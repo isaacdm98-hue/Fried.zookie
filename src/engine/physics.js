@@ -31,11 +31,12 @@ export function stepPhysics(world) {
  * @returns {RAPIER.RigidBody}
  */
 export function createGround(world, R) {
-  const bodyDesc = R.RigidBodyDesc.fixed();
+  const bodyDesc = R.RigidBodyDesc.fixed().setTranslation(0, -0.5, 0);
   const body = world.createRigidBody(bodyDesc);
 
-  // half-space collider: normal pointing up (y+)
-  const colliderDesc = R.ColliderDesc.halfSpace(new R.Vector3(0, 1, 0))
+  // Large thin cuboid acting as the ground. Top surface sits at y = 0.
+  // (rapier3d-compat has no halfSpace collider, so we use a big slab.)
+  const colliderDesc = R.ColliderDesc.cuboid(500, 0.5, 500)
     .setFriction(0.8)
     .setRestitution(0.1);
   world.createCollider(colliderDesc, body);
