@@ -119,7 +119,7 @@ export class Zook {
     this._bodyMesh = bodyMesh;
 
     // ── Eyes ────────────────────────────────────────────────────────────────
-    const eyeR      = 0.07;
+    const eyeR      = genome.eyeSize || 0.07;
     const eyeMat    = new THREE.MeshToonMaterial({ color: 0xffffff, gradientMap: GRAD_TEX.get() });
     const pupilMat  = new THREE.MeshToonMaterial({ color: 0x111111, gradientMap: GRAD_TEX.get() });
     const eyeGeo    = new THREE.SphereGeometry(eyeR, 8, 6);
@@ -146,7 +146,7 @@ export class Zook {
     const legCapR    = legR;
     const legCapL    = Math.max(legLen - legR * 2, 0.05);
     const legGeo     = new THREE.CapsuleGeometry(legCapR, legCapL, 4, 8);
-    const legMat     = toonMat(color, true);
+    const legMat     = toonMat(genome.accent || color, true);
 
     for (const { x: lx, z: lz, phase } of layout) {
       // Pivot at hip joint (at top of leg)

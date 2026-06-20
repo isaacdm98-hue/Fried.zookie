@@ -7,35 +7,42 @@ export function defaultGenome(name = 'Newzook') {
   return {
     name,
     color: PALETTE[0],
+    accent: PALETTE[2],          // leg / underside accent colour
+    eyeSize: 0.07,               // eyeball radius
     body: { w: 0.60, h: 0.55, l: 1.0, mass: 2.0 },
     legCount: 4,
     leg: { len: 0.95, radius: 0.14 },
-    gait: { freq: 2.2, amplitude: 0.70, drive: 12, jump: 0, steer: 0 },
+    gait: { freq: 2.2, amplitude: 0.70, drive: 12, jump: 4, steer: 0 },
   };
 }
 
 export function randomGenome() {
-  const names = ['Zipzook','Chomper','Bolt','Flumps','Dasher','Wobble','Bouncer','Quake','Zara','Blip'];
+  const names = ['Zipzook','Chomper','Bolt','Flumps','Dasher','Wobble','Bouncer','Quake','Zara','Blip',
+                 'Grub','Nibbler','Stomp','Twitch','Pogo','Skitter','Lumpy','Zoomie','Crank','Noodle'];
+  const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+  const rnd  = (a, b) => a + Math.random() * (b - a);
   return {
-    name: names[Math.floor(Math.random() * names.length)],
-    color: PALETTE[Math.floor(Math.random() * PALETTE.length)],
+    name: pick(names),
+    color: pick(PALETTE),
+    accent: pick(PALETTE),
+    eyeSize: rnd(0.04, 0.13),
     body: {
-      w: 0.40 + Math.random() * 0.50,
-      h: 0.35 + Math.random() * 0.45,
-      l: 0.70 + Math.random() * 0.70,
-      mass: 1.0 + Math.random() * 3.0,
+      w: rnd(0.30, 1.00),
+      h: rnd(0.30, 0.80),
+      l: rnd(0.60, 1.60),
+      mass: rnd(0.6, 5.0),
     },
-    legCount: [2, 4, 6, 8][Math.floor(Math.random() * 4)],
+    legCount: pick([2, 4, 6, 8]),
     leg: {
-      len: 0.70 + Math.random() * 0.60,
-      radius: 0.10 + Math.random() * 0.10,
+      len: rnd(0.55, 1.40),
+      radius: rnd(0.08, 0.22),
     },
     gait: {
-      freq: 1.5 + Math.random() * 3.0,
-      amplitude: 0.40 + Math.random() * 0.60,
-      drive: 6 + Math.random() * 16,
-      jump: 0,
-      steer: (Math.random() - 0.5) * 0.4,
+      freq: rnd(1.0, 5.0),
+      amplitude: rnd(0.25, 1.20),
+      drive: rnd(4, 22),
+      jump: rnd(0, 9),
+      steer: rnd(-0.8, 0.8),
     },
   };
 }

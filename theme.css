@@ -2,7 +2,17 @@
    FriedZooki v3 — Tactile Bamzookie Theme
    ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Patrick+Hand&display=swap');
+/* Self-hosted fonts — no external network dependency (works offline / restricted) */
+@font-face {
+  font-family: 'Fredoka One';
+  font-style: normal; font-weight: 400; font-display: swap;
+  src: url('./fonts/fredoka-one.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Patrick Hand';
+  font-style: normal; font-weight: 400; font-display: swap;
+  src: url('./fonts/patrick-hand.ttf') format('truetype');
+}
 
 :root {
   --cream: #fbf7ec;

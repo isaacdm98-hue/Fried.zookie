@@ -264,96 +264,82 @@ export class WorkshopScene {
     if (style) style.remove();
   }
 
+  /** Build the HTML for one retro dial module. */
+  _dialHTML(param, label, min, max, step, value) {
+    const fmt = step < 0.1 ? value.toFixed(2) : (step < 1 ? value.toFixed(1) : String(Math.round(value)));
+    return `
+      <div class="wp-mod">
+        <div class="knob" data-param="${param}" data-min="${min}" data-max="${max}"
+             data-step="${step}" data-value="${value}">
+          <div class="knob-dial"></div>
+        </div>
+        <div class="knob-val">${fmt}</div>
+        <div class="wp-mod-label">${label}</div>
+      </div>`;
+  }
+
   _panelHTML() {
     const g = this._genome;
+    const d = (p, l, mn, mx, st, v) => this._dialHTML(p, l, mn, mx, st, v);
+
     return `
-      <div class="wp-header">
-        <input id="build-name" class="wp-name-input" type="text"
-               value="${_esc(g.name)}" placeholder="Name your Zook" maxlength="20" />
+      <!-- Top floating bar -->
+      <div class="wp-top">
+        <button id="build-back" class="wp-icon-btn" title="Back">‹</button>
+        <div class="wp-nameplate">
+          <input id="build-name" class="wp-name-input" type="text"
+                 value="${_esc(g.name)}" placeholder="NAME YOUR ZOOK" maxlength="16" />
+        </div>
+        <button id="build-new" class="wp-icon-btn" title="Randomise">⟳</button>
       </div>
 
-      <div class="wp-knobs">
-        <label class="wp-label">Legs
-          <div class="knob" data-param="legCount" data-min="2" data-max="8" data-step="2"
-               data-value="${g.legCount}">
-            <div class="knob-dial"></div>
-            <span class="knob-val">${g.legCount}</span>
-          </div>
-        </label>
-
-        <label class="wp-label">Drive
-          <div class="knob" data-param="drive" data-min="4" data-max="20" data-step="0.5"
-               data-value="${g.gait.drive.toFixed(1)}">
-            <div class="knob-dial"></div>
-            <span class="knob-val">${g.gait.drive.toFixed(1)}</span>
-          </div>
-        </label>
-
-        <label class="wp-label">Freq
-          <div class="knob" data-param="freq" data-min="1" data-max="5" data-step="0.1"
-               data-value="${g.gait.freq.toFixed(1)}">
-            <div class="knob-dial"></div>
-            <span class="knob-val">${g.gait.freq.toFixed(1)}</span>
-          </div>
-        </label>
-
-        <label class="wp-label">Amp
-          <div class="knob" data-param="amplitude" data-min="0.2" data-max="1.2" data-step="0.05"
-               data-value="${g.gait.amplitude.toFixed(2)}">
-            <div class="knob-dial"></div>
-            <span class="knob-val">${g.gait.amplitude.toFixed(2)}</span>
-          </div>
-        </label>
-
-        <label class="wp-label">Mass
-          <div class="knob" data-param="mass" data-min="0.5" data-max="5" data-step="0.1"
-               data-value="${g.body.mass.toFixed(1)}">
-            <div class="knob-dial"></div>
-            <span class="knob-val">${g.body.mass.toFixed(1)}</span>
-          </div>
-        </label>
-
-        <label class="wp-label">Steer
-          <div class="knob" data-param="steer" data-min="-1.5" data-max="1.5" data-step="0.05"
-               data-value="${g.gait.steer.toFixed(2)}">
-            <div class="knob-dial"></div>
-            <span class="knob-val">${g.gait.steer.toFixed(2)}</span>
-          </div>
-        </label>
-
-        <label class="wp-label">Width
-          <div class="knob" data-param="bodyW" data-min="0.3" data-max="1.0" data-step="0.05"
-               data-value="${g.body.w.toFixed(2)}">
-            <div class="knob-dial"></div>
-            <span class="knob-val">${g.body.w.toFixed(2)}</span>
-          </div>
-        </label>
-
-        <label class="wp-label">Height
-          <div class="knob" data-param="bodyH" data-min="0.3" data-max="0.8" data-step="0.05"
-               data-value="${g.body.h.toFixed(2)}">
-            <div class="knob-dial"></div>
-            <span class="knob-val">${g.body.h.toFixed(2)}</span>
-          </div>
-        </label>
+      <!-- Left rack: CHASSIS -->
+      <div class="wp-rack wp-rack-left">
+        <div class="wp-rack-label">CHASSIS</div>
+        <div class="wp-rack-screw tl"></div><div class="wp-rack-screw tr"></div>
+        ${d('bodyW',     'WIDTH',  0.30, 1.00, 0.05, g.body.w)}
+        ${d('bodyH',     'HEIGHT', 0.30, 0.80, 0.05, g.body.h)}
+        ${d('bodyL',     'LENGTH', 0.60, 1.60, 0.05, g.body.l)}
+        ${d('mass',      'MASS',   0.60, 5.00, 0.10, g.body.mass)}
+        ${d('legRadius', 'THICK',  0.08, 0.22, 0.01, g.leg.radius)}
+        ${d('eyeSize',   'EYES',   0.04, 0.13, 0.01, g.eyeSize ?? 0.07)}
+        <div class="wp-rack-screw bl"></div><div class="wp-rack-screw br"></div>
       </div>
 
-      <div class="wp-color-row">
-        <label class="wp-label">Colour
-          <input class="color-wheel" type="color" value="${g.color}" />
-        </label>
+      <!-- Right rack: MOTION -->
+      <div class="wp-rack wp-rack-right">
+        <div class="wp-rack-label">MOTION</div>
+        <div class="wp-rack-screw tl"></div><div class="wp-rack-screw tr"></div>
+        ${d('drive',     'POWER',  4.0, 22.0, 0.5,  g.gait.drive)}
+        ${d('freq',      'FREQ',   1.0,  5.0, 0.1,  g.gait.freq)}
+        ${d('amplitude', 'STRIDE', 0.25, 1.20, 0.05, g.gait.amplitude)}
+        ${d('legLen',    'REACH',  0.55, 1.40, 0.05, g.leg.len)}
+        ${d('jump',      'HOP',    0.0,  9.0, 0.5,  g.gait.jump ?? 0)}
+        ${d('steer',     'STEER', -0.8,  0.8, 0.05, g.gait.steer)}
+        <div class="wp-rack-screw bl"></div><div class="wp-rack-screw br"></div>
       </div>
 
-      <div class="wp-stats" id="wp-stats"></div>
-
-      <div class="wp-coach" id="wp-coach">
-        <span id="wp-coach-text">Drag the knobs to shape your Zook!</span>
-      </div>
-
-      <div class="wp-actions">
-        <button id="build-new"  class="wp-btn wp-btn-ghost">Randomise</button>
-        <button id="build-save" class="wp-btn wp-btn-primary">Save</button>
-        <button id="build-test" class="wp-btn wp-btn-accent">Test</button>
+      <!-- Bottom dock: switches + colours + actions -->
+      <div class="wp-dock">
+        <div class="wp-dock-row">
+          <button id="legs-switch" class="wp-switch" data-value="${g.legCount}">
+            <span class="wp-switch-label">LEGS</span>
+            <span class="wp-switch-val" id="legs-switch-val">${g.legCount}</span>
+          </button>
+          <label class="wp-swatch" title="Body colour">
+            <input id="color-body" class="color-wheel" type="color" value="${g.color}" />
+            <span class="wp-swatch-cap">BODY</span>
+          </label>
+          <label class="wp-swatch" title="Leg colour">
+            <input id="color-accent" class="color-wheel" type="color" value="${g.accent || g.color}" />
+            <span class="wp-swatch-cap">LEGS</span>
+          </label>
+          <div class="wp-readout" id="wp-stats"></div>
+        </div>
+        <div class="wp-dock-row wp-dock-actions">
+          <button id="build-save" class="wp-btn wp-btn-primary">SAVE</button>
+          <button id="build-test" class="wp-btn wp-btn-accent">TEST ▶</button>
+        </div>
       </div>
     `;
   }
@@ -363,122 +349,178 @@ export class WorkshopScene {
     const style = document.createElement('style');
     style.id = 'workshop-panel-style';
     style.textContent = `
+      /* ── Workshop: floating retro-synth control surface ──
+         Racks float at the screen edges; the 3-D creature stays
+         fully visible in the centre.  No element fills the viewport. */
       #workshop-panel {
-        position: fixed;
-        z-index: 40;
-        background: rgba(20,15,28,0.85);
-        backdrop-filter: blur(8px);
-        border: 1.5px solid #f07800;
-        font-family: 'Courier New', monospace;
-        color: #ffb347;
-        overflow-y: auto;
-        box-sizing: border-box;
-        padding: 12px 14px 16px;
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
+        position: fixed; inset: 0; z-index: 40;
+        pointer-events: none;            /* only the modules catch input */
+        font-family: var(--font-ui), 'Patrick Hand', sans-serif;
+      }
+      #workshop-panel > * { pointer-events: auto; }
+
+      /* Shared brushed-metal chassis look */
+      .wp-rack, .wp-dock, .wp-nameplate, .wp-switch, .wp-btn, .wp-icon-btn {
+        background:
+          linear-gradient(180deg, rgba(255,255,255,0.10), rgba(0,0,0,0.18)),
+          linear-gradient(135deg, #2c2436, #1a1422);
+        border: 1.5px solid #4a3d5e;
+        box-shadow: 0 6px 18px rgba(0,0,0,0.45),
+                    inset 0 1px 0 rgba(255,255,255,0.12);
       }
 
-      /* Portrait mobile: slides up from bottom, 40% height */
-      @media (max-aspect-ratio: 1/1) {
-        #workshop-panel {
-          left: 0; right: 0; bottom: 0;
-          max-height: 40vh;
-          border-radius: 18px 18px 0 0;
-          border-bottom: none;
-        }
+      /* ── Top bar ── */
+      .wp-top {
+        position: absolute; top: 10px; left: 10px; right: 10px; height: 46px;
+        display: flex; align-items: center; gap: 10px; pointer-events: none;
       }
-
-      /* Landscape / tablet: right sidebar, 40% width */
-      @media (min-aspect-ratio: 1/1) {
-        #workshop-panel {
-          right: 0; top: 0; bottom: 0;
-          width: 40vw;
-          max-width: 360px;
-          border-radius: 14px 0 0 14px;
-          border-right: none;
-        }
+      .wp-top > * { pointer-events: auto; }
+      .wp-nameplate {
+        flex: 1; height: 100%; border-radius: 12px;
+        display: flex; align-items: center; padding: 0 12px;
       }
-
-      .wp-header { display:flex; align-items:center; gap:8px; }
       .wp-name-input {
-        flex:1; background: rgba(255,255,255,0.06);
-        border: 1.5px solid #f07800; border-radius: 8px;
-        color: #ffb347; font-family: inherit; font-size: 15px;
-        font-weight: 900; padding: 5px 10px; outline: none;
+        width: 100%; background: none; border: none; outline: none;
+        color: var(--synth-accent2, #ffc040); font-size: 20px; font-weight: 400;
+        letter-spacing: 0.06em; text-align: center;
+        text-shadow: 0 0 8px rgba(255,192,64,0.35);
       }
-      .wp-knobs {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 8px;
+      .wp-name-input::placeholder { color: #6b5a82; }
+      .wp-icon-btn {
+        width: 46px; height: 46px; border-radius: 12px; flex-shrink: 0;
+        color: var(--synth-accent, #ff8040); font-size: 24px; line-height: 1;
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer; transition: transform 0.08s, filter 0.12s;
       }
-      @media (max-width: 480px) {
-        .wp-knobs { grid-template-columns: repeat(4, 1fr); gap: 6px; }
-      }
-      .wp-label {
+      .wp-icon-btn:active { transform: translateY(1px); filter: brightness(1.25); }
+
+      /* ── Side racks ── */
+      .wp-rack {
+        position: absolute; top: 66px; bottom: 132px;
+        width: 76px; border-radius: 14px;
         display: flex; flex-direction: column; align-items: center;
-        font-size: 9px; letter-spacing: 0.1em; color: #a07040; gap: 4px;
-        user-select: none;
+        gap: 2px; padding: 16px 0 8px;
+        overflow: visible;
+      }
+      .wp-rack-left  { left: 8px; }
+      .wp-rack-right { right: 8px; }
+      .wp-rack-label {
+        position: absolute; top: 4px; left: 0; right: 0; text-align: center;
+        font-family: monospace; font-size: 8px; letter-spacing: 2px;
+        color: #7a6a96;
+      }
+      .wp-rack-screw {
+        position: absolute; width: 6px; height: 6px; border-radius: 50%;
+        background: radial-gradient(circle at 35% 35%, #6a5a82, #1a1422);
+        box-shadow: inset 0 0 1px rgba(0,0,0,0.8);
+      }
+      .wp-rack-screw.tl { top: 5px; left: 5px; }
+      .wp-rack-screw.tr { top: 5px; right: 5px; }
+      .wp-rack-screw.bl { bottom: 5px; left: 5px; }
+      .wp-rack-screw.br { bottom: 5px; right: 5px; }
+
+      /* ── Dial module ── */
+      .wp-mod {
+        display: flex; flex-direction: column; align-items: center; gap: 1px;
+        flex: 1 1 0; justify-content: center; min-height: 0;
       }
       .knob {
-        width: 44px; height: 44px;
-        border-radius: 50%;
-        background: radial-gradient(circle at 35% 35%, #3a2a3a, #1a1020);
-        border: 2px solid #f07800;
-        display: flex; flex-direction: column;
-        align-items: center; justify-content: center;
-        cursor: grab; position: relative;
-        box-shadow: 0 0 8px rgba(240,120,0,0.3);
-        touch-action: none;
+        --d: 42px;
+        width: var(--d); height: var(--d); border-radius: 50%;
+        position: relative; cursor: grab; touch-action: none; flex-shrink: 0;
+        background:
+          radial-gradient(circle at 38% 30%, #5a4d72 0%, #2a2238 55%, #15101e 100%);
+        box-shadow:
+          0 3px 6px rgba(0,0,0,0.6),
+          inset 0 1px 2px rgba(255,255,255,0.18),
+          0 0 0 2px #0d0b14,
+          0 0 0 3px #4a3d5e;
+        transition: box-shadow 0.1s;
       }
-      .knob:active { cursor: grabbing; }
+      .knob:active { cursor: grabbing;
+        box-shadow: 0 3px 6px rgba(0,0,0,0.6), inset 0 1px 2px rgba(255,255,255,0.18),
+                    0 0 0 2px var(--synth-accent,#ff8040), 0 0 12px rgba(255,128,64,0.5); }
+      /* tick ring */
+      .knob::after {
+        content: ''; position: absolute; inset: -7px; border-radius: 50%;
+        background:
+          repeating-conic-gradient(from -135deg,
+            #6a5a86 0deg 2deg, transparent 2deg 24deg);
+        -webkit-mask: radial-gradient(circle, transparent 60%, #000 61%, #000 70%, transparent 71%);
+                mask: radial-gradient(circle, transparent 60%, #000 61%, #000 70%, transparent 71%);
+        opacity: 0.55; pointer-events: none;
+      }
       .knob-dial {
-        position: absolute;
-        width: 6px; height: 14px;
-        background: #f07800;
-        border-radius: 3px;
-        top: 4px;
-        transform-origin: bottom center;
-        transform: rotate(0deg);
-        left: calc(50% - 3px);
+        position: absolute; width: 4px; height: 13px; left: calc(50% - 2px); top: 4px;
+        background: var(--synth-accent2, #ffc040); border-radius: 2px;
+        transform-origin: 50% calc(var(--d) / 2 - 4px); transform: rotate(0deg);
+        box-shadow: 0 0 5px var(--synth-accent2, #ffc040); pointer-events: none;
       }
       .knob-val {
-        position: absolute;
-        bottom: 5px;
-        font-size: 8px;
-        color: #ffb347;
-        letter-spacing: 0;
-        pointer-events: none;
+        font-family: monospace; font-size: 9px; line-height: 1;
+        color: var(--synth-accent2, #ffc040); letter-spacing: 0;
+        background: rgba(0,0,0,0.35); border-radius: 3px; padding: 1px 3px;
+        min-width: 26px; text-align: center;
       }
-      .wp-color-row { display:flex; gap:10px; align-items:center; }
-      .color-wheel {
-        width: 36px; height: 36px; padding: 2px;
-        border: 2px solid #f07800; border-radius: 8px;
-        background: none; cursor: pointer;
+      .wp-mod-label {
+        font-family: monospace; font-size: 8px; letter-spacing: 1px; color: #8a7aa6;
       }
-      .wp-stats {
-        font-size: 10px; color: #a07040; letter-spacing: 0.08em;
-        background: rgba(255,255,255,0.03);
-        border-radius: 6px; padding: 6px 8px;
+
+      /* ── Bottom dock ── */
+      .wp-dock {
+        position: absolute; left: 8px; right: 8px; bottom: 8px;
+        border-radius: 16px; padding: 8px 10px;
+        display: flex; flex-direction: column; gap: 8px;
       }
-      .wp-coach {
-        font-size: 11px; color: #ffb347; min-height: 18px;
-        background: rgba(240,120,0,0.08);
-        border-left: 3px solid #f07800;
-        padding: 4px 8px; border-radius: 0 6px 6px 0;
+      .wp-dock-row { display: flex; align-items: center; gap: 8px; }
+      .wp-switch {
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        width: 56px; height: 42px; border-radius: 10px; cursor: pointer; flex-shrink: 0;
+        transition: filter 0.12s;
       }
-      .wp-actions { display:flex; gap:8px; }
+      .wp-switch:active { filter: brightness(1.2); }
+      .wp-switch-label { font-family: monospace; font-size: 8px; letter-spacing: 1px; color: #8a7aa6; }
+      .wp-switch-val {
+        font-size: 18px; font-weight: 400; line-height: 1;
+        color: var(--synth-accent2,#ffc040); text-shadow: 0 0 6px rgba(255,192,64,0.4);
+      }
+      .wp-swatch {
+        position: relative; width: 42px; height: 42px; border-radius: 10px;
+        overflow: hidden; flex-shrink: 0; cursor: pointer;
+        border: 1.5px solid #4a3d5e; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.5);
+      }
+      .wp-swatch .color-wheel {
+        position: absolute; inset: -6px; width: calc(100% + 12px); height: calc(100% + 12px);
+        border: none; padding: 0; background: none; cursor: pointer;
+      }
+      .wp-swatch-cap {
+        position: absolute; bottom: 0; left: 0; right: 0; text-align: center;
+        font-family: monospace; font-size: 7px; letter-spacing: 1px;
+        color: #fff; background: rgba(0,0,0,0.5); padding: 1px 0;
+      }
+      .wp-readout {
+        flex: 1; font-family: monospace; font-size: 9px; line-height: 1.35;
+        color: #9a8ab6; letter-spacing: 0.04em; text-align: right;
+      }
+      .wp-readout b { color: var(--synth-accent2,#ffc040); }
+      .wp-dock-actions { gap: 10px; }
       .wp-btn {
-        flex:1; padding: 9px 4px;
-        border-radius: 8px; border: none;
-        font-family: inherit; font-size: 12px;
-        font-weight: 900; letter-spacing: 0.08em;
-        cursor: pointer; transition: filter 0.15s;
+        flex: 1; padding: 11px 4px; border-radius: 10px; cursor: pointer;
+        font-family: var(--font-ui), sans-serif; font-size: 17px; letter-spacing: 0.06em;
+        transition: transform 0.08s, filter 0.12s;
       }
-      .wp-btn:active { filter: brightness(0.8); }
-      .wp-btn-ghost   { background: rgba(255,255,255,0.08); color: #a07040; border: 1.5px solid #a07040; }
-      .wp-btn-primary { background: #f07800; color: #1a1020; }
-      .wp-btn-accent  { background: #4ade80; color: #1a1020; }
+      .wp-btn:active { transform: translateY(1px); filter: brightness(1.15); }
+      .wp-btn-primary { color: #1a1020;
+        background: linear-gradient(180deg, #ffc040, #f0901a); border-color: #c0700a; }
+      .wp-btn-accent  { color: #0a2014;
+        background: linear-gradient(180deg, #6ef09a, #2bbf66); border-color: #1a8044; }
+
+      /* Landscape: shrink racks so they stay at the very edges */
+      @media (orientation: landscape) and (max-height: 520px) {
+        .wp-rack { top: 60px; bottom: 70px; width: 64px; }
+        .wp-dock { left: 80px; right: 80px; }
+        .knob { --d: 36px; }
+      }
     `;
     document.head.appendChild(style);
   }
@@ -494,13 +536,36 @@ export class WorkshopScene {
       this._wireKnob(knobEl);
     });
 
-    // Colour wheel
-    const colorInput = panel.querySelector('.color-wheel');
-    if (colorInput) {
-      colorInput.addEventListener('input', () => {
-        this._genome.color = colorInput.value;
+    // Body colour
+    const bodyColor = panel.querySelector('#color-body');
+    if (bodyColor) {
+      bodyColor.addEventListener('input', () => {
+        this._genome.color = bodyColor.value;
         haptic.tick();
-        this._onGenomeChange(false);
+        this._onGenomeChange(true);   // colour lives on the mesh — rebuild
+      });
+    }
+
+    // Accent / leg colour
+    const accentColor = panel.querySelector('#color-accent');
+    if (accentColor) {
+      accentColor.addEventListener('input', () => {
+        this._genome.accent = accentColor.value;
+        haptic.tick();
+        this._onGenomeChange(true);
+      });
+    }
+
+    // Legs switch — taps cycle 2 → 4 → 6 → 8 → 2
+    const legsSwitch = panel.querySelector('#legs-switch');
+    if (legsSwitch) {
+      legsSwitch.addEventListener('click', () => {
+        const next = this._genome.legCount >= 8 ? 2 : this._genome.legCount + 2;
+        this._genome.legCount = next;
+        const valEl = panel.querySelector('#legs-switch-val');
+        if (valEl) valEl.textContent = String(next);
+        haptic.double();
+        this._onGenomeChange(true);
       });
     }
 
@@ -514,6 +579,7 @@ export class WorkshopScene {
     }
 
     // Buttons
+    panel.querySelector('#build-back')?.addEventListener('click', () => navigate('title'));
     panel.querySelector('#build-save')?.addEventListener('click', () => this._save());
     panel.querySelector('#build-test')?.addEventListener('click', () => this._test());
     panel.querySelector('#build-new')?.addEventListener('click', () => {
@@ -533,11 +599,11 @@ export class WorkshopScene {
     let startY   = 0;
     let startVal = parseFloat(knobEl.dataset.value);
 
+    const valEl  = knobEl.parentElement?.querySelector('.knob-val');
     const applyVal = (val) => {
       this._writeParam(param, val);
       knobEl.dataset.value = val;
       const dialEl = knobEl.querySelector('.knob-dial');
-      const valEl  = knobEl.querySelector('.knob-val');
       if (dialEl) {
         const t   = (val - min) / (max - min);
         const deg = -135 + t * 270;
@@ -564,8 +630,8 @@ export class WorkshopScene {
       applyVal(val);
       haptic.tick();
 
-      const needsRebuild = (param === 'legCount' || param === 'bodyW' || param === 'bodyH');
-      this._onGenomeChange(needsRebuild);
+      const meshParams = ['legCount','bodyW','bodyH','bodyL','legLen','legRadius','eyeSize'];
+      this._onGenomeChange(meshParams.includes(param));
     });
   }
 
@@ -579,8 +645,13 @@ export class WorkshopScene {
       case 'amplitude':  g.gait.amplitude  = val;  break;
       case 'mass':       g.body.mass       = val;  break;
       case 'steer':      g.gait.steer      = val;  break;
+      case 'jump':       g.gait.jump       = val;  break;
       case 'bodyW':      g.body.w          = val;  break;
       case 'bodyH':      g.body.h          = val;  break;
+      case 'bodyL':      g.body.l          = val;  break;
+      case 'legLen':     g.leg.len         = val;  break;
+      case 'legRadius':  g.leg.radius      = val;  break;
+      case 'eyeSize':    g.eyeSize         = val;  break;
     }
   }
 
