@@ -123,7 +123,12 @@ function navigate(screen, opts = {}) {
     case 'freeroam': {
       activeScene = freeroamMode;
       freeroamMode.enter(S.activeGenome);
-      // freeroam.js manages its own loop and joystick UI
+      stopCurrentLoop = startLoop({
+        world: eng.world, renderer: eng.renderer, scene: eng.scene,
+        camera: eng.camera, clock: eng.clock,
+        onStep: (dt) => freeroamMode.onStep(dt),
+        onFrame: (dt) => freeroamMode.update(dt),
+      });
       break;
     }
     case 'online': {

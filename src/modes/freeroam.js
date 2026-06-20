@@ -10,7 +10,6 @@
 
 import { Zook }           from '../creature/builder.js';
 import { Environment }    from '../engine/env.js';
-import { startLoop }      from '../engine/loop.js';
 import { setCamera, updateCamera } from '../engine/renderer.js';
 import { navigate }       from '../router.js';
 import { S }              from '../state.js';
@@ -41,7 +40,6 @@ export class FreeRoamMode {
 
     this._env      = null;
     this._zook     = null;
-    this._stopLoop = null;
 
     // Joystick state (normalized -1 … 1)
     this._joyX = 0;
@@ -90,22 +88,10 @@ export class FreeRoamMode {
 
     // Initial camera
     setCamera({ x: 0, y: 4, z: 6 }, { x: 0, y: 0.5, z: 0 }, true);
-
-    // Start loop
-    this._stopLoop = startLoop({
-      world:    this._world,
-      renderer: this._renderer,
-      scene:    this._scene,
-      camera:   this._camera,
-      clock:    this._clock,
-      onStep:   (dt) => this._physicsStep(dt),
-      onFrame:  (dt) => this._frame(dt),
-    });
+    // Loop is managed externally by main.js — no startLoop call here
   }
 
   exit() {
-    if (this._stopLoop) { this._stopLoop(); this._stopLoop = null; }
-
     if (this._zook && typeof this._zook.dispose === 'function') this._zook.dispose();
     this._zook = null;
 
