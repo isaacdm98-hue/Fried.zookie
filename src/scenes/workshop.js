@@ -19,6 +19,7 @@ import { cloneGenome, randomGenome, saveRoster } from '../creature/genome.js';
 import { navigate }       from '../router.js';
 import { S, setState }    from '../state.js';
 import { haptic }         from '../ui/haptic.js';
+import { narrator }       from '../audio/narrator.js';
 import { setCamera } from '../engine/renderer.js';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -710,6 +711,7 @@ export class WorkshopScene {
     saveRoster(roster);
     setState({ roster, activeGenome: g });
     haptic.burst();
+    narrator.play('save');
 
     const btn = this._panel?.querySelector('#build-save');
     if (btn) {

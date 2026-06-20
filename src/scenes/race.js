@@ -27,6 +27,7 @@ import { Environment }    from '../engine/env.js';
 import { setCamera }      from '../engine/renderer.js';
 import { setState }       from '../state.js';
 import { haptic }         from '../ui/haptic.js';
+import { narrator }       from '../audio/narrator.js';
 import { cloneGenome }    from '../creature/genome.js';
 
 // ── Camera phase constants ────────────────────────────────────────────────────
@@ -213,6 +214,7 @@ export class RaceScene {
       if (step >= COUNTDOWN_SEQ.length) {
         this._started = true;
         haptic.burst();
+        narrator.play('race_start');
         return;
       }
       const n = COUNTDOWN_SEQ[step++];
@@ -415,6 +417,7 @@ export class RaceScene {
     if (this._lowerThird && leadEntry && leadEntry.name !== this._lastLeadName && this._elapsed > 3) {
       this._lastLeadName = leadEntry.name;
       this._lowerThird.show(`${leadEntry.name} takes the lead!`);
+      narrator.play('lead_change');
     }
 
     this._hud.update({

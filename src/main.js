@@ -56,7 +56,7 @@ async function boot() {
   setStep('ready!');
 
   sfx.init();
-  narrator.init();
+  await narrator.init();
   initUI();
 
   // Listen for navigate events dispatched by router.js
@@ -65,6 +65,11 @@ async function boot() {
   });
 
   navigate('title');
+
+  // First-ever launch: the narrator welcomes the player with the story.
+  // Triggered on the first user gesture so the audio is allowed to play
+  // (browsers block autoplay before any interaction).
+  window.addEventListener('pointerdown', () => narrator.playOnce('intro'), { once: true });
 }
 
 /* ─── Navigation ─────────────────────────────────────── */
@@ -98,6 +103,7 @@ function navigate(screen, opts = {}) {
       document.getElementById('screen-build').classList.add('show');
       activeScene = workshopScene;
       workshopScene.enter(S.activeGenome);
+      narrator.play('build');
       // workshop.js manages its own internal loop
       break;
     }
@@ -154,7 +160,7 @@ function navigate(screen, opts = {}) {
           });
           if (result.won) { fireConfetti(eng.renderer.domElement); sfx.play('win'); }
           else sfx.play('lose');
-          if (narrator.enabled) narrator.say(narrator.pick(result.won ? 'win' : 'lose'));
+          narrator.play(result.won ? 'win' : 'lose');
         }, 200);
       };
       raceScene.onRaceEnd = opts.onFinish || defaultOnFinish;
@@ -190,7 +196,7 @@ function startTrial(trialId, genome) {
         });
         if (result.won) { fireConfetti(eng.renderer.domElement); sfx.play('win'); }
         else sfx.play('lose');
-        if (narrator.enabled) narrator.say(narrator.pick(result.won ? 'win' : 'lose'));
+        narrator.play(result.won ? 'win' : 'lose');
       }, 200);
     },
   });
@@ -238,6 +244,7 @@ function onChampEnd(scores, genome) {
   const total = scores.length;
   fireConfetti(eng.renderer.domElement);
   sfx.play('win');
+  narrator.play('champion');
   document.getElementById('trophy-title').textContent = won >= total * 0.6 ? '🏆 Champion!' : 'Well Run!';
   document.getElementById('trophy-score').textContent = `${won}/${total} races won`;
   document.getElementById('trophy-screen').classList.remove('hidden');
