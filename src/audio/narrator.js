@@ -39,19 +39,43 @@ export const narrator = {
       this._manifest = null;   // we'll lean on Web Speech
     }
 
-    // Web Speech fallback voice (best British we can find)
+    // Choose the best-quality system voice available on this device.
     if (this._synth) {
       const pickVoice = () => {
         const vs = this._synth.getVoices();
         if (!vs.length) return;
-        this._voice =
-          vs.find(v => v.lang === 'en-GB' && /daniel|arthur|oliver|george|male/i.test(v.name)) ||
-          vs.find(v => v.lang === 'en-GB') ||
-          vs.find(v => v.lang.startsWith('en')) || vs[0];
+        this._voice = vs.slice().sort((a, b) => this._scoreVoice(b) - this._scoreVoice(a))[0];
       };
       pickVoice();
       this._synth.addEventListener('voiceschanged', pickVoice);
     }
+  },
+
+  /**
+   * Score a SpeechSynthesisVoice for "warm British narrator" suitability.
+   * Higher = better. Premium/neural named voices win; en-GB beats other
+   * English; English beats everything else.
+   */
+  _scoreVoice(v) {
+    let s = 0;
+    const name = (v.name || '').toLowerCase();
+    const lang = (v.lang || '').toLowerCase();
+
+    if (lang === 'en-gb') s += 40;
+    else if (lang.startsWith('en')) s += 18;
+
+    // Known high-quality British male voices (Fry-ish warmth)
+    if (/\b(daniel|arthur|oliver|george|jamie)\b/.test(name)) s += 30;
+    // Other good British voices
+    if (/\b(serena|kate|stephanie|sonia|libby|ryan)\b/.test(name)) s += 18;
+    // Neural / premium / natural engines sound markedly less robotic
+    if (/(neural|natural|premium|enhanced|online|siri|google uk)/.test(name)) s += 25;
+    // Remote services are usually the neural ones
+    if (v.localService === false) s += 8;
+    // Mild penalty for the obviously robotic legacy voices
+    if (/(espeak|compact|robo|microsoft (david|zira|mark))/.test(name)) s -= 20;
+
+    return s;
   },
 
   _load(file) {
@@ -69,13 +93,25 @@ export const narrator = {
    */
   play(event, opts = {}) {
     if (!this.enabled) return;
-    const pool = this._manifest && this._manifest[event];
+    const text = this.pick(event);
+    if (!text) return;
 
+    // Primary: the device's best system voice (per user preference).
+    // Falls back to the bundled neural clips only when no usable
+    // speech voice exists (keeps it human-sounding offline too).
+    if (this._synth && this._voice) {
+      this._speak(text);
+      return;
+    }
+    this._playClip(event, text);
+  },
+
+  /** Play a bundled pre-baked OGG for the event (offline fallback). */
+  _playClip(event, text) {
+    const pool = this._manifest && this._manifest[event];
     if (pool && pool.length) {
       const clip = pool[Math.floor(Math.random() * pool.length)];
       const audio = this._load(clip.file);
-
-      // Stop whatever's playing (commentary shouldn't pile up)
       if (this._current && this._current !== audio) {
         try { this._current.pause(); this._current.currentTime = 0; } catch (_) {}
       }
@@ -84,13 +120,12 @@ export const narrator = {
       try {
         audio.currentTime = 0;
         const p = audio.play();
-        if (p && p.catch) p.catch(() => this._speak(clip.text));
-      } catch (_) { this._speak(clip.text); }
+        if (p && p.catch) p.catch(() => this._caption(clip.text, null));
+      } catch (_) { this._caption(clip.text, null); }
       return;
     }
-
-    // No clip available → Web Speech fallback with a sensible line
-    this._speak(this._fallbackText(event));
+    // Last resort: caption only
+    this._caption(text || this._fallbackText(event), null);
   },
 
   /** Play an event only the first time ever (e.g. the intro story). */
