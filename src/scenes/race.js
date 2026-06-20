@@ -29,6 +29,7 @@ import { setState }       from '../state.js';
 import { haptic }         from '../ui/haptic.js';
 import { narrator }       from '../audio/narrator.js';
 import { cloneGenome }    from '../creature/genome.js';
+import { makeSumoContest, makeFootballContest } from '../creature/behaviour.js';
 
 // ── Camera phase constants ────────────────────────────────────────────────────
 const CAM_BROADCAST = 'broadcast';
@@ -77,6 +78,7 @@ export class RaceScene {
     this._hud         = null;
     this._lowerThird  = null;
     this._onFinish    = null;
+    this._contest     = null;   // behaviour-engine contest (sumo/football)
 
     // Race state
     this._trial       = null;
@@ -171,6 +173,18 @@ export class RaceScene {
       });
     }
 
+    // Build a behaviour-engine contest for autonomous duels (sumo/football).
+    this._contest = null;
+    if (trial.id === 'sumo') {
+      this._contest = makeSumoContest(this._zooks, SUMO_RING_RADIUS);
+    } else if (trial.id === 'football' && this._footballBody) {
+      const ballPos = () => {
+        const t = this._footballBody.translation();
+        return { x: t.x, y: t.y, z: t.z };
+      };
+      this._contest = makeFootballContest(this._zooks, ballPos, { farZ: -20, nearZ: 20, half: 2 });
+    }
+
     // Show HUD
     if (this._hud) {
       this._hud.show(trial.id);
@@ -191,6 +205,7 @@ export class RaceScene {
 
     if (this._env && typeof this._env.dispose === 'function') this._env.dispose();
     this._env = null;
+    this._contest = null;
 
     if (this._hud) {
       this._hud.hide();
@@ -231,14 +246,25 @@ export class RaceScene {
   onStep(dt) {
     if (!this._started || this._finished) return;
 
+    // Advance the behaviour engine first so each zook gets a fresh intent.
+    if (this._contest) this._contest.tick(dt);
+
     for (const entry of this._zooks) {
       if (entry.finished) continue;
-      const g = entry.genome;
-      // Use genome's inherent steer bias to drive AI;
-      // positive steer → steerRight, negative → steerLeft
-      const steerLeft  = g.gait.steer < -0.05;
-      const steerRight = g.gait.steer >  0.05;
-      entry.zook.step(dt, { steerLeft, steerRight, jump: false });
+      let inputs;
+      if (this._contest) {
+        // Autonomous contest: steer toward the goal the contest assigned.
+        inputs = this._contest.controlFor(entry);
+      } else {
+        // Genome's inherent steer bias drives athletic trials.
+        const g = entry.genome;
+        inputs = {
+          steerLeft:  g.gait.steer < -0.05,
+          steerRight: g.gait.steer >  0.05,
+          jump:       false,
+        };
+      }
+      entry.zook.step(dt, inputs);
     }
 
     // Sync push-block mesh to its physics body
@@ -278,6 +304,10 @@ export class RaceScene {
 
     // Time limit
     if (this._trial.maxTime && this._elapsed >= this._trial.maxTime) {
+      if (this._contest && !this._contest.finished) {
+        const r = this._contest.resolveTimeout();
+        if (r) { this._endRace({ won: r.won, metric: r.metric, metricLabel: r.metricLabel }); return; }
+      }
       this._endRace();
     }
   }
@@ -286,6 +316,15 @@ export class RaceScene {
 
   _checkWinConditions() {
     const { goal, dist } = this._trial;
+
+    // Behaviour-engine contests resolve themselves (set during onStep tick).
+    if (this._contest) {
+      if (this._contest.finished && this._contest.result) {
+        const r = this._contest.result;
+        this._endRace({ won: r.won, metric: r.metric, metricLabel: r.metricLabel });
+      }
+      return;
+    }
 
     switch (goal) {
       case 'distance': this._checkDistance(dist || 25);    break;

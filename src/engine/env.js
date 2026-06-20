@@ -350,15 +350,17 @@ export class Environment {
     });
     this._addBody(ballBody);
 
-    // Goal frame (visual)
-    const goalMesh = new THREE.Mesh(
-      new THREE.BoxGeometry(4, 2.5, 0.1),
-      GOAL_MAT,
-    );
-    goalMesh.position.set(0, 1.25, -20);
-    this._add(goalMesh);
+    // Two goal frames — the player attacks the far goal (-z), rivals the near.
+    for (const z of [-20, 20]) {
+      const goalMesh = new THREE.Mesh(
+        new THREE.BoxGeometry(4, 2.5, 0.1),
+        GOAL_MAT,
+      );
+      goalMesh.position.set(0, 1.25, z);
+      this._add(goalMesh);
+    }
 
-    // Goal sensor
+    // Goal sensor (far goal — kept for legacy single-goal checks)
     const goalBody = createBox(this._world, this._RAPIER, {
       pos:      { x: 0, y: 1.25, z: -20 },
       size:     { x: 4, y: 2.5, z: 0.5 },

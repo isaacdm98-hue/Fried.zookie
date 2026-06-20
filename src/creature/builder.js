@@ -299,6 +299,20 @@ export class Zook {
     };
   }
 
+  /**
+   * Current heading (yaw) in radians. Forward vector is
+   * (-sin yaw, 0, -cos yaw) — matching the drive direction in step().
+   * @returns {number}
+   */
+  get yaw() {
+    if (!this._physBody) return this.group.rotation.y;
+    const rot = this._physBody.rotation();
+    return Math.atan2(
+      2 * (rot.w * rot.y + rot.x * rot.z),
+      1 - 2 * (rot.y * rot.y + rot.z * rot.z),
+    );
+  }
+
   // ── Dispose ──────────────────────────────────────────────────────────────
 
   dispose() {
