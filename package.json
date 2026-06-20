@@ -1,0 +1,18 @@
+{
+  "name": "friedzooki",
+  "version": "3.0.0",
+  "description": "Build a creature. Tune how it moves. Race it.",
+  "type": "module",
+  "scripts": {
+    "dev": "node build.js",
+    "build": "node build.js --prod",
+    "serve": "npx serve . -l 3000"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0"
+  },
+  "dependencies": {
+    "three": "^0.160.0",
+    "@dimforge/rapier3d-compat": "^0.12.0"
+  }
+}
