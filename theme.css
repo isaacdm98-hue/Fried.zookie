@@ -721,3 +721,67 @@ input:not([type="range"]), textarea {
   animation: coachPulse 1s ease-in-out infinite !important;
 }
 @keyframes coachPulse { 0%,100%{outline-color:var(--orange)} 50%{outline-color:var(--yellow)} }
+
+/* ════════════════════════════════════════════════════
+   HAND-DRAWN ASSETS — tactful incorporation pass
+   ════════════════════════════════════════════════════ */
+
+/* Roster cards framed with the hand-drawn green frame */
+.zook-card {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  position: relative;
+  padding: 18px 20px !important;
+}
+.zook-card::before {
+  content: '';
+  position: absolute; inset: -6px; z-index: 0; pointer-events: none;
+  background-image: url('./assets/frame-green.png');
+  background-size: 100% 100%; background-repeat: no-repeat;
+}
+.zook-card > * { position: relative; z-index: 1; }
+
+/* Empty-state messages sit in a dashed hand-drawn frame */
+.list .muted.center {
+  position: relative; padding: 28px 22px !important;
+}
+.list .muted.center::before {
+  content: '';
+  position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background-image: url('./assets/frame-dashed.png');
+  background-size: 100% 100%; background-repeat: no-repeat;
+}
+
+/* Result modal title on a hand-drawn pink keyword bubble */
+#result-title {
+  display: inline-block;
+  padding: 10px 26px 14px; margin: 0 auto 8px;
+  background-image: url('./assets/bubble-pink.png');
+  background-size: 100% 100%; background-repeat: no-repeat;
+}
+
+/* Versus / online race chips get an alternate hand-drawn keyword bubble */
+#vs-trials .trial-chip:nth-child(even),
+#net-trials .trial-chip:nth-child(even) {
+  background-image: url('./assets/bubble-keyword2.png');
+}
+
+/* Dotted hand-drawn divider under section headers */
+.bar h2 { position: relative; }
+.bar h2::after {
+  content: '';
+  position: absolute; left: 50%; transform: translateX(-50%);
+  bottom: -10px; width: 70px; height: 10px;
+  background-image: url('./assets/line-dotted2.png');
+  background-size: contain; background-repeat: no-repeat; background-position: center;
+}
+
+/* Third soft idea-blob decoration on the overlay screens */
+.overlay-screen::after {
+  content: '';
+  position: absolute; bottom: 8%; right: -28px;
+  width: 160px; height: 160px; opacity: 0.10; pointer-events: none;
+  background-image: url('./assets/blob-idea-green2.png');
+  background-size: contain; background-repeat: no-repeat;
+}
