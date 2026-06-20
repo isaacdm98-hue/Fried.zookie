@@ -184,9 +184,19 @@
   <div id="narration" class="narration"></div>
 
   <script>
-    if ('serviceWorker' in navigator)
-      navigator.serviceWorker.getRegistrations().then(rs => rs.forEach(r => r.unregister())).catch(()=>{});
-    if (window.caches) caches.keys().then(ks => ks.forEach(k => caches.delete(k))).catch(()=>{});
+    // Register the service worker for offline play + installability.
+    // Auto-reloads once when a new version takes control.
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+        let refreshing = false;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          if (refreshing) return;
+          refreshing = true;
+          location.reload();
+        });
+      });
+    }
     document.getElementById('play-ui').classList.add('hidden');
     window.addEventListener('error', e => {
       const el = document.getElementById('boot-step');
