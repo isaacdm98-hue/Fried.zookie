@@ -19,7 +19,7 @@ import { cloneGenome, randomGenome, saveRoster } from '../creature/genome.js';
 import { navigate }       from '../router.js';
 import { S, setState }    from '../state.js';
 import { haptic }         from '../ui/haptic.js';
-import { setCamera, updateCamera } from '../engine/renderer.js';
+import { setCamera } from '../engine/renderer.js';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 

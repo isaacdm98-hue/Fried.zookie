@@ -22,11 +22,10 @@
  * }
  */
 
-import * as THREE from 'three';
 import { Zook }           from '../creature/builder.js';
 import { Environment }    from '../engine/env.js';
 import { setCamera }      from '../engine/renderer.js';
-import { S, setState }    from '../state.js';
+import { setState }       from '../state.js';
 import { haptic }         from '../ui/haptic.js';
 import { cloneGenome }    from '../creature/genome.js';
 

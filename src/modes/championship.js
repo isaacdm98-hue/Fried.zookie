@@ -6,7 +6,6 @@
  * ceremony fires.
  */
 
-import * as THREE from 'three';
 import { navigate }      from '../router.js';
 import { S, setState }   from '../state.js';
 import { TRIALS }        from './trials.js';

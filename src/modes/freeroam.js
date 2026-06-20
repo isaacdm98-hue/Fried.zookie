@@ -13,7 +13,7 @@ import { Environment }    from '../engine/env.js';
 import { startLoop }      from '../engine/loop.js';
 import { setCamera, updateCamera } from '../engine/renderer.js';
 import { navigate }       from '../router.js';
-import { S, setState }    from '../state.js';
+import { S }              from '../state.js';
 import { cloneGenome }    from '../creature/genome.js';
 
 // Joystick sizing

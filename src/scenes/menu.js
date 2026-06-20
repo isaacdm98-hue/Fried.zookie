@@ -14,7 +14,7 @@ import * as THREE from 'three';
 import { Zook }        from '../creature/builder.js';
 import { Environment } from '../engine/env.js';
 import { AI_GENOMES }  from '../creature/genome.js';
-import { setCamera, updateCamera } from '../engine/renderer.js';
+import { setCamera } from '../engine/renderer.js';
 
 // Wander AI constants
 const WANDER_INTERVAL  = 3000;  // ms between direction changes
