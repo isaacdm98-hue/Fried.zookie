@@ -1,23 +1,45 @@
 import * as THREE from 'three';
 import { createGround, createBox, createSphere } from './physics.js';
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
+// ── Toon shading (matches the creatures for a cohesive Bamzooki look) ─────────
 
-const GREEN_MAT   = new THREE.MeshLambertMaterial({ color: 0x7ec850 });
-const LANE_MAT    = new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 2 });
-const HURDLE_MAT  = new THREE.MeshLambertMaterial({ color: 0xff6622 });
-const TRUNK_MAT   = new THREE.MeshLambertMaterial({ color: 0x6b4226 });
-const FOLIAGE_MAT = new THREE.MeshLambertMaterial({ color: 0x3a7a3a });
-const STAND_MAT   = new THREE.MeshLambertMaterial({ color: 0xddccaa });
-const GOAL_MAT    = new THREE.MeshLambertMaterial({ color: 0xffffff, wireframe: true });
-const RING_MAT    = new THREE.MeshLambertMaterial({ color: 0xd4a04a });
-const RAMP_MAT    = new THREE.MeshLambertMaterial({ color: 0xcc9944 });
-const POLE_MAT    = new THREE.MeshLambertMaterial({ color: 0xff4444 });
-const BAR_MAT     = new THREE.MeshLambertMaterial({ color: 0xff4444 });
+function makeToonGradient(steps = 3) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256; canvas.height = 1;
+  const ctx = canvas.getContext('2d');
+  for (let i = 0; i < steps; i++) {
+    const t = i / steps;
+    const lum = Math.round(120 + t * 135);   // brighter banding = clean studio feel
+    ctx.fillStyle = `rgb(${lum},${lum},${lum})`;
+    ctx.fillRect(Math.round(t * 256), 0, Math.ceil(256 / steps), 1);
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.minFilter = tex.magFilter = THREE.NearestFilter;
+  return tex;
+}
+const TOON_GRAD = { _v: null, get() { return this._v || (this._v = makeToonGradient()); } };
 
 function makeMat(color) {
-  return new THREE.MeshLambertMaterial({ color });
+  return new THREE.MeshToonMaterial({ color, gradientMap: TOON_GRAD.get() });
 }
+
+// Clean, bright Bamzooki palette
+const GREEN_MAT   = makeMat(0x8ed158);   // grass
+const LANE_MAT    = new THREE.LineBasicMaterial({ color: 0xffffff });
+const HURDLE_MAT  = makeMat(0xff8a1e);   // bright orange
+const TRUNK_MAT   = makeMat(0x9c6b3f);
+const FOLIAGE_MAT = makeMat(0x46a046);
+const FOLIAGE_MAT2 = makeMat(0x5cbf5c);  // lighter tier for 2-tone trees
+const STAND_MAT   = makeMat(0xf0e2c0);
+const GOAL_MAT    = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true });
+const RING_MAT    = makeMat(0x38bdf8);   // clean blue mat
+const RIM_MAT     = makeMat(0xff8a1e);   // orange rim
+const RAMP_MAT    = makeMat(0xffc24a);   // warm yellow
+const POLE_MAT    = makeMat(0xff5a5a);
+const BAR_MAT     = makeMat(0xff5a5a);
+const WALL_MAT    = makeMat(0xb89a6a);
+const BLOCK_MAT   = makeMat(0x9b6be0);   // bright purple
+const BALL_MAT    = makeMat(0xffffff);
 
 // ── Environment class ─────────────────────────────────────────────────────────
 
@@ -75,14 +97,16 @@ export class Environment {
     trunk.castShadow = true;
     this._add(trunk);
 
-    // Foliage cone
-    const foliage = new THREE.Mesh(
-      new THREE.ConeGeometry(0.5, 1.8, 7),
-      FOLIAGE_MAT,
-    );
-    foliage.position.set(x, 0.8 + 1.8 / 2, z);
-    foliage.castShadow = true;
-    this._add(foliage);
+    // Two-tier stylised fir (clean, cohesive with the toon look)
+    const lower = new THREE.Mesh(new THREE.ConeGeometry(0.55, 1.3, 8), FOLIAGE_MAT);
+    lower.position.set(x, 1.35, z);
+    lower.castShadow = true;
+    this._add(lower);
+
+    const upper = new THREE.Mesh(new THREE.ConeGeometry(0.38, 1.0, 8), FOLIAGE_MAT2);
+    upper.position.set(x, 2.05, z);
+    upper.castShadow = true;
+    this._add(upper);
   }
 
   /** Low bleacher stands behind the track */
@@ -282,7 +306,7 @@ export class Environment {
 
     const mesh = new THREE.Mesh(
       new THREE.BoxGeometry(1, 1, 1),
-      makeMat(0x8855cc),
+      BLOCK_MAT,
     );
     mesh.position.set(0, 0.5, -8);
     mesh.castShadow = true;
@@ -310,7 +334,7 @@ export class Environment {
     // Ball mesh
     const ball = new THREE.Mesh(
       new THREE.SphereGeometry(0.3, 16, 12),
-      makeMat(0xffffff),
+      BALL_MAT,
     );
     ball.position.set(0, 0.3, 0);
     ball.castShadow = true;
@@ -378,7 +402,7 @@ export class Environment {
 
       const rimMesh = new THREE.Mesh(
         new THREE.BoxGeometry(0.18, 0.35, 0.18),
-        RING_MAT,
+        RIM_MAT,
       );
       rimMesh.position.set(rx, 0.3, rz);
       this._add(rimMesh);
@@ -445,7 +469,7 @@ export class Environment {
       for (const side of [-1, 1]) {
         const wallMesh = new THREE.Mesh(
           new THREE.BoxGeometry(1.5, 1.5, 0.3),
-          makeMat(0x998866),
+          WALL_MAT,
         );
         wallMesh.position.set(side * 2.25, 0.75, z);
         wallMesh.castShadow = true;
