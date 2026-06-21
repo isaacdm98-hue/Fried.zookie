@@ -34,15 +34,19 @@ body { -webkit-user-select: none; user-select: none; touch-action: none; }
 
 /* ── Controller deck ─────────────────────────────────────────────────────── */
 .deck {
-  position: fixed; left: 50%; bottom: 0; transform: translateX(-50%);
+  position: fixed; left: 50%; bottom: 0; transform: translate(-50%, 0);
   width: min(540px, 100%);
-  padding: 14px 16px calc(16px + env(safe-area-inset-bottom));
+  padding: 10px 14px calc(12px + env(safe-area-inset-bottom));
   background: var(--panel);
   border-top: 1px solid var(--line);
   border-radius: 18px 18px 0 0;
   box-shadow: 0 -8px 30px rgba(0,0,0,0.14);
+  transition: transform 0.26s ease;
 }
-.deck-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+/* Collapsed: slide down so only the header handle shows — full Zook in view. */
+.deck.collapsed { transform: translate(-50%, calc(100% - 50px)); }
+.deck.collapsed .tabs, .deck.collapsed .deck-body, .deck.collapsed .deck-foot { opacity: 0; pointer-events: none; }
+.deck-head { display: flex; align-items: center; gap: 8px; justify-content: space-between; margin-bottom: 10px; }
 .brand { font-size: 12px; letter-spacing: 0.22em; color: var(--ink); text-transform: lowercase; }
 .brand b { color: var(--accent); }
 /* model-number badge — pure TE */
@@ -57,8 +61,11 @@ body { -webkit-user-select: none; user-select: none; touch-action: none; }
 .tab:last-child { border-right: 0; }
 .tab.on { color: #fff; background: var(--accent); }
 
-.deck-body { min-height: 100px; display: flex; flex-direction: column; gap: 16px; justify-content: center; }
-.knob-row { display: flex; justify-content: space-between; gap: 6px; }
+.deck-body { min-height: 84px; display: flex; flex-direction: column; gap: 12px; justify-content: center; transition: opacity 0.2s; }
+.knob-row { display: flex; justify-content: space-between; gap: 5px; }
+.tabs, .deck-foot { transition: opacity 0.2s; }
+.save-btn { display: inline-flex; align-items: center; gap: 5px; }
+.save-btn img { width: 18px; height: 18px; object-fit: contain; }
 
 /* ── Knob — solid matte cap with an engraved indicator ───────────────────── */
 .ctl { display: flex; flex-direction: column; align-items: center; gap: 6px; }
@@ -67,7 +74,7 @@ body { -webkit-user-select: none; user-select: none; touch-action: none; }
   background: var(--panel-2); border-radius: 4px; padding: 1px 7px; }
 
 .knob-dial {
-  position: relative; width: 56px; height: 56px; border-radius: 50%;
+  position: relative; width: 50px; height: 50px; border-radius: 50%;
   background: var(--cap, var(--cap4));
   box-shadow: inset 0 -3px 5px rgba(0,0,0,0.18), inset 0 2px 3px rgba(255,255,255,0.5), 0 2px 5px rgba(0,0,0,0.16);
   cursor: grab; touch-action: none;
@@ -127,7 +134,10 @@ body { -webkit-user-select: none; user-select: none; touch-action: none; }
   background: var(--panel-2); border: 1px solid var(--line); border-radius: 9px; padding: 8px; }
 
 /* ── Title ───────────────────────────────────────────────────────────────── */
-.title-wrap { margin: auto; text-align: center; padding: 24px; }
+.title-wrap { margin: auto; text-align: center; padding: 24px; display: flex; flex-direction: column; align-items: center; }
+.title-doodle { width: min(260px, 64vw); height: auto; margin-bottom: -6px;
+  animation: doodle 3.4s ease-in-out infinite; filter: drop-shadow(0 6px 14px rgba(0,0,0,0.12)); }
+@keyframes doodle { 50% { transform: translateY(-8px) rotate(-2deg); } }
 .big-logo { font-size: 46px; font-weight: 800; letter-spacing: 0.01em; line-height: 1; }
 .t-fried { color: var(--accent); } .t-zooki { color: var(--ink); }
 .t-sub { color: var(--sub); letter-spacing: 0.2em; font-size: 11px; margin-top: 8px; text-transform: uppercase; }

@@ -1,5 +1,5 @@
 /**
- * guide.js — the immersive curation guide ("DYL").
+ * guide.js — the immersive curation guide ("Fried").
  *
  * An Animal-Crossing-style speaking mascot: text types out character by
  * character while a pitched blip plays per letter (animalese). Used throughout
@@ -18,7 +18,7 @@ function ensure() {
   bubble.className = 'guide hidden';
   bubble.innerHTML = `
     <div class="guide-avatar"><div class="g-face"><span class="g-eye"></span><span class="g-eye"></span></div></div>
-    <div class="guide-bubble"><span class="guide-name">DYL</span><p class="guide-text"></p></div>`;
+    <div class="guide-bubble"><span class="guide-name">Fried</span><p class="guide-text"></p></div>`;
   mount.appendChild(bubble);
   avatar = bubble.querySelector('.guide-avatar');
   nameEl = bubble.querySelector('.guide-name');
@@ -50,7 +50,7 @@ async function run() {
   speaking = true;
   while (queue.length) {
     const { text, name, voiceRate } = queue.shift();
-    nameEl.textContent = name || 'DYL';
+    nameEl.textContent = name || 'Fried';
     rate = voiceRate || 1.06;
     bubble.classList.remove('hidden');
     await typeOut(text);

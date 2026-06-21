@@ -45,10 +45,12 @@ export class Builder {
     plinth.position.y = -0.15; plinth.receiveShadow = true;
     this.turntable.add(plinth);
 
+    this.turntable.position.y = 0.5;     // lift the stage so the deck never hides it
     this.zook = new Zook(this.bp, { preview: true, showArrow: true });
     this.turntable.add(this.zook.group);
 
-    setCamera({ x: 0, y: 2.0, z: 4.6 }, { x: 0, y: 0.4, z: 0 }, true);
+    // Frame the Zook in the upper portion of the screen, clear of the deck.
+    setCamera({ x: 0, y: 2.7, z: 4.4 }, { x: 0, y: 1.15, z: 0 }, true);
     this._buildDeck();
     guide.now(TIPS.build);
   }
@@ -75,10 +77,16 @@ export class Builder {
       <div class="deck-head">
         <button class="mini-btn" data-act="back">‹</button>
         <input class="name-in" value="${this.name}" maxlength="14" />
-        <span class="led"></span>
+        <button class="mini-btn" data-act="collapse" title="Hide controls">▾</button>
       </div>`;
     deck.querySelector('[data-act=back]').addEventListener('click', () => { fb.press(); this.onBack(); });
     deck.querySelector('.name-in').addEventListener('input', e => { this.name = e.target.value || 'My Zook'; });
+    const collapseBtn = deck.querySelector('[data-act=collapse]');
+    collapseBtn.addEventListener('click', () => {
+      fb.tick();
+      const c = deck.classList.toggle('collapsed');
+      collapseBtn.textContent = c ? '▴' : '▾';
+    });
 
     // Tabs.
     const tabs = document.createElement('div'); tabs.className = 'tabs';
@@ -103,7 +111,8 @@ export class Builder {
     const undo = document.createElement('button'); undo.className = 'mini-btn'; undo.textContent = '↶';
     undo.addEventListener('click', () => { if (this._undo.length) { this._redo.push({ ...this.bp }); this.bp = this._undo.pop(); this._apply(); this._refresh(); fb.press(); } });
     const walk = Switch({ label: 'WALK', value: this._walk, onChange: v => { this._walk = v; } });
-    const save = document.createElement('button'); save.className = 'mini-btn wide'; save.textContent = 'SAVE';
+    const save = document.createElement('button'); save.className = 'mini-btn save-btn';
+    save.innerHTML = `<img src="./assets/btn-check.png" alt=""/>SAVE`;
     save.addEventListener('click', () => { saveZook(this.name, this.bp); fb.confirm(); guide.now(`Saved ${this.name}! A fine specimen.`); });
     const test = document.createElement('button'); test.className = 'test-btn'; test.textContent = 'TEST ▶';
     test.addEventListener('click', () => { fb.press(); this.onTest(this.bp, this.name); });

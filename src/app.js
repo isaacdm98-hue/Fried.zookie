@@ -70,7 +70,8 @@ export class App {
 
   go(screen, opts = {}) {
     this._clear();
-    if (screen !== 'workshop' && screen !== 'test' && screen !== 'contestRun') this._showHero(this.active.bp);
+    // Hero Zook spins behind the DOM menus; title uses a hand-drawn doodle instead.
+    if (['menu', 'contests', 'versus', 'myzooks'].includes(screen)) this._showHero(this.active.bp);
     else this._hideHero();
     ({
       title: () => this._title(),
@@ -88,10 +89,11 @@ export class App {
   _title() {
     const d = this._overlayEl(`
       <div class="title-wrap">
+        <img class="title-doodle" src="./assets/blob-idea-yellow.png" alt="" />
         <div class="big-logo"><span class="t-fried">Fried</span><span class="t-zooki">Zooki</span></div>
-        <div class="t-sub">a tiny zook workshop</div>
+        <div class="t-sub">build · tune · compete</div>
         <button class="start-btn">TAP TO START</button>
-        <div class="t-foot">after CBBC's BAMZOOKi · built with the Zook-Kit manual</div>
+        <div class="t-foot">after CBBC's BAMZOOKi · made from the Zook-Kit manual</div>
       </div>`);
     const start = () => { unlockAudio(); fb.confirm(); guide.now(TIPS.menu); this.go('menu'); };
     d.querySelector('.start-btn').addEventListener('click', start);
