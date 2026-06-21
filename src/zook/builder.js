@@ -16,7 +16,7 @@ import * as THREE from 'three';
 import { Zook, defaultBlueprint, makeLeg, newPairId, ensureLegs, defaultPath } from './model.js';
 import { Knob, Switch, HueSlider, Selector } from './controls.js';
 import { setCamera } from '../engine/renderer.js';
-import { saveZook } from './library.js';
+import { saveZook, randomExample } from './library.js';
 import { guide, TIPS } from '../sys/guide.js';
 import { fb } from '../sys/feedback.js';
 
@@ -89,6 +89,7 @@ export class Builder {
       <div class="btopbar">
         <button class="b-back" title="Back"><img src="./assets/btn-back.png" alt="Back"/></button>
         <input class="name-in" value="${this.name}" maxlength="14" />
+        <button class="b-dice" title="Surprise me">🎲</button>
         <button class="b-guide" title="Helper on/off">💬</button>
         <button class="b-walk" title="Walk in place">WALK</button>
         <button class="b-save" title="Save"><img src="./assets/btn-check.png" alt="Save"/></button>
@@ -109,6 +110,7 @@ export class Builder {
     const sw = () => walk.classList.toggle('on', this._walk); sw();
     walk.addEventListener('click', () => { this._walk = !this._walk; sw(); fb.tick(); });
     // tiny helper toggle — Fried only speaks when this is on
+    wrap.querySelector('.b-dice').addEventListener('click', () => { fb.confirm(); this._pushUndo(); this.bp = JSON.parse(JSON.stringify(randomExample().bp)); this._sel = null; this._apply(); this._renderBar(); if (this._helper) guide.pop('Surprise! Tweak it, or roll again.'); });
     const gb = wrap.querySelector('.b-guide');
     const gs = () => gb.classList.toggle('on', this._helper); gs();
     gb.addEventListener('click', () => { fb.tick(); this._helper = !this._helper; gs(); if (this._helper) guide.pop(this._helpText()); else guide.hide(); });
@@ -132,11 +134,18 @@ export class Builder {
     if (this._helper) guide.pop(this._helpText());
   }
 
+  _coach(text) {
+    if (!this._coachEl) { this._coachEl = document.createElement('div'); this._coachEl.className = 'b-coach'; this._deck.appendChild(this._coachEl); }
+    this._coachEl.textContent = text; this._coachEl.style.display = text ? 'block' : 'none';
+  }
+
   _renderBar() {
     const el = this._barEl; el.innerHTML = '';
     const K = (o) => Knob(o).root;
     const set = (k, v) => { this._pushUndo(); this.bp[k] = v; this._apply(); };
     const hint = (t) => { this._hintEl.textContent = t; };
+    // Cold-start coach: a big hint over the model until the first leg is placed.
+    this._coach(this._mode === 'add' && (this.bp.legs || []).length === 0 && this._addType === 'leg' ? '👆 Tap the body to add a leg' : '');
 
     if (this._mode === 'shape') {
       el.append(

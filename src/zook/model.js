@@ -338,6 +338,16 @@ export class Zook {
       .setFriction(0.3).setRestitution(0).setDensity(0.85);
     if (R.CoefficientCombineRule) col.setFrictionCombineRule(R.CoefficientCombineRule.Min);
     this.world.createCollider(col, this._body);
+
+    // "Wonkiness": how lop-sided / under-built this Zook is. A balanced design
+    // walks clean; a strange one (legs all one side, too few, too narrow) gets a
+    // comical seeded waddle — random across designs but predictable for any given
+    // one, which is exactly what made the original kit fun.
+    const legs = ensureLegs(this.bp);
+    const Lc = legs.filter(l => l.side < 0).length, Rc = legs.filter(l => l.side > 0).length, n = legs.length || 1;
+    const asym = Math.abs(Lc - Rc) / n, sparse = n < 4 ? (4 - n) / 4 : 0, narrow = Math.max(0, 1.0 - this.bp.width);
+    this._wonk = Math.max(0, Math.min(1, asym * 0.6 + sparse * 0.35 + narrow * 0.45));
+    this._wonkSeed = ((this.bp.len * 7 + this.bp.width * 13 + n * 3) % (Math.PI * 2));
   }
 
   _place() {
@@ -493,6 +503,16 @@ export class Zook {
       // back up; a top-heavy or lopsided Zook stays down (it's a bad design).
       const upK = 3.2 * stiff;
       b.applyTorqueImpulse({ x: -rot.x * upK * dt, y: 0, z: -rot.z * upK * dt }, true);
+      // Comical waddle for wonky builds — a seeded side-to-side roll + lazy weave.
+      // Predictable per design, daft across the roster (the BAMZOOKi charm).
+      if (walk && this._wonk > 0.05) {
+        const w = this._wonk, sd = this._wonkSeed || 0;
+        b.applyTorqueImpulse({ x: 0, y: Math.sin(this._t * 1.6 + sd) * w * 0.45 * dt, z: Math.sin(this._t * (3 + sd)) * w * 1.15 * dt }, true);
+      }
+    } else if (walk) {
+      // FLOPPED but still trying — a daft little struggle (legs keep paddling via
+      // _animateLegs). A complete failure should look funny, never just dead.
+      b.applyTorqueImpulse({ x: Math.sin(this._t * 7 + 1) * 0.16 * dt, y: Math.sin(this._t * 5) * 0.1 * dt, z: Math.cos(this._t * 6) * 0.16 * dt }, true);
     }
 
     // Cap the turn rate for controlled steering (Karma MaxAngularVelocity).

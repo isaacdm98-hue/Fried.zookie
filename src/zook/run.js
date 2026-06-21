@@ -169,8 +169,11 @@ export class ZookRun {
 
   _finish() {
     const time = this.t; fb.win();
+    let best = 0; try { best = +localStorage.getItem('fz-runscore') || 0; } catch (_) {}
+    const isBest = this.score > best;
+    if (isBest) { try { localStorage.setItem('fz-runscore', this.score); } catch (_) {} }
     if (this.onFinish) this.onFinish(time, this.score);
-    else this._result(`Finished! ${time.toFixed(1)}s · ${this.score} pts`);
+    else this._result(`Finished! ${time.toFixed(1)}s · ${this.score} pts${isBest ? ' · 🏆 NEW BEST!' : ` · best ${best}`}`);
   }
   result(text) { this._result(text); }    // online wrapper calls this
   _result(text) {
@@ -186,6 +189,7 @@ export class ZookRun {
     const h = document.createElement('div'); h.className = 'run-hud';
     h.innerHTML = `
       <button class="game-back" data-back><img src="./assets/btn-back.png" alt="Menu"/></button>
+      <div class="run-best">BEST ${(() => { try { return +localStorage.getItem('fz-runscore') || 0; } catch (_) { return 0; } })()}</div>
       <div class="run-warn"></div>
       <div class="run-stats"><span class="run-time">0.0s</span><div class="run-prog"><i></i></div><span class="run-spd">8.0</span></div>
       <div class="run-pads">

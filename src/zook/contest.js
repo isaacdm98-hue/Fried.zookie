@@ -69,9 +69,14 @@ export class ContestScene {
     this._t = 0; this._state = 'count'; this._count = 3; this._countT = 0;
     fb.count(false);
     setCamera({ x: 6, y: 5, z: 12 }, { x: 0, y: 0, z: 2 }, true);
+    // Tap the arena (the 3D canvas) to cycle camera angle: broadcast/low/top.
+    this._camMode = 0;
+    this._onCamTap = (e) => { if (!this.tabletop && e.target && e.target.id === 'scene') { this._camMode = (this._camMode + 1) % 3; fb.tick(); } };
+    window.addEventListener('pointerdown', this._onCamTap);
   }
 
   exit() {
+    if (this._onCamTap) { window.removeEventListener('pointerdown', this._onCamTap); this._onCamTap = null; }
     if (this._tether) { try { this.world.removeImpulseJoint(this._tether, true); } catch (_) {} this._tether = null; }
     for (const e of [this.green, this.red]) if (e) e.zook.dispose();
     for (const m of this._meshes) { this.scene.remove(m); m.geometry?.dispose?.(); }
@@ -161,12 +166,20 @@ export class ContestScene {
       return;
     }
     for (const e of [this.green, this.red]) if (e) { e.zook.syncMeshes(); this._followRing(e); }
-    // Victory dance — the winner hops and spins behind the result card.
+    // Victory dance — the winner faces the camera and busts daft, tongue-in-cheek
+    // moves under the WINNER card: butt-in-the-air waggle, hops, a spin, a shimmy.
     if (this._victor && this._victor.zook) {
       this._danceT = (this._danceT || 0) + dt;
-      const g = this._victor.zook.group;
-      g.position.y += Math.abs(Math.sin(this._danceT * 7)) * 0.5;
-      g.rotation.y = this._danceT * 5;
+      const t = this._danceT, g = this._victor.zook.group, rest = this._victor.zook.dims.rest, p = this._victor.zook.position;
+      const seg = (t * 0.7) % 4;
+      let rx = 0, ry = Math.PI, rz = 0, hop = 0;
+      if (seg < 1)      { rx = 0.9; ry = Math.PI + Math.sin(t * 12) * 0.6; }              // 🍑 butt in the air, waggling
+      else if (seg < 2) { hop = Math.abs(Math.sin(t * 10)) * 0.6; }                        // bouncy hops
+      else if (seg < 3) { ry = Math.PI + (seg - 2) * Math.PI * 2; hop = 0.15; }            // victory spin
+      else              { rz = Math.sin(t * 11) * 0.34; hop = Math.abs(Math.sin(t * 7)) * 0.18; } // shimmy
+      g.position.set(p.x, rest + hop, p.z);
+      g.rotation.set(rx, ry, rz);
+      g.scale.set(1, 1 + Math.sin(t * 5) * 0.06, 1);
     }
     // Record frames (~20Hz) for the Motion Player.
     this._recT += dt;
@@ -180,15 +193,24 @@ export class ContestScene {
     this._frameCamera();
   }
 
-  // Broadcast camera that frames BOTH Zooks — pulls back as they separate.
+  // Camera that frames BOTH Zooks. Tap the arena to cycle broadcast / low / top.
   _frameCamera() {
     if (this.tabletop) return;        // app drives the top-down ortho camera
+    // On a win, push in on the dancing champion (lower third, under the card).
+    if (this._victor && this._victor.zook) {
+      const p = this._victor.zook.position;
+      setCamera({ x: p.x, y: 2.0, z: p.z + 4.3 }, { x: p.x, y: 0.7, z: p.z });
+      return;
+    }
     if (!this.green || !this.red) return;
     const a = this.green.zook.position, b = this.red.zook.position;
     const mx = (a.x + b.x) / 2, mz = (a.z + b.z) / 2;
     const dist = Math.hypot(a.x - b.x, a.z - b.z);
-    const back = Math.min(20, 8 + dist * 0.7);
-    setCamera({ x: mx + back * 0.45, y: back * 0.6, z: mz + back }, { x: mx, y: 0.4, z: mz });
+    const back = Math.min(22, 8 + dist * 0.7);
+    const m = this._camMode || 0;
+    if (m === 1) setCamera({ x: mx + back * 0.9, y: back * 0.28, z: mz + back * 0.5 }, { x: mx, y: 0.5, z: mz });      // low, side-on
+    else if (m === 2) setCamera({ x: mx + 0.01, y: back * 1.4, z: mz + 0.1 }, { x: mx, y: 0, z: mz });                 // top-down
+    else setCamera({ x: mx + back * 0.45, y: back * 0.6, z: mz + back }, { x: mx, y: 0.4, z: mz });                    // broadcast
   }
 
   // ── networking (host streams these; joiner applies) ───────────────────────

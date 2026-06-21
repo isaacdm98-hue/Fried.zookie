@@ -768,3 +768,28 @@ h2 { display: inline-flex; align-items: center; }
 .confetti i { position: absolute; top: -18px; width: 9px; height: 14px; border-radius: 2px;
   opacity: 0.95; animation: conffall linear forwards; }
 @keyframes conffall { to { transform: translateY(112vh) rotate(900deg); } }
+
+
+/* ── Round 2 edits: legibility, non-blocking guide, clear game controls ─────── */
+#ui > .guide { pointer-events: none; }            /* never eats taps on game controls */
+.ctl-label { font-size: 9.5px; }
+.bside .b-hint { font-size: 10px; }
+.deck-note { font-size: 10px; }
+.t-foot { font-size: 10px; }
+.test-tools { bottom: calc(26px + env(safe-area-inset-bottom)); }   /* clear of the home bar */
+/* one-time builder coach hint over the model */
+.b-coach { position: fixed; left: 50%; top: 38%; transform: translateX(-50%); z-index: 47; pointer-events: none;
+  background: var(--accent); color: #fff; font-weight: 800; letter-spacing: 0.04em; font-size: 13px;
+  padding: 10px 16px; border-radius: 14px; box-shadow: 0 4px 14px rgba(240,120,45,0.45);
+  animation: coachpulse 1.4s ease-in-out infinite; }
+@keyframes coachpulse { 50% { transform: translateX(-50%) translateY(-6px) scale(1.04); } }
+.m-mute { margin: 10px auto 0; display: inline-flex; align-items: center; gap: 10px; cursor: pointer;
+  font: inherit; font-size: 11px; font-weight: 800; letter-spacing: 0.14em; color: var(--sub);
+  background: rgba(0,0,0,0.04); border: 1px solid var(--line); border-radius: 20px; padding: 8px 16px; }
+.m-mute b { color: #fff; background: var(--accent); border-radius: 10px; padding: 2px 9px; font-size: 10px; }
+.m-mute.off b { background: #b8b2a4; }
+.run-best { position: fixed; top: calc(50px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%);
+  font-size: 11px; font-weight: 700; color: var(--sub); letter-spacing: 0.08em; }
+
+/* Winner card sits up top so the champ can dance underneath it. */
+.result-modal.top { margin: calc(7vh + env(safe-area-inset-top)) auto auto; }

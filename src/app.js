@@ -9,7 +9,7 @@
 
 import * as THREE from 'three';
 import { setCamera } from './engine/renderer.js';
-import { Zook, defaultBlueprint, blankBlueprint } from './zook/model.js';
+import { Zook, defaultBlueprint, blankBlueprint, cloneBlueprint, makeDefaultLegs } from './zook/model.js';
 import { Builder } from './zook/builder.js';
 import { Arena } from './zook/arena.js';
 import { ContestScene, CONTESTS } from './zook/contest.js';
@@ -30,6 +30,8 @@ export class App {
   constructor({ scene, world, RAPIER, camera, canvas, ui }) {
     Object.assign(this, { scene, world, RAPIER, camera, canvas, ui });
     this.active = { name: randomName(), bp: blankBlueprint() };
+    try { this._muted = localStorage.getItem('fz-mute') === '1'; } catch (_) { this._muted = false; }
+    setMuted(this._muted);
     this.mode = null;            // gameplay mode with onStep/update/exit
     this._hero = null; this._heroSpin = true; this._heroSpinT = 0;
     this._overlay = null;
@@ -123,6 +125,12 @@ export class App {
     const d = document.createElement('div'); d.className = 'overlay'; d.innerHTML = html;
     this.ui.appendChild(d); (this._overlays = this._overlays || []).push(d); this._overlay = d; return d;
   }
+  /** A Zook you can actually compete with — an unbuilt (legless) one gets a
+   *  default set of legs so contests are never a no-show. */
+  _legged(bp) {
+    if (bp && Array.isArray(bp.legs) && bp.legs.length === 0) { const b = cloneBlueprint(bp); b.legs = makeDefaultLegs(3); return b; }
+    return bp;
+  }
   /** A celebratory confetti burst over an overlay. */
   _confetti(mount, n = 90) {
     const colors = ['#f0782d', '#2bb6a6', '#3f6fd8', '#e8466e', '#ffd479', '#37c46a'];
@@ -210,12 +218,18 @@ export class App {
           <button class="m-btn" data-go="run"><b>ZOOK RUN</b><span>tilt racer</span></button>
           <button class="m-btn" data-go="myzooks"><b>MY ZOOKS</b><span>your roster</span></button>
         </div>
-        <button class="m-guide" data-guide><span>FRIED'S TIPS</span><b>${guide.enabled ? 'ON' : 'OFF'}</b></button>
+        <div class="row">
+          <button class="m-guide" data-guide><span>FRIED'S TIPS</span><b>${guide.enabled ? 'ON' : 'OFF'}</b></button>
+          <button class="m-mute" data-mute><span>SOUND</span><b>${this._muted ? 'OFF' : 'ON'}</b></button>
+        </div>
       </div>`);
     d.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => { fb.press(); this.go(b.dataset.go); }));
     const gt = d.querySelector('[data-guide]');
     gt.addEventListener('click', () => { fb.tick(); guide.setEnabled(!guide.enabled); gt.querySelector('b').textContent = guide.enabled ? 'ON' : 'OFF'; gt.classList.toggle('off', !guide.enabled); });
     gt.classList.toggle('off', !guide.enabled);
+    const mt = d.querySelector('[data-mute]');
+    mt.classList.toggle('off', this._muted);
+    mt.addEventListener('click', () => { this._muted = !this._muted; setMuted(this._muted); try { localStorage.setItem('fz-mute', this._muted ? '1' : '0'); } catch (_) {} if (!this._muted) fb.tick(); mt.querySelector('b').textContent = this._muted ? 'OFF' : 'ON'; mt.classList.toggle('off', this._muted); });
   }
 
   // ── Workshop ─────────────────────────────────────────────────────────────
@@ -268,7 +282,7 @@ export class App {
     this._clear();
     const cs = new ContestScene({ scene: this.scene, world: this.world, RAPIER: this.RAPIER, camera: this.camera,
       onResult: ({ playerWon, line }) => { playerWon ? ch.wins++ : ch.losses++; this._champStandings(playerWon, line); } });
-    cs.enter(contest, this.active.bp, opp.bp); this.mode = cs;
+    cs.enter(contest, this._legged(this.active.bp), opp.bp); this.mode = cs;
     this._contestOverlay(`${this.active.name || 'You'} (${ch.wins})`, `${opp.name} (${ch.losses})`, `${ch.STAGES[ch.stage]} · ${ch.labels[ch.i]}`);
   }
   _champStandings(won, line) {
@@ -314,8 +328,8 @@ export class App {
         guide.now(line);
         this._lastRec = { contestId: contest.id, greenBp: green.bp, redBp: red.bp, frames: cs.getRecording().slice() };
         const r = this._overlayEl(`
-          <div class="result-modal">
-            <h1 class="${playerWon ? 'win' : 'lose'}">${playerWon ? 'YOU WIN!' : 'YOU LOSE'}</h1>
+          <div class="result-modal ${playerWon ? 'top' : ''}">
+            <h1 class="${playerWon ? 'win' : 'lose'}">${playerWon ? `${(green.name || 'YOU').toUpperCase()} WINS!` : `${(red.name || 'RIVAL').toUpperCase()} WINS`}</h1>
             <p>${line}</p>
             <div class="row">
               <button class="m-btn" data-act="again"><b>REMATCH</b></button>
@@ -329,7 +343,7 @@ export class App {
         r.querySelector('[data-act=menu]').addEventListener('click', () => { fb.press(); this.go('contests'); });
       },
     });
-    cs.enter(contest, green.bp, red.bp);
+    cs.enter(contest, this._legged(green.bp), this._legged(red.bp));
     this.mode = cs;
     this._contestOverlay(green.name || 'You', red.name, contest.name);
   }
@@ -598,7 +612,7 @@ export class App {
         this._link.send({ type: 'result', winner: playerWon ? 'green' : 'red', line });
         this._resultOverlay(playerWon, line, () => this._online());
       } });
-    cs.enter(contest, green.bp, red.bp, { tabletop });
+    cs.enter(contest, this._legged(green.bp), this._legged(red.bp), { tabletop });
     this.mode = cs;
     this._contestOverlay(green.name || 'You', red.name, contest.name, tabletop, 'host');
   }
