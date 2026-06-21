@@ -68,6 +68,23 @@ export class Builder {
   }
 
   _apply() { if (this.zook) this.zook.setBlueprint(this.bp); }
+
+  // Coach the build from the real Zook Kit fix-it table (research paper, Table 2:
+  // "Possible Zook Problems and Solutions"). Returns the single most useful tip.
+  _diagnose() {
+    const bp = this.bp, legs = bp.legs || [];
+    const L = legs.filter(l => l.side < 0).length, R = legs.filter(l => l.side > 0).length;
+    if (!legs.length) return "No legs yet — add some on the ADD page or your Zook just sits there!";
+    if (legs.length < 2) return "One leg won't do — it'll just flop about. Add more, on both sides!";
+    if (L === 0 || R === 0) return "All the legs are on one side — mirror them or it'll topple straight over.";
+    if (bp.width < 0.9) return "It's narrow and will tip — widen the body for a stable stance.";
+    const phases = new Set(legs.map(l => Math.round((l.cycle || 0) * 12)));
+    if (phases.size < 2) return "Every leg steps together — stagger each leg's CYCLE so it doesn't limp or hop.";
+    if (bp.stride < 0.5) return "Small steps! Raise STRIDE on the MOVE page for a longer step.";
+    if (legs.every(l => l.len < 0.6) && bp.len > 2.2) return "Legs look short for that long body — lengthen them for a bigger stride.";
+    if (bp.speed < 2) return "It'll walk, not run — raise SPEED to quicken the gait cycle.";
+    return "Looking sharp! Send it to the test table and see how it scurries.";
+  }
   _pushUndo() { this._undo.push({ ...this.bp }); if (this._undo.length > 30) this._undo.shift(); this._redo.length = 0; }
 
   // ── deck UI ─────────────────────────────────────────────────────────────────
@@ -114,7 +131,7 @@ export class Builder {
     save.innerHTML = `<img src="./assets/btn-check.png" alt=""/>SAVE`;
     save.addEventListener('click', () => { saveZook(this.name, this.bp); fb.confirm(); guide.now(`Saved ${this.name}! A fine specimen.`); });
     const test = document.createElement('button'); test.className = 'test-btn'; test.textContent = 'TEST ▶';
-    test.addEventListener('click', () => { fb.press(); this.onTest(this.bp, this.name); });
+    test.addEventListener('click', () => { fb.press(); guide.now(this._diagnose()); this.onTest(this.bp, this.name); });
     foot.append(undo, walk.root, save, test);
     deck.appendChild(foot);
 
