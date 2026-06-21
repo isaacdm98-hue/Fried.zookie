@@ -23,6 +23,10 @@ body { -webkit-user-select: none; user-select: none; touch-action: none; }
 
 #ui { position: fixed; inset: 0; pointer-events: none; z-index: 10; }
 #ui > * { pointer-events: auto; }
+/* Full-screen layers that sit OVER the 3D canvas must NOT absorb touches in the
+   empty (model) area, or taps/drags never reach the canvas. These overrides beat
+   `#ui > *` on specificity so only their actual controls are interactive. */
+#ui > .bld, #ui > .test-hud, #ui > .run-hud { pointer-events: none; }
 
 /* ── Loading ─────────────────────────────────────────────────────────────── */
 .screen { position: fixed; inset: 0; display: none; flex-direction: column;
@@ -724,3 +728,37 @@ h2 { display: inline-flex; align-items: center; }
   font: inherit; font-weight: 800; font-size: 15px; color: #1a1206;
   background: linear-gradient(180deg,#ffd479,#ffb347); box-shadow: 0 2px 6px rgba(0,0,0,0.35); }
 .b-help:active { transform: scale(0.92); }
+
+/* ── Builder LEFT side-panel (drawing-app style) ─────────────────────────────── */
+.bside { position: fixed; left: 0; top: calc(52px + env(safe-area-inset-top)); bottom: 0; width: 120px; z-index: 45;
+  padding: 8px 8px calc(10px + env(safe-area-inset-bottom)); overflow-y: auto;
+  background: linear-gradient(90deg, rgba(20,18,24,0.94), rgba(20,18,24,0.74)); }
+.bside::-webkit-scrollbar { width: 0; }
+.bmodes { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 8px; }
+.bmode { font: inherit; font-size: 10px; font-weight: 800; letter-spacing: 0.05em; color: #9aa0ac; cursor: pointer;
+  background: linear-gradient(180deg,#2b2e35,#1c1f24); border: 1px solid rgba(0,0,0,0.5); border-radius: 9px; padding: 8px 0; }
+.bmode.on { color: #1a1206; background: linear-gradient(180deg,#ffb347,var(--accent)); }
+.bmode:active { transform: scale(0.96); }
+.bside .b-hint { font-size: 9px; line-height: 1.35; color: #e0d09c; text-align: center; margin-bottom: 10px; min-height: 12px; }
+.bctl { display: flex; flex-direction: column; align-items: center; gap: 15px; }
+.bctl.deck { position: static; transform: none; inset: auto; left: auto; right: auto; top: auto; bottom: auto;
+  width: auto; max-width: none; min-height: 0; margin: 0; padding: 0 0 12px; background: none; box-shadow: none; border: 0; }
+.bctl.deck::before { display: none; }
+.bctl .ctl { width: 100%; }
+.bctl .swatches { flex-wrap: wrap; justify-content: center; }
+.bctl .seg-row { flex-wrap: wrap; justify-content: center; }
+.bctl .hue-track { width: 96px; }
+.bctl .mini-btn { width: 100%; }
+/* tiny helper toggle in the top bar */
+.b-guide { flex: 0 0 auto; width: 36px; height: 36px; border-radius: 9px; border: 1px solid rgba(0,0,0,0.5);
+  cursor: pointer; font-size: 15px; line-height: 1; color: #ece7db; background: linear-gradient(180deg,#32353d,#23262c); }
+.b-guide.on { background: linear-gradient(180deg,#ffb347,var(--accent)); }
+.b-guide:active { transform: scale(0.93); }
+
+/* Vibrant encoder caps in the side panel (cycle the OP-Z palette). */
+.bctl .ctl:nth-child(6n+1) .knob-dial { --cap: var(--cap1); }
+.bctl .ctl:nth-child(6n+2) .knob-dial { --cap: var(--cap2); }
+.bctl .ctl:nth-child(6n+3) .knob-dial { --cap: var(--cap3); }
+.bctl .ctl:nth-child(6n+4) .knob-dial { --cap: var(--cap5); }
+.bctl .ctl:nth-child(6n+5) .knob-dial { --cap: var(--cap1); }
+.bctl .ctl:nth-child(6n) .knob-dial { --cap: var(--cap2); }

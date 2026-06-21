@@ -27,7 +27,7 @@ export class Builder {
     this.bp = defaultBlueprint();
     this.name = 'My Zook';
     this.zook = null; this.turntable = null; this._deck = null;
-    this._mode = 'shape'; this._walk = true;
+    this._mode = 'shape'; this._walk = true; this._helper = false;
     this._mirror = true; this._addType = 'leg';
     this._sel = null;            // { type:'leg'|'blob', idx }
     this._drag = null;
@@ -55,7 +55,7 @@ export class Builder {
     this.zook = new Zook(this.bp, { preview: true, showArrow: true });
     this.turntable.add(this.zook.group);
 
-    setCamera({ x: 0, y: 2.35, z: 4.9 }, { x: 0, y: 1.05, z: 0 }, true);
+    setCamera({ x: -0.7, y: 2.4, z: 5.2 }, { x: -0.7, y: 1.05, z: 0 }, true);
     this._buildUI();
     this.canvas.addEventListener('pointerdown', this._onDown);
     window.addEventListener('pointermove', this._onMove);
@@ -81,37 +81,45 @@ export class Builder {
   _pushUndo() { this._undo.push(JSON.parse(JSON.stringify(this.bp))); if (this._undo.length > 40) this._undo.shift(); this._redo.length = 0; }
 
   // ── chrome ──────────────────────────────────────────────────────────────────
+  // A thin LEFT side-panel (drawing-app style): mode tabs + the mode's tactile
+  // controls stacked vertically. The model stays fully visible to the right.
   _buildUI() {
     const wrap = document.createElement('div'); wrap.className = 'bld';
     wrap.innerHTML = `
       <div class="btopbar">
         <button class="b-back" title="Back"><img src="./assets/btn-back.png" alt="Back"/></button>
         <input class="name-in" value="${this.name}" maxlength="14" />
+        <button class="b-guide" title="Helper on/off">💬</button>
         <button class="b-walk" title="Walk in place">WALK</button>
         <button class="b-save" title="Save"><img src="./assets/btn-check.png" alt="Save"/></button>
         <button class="b-test">TEST ▶</button>
       </div>
-      <div class="bchips"></div>
-      <button class="b-help" title="Help">?</button>
-      <div class="bbar"><div class="bbar-inner deck"></div><div class="b-hint"></div></div>`;
+      <div class="bside">
+        <div class="bmodes"></div>
+        <div class="b-hint"></div>
+        <div class="bctl deck"></div>
+      </div>`;
     this.mount.appendChild(wrap); this._deck = wrap;
-    wrap.querySelector('.b-help').addEventListener('click', () => { fb.tick(); guide.pop(this._helpText()); });
 
     wrap.querySelector('.b-back').addEventListener('click', () => { fb.press(); this.onBack(); });
     wrap.querySelector('.name-in').addEventListener('input', e => { this.name = e.target.value || 'My Zook'; });
-    wrap.querySelector('.b-save').addEventListener('click', () => { saveZook(this.name, this.bp); fb.confirm(); guide.now(`Saved ${this.name}! A fine specimen.`); });
+    wrap.querySelector('.b-save').addEventListener('click', () => { saveZook(this.name, this.bp); fb.confirm(); if (this._helper) guide.pop(`Saved ${this.name}!`); });
     wrap.querySelector('.b-test').addEventListener('click', () => { fb.press(); this.onTest(this.bp, this.name); });
     const walk = wrap.querySelector('.b-walk');
     const sw = () => walk.classList.toggle('on', this._walk); sw();
     walk.addEventListener('click', () => { this._walk = !this._walk; sw(); fb.tick(); });
+    // tiny helper toggle — Fried only speaks when this is on
+    const gb = wrap.querySelector('.b-guide');
+    const gs = () => gb.classList.toggle('on', this._helper); gs();
+    gb.addEventListener('click', () => { fb.tick(); this._helper = !this._helper; gs(); if (this._helper) guide.pop(this._helpText()); else guide.hide(); });
 
-    const chips = wrap.querySelector('.bchips');
+    const modes = wrap.querySelector('.bmodes');
     [['shape', 'SHAPE'], ['add', 'ADD'], ['move', 'MOVE'], ['paint', 'PAINT']].forEach(([m, label]) => {
-      const c = document.createElement('button'); c.className = 'bchip'; c.dataset.m = m; c.textContent = label;
+      const c = document.createElement('button'); c.className = 'bmode'; c.dataset.m = m; c.textContent = label;
       c.addEventListener('click', () => { fb.tick(); this._setMode(m); });
-      chips.appendChild(c);
+      modes.appendChild(c);
     });
-    this._barEl = wrap.querySelector('.bbar-inner');
+    this._barEl = wrap.querySelector('.bctl');
     this._hintEl = wrap.querySelector('.b-hint');
     this._setMode(this._mode);
   }
@@ -119,8 +127,9 @@ export class Builder {
   _setMode(m) {
     this._mode = m;
     if (m !== 'add' && m !== 'move') this._select(null);
-    this._deck.querySelectorAll('.bchip').forEach(c => c.classList.toggle('on', c.dataset.m === m));
+    this._deck.querySelectorAll('.bmode').forEach(c => c.classList.toggle('on', c.dataset.m === m));
     this._renderBar();
+    if (this._helper) guide.pop(this._helpText());
   }
 
   _renderBar() {
