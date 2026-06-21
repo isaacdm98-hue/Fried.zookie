@@ -22,7 +22,7 @@ export class App {
     Object.assign(this, { scene, world, RAPIER, camera, canvas, ui });
     this.active = { name: 'My Zook', bp: defaultBlueprint() };
     this.mode = null;            // gameplay mode with onStep/update/exit
-    this._hero = null; this._heroSpin = 0;
+    this._hero = null; this._heroSpin = true; this._heroSpinT = 0;
     this._overlay = null;
     this._builder = new Builder({ scene, mount: ui,
       onTest: (bp, name) => { this.active = { bp, name }; this.go('test'); },
@@ -34,7 +34,10 @@ export class App {
   // ── loop hooks ────────────────────────────────────────────────────────────
   onStep(dt) { if (this.mode && this.mode.onStep) this.mode.onStep(dt); }
   update(dt) {
-    if (this._hero) { this._heroSpin += dt * 0.5; this._hero.rotation.y = this._heroSpin; this._heroZook.step(dt, { walk: true }); this._heroZook.syncMeshes(); }
+    if (this._hero) {
+      if (this._heroSpin !== false) { this._heroSpinT += dt * 0.5; this._hero.rotation.y = this._heroSpinT; }
+      this._heroZook.step(dt, { walk: true }); this._heroZook.syncMeshes();
+    }
     if (this.mode && this.mode.update) this.mode.update(dt);
     if (this._countdownEl && this.mode && this.mode.countLabel != null) {
       const l = this.mode.countLabel;
@@ -62,6 +65,7 @@ export class App {
     plinth.position.y = -0.15; plinth.receiveShadow = true; this._hero.add(plinth);
     this._heroZook = new Zook(bp || this.active.bp, { preview: true, showArrow: true });
     this._hero.add(this._heroZook.group);
+    this._heroSpin = true; this._heroSpinT = 0; this._hero.rotation.y = 0;
     setCamera({ x: 0, y: 2.0, z: 4.8 }, { x: 0, y: 0.4, z: 0 }, true);
   }
   _hideHero() {
@@ -95,6 +99,9 @@ export class App {
       new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false }));
     panel.position.set(0, 1.15, -1.4);
     this._hero.add(panel);
+    // Face the Zook toward the user (front is -Z; rotate just the creature so
+    // it greets the camera while the yellow panel stays behind it).
+    this._heroSpin = false; this._hero.rotation.y = 0; this._heroZook.group.rotation.y = Math.PI;
     setCamera({ x: 0, y: 1.5, z: 5.2 }, { x: 0, y: 1.05, z: 0 }, true);
 
     const d = this._overlayEl(`
