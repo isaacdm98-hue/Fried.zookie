@@ -166,6 +166,7 @@ export class App {
   _menu() {
     const d = this._overlayEl(`
       <div class="menu-wrap">
+        <img class="m-doodle" src="./assets/blob-idea-green.png" alt="" />
         <div class="m-logo"><span class="t-fried">Fried</span>Zooki</div>
         <div class="menu-grid">
           <button class="m-btn" data-go="workshop"><b>BUILD</b><span>make a Zook</span></button>

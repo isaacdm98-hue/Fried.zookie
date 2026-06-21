@@ -23,7 +23,7 @@ export class Builder {
     this.bp = defaultBlueprint();
     this.name = 'My Zook';
     this.zook = null; this.turntable = null; this._deck = null;
-    this._spin = 0; this._walk = true; this._page = 'shape';
+    this._spin = 0; this._walk = true; this._page = 'shape'; this._open = true;
     this._undo = []; this._redo = [];
     this._selLeg = 0;        // selected leg index
     this._mirror = true;     // mirror toggle (on by default)
@@ -49,9 +49,8 @@ export class Builder {
     this.zook = new Zook(this.bp, { preview: true, showArrow: true });
     this.turntable.add(this.zook.group);
 
-    // Frame the Zook in the upper portion of the screen, clear of the deck.
-    setCamera({ x: 0, y: 2.7, z: 4.4 }, { x: 0, y: 1.15, z: 0 }, true);
-    this._buildDeck();
+    setCamera({ x: 0, y: 2.4, z: 4.6 }, { x: 0, y: 1.0, z: 0 }, true);
+    this._buildPanel();
     guide.now(TIPS.build);
   }
 
@@ -87,61 +86,74 @@ export class Builder {
   }
   _pushUndo() { this._undo.push({ ...this.bp }); if (this._undo.length > 30) this._undo.shift(); this._redo.length = 0; }
 
-  // ── deck UI ─────────────────────────────────────────────────────────────────
-  _buildDeck() {
-    const deck = document.createElement('div'); deck.className = 'deck';
-    deck.innerHTML = `
-      <div class="deck-head">
-        <button class="mini-btn" data-act="back">‹</button>
+  // ── panel UI (a left tool-rail with fly-out controls, like a drawing app) ────
+  // The viewport stays clear: tools live on a thin left rail; tapping one opens
+  // a translucent fly-out beside it (tap again or × to close). The Zook pans to
+  // the right so the open panel never covers what you're building.
+  _buildPanel() {
+    const wrap = document.createElement('div'); wrap.className = 'bpanel';
+    wrap.innerHTML = `
+      <div class="btopbar">
+        <button class="b-back" title="Back"><img src="./assets/btn-back.png" alt="Back"/></button>
         <input class="name-in" value="${this.name}" maxlength="14" />
-        <button class="mini-btn" data-act="collapse" title="Hide controls">▾</button>
+        <button class="b-walk" title="Walk in place">WALK</button>
+        <button class="b-save" title="Save"><img src="./assets/btn-check.png" alt="Save"/></button>
+        <button class="b-test">TEST ▶</button>
+      </div>
+      <div class="brail"></div>
+      <div class="bfly">
+        <div class="bfly-head"><span class="bfly-title"></span><button class="bfly-x" title="Close">×</button></div>
+        <div class="bfly-body deck"></div>
       </div>`;
-    deck.querySelector('[data-act=back]').addEventListener('click', () => { fb.press(); this.onBack(); });
-    deck.querySelector('.name-in').addEventListener('input', e => { this.name = e.target.value || 'My Zook'; });
-    const collapseBtn = deck.querySelector('[data-act=collapse]');
-    collapseBtn.addEventListener('click', () => {
-      fb.tick();
-      const c = deck.classList.toggle('collapsed');
-      collapseBtn.textContent = c ? '▴' : '▾';
-    });
+    this.mount.appendChild(wrap); this._deck = wrap;
 
-    // Tabs.
-    const tabs = document.createElement('div'); tabs.className = 'tabs';
-    const body = document.createElement('div'); body.className = 'deck-body';
+    wrap.querySelector('.b-back').addEventListener('click', () => { fb.press(); this.onBack(); });
+    wrap.querySelector('.name-in').addEventListener('input', e => { this.name = e.target.value || 'My Zook'; });
+    wrap.querySelector('.b-save').addEventListener('click', () => { saveZook(this.name, this.bp); fb.confirm(); guide.now(`Saved ${this.name}! A fine specimen.`); });
+    wrap.querySelector('.b-test').addEventListener('click', () => { fb.press(); guide.now(this._diagnose()); this.onTest(this.bp, this.name); });
+    const walkBtn = wrap.querySelector('.b-walk');
+    const setWalk = () => walkBtn.classList.toggle('on', this._walk); setWalk();
+    walkBtn.addEventListener('click', () => { this._walk = !this._walk; setWalk(); fb.tick(); });
+
+    const rail = wrap.querySelector('.brail');
+    const fly = wrap.querySelector('.bfly');
+    const flyBody = wrap.querySelector('.bfly-body');
+    const flyTitle = wrap.querySelector('.bfly-title');
     const pages = { shape: 'SHAPE', add: 'ADD', path: 'PATH', move: 'MOVE', paint: 'PAINT' };
+    const icons = { shape: '●', add: '＋', path: '∿', move: '➜', paint: '✦' };
+
     const render = () => {
-      body.innerHTML = '';
-      tabs.querySelectorAll('.tab').forEach(t => t.classList.toggle('on', t.dataset.p === this._page));
-      this._builders[this._page](body);
-      if (this.zook) this.zook.setHighlight((this._page === 'add' || this._page === 'path') ? Math.min(this._selLeg, this.bp.legs.length - 1) : -1);
+      flyTitle.textContent = pages[this._page] || '';
+      flyBody.innerHTML = '';
+      if (this._open) this._builders[this._page](flyBody);
+      rail.querySelectorAll('.btool').forEach(t => t.classList.toggle('on', t.dataset.p === this._page && this._open));
+      fly.classList.toggle('open', this._open);
+      this._panCam(this._open);
+      if (this.zook) this.zook.setHighlight((this._open && (this._page === 'add' || this._page === 'path')) ? Math.min(this._selLeg, this.bp.legs.length - 1) : -1);
     };
+
     Object.entries(pages).forEach(([p, label]) => {
-      const t = document.createElement('button'); t.className = 'tab'; t.dataset.p = p; t.textContent = label;
-      t.addEventListener('click', () => { fb.tick(); this._page = p; render(); });
-      tabs.appendChild(t);
+      const t = document.createElement('button'); t.className = 'btool'; t.dataset.p = p;
+      t.innerHTML = `<b>${icons[p]}</b><i>${label}</i>`;
+      t.addEventListener('click', () => { fb.tick(); if (this._open && this._page === p) this._open = false; else { this._page = p; this._open = true; } render(); });
+      rail.appendChild(t);
     });
-    deck.append(tabs, body);
-
-    // Footer: UNDO · WALK · SAVE · TEST.
-    const foot = document.createElement('div'); foot.className = 'deck-foot';
-    const undo = document.createElement('button'); undo.className = 'mini-btn'; undo.textContent = '↶';
+    const undo = document.createElement('button'); undo.className = 'btool b-undo'; undo.innerHTML = '<b>↶</b><i>UNDO</i>';
     undo.addEventListener('click', () => { if (this._undo.length) { this._redo.push({ ...this.bp }); this.bp = this._undo.pop(); this._apply(); this._refresh(); fb.press(); } });
-    const walk = Switch({ label: 'WALK', value: this._walk, onChange: v => { this._walk = v; } });
-    const save = document.createElement('button'); save.className = 'mini-btn save-btn';
-    save.innerHTML = `<img src="./assets/btn-check.png" alt=""/>SAVE`;
-    save.addEventListener('click', () => { saveZook(this.name, this.bp); fb.confirm(); guide.now(`Saved ${this.name}! A fine specimen.`); });
-    const test = document.createElement('button'); test.className = 'test-btn'; test.textContent = 'TEST ▶';
-    test.addEventListener('click', () => { fb.press(); guide.now(this._diagnose()); this.onTest(this.bp, this.name); });
-    foot.append(undo, walk.root, save, test);
-    deck.appendChild(foot);
+    rail.appendChild(undo);
+    wrap.querySelector('.bfly-x').addEventListener('click', () => { fb.tick(); this._open = false; render(); });
 
-    this.mount.appendChild(deck);
-    this._deck = deck;
-    this._tabsEl = tabs; this._bodyEl = body; this._renderPage = render;
+    this._renderPage = render;
     render();
   }
 
-  _refresh() { if (this._renderPage) this._renderPage(); const n = this._deck?.querySelector('.name-in'); if (n) n.value = this.name; }
+  // Pan the camera right while the panel is open so the model stays visible.
+  _panCam(open) {
+    const x = open ? -1.5 : 0;
+    setCamera({ x, y: 2.4, z: 4.6 }, { x, y: 1.0, z: 0 }, true);
+  }
+
+  _refresh() { if (this._renderPage) this._renderPage(); const n = this._deck?.querySelector('.name-in'); if (n && document.activeElement !== n) n.value = this.name; }
 
   // ── leg-part operations (Add menu) ────────────────────────────────────────
   _addLeg() {
