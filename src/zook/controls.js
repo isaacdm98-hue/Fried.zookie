@@ -6,6 +6,8 @@
  * no framework. Each returns its root element and reports via onChange.
  */
 
+import { fb } from '../sys/feedback.js';
+
 /**
  * Rotary knob. Drag up/down (or left/right) to turn it across ~270°.
  * @param {{
@@ -34,7 +36,7 @@ export function Knob(o) {
   function set(v) {
     v = Math.max(o.min, Math.min(o.max, v));
     if (o.step) v = Math.round(v / o.step) * o.step;
-    if (v !== value) { value = v; render(); o.onChange(value); }
+    if (v !== value) { value = v; render(); fb.tick(); o.onChange(value); }
     else render();
   }
 
@@ -76,7 +78,7 @@ export function Switch(o) {
   root.append(track, name);
   let on = !!o.value;
   function render() { root.classList.toggle('on', on); }
-  track.addEventListener('click', () => { on = !on; render(); o.onChange(on); });
+  track.addEventListener('click', () => { on = !on; render(); fb.toggle(on); o.onChange(on); });
   render();
   return { root, set: v => { on = v; render(); }, get value() { return on; } };
 }
@@ -108,6 +110,26 @@ export function HueSlider(o) {
   window.addEventListener('pointerup', () => { dragging = false; });
   render();
   return { root, set: v => { value = v; render(); }, get value() { return value; } };
+}
+
+/**
+ * Segmented selector — pick one option from a small set (e.g. leg style).
+ * @param {{label:string, options:{v:string,t:string}[], value:string, onChange:(v:string)=>void}} o
+ */
+export function Selector(o) {
+  const root = el('div', 'ctl seg');
+  const name = el('div', 'ctl-label', o.label);
+  const row  = el('div', 'seg-row');
+  let value = o.value;
+  o.options.forEach(opt => {
+    const b = el('button', 'seg-btn', opt.t);
+    b.dataset.v = opt.v;
+    b.addEventListener('click', () => { value = opt.v; render(); fb.tick(); o.onChange(value); });
+    row.appendChild(b);
+  });
+  function render() { row.querySelectorAll('.seg-btn').forEach(b => b.classList.toggle('on', b.dataset.v === value)); }
+  root.append(name, row); render();
+  return { root, get value() { return value; } };
 }
 
 // ── helper ─────────────────────────────────────────────────────────────────

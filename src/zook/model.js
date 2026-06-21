@@ -25,15 +25,55 @@ export function defaultBlueprint() {
     height:    0.78,   // body height  (Y)
     square:    0.6,    // 0 round … 1 boxy (default leans blocky)
     pointy:    0.35,   // nose taper 0..1
-    legPairs:  3,      // 1..4 mirrored pairs
-    legLen:    0.72,   // 0.35..1.2
-    legThick:  0.16,
+    flatEnd:   0.0,    // flatten the tail end 0..1
+    flatSide:  0.0,    // flatten the sides 0..1
+    // Legs are individual parts: each placed on the body with its own side,
+    // along-body position, size, style and Movement Cycle (phase 0..1).
+    // Mirroring is an optional action, not forced.
+    legs:      makeDefaultLegs(3),
+    legThick:  0.16,   // default thickness for new legs
+    antennae:  false,  // decorative part
+    tail:      false,  // decorative part
+    pattern:   'none', // none | stripes | spots
     speed:     2.4,    // 1..4 cycle frequency (Hz)
     stride:    0.5,    // 0.3..1.3 swing amplitude
     footAngle: 0.2,
+    turnSharp: 1.5,    // how hard it turns toward a target
+    turnSmooth:0.85,   // steering damping
   };
 }
-export function cloneBlueprint(b) { return { ...b }; }
+
+let _pairSeq = 1;
+export function newPairId() { return _pairSeq++; }
+
+/** A new leg part. `pair` links mirror partners (same id, opposite side). */
+export function makeLeg(side, along, { len = 0.72, thick = 0.16, style = 'crawl', cycle = 0, pair = newPairId() } = {}) {
+  return { side, along, len, thick, style, cycle, pair };
+}
+
+/** Default crawl: pairs down the body, staggered movement cycles. */
+export function makeDefaultLegs(pairs = 3) {
+  const legs = [];
+  for (let p = 0; p < pairs; p++) {
+    const along = pairs > 1 ? 0.4 * (0.5 - p / (pairs - 1)) : 0;
+    const c = pairs > 1 ? p / pairs : 0;
+    const pair = newPairId();
+    legs.push(makeLeg( 1, along, { cycle: c, pair }));
+    legs.push(makeLeg(-1, along, { cycle: (c + 0.5) % 1, pair }));   // opposite side, half-cycle
+  }
+  return legs;
+}
+
+/** Ensure a blueprint has a legs array (synthesising from old fields if needed). */
+export function ensureLegs(bp) {
+  if (Array.isArray(bp.legs)) return bp.legs;
+  const pairs = bp.legPairs || 3;
+  bp.legs = makeDefaultLegs(pairs).map(l => ({ ...l, len: bp.legLen || 0.72, thick: bp.legThick || 0.16, style: bp.legStyle || 'crawl' }));
+  return bp.legs;
+}
+export function cloneBlueprint(b) {
+  return { ...b, legs: Array.isArray(b.legs) ? b.legs.map(l => ({ ...l })) : b.legs };
+}
 
 // ── Materials ────────────────────────────────────────────────────────────────
 
@@ -42,6 +82,7 @@ const mat = (hue, l = 0.55, rough = 0.45) =>
 const EYE_WHITE = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.25 });
 const EYE_DARK  = new THREE.MeshStandardMaterial({ color: 0x140f1c, roughness: 0.2 });
 const ARROW_MAT = new THREE.MeshStandardMaterial({ color: 0xff3344, roughness: 0.5, emissive: 0x330000 });
+const HILITE    = new THREE.MeshStandardMaterial({ color: 0xffd479, emissive: 0xf0782d, emissiveIntensity: 0.5, roughness: 0.4 });
 
 // ── Zook ─────────────────────────────────────────────────────────────────────
 
@@ -58,6 +99,7 @@ export class Zook {
     this.group  = new THREE.Group();
     this._legs  = [];
     this._body  = null;
+    this._highlight = (opts.highlight == null ? -1 : opts.highlight);
     this._t = 0; this._steer = 0; this._onGround = true; this._bob = 0;
 
     this._buildMeshes();
@@ -67,8 +109,10 @@ export class Zook {
   }
 
   get dims() {
-    const { len, width, height, legLen } = this.bp;
-    return { w: width, h: height, l: len, rest: legLen + height / 2 };
+    const { len, width, height } = this.bp;
+    const legs = ensureLegs(this.bp);
+    const maxLeg = legs.length ? Math.max(...legs.map(l => l.len)) : 0.5;
+    return { w: width, h: height, l: len, rest: maxLeg + height / 2 };
   }
 
   // ── Geometry ──────────────────────────────────────────────────────────────
@@ -78,6 +122,8 @@ export class Zook {
     const bp = this.bp;
     const bMat = mat(bp.hue), lMat = mat(bp.footHue, 0.42, 0.55);
     bMat.flatShading = true;   // faceted, blocky BAMZOOKi look
+    const tex = patternTexture(bp.pattern);
+    if (tex) bMat.map = tex;
 
     // Shapeable root body.
     const body = new THREE.Mesh(shapeBody(bp), bMat);
@@ -102,50 +148,53 @@ export class Zook {
       this.group.add(w, p);
     }
 
-    // Legs: mirrored pairs along the body sides — two-segment, spider-style.
-    const total = bp.legPairs * 2;
-    const thick = bp.legThick;
-    const u = bp.legLen * 0.5;          // upper segment
-    const l = bp.legLen * 0.62;         // lower segment
-    const upGeo   = new THREE.BoxGeometry(thick, u, thick);
-    const lowGeo  = new THREE.BoxGeometry(thick * 0.85, l, thick * 0.85);
-    const footGeo = new THREE.BoxGeometry(thick * 1.5, thick * 0.5, thick * 2.0);
-    const hipY = -bp.height * 0.32, hipX = bp.width * 0.46;
-    let idx = 0;
-    for (let p = 0; p < bp.legPairs; p++) {
-      const z = bp.legPairs > 1 ? (bp.len * 0.40) * (0.5 - p / (bp.legPairs - 1)) : 0;
-      for (const side of [1, -1]) {
-        const pivot = new THREE.Group();         // hip
-        pivot.position.set(side * hipX, hipY, z);
-        pivot.rotation.z = side * 0.6;           // splay upper segment outward
+    // Legs: individual parts, each with its own placement, size, style and
+    // Movement Cycle. The selected leg (workshop) is highlighted.
+    const legs = ensureLegs(bp);
+    const hipY = -bp.height * 0.32;
+    legs.forEach((leg, i) => {
+      const S = LEG_STYLES[leg.style] || LEG_STYLES.crawl;
+      const thick = leg.thick, len = leg.len, u = len * S.u, l = len * S.l;
+      const m = (i === this._highlight) ? HILITE : lMat;
+      const x = leg.side * bp.width * 0.46;
+      const z = leg.along * bp.len * 0.5;
+      const pivot = new THREE.Group();
+      pivot.position.set(x, hipY, z);
+      pivot.rotation.z = leg.side * S.splay;
+      const up = new THREE.Mesh(new THREE.BoxGeometry(thick, u, thick), m);
+      up.position.y = -u / 2; up.castShadow = true; pivot.add(up);
+      const knee = new THREE.Group(); knee.position.y = -u; knee.rotation.z = -leg.side * S.splay; pivot.add(knee);
+      const low = new THREE.Mesh(new THREE.BoxGeometry(thick * 0.85, l, thick * 0.85), m);
+      low.position.y = -l / 2; low.castShadow = true; knee.add(low);
+      const foot = new THREE.Mesh(new THREE.BoxGeometry(thick * S.footW, thick * S.footH, thick * S.footL), m);
+      foot.position.set(0, -l, thick * 0.4); foot.castShadow = true; knee.add(foot);
+      this.group.add(pivot);
+      const phase = (leg.cycle || 0) * Math.PI * 2;
+      this._legs.push({ pivot, knee, foot, side: leg.side, phase, swingMul: S.swing });
+    });
 
-        const up = new THREE.Mesh(upGeo, lMat);
-        up.position.y = -u / 2; up.castShadow = true;
-        pivot.add(up);
-
-        const knee = new THREE.Group();          // knee at end of upper
-        knee.position.y = -u;
-        knee.rotation.z = -side * 0.6;           // bring lower segment back to vertical
-        pivot.add(knee);
-
-        const low = new THREE.Mesh(lowGeo, lMat);
-        low.position.y = -l / 2; low.castShadow = true;
-        knee.add(low);
-        const foot = new THREE.Mesh(footGeo, lMat);
-        foot.position.set(0, -l, thick * 0.4); foot.castShadow = true;
-        knee.add(foot);
-
-        this.group.add(pivot);
-        const phase = (idx / total) * Math.PI * 2 + (side < 0 ? Math.PI : 0);
-        this._legs.push({ pivot, knee, foot, side, phase });
-        idx++;
+    // Decorative parts (Add menu): antennae on the nose, a tail at the back.
+    if (bp.antennae) {
+      const aGeo = new THREE.CylinderGeometry(thick * 0.18, thick * 0.3, bp.height * 0.9, 6);
+      for (const sx of [-1, 1]) {
+        const a = new THREE.Mesh(aGeo, lMat);
+        a.position.set(sx * bp.width * 0.18, bp.height * 0.5, -bp.len * 0.35);
+        a.rotation.set(-0.5, 0, sx * 0.4);
+        this.group.add(a);
       }
+    }
+    if (bp.tail) {
+      const tGeo = new THREE.ConeGeometry(bp.height * 0.22, bp.len * 0.5, 6);
+      const tail = new THREE.Mesh(tGeo, lMat);
+      tail.position.set(0, bp.height * 0.2, bp.len * 0.55);
+      tail.rotation.x = Math.PI * 0.62;
+      this.group.add(tail);
     }
   }
 
   _buildBody() {
     const { w, h, l, rest } = this.dims;
-    const legLen = this.bp.legLen;
+    const legLen = rest - h / 2;
     const R = this.RAPIER;
     const desc = R.RigidBodyDesc.dynamic()
       .setTranslation(this._pos.x, rest, this._pos.z)
@@ -166,13 +215,16 @@ export class Zook {
     if (this.preview || !this._body) this.group.position.set(this._pos.x, this.dims.rest, this._pos.z);
   }
 
-  setBlueprint(bp) {
-    const struct = ['len', 'width', 'height', 'square', 'pointy', 'legPairs', 'legLen', 'legThick'];
-    const changed = struct.some(k => bp[k] !== this.bp[k]);
+  setBlueprint(bp, highlight) {
+    if (highlight != null) this._highlight = highlight;
+    const sig = (b) => JSON.stringify([b.len, b.width, b.height, b.square, b.pointy, b.flatEnd, b.flatSide, b.antennae, b.tail, b.legs]);
+    const changed = sig(bp) !== sig(this.bp);
     this.bp = cloneBlueprint(bp);
     this._buildMeshes();
     if (!this.preview && changed && this._body) { this.world.removeRigidBody(this._body); this._buildBody(); }
   }
+
+  setHighlight(i) { this._highlight = i; this._buildMeshes(); }
 
   // ── Animation / driving ──────────────────────────────────────────────────────
   _animateLegs(amount) {
@@ -180,7 +232,7 @@ export class Zook {
     const w = 2 * Math.PI * speed;
     for (const leg of this._legs) {
       const ph = w * this._t + leg.phase;
-      leg.pivot.rotation.x = Math.sin(ph) * stride * amount;     // fore-aft swing
+      leg.pivot.rotation.x = Math.sin(ph) * stride * leg.swingMul * amount; // fore-aft swing
       const lift = Math.max(0, Math.cos(ph));                    // recovery half
       leg.knee.rotation.x = 0.25 + lift * 0.55 * amount;         // knee bends to lift foot
       leg.foot.rotation.x = footAngle + lift * 0.3 * amount;
@@ -207,15 +259,32 @@ export class Zook {
     if (inputs.target) {
       const want = Math.atan2(-(inputs.target.x - pos.x), -(inputs.target.z - pos.z));
       let d = want - yaw; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI;
-      steer = Math.max(-1, Math.min(1, d * 1.5));
+      steer = Math.max(-1, Math.min(1, d * this.bp.turnSharp));
     } else if (inputs.steerLeft) steer = 1; else if (inputs.steerRight) steer = -1;
+    // Turn smoothness damps the steer response.
+    this._steer += (steer - this._steer) * (1 - this.bp.turnSmooth * 0.6);
 
+    // Emergent locomotion: each leg only propels during its planted backstroke,
+    // so motion arises from the gait itself. Staggering the legs (Movement
+    // Cycle) keeps a foot pushing at all times → smoother, faster; legs in
+    // unison give a lurching, weaker gait. Stride, speed and leg count all feed
+    // in naturally, exactly as building a real Zook should reward.
     if (walk && this._onGround) {
-      const drive = speed * stride * this.bp.legPairs * 1.4;
+      const w = 2 * Math.PI * speed;
+      let push = 0;
+      for (const leg of this._legs) {
+        const back = -Math.cos(w * this._t + leg.phase);   // >0 on power stroke
+        if (back > 0.05) push += back * stride * leg.swingMul;
+      }
+      const drive = push * speed * 0.85;
       b.applyImpulse({ x: fwdX * drive * dt, y: 0, z: fwdZ * drive * dt }, true);
     }
-    if (Math.abs(steer) > 0.01) b.applyTorqueImpulse({ x: 0, y: steer * 1.6 * dt, z: 0 }, true);
-    b.applyTorqueImpulse({ x: -rot.x * 6 * dt, y: 0, z: -rot.z * 6 * dt }, true);
+    // Steering: only turn while feet can grip the ground.
+    if (this._onGround && Math.abs(this._steer) > 0.01) {
+      b.applyTorqueImpulse({ x: 0, y: this._steer * 1.4 * dt, z: 0 }, true);
+    }
+    // Self-righting: keep the Zook upright (stronger when tilted further).
+    b.applyTorqueImpulse({ x: -rot.x * 9 * dt, y: 0, z: -rot.z * 9 * dt }, true);
   }
 
   syncMeshes() {
@@ -244,7 +313,7 @@ export class Zook {
 // ── Shapeable body geometry ──────────────────────────────────────────────────
 // A superellipsoid-style blob: round↔boxy via `square`, tapered nose via `pointy`.
 function shapeBody(bp) {
-  const { width, height, len, square, pointy } = bp;
+  const { width, height, len, square, pointy, flatEnd = 0, flatSide = 0 } = bp;
   const geo = new THREE.SphereGeometry(1, 18, 14);   // low-poly → faceted
   const pos = geo.attributes.position;
   const v = new THREE.Vector3();
@@ -252,7 +321,6 @@ function shapeBody(bp) {
   const hx = width / 2, hy = height / 2, hz = len / 2;
   for (let i = 0; i < pos.count; i++) {
     v.fromBufferAttribute(pos, i);
-    // Superellipsoid deform on the unit sphere.
     v.set(
       Math.sign(v.x) * Math.pow(Math.abs(v.x), p),
       Math.sign(v.y) * Math.pow(Math.abs(v.y), p),
@@ -261,10 +329,38 @@ function shapeBody(bp) {
     v.x *= hx; v.y *= hy; v.z *= hz;
     // Taper toward the nose (-z).
     const noseFrac = Math.max(0, Math.min(1, (-(v.z) / hz + 1) / 2));
-    const f = 1 - pointy * 0.8 * noseFrac;
-    v.x *= f; v.y *= f;
+    v.x *= 1 - pointy * 0.8 * noseFrac; v.y *= 1 - pointy * 0.8 * noseFrac;
+    // Flatten the tail end (+z): pull the back face inward.
+    const tailFrac = Math.max(0, Math.min(1, (v.z / hz + 1) / 2));
+    v.x *= 1 - flatEnd * 0.7 * tailFrac;
+    // Flatten the sides: squash width.
+    v.x *= 1 - flatSide * 0.5;
     pos.setXYZ(i, v.x, v.y, v.z);
   }
   geo.computeVertexNormals();
   return geo;
+}
+
+// Leg-part styles from the Add menu (crawl legs, paddles, stalks).
+const LEG_STYLES = {
+  crawl:  { u: 0.5,  l: 0.62, splay: 0.6,  footW: 1.5, footH: 0.5, footL: 2.0, swing: 1.0 },
+  paddle: { u: 0.35, l: 0.35, splay: 0.3,  footW: 3.2, footH: 0.4, footL: 1.4, swing: 1.5 },
+  stalk:  { u: 0.6,  l: 0.6,  splay: 0.15, footW: 1.0, footH: 0.6, footL: 1.0, swing: 0.7 },
+};
+
+// Generated grayscale pattern textures (white base shows the body hue).
+let _patCache = {};
+function patternTexture(kind) {
+  if (!kind || kind === 'none') return null;
+  if (_patCache[kind]) return _patCache[kind];
+  const c = document.createElement('canvas'); c.width = c.height = 64;
+  const x = c.getContext('2d');
+  x.fillStyle = '#fff'; x.fillRect(0, 0, 64, 64);
+  x.fillStyle = 'rgba(0,0,0,0.32)';
+  if (kind === 'stripes') { for (let i = 0; i < 64; i += 16) x.fillRect(i, 0, 7, 64); }
+  else if (kind === 'spots') { for (let a = 8; a < 64; a += 20) for (let b = 8; b < 64; b += 20) { x.beginPath(); x.arc(a, b, 5, 0, 7); x.fill(); } }
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping; tex.repeat.set(3, 2);
+  _patCache[kind] = tex;
+  return tex;
 }

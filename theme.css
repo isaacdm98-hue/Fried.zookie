@@ -108,6 +108,117 @@ body { -webkit-user-select: none; user-select: none; touch-action: none; }
   box-shadow: 0 2px 6px rgba(240,120,45,0.35); }
 .test-btn:active { transform: translateY(1px); }
 
+/* ── Overlays / screens ──────────────────────────────────────────────────── */
+.overlay { position: fixed; inset: 0; pointer-events: none; display: flex; flex-direction: column; }
+.overlay .sheet, .overlay .title-wrap, .overlay .menu-wrap, .overlay .result-modal,
+.overlay .con-hud, .overlay .back-btn, .overlay button, .overlay select, .overlay input, .overlay label { pointer-events: auto; }
+.sheet { width: min(560px, 100%); margin: 0 auto; padding: calc(12px + env(safe-area-inset-top)) 14px 24px;
+  overflow-y: auto; max-height: 100%; }
+.bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
+.bar h2 { margin: 0; font-size: 16px; letter-spacing: 0.14em; color: var(--ink); }
+.row { display: flex; gap: 10px; justify-content: center; }
+.small { font-size: 11px; } .muted { color: var(--sub); }
+
+.mini-btn { font: inherit; font-size: 14px; font-weight: 700; color: var(--ink); background: var(--panel-2);
+  border: 1px solid var(--line); border-radius: 9px; padding: 8px 12px; min-width: 40px; cursor: pointer; }
+.mini-btn.wide { letter-spacing: 0.12em; }
+.mini-btn:active { transform: translateY(1px); }
+.name-in { flex: 1; font: inherit; font-weight: 700; font-size: 14px; color: var(--ink); text-align: center;
+  background: var(--panel-2); border: 1px solid var(--line); border-radius: 9px; padding: 8px; }
+
+/* ── Title ───────────────────────────────────────────────────────────────── */
+.title-wrap { margin: auto; text-align: center; padding: 24px; }
+.big-logo { font-size: 46px; font-weight: 800; letter-spacing: 0.01em; line-height: 1; }
+.t-fried { color: var(--accent); } .t-zooki { color: var(--ink); }
+.t-sub { color: var(--sub); letter-spacing: 0.2em; font-size: 11px; margin-top: 8px; text-transform: uppercase; }
+.start-btn { margin-top: 26px; font: inherit; font-weight: 700; letter-spacing: 0.16em; font-size: 15px;
+  color: #fff; background: var(--accent); border: 0; border-radius: 12px; padding: 14px 30px; cursor: pointer;
+  box-shadow: 0 3px 10px rgba(240,120,45,0.4); animation: bob 1.8s ease-in-out infinite; }
+@keyframes bob { 50% { transform: translateY(-4px); } }
+.t-foot { margin-top: 22px; color: var(--sub); font-size: 9px; letter-spacing: 0.08em; }
+
+/* ── Menu ────────────────────────────────────────────────────────────────── */
+.menu-wrap { margin: auto; text-align: center; width: min(440px, 92%); }
+.m-logo { font-size: 30px; font-weight: 800; margin-bottom: 22px; }
+.menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.m-btn { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 20px 10px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 16px; cursor: pointer; color: var(--ink);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+.m-btn b { font-size: 15px; letter-spacing: 0.1em; }
+.m-btn span { font-size: 10px; color: var(--sub); }
+.m-btn:active { transform: scale(0.97); }
+
+/* ── Contests ────────────────────────────────────────────────────────────── */
+.con-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.con-card { text-align: left; padding: 14px; border-radius: 14px; background: var(--panel); border: 1px solid var(--line);
+  cursor: pointer; color: var(--ink); display: flex; flex-direction: column; gap: 5px; }
+.con-card b { font-size: 13px; letter-spacing: 0.06em; }
+.con-card span { font-size: 10px; color: var(--sub); line-height: 1.35; }
+.con-card:active { transform: scale(0.97); }
+.con-hud { display: flex; align-items: center; justify-content: center; gap: 10px; margin: calc(12px + env(safe-area-inset-top)) auto 0;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px; width: max-content; }
+.con-hud .tag { font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 6px; color: #fff; }
+.con-hud .tag.green { background: #37c46a; } .con-hud .tag.red { background: #e8466e; }
+.con-hud .vs { font-size: 11px; color: var(--sub); letter-spacing: 0.08em; }
+.countdown { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+  font-size: 96px; font-weight: 800; color: var(--accent); text-shadow: 0 4px 16px rgba(0,0,0,0.25);
+  pointer-events: none; opacity: 0; transition: opacity 0.2s; }
+
+/* ── Result ──────────────────────────────────────────────────────────────── */
+.result-modal { margin: auto; text-align: center; background: var(--panel); border: 1px solid var(--line);
+  border-radius: 18px; padding: 28px 26px; width: min(380px, 88%); box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
+.result-modal h1 { margin: 0 0 6px; font-size: 30px; letter-spacing: 0.06em; }
+.result-modal h1.win { color: #37c46a; } .result-modal h1.lose { color: #e8466e; }
+.result-modal p { color: var(--sub); font-size: 12px; margin: 0 0 18px; }
+
+/* ── Versus (DS-style link) ──────────────────────────────────────────────── */
+.link-panel { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 18px;
+  display: flex; flex-direction: column; gap: 14px; }
+.link-anim { display: flex; gap: 8px; justify-content: center; }
+.link-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--accent); animation: ds 1.2s infinite; }
+.link-dot:nth-child(2) { animation-delay: 0.2s; } .link-dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes ds { 0%, 100% { opacity: 0.25; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1.1); } }
+.link-status { text-align: center; color: var(--sub); font-size: 11px; letter-spacing: 0.1em; margin: 0; }
+.vs-pick { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 12px;
+  font-weight: 700; letter-spacing: 0.08em; color: var(--ink); }
+.vs-pick.green { color: #2a9d54; } .vs-pick.red { color: #c4365c; }
+.vs-pick select { font: inherit; font-size: 13px; padding: 8px 10px; border-radius: 9px; border: 1px solid var(--line);
+  background: var(--panel-2); color: var(--ink); flex: 1; }
+
+/* ── My Zooks ────────────────────────────────────────────────────────────── */
+.mz-h { font-size: 12px; letter-spacing: 0.14em; color: var(--sub); margin: 16px 0 8px; }
+.mz-list { display: flex; flex-direction: column; gap: 8px; }
+.mz-item { display: flex; align-items: center; justify-content: space-between; padding: 13px 14px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 12px; cursor: pointer; color: var(--ink); font-weight: 700; }
+.mz-item em { font-style: normal; font-size: 11px; color: var(--accent); }
+
+/* ── Leg tools / notes (builder) ─────────────────────────────────────────── */
+.leg-tools { display: flex; align-items: center; gap: 6px; }
+.leg-count { flex: 1; text-align: center; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; color: var(--ink); }
+.deck-note { text-align: center; font-size: 9px; letter-spacing: 0.08em; color: var(--sub); margin-top: 8px; }
+
+/* ── Segmented selector ──────────────────────────────────────────────────── */
+.seg { gap: 7px; align-items: stretch; width: 100%; }
+.seg-row { display: flex; gap: 4px; }
+.seg-btn { flex: 1; font: inherit; font-size: 10px; letter-spacing: 0.08em; font-weight: 700; padding: 9px 0;
+  color: var(--sub); background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; cursor: pointer; }
+.seg-btn.on { color: #fff; background: var(--accent); }
+
+/* ── Animalese guide ─────────────────────────────────────────────────────── */
+.guide { position: fixed; left: 50%; transform: translateX(-50%); top: calc(10px + env(safe-area-inset-top));
+  width: min(520px, 94%); display: flex; gap: 10px; align-items: flex-end; z-index: 60; transition: opacity 0.2s; }
+.guide.hidden { opacity: 0; pointer-events: none; }
+.guide-avatar { flex: 0 0 auto; width: 46px; height: 46px; border-radius: 50%; background: var(--accent);
+  display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+.g-face { display: flex; gap: 5px; }
+.g-eye { width: 6px; height: 10px; background: #fff; border-radius: 3px; }
+.guide.talking .g-eye { animation: blink 0.28s steps(2) infinite; }
+@keyframes blink { 50% { height: 3px; } }
+.guide-bubble { flex: 1; background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 9px 13px;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.12); }
+.guide-name { font-size: 9px; font-weight: 800; letter-spacing: 0.18em; color: var(--accent); }
+.guide-text { margin: 2px 0 0; font-size: 12px; line-height: 1.4; color: var(--ink); min-height: 16px; }
+
 /* ── Arena back button (one supplied asset, used sparingly) ───────────────── */
 .back-btn { position: fixed; top: calc(12px + env(safe-area-inset-top)); left: 12px;
   width: 50px; height: 50px; padding: 0; border: 0; background: none; cursor: pointer; z-index: 20; }
