@@ -50,7 +50,7 @@ export function startLoop({ world, renderer, scene, camera, clock, onStep, onFra
     // Per-frame logic (mesh sync, camera, etc.)
     if (typeof onFrame === 'function') onFrame(dt, alpha);
 
-    renderer.render(scene, camera);
+    renderer.render(scene, scene.userData.cam || camera);
   }
 
   tick();

@@ -21,6 +21,8 @@ import { makeQR, startScan } from './net/qr.js';
 
 // Online is restricted to static-arena contests so streamed state stays in sync.
 const ONLINE_IDS = ['sprint', 'hurdles', 'sumo', 'weakest', 'tag'];
+// Cross-screen "tabletop" arenas (bird's-eye; action crosses the seam).
+const TABLETOP_IDS = ['sumo', 'weakest', 'tag'];
 
 export class App {
   constructor({ scene, world, RAPIER, camera, canvas, ui }) {
@@ -63,6 +65,27 @@ export class App {
     this.mode = null;
     if (this._overlay) { this._overlay.remove(); this._overlay = null; }
     this._countdownEl = null;
+    this._clearTabletop();
+  }
+
+  // Bird's-eye ORTHO camera covering this phone's HALF of a cross-screen arena.
+  // host = left half (seam on its right edge), join = right half (seam on left).
+  _setupTabletop(role) {
+    const cv = this.canvas, FIELD_W = 5;
+    const o = this._ortho = new THREE.OrthographicCamera(-FIELD_W / 2, FIELD_W / 2, 1, -1, 0.1, 100);
+    const cx = role === 'host' ? -FIELD_W / 2 : FIELD_W / 2;
+    const resize = () => {
+      const w = cv.clientWidth, h = cv.clientHeight, Hw = (h / w) * FIELD_W;
+      o.top = Hw / 2; o.bottom = -Hw / 2; o.left = -FIELD_W / 2; o.right = FIELD_W / 2;
+      o.position.set(cx, 30, 0); o.up.set(0, 0, -1); o.lookAt(cx, 0, 0); o.updateProjectionMatrix();
+    };
+    resize(); this._orthoResize = resize; window.addEventListener('resize', resize);
+    this.scene.userData.cam = o;
+  }
+  _clearTabletop() {
+    if (this.scene.userData.cam) delete this.scene.userData.cam;
+    if (this._orthoResize) { window.removeEventListener('resize', this._orthoResize); this._orthoResize = null; }
+    this._ortho = null;
   }
   _overlayEl(html) {
     const d = document.createElement('div'); d.className = 'overlay'; d.innerHTML = html;
@@ -294,25 +317,39 @@ export class App {
   }
 
   _hostPick(box) {
-    const cs = CONTESTS.filter(c => ONLINE_IDS.includes(c.id));
-    box.innerHTML = `<p class="link-status">Connected to ${this._peer.name}! Pick a contest:</p><div class="con-grid"></div>`;
-    const grid = box.querySelector('.con-grid');
-    cs.forEach(c => { const b = document.createElement('button'); b.className = 'con-card'; b.innerHTML = `<b>${c.name}</b><span>${c.desc}</span>`;
-      b.onclick = () => { fb.confirm(); this._runHostContest(c); }; grid.appendChild(b); });
+    const render = () => {
+      const tt = this._tabletop;
+      const ids = tt ? TABLETOP_IDS : ONLINE_IDS;
+      const cs = CONTESTS.filter(c => ids.includes(c.id));
+      box.innerHTML = `<p class="link-status">Connected to ${this._peer.name}!</p>
+        <div class="mode-pick">
+          <button class="seg-btn ${tt ? '' : 'on'}" data-m="same">SAME SCREEN</button>
+          <button class="seg-btn ${tt ? 'on' : ''}" data-m="tab">TABLETOP · 2 PHONES</button>
+        </div>
+        <p class="link-status">${tt ? 'Lay both phones edge-to-edge — one arena across two screens.' : 'Pick a contest:'}</p>
+        <div class="con-grid"></div>`;
+      box.querySelector('[data-m=same]').onclick = () => { fb.tick(); this._tabletop = false; render(); };
+      box.querySelector('[data-m=tab]').onclick = () => { fb.tick(); this._tabletop = true; render(); };
+      const grid = box.querySelector('.con-grid');
+      cs.forEach(c => { const b = document.createElement('button'); b.className = 'con-card'; b.innerHTML = `<b>${c.name}</b><span>${c.desc}</span>`;
+        b.onclick = () => { fb.confirm(); this._runHostContest(c, this._tabletop); }; grid.appendChild(b); });
+    };
+    render();
   }
 
-  _runHostContest(contest) {
+  _runHostContest(contest, tabletop) {
     const green = this.active, red = this._peer;
-    this._link.send({ type: 'start', contest: contest.id, greenBp: green.bp, redBp: red.bp });
+    this._link.send({ type: 'start', contest: contest.id, greenBp: green.bp, redBp: red.bp, tabletop });
     this._clear();
+    if (tabletop) this._setupTabletop('host');
     const cs = new ContestScene({ scene: this.scene, world: this.world, RAPIER: this.RAPIER, camera: this.camera,
       onResult: ({ playerWon, line }) => {
         this._link.send({ type: 'result', winner: playerWon ? 'green' : 'red', line });
         this._resultOverlay(playerWon, line, () => this._online());
       } });
-    cs.enter(contest, green.bp, red.bp);
+    cs.enter(contest, green.bp, red.bp, { tabletop });
     this.mode = cs;
-    this._contestOverlay(green.name || 'You', red.name, contest.name);
+    this._contestOverlay(green.name || 'You', red.name, contest.name, tabletop, 'host');
   }
 
   async _joinFlow(box) {
@@ -338,10 +375,11 @@ export class App {
     if (m.type === 'start') {
       const contest = CONTESTS.find(c => c.id === m.contest);
       this._clear();
+      if (m.tabletop) this._setupTabletop('join');
       const cs = new ContestScene({ scene: this.scene, world: this.world, RAPIER: this.RAPIER, camera: this.camera, onResult: () => {} });
-      cs.enter(contest, m.greenBp, m.redBp, { remote: true });
+      cs.enter(contest, m.greenBp, m.redBp, { remote: true, tabletop: m.tabletop });
       this.mode = cs;
-      this._contestOverlay('Host', this.active.name, contest.name);
+      this._contestOverlay('Host', this.active.name, contest.name, m.tabletop, 'join');
     } else if (m.type === 'state' && this.mode && this.mode.applyState) {
       this.mode.applyState(m);
     } else if (m.type === 'result') {
@@ -362,10 +400,14 @@ export class App {
     }
   }
 
-  _contestOverlay(greenName, redName, contestName) {
+  _contestOverlay(greenName, redName, contestName, tabletop, role) {
+    const seam = role === 'host' ? 'right' : 'left';
+    const seamHtml = tabletop
+      ? `<div class="seam seam-${seam}"><span>▸</span><span>▸</span><span>▸</span></div>
+         <div class="tabletop-hint">lay phones edge-to-edge · line up the ▸ marks</div>` : '';
     const d = this._overlayEl(`
       <div class="con-hud"><span class="tag green">${greenName}</span><span class="vs">${contestName}</span><span class="tag red">${redName}</span></div>
-      <div class="countdown"></div>`);
+      <div class="countdown"></div>${seamHtml}`);
     this._countdownEl = d.querySelector('.countdown');
   }
 

@@ -41,6 +41,7 @@ export class ContestScene {
   enter(contest, greenBp, redBp, opts = {}) {
     this.contest = contest;
     this.remote = !!opts.remote;      // joiner renders streamed state, no sim
+    this.tabletop = !!opts.tabletop;  // bird's-eye, camera driven by the app (cross-screen)
     this._remoteCount = null; this._lastState = null;
     this._buildEnv(contest);
 
@@ -130,6 +131,7 @@ export class ContestScene {
 
   // Broadcast camera that frames BOTH Zooks — pulls back as they separate.
   _frameCamera() {
+    if (this.tabletop) return;        // app drives the top-down ortho camera
     if (!this.green || !this.red) return;
     const a = this.green.zook.position, b = this.red.zook.position;
     const mx = (a.x + b.x) / 2, mz = (a.z + b.z) / 2;
