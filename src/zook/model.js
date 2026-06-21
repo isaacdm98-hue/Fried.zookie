@@ -334,12 +334,12 @@ export class Zook {
     // Just the body shape — sits well above the floor while standing, and only
     // touches down (belly-flop) if the legs fail to hold it up. Low friction so
     // a toppled body slides rather than sticking; the feet supply real grip.
-    // Each leg is real weight: more legs grip better but a heavy build is slower
-    // to accelerate, so there's an OPTIMAL count to find — you tune to win.
-    const legCount = ensureLegs(this.bp).length;
-    const density = 0.85 + Math.min(8, legCount) * 0.045;     // 2 legs light … 8 heavy
+    // Mass comes from the BODY's volume, not the leg count — there is no "best"
+    // number of legs (BAMZOOKi is open-ended: a clever 2-legger or a long snake
+    // can win). Grip is friction-limited by weight (μ·N summed ≈ μ·mg whatever
+    // the foot count), so legs change STABILITY and gait, never a forced optimum.
     const col = R.ColliderDesc.cuboid(w / 2, h / 2, l / 2)
-      .setFriction(0.3).setRestitution(0).setDensity(density);
+      .setFriction(0.3).setRestitution(0).setDensity(0.95);
     if (R.CoefficientCombineRule) col.setFrictionCombineRule(R.CoefficientCombineRule.Min);
     this.world.createCollider(col, this._body);
 
@@ -347,10 +347,14 @@ export class Zook {
     // walks clean; a strange one (legs all one side, too few, too narrow) gets a
     // comical seeded waddle — random across designs but predictable for any given
     // one, which is exactly what made the original kit fun.
+    // Wonk is about whether the design can BALANCE, not how many legs it has. A
+    // lopsided build (legs mostly one side) genuinely can't walk straight, and a
+    // narrow stance is tippy — but a clean symmetric two-legger walks fine. Few
+    // legs is never penalised on its own (no "right" number of legs).
     const legs = ensureLegs(this.bp);
     const Lc = legs.filter(l => l.side < 0).length, Rc = legs.filter(l => l.side > 0).length, n = legs.length || 1;
-    const asym = Math.abs(Lc - Rc) / n, sparse = n < 4 ? (4 - n) / 4 : 0, narrow = Math.max(0, 1.0 - this.bp.width);
-    this._wonk = Math.max(0, Math.min(1, asym * 0.6 + sparse * 0.35 + narrow * 0.45));
+    const asym = Math.abs(Lc - Rc) / n, narrow = Math.max(0, 1.0 - this.bp.width);
+    this._wonk = Math.max(0, Math.min(1, asym * 0.7 + narrow * 0.5));
     this._wonkSeed = ((this.bp.len * 7 + this.bp.width * 13 + n * 3) % (Math.PI * 2));
     // Stance height trade-off: long legs reach further (longer stride) but raise
     // the centre of mass, so a tall Zook tips more easily. 0 = low & planted.
