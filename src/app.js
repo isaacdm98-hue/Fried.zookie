@@ -46,6 +46,14 @@ export class App {
       if (this._heroSpin !== false) { this._heroSpinT += dt * 0.5; this._hero.rotation.y = this._heroSpinT; }
       this._heroZook.step(dt, { walk: true }); this._heroZook.syncMeshes();
     }
+    // Motion Player: drive the remote contest from recorded frames.
+    if (this._replay && this.mode && this.mode.applyState) {
+      const R = this._replay;
+      if (R.playing) { R.t += dt * R.rate; if (R.t >= R.dur) { if (R.loop) R.t = 0; else { R.t = R.dur; R.playing = false; } } }
+      const idx = Math.max(0, Math.min(R.frames.length - 1, Math.floor(R.t / 0.05)));
+      this.mode.applyState(R.frames[idx]);
+      if (this._scrub && document.activeElement !== this._scrub) this._scrub.value = (R.t / R.dur) * 1000;
+    }
     if (this.mode && this.mode.update) this.mode.update(dt);
     // Host streams the live contest state to the joiner (~20 Hz).
     if (this._netRole === 'host' && this._link && this.mode && this.mode.serializeState) {
@@ -65,6 +73,7 @@ export class App {
     this.mode = null;
     if (this._overlay) { this._overlay.remove(); this._overlay = null; }
     this._countdownEl = null;
+    this._replay = null; this._scrub = null;
     this._clearTabletop();
   }
 
@@ -206,16 +215,19 @@ export class App {
       scene: this.scene, world: this.world, RAPIER: this.RAPIER, camera: this.camera,
       onResult: ({ playerWon, line }) => {
         guide.now(line);
+        this._lastRec = { contestId: contest.id, greenBp: green.bp, redBp: red.bp, frames: cs.getRecording().slice() };
         const r = this._overlayEl(`
           <div class="result-modal">
             <h1 class="${playerWon ? 'win' : 'lose'}">${playerWon ? 'YOU WIN!' : 'YOU LOSE'}</h1>
             <p>${line}</p>
             <div class="row">
               <button class="m-btn" data-act="again"><b>REMATCH</b></button>
+              <button class="m-btn" data-act="replay"><b>REPLAY</b></button>
               <button class="m-btn" data-act="menu"><b>CONTESTS</b></button>
             </div>
           </div>`);
         r.querySelector('[data-act=again]').addEventListener('click', () => { fb.press(); this.go('contestRun', { contest, green, red }); });
+        r.querySelector('[data-act=replay]').addEventListener('click', () => { fb.press(); this._motionPlayer(this._lastRec, { contest, green, red }); });
         r.querySelector('[data-act=menu]').addEventListener('click', () => { fb.press(); this.go('contests'); });
       },
     });
@@ -279,6 +291,33 @@ export class App {
       this.go('workshop');
     }));
   }
+
+  // ── Motion Player (Ch17) — replay a recorded contest ──────────────────────
+  _motionPlayer(rec, back) {
+    if (!rec || !rec.frames.length) return;
+    this._clear();
+    const contest = CONTESTS.find(c => c.id === rec.contestId);
+    const cs = new ContestScene({ scene: this.scene, world: this.world, RAPIER: this.RAPIER, camera: this.camera, onResult: () => {} });
+    cs.enter(contest, rec.greenBp, rec.redBp, { remote: true });
+    this.mode = cs;
+    this._replay = { frames: rec.frames, t: 0, playing: true, rate: 1, loop: true, dur: rec.frames.length * 0.05 };
+    const d = this._overlayEl(`
+      <div class="con-hud"><span class="vs">⏵ MOTION PLAYER · ${contest.name}</span></div>
+      <div class="mp-bar">
+        <button class="mini-btn" data-mp="play">❚❚</button>
+        <input class="mp-scrub" type="range" min="0" max="1000" value="0" />
+        <button class="mini-btn ${'on'}" data-mp="loop">⟲</button>
+        <button class="mini-btn" data-mp="eject">⏏</button>
+      </div>`);
+    this._scrub = d.querySelector('.mp-scrub');
+    const playBtn = d.querySelector('[data-mp=play]'), loopBtn = d.querySelector('[data-mp=loop]');
+    playBtn.onclick = () => { fb.tick(); this._replay.playing = !this._replay.playing; playBtn.textContent = this._replay.playing ? '❚❚' : '⏵'; };
+    loopBtn.onclick = () => { fb.tick(); this._replay.loop = !this._replay.loop; loopBtn.classList.toggle('on', this._replay.loop); };
+    d.querySelector('[data-mp=eject]').onclick = () => { fb.press(); this._replay = null; this._scrub = null; back ? this._contestRunResultBack(back) : this.go('menu'); };
+    this._scrub.oninput = () => { this._replay.t = (this._scrub.value / 1000) * this._replay.dur; this._replay.playing = false; playBtn.textContent = '⏵'; };
+    guide.now('Motion Player — watch the contest back. Scrub the timeline, loop, or eject.');
+  }
+  _contestRunResultBack(back) { this.go('contestRun', back); }
 
   // ── Online (QR-linked WebRTC) ─────────────────────────────────────────────
   _netClose() { try { this._link?.close(); } catch (_) {} this._link = null; this._netRole = null; this._peer = null; }

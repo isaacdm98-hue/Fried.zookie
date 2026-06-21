@@ -36,7 +36,10 @@ export class ContestScene {
     this.green = null; this.red = null;
     this._t = 0; this._state = 'count'; this._count = 3; this._countT = 0;
     this._ball = null; this._ballMesh = null; this._platform = null; this._doors = []; this._dynamic = [];
+    this._rec = []; this._recT = 0;     // motion-player recording
   }
+
+  getRecording() { return this._rec; }
 
   enter(contest, greenBp, redBp, opts = {}) {
     this.contest = contest;
@@ -121,6 +124,9 @@ export class ContestScene {
       return;
     }
     for (const e of [this.green, this.red]) if (e) { e.zook.syncMeshes(); this._followRing(e); }
+    // Record frames (~20Hz) for the Motion Player.
+    this._recT += dt;
+    if (this._recT >= 0.05 && this._rec.length < 1600) { this._recT = 0; this._rec.push(this.serializeState()); }
     if (this._ball && this._ballMesh) {
       const t = this._ball.translation(); this._ballMesh.position.set(t.x, t.y, t.z);
     }
