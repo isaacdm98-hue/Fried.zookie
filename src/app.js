@@ -80,7 +80,10 @@ export class App {
   _clear() {
     if (this.mode && this.mode.exit) this.mode.exit();
     this.mode = null;
-    if (this._overlay) { this._overlay.remove(); this._overlay = null; }
+    // Remove EVERY overlay this screen created (a screen can stack several, e.g.
+    // a contest's VS bar + its result card) so none leaks onto the next screen.
+    if (this._overlays) for (const o of this._overlays) o.remove();
+    this._overlays = []; this._overlay = null;
     this._countdownEl = null;
     this._replay = null; this._scrub = null; this._lab = null; this._labUI = null; this._runScene = null;
     this._clearTabletop();
@@ -107,7 +110,7 @@ export class App {
   }
   _overlayEl(html) {
     const d = document.createElement('div'); d.className = 'overlay'; d.innerHTML = html;
-    this.ui.appendChild(d); this._overlay = d; return d;
+    this.ui.appendChild(d); (this._overlays = this._overlays || []).push(d); this._overlay = d; return d;
   }
   /** A celebratory confetti burst over an overlay. */
   _confetti(mount, n = 90) {
@@ -140,9 +143,9 @@ export class App {
 
   go(screen, opts = {}) {
     this._clear();
-    // Hero Zook spins behind the DOM menus; title uses a hand-drawn doodle instead.
-    if (['menu', 'contests', 'versus', 'myzooks'].includes(screen)) this._showHero(this.active.bp);
-    else this._hideHero();
+    // The hero Zook belongs to the title screen (which frames it). Every other
+    // screen builds its own scene, so keep their backgrounds clean.
+    this._hideHero();
     ({
       title: () => this._title(),
       menu: () => this._menu(),
