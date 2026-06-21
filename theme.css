@@ -686,3 +686,41 @@ h2 { display: inline-flex; align-items: center; }
 .bfly-x { padding: 0; } .bfly-x img { width: 20px; height: 20px; object-fit: contain; display: block; margin: auto; }
 .mz-empty { display: block; width: 92px; height: auto; margin: 10px auto; opacity: 0.9;
   animation: doodlespin 4.2s ease-in-out infinite; }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   Touch-first builder: model fills the screen; a thin bottom bar per mode.
+   ════════════════════════════════════════════════════════════════════════════ */
+.bld { position: fixed; inset: 0; pointer-events: none; z-index: 40; }
+.bld > * { pointer-events: auto; }
+.bchips { position: fixed; top: calc(56px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%);
+  z-index: 45; display: flex; gap: 6px; }
+.bchip { font: inherit; font-size: 11px; font-weight: 800; letter-spacing: 0.12em; color: #9aa0ac; cursor: pointer;
+  background: linear-gradient(180deg,#2b2e35,#1c1f24); border: 1px solid rgba(0,0,0,0.5); border-radius: 11px;
+  padding: 7px 15px; box-shadow: 0 2px 6px rgba(0,0,0,0.3); }
+.bchip.on { color: #1a1206; background: linear-gradient(180deg,#ffb347,var(--accent)); }
+.bchip:active { transform: scale(0.96); }
+.bbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 45;
+  padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
+  background: linear-gradient(0deg, rgba(20,18,24,0.95), rgba(20,18,24,0.55)); }
+.bbar-inner { display: flex; align-items: center; gap: 16px; overflow-x: auto; min-height: 62px; }
+.bbar-inner::-webkit-scrollbar { height: 0; }
+.b-hint { text-align: center; font-size: 10px; letter-spacing: 0.05em; color: #d8c89a; margin-top: 3px; min-height: 12px; }
+.bbar-inner.deck { position: static; transform: none; left: auto; right: auto; top: auto; bottom: auto;
+  width: auto; max-width: none; margin: 0; padding: 2px 2px; background: none; box-shadow: none; border: 0; }
+.bbar-inner.deck::before { display: none; }
+.bbar-inner > * { flex: 0 0 auto; }
+.bbar-inner .swatches { flex-wrap: nowrap; }
+/* foot-path popover */
+.path-pop { background: rgba(0,0,0,0.5); }
+.path-card { margin: auto; width: min(360px, 92%); background: #16141b; border: 1px solid rgba(0,0,0,0.5);
+  border-radius: 16px; padding: 14px; box-shadow: 0 12px 40px rgba(0,0,0,0.5); }
+.path-card .bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; color: #ffd479; }
+.path-card .path-pad { background: linear-gradient(180deg,#2a2d34,#1d2026); border: 1px solid rgba(0,0,0,0.5); }
+.path-card .deck-note { color: #b9b08f; }
+
+/* Builder help button — Fried only appears when this is tapped. */
+.b-help { position: fixed; right: 12px; top: calc(56px + env(safe-area-inset-top)); z-index: 46;
+  width: 32px; height: 32px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.5); cursor: pointer;
+  font: inherit; font-weight: 800; font-size: 15px; color: #1a1206;
+  background: linear-gradient(180deg,#ffd479,#ffb347); box-shadow: 0 2px 6px rgba(0,0,0,0.35); }
+.b-help:active { transform: scale(0.92); }

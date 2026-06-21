@@ -72,6 +72,9 @@ export const guide = {
   now(text, opts = {}) { if (!enabled) return; ensure(); queue = [{ text, ...opts }]; if (!speaking) run(); },
   hide() { if (bubble) { bubble.classList.add('hidden'); queue = []; } },
   setName(n) { if (nameEl) nameEl.textContent = n; },
+  /** Show a single line on explicit request (e.g. a Help button), bypassing the
+   *  on/off setting — the user asked for it, so it always appears. */
+  pop(text, opts = {}) { ensure(); queue = [{ text, ...opts }]; if (!speaking) run(); },
   /** Turn Fried's commentary on/off (persisted). */
   setEnabled(on) { enabled = !!on; try { localStorage.setItem('fz-guide', on ? 'on' : 'off'); } catch (_) {} if (!on) { queue = []; this.hide(); } },
   get enabled() { return enabled; },

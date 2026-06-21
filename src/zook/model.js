@@ -226,6 +226,7 @@ export class Zook {
     // Shapeable root body.
     const body = new THREE.Mesh(shapeBody(bp), bMat);
     body.castShadow = body.receiveShadow = true;
+    body.userData.isBody = true;                 // tap-target for placing parts
     this.group.add(body);
 
     // Extra body blobs (modelling clay): scaled blobs merged onto the root.

@@ -1,15 +1,19 @@
 /**
- * builder.js — the Workshop (the Zook Kit).
+ * builder.js — the Workshop (the Zook Kit), rebuilt touch-first.
  *
- * The Zook turns centre-stage with its red direction arrow while a deck of
- * tactile controls — SHAPE / ADD / MOVE / PAINT (covering the manual's Forming
- * a Body, Add menu, Movement and Colour chapters) — tunes it live. SAVE stores
- * it to your roster; TEST sends it to the test table. Styled like a Teenage
- * Engineering device; guided by the animalese mascot.
+ * The model fills the screen. You work on it DIRECTLY, with touch as the mouse
+ * (just like the original Zook Kit):
+ *   • SHAPE — drag on the body to stretch it (across = wider, up/down = taller).
+ *   • ADD   — TAP THE BODY where you want a leg (or blob); it appears there.
+ *             Drag a part to move it; its mirror partner follows.
+ *   • MOVE  — tune how it walks; tap a leg to edit its cycle / foot path.
+ *   • PAINT — colour it.
+ * Drag empty space to orbit the model. A single thin bar at the very bottom holds
+ * the few controls each mode needs — nothing covers the creature.
  */
 
 import * as THREE from 'three';
-import { Zook, defaultBlueprint, makeLeg, newPairId, ensureLegs } from './model.js';
+import { Zook, defaultBlueprint, makeLeg, newPairId, ensureLegs, defaultPath } from './model.js';
 import { Knob, Switch, HueSlider, Selector } from './controls.js';
 import { setCamera } from '../engine/renderer.js';
 import { saveZook } from './library.js';
@@ -17,60 +21,52 @@ import { guide, TIPS } from '../sys/guide.js';
 import { fb } from '../sys/feedback.js';
 
 export class Builder {
-  /** @param {{ scene, mount, camera, canvas, onTest, onBack }} o */
   constructor({ scene, mount, camera, canvas, onTest, onBack }) {
     this.scene = scene; this.mount = mount; this.camera = camera; this.canvas = canvas;
     this.onTest = onTest; this.onBack = onBack;
-    this._ray = new THREE.Raycaster(); this._drag = null; this._spinPaused = false;
-    this._onPointerDown = this._onPointerDown.bind(this);
-    this._onPointerMove = this._onPointerMove.bind(this);
-    this._onPointerUp = this._onPointerUp.bind(this);
     this.bp = defaultBlueprint();
     this.name = 'My Zook';
     this.zook = null; this.turntable = null; this._deck = null;
-    this._spin = 0; this._walk = true; this._page = 'shape'; this._open = true;
+    this._mode = 'shape'; this._walk = true;
+    this._mirror = true; this._addType = 'leg';
+    this._sel = null;            // { type:'leg'|'blob', idx }
+    this._drag = null;
     this._undo = []; this._redo = [];
-    this._selLeg = 0;        // selected leg index
-    this._selBlob = 0;       // selected body-blob index
-    this._mirror = true;     // mirror toggle (on by default)
-    this._addSide = 1;       // side for new legs when mirror is off
+    this._ray = new THREE.Raycaster();
+    this._onDown = this._onDown.bind(this);
+    this._onMove = this._onMove.bind(this);
+    this._onUp = this._onUp.bind(this);
   }
 
   enter(blueprint, name) {
     if (blueprint) this.bp = { ...blueprint };
     if (name) this.name = name;
-    ensureLegs(this.bp);
-    this._selLeg = 0;
+    ensureLegs(this.bp); if (!Array.isArray(this.bp.blobs)) this.bp.blobs = [];
+    this._sel = null;
 
     this.turntable = new THREE.Group();
     this.scene.add(this.turntable);
-    const plinth = new THREE.Mesh(
-      new THREE.CylinderGeometry(1.8, 2.0, 0.3, 56),
-      new THREE.MeshStandardMaterial({ color: 0xd7d3c9, roughness: 0.7 }),
-    );
-    plinth.position.y = -0.15; plinth.receiveShadow = true;
-    this.turntable.add(plinth);
+    const plinth = new THREE.Mesh(new THREE.CylinderGeometry(1.8, 2.0, 0.3, 56),
+      new THREE.MeshStandardMaterial({ color: 0xd7d3c9, roughness: 0.7 }));
+    plinth.position.y = -0.15; plinth.receiveShadow = true; this.turntable.add(plinth);
+    this.turntable.position.y = 0.5;
+    this.turntable.rotation.y = -0.5;            // a friendly 3/4 view to start
 
-    this.turntable.position.y = 0.5;     // lift the stage so the deck never hides it
     this.zook = new Zook(this.bp, { preview: true, showArrow: true });
     this.turntable.add(this.zook.group);
 
-    setCamera({ x: 0, y: 2.4, z: 4.6 }, { x: 0, y: 1.0, z: 0 }, true);
-    this._buildPanel();
-    if (this.canvas) {
-      this.canvas.addEventListener('pointerdown', this._onPointerDown);
-      window.addEventListener('pointermove', this._onPointerMove);
-      window.addEventListener('pointerup', this._onPointerUp);
-    }
-    guide.now(TIPS.build);
+    setCamera({ x: 0, y: 2.35, z: 4.9 }, { x: 0, y: 1.05, z: 0 }, true);
+    this._buildUI();
+    this.canvas.addEventListener('pointerdown', this._onDown);
+    window.addEventListener('pointermove', this._onMove);
+    window.addEventListener('pointerup', this._onUp);
+    guide.hide();        // builder is help-on-demand only (tap the ? button)
   }
 
   exit() {
-    if (this.canvas) {
-      this.canvas.removeEventListener('pointerdown', this._onPointerDown);
-      window.removeEventListener('pointermove', this._onPointerMove);
-      window.removeEventListener('pointerup', this._onPointerUp);
-    }
+    this.canvas.removeEventListener('pointerdown', this._onDown);
+    window.removeEventListener('pointermove', this._onMove);
+    window.removeEventListener('pointerup', this._onUp);
     this._drag = null;
     if (this.zook) { this.zook.dispose(); this.zook = null; }
     if (this.turntable) { this.scene.remove(this.turntable); this.turntable = null; }
@@ -78,141 +74,15 @@ export class Builder {
   }
 
   update(dt) {
-    // Stop the turntable while you're working on legs (ADD/PATH) or dragging, so
-    // you can touch-drag parts precisely; otherwise it slowly turns to show off.
-    this._spinPaused = this._drag != null || (this._open && (this._page === 'add' || this._page === 'path' || this._page === 'blob'));
-    if (!this._spinPaused) this._spin += dt * 0.5;
-    if (this.turntable) this.turntable.rotation.y = this._spin;
     if (this.zook) { this.zook.step(dt, { walk: this._walk }); this.zook.syncMeshes(); }
   }
 
-  // ── direct touch manipulation: tap a leg to select it, drag it along the body
-  // (its mirror partner follows). Mirrors the Zook Kit's drag-to-place parts.
-  _toScreen(x, y, z) {
-    const v = new THREE.Vector3(x, y, z);
-    this.zook.group.localToWorld(v); v.project(this.camera);
-    const r = this.canvas.getBoundingClientRect();
-    return { x: (v.x * 0.5 + 0.5) * r.width + r.left, y: (-v.y * 0.5 + 0.5) * r.height + r.top };
-  }
+  _apply() { if (this.zook) this.zook.setBlueprint(this.bp, this._sel && this._sel.type === 'leg' ? this._sel.idx : -1); }
+  _pushUndo() { this._undo.push(JSON.parse(JSON.stringify(this.bp))); if (this._undo.length > 40) this._undo.shift(); this._redo.length = 0; }
 
-  _pick(e) {
-    if (!this.zook) return null;
-    const r = this.canvas.getBoundingClientRect();
-    const nx = ((e.clientX - r.left) / r.width) * 2 - 1, ny = -((e.clientY - r.top) / r.height) * 2 + 1;
-    this._ray.setFromCamera({ x: nx, y: ny }, this.camera);
-    const hits = this._ray.intersectObjects(this.zook.group.children, true);
-    for (const h of hits) {
-      let o = h.object;
-      while (o) {
-        if (o.userData) {
-          if (o.userData.legIndex != null) return { type: 'leg', idx: o.userData.legIndex };
-          if (o.userData.blobIndex != null) return { type: 'blob', idx: o.userData.blobIndex };
-        }
-        o = o.parent;
-      }
-    }
-    return null;
-  }
-
-  _onPointerDown(e) {
-    const hit = this._pick(e);
-    if (!hit) return;
-    e.preventDefault();
-    if (hit.type === 'leg') {
-      this._selLeg = hit.idx;
-      if (!this._open || (this._page !== 'add' && this._page !== 'path')) { this._page = 'add'; this._open = true; }
-      this._renderPage();
-      const leg = this.bp.legs[hit.idx];
-      const x = leg.side * this.bp.width * 0.4, y = -this.bp.height * 0.32;
-      this._drag = { type: 'leg', idx: hit.idx, A: this._toScreen(x, y, -this.bp.len * 0.46), B: this._toScreen(x, y, this.bp.len * 0.46) };
-    } else {
-      this._selBlob = hit.idx;
-      if (!this._open || this._page !== 'blob') { this._page = 'blob'; this._open = true; }
-      this._renderPage();
-      const bl = this.bp.blobs[hit.idx];
-      const O = this._toScreen(bl.x, bl.y, bl.z), Pz = this._toScreen(bl.x, bl.y, bl.z + 1), Py = this._toScreen(bl.x, bl.y + 1, bl.z);
-      this._drag = { type: 'blob', idx: hit.idx, az: { x: Pz.x - O.x, y: Pz.y - O.y }, ay: { x: Py.x - O.x, y: Py.y - O.y },
-        startPx: { x: e.clientX, y: e.clientY }, sz: bl.z, sy: bl.y };
-    }
-    fb.tick();
-  }
-
-  _onPointerMove(e) {
-    if (!this._drag) return;
-    if (this._drag.type === 'leg') {
-      const { A, B } = this._drag;
-      const abx = B.x - A.x, aby = B.y - A.y, len2 = abx * abx + aby * aby || 1;
-      let t = ((e.clientX - A.x) * abx + (e.clientY - A.y) * aby) / len2;
-      t = Math.max(0, Math.min(1, t));
-      const along = Math.round((-1 + t * 2) * 20) / 20;
-      const leg = this.bp.legs[this._drag.idx]; if (!leg) return;
-      leg.along = along;
-      const partner = this.bp.legs.find(l => l !== leg && l.pair === leg.pair);
-      if (partner) partner.along = along;            // mirrored legs move together
-      this._apply();
-    } else {
-      // Move the blob in the body's Y–Z plane: solve the 2×2 screen projection.
-      const d = this._drag, dx = e.clientX - d.startPx.x, dy = e.clientY - d.startPx.y;
-      const det = d.az.x * d.ay.y - d.ay.x * d.az.y || 1;
-      const dz = (dx * d.ay.y - d.ay.x * dy) / det;
-      const dyl = (d.az.x * dy - dx * d.az.y) / det;
-      const bl = this.bp.blobs[d.idx]; if (!bl) return;
-      bl.z = Math.max(-1.6, Math.min(1.6, Math.round((d.sz + dz) * 20) / 20));
-      bl.y = Math.max(-1.0, Math.min(1.6, Math.round((d.sy + dyl) * 20) / 20));
-      this._apply();
-    }
-  }
-
-  _onPointerUp() {
-    if (!this._drag) return;
-    this._drag = null; fb.tick(); this._refresh();
-  }
-
-  // ── body-blob operations (modelling clay) ───────────────────────────────────
-  _addBlob() {
-    this._pushUndo();
-    const b = this.bp; if (!b.blobs) b.blobs = [];
-    b.blobs.push({ x: 0, y: b.height * 0.5, z: 0, sx: 0.7, sy: 0.7, sz: 0.7 });
-    this._selBlob = b.blobs.length - 1; this._apply(); this._refresh(); fb.confirm();
-  }
-  _delBlob() {
-    const b = this.bp; if (!b.blobs || !b.blobs.length) return;
-    this._pushUndo(); b.blobs.splice(this._selBlob, 1);
-    this._selBlob = Math.max(0, this._selBlob - 1); this._apply(); this._refresh();
-  }
-  _mirrorBlob() {
-    const b = this.bp, src = b.blobs && b.blobs[this._selBlob]; if (!src) return;
-    this._pushUndo(); b.blobs.push({ ...src, x: -src.x });
-    this._selBlob = b.blobs.length - 1; this._apply(); this._refresh(); fb.confirm();
-  }
-  _editBlob(key, val) { const bl = this.bp.blobs[this._selBlob]; if (!bl) return; bl[key] = val; this._apply(); }
-
-  _apply() { if (this.zook) this.zook.setBlueprint(this.bp); }
-
-  // Coach the build from the real Zook Kit fix-it table (research paper, Table 2:
-  // "Possible Zook Problems and Solutions"). Returns the single most useful tip.
-  _diagnose() {
-    const bp = this.bp, legs = bp.legs || [];
-    const L = legs.filter(l => l.side < 0).length, R = legs.filter(l => l.side > 0).length;
-    if (!legs.length) return "No legs yet — add some on the ADD page or your Zook just sits there!";
-    if (legs.length < 2) return "One leg won't do — it'll just flop about. Add more, on both sides!";
-    if (L === 0 || R === 0) return "All the legs are on one side — mirror them or it'll topple straight over.";
-    if (bp.width < 0.9) return "It's narrow and will tip — widen the body for a stable stance.";
-    const phases = new Set(legs.map(l => Math.round((l.cycle || 0) * 12)));
-    if (phases.size < 2) return "Every leg steps together — stagger each leg's CYCLE so it doesn't limp or hop.";
-    if (bp.stride < 0.5) return "Small steps! Raise STRIDE on the MOVE page for a longer step.";
-    if (legs.every(l => l.len < 0.6) && bp.len > 2.2) return "Legs look short for that long body — lengthen them for a bigger stride.";
-    if (bp.speed < 2) return "It'll walk, not run — raise SPEED to quicken the gait cycle.";
-    return "Looking sharp! Send it to the test table and see how it scurries.";
-  }
-  _pushUndo() { this._undo.push({ ...this.bp }); if (this._undo.length > 30) this._undo.shift(); this._redo.length = 0; }
-
-  // ── panel UI (a left tool-rail with fly-out controls, like a drawing app) ────
-  // The viewport stays clear: tools live on a thin left rail; tapping one opens
-  // a translucent fly-out beside it (tap again or × to close). The Zook pans to
-  // the right so the open panel never covers what you're building.
-  _buildPanel() {
-    const wrap = document.createElement('div'); wrap.className = 'bpanel';
+  // ── chrome ──────────────────────────────────────────────────────────────────
+  _buildUI() {
+    const wrap = document.createElement('div'); wrap.className = 'bld';
     wrap.innerHTML = `
       <div class="btopbar">
         <button class="b-back" title="Back"><img src="./assets/btn-back.png" alt="Back"/></button>
@@ -221,289 +91,294 @@ export class Builder {
         <button class="b-save" title="Save"><img src="./assets/btn-check.png" alt="Save"/></button>
         <button class="b-test">TEST ▶</button>
       </div>
-      <div class="brail"></div>
-      <div class="bfly">
-        <div class="bfly-head"><span class="bfly-title"></span><button class="bfly-x" title="Close"><img src="./assets/btn-close.png" alt="Close"/></button></div>
-        <div class="bfly-body deck"></div>
-      </div>`;
+      <div class="bchips"></div>
+      <button class="b-help" title="Help">?</button>
+      <div class="bbar"><div class="bbar-inner deck"></div><div class="b-hint"></div></div>`;
     this.mount.appendChild(wrap); this._deck = wrap;
+    wrap.querySelector('.b-help').addEventListener('click', () => { fb.tick(); guide.pop(this._helpText()); });
 
     wrap.querySelector('.b-back').addEventListener('click', () => { fb.press(); this.onBack(); });
     wrap.querySelector('.name-in').addEventListener('input', e => { this.name = e.target.value || 'My Zook'; });
     wrap.querySelector('.b-save').addEventListener('click', () => { saveZook(this.name, this.bp); fb.confirm(); guide.now(`Saved ${this.name}! A fine specimen.`); });
-    wrap.querySelector('.b-test').addEventListener('click', () => { fb.press(); guide.now(this._diagnose()); this.onTest(this.bp, this.name); });
-    const walkBtn = wrap.querySelector('.b-walk');
-    const setWalk = () => walkBtn.classList.toggle('on', this._walk); setWalk();
-    walkBtn.addEventListener('click', () => { this._walk = !this._walk; setWalk(); fb.tick(); });
+    wrap.querySelector('.b-test').addEventListener('click', () => { fb.press(); this.onTest(this.bp, this.name); });
+    const walk = wrap.querySelector('.b-walk');
+    const sw = () => walk.classList.toggle('on', this._walk); sw();
+    walk.addEventListener('click', () => { this._walk = !this._walk; sw(); fb.tick(); });
 
-    const rail = wrap.querySelector('.brail');
-    const fly = wrap.querySelector('.bfly');
-    const flyBody = wrap.querySelector('.bfly-body');
-    const flyTitle = wrap.querySelector('.bfly-title');
-    const pages = { shape: 'SHAPE', blob: 'BLOB', add: 'ADD', path: 'PATH', move: 'MOVE', paint: 'PAINT' };
-    const icons = { shape: '●', blob: '◍', add: '＋', path: '∿', move: '➜', paint: '✦' };
-
-    const render = () => {
-      flyTitle.textContent = pages[this._page] || '';
-      flyBody.innerHTML = '';
-      if (this._open) this._builders[this._page](flyBody);
-      rail.querySelectorAll('.btool').forEach(t => t.classList.toggle('on', t.dataset.p === this._page && this._open));
-      fly.classList.toggle('open', this._open);
-      this._panCam(this._open);
-      if (this.zook) this.zook.setHighlight((this._open && (this._page === 'add' || this._page === 'path')) ? Math.min(this._selLeg, this.bp.legs.length - 1) : -1);
-    };
-
-    Object.entries(pages).forEach(([p, label]) => {
-      const t = document.createElement('button'); t.className = 'btool'; t.dataset.p = p;
-      t.innerHTML = `<b>${icons[p]}</b><i>${label}</i>`;
-      t.addEventListener('click', () => { fb.tick(); if (this._open && this._page === p) this._open = false; else { this._page = p; this._open = true; } render(); });
-      rail.appendChild(t);
+    const chips = wrap.querySelector('.bchips');
+    [['shape', 'SHAPE'], ['add', 'ADD'], ['move', 'MOVE'], ['paint', 'PAINT']].forEach(([m, label]) => {
+      const c = document.createElement('button'); c.className = 'bchip'; c.dataset.m = m; c.textContent = label;
+      c.addEventListener('click', () => { fb.tick(); this._setMode(m); });
+      chips.appendChild(c);
     });
-    const undo = document.createElement('button'); undo.className = 'btool b-undo'; undo.innerHTML = '<b>↶</b><i>UNDO</i>';
-    undo.addEventListener('click', () => { if (this._undo.length) { this._redo.push({ ...this.bp }); this.bp = this._undo.pop(); this._apply(); this._refresh(); fb.press(); } });
-    rail.appendChild(undo);
-    wrap.querySelector('.bfly-x').addEventListener('click', () => { fb.tick(); this._open = false; render(); });
-
-    this._renderPage = render;
-    render();
+    this._barEl = wrap.querySelector('.bbar-inner');
+    this._hintEl = wrap.querySelector('.b-hint');
+    this._setMode(this._mode);
   }
 
-  // Pan the camera right while the panel is open so the model stays visible.
-  _panCam(open) {
-    const x = open ? -1.5 : 0;
-    setCamera({ x, y: 2.4, z: 4.6 }, { x, y: 1.0, z: 0 }, true);
+  _setMode(m) {
+    this._mode = m;
+    if (m !== 'add' && m !== 'move') this._select(null);
+    this._deck.querySelectorAll('.bchip').forEach(c => c.classList.toggle('on', c.dataset.m === m));
+    this._renderBar();
   }
 
-  _refresh() { if (this._renderPage) this._renderPage(); const n = this._deck?.querySelector('.name-in'); if (n && document.activeElement !== n) n.value = this.name; }
-
-  // ── leg-part operations (Add menu) ────────────────────────────────────────
-  _addLeg() {
-    this._pushUndo();
-    const legs = this.bp.legs;
-    const src = legs[this._selLeg] || { len: 0.72, thick: this.bp.legThick, style: 'crawl', along: 0 };
-    if (this._mirror) {
-      const pair = newPairId();
-      legs.push(makeLeg( 1, 0, { len: src.len, thick: src.thick, style: src.style, cycle: 0, pair }));
-      legs.push(makeLeg(-1, 0, { len: src.len, thick: src.thick, style: src.style, cycle: 0.5, pair }));
-      this._selLeg = legs.length - 2;
-    } else {
-      legs.push(makeLeg(this._addSide, 0, { len: src.len, thick: src.thick, style: src.style, cycle: 0 }));
-      this._selLeg = legs.length - 1;
-    }
-    this._apply(); this._refresh(); fb.confirm();
-  }
-
-  _delLeg() {
-    const legs = this.bp.legs;
-    if (!legs.length) return;
-    this._pushUndo();
-    const leg = legs[this._selLeg];
-    const remove = this._mirror ? (l => l.pair === leg.pair) : (l => l === leg);
-    this.bp.legs = legs.filter(l => !remove(l));
-    this._selLeg = Math.max(0, this._selLeg - 1);
-    this._apply(); this._refresh();
-  }
-
-  _editLeg(key, val, refresh = false, cycleOnly = false) {
-    const legs = this.bp.legs, leg = legs[this._selLeg];
-    if (!leg) return;
-    leg[key] = val;
-    // Mirror geometry edits to the partner; cycle and side stay per-leg.
-    if (this._mirror && !cycleOnly && key !== 'side') {
-      const partner = legs.find(l => l !== leg && l.pair === leg.pair);
-      if (partner) partner[key] = val;
-    }
-    this._apply();
-    if (refresh) this._refresh();
-  }
-
-  get _builders() {
+  _renderBar() {
+    const el = this._barEl; el.innerHTML = '';
     const K = (o) => Knob(o).root;
     const set = (k, v) => { this._pushUndo(); this.bp[k] = v; this._apply(); };
-    return {
-      shape: (el) => {
-        const r1 = document.createElement('div'); r1.className = 'knob-row';
-        r1.append(
-          K({ label: 'LENGTH', min: 1.0, max: 3.2, step: 0.1, value: this.bp.len,    onChange: v => set('len', v) }),
-          K({ label: 'WIDTH',  min: 0.5, max: 1.8, step: 0.05, value: this.bp.width,  onChange: v => set('width', v) }),
-          K({ label: 'HEIGHT', min: 0.4, max: 1.4, step: 0.05, value: this.bp.height, onChange: v => set('height', v) }),
-          K({ label: 'SQUARE', min: 0, max: 1, step: 0.05, value: this.bp.square, format: v => `${Math.round(v * 100)}`, onChange: v => set('square', v) }),
-          K({ label: 'POINTY', min: 0, max: 1, step: 0.05, value: this.bp.pointy, format: v => `${Math.round(v * 100)}`, onChange: v => set('pointy', v) }),
-        );
-        const r2 = document.createElement('div'); r2.className = 'knob-row';
-        r2.append(
-          K({ label: 'FLAT END',  min: 0, max: 1, step: 0.05, value: this.bp.flatEnd,  format: v => `${Math.round(v * 100)}`, onChange: v => set('flatEnd', v) }),
-          K({ label: 'FLAT SIDE', min: 0, max: 1, step: 0.05, value: this.bp.flatSide, format: v => `${Math.round(v * 100)}`, onChange: v => set('flatSide', v) }),
-        );
-        el.append(r1, r2);
-      },
-      blob: (el) => {
-        const blobs = this.bp.blobs || (this.bp.blobs = []);
-        const btn = (t, fn) => { const b = document.createElement('button'); b.className = 'mini-btn'; b.textContent = t; b.addEventListener('click', () => { fb.press(); fn(); }); return b; };
-        if (!blobs.length) {
-          const tb = document.createElement('div'); tb.className = 'leg-tools'; tb.append(btn('+ BLOB', () => this._addBlob()));
-          const note = document.createElement('div'); note.className = 'deck-note'; note.textContent = 'add clay blobs to sculpt the body — then drag them on the model';
-          el.append(tb, note); return;
+    const hint = (t) => { this._hintEl.textContent = t; };
+
+    if (this._mode === 'shape') {
+      el.append(
+        K({ label: 'LENGTH', min: 1.0, max: 3.2, step: 0.1, value: this.bp.len, onChange: v => set('len', v) }),
+        K({ label: 'WIDTH', min: 0.5, max: 1.8, step: 0.05, value: this.bp.width, onChange: v => set('width', v) }),
+        K({ label: 'HEIGHT', min: 0.4, max: 1.4, step: 0.05, value: this.bp.height, onChange: v => set('height', v) }),
+        K({ label: 'SQUARE', min: 0, max: 1, step: 0.05, value: this.bp.square, format: v => `${Math.round(v * 100)}`, onChange: v => set('square', v) }),
+        K({ label: 'POINTY', min: 0, max: 1, step: 0.05, value: this.bp.pointy, format: v => `${Math.round(v * 100)}`, onChange: v => set('pointy', v) }),
+      );
+      hint('drag the body to stretch it · drag the floor to spin it round');
+    } else if (this._mode === 'add') {
+      const type = Selector({ label: 'PART', value: this._addType,
+        options: [{ v: 'leg', t: 'LEG' }, { v: 'blob', t: 'BLOB' }], onChange: v => { this._addType = v; this._select(null); this._renderBar(); } });
+      el.append(type.root, Switch({ label: 'MIRROR', value: this._mirror, onChange: v => { this._mirror = v; } }).root);
+      if (this._addType === 'leg') {
+        el.append(Selector({ label: 'STYLE', value: this._legStyle || 'crawl',
+          options: [{ v: 'crawl', t: 'CRAWL' }, { v: 'paddle', t: 'PADDLE' }, { v: 'stalk', t: 'STALK' }, { v: 'step', t: 'STEP' }, { v: 'stomp', t: 'STOMP' }, { v: 'push', t: 'PUSH' }, { v: 'flipper', t: 'FLIP' }],
+          onChange: v => { this._legStyle = v; if (this._sel && this._sel.type === 'leg') this._editLeg('style', v, true); } }).root);
+      }
+      const s = this._sel;
+      if (s && s.type === 'leg' && this.bp.legs[s.idx]) {
+        const leg = this.bp.legs[s.idx];
+        el.append(K({ label: 'LEN', min: 0.35, max: 1.2, step: 0.05, value: leg.len, onChange: v => this._editLeg('len', v) }),
+          K({ label: 'THICK', min: 0.1, max: 0.32, step: 0.02, value: leg.thick, onChange: v => this._editLeg('thick', v) }),
+          this._delBtn());
+        hint('drag the leg to move it · its mirror follows');
+      } else if (s && s.type === 'blob' && this.bp.blobs[s.idx]) {
+        const bl = this.bp.blobs[s.idx];
+        el.append(K({ label: 'SIZE', min: 0.2, max: 1.8, step: 0.05, value: bl.sx, onChange: v => { this._pushUndo(); bl.sx = bl.sy = bl.sz = v; this._apply(); } }), this._delBtn());
+        hint('drag the blob to move it');
+      } else {
+        hint(this._addType === 'leg' ? 'TAP THE BODY where you want a leg' : 'TAP THE BODY to add a clay blob');
+      }
+    } else if (this._mode === 'move') {
+      el.append(
+        K({ label: 'SPEED', min: 1, max: 4, step: 0.1, value: this.bp.speed, onChange: v => set('speed', v) }),
+        K({ label: 'STRIDE', min: 0.3, max: 1.3, step: 0.05, value: this.bp.stride, onChange: v => set('stride', v) }),
+        K({ label: 'STIFF', min: 0.5, max: 2, step: 0.1, value: this.bp.stiffness, format: v => v.toFixed(1), onChange: v => set('stiffness', v) }),
+        K({ label: 'TURN', min: 0.5, max: 3, step: 0.1, value: this.bp.turnSharp, onChange: v => set('turnSharp', v) }),
+      );
+      const s = this._sel;
+      if (s && s.type === 'leg' && this.bp.legs[s.idx]) {
+        const leg = this.bp.legs[s.idx];
+        el.append(K({ label: 'CYCLE', min: 0, max: 1, step: 0.05, value: leg.cycle, format: v => v.toFixed(2), onChange: v => { leg.cycle = v; this._apply(); } }), this._pathBtn());
+        hint('CYCLE staggers this leg · tap PATH to shape its step');
+      } else hint('tap a leg to tune its step · SPEED & STRIDE set the pace');
+    } else { // paint
+      const sw = document.createElement('div'); sw.className = 'swatches';
+      [0.02, 0.07, 0.13, 0.22, 0.33, 0.45, 0.55, 0.63, 0.74, 0.88, 0.95].forEach(h => {
+        const b = document.createElement('button'); b.className = 'swatch'; b.style.background = `hsl(${h * 360},72%,55%)`;
+        b.addEventListener('click', () => { this._pushUndo(); this.bp.hue = h; this.bp.footHue = h; this._apply(); fb.tick(); });
+        sw.appendChild(b);
+      });
+      el.append(sw,
+        HueSlider({ label: 'BODY', value: this.bp.hue, onChange: v => set('hue', v) }).root,
+        HueSlider({ label: 'FEET', value: this.bp.footHue, onChange: v => set('footHue', v) }).root,
+        Selector({ label: 'PATTERN', value: this.bp.pattern,
+          options: [{ v: 'none', t: 'PLAIN' }, { v: 'stripes', t: 'STRIPE' }, { v: 'spots', t: 'SPOTS' }, { v: 'dots', t: 'DOTS' }, { v: 'checker', t: 'CHECK' }, { v: 'camo', t: 'CAMO' }, { v: 'plaster', t: 'SPECK' }],
+          onChange: v => { this._pushUndo(); this.bp.pattern = v; this._apply(); } }).root);
+      hint('pick a colour for the body and the feet');
+    }
+  }
+
+  _delBtn() {
+    const b = document.createElement('button'); b.className = 'mini-btn'; b.textContent = 'DELETE';
+    b.addEventListener('click', () => { fb.press(); this._deleteSel(); });
+    return b;
+  }
+  _pathBtn() {
+    const b = document.createElement('button'); b.className = 'mini-btn'; b.textContent = 'PATH ✎';
+    b.addEventListener('click', () => { fb.press(); this._openPath(); });
+    return b;
+  }
+
+  // ── selection + part ops ────────────────────────────────────────────────────
+  _select(sel) {
+    this._sel = sel;
+    if (this.zook) this.zook.setHighlight(sel && sel.type === 'leg' ? sel.idx : -1);
+  }
+  _editLeg(key, val, rebuild = false) {
+    const leg = this._sel && this._sel.type === 'leg' && this.bp.legs[this._sel.idx]; if (!leg) return;
+    leg[key] = val;
+    const partner = this.bp.legs.find(l => l !== leg && l.pair === leg.pair);
+    if (partner && key !== 'cycle') partner[key] = val;
+    this._apply(); if (rebuild) this._renderBar();
+  }
+  _deleteSel() {
+    const s = this._sel; if (!s) return; this._pushUndo();
+    if (s.type === 'leg') {
+      const leg = this.bp.legs[s.idx]; this.bp.legs = this.bp.legs.filter(l => l !== leg && l.pair !== leg.pair);
+    } else { this.bp.blobs.splice(s.idx, 1); }
+    this._select(null); this._apply(); this._renderBar();
+  }
+
+  _addLegAt(along, side) {
+    this._pushUndo();
+    const legs = this.bp.legs, last = legs[legs.length - 1];
+    const len = last ? last.len : 0.72, thick = last ? last.thick : this.bp.legThick, style = this._legStyle || (last ? last.style : 'crawl');
+    if (this._mirror) {
+      const pair = newPairId();
+      legs.push(makeLeg(1, along, { len, thick, style, cycle: 0, pair }));
+      legs.push(makeLeg(-1, along, { len, thick, style, cycle: 0.5, pair }));
+      this._select({ type: 'leg', idx: legs.length - 2 });
+    } else {
+      legs.push(makeLeg(side, along, { len, thick, style, cycle: 0 }));
+      this._select({ type: 'leg', idx: legs.length - 1 });
+    }
+    this._apply(); this._renderBar(); fb.confirm();
+  }
+  _addBlobAtLocal(loc) {
+    this._pushUndo();
+    this.bp.blobs.push({ x: loc.x, y: loc.y, z: loc.z, sx: 0.6, sy: 0.6, sz: 0.6 });
+    this._select({ type: 'blob', idx: this.bp.blobs.length - 1 });
+    this._apply(); this._renderBar(); fb.confirm();
+  }
+
+  // ── touch interaction (touch = mouse) ───────────────────────────────────────
+  _hit(e) {
+    const r = this.canvas.getBoundingClientRect();
+    const nx = ((e.clientX - r.left) / r.width) * 2 - 1, ny = -((e.clientY - r.top) / r.height) * 2 + 1;
+    this._ray.setFromCamera({ x: nx, y: ny }, this.camera);
+    const hits = this._ray.intersectObjects(this.zook.group.children, true);
+    for (const h of hits) {
+      let o = h.object;
+      while (o) {
+        if (o.userData) {
+          if (o.userData.legIndex != null) return { type: 'leg', idx: o.userData.legIndex, point: h.point };
+          if (o.userData.blobIndex != null) return { type: 'blob', idx: o.userData.blobIndex, point: h.point };
+          if (o.userData.isBody) return { type: 'body', point: h.point };
         }
-        this._selBlob = Math.max(0, Math.min(this._selBlob, blobs.length - 1));
-        const bl = blobs[this._selBlob];
-        const tb = document.createElement('div'); tb.className = 'leg-tools';
-        const lbl = document.createElement('span'); lbl.className = 'leg-count'; lbl.textContent = `BLOB ${this._selBlob + 1}/${blobs.length}`;
-        tb.append(
-          btn('◀', () => { this._selBlob = (this._selBlob - 1 + blobs.length) % blobs.length; this._refresh(); }),
-          lbl,
-          btn('▶', () => { this._selBlob = (this._selBlob + 1) % blobs.length; this._refresh(); }),
-          btn('+', () => this._addBlob()), btn('MIRROR', () => this._mirrorBlob()), btn('DEL', () => this._delBlob()),
-        );
-        const r = document.createElement('div'); r.className = 'knob-row';
-        r.append(
-          K({ label: 'POS X', min: -1.2, max: 1.2, step: 0.05, value: bl.x, format: v => v.toFixed(2), onChange: v => this._editBlob('x', v) }),
-          K({ label: 'POS Y', min: -0.8, max: 1.4, step: 0.05, value: bl.y, format: v => v.toFixed(2), onChange: v => this._editBlob('y', v) }),
-          K({ label: 'POS Z', min: -1.4, max: 1.4, step: 0.05, value: bl.z, format: v => v.toFixed(2), onChange: v => this._editBlob('z', v) }),
-        );
-        const r2 = document.createElement('div'); r2.className = 'knob-row';
-        r2.append(
-          K({ label: 'SIZE X', min: 0.2, max: 1.8, step: 0.05, value: bl.sx, onChange: v => this._editBlob('sx', v) }),
-          K({ label: 'SIZE Y', min: 0.2, max: 1.8, step: 0.05, value: bl.sy, onChange: v => this._editBlob('sy', v) }),
-          K({ label: 'SIZE Z', min: 0.2, max: 1.8, step: 0.05, value: bl.sz, onChange: v => this._editBlob('sz', v) }),
-        );
-        const note = document.createElement('div'); note.className = 'deck-note'; note.textContent = 'drag the blob on the model to place it · MIRROR copies it across';
-        el.append(tb, r, r2, note);
-      },
-      add: (el) => {
-        const legs = this.bp.legs;
-        const btn = (t, fn) => { const b = document.createElement('button'); b.className = 'mini-btn'; b.textContent = t; b.addEventListener('click', () => { fb.press(); fn(); }); return b; };
-        const mir = Switch({ label: 'MIRROR', value: this._mirror, onChange: v => { this._mirror = v; this._refresh(); } });
-        // Empty Zook: just prompt to add the first legs.
-        if (!legs.length) {
-          const tb0 = document.createElement('div'); tb0.className = 'leg-tools';
-          tb0.append(btn('+ LEG', () => this._addLeg()));
-          const note0 = document.createElement('div'); note0.className = 'deck-note';
-          note0.textContent = 'no legs yet — add some to make your Zook move';
-          el.append(tb0, mir.root, note0); return;
-        }
-        this._selLeg = Math.max(0, Math.min(this._selLeg, legs.length - 1));
-        const leg = legs[this._selLeg];
+        o = o.parent;
+      }
+    }
+    return null;
+  }
+  _toScreen(x, y, z) {
+    const v = new THREE.Vector3(x, y, z); this.zook.group.localToWorld(v); v.project(this.camera);
+    const r = this.canvas.getBoundingClientRect();
+    return { x: (v.x * 0.5 + 0.5) * r.width + r.left, y: (-v.y * 0.5 + 0.5) * r.height + r.top };
+  }
+  _legDrag(idx) {
+    const leg = this.bp.legs[idx]; const x = leg.side * this.bp.width * 0.4, y = -this.bp.height * 0.32;
+    return { kind: 'leg', idx, A: this._toScreen(x, y, -this.bp.len * 0.46), B: this._toScreen(x, y, this.bp.len * 0.46) };
+  }
+  _blobDrag(idx, e) {
+    const bl = this.bp.blobs[idx];
+    const O = this._toScreen(bl.x, bl.y, bl.z), Pz = this._toScreen(bl.x, bl.y, bl.z + 1), Py = this._toScreen(bl.x, bl.y + 1, bl.z);
+    return { kind: 'blob', idx, az: { x: Pz.x - O.x, y: Pz.y - O.y }, ay: { x: Py.x - O.x, y: Py.y - O.y }, startPx: { x: e.clientX, y: e.clientY }, sz: bl.z, sy: bl.y };
+  }
 
-        // Toolbar: select ◀ ▶ · add · delete.
-        const tb = document.createElement('div'); tb.className = 'leg-tools';
-        const lbl = document.createElement('span'); lbl.className = 'leg-count'; lbl.textContent = `LEG ${this._selLeg + 1}/${legs.length}`;
-        tb.append(
-          btn('◀', () => { this._selLeg = (this._selLeg - 1 + legs.length) % legs.length; this._refresh(); }),
-          lbl,
-          btn('▶', () => { this._selLeg = (this._selLeg + 1) % legs.length; this._refresh(); }),
-          btn('+ LEG', () => this._addLeg()),
-          btn('DEL', () => this._delLeg()),
-        );
+  _onDown(e) {
+    if (!this.zook) return;
+    const hit = this._hit(e);
+    e.preventDefault();
+    if (this._mode === 'shape') {
+      if (hit && hit.type === 'body') this._drag = { kind: 'shape', w: this.bp.width, h: this.bp.height, x: e.clientX, y: e.clientY };
+      else this._orbit(e);
+    } else if (this._mode === 'add') {
+      if (hit && hit.type === 'leg') { this._select({ type: 'leg', idx: hit.idx }); this._renderBar(); this._drag = this._legDrag(hit.idx); }
+      else if (hit && hit.type === 'blob') { this._select({ type: 'blob', idx: hit.idx }); this._renderBar(); this._drag = this._blobDrag(hit.idx, e); }
+      else if (hit && hit.type === 'body') {
+        const loc = this.zook.group.worldToLocal(hit.point.clone());
+        if (this._addType === 'blob') { this._addBlobAtLocal(loc); this._drag = this._blobDrag(this._sel.idx, e); }
+        else { const along = Math.max(-1, Math.min(1, loc.z / (this.bp.len * 0.46))); this._addLegAt(along, loc.x < 0 ? -1 : 1); this._drag = this._legDrag(this._sel.idx); }
+      } else this._orbit(e);
+    } else if (this._mode === 'move') {
+      if (hit && hit.type === 'leg') { this._select({ type: 'leg', idx: hit.idx }); this._renderBar(); this._drag = this._legDrag(hit.idx); }
+      else this._orbit(e);
+    } else this._orbit(e);
+  }
+  _orbit(e) { this._drag = { kind: 'orbit', x: e.clientX, base: this.turntable.rotation.y }; }
 
-        const style = Selector({ label: 'LEG PART', value: leg.style,
-          options: [{ v: 'crawl', t: 'CRAWL' }, { v: 'paddle', t: 'PADDLE' }, { v: 'stalk', t: 'STALK' },
-                    { v: 'step', t: 'STEP' }, { v: 'stomp', t: 'STOMP' }, { v: 'push', t: 'PUSH' }, { v: 'flipper', t: 'FLIP' }],
-          onChange: v => this._editLeg('style', v, true) });
+  _onMove(e) {
+    const d = this._drag; if (!d) return;
+    e.preventDefault();
+    if (d.kind === 'orbit') { this.turntable.rotation.y = d.base + (e.clientX - d.x) * 0.01; return; }
+    if (d.kind === 'shape') {
+      this.bp.width = Math.max(0.5, Math.min(1.8, d.w + (e.clientX - d.x) * 0.006));
+      this.bp.height = Math.max(0.4, Math.min(1.4, d.h - (e.clientY - d.y) * 0.006));
+      this._apply(); return;
+    }
+    if (d.kind === 'leg') {
+      const A = d.A, B = d.B, abx = B.x - A.x, aby = B.y - A.y, l2 = abx * abx + aby * aby || 1;
+      let t = ((e.clientX - A.x) * abx + (e.clientY - A.y) * aby) / l2; t = Math.max(0, Math.min(1, t));
+      const along = Math.round((-1 + t * 2) * 20) / 20;
+      const leg = this.bp.legs[d.idx]; if (!leg) return;
+      leg.along = along; const partner = this.bp.legs.find(l => l !== leg && l.pair === leg.pair); if (partner) partner.along = along;
+      this._apply(); return;
+    }
+    if (d.kind === 'blob') {
+      const dx = e.clientX - d.startPx.x, dy = e.clientY - d.startPx.y, det = d.az.x * d.ay.y - d.ay.x * d.az.y || 1;
+      const dz = (dx * d.ay.y - d.ay.x * dy) / det, dyl = (d.az.x * dy - dx * d.az.y) / det;
+      const bl = this.bp.blobs[d.idx]; if (!bl) return;
+      bl.z = Math.max(-1.6, Math.min(1.6, Math.round((d.sz + dz) * 20) / 20));
+      bl.y = Math.max(-1.0, Math.min(1.6, Math.round((d.sy + dyl) * 20) / 20));
+      this._apply(); return;
+    }
+  }
+  _onUp() { if (!this._drag) return; const k = this._drag.kind; this._drag = null; if (k === 'leg' || k === 'blob' || k === 'shape') { fb.tick(); this._renderBar(); } }
 
-        const r = document.createElement('div'); r.className = 'knob-row';
-        if (!this._mirror) r.append(K({ label: 'SIDE', min: -1, max: 1, step: 2, value: leg.side, format: v => v < 0 ? 'L' : 'R', onChange: v => this._editLeg('side', v < 0 ? -1 : 1, true) }));
-        r.append(
-          K({ label: 'ALONG',  min: -1, max: 1, step: 0.05, value: leg.along, format: v => v.toFixed(2), onChange: v => this._editLeg('along', v) }),
-          K({ label: 'LENGTH', min: 0.35, max: 1.2, step: 0.05, value: leg.len, onChange: v => this._editLeg('len', v) }),
-          K({ label: 'THICK',  min: 0.1, max: 0.32, step: 0.02, value: leg.thick, onChange: v => this._editLeg('thick', v) }),
-          K({ label: 'CYCLE',  min: 0, max: 1, step: 0.05, value: leg.cycle, format: v => v.toFixed(2), onChange: v => this._editLeg('cycle', v, false, true) }),
-        );
+  // ── foot-path popover (MOVE) ────────────────────────────────────────────────
+  _openPath() {
+    const leg = this._sel && this._sel.type === 'leg' && this.bp.legs[this._sel.idx]; if (!leg) return;
+    if (!Array.isArray(leg.path)) leg.path = defaultPath();
+    const pop = document.createElement('div'); pop.className = 'overlay path-pop';
+    pop.innerHTML = `<div class="path-card">
+      <div class="bar"><b>FOOT PATH</b><button class="mini-btn" data-x>DONE</button></div>
+      <div class="path-pad"><span class="pad-ax pad-fwd">◀ back · fwd ▶</span><span class="pad-ax pad-up">lift ▲</span><span class="pad-ground">ground</span></div>
+      <div class="deck-note">drag the points — low &amp; sweeping BACK pushes the Zook along</div></div>`;
+    const pad = pop.querySelector('.path-pad');
+    const place = (dot, pt) => { dot.style.left = `${(pt.f + 1) / 2 * 100}%`; dot.style.top = `${(1 - pt.h) * 100}%`; };
+    leg.path.forEach((pt, i) => {
+      const dot = document.createElement('div'); dot.className = 'path-dot'; dot.textContent = i + 1; place(dot, pt);
+      let drag = false;
+      dot.addEventListener('pointerdown', ev => { drag = true; dot.setPointerCapture?.(ev.pointerId); ev.preventDefault(); ev.stopPropagation(); });
+      dot.addEventListener('pointermove', ev => {
+        if (!drag) return; const r = pad.getBoundingClientRect();
+        pt.f = Math.max(-1, Math.min(1, ((ev.clientX - r.left) / r.width) * 2 - 1));
+        pt.h = Math.max(0, Math.min(1, 1 - (ev.clientY - r.top) / r.height));
+        place(dot, pt); this._apply();
+      });
+      dot.addEventListener('pointerup', ev => { drag = false; dot.releasePointerCapture?.(ev.pointerId); fb.tick(); });
+      pad.appendChild(dot);
+    });
+    pop.querySelector('[data-x]').addEventListener('click', () => { fb.press(); pop.remove(); });
+    this.mount.appendChild(pop);
+  }
 
-        const setR = (k, v) => { set(k, v); this._refresh(); };
-        const aimOpts = [{ v: 'off', t: 'OFF' }, { v: 'normal', t: 'AWAY' }, { v: 'inverted', t: 'TOWARD' }];
-        const toggles = document.createElement('div'); toggles.className = 'deck-foot';
-        toggles.append(Switch({ label: 'ANTENNAE', value: this.bp.antennae, onChange: v => setR('antennae', v) }).root,
-                       Switch({ label: 'TAIL', value: this.bp.tail, onChange: v => setR('tail', v) }).root);
-        const note = document.createElement('div'); note.className = 'deck-note';
-        note.textContent = this._mirror ? 'MIRROR on — edits both sides · CYCLE is per-leg' : 'MIRROR off — placing single legs';
-        el.append(tb, mir.root, style.root, r, toggles);
-        // Part Targeting (manual Ch13) for the decorative parts.
-        if (this.bp.antennae) el.append(Selector({ label: 'ANT AIM', value: this.bp.antTarget || 'normal', options: aimOpts, onChange: v => set('antTarget', v) }).root);
-        if (this.bp.tail) el.append(Selector({ label: 'TAIL AIM', value: this.bp.tailTarget || 'off', options: aimOpts, onChange: v => set('tailTarget', v) }).root);
-        el.append(note);
-      },
-      path: (el) => {
-        const legs = this.bp.legs;
-        if (!legs.length) { const n = document.createElement('div'); n.className = 'deck-note'; n.textContent = 'add a leg on the ADD page first, then shape its step here'; el.append(n); return; }
-        this._selLeg = Math.max(0, Math.min(this._selLeg, legs.length - 1));
-        const leg = legs[this._selLeg];
-
-        const tb = document.createElement('div'); tb.className = 'leg-tools';
-        const btn = (t, fn) => { const b = document.createElement('button'); b.className = 'mini-btn'; b.textContent = t; b.addEventListener('click', () => { fb.press(); fn(); }); return b; };
-        const lbl = document.createElement('span'); lbl.className = 'leg-count'; lbl.textContent = `FOOT PATH · LEG ${this._selLeg + 1}/${legs.length}`;
-        tb.append(
-          btn('◀', () => { this._selLeg = (this._selLeg - 1 + legs.length) % legs.length; this._refresh(); }),
-          lbl,
-          btn('▶', () => { this._selLeg = (this._selLeg + 1) % legs.length; this._refresh(); }),
-        );
-
-        const move = Selector({ label: 'MOVEMENT', value: leg.move,
-          options: [{ v: 'two', t: 'TWO-PART' }, { v: 'single', t: 'SINGLE' }],
-          onChange: v => { this._pushUndo(); leg.move = v; this._apply(); this._refresh(); } });
-        const mtype = Selector({ label: 'TURN ROLE', value: leg.moveType || 'auto',
-          options: [{ v: 'auto', t: 'AUTO' }, { v: 'always', t: 'ALWAYS' }, { v: 'left', t: 'LEFT' }, { v: 'right', t: 'RIGHT' }],
-          onChange: v => { this._pushUndo(); leg.moveType = v; this._apply(); } });
-
-        // Draggable IK pad: x = fore/aft, y = lift. Drag the numbered points.
-        const pad = document.createElement('div'); pad.className = 'path-pad';
-        pad.innerHTML = `<span class="pad-ax pad-fwd">◀ back · fwd ▶</span><span class="pad-ax pad-up">lift ▲</span><span class="pad-ground">ground</span>`;
-        const place = (dot, pt) => { dot.style.left = `${(pt.f + 1) / 2 * 100}%`; dot.style.top = `${(1 - pt.h) * 100}%`; };
-        leg.path.forEach((pt, i) => {
-          const dot = document.createElement('div'); dot.className = 'path-dot'; dot.textContent = i + 1; place(dot, pt);
-          let drag = false;
-          dot.addEventListener('pointerdown', e => { drag = true; dot.setPointerCapture?.(e.pointerId); e.preventDefault(); });
-          dot.addEventListener('pointermove', e => {
-            if (!drag) return;
-            const r = pad.getBoundingClientRect();
-            pt.f = Math.max(-1, Math.min(1, ((e.clientX - r.left) / r.width) * 2 - 1));
-            pt.h = Math.max(0, Math.min(1, 1 - (e.clientY - r.top) / r.height));
-            place(dot, pt); this._apply();
-          });
-          dot.addEventListener('pointerup', e => { drag = false; dot.releasePointerCapture?.(e.pointerId); fb.tick(); });
-          pad.appendChild(dot);
-        });
-        const note = document.createElement('div'); note.className = 'deck-note';
-        note.textContent = 'drag the foot path — points low & moving back PUSH the Zook along';
-        el.append(tb, move.root, mtype.root, pad, note);
-      },
-      move: (el) => {
-        const r = document.createElement('div'); r.className = 'knob-row';
-        r.append(
-          K({ label: 'SPEED',  min: 1, max: 4, step: 0.1, value: this.bp.speed,  onChange: v => set('speed', v) }),
-          K({ label: 'STRIDE', min: 0.3, max: 1.3, step: 0.05, value: this.bp.stride, onChange: v => set('stride', v) }),
-          K({ label: 'FOOT',   min: 0, max: 0.6, step: 0.05, value: this.bp.footAngle, format: v => v.toFixed(2), onChange: v => set('footAngle', v) }),
-          K({ label: 'STIFF',  min: 0.5, max: 2, step: 0.1, value: this.bp.stiffness, format: v => v.toFixed(1), onChange: v => set('stiffness', v) }),
-          K({ label: 'TURN',   min: 0.5, max: 3, step: 0.1, value: this.bp.turnSharp, onChange: v => set('turnSharp', v) }),
-          K({ label: 'SMOOTH', min: 0, max: 1, step: 0.05, value: this.bp.turnSmooth, format: v => `${Math.round(v * 100)}`, onChange: v => set('turnSmooth', v) }),
-          K({ label: 'AIM', min: 0, max: 1.2, step: 0.1, value: this.bp.targetAngle != null ? this.bp.targetAngle : 0.5, format: v => v.toFixed(1), onChange: v => set('targetAngle', v) }),
-        );
-        const note = document.createElement('div'); note.className = 'deck-note';
-        note.textContent = 'set each leg’s CYCLE on the ADD page to stagger the gait · AIM is the Part Targeting angle';
-        el.append(r, note);
-      },
-      paint: (el) => {
-        // Modern colour swatches — quick-pick a body+feet colour.
-        const sw = document.createElement('div'); sw.className = 'swatches';
-        [0.02, 0.07, 0.13, 0.22, 0.33, 0.45, 0.55, 0.63, 0.74, 0.88, 0.95].forEach(h => {
-          const b = document.createElement('button'); b.className = 'swatch';
-          b.style.background = `hsl(${h * 360},72%,55%)`;
-          b.addEventListener('click', () => { this._pushUndo(); this.bp.hue = h; this.bp.footHue = h; this._apply(); fb.tick(); this._refresh(); });
-          sw.appendChild(b);
-        });
-        const hue  = HueSlider({ label: 'BODY COLOUR', value: this.bp.hue,     onChange: v => set('hue', v) });
-        const feet = HueSlider({ label: 'FEET COLOUR', value: this.bp.footHue, onChange: v => set('footHue', v) });
-        const pat = Selector({ label: 'PATTERN', value: this.bp.pattern,
-          options: [{ v: 'none', t: 'PLAIN' }, { v: 'stripes', t: 'STRIPES' }, { v: 'spots', t: 'SPOTS' },
-                    { v: 'dots', t: 'DOTS' }, { v: 'checker', t: 'CHECK' }, { v: 'camo', t: 'CAMO' }, { v: 'plaster', t: 'SPECK' }],
-          onChange: v => { this._pushUndo(); this.bp.pattern = v; this._apply(); } });
-        const r2 = document.createElement('div'); r2.className = 'knob-row';
-        r2.append(
-          K({ label: 'BRIGHT', min: -1, max: 1, step: 0.1, value: this.bp.bright || 0, format: v => v.toFixed(1), onChange: v => set('bright', v) }),
-          K({ label: 'TEX SIZE', min: 0.5, max: 3, step: 0.25, value: this.bp.patternScale || 1, format: v => v.toFixed(2), onChange: v => set('patternScale', v) }),
-        );
-        el.append(sw, hue.root, feet.root, pat.root, r2);
-      },
+  _helpText() {
+    const tips = {
+      shape: 'SHAPE — drag the body to stretch it: across for width, up/down for height. The red arrow shows the way it walks.',
+      add: 'ADD — tap the body where you want a leg! MIRROR adds a matching pair; drag a leg to move it. Switch to BLOB to add clay lumps.',
+      move: 'MOVE — SPEED and STRIDE set the pace. Tap a leg to stagger its CYCLE and shape its foot PATH.',
+      paint: 'PAINT — pick a colour for the body and the feet, and a pattern.',
     };
+    const d = this._diagnose();
+    return (tips[this._mode] || '') + (d.startsWith('Looking') ? '' : ' — ' + d);
+  }
+
+  // Coach the build from the real Zook Kit fix-it table (research paper, Table 2).
+  _diagnose() {
+    const bp = this.bp, legs = bp.legs || [];
+    const L = legs.filter(l => l.side < 0).length, R = legs.filter(l => l.side > 0).length;
+    if (!legs.length) return "No legs yet — switch to ADD and tap the body to place some!";
+    if (legs.length < 2) return "One leg won't do — it'll just flop. Add more, on both sides!";
+    if (L === 0 || R === 0) return "All the legs are on one side — mirror them or it'll topple over.";
+    if (bp.width < 0.9) return "It's narrow and will tip — widen the body for a stable stance.";
+    const phases = new Set(legs.map(l => Math.round((l.cycle || 0) * 12)));
+    if (phases.size < 2) return "Every leg steps together — stagger each leg's CYCLE so it doesn't limp.";
+    if (bp.stride < 0.5) return "Small steps! Raise STRIDE on the MOVE page for a longer step.";
+    if (bp.speed < 2) return "It'll walk, not run — raise SPEED to quicken the gait cycle.";
+    return "Looking sharp! Send it to the test table and see how it scurries.";
   }
 }
