@@ -1,12 +1,12 @@
 /**
- * run.js — ZOOK RUN: a top-down tilt-timing racer (Super Monkey Ball × Tap Hero).
+ * run.js — ZOOK RUN: a Super-Monkey-Ball-style tilt racer.
  *
- * Your Zook auto-runs down a track seen from above. A stream of cues — TURN
- * LEFT/RIGHT, INCLINE, DROP — approaches; each flashes a warning ~1s ahead at
- * the top of the screen. Tilt the phone (or tap the on-screen pads) in the cued
- * direction at the right moment to nail it and surge faster; mistime it and you
- * bog down. First to the finish wins. Same seed → identical track for both
- * players, so online races are fair (each renders its own Zook locally).
+ * Your Zook auto-runs down a WINDING ribbon of a track seen from a chase camera.
+ * TILT to steer left/right and lean forward to accelerate / back to brake. The
+ * track snakes left and right, narrows, and is strewn with obstacles (cones and
+ * blocks) you must steer AROUND — clip one and you bog down; stray off the ribbon
+ * and you slow to a crawl. Grab the floating pips for a speed boost and points.
+ * Same seed → identical track for both players, so online races are fair.
  */
 
 import * as THREE from 'three';
@@ -15,52 +15,64 @@ import { setCamera } from '../engine/renderer.js';
 import { fb } from '../sys/feedback.js';
 import { guide } from '../sys/guide.js';
 
-const LANE = 3.2;             // half-width of the track
-const FINISH = 160;          // track length (world units)
-const TYPES = ['L', 'R', 'UP', 'DOWN'];
-const ICON = { L: '◀', R: '▶', UP: '⛰', DOWN: '▽' };
-const NAME = { L: 'LEFT', R: 'RIGHT', UP: 'INCLINE', DOWN: 'DROP' };
+const LANE = 3.4;             // half-width of the ribbon
+const FINISH = 200;           // track length (world units)
+const SEG = 2.2;              // track segment spacing
 
 function mulberry32(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 
 export class ZookRun {
   constructor({ scene, camera, canvas, mount, bp, seed = 1, onExit, onFinish, vsName }) {
     Object.assign(this, { scene, camera, canvas, mount, bp, seed, onExit, onFinish, vsName });
-    this.dist = 0; this.speed = 7; this.base = 7; this.x = 0; this.tilt = { lr: 0, fb: 0 };
-    this._action = { dir: null, t: -9 }; this.combo = 0; this.best = 0; this.score = 0;
-    this.done = false; this.started = false; this.t = 0; this._meshes = [];
+    this.dist = 0; this.speed = 8; this.x = 0; this.tilt = { lr: 0, fb: 0 }; this._padLR = 0;
+    this.score = 0; this.done = false; this.t = 0; this._meshes = [];
+    this._obstacles = []; this._pips = []; this._offT = 0; this._camX = 0;
     this._onTilt = this._onTilt.bind(this);
+    // Winding centreline of the ribbon, as a function of distance travelled.
+    const rnd = mulberry32(seed);
+    const a1 = 2.2 + rnd() * 2.0, a2 = 3.0 + rnd() * 2.5;
+    const f1 = 0.05 + rnd() * 0.02, f2 = 0.018 + rnd() * 0.01, p1 = rnd() * 6, p2 = rnd() * 6;
+    this.path = (d) => Math.sin(d * f1 + p1) * a1 + Math.sin(d * f2 + p2) * a2;
+    this._rnd = rnd;
   }
 
   enter() {
-    // Track + lane markings.
-    const track = new THREE.Mesh(new THREE.BoxGeometry(LANE * 2 + 1.2, 0.4, FINISH + 40),
-      new THREE.MeshStandardMaterial({ color: 0xeee7d6, roughness: 0.85 }));
-    track.position.set(0, -0.2, -FINISH / 2 + 6); track.receiveShadow = true;
-    this.scene.add(track); this._meshes.push(track);
-    for (let z = 4; z > -FINISH - 6; z -= 4) {
-      const m = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.02, 1.6), new THREE.MeshStandardMaterial({ color: 0xcbb98f }));
-      m.position.set(0, 0.01, z); this.scene.add(m); this._meshes.push(m);
+    // Build the winding ribbon out of short segments + edge rails.
+    const railL = new THREE.MeshStandardMaterial({ color: 0xff8a1e, roughness: 0.6 });
+    for (let d = -2; d < FINISH + 4; d += SEG) {
+      const cx = this.path(d), nx = this.path(d + SEG);
+      const ang = Math.atan2(nx - cx, SEG);
+      const seg = new THREE.Mesh(new THREE.BoxGeometry(LANE * 2, 0.4, SEG + 0.3),
+        new THREE.MeshStandardMaterial({ color: (Math.floor(d / SEG) % 2) ? 0xeee7d6 : 0xe6dcc4, roughness: 0.85 }));
+      seg.position.set(cx, -0.2, -d); seg.rotation.y = ang; seg.receiveShadow = true;
+      this.scene.add(seg); this._meshes.push(seg);
+      // edge rails
+      for (const s of [-1, 1]) {
+        const r = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.3, SEG + 0.3), railL);
+        r.position.set(cx + s * LANE, 0.0, -d); r.rotation.y = ang; this.scene.add(r); this._meshes.push(r);
+      }
     }
-    // Cues from the seed.
-    const rnd = mulberry32(this.seed);
-    this.cues = [];
-    for (let d = 14; d < FINISH - 6; d += 7 + Math.floor(rnd() * 6)) {
-      const type = TYPES[Math.floor(rnd() * TYPES.length)];
-      this.cues.push({ d, type, done: false });
-      this._cueMarker(d, type);
+    // Obstacles + pips, spaced from the seed, offset to one side of the centre.
+    const rnd = this._rnd;
+    for (let d = 16; d < FINISH - 6; d += 6 + rnd() * 6) {
+      const side = rnd() < 0.5 ? -1 : 1;
+      const off = side * (0.6 + rnd() * (LANE - 1.0));
+      const cx = this.path(d) + off;
+      if (rnd() < 0.7) this._cone(cx, -d); else this._block(cx, -d, 1.2 + rnd() * 1.2);
+      // a pip on the opposite (safe) side
+      if (rnd() < 0.6) this._pip(this.path(d) - off * 0.8, -d - 2);
     }
-    // Finish line.
-    const fin = new THREE.Mesh(new THREE.BoxGeometry(LANE * 2 + 1.2, 0.06, 0.6),
-      new THREE.MeshStandardMaterial({ color: 0x222222 }));
-    fin.position.set(0, 0.03, -FINISH); this.scene.add(fin); this._meshes.push(fin);
 
     this.zook = new Zook(this.bp, { scene: this.scene, preview: true, pos: { x: 0, z: 0 } });
-    setCamera({ x: 0, y: 9, z: 7 }, { x: 0, y: 0, z: -4 }, true);
+    // Finish line.
+    const fx = this.path(FINISH);
+    const fin = new THREE.Mesh(new THREE.BoxGeometry(LANE * 2, 0.06, 0.6), new THREE.MeshStandardMaterial({ color: 0x222222 }));
+    fin.position.set(fx, 0.03, -FINISH); this.scene.add(fin); this._meshes.push(fin);
 
+    setCamera({ x: 0, y: 6.5, z: 9 }, { x: 0, y: 0, z: -6 }, true);
     this._buildHud();
     window.addEventListener('deviceorientation', this._onTilt);
-    guide.now('Lean into the turns and bumps as they hit the line — nail the timing to surge ahead!');
+    guide.now('Tilt to steer round the cones and off the edges — lean forward to GO, back to brake. Grab the pips!');
   }
 
   exit() {
@@ -70,56 +82,93 @@ export class ZookRun {
     this._meshes = []; if (this._hud) this._hud.remove();
   }
 
-  _cueMarker(d, type) {
-    const colour = type === 'L' || type === 'R' ? 0x3f6fd8 : type === 'UP' ? 0xff8a1e : 0x2bb6a6;
-    const m = new THREE.Mesh(new THREE.BoxGeometry(type === 'UP' || type === 'DOWN' ? LANE * 2 : 0.7, 0.5, 0.7),
-      new THREE.MeshStandardMaterial({ color: colour, roughness: 0.6 }));
-    const x = type === 'L' ? -LANE : type === 'R' ? LANE : 0;
-    m.position.set(x, 0.25, -d); if (type === 'UP') m.rotation.x = -0.3;
-    this.scene.add(m); this._meshes.push(m);
+  _cone(x, z) {
+    const m = new THREE.Mesh(new THREE.ConeGeometry(0.45, 1.0, 12),
+      new THREE.MeshStandardMaterial({ color: 0xff5a3c, roughness: 0.6, flatShading: true }));
+    m.position.set(x, 0.5, z); m.castShadow = true; this.scene.add(m); this._meshes.push(m);
+    this._obstacles.push({ x, z, r: 0.7, mesh: m });
+  }
+  _block(x, z, w) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, 0.9, 0.7),
+      new THREE.MeshStandardMaterial({ color: 0x6b5b8a, roughness: 0.7 }));
+    m.position.set(x, 0.45, z); m.castShadow = true; this.scene.add(m); this._meshes.push(m);
+    this._obstacles.push({ x, z, r: w / 2 + 0.4, mesh: m });
+  }
+  _pip(x, z) {
+    const m = new THREE.Mesh(new THREE.IcosahedronGeometry(0.32, 0),
+      new THREE.MeshStandardMaterial({ color: 0x33d6a6, roughness: 0.3, emissive: 0x0a3, emissiveIntensity: 0.3 }));
+    m.position.set(x, 0.7, z); this.scene.add(m); this._meshes.push(m);
+    this._pips.push({ x, z, got: false, mesh: m });
   }
 
   // ── input ──────────────────────────────────────────────────────────────────
   _onTilt(e) {
-    if (e.gamma != null) this.tilt.lr = Math.max(-1, Math.min(1, e.gamma / 30));
-    if (e.beta != null) this.tilt.fb = Math.max(-1, Math.min(1, (e.beta - 45) / 30));
-    // Derive discrete actions from strong tilts.
-    if (this.tilt.lr < -0.5) this._fire('L'); else if (this.tilt.lr > 0.5) this._fire('R');
-    if (this.tilt.fb < -0.5) this._fire('UP'); else if (this.tilt.fb > 0.5) this._fire('DOWN');
+    if (e.gamma != null) this.tilt.lr = Math.max(-1, Math.min(1, e.gamma / 28));
+    if (e.beta != null) this.tilt.fb = Math.max(-1, Math.min(1, (e.beta - 45) / 28));
   }
-  _fire(dir) { this._action = { dir, t: this.t }; }
 
   // ── loop ──────────────────────────────────────────────────────────────────
   update(dt) {
     if (!this.zook) return;
     this.t += dt;
+    const steer = Math.max(-1, Math.min(1, this.tilt.lr + this._padLR));
     if (!this.done) {
-      this.dist += this.speed * dt;
-      this.speed += (this.base - this.speed) * Math.min(1, dt * 1.5);      // ease back to base
-      // lateral from tilt (Monkey Ball feel)
-      this.x += this.tilt.lr * dt * 5; this.x = Math.max(-LANE, Math.min(LANE, this.x));
-      // resolve cues as they reach the Zook (the "hit line")
-      for (const c of this.cues) {
-        if (c.done || this.dist < c.d) continue;
-        c.done = true;
-        const hit = this._action.dir === c.type && (this.t - this._action.t) < 0.35;
-        if (hit) { this.combo++; this.best = Math.max(this.best, this.combo); this.score += 10 * this.combo; this.speed = Math.min(16, this.speed + 3.2); fb.confirm(); }
-        else { this.combo = 0; this.speed = Math.max(3.5, this.speed * 0.55); fb.thud(); }
-        this._flash(hit);
+      // accelerate/brake from forward lean (and pads default to rolling).
+      const target = 8 + Math.max(0, -this.tilt.fb) * 12 - Math.max(0, this.tilt.fb) * 5;
+      this.speed += (target - this.speed) * Math.min(1, dt * 1.4);
+
+      // steer — authority scales a little with speed (Monkey Ball roll).
+      this.x += steer * dt * (5 + this.speed * 0.25);
+
+      // off the ribbon? bog down and warn.
+      const cx = this.path(this.dist);
+      const off = Math.abs(this.x - cx);
+      if (off > LANE) {
+        this.x = cx + Math.sign(this.x - cx) * LANE;   // clamp to the rail
+        this.speed = Math.max(3, this.speed * 0.9);
+        this._offT += dt;
+        if (this._offT > 0.1) { this._warn('CAREFUL!', 'bad'); fb.tick(); this._offT = 0; }
       }
+
+      // obstacle hits
+      for (const o of this._obstacles) {
+        if (o.hit) continue;
+        const wz = -this.dist;
+        if (Math.abs(wz - o.z) < 0.9 && Math.abs(this.x - o.x) < o.r) {
+          o.hit = true; this.speed = Math.max(2.5, this.speed * 0.45);
+          this.x += Math.sign(this.x - o.x || 1) * 0.6;       // bounce aside
+          o.mesh.material.color.set(0x888888); fb.thud(); this._warn('OOF!', 'bad');
+        }
+      }
+      // pips
+      for (const p of this._pips) {
+        if (p.got) continue;
+        const wz = -this.dist;
+        if (Math.abs(wz - p.z) < 0.9 && Math.abs(this.x - p.x) < 0.8) {
+          p.got = true; this.score += 50; this.speed = Math.min(22, this.speed + 1.8);
+          this.scene.remove(p.mesh); fb.confirm(); this._warn('+50', 'good');
+        }
+      }
+
+      this.dist += this.speed * dt;
       if (this.dist >= FINISH) { this.done = true; this._finish(); }
     }
-    // place Zook + follow camera (top-down-ish)
+
+    // animate pips spinning
+    for (const p of this._pips) if (!p.got) { p.mesh.rotation.y += dt * 3; p.mesh.position.y = 0.7 + Math.sin(this.t * 4 + p.z) * 0.12; }
+
+    // place Zook + chase camera that leans into the steer.
     this.zook.step(dt, { walk: true });
+    const cx = this.path(this.dist);
     this.zook.group.position.set(this.x, this.zook.dims.rest, -this.dist);
-    this.zook.group.rotation.y = -this.tilt.lr * 0.4;
-    setCamera({ x: 0, y: 9, z: -this.dist + 7 }, { x: 0, y: 0, z: -this.dist - 4 });
+    this.zook.group.rotation.y = Math.atan2(this.path(this.dist + 2) - cx, 2) - steer * 0.4;
+    this._camX += (this.x * 0.6 - this._camX) * Math.min(1, dt * 3);
+    setCamera({ x: this._camX, y: 6.5, z: -this.dist + 9 }, { x: this.x * 0.4, y: 0.3, z: -this.dist - 6 });
     this._hudUpdate();
   }
 
   _finish() {
-    const time = this.t;
-    fb.win();
+    const time = this.t; fb.win();
     if (this.onFinish) this.onFinish(time, this.score);
     else this._result(`Finished! ${time.toFixed(1)}s · ${this.score} pts`);
   }
@@ -138,36 +187,33 @@ export class ZookRun {
     h.innerHTML = `
       <button class="game-back" data-back><img src="./assets/btn-back.png" alt="Menu"/></button>
       <div class="run-warn"></div>
-      <div class="run-stats"><span class="run-combo">×0</span><div class="run-prog"><i></i></div><span class="run-spd">7.0</span></div>
+      <div class="run-stats"><span class="run-time">0.0s</span><div class="run-prog"><i></i></div><span class="run-spd">8.0</span></div>
       <div class="run-pads">
-        <button class="run-pad" data-d="L">◀</button>
-        <div class="run-pad-col"><button class="run-pad" data-d="UP">⛰</button><button class="run-pad" data-d="DOWN">▽</button></div>
-        <button class="run-pad" data-d="R">▶</button>
+        <button class="run-pad steer" data-d="L">◀</button>
+        <button class="run-pad" data-d="GO">GO</button>
+        <button class="run-pad steer" data-d="R">▶</button>
       </div>`;
     this.mount.appendChild(h); this._hud = h;
-    h.querySelectorAll('[data-d]').forEach(b => b.addEventListener('pointerdown', (e) => { e.preventDefault(); this._fire(b.dataset.d); b.classList.add('on'); setTimeout(() => b.classList.remove('on'), 120); }));
+    h.querySelector('[data-back]').addEventListener('click', () => { fb.press(); this.onExit && this.onExit(); });
+    const set = (d, on) => {
+      if (d === 'L') this._padLR = on ? -1 : 0;
+      else if (d === 'R') this._padLR = on ? 1 : 0;
+      else if (d === 'GO') this.tilt.fb = on ? -1 : 0;
+    };
+    h.querySelectorAll('[data-d]').forEach(b => {
+      const d = b.dataset.d;
+      const dn = (e) => { e.preventDefault(); set(d, true); b.classList.add('on'); };
+      const up = () => { set(d, false); b.classList.remove('on'); };
+      b.addEventListener('pointerdown', dn); b.addEventListener('pointerup', up);
+      b.addEventListener('pointerleave', up); b.addEventListener('pointercancel', up);
+    });
     this._warnEl = h.querySelector('.run-warn');
   }
-  _flash(hit) {
-    this._warnEl.textContent = hit ? 'NICE!' : 'MISS';
-    this._warnEl.className = 'run-warn ' + (hit ? 'good' : 'bad');
-  }
+  _warn(text, cls) { this._warnEl.textContent = text; this._warnEl.className = 'run-warn ' + cls; this._fadeT = 0; }
   _hudUpdate() {
     const h = this._hud; if (!h) return;
-    // next upcoming cue → warning ~1s ahead
-    let next = null;
-    for (const c of this.cues) { if (!c.done && c.d >= this.dist) { next = c; break; } }
-    if (next) {
-      const tt = (next.d - this.dist) / Math.max(1, this.speed);
-      if (tt < 1.0 && !this._warnEl.classList.contains('good') && !this._warnEl.classList.contains('bad')) {
-        this._warnEl.textContent = `${ICON[next.type]} ${NAME[next.type]}`;
-        this._warnEl.className = 'run-warn live'; this._warnEl.style.opacity = String(Math.min(1, 1.2 - tt));
-      }
-    }
-    if (this._warnEl.classList.contains('good') || this._warnEl.classList.contains('bad')) {
-      this._fadeT = (this._fadeT || 0) + 0.016; if (this._fadeT > 0.4) { this._warnEl.className = 'run-warn'; this._warnEl.textContent = ''; this._fadeT = 0; }
-    }
-    h.querySelector('.run-combo').textContent = '×' + this.combo;
+    if (this._warnEl.textContent) { this._fadeT = (this._fadeT || 0) + 0.016; if (this._fadeT > 0.6) { this._warnEl.className = 'run-warn'; this._warnEl.textContent = ''; } }
+    h.querySelector('.run-time').textContent = this.t.toFixed(1) + 's';
     h.querySelector('.run-spd').textContent = this.speed.toFixed(1);
     h.querySelector('.run-prog i').style.width = Math.min(100, (this.dist / FINISH) * 100) + '%';
   }

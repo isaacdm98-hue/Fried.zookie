@@ -139,22 +139,16 @@ export class App {
 
   // ── Title ────────────────────────────────────────────────────────────────
   _title() {
-    // Hero Zook standing over the hand-drawn yellow panel (a textured plane).
+    // Hero Zook facing the user; the hand-drawn (animated APNG) doodle is shown
+    // as a DOM image so it actually animates.
     this._showHero(this.active.bp);
-    const tex = new THREE.TextureLoader().load('./assets/blob-idea-yellow.png');
-    tex.colorSpace = THREE.SRGBColorSpace;
-    const panel = new THREE.Mesh(new THREE.PlaneGeometry(3.8, 3.8),
-      new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false }));
-    panel.position.set(0, 1.15, -1.4);
-    this._hero.add(panel);
-    // Face the Zook toward the user (front is -Z; rotate just the creature so
-    // it greets the camera while the yellow panel stays behind it).
     this._heroSpin = false; this._hero.rotation.y = 0; this._heroZook.group.rotation.y = Math.PI;
-    setCamera({ x: 0, y: 1.5, z: 5.2 }, { x: 0, y: 1.05, z: 0 }, true);
+    setCamera({ x: 0, y: 1.5, z: 5.2 }, { x: 0, y: 1.0, z: 0 }, true);
 
     const d = this._overlayEl(`
       <div class="title-wrap">
         <div class="title-top">
+          <img class="t-doodle" src="./assets/blob-idea-yellow.png" alt="" />
           <img class="title-word" src="./assets/title-friedzooki.png" alt="FriedZooki" />
           <div class="t-sub">build · tune · compete</div>
         </div>

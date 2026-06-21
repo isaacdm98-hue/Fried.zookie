@@ -67,7 +67,8 @@ export class ContestScene {
     for (const m of this._meshes) { this.scene.remove(m); m.geometry?.dispose?.(); }
     for (const b of this._bodies) { try { this.world.removeRigidBody(b); } catch (_) {} }
     for (const r of this._rings) this.scene.remove(r);
-    this._meshes = []; this._bodies = []; this._rings = []; this._doors = []; this._dynamic = [];
+    if (this._shards) for (const sh of this._shards) { this.scene.remove(sh.mesh); sh.mesh.geometry?.dispose?.(); sh.mesh.material?.dispose?.(); }
+    this._meshes = []; this._bodies = []; this._rings = []; this._doors = []; this._dynamic = []; this._shards = [];
     this._china = []; this._chinaG = 0; this._chinaR = 0;
     this.green = this.red = this._ball = this._ballMesh = this._platform = null;
   }
@@ -117,16 +118,19 @@ export class ContestScene {
       d.body.setNextKinematicTranslation({ x, y: d.y, z: d.z });
     }
     if (this._platform) this._spinPlatform(dt);
-    // China Shop: a knocked-over cup is credited to the nearer Zook.
+    // China Shop: a cup knocked off its plinth is credited to the nearer Zook,
+    // then SMASHES on the floor in a burst of shards.
     if (this.contest.goal === 'china') {
       for (const k of this._china) {
-        if (k.owner) continue;
+        if (k.smashed) continue;
         const t = k.body.translation();
-        if (t.y < 0.25 || Math.hypot(t.x - k.start.x, t.z - k.start.z) > 1.2) {
+        const fellOff = t.y < k.top + 0.15 || Math.hypot(t.x - k.start.x, t.z - k.start.z) > 0.9;
+        if (fellOff) {
           const gp = g.zook.position, rp = r.zook.position;
           k.owner = Math.hypot(t.x - gp.x, t.z - gp.z) <= Math.hypot(t.x - rp.x, t.z - rp.z) ? 'g' : 'r';
           if (k.owner === 'g') this._chinaG++; else this._chinaR++;
-          fb.thud();
+          k.smashed = true;
+          this._smashCup(k);
         }
       }
     }
@@ -154,6 +158,7 @@ export class ContestScene {
     }
     for (const d of this._doors) { const t = d.body.translation(); d.mesh.position.set(t.x, t.y, t.z); }
     for (const o of this._dynamic) { const t = o.body.translation(), r = o.body.rotation(); o.mesh.position.set(t.x, t.y, t.z); o.mesh.quaternion.set(r.x, r.y, r.z, r.w); }
+    this._stepShards(dt);
     this._frameCamera();
   }
 
@@ -253,12 +258,22 @@ export class ContestScene {
     } else if (c.goal === 'tag') {
       this._box({ pos: { x: 0, y: -0.2, z: 0 }, size: { x: 16, y: 0.4, z: 16 }, color: 0xeee7d6 });
     } else if (c.goal === 'china') {
-      this._box({ pos: { x: 0, y: -0.2, z: 0 }, size: { x: 15, y: 0.4, z: 15 }, color: 0xeee7d6 });
-      this._china = [];
+      // A china shop: cups perch on little display plinths. Bump a plinth and the
+      // cup topples off, falls, and SMASHES on the floor in a burst of shards.
+      this._box({ pos: { x: 0, y: -0.2, z: 0 }, size: { x: 15, y: 0.4, z: 15 }, color: 0xe7ddc8 });
+      this._china = []; this._shards = [];
+      const CHINA = [0xdfeaf2, 0xf2dfe6, 0xe2f2df, 0xf2ecdf, 0xdfe6f2];
+      const plinthTop = 0.55;
       for (let i = 0; i < 16; i++) {
-        const x = (Math.random() - 0.5) * 8, z = (Math.random() - 0.5) * 8;
-        const b = this._dynBox({ pos: { x, y: 0.45, z }, size: { x: 0.6, y: 0.9, z: 0.6 }, color: 0xdfeaf2, mass: 0.15 });
-        this._china.push({ body: b, start: { x, z }, owner: null });
+        const x = (Math.random() - 0.5) * 9, z = (Math.random() - 0.5) * 9;
+        // the plinth (fixed display stand)
+        this._box({ pos: { x, y: plinthTop / 2 - 0.05, z }, size: { x: 0.5, y: plinthTop, z: 0.5 }, color: 0xb9a98a });
+        // the cup, resting on top
+        const cy = plinthTop + 0.3;
+        const col = CHINA[i % CHINA.length];
+        this._dynBox({ pos: { x, y: cy, z }, size: { x: 0.45, y: 0.6, z: 0.45 }, color: col, mass: 0.1 });
+        const entry = this._dynamic[this._dynamic.length - 1];
+        this._china.push({ body: entry.body, mesh: entry.mesh, entry, start: { x, z }, top: plinthTop, color: col, owner: null, smashed: false });
       }
     } else if (c.goal === 'ring' || c.goal === 'merry') {
       const disc = new THREE.Mesh(new THREE.CylinderGeometry(c.radius, c.radius + 0.2, 0.4, 40),
@@ -288,6 +303,49 @@ export class ContestScene {
     const b = this.world.createRigidBody(R.RigidBodyDesc.dynamic().setTranslation(pos.x, pos.y, pos.z).setAdditionalMass(mass));
     this.world.createCollider(R.ColliderDesc.cuboid(size.x / 2, size.y / 2, size.z / 2).setFriction(0.7).setRestitution(0.1), b);
     this._dynamic.push({ mesh: m, body: b }); this._bodies.push(b); return b;
+  }
+
+  // Remove a toppled cup and replace it with a short-lived burst of shards.
+  _smashCup(k) {
+    const t = k.body.translation();
+    const x = t.x, y = Math.max(0.15, t.y), z = t.z;
+    // drop the physics cup and its mesh
+    const idx = this._dynamic.indexOf(k.entry);
+    if (idx >= 0) this._dynamic.splice(idx, 1);
+    try { this.world.removeRigidBody(k.body); } catch (e) {}
+    this.scene.remove(k.mesh);
+    const mi = this._meshes.indexOf(k.mesh); if (mi >= 0) this._meshes.splice(mi, 1);
+    k.mesh.geometry.dispose(); k.mesh.material.dispose();
+    // shards
+    if (!this._shards) this._shards = [];
+    for (let i = 0; i < 9; i++) {
+      const s = 0.07 + Math.random() * 0.1;
+      const m = new THREE.Mesh(new THREE.TetrahedronGeometry(s),
+        new THREE.MeshStandardMaterial({ color: k.color, roughness: 0.6, flatShading: true }));
+      m.position.set(x, y, z); m.castShadow = true; this.scene.add(m);
+      const a = Math.random() * Math.PI * 2, sp = 1.4 + Math.random() * 2.4;
+      this._shards.push({ mesh: m, life: 0.9 + Math.random() * 0.4,
+        vel: { x: Math.cos(a) * sp, y: 1.6 + Math.random() * 2.2, z: Math.sin(a) * sp },
+        spin: { x: (Math.random() - 0.5) * 14, y: (Math.random() - 0.5) * 14, z: (Math.random() - 0.5) * 14 } });
+    }
+    fb.thud();
+  }
+
+  _stepShards(dt) {
+    if (!this._shards || !this._shards.length) return;
+    for (let i = this._shards.length - 1; i >= 0; i--) {
+      const sh = this._shards[i];
+      sh.life -= dt; sh.vel.y -= 12 * dt;
+      const p = sh.mesh.position;
+      p.x += sh.vel.x * dt; p.y += sh.vel.y * dt; p.z += sh.vel.z * dt;
+      if (p.y < 0.06) { p.y = 0.06; sh.vel.y *= -0.35; sh.vel.x *= 0.6; sh.vel.z *= 0.6; }
+      sh.mesh.rotation.x += sh.spin.x * dt; sh.mesh.rotation.z += sh.spin.z * dt;
+      sh.mesh.scale.setScalar(Math.max(0.02, Math.min(1, sh.life * 1.4)));
+      if (sh.life <= 0) {
+        this.scene.remove(sh.mesh); sh.mesh.geometry.dispose(); sh.mesh.material.dispose();
+        this._shards.splice(i, 1);
+      }
+    }
   }
 
   _marbles() {
