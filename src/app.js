@@ -202,7 +202,7 @@ export class App {
     const cards = CONTESTS.map(c => `
       <button class="con-card" data-id="${c.id}"><b>${c.name}</b><span>${c.desc}</span></button>`).join('');
     const d = this._overlayEl(`<div class="sheet">
-      <div class="bar"><button class="mini-btn" data-back>‹</button><h2>Contests</h2><span style="width:40px"></span></div>
+      <div class="bar"><button class="mini-btn" data-back>‹</button><h2><img class="h2-ic" src="./assets/blob-idea-red.png" alt=""/>Contests</h2><span style="width:40px"></span></div>
       <button class="con-card coop champ-card" data-champ><b>🏆 CHAMPIONSHIP</b><span>five contests, one champion — like a full episode</span></button>
       <div class="con-grid">${cards}</div></div>`);
     d.querySelector('[data-back]').addEventListener('click', () => { fb.press(); this.go('menu'); });
@@ -328,9 +328,9 @@ export class App {
       <h3 class="mz-h">${title}</h3>
       <div class="mz-list">${arr.length ? arr.map((z, i) =>
         `<button class="mz-item" data-saved="${saved}" data-i="${i}"><span>${z.name}</span><em>open ›</em></button>`).join('')
-        : '<p class="muted small">none yet — go build one!</p>'}</div>`;
+        : '<img class="mz-empty" src="./assets/lilypad.png" alt=""/><p class="muted small">none yet — go build one!</p>'}</div>`;
     const d = this._overlayEl(`<div class="sheet">
-      <div class="bar"><button class="mini-btn" data-back>‹</button><h2>My Zooks</h2>
+      <div class="bar"><button class="mini-btn" data-back>‹</button><h2><img class="h2-ic" src="./assets/tab-zook.png" alt=""/>My Zooks</h2>
         <button class="mini-btn wide" data-new>NEW</button></div>
       ${list('Saved', roster, 1)}
       ${list('Examples', EXAMPLES, 0)}</div>`);
@@ -356,7 +356,7 @@ export class App {
     this.mode = cs;
     this._replay = { frames: rec.frames, t: 0, playing: true, rate: 1, loop: true, dur: rec.frames.length * 0.05 };
     const d = this._overlayEl(`
-      <div class="con-hud"><span class="vs">⏵ MOTION PLAYER · ${contest.name}</span></div>
+      <div class="con-hud"><span class="vs"><img class="h2-ic" src="./assets/icon-cassette.png" alt=""/>MOTION PLAYER · ${contest.name}</span></div>
       <div class="mp-bar">
         <button class="mini-btn" data-mp="play">❚❚</button>
         <input class="mp-scrub" type="range" min="0" max="1000" value="0" />
@@ -491,7 +491,7 @@ export class App {
   _online() {
     this._netClose();
     const d = this._overlayEl(`<div class="sheet">
-      <div class="bar"><button class="mini-btn" data-back>‹</button><h2>Online Link</h2><span style="width:40px"></span></div>
+      <div class="bar"><button class="mini-btn" data-back>‹</button><h2><img class="h2-ic" src="./assets/icon-link.png" alt=""/>Online Link</h2><span style="width:40px"></span></div>
       <div class="link-panel" id="onl"></div></div>`);
     d.querySelector('[data-back]').addEventListener('click', () => { fb.press(); this._netClose(); this.go('menu'); });
     const box = d.querySelector('#onl');

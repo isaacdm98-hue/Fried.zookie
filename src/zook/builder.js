@@ -223,7 +223,7 @@ export class Builder {
       </div>
       <div class="brail"></div>
       <div class="bfly">
-        <div class="bfly-head"><span class="bfly-title"></span><button class="bfly-x" title="Close">×</button></div>
+        <div class="bfly-head"><span class="bfly-title"></span><button class="bfly-x" title="Close"><img src="./assets/btn-close.png" alt="Close"/></button></div>
         <div class="bfly-body deck"></div>
       </div>`;
     this.mount.appendChild(wrap); this._deck = wrap;
