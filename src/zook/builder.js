@@ -27,10 +27,11 @@ export class Builder {
     this.bp = defaultBlueprint();
     this.name = 'My Zook';
     this.zook = null; this.turntable = null; this._deck = null;
-    this._mode = 'shape'; this._walk = true; this._helper = false;
+    this._mode = 'shape'; this._walk = false; this._helper = false;   // creature stands still while you build (walks only in Test / WALK preview)
     this._mirror = true; this._addType = 'leg';
     this._sel = null;            // { type:'leg'|'blob', idx }
     this._drag = null;
+    this._selBox = null; this._handles = [];
     this._undo = []; this._redo = [];
     this._ray = new THREE.Raycaster();
     this._onDown = this._onDown.bind(this);
@@ -68,6 +69,7 @@ export class Builder {
     window.removeEventListener('pointermove', this._onMove);
     window.removeEventListener('pointerup', this._onUp);
     this._drag = null;
+    this._clearSelBox();
     if (this.zook) { this.zook.dispose(); this.zook = null; }
     if (this.turntable) { this.scene.remove(this.turntable); this.turntable = null; }
     if (this._deck) { this._deck.remove(); this._deck = null; }
@@ -75,6 +77,7 @@ export class Builder {
 
   update(dt) {
     if (this.zook) { this.zook.step(dt, { walk: this._walk }); this.zook.syncMeshes(); }
+    this._updateSelBox();
   }
 
   _apply() { if (this.zook) this.zook.setBlueprint(this.bp, this._sel && this._sel.type === 'leg' ? this._sel.idx : -1); }
@@ -284,6 +287,47 @@ export class Builder {
   _select(sel) {
     this._sel = sel;
     if (this.zook) this.zook.setHighlight(sel && sel.type === 'leg' ? sel.idx : -1);
+    this._updateSelBox();
+  }
+
+  // ── The see-through selection box (the Zook Kit signature) ──────────────────
+  // A green wireframe box wraps the selected part, with little face handles you
+  // DRAG to scale it — exactly like squishing modelling clay in the original.
+  _selObj() {
+    const s = this._sel; if (!s || !this.zook) return null;
+    if (s.type === 'leg') { const lg = this.zook._legs[s.idx]; return lg && lg.pivot; }
+    if (s.type === 'blob') { return this.zook._blobs && this.zook._blobs[s.idx]; }
+    return null;
+  }
+  _ensureSelBox() {
+    if (this._selBox) return;
+    const lm = new THREE.LineBasicMaterial({ color: 0x39c46a, depthTest: false, transparent: true, opacity: 0.95 });
+    this._selBox = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(1, 1, 1)), lm);
+    this._selBox.renderOrder = 999; this.scene.add(this._selBox);
+    const hm = new THREE.MeshBasicMaterial({ color: 0x2bb66a, depthTest: false, transparent: true, opacity: 0.98 });
+    for (const [axis, sign] of [['x', 1], ['x', -1], ['y', 1], ['y', -1], ['z', 1], ['z', -1]]) {
+      const h = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.16, 0.16), hm);
+      h.renderOrder = 1000; h.userData = { handleAxis: axis, handleSign: sign }; this.scene.add(h); this._handles.push(h);
+    }
+  }
+  _hideSelBox() { if (this._selBox) this._selBox.visible = false; for (const h of this._handles) h.visible = false; }
+  _updateSelBox() {
+    const obj = this._selObj();
+    if (!obj) { this._hideSelBox(); return; }
+    this._ensureSelBox();
+    const box = new THREE.Box3().setFromObject(obj);
+    if (box.isEmpty()) { this._hideSelBox(); return; }
+    const c = box.getCenter(new THREE.Vector3()), sz = box.getSize(new THREE.Vector3());
+    this._selBox.visible = true; this._selBox.position.copy(c);
+    this._selBox.scale.set(Math.max(0.06, sz.x), Math.max(0.06, sz.y), Math.max(0.06, sz.z));
+    for (const h of this._handles) { h.visible = true; const p = c.clone(); p[h.userData.handleAxis] += h.userData.handleSign * sz[h.userData.handleAxis] / 2; h.position.copy(p); }
+    this._selCenter = c; this._selSize = sz;
+  }
+  _clearSelBox() {
+    if (this._selBox) { this.scene.remove(this._selBox); this._selBox.geometry.dispose(); this._selBox.material.dispose(); this._selBox = null; }
+    for (const h of this._handles) { this.scene.remove(h); h.geometry.dispose(); }
+    if (this._handles.length) this._handles[0].material.dispose();
+    this._handles = [];
   }
   _editLeg(key, val, rebuild = false) {
     const leg = this._sel && this._sel.type === 'leg' && this.bp.legs[this._sel.idx]; if (!leg) return;
@@ -356,10 +400,36 @@ export class Builder {
     return { kind: 'blob', idx, az: { x: Pz.x - O.x, y: Pz.y - O.y }, ay: { x: Py.x - O.x, y: Py.y - O.y }, startPx: { x: e.clientX, y: e.clientY }, sz: bl.z, sy: bl.y };
   }
 
+  _worldToScreen(v) {
+    const p = v.clone().project(this.camera); const r = this.canvas.getBoundingClientRect();
+    return { x: (p.x * 0.5 + 0.5) * r.width + r.left, y: (-p.y * 0.5 + 0.5) * r.height + r.top };
+  }
+  _hitHandle(e) {
+    if (!this._handles.length || !this._selBox || !this._selBox.visible) return null;
+    const r = this.canvas.getBoundingClientRect();
+    const nx = ((e.clientX - r.left) / r.width) * 2 - 1, ny = -((e.clientY - r.top) / r.height) * 2 + 1;
+    this._ray.setFromCamera({ x: nx, y: ny }, this.camera);
+    const hh = this._ray.intersectObjects(this._handles.filter(h => h.visible));
+    return hh.length ? hh[0].object : null;
+  }
+  // Begin dragging a face handle to scale the selected part along that axis.
+  _beginScale(handle, e) {
+    const axis = handle.userData.handleAxis;
+    const cs = this._worldToScreen(this._selCenter), hs = this._worldToScreen(handle.position);
+    let dx = hs.x - cs.x, dy = hs.y - cs.y; const L = Math.hypot(dx, dy) || 1; dx /= L; dy /= L;
+    const field = axis === 'x' ? 'sx' : axis === 'y' ? 'sy' : 'sz';
+    const part = this._sel.type === 'leg' ? this.bp.legs[this._sel.idx] : this.bp.blobs[this._sel.idx];
+    this._pushUndo();
+    this._drag = { kind: 'scale', field, dx, dy, sx: e.clientX, sy: e.clientY, startVal: part[field] || 1, type: this._sel.type, idx: this._sel.idx };
+  }
+
   _onDown(e) {
     if (!this.zook) return;
-    const hit = this._hit(e);
     e.preventDefault();
+    // Grabbing a selection-box handle scales the part (the clay-squish interaction).
+    const handle = this._hitHandle(e);
+    if (handle && this._sel) { this._beginScale(handle, e); return; }
+    const hit = this._hit(e);
     if (this._mode === 'shape') {
       if (hit && hit.type === 'body') this._drag = { kind: 'shape', w: this.bp.width, h: this.bp.height, x: e.clientX, y: e.clientY };
       else this._orbit(e);
@@ -386,6 +456,13 @@ export class Builder {
     const d = this._drag; if (!d) return;
     e.preventDefault();
     if (d.kind === 'orbit') { this.turntable.rotation.y = d.base + (e.clientX - d.x) * 0.01; return; }
+    if (d.kind === 'scale') {
+      const proj = (e.clientX - d.sx) * d.dx + (e.clientY - d.sy) * d.dy;   // drag distance along the handle's outward axis
+      const nv = Math.max(0.3, Math.min(2.8, d.startVal + proj * 0.012));
+      if (d.type === 'leg') { const leg = this.bp.legs[d.idx]; if (!leg) return; leg[d.field] = nv; const p = this.bp.legs.find(l => l !== leg && l.pair === leg.pair); if (p) p[d.field] = nv; }
+      else { const bl = this.bp.blobs[d.idx]; if (!bl) return; bl[d.field] = nv; }
+      this._apply(); return;
+    }
     if (d.kind === 'shape') {
       this.bp.width = Math.max(0.5, Math.min(1.8, d.w + (e.clientX - d.x) * 0.006));
       this.bp.height = Math.max(0.4, Math.min(1.4, d.h - (e.clientY - d.y) * 0.006));
@@ -408,7 +485,7 @@ export class Builder {
       this._apply(); return;
     }
   }
-  _onUp() { if (!this._drag) return; const k = this._drag.kind; this._drag = null; if (k === 'leg' || k === 'blob' || k === 'shape') { fb.tick(); this._renderBar(); } }
+  _onUp() { if (!this._drag) return; const k = this._drag.kind; this._drag = null; if (k === 'leg' || k === 'blob' || k === 'shape' || k === 'scale') { fb.tick(); this._renderBar(); } }
 
   // ── foot-path popover (MOVE) ────────────────────────────────────────────────
   // The full IK editor from the manual (Ch12): drag points, tap empty space to
