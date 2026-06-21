@@ -387,12 +387,16 @@ export class Zook {
   _animateLegs(amount, dt = 1 / 60) {
     const { speed, stride, footAngle } = this.bp;
     const fwd = stride * FREACH;
+    // Body transform (for visually planting stance feet in world space).
+    const haveBody = !this.preview && !!this._body;
+    let bpos = null, brot = null, brotC = null;
+    if (haveBody) { bpos = this._body.translation(); brot = this._body.rotation(); brotC = { x: -brot.x, y: -brot.y, z: -brot.z, w: brot.w }; }
     for (const leg of this._legs) {
       const reach = leg.reach;
       // "No movement" parts (Movement Mode = None): a static prop — they hold a
       // neutral pose and never grip, so antennae/tails/fins don't propel.
       if (leg.move === 'none') {
-        leg._footLocal = null;
+        leg._footLocal = null; leg._vlock = null;
         leg.pivot.rotation.set(0, leg.pivot.rotation.y, leg.side * leg.splay);
         leg.knee.rotation.x = 0.2; leg.foot.rotation.x = footAngle;
         continue;
@@ -409,12 +413,24 @@ export class Zook {
         z: leg.hip.z - p.f * fwd * reach * amount,
       });
       const fl = off(cur), flp = off(prev);
-      leg._footLocal = fl;
+      leg._footLocal = fl;                       // physics foot (drives the contact/propulsion)
       leg._footVel = { x: (fl.x - flp.x) / dt, y: (fl.y - flp.y) / dt, z: (fl.z - flp.z) / dt };
       leg._planted = (cur.h * amount) < PLANT_H;
 
+      // ── Visual foot: a planted stance foot stays PUT in the world while the body
+      // strides over it (real walking), instead of skating with the body. This is
+      // cosmetic only — propulsion still comes from the swept physics foot above.
+      let vf = fl;
+      if (haveBody && amount > 0 && leg._planted) {
+        if (!leg._vlock) { const w = quatRot(brot, fl); leg._vlock = { x: bpos.x + w.x, z: bpos.z + w.z }; }
+        const rel = { x: leg._vlock.x - bpos.x, y: (GROUND_Y - 0.02) - bpos.y, z: leg._vlock.z - bpos.z };
+        const lp = quatRot(brotC, rel);
+        // only honour the lock while the foot stays within the leg's reach
+        if (Math.hypot(lp.x - leg.hip.x, lp.y - leg.hip.y, lp.z - leg.hip.z) < reach * 1.05) vf = lp; else leg._vlock = null;
+      } else { leg._vlock = null; }
+
       // Visual 2-bone IK: aim the pivot at the foot, bend the knee to reach it.
-      const dx = fl.x - leg.hip.x, dy = fl.y - leg.hip.y, dz = fl.z - leg.hip.z;
+      const dx = vf.x - leg.hip.x, dy = vf.y - leg.hip.y, dz = vf.z - leg.hip.z;
       const dist = Math.hypot(dx, dy, dz);
       leg.pivot.rotation.x = Math.atan2(dz, -dy);
       leg.pivot.rotation.z = leg.side * leg.splay;

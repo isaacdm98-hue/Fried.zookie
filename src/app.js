@@ -344,9 +344,15 @@ export class App {
   _championship(stage = 0) {
     const STAGES = ['HEAT', 'SEMI-FINAL', 'GRAND FINAL'];
     const opp = randomExample();
-    const ids = CONTESTS.map(c => c.id);
-    for (let i = ids.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [ids[i], ids[j]] = [ids[j], ids[i]]; }
-    const rounds = ids.slice(0, 3).map(id => ({ contest: CONTESTS.find(c => c.id === id) }));
+    // A balanced episode like the show: a racing event, a battle, and a skill
+    // contest, then the Grand Final relay decider.
+    const RACES = ['sprint', 'hurdles', 'ramps', 'steps', 'marbles', 'smash', 'blockpush', 'dodge', 'zigzag', 'assault'];
+    const BATTLES = ['sumo', 'weakest', 'tag', 'merry'];
+    const SKILL = ['china', 'ball'];
+    const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+    const rounds = [pick(RACES), pick(BATTLES), pick(SKILL)]
+      .map(id => ({ contest: CONTESTS.find(c => c.id === id) }))
+      .filter(r => r.contest);
     rounds.push({ contest: { id: 'relay', name: 'Grand Final Relay', desc: 'the decider — first Zook home wins the episode', goal: 'race' }, relay: true });
     music.play('champ');
     this._champ = { opp, rounds, labels: ['CONTEST 1', 'CONTEST 2', 'CONTEST 3', 'RELAY DECIDER'], i: 0, wins: 0, losses: 0, stage, STAGES };

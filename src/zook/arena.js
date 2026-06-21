@@ -141,6 +141,10 @@ export class Arena {
     // timing + top speed + jump height
     const p = this.zook.position;
     this._maxH = Math.max(this._maxH || 0, p.y - this.zook.dims.rest);
+    // High Jump trial: record the best clearance (persisted), with a medal.
+    if (ENVIRONMENTS[this._envIdx].id === 'highjump' && this._maxH > (this._best.jump || 0) + 0.02) {
+      this._best.jump = this._maxH; this._saveBest();
+    }
     if (this._lastPos) {
       const v = Math.hypot(p.x - this._lastPos.x, p.z - this._lastPos.z) / dt;
       this._topSpeed = Math.max(this._topSpeed, v);
@@ -294,6 +298,7 @@ export class Arena {
   _target(id) {
     if (id === 'sprint') return '🥇 under 13s · 🥈 under 20s';
     if (id === 'lap') return '🥇 under 24s · 🥈 under 34s';
+    if (id === 'highjump') return '🥇 over 1.5m · 🥈 over 1.0m — tap JUMP!';
     return '';
   }
   _cycleEnv(d) {
@@ -336,6 +341,7 @@ export class Arena {
         <div class="pp-row"><span>Top jump</span><b>${(this._maxH || 0).toFixed(2)} m</b></div>
         <div class="pp-row"><span>Best sprint</span><b>${this._best.sprint ? this._best.sprint.toFixed(2) + 's  ' + this._medal('sprint', this._best.sprint) : '—'}</b></div>
         <div class="pp-row"><span>Best lap</span><b>${this._best.lap ? this._best.lap.toFixed(2) + 's  ' + this._medal('lap', this._best.lap) : '—'}</b></div>
+        <div class="pp-row"><span>Best jump</span><b>${this._best.jump ? this._best.jump.toFixed(2) + 'm  ' + this._medal('jump', this._best.jump) : '—'}</b></div>
         <button class="chip wide" data-close>CLOSE</button>
       </div>`;
     card.querySelector('[data-close]').addEventListener('click', () => { fb.press(); card.remove(); });
