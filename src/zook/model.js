@@ -334,8 +334,12 @@ export class Zook {
     // Just the body shape — sits well above the floor while standing, and only
     // touches down (belly-flop) if the legs fail to hold it up. Low friction so
     // a toppled body slides rather than sticking; the feet supply real grip.
+    // Each leg is real weight: more legs grip better but a heavy build is slower
+    // to accelerate, so there's an OPTIMAL count to find — you tune to win.
+    const legCount = ensureLegs(this.bp).length;
+    const density = 0.85 + Math.min(8, legCount) * 0.045;     // 2 legs light … 8 heavy
     const col = R.ColliderDesc.cuboid(w / 2, h / 2, l / 2)
-      .setFriction(0.3).setRestitution(0).setDensity(0.85);
+      .setFriction(0.3).setRestitution(0).setDensity(density);
     if (R.CoefficientCombineRule) col.setFrictionCombineRule(R.CoefficientCombineRule.Min);
     this.world.createCollider(col, this._body);
 
@@ -348,6 +352,9 @@ export class Zook {
     const asym = Math.abs(Lc - Rc) / n, sparse = n < 4 ? (4 - n) / 4 : 0, narrow = Math.max(0, 1.0 - this.bp.width);
     this._wonk = Math.max(0, Math.min(1, asym * 0.6 + sparse * 0.35 + narrow * 0.45));
     this._wonkSeed = ((this.bp.len * 7 + this.bp.width * 13 + n * 3) % (Math.PI * 2));
+    // Stance height trade-off: long legs reach further (longer stride) but raise
+    // the centre of mass, so a tall Zook tips more easily. 0 = low & planted.
+    this._tall = Math.max(0, this.dims.rest - 1.0);
   }
 
   _place() {
@@ -408,6 +415,7 @@ export class Zook {
   step(dt, inputs = {}) {
     this._t += dt;
     const walk = inputs.walk !== false;
+    const boost = inputs.boost || 1;     // contest rubber-band (trailing Zook pushes harder)
     this._animateLegs(walk ? 1 : 0, dt);
     // Idle blink — a quick eye-squash every few seconds for a bit of life.
     if (this._eyes && this._eyes.length) {
@@ -466,8 +474,13 @@ export class Zook {
         if (!leg._footLocal) continue;
         const flw = quatRot(rot, leg._footLocal);
         const F = { x: pos.x + flw.x, y: pos.y + flw.y, z: pos.z + flw.z };
-        if (!(leg._planted && F.y <= GROUND_Y + 0.14)) continue;
+        if (!(leg._planted && F.y <= GROUND_Y + 0.14)) { leg._settle = 0; continue; }
         planted++;
+        // A foot needs a moment to bite. Crank the cadence too high and feet are
+        // re-planted before they ever settle → they skitter and grip is wasted.
+        // So there's a SWEET-SPOT cadence to tune to, not "faster is always better".
+        leg._settle = Math.min(0.2, (leg._settle || 0) + dt);
+        const settle = Math.min(1, leg._settle / 0.06);
         const hipw = quatRot(rot, leg.hip);
         const H = { x: pos.x + hipw.x, y: pos.y + hipw.y, z: pos.z + hipw.z };
         // contact-point velocity = body linear + ω×r + foot actuation (path) velocity
@@ -488,9 +501,10 @@ export class Zook {
         if (side !== 0 && Math.sign(this._steer) === Math.sign(side) && Math.abs(this._steer) > 0.05) {
           const k = 1 - Math.min(0.7, Math.abs(this._steer) * 0.7); Tx *= k; Tz *= k;
         }
+        Tx *= settle; Tz *= settle;     // un-settled feet skitter (cadence sweet-spot)
         const Tmag = Math.hypot(Tx, Tz), Tmax = MU * Fy + 1.5;
         if (Tmag > Tmax) { const s = Tmax / Tmag; Tx *= s; Tz *= s; }
-        b.applyImpulseAtPoint({ x: Tx * dt, y: Fy * dt, z: Tz * dt }, H, true);
+        b.applyImpulseAtPoint({ x: Tx * dt * boost, y: Fy * dt, z: Tz * dt * boost }, H, true);
       }
     }
     this._onGround = planted > 0;
@@ -501,7 +515,9 @@ export class Zook {
       if (Math.abs(this._steer) > 0.01) b.applyTorqueImpulse({ x: 0, y: this._steer * 0.7 * dt, z: 0 }, true);
       // Mild self-righting — recovers small wobbles but won't lift a real flop
       // back up; a top-heavy or lopsided Zook stays down (it's a bad design).
-      const upK = 3.2 * stiff;
+      // A tall stance rights more weakly (high COM), so leggy Zooks wobble more —
+      // the pay-off for their longer stride. Keep your build low to stay planted.
+      const upK = 3.2 * stiff / (1 + (this._tall || 0) * 0.6);
       b.applyTorqueImpulse({ x: -rot.x * upK * dt, y: 0, z: -rot.z * upK * dt }, true);
       // Comical waddle for wonky builds — a seeded side-to-side roll + lazy weave.
       // Predictable per design, daft across the roster (the BAMZOOKi charm).

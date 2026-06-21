@@ -42,7 +42,8 @@ export class App {
       onBack: () => this.go('menu'),
     });
     this._countdownEl = null;
-    if (typeof window !== 'undefined') { window.__app = this; window.__Link = Link; }   // debug handle
+    if (typeof window !== 'undefined') { window.__app = this; window.__Link = Link;       // debug handle
+      window.__model = { Zook, defaultBlueprint, blankBlueprint, cloneBlueprint, makeDefaultLegs }; }
   }
 
   // ── loop hooks ────────────────────────────────────────────────────────────

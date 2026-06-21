@@ -129,8 +129,20 @@ export class ContestScene {
       }
       return { x: 0, z: -10 };
     };
-    g.zook.step(dt, { walk: true, target: drive(g, r) });
-    r.zook.step(dt, { walk: true, target: drive(r, g) });
+    // The BUILD has to win it. We never SUPERCHARGE a trailing Zook (that would
+    // reward a bad design); we only let a runaway LEADER ease off a touch so the
+    // race stays watchable to the wire. A genuinely better-tuned Zook still wins.
+    const prog = (e) => {
+      const c = this.contest, p = e.zook.position;
+      if (c.goal === 'race') return -p.z;            // toward the finish (-z)
+      if (c.goal === 'tug') return Math.abs(p.x);    // further out = winning the haul
+      if (c.goal === 'china') return e === g ? this._chinaG : this._chinaR;
+      return 0;
+    };
+    const gap = prog(g) - prog(r);                    // >0 ⇒ green ahead
+    const bo = (lead) => lead > 0 ? Math.max(0.9, 1 - lead * 0.03) : 1;
+    g.zook.step(dt, { walk: true, target: drive(g, r), boost: bo(gap) });
+    r.zook.step(dt, { walk: true, target: drive(r, g), boost: bo(-gap) });
 
     // Sliding doors (Dodgy Zook) oscillate across the lane.
     for (const d of this._doors) {
@@ -241,8 +253,8 @@ export class ContestScene {
   _judge() {
     const c = this.contest, g = this.green.zook.position, r = this.red.zook.position;
     if (c.goal === 'race') {
-      if (g.z <= -18) return this._finish(true,  'Across the line — get in! 🏁');
-      if (r.z <= -18) return this._finish(false, 'Pipped at the post. Gutting.');
+      if (g.z <= -26) return this._finish(true,  'Across the line — get in! 🏁');
+      if (r.z <= -26) return this._finish(false, 'Pipped at the post. Gutting.');
     } else if (c.goal === 'ring' || c.goal === 'merry') {
       const R = c.radius, go = Math.hypot(g.x, g.z) > R || g.y < -1;
       const ro = Math.hypot(r.x, r.z) > R || r.y < -1;
@@ -266,7 +278,7 @@ export class ContestScene {
       if (r.y < -1) return this._finish(true,  'HEAVE! You dragged the rival into the pit!');
     }
     // time limit
-    if (this._t > 30) {
+    if (this._t > (this.contest.goal === 'race' ? 45 : 32)) {
       if (c.goal === 'race') return this._finish(g.z < r.z, g.z < r.z ? 'Ahead when the whistle blew — win!' : 'Behind at the whistle. So close.');
       if (c.goal === 'tug') { const win = Math.abs(g.x) >= Math.abs(r.x); return this._finish(win, win ? 'You held your ground — strongest Zook!' : 'Rival out-muscled you. Beef it up!'); }
       const gc = Math.hypot(g.x, g.z), rc = Math.hypot(r.x, r.z);
@@ -309,13 +321,13 @@ export class ContestScene {
       return;
     }
     if (c.goal === 'race') {
-      this._box({ pos: { x: 0, y: -0.2, z: -6 }, size: { x: 9, y: 0.4, z: 32 }, color: 0xeee7d6 });
-      // finish line
-      this._box({ pos: { x: 0, y: 0.01, z: -18 }, size: { x: 7, y: 0.02, z: 0.4 }, color: 0x222222 });
-      if (c.hurdles) for (const z of [-2, -7, -12]) this._box({ pos: { x: 0, y: 0.25, z }, size: { x: 6, y: 0.5, z: 0.4 }, color: 0xff8a1e });
+      this._box({ pos: { x: 0, y: -0.2, z: -12 }, size: { x: 9, y: 0.4, z: 46 }, color: 0xeee7d6 });
+      // finish line (longer course so it's a proper race)
+      this._box({ pos: { x: 0, y: 0.01, z: -26 }, size: { x: 7, y: 0.02, z: 0.4 }, color: 0x222222 });
+      if (c.hurdles) for (const z of [-2, -7, -12, -17, -22]) this._box({ pos: { x: 0, y: 0.25, z }, size: { x: 6, y: 0.5, z: 0.4 }, color: 0xff8a1e });
       if (c.marbles) this._marbles();
       if (c.doors) this._slidingDoors();
-      if (c.smash) for (const z of [-1, -6, -11]) for (let i = 0; i < 4; i++)
+      if (c.smash) for (const z of [-1, -6, -11, -16, -21]) for (let i = 0; i < 4; i++)
         this._dynBox({ pos: { x: -2.4 + i * 1.6, y: 0.5 + Math.random() * 0.1, z }, size: { x: 1.3, y: 1.0, z: 1.0 }, color: 0xff8a1e, mass: 0.5 });
     } else if (c.goal === 'tag') {
       this._box({ pos: { x: 0, y: -0.2, z: 0 }, size: { x: 16, y: 0.4, z: 16 }, color: 0xeee7d6 });
