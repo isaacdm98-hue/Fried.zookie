@@ -350,3 +350,21 @@ body { -webkit-user-select: none; user-select: none; touch-action: none; }
 .pp-card h3 { margin: 0 0 12px; font-size: 13px; letter-spacing: 0.2em; color: #ffd479; text-align: center; }
 .pp-row { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 12px; }
 .pp-row span { color: #9a9ca4; } .pp-row b { color: #ece7db; }
+
+/* ── IK foot-path pad (Ch12) ─────────────────────────────────────────────── */
+.tabs .tab { font-size: 10px; letter-spacing: 0.08em; padding: 9px 0; }
+.path-pad { position: relative; width: 100%; height: 150px; border-radius: 12px;
+  background:
+    repeating-linear-gradient(0deg, transparent 0 24px, rgba(255,255,255,0.04) 24px 25px),
+    repeating-linear-gradient(90deg, transparent 0 24px, rgba(255,255,255,0.04) 24px 25px),
+    #0c0d10;
+  border: 1px solid rgba(0,0,0,0.6); box-shadow: inset 0 2px 6px rgba(0,0,0,0.6); touch-action: none; }
+.path-dot { position: absolute; width: 24px; height: 24px; margin: -12px 0 0 -12px; border-radius: 50%;
+  background: linear-gradient(180deg, #ffb347, var(--accent)); color: #1a1206; font-size: 11px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center; cursor: grab; touch-action: none;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.4); }
+.path-dot:active { cursor: grabbing; }
+.pad-ax { position: absolute; font-size: 8px; letter-spacing: 0.1em; color: #6c6f78; pointer-events: none; }
+.pad-fwd { bottom: 3px; left: 50%; transform: translateX(-50%); }
+.pad-up { top: 3px; left: 4px; }
+.pad-ground { position: absolute; left: 4px; bottom: 3px; font-size: 8px; color: #5a5d66; pointer-events: none; }

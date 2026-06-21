@@ -29,6 +29,7 @@ export class App {
       onBack: () => this.go('menu'),
     });
     this._countdownEl = null;
+    if (typeof window !== 'undefined') window.__app = this;   // debug handle
   }
 
   // ── loop hooks ────────────────────────────────────────────────────────────
@@ -39,8 +40,8 @@ export class App {
       this._heroZook.step(dt, { walk: true }); this._heroZook.syncMeshes();
     }
     if (this.mode && this.mode.update) this.mode.update(dt);
-    if (this._countdownEl && this.mode && this.mode.countLabel != null) {
-      const l = this.mode.countLabel;
+    if (this._countdownEl) {
+      const l = (this.mode && this.mode.countLabel != null) ? this.mode.countLabel : null;
       this._countdownEl.textContent = l || '';
       this._countdownEl.style.opacity = l ? '1' : '0';
     }

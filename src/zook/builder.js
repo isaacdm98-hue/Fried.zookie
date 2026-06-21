@@ -91,12 +91,12 @@ export class Builder {
     // Tabs.
     const tabs = document.createElement('div'); tabs.className = 'tabs';
     const body = document.createElement('div'); body.className = 'deck-body';
-    const pages = { shape: 'SHAPE', add: 'ADD', move: 'MOVE', paint: 'PAINT' };
+    const pages = { shape: 'SHAPE', add: 'ADD', path: 'PATH', move: 'MOVE', paint: 'PAINT' };
     const render = () => {
       body.innerHTML = '';
       tabs.querySelectorAll('.tab').forEach(t => t.classList.toggle('on', t.dataset.p === this._page));
       this._builders[this._page](body);
-      if (this.zook) this.zook.setHighlight(this._page === 'add' ? Math.min(this._selLeg, this.bp.legs.length - 1) : -1);
+      if (this.zook) this.zook.setHighlight((this._page === 'add' || this._page === 'path') ? Math.min(this._selLeg, this.bp.legs.length - 1) : -1);
       if (TIPS[this._page] && this._lastTipPage !== this._page) { this._lastTipPage = this._page; guide.now(TIPS[this._page]); }
     };
     Object.entries(pages).forEach(([p, label]) => {
@@ -225,6 +225,46 @@ export class Builder {
         const note = document.createElement('div'); note.className = 'deck-note';
         note.textContent = this._mirror ? 'MIRROR on — edits both sides · CYCLE is per-leg' : 'MIRROR off — placing single legs';
         el.append(tb, mir.root, style.root, r, toggles, note);
+      },
+      path: (el) => {
+        const legs = this.bp.legs;
+        this._selLeg = Math.max(0, Math.min(this._selLeg, legs.length - 1));
+        const leg = legs[this._selLeg];
+
+        const tb = document.createElement('div'); tb.className = 'leg-tools';
+        const btn = (t, fn) => { const b = document.createElement('button'); b.className = 'mini-btn'; b.textContent = t; b.addEventListener('click', () => { fb.press(); fn(); }); return b; };
+        const lbl = document.createElement('span'); lbl.className = 'leg-count'; lbl.textContent = `FOOT PATH · LEG ${this._selLeg + 1}/${legs.length}`;
+        tb.append(
+          btn('◀', () => { this._selLeg = (this._selLeg - 1 + legs.length) % legs.length; this._refresh(); }),
+          lbl,
+          btn('▶', () => { this._selLeg = (this._selLeg + 1) % legs.length; this._refresh(); }),
+        );
+
+        const move = Selector({ label: 'MOVEMENT', value: leg.move,
+          options: [{ v: 'two', t: 'TWO-PART' }, { v: 'single', t: 'SINGLE' }],
+          onChange: v => { this._pushUndo(); leg.move = v; this._apply(); this._refresh(); } });
+
+        // Draggable IK pad: x = fore/aft, y = lift. Drag the numbered points.
+        const pad = document.createElement('div'); pad.className = 'path-pad';
+        pad.innerHTML = `<span class="pad-ax pad-fwd">◀ back · fwd ▶</span><span class="pad-ax pad-up">lift ▲</span><span class="pad-ground">ground</span>`;
+        const place = (dot, pt) => { dot.style.left = `${(pt.f + 1) / 2 * 100}%`; dot.style.top = `${(1 - pt.h) * 100}%`; };
+        leg.path.forEach((pt, i) => {
+          const dot = document.createElement('div'); dot.className = 'path-dot'; dot.textContent = i + 1; place(dot, pt);
+          let drag = false;
+          dot.addEventListener('pointerdown', e => { drag = true; dot.setPointerCapture?.(e.pointerId); e.preventDefault(); });
+          dot.addEventListener('pointermove', e => {
+            if (!drag) return;
+            const r = pad.getBoundingClientRect();
+            pt.f = Math.max(-1, Math.min(1, ((e.clientX - r.left) / r.width) * 2 - 1));
+            pt.h = Math.max(0, Math.min(1, 1 - (e.clientY - r.top) / r.height));
+            place(dot, pt); this._apply();
+          });
+          dot.addEventListener('pointerup', e => { drag = false; dot.releasePointerCapture?.(e.pointerId); fb.tick(); });
+          pad.appendChild(dot);
+        });
+        const note = document.createElement('div'); note.className = 'deck-note';
+        note.textContent = 'drag the foot path — points low & moving back PUSH the Zook along';
+        el.append(tb, move.root, pad, note);
       },
       move: (el) => {
         const r = document.createElement('div'); r.className = 'knob-row';

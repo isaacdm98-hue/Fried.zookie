@@ -46,9 +46,21 @@ export function defaultBlueprint() {
 let _pairSeq = 1;
 export function newPairId() { return _pairSeq++; }
 
+/** The default foot path (IK points): plant → push back → lift → swing forward. */
+export function defaultPath() {
+  return [
+    { f:  0.6, h: 0.0 },   // 1 forward contact
+    { f:  0.1, h: 0.0 },   // 2 mid stance
+    { f: -0.5, h: 0.0 },   // 3 push back (on ground → propels)
+    { f: -0.6, h: 0.55 },  // 4 lift off
+    { f:  0.0, h: 1.0 },   // 5 swing up
+    { f:  0.5, h: 0.5 },   // 6 reach forward
+  ];
+}
+
 /** A new leg part. `pair` links mirror partners (same id, opposite side). */
-export function makeLeg(side, along, { len = 0.72, thick = 0.16, style = 'crawl', cycle = 0, pair = newPairId() } = {}) {
-  return { side, along, len, thick, style, cycle, pair };
+export function makeLeg(side, along, { len = 0.72, thick = 0.16, style = 'crawl', cycle = 0, pair = newPairId(), move = 'two', path } = {}) {
+  return { side, along, len, thick, style, cycle, pair, move, path: path || defaultPath() };
 }
 
 /** Default crawl: pairs down the body, staggered movement cycles. */
@@ -66,13 +78,29 @@ export function makeDefaultLegs(pairs = 3) {
 
 /** Ensure a blueprint has a legs array (synthesising from old fields if needed). */
 export function ensureLegs(bp) {
-  if (Array.isArray(bp.legs)) return bp.legs;
+  if (Array.isArray(bp.legs)) {
+    // Back-compat: make sure every leg has a foot path + movement type.
+    for (const l of bp.legs) { if (!Array.isArray(l.path)) l.path = defaultPath(); if (!l.move) l.move = 'two'; }
+    return bp.legs;
+  }
   const pairs = bp.legPairs || 3;
   bp.legs = makeDefaultLegs(pairs).map(l => ({ ...l, len: bp.legLen || 0.72, thick: bp.legThick || 0.16, style: bp.legStyle || 'crawl' }));
   return bp.legs;
 }
 export function cloneBlueprint(b) {
-  return { ...b, legs: Array.isArray(b.legs) ? b.legs.map(l => ({ ...l })) : b.legs };
+  return {
+    ...b,
+    legs: Array.isArray(b.legs)
+      ? b.legs.map(l => ({ ...l, path: Array.isArray(l.path) ? l.path.map(p => ({ ...p })) : l.path }))
+      : b.legs,
+  };
+}
+
+/** Sample a looped foot path at phase u (0..1) → { f, h }. */
+function samplePath(path, u) {
+  const n = path.length, x = ((u % 1) + 1) % 1 * n, i = Math.floor(x) % n, fr = x - Math.floor(x);
+  const a = path[i], b = path[(i + 1) % n];
+  return { f: a.f + (b.f - a.f) * fr, h: a.h + (b.h - a.h) * fr };
 }
 
 // ── Materials ────────────────────────────────────────────────────────────────
@@ -82,7 +110,10 @@ const mat = (hue, l = 0.55, rough = 0.45) =>
 const EYE_WHITE = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.25 });
 const EYE_DARK  = new THREE.MeshStandardMaterial({ color: 0x140f1c, roughness: 0.2 });
 const ARROW_MAT = new THREE.MeshStandardMaterial({ color: 0xff3344, roughness: 0.5, emissive: 0x330000 });
-const HILITE    = new THREE.MeshStandardMaterial({ color: 0xffd479, emissive: 0xf0782d, emissiveIntensity: 0.5, roughness: 0.4 });
+const HILITE    = new THREE.MeshStandardMaterial({ color: 0xffd479, emissive: 0xf0782d, emissiveIntensity: 0.5, roughness: 0.4, flatShading: true });
+// Shared unit blob (low-poly sphere) — limbs are scaled blobs, like the real
+// Zook Kit (every part is a squished "Blob" mesh) so the creature reads as one.
+const BLOB_GEO  = new THREE.SphereGeometry(0.5, 10, 8);
 
 // ── Zook ─────────────────────────────────────────────────────────────────────
 
@@ -117,11 +148,18 @@ export class Zook {
 
   // ── Geometry ──────────────────────────────────────────────────────────────
   _buildMeshes() {
+    // Dispose the previous build's unique geometries/materials (not shared ones).
+    this.group.traverse(o => {
+      if (o.isMesh) {
+        if (o.geometry && o.geometry !== BLOB_GEO) o.geometry.dispose();
+        if (o.material && o.material !== HILITE && o.material !== EYE_WHITE && o.material !== EYE_DARK && o.material !== ARROW_MAT) o.material.dispose();
+      }
+    });
     while (this.group.children.length) this.group.remove(this.group.children[0]);
     this._legs = [];
     const bp = this.bp;
-    const bMat = mat(bp.hue), lMat = mat(bp.footHue, 0.42, 0.55);
-    bMat.flatShading = true;   // faceted, blocky BAMZOOKi look
+    const bMat = mat(bp.hue), lMat = mat(bp.footHue, 0.48, 0.55);
+    bMat.flatShading = true; lMat.flatShading = true;   // faceted, organic look
     const tex = patternTexture(bp.pattern);
     if (tex) bMat.map = tex;
 
@@ -154,23 +192,25 @@ export class Zook {
     const hipY = -bp.height * 0.32;
     legs.forEach((leg, i) => {
       const S = LEG_STYLES[leg.style] || LEG_STYLES.crawl;
-      const thick = leg.thick, len = leg.len, u = len * S.u, l = len * S.l;
+      const thick = leg.thick * 1.5, len = leg.len, u = len * S.u, l = len * S.l;
       const m = (i === this._highlight) ? HILITE : lMat;
-      const x = leg.side * bp.width * 0.46;
-      const z = leg.along * bp.len * 0.5;
+      // Hips sit slightly inside the body so the limb merges into it.
+      const x = leg.side * bp.width * 0.4;
+      const z = leg.along * bp.len * 0.46;
       const pivot = new THREE.Group();
       pivot.position.set(x, hipY, z);
       pivot.rotation.z = leg.side * S.splay;
-      const up = new THREE.Mesh(new THREE.BoxGeometry(thick, u, thick), m);
-      up.position.y = -u / 2; up.castShadow = true; pivot.add(up);
+      // Upper limb: a stretched blob whose top overlaps the body (attached).
+      const up = new THREE.Mesh(BLOB_GEO, m);
+      up.scale.set(thick, u * 1.15, thick); up.position.y = -u / 2; up.castShadow = true; pivot.add(up);
       const knee = new THREE.Group(); knee.position.y = -u; knee.rotation.z = -leg.side * S.splay; pivot.add(knee);
-      const low = new THREE.Mesh(new THREE.BoxGeometry(thick * 0.85, l, thick * 0.85), m);
-      low.position.y = -l / 2; low.castShadow = true; knee.add(low);
-      const foot = new THREE.Mesh(new THREE.BoxGeometry(thick * S.footW, thick * S.footH, thick * S.footL), m);
-      foot.position.set(0, -l, thick * 0.4); foot.castShadow = true; knee.add(foot);
+      const low = new THREE.Mesh(BLOB_GEO, m);
+      low.scale.set(thick * 0.9, l * 1.1, thick * 0.9); low.position.y = -l / 2; low.castShadow = true; knee.add(low);
+      const foot = new THREE.Mesh(BLOB_GEO, m);
+      foot.scale.set(thick * 1.5, thick * 0.7, thick * 2.0); foot.position.set(0, -l, thick * 0.4); foot.castShadow = true; knee.add(foot);
       this.group.add(pivot);
-      const phase = (leg.cycle || 0) * Math.PI * 2;
-      this._legs.push({ pivot, knee, foot, side: leg.side, phase, swingMul: S.swing });
+      this._legs.push({ pivot, knee, foot, side: leg.side, swingMul: S.swing,
+        path: leg.path || defaultPath(), cycle: leg.cycle || 0, move: leg.move || 'two', _push: 0 });
     });
 
     // Decorative parts (Add menu): antennae on the nose, a tail at the back.
@@ -198,17 +238,20 @@ export class Zook {
     const R = this.RAPIER;
     const desc = R.RigidBodyDesc.dynamic()
       .setTranslation(this._pos.x, rest, this._pos.z)
-      .setLinearDamping(0.3).setAngularDamping(0.9);
+      .setLinearDamping(1.2).setAngularDamping(1.4);
     this._body = this.world.createRigidBody(desc);
     // Collider is a leg-height "skirt": it reaches from the body down to the
     // feet, so the Zook stands at leg height instead of resting on its belly.
+    // Low friction so the emergent leg drive can actually move it; linear
+    // damping (above) keeps it from sliding forever.
     const fullH = h + legLen;
-    this.world.createCollider(
-      R.ColliderDesc.cuboid(w / 2, fullH / 2, l / 2)
-        .setTranslation(0, -legLen / 2, 0)
-        .setFriction(1.1).setRestitution(0).setDensity(0.9),
-      this._body,
-    );
+    const col = R.ColliderDesc.cuboid(w / 2, fullH / 2, l / 2)
+      .setTranslation(0, -legLen / 2, 0)
+      .setFriction(0.08).setRestitution(0).setDensity(0.9);
+    // Use the MIN friction rule so the table's high grip doesn't glue the body
+    // (locomotion is drive-based); the legs supply the "grip" conceptually.
+    if (R.CoefficientCombineRule) col.setFrictionCombineRule(R.CoefficientCombineRule.Min);
+    this.world.createCollider(col, this._body);
   }
 
   _place() {
@@ -229,15 +272,27 @@ export class Zook {
   // ── Animation / driving ──────────────────────────────────────────────────────
   _animateLegs(amount) {
     const { speed, stride, footAngle } = this.bp;
-    const w = 2 * Math.PI * speed;
     for (const leg of this._legs) {
-      const ph = w * this._t + leg.phase;
-      leg.pivot.rotation.x = Math.sin(ph) * stride * leg.swingMul * amount; // fore-aft swing
-      const lift = Math.max(0, Math.cos(ph));                    // recovery half
-      leg.knee.rotation.x = 0.25 + lift * 0.55 * amount;         // knee bends to lift foot
-      leg.foot.rotation.x = footAngle + lift * 0.3 * amount;
+      const u = (this._t * speed + (leg.cycle || 0)) % 1;
+      if (leg.move === 'single') {
+        // Single-part movement (flipper/paddle): the whole leg sweeps round.
+        leg.pivot.rotation.x = Math.sin(u * Math.PI * 2) * stride * 1.6 * amount;
+        leg.knee.rotation.x = 0.1;
+        leg.foot.rotation.x = footAngle;
+        leg._push = amount * Math.max(0, -Math.cos(u * Math.PI * 2)) * stride * leg.swingMul;
+        continue;
+      }
+      // Two-part movement: foot follows its editable IK path.
+      const cur = samplePath(leg.path, u);
+      const prev = samplePath(leg.path, u - 0.04);
+      const df = cur.f - prev.f;                    // <0 ⇒ foot sweeping backward
+      leg.pivot.rotation.x = cur.f * stride * leg.swingMul * amount;
+      leg.knee.rotation.x = (0.08 + cur.h * 0.95) * amount + 0.04;
+      leg.foot.rotation.x = footAngle + cur.h * 0.3 * amount;
+      const planted = cur.h < 0.35;
+      leg._push = (planted ? Math.max(0, -df) : 0) * stride * amount;
     }
-    this._bob = Math.sin(w * this._t * 2) * 0.02 * amount;
+    this._bob = Math.sin(this._t * 2 * Math.PI * speed) * 0.02 * amount;
   }
 
   /** @param {{walk?:boolean, target?:{x,z}}} inputs */
@@ -270,13 +325,11 @@ export class Zook {
     // unison give a lurching, weaker gait. Stride, speed and leg count all feed
     // in naturally, exactly as building a real Zook should reward.
     if (walk && this._onGround) {
-      const w = 2 * Math.PI * speed;
+      // Drive emerges from the feet: each leg's planted backstroke (from its IK
+      // path) contributes. Good paths + staggered cycles ⇒ smooth, fast Zooks.
       let push = 0;
-      for (const leg of this._legs) {
-        const back = -Math.cos(w * this._t + leg.phase);   // >0 on power stroke
-        if (back > 0.05) push += back * stride * leg.swingMul;
-      }
-      const drive = push * speed * 0.85;
+      for (const leg of this._legs) push += leg._push || 0;
+      const drive = push * speed * 42;
       b.applyImpulse({ x: fwdX * drive * dt, y: 0, z: fwdZ * drive * dt }, true);
     }
     // Steering: only turn while feet can grip the ground.
@@ -305,7 +358,7 @@ export class Zook {
   }
   dispose() {
     if (this.scene) this.scene.remove(this.group);
-    this.group.traverse(o => { if (o.isMesh) o.geometry?.dispose?.(); });
+    this.group.traverse(o => { if (o.isMesh && o.geometry && o.geometry !== BLOB_GEO) o.geometry.dispose(); });
     if (this._body && this.world) { try { this.world.removeRigidBody(this._body); } catch (_) {} this._body = null; }
   }
 }
