@@ -368,3 +368,114 @@ body { -webkit-user-select: none; user-select: none; touch-action: none; }
 .pad-fwd { bottom: 3px; left: 50%; transform: translateX(-50%); }
 .pad-up { top: 3px; left: 4px; }
 .pad-ground { position: absolute; left: 4px; bottom: 3px; font-size: 8px; color: #5a5d66; pointer-events: none; }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   BAKELITE × KO II × Korg deck skin — glossy moulded plastic (overrides OP-Z).
+   Warm caramel/ivory body with a sheen, KO-II orange, rubbery keys, chunky
+   colour knobs in recessed wells, a dark LCD name display. 60s Bakelite vibe.
+   ════════════════════════════════════════════════════════════════════════════ */
+:root { --bake-top:#f5ecd6; --bake:#ecdab2; --bake-deep:#d8c084; }
+.deck {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.55), rgba(255,255,255,0) 16%),
+    linear-gradient(170deg, #f6edd7 0%, #ecd9b0 46%, #d8c084 100%),
+    linear-gradient(170deg, #f6edd7 0%, #ecd9b0 46%, #d8c084 100%);
+  border-top: 1px solid rgba(255,255,255,0.7);
+  box-shadow: 0 -10px 40px rgba(80,55,20,0.28),
+              inset 0 2px 0 rgba(255,255,255,0.8),
+              inset 0 0 0 1px rgba(120,90,40,0.25),
+              inset 0 -30px 50px rgba(150,110,50,0.12);
+  color: #4a3a1e;
+}
+.deck::before { background: linear-gradient(180deg,#cbb079,#a98c52); box-shadow: inset 0 1px 0 rgba(255,255,255,0.5), 0 1px 1px rgba(0,0,0,0.25); }
+
+/* KO-II LCD name display */
+.deck .name-in { background: linear-gradient(180deg,#20241c,#171a13); color: #b8ff8a;
+  border: 1px solid rgba(0,0,0,0.6); text-shadow: 0 0 6px rgba(150,255,120,0.45);
+  box-shadow: inset 0 2px 6px rgba(0,0,0,0.8), 0 1px 0 rgba(255,255,255,0.6); }
+
+/* rubbery ivory keys */
+.deck .mini-btn, .deck .save-btn {
+  background: linear-gradient(180deg,#fbf4e2,#e3d0a6); color: #4a3a1e;
+  border: 1px solid rgba(120,90,40,0.4);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 2px 3px rgba(120,90,40,0.35); }
+.deck .mini-btn:active { transform: translateY(1px); box-shadow: inset 0 2px 4px rgba(120,90,40,0.4); }
+
+/* tab strip = recessed caramel with glossy orange active key */
+.deck .tabs { background: linear-gradient(180deg,#cbb079,#cbb079); background: #cdb588;
+  border: 1px solid rgba(120,90,40,0.5); box-shadow: inset 0 2px 5px rgba(120,90,40,0.5); }
+.deck .tab { color: #6a5736; border-right: 1px solid rgba(120,90,40,0.3); }
+.deck .tab.on { color: #fff; background: linear-gradient(180deg,#ff9a3c,#f0671f);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.6), 0 0 10px rgba(240,103,31,0.5); text-shadow: 0 1px 1px rgba(0,0,0,0.25); }
+
+.deck .ctl-label { color: #6a5736; }
+.deck .ctl-val { background: linear-gradient(180deg,#fbf4e2,#e7d6ad); color: #4a3a1e;
+  border: 1px solid rgba(120,90,40,0.35); box-shadow: inset 0 1px 2px rgba(120,90,40,0.3); text-shadow: none; }
+
+/* chunky glossy colour knobs in caramel wells */
+.deck .knob-dial {
+  box-shadow: inset 0 -3px 6px rgba(0,0,0,0.22), inset 0 3px 4px rgba(255,255,255,0.7),
+              0 2px 4px rgba(120,90,40,0.5),
+              0 0 0 4px rgba(205,181,136,0.9), 0 0 0 5px rgba(120,90,40,0.4),
+              0 0 0 7px rgba(255,255,255,0.35); }
+.deck .knob-ind::before { background: rgba(40,28,8,0.7); }
+
+/* switches */
+.deck .sw-track { background: linear-gradient(180deg,#cbb079,#bda468); border: 1px solid rgba(120,90,40,0.5);
+  box-shadow: inset 0 2px 4px rgba(120,90,40,0.5); }
+.deck .sw-knob { background: linear-gradient(180deg,#fff,#e6d8b6); }
+.deck .switch.on .sw-track { background: linear-gradient(180deg,#ff9a3c,#f0671f); box-shadow: 0 0 8px rgba(240,103,31,0.5); }
+
+/* segmented keys */
+.deck .seg-btn { background: linear-gradient(180deg,#fbf4e2,#e3d0a6); color: #6a5736; border: 1px solid rgba(120,90,40,0.4);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.9); }
+.deck .seg-btn.on { color: #fff; background: linear-gradient(180deg,#ff9a3c,#f0671f); box-shadow: 0 0 8px rgba(240,103,31,0.45); }
+
+.deck .hue-thumb { border-color: #fff; }
+.deck .deck-note, .deck .leg-count { color: #6a5736; }
+
+/* TEST = glossy orange action key */
+.deck .test-btn { background: linear-gradient(180deg,#ffa24a,#ef6a1d); color: #fff;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.6), 0 3px 8px rgba(239,106,29,0.5); }
+
+/* IK pad as a cream recessed slate */
+.deck .path-pad { background:
+    repeating-linear-gradient(0deg, transparent 0 23px, rgba(120,90,40,0.10) 23px 24px),
+    repeating-linear-gradient(90deg, transparent 0 23px, rgba(120,90,40,0.10) 23px 24px),
+    linear-gradient(180deg,#efe2c2,#e2cfa4);
+  border: 1px solid rgba(120,90,40,0.5); box-shadow: inset 0 2px 6px rgba(120,90,40,0.4); }
+
+/* colour swatches (PAINT) */
+.swatches { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+.swatch { width: 30px; height: 30px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.85);
+  box-shadow: 0 1px 3px rgba(120,90,40,0.4), inset 0 1px 2px rgba(255,255,255,0.5); cursor: pointer; }
+.swatch:active { transform: scale(0.9); }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   OP-Z style dials — flat colour circles with a filling value-arc + a clean
+   spinning indicator. Fun to spin, satisfying to read. (Wins over knob skins.)
+   ════════════════════════════════════════════════════════════════════════════ */
+.knob-dial, .deck .knob-dial {
+  position: relative; width: 54px; height: 54px; border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 38%, rgba(255,255,255,0.45), rgba(255,255,255,0) 55%),
+    var(--cap, #e8e4da);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.28), inset 0 0 0 1.5px rgba(0,0,0,0.22),
+              inset 0 -5px 9px rgba(0,0,0,0.16);
+  cursor: grab; touch-action: none; transition: transform 0.08s ease;
+}
+.knob-dial:active, .deck .knob-dial:active { cursor: grabbing; transform: scale(1.06); }
+/* filling value arc that sweeps as you turn */
+.knob-dial::after, .deck .knob-dial::after {
+  content: ''; position: absolute; inset: -6px; border-radius: 50%; pointer-events: none;
+  background: conic-gradient(from 215deg, #ff8a1e 0deg, #ff8a1e calc(var(--val,0) * 270deg), rgba(20,15,8,0.18) calc(var(--val,0) * 270deg), rgba(20,15,8,0.18) 270deg, transparent 270deg);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3.5px));
+          mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3.5px));
+  filter: drop-shadow(0 0 3px rgba(255,138,30,0.5));
+}
+/* spinning indicator dot+line */
+.knob-ind, .deck .knob-ind { position: absolute; inset: 0; transform: rotate(var(--turn, 0deg)); }
+.knob-ind::before, .deck .knob-ind::before {
+  content: ''; position: absolute; top: 6px; left: 50%; width: 4px; height: 12px; margin-left: -2px;
+  border-radius: 2px; background: rgba(20,15,8,0.78); box-shadow: 0 0 0 1.5px rgba(255,255,255,0.35);
+}

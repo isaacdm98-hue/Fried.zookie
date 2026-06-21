@@ -272,6 +272,7 @@ export class Builder {
           K({ label: 'SPEED',  min: 1, max: 4, step: 0.1, value: this.bp.speed,  onChange: v => set('speed', v) }),
           K({ label: 'STRIDE', min: 0.3, max: 1.3, step: 0.05, value: this.bp.stride, onChange: v => set('stride', v) }),
           K({ label: 'FOOT',   min: 0, max: 0.6, step: 0.05, value: this.bp.footAngle, format: v => v.toFixed(2), onChange: v => set('footAngle', v) }),
+          K({ label: 'STIFF',  min: 0.5, max: 2, step: 0.1, value: this.bp.stiffness, format: v => v.toFixed(1), onChange: v => set('stiffness', v) }),
           K({ label: 'TURN',   min: 0.5, max: 3, step: 0.1, value: this.bp.turnSharp, onChange: v => set('turnSharp', v) }),
           K({ label: 'SMOOTH', min: 0, max: 1, step: 0.05, value: this.bp.turnSmooth, format: v => `${Math.round(v * 100)}`, onChange: v => set('turnSmooth', v) }),
         );

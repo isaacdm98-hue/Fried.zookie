@@ -31,6 +31,7 @@ export function Knob(o) {
   function render() {
     const t = (value - o.min) / (o.max - o.min);
     dial.style.setProperty('--turn', `${-135 + t * ANGLE}deg`);
+    dial.style.setProperty('--val', t);          // 0..1 for the value arc
     val.textContent = fmt(value);
   }
   function set(v) {

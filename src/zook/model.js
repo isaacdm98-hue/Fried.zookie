@@ -40,6 +40,7 @@ export function defaultBlueprint() {
     footAngle: 0.2,
     turnSharp: 1.5,    // how hard it turns toward a target
     turnSmooth:0.85,   // steering damping
+    stiffness: 1.0,    // limb stiffness 0.5..2 — stronger push & more upright
   };
 }
 
@@ -329,15 +330,17 @@ export class Zook {
       // path) contributes. Good paths + staggered cycles ⇒ smooth, fast Zooks.
       let push = 0;
       for (const leg of this._legs) push += leg._push || 0;
-      const drive = push * speed * 42;
+      const stiff = this.bp.stiffness || 1;
+      const drive = push * speed * 42 * stiff;
       b.applyImpulse({ x: fwdX * drive * dt, y: 0, z: fwdZ * drive * dt }, true);
     }
     // Steering: only turn while feet can grip the ground.
     if (this._onGround && Math.abs(this._steer) > 0.01) {
       b.applyTorqueImpulse({ x: 0, y: this._steer * 1.4 * dt, z: 0 }, true);
     }
-    // Self-righting: keep the Zook upright (stronger when tilted further).
-    b.applyTorqueImpulse({ x: -rot.x * 9 * dt, y: 0, z: -rot.z * 9 * dt }, true);
+    // Self-righting: stiffer limbs hold the Zook upright more firmly.
+    const up = 9 * (this.bp.stiffness || 1);
+    b.applyTorqueImpulse({ x: -rot.x * up * dt, y: 0, z: -rot.z * up * dt }, true);
   }
 
   syncMeshes() {
