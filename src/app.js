@@ -267,7 +267,8 @@ export class App {
   // ── Contests (select) ────────────────────────────────────────────────────
   _contests() {
     // Real contest screenshots from the original game, lightly re-graded.
-    const THUMBS = new Set(['dodge', 'merry', 'weakest', 'ball', 'china', 'marbles', 'smash', 'sumo', 'hurdles', 'tag']);
+    const THUMBS = new Set(['dodge', 'merry', 'weakest', 'ball', 'china', 'marbles', 'smash', 'sumo', 'hurdles', 'tag',
+      'sprint', 'blockpush', 'ramps', 'steps', 'zigzag', 'assault']);
     const cards = CONTESTS.map(c => `
       <button class="con-card${THUMBS.has(c.id) ? ' has-thumb' : ''}" data-id="${c.id}">
         ${THUMBS.has(c.id) ? `<img class="con-thumb" src="./assets/contests/${c.id}.png" alt="" loading="lazy"/>` : ''}
