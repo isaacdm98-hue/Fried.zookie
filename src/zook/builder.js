@@ -207,7 +207,8 @@ export class Builder {
 
         const mir = Switch({ label: 'MIRROR', value: this._mirror, onChange: v => { this._mirror = v; this._refresh(); } });
         const style = Selector({ label: 'LEG PART', value: leg.style,
-          options: [{ v: 'crawl', t: 'CRAWL' }, { v: 'paddle', t: 'PADDLE' }, { v: 'stalk', t: 'STALK' }],
+          options: [{ v: 'crawl', t: 'CRAWL' }, { v: 'paddle', t: 'PADDLE' }, { v: 'stalk', t: 'STALK' },
+                    { v: 'step', t: 'STEP' }, { v: 'stomp', t: 'STOMP' }, { v: 'push', t: 'PUSH' }, { v: 'flipper', t: 'FLIP' }],
           onChange: v => this._editLeg('style', v, true) });
 
         const r = document.createElement('div'); r.className = 'knob-row';

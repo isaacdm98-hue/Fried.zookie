@@ -528,3 +528,5 @@ body { -webkit-user-select: none; user-select: none; touch-action: none; }
 .scan-wrap { margin: auto; display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 20px; }
 .scan-video { width: min(320px, 86vw); height: min(320px, 86vw); object-fit: cover; border-radius: 16px;
   background: #000; box-shadow: 0 6px 24px rgba(0,0,0,0.4); }
+
+.seg-row { flex-wrap: wrap; }

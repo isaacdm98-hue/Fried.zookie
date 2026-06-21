@@ -398,10 +398,15 @@ function shapeBody(bp) {
 }
 
 // Leg-part styles from the Add menu (crawl legs, paddles, stalks).
+// Proportions distilled from the Zook Kit's component library.
 const LEG_STYLES = {
-  crawl:  { u: 0.5,  l: 0.62, splay: 0.6,  footW: 1.5, footH: 0.5, footL: 2.0, swing: 1.0 },
-  paddle: { u: 0.35, l: 0.35, splay: 0.3,  footW: 3.2, footH: 0.4, footL: 1.4, swing: 1.5 },
-  stalk:  { u: 0.6,  l: 0.6,  splay: 0.15, footW: 1.0, footH: 0.6, footL: 1.0, swing: 0.7 },
+  crawl:   { u: 0.5,  l: 0.62, splay: 0.6,  footW: 1.5, footH: 0.5, footL: 2.0, swing: 1.0 },
+  paddle:  { u: 0.35, l: 0.35, splay: 0.3,  footW: 3.2, footH: 0.4, footL: 1.4, swing: 1.5 },
+  stalk:   { u: 0.6,  l: 0.6,  splay: 0.15, footW: 1.0, footH: 0.6, footL: 1.0, swing: 0.7 },
+  step:    { u: 0.7,  l: 0.8,  splay: 0.4,  footW: 1.4, footH: 0.5, footL: 2.4, swing: 1.1 },
+  stomp:   { u: 0.55, l: 0.7,  splay: 0.12, footW: 1.3, footH: 1.2, footL: 1.3, swing: 1.3 },
+  push:    { u: 0.3,  l: 0.3,  splay: 0.25, footW: 3.6, footH: 0.6, footL: 1.0, swing: 1.2 },
+  flipper: { u: 0.25, l: 0.5,  splay: 0.2,  footW: 3.0, footH: 0.3, footL: 2.2, swing: 1.6 },
 };
 
 // Generated grayscale pattern textures (white base shows the body hue).
