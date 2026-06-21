@@ -25,6 +25,10 @@ export const CONTESTS = [
   { id: 'tag',     name: 'Zook Tag',       desc: 'Catch the rival before time runs out!',         goal: 'tag' },
   { id: 'smash',   name: 'Zook Smash',     desc: 'Smash through the blocks to the line.',          goal: 'race', smash: true },
   { id: 'blockpush', name: 'Block Push',   desc: 'Shove your heavy block over the line first.',    goal: 'race', push: true },
+  { id: 'ramps',   name: 'Ramp Run',       desc: 'Up and over the ramps to the line.',            goal: 'race', slope: true },
+  { id: 'steps',   name: 'Step Climb',     desc: 'Clamber over the staircase course.',            goal: 'race', steps: true },
+  { id: 'zigzag',  name: 'Zig-Zag',        desc: 'Weave the slalom barriers to the finish.',      goal: 'race', zigzag: true },
+  { id: 'assault', name: 'Assault Course', desc: 'Ramps, crates and a hurdle — the full gauntlet.', goal: 'race', assault: true },
   { id: 'china',   name: 'China Shop',     desc: 'Knock over more china than your rival!',         goal: 'china' },
 ];
 
@@ -337,6 +341,23 @@ export class ContestScene {
       // faster and straighter, so it's a real test of the build.
       if (c.push) for (const s of [-1, 1])
         this._dynBall({ pos: { x: s, y: 0.85, z: 4.0 }, r: 0.85, color: 0x4f74ff, density: 0.3 });
+      // ── Assault-course obstacles (the real BAMZOOKi environments) ──────────────
+      // Ramps: long, gentle humps to climb up and over (SlopeEnv). Kept shallow so
+      // any reasonable build can crest them — peak ~0.45 high.
+      if (c.slope || c.assault) for (const z of [-1, -10, -19]) {
+        this._box({ pos: { x: 0, y: 0.1, z: z + 2.7 }, size: { x: 8, y: 0.25, z: 6 }, color: 0xd0a866, rot: { x: 0.14 } });
+        this._box({ pos: { x: 0, y: 0.1, z: z - 2.7 }, size: { x: 8, y: 0.25, z: 6 }, color: 0xc99a54, rot: { x: -0.14 } });
+      }
+      // Steps: a low staircase up then down (StepEnv) — climbable strides.
+      if (c.steps) { let zc = -1; for (const h of [0.22, 0.42, 0.62, 0.42, 0.22]) { this._box({ pos: { x: 0, y: h / 2, z: zc }, size: { x: 8, y: h, z: 2.4 }, color: 0xb9a98a }); zc -= 2.4; } }
+      // Zig-zag slalom: low staggered barriers to climb/weave through (ZigZagEnv).
+      if (c.zigzag) for (let i = 0; i < 6; i++)
+        this._box({ pos: { x: (i % 2 ? 1 : -1) * 2.2, y: 0.3, z: -2 - i * 3.4 }, size: { x: 5, y: 0.6, z: 0.5 }, color: 0xe06b3a });
+      // Assault course finale: a hump (above), then smash crates, then a hurdle.
+      if (c.assault) {
+        for (let i = 0; i < 3; i++) this._dynBox({ pos: { x: -1.6 + i * 1.6, y: 0.5, z: -12 }, size: { x: 1.2, y: 1.0, z: 1.0 }, color: 0xff8a1e, mass: 0.45 });
+        this._box({ pos: { x: 0, y: 0.25, z: -22 }, size: { x: 6, y: 0.5, z: 0.4 }, color: 0xff8a1e });
+      }
     } else if (c.goal === 'tag') {
       this._box({ pos: { x: 0, y: -0.2, z: 0 }, size: { x: 16, y: 0.4, z: 16 }, color: 0xeee7d6 });
     } else if (c.goal === 'china') {
