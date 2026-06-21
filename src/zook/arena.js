@@ -286,12 +286,18 @@ export class Arena {
     hud.querySelectorAll('[data-tool]').forEach(b => b.addEventListener('click', () => this._tool(b.dataset.tool)));
     this._syncHud();
   }
+  _target(id) {
+    if (id === 'sprint') return '🥇 under 13s · 🥈 under 20s';
+    if (id === 'lap') return '🥇 under 24s · 🥈 under 34s';
+    return '';
+  }
   _cycleEnv(d) {
     this._envIdx = (this._envIdx + d + ENVIRONMENTS.length) % ENVIRONMENTS.length;
+    const env = ENVIRONMENTS[this._envIdx], tgt = this._target(env.id);
     const e = this._hud.querySelector('.env-name');
-    e.innerHTML = `<b>${ENVIRONMENTS[this._envIdx].name}</b><span>${ENVIRONMENTS[this._envIdx].blurb}</span>`;
+    e.innerHTML = `<b>${env.name}</b><span>${tgt || env.blurb}</span>`;
     this._reset();
-    guide.now(`${ENVIRONMENTS[this._envIdx].name} — ${ENVIRONMENTS[this._envIdx].blurb}.`);
+    guide.now(`${env.name} — ${env.blurb}.${tgt ? ' Beat the clock for GOLD!' : ''}`);
   }
   _tool(t) {
     if (t === 'jump') { fb.press(); this.zook && this.zook.jump(); }

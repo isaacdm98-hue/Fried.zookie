@@ -330,12 +330,20 @@ export class ContestScene {
         this._china.push({ body: entry.body, mesh: entry.mesh, entry, start: { x, z }, top: plinthTop, color: col, owner: null, smashed: false });
       }
     } else if (c.goal === 'ring' || c.goal === 'merry') {
-      const disc = new THREE.Mesh(new THREE.CylinderGeometry(c.radius, c.radius + 0.2, 0.4, 40),
+      // Sumo: a raised disc inside a square PIT (loser barged off drops in), like
+      // the real contest. Merry-Go-Zook keeps its lone spinning platform.
+      if (c.goal === 'ring') {
+        this._box({ pos: { x: 0, y: -2.6, z: 0 }, size: { x: 16, y: 0.4, z: 16 }, color: 0x6b6457 });   // pit floor
+        for (const [x, z, sx, sz] of [[-8, 0, 0.5, 16], [8, 0, 0.5, 16], [0, -8, 16, 0.5], [0, 8, 16, 0.5]])
+          this._box({ pos: { x, y: -1.1, z }, size: { x: sx, y: 3, z: sz }, color: 0x4f4a40 });          // pit walls
+      }
+      const disc = new THREE.Mesh(new THREE.CylinderGeometry(c.radius, c.radius + 0.2, c.goal === 'ring' ? 2.6 : 0.4, 40),
         new THREE.MeshStandardMaterial({ color: c.goal === 'merry' ? 0xf0782d : 0xeee7d6, roughness: 0.7 }));
-      disc.position.y = -0.2; disc.receiveShadow = true; this.scene.add(disc); this._meshes.push(disc);
-      const R = this.RAPIER, d = R.RigidBodyDesc.fixed().setTranslation(0, -0.2, 0);
+      const dy = c.goal === 'ring' ? -1.3 : -0.2;
+      disc.position.y = dy; disc.receiveShadow = true; this.scene.add(disc); this._meshes.push(disc);
+      const R = this.RAPIER, d = R.RigidBodyDesc.fixed().setTranslation(0, dy, 0);
       const b = this.world.createRigidBody(d);
-      this.world.createCollider(R.ColliderDesc.cylinder(0.2, c.radius).setFriction(1.0), b);
+      this.world.createCollider(R.ColliderDesc.cylinder(c.goal === 'ring' ? 1.3 : 0.2, c.radius).setFriction(1.0), b);
       this._bodies.push(b);
       if (c.goal === 'merry') this._platform = b;
     } else if (c.goal === 'ball') {

@@ -33,6 +33,7 @@ export class App {
     this.active = { name: randomName(), bp: blankBlueprint() };
     try { this._muted = localStorage.getItem('fz-mute') === '1'; } catch (_) { this._muted = false; }
     setMuted(this._muted);
+    try { this._diff = Math.max(0, Math.min(2, +localStorage.getItem('fz-diff') || 1)); } catch (_) { this._diff = 1; }
     this.mode = null;            // gameplay mode with onStep/update/exit
     this._hero = null; this._heroSpin = true; this._heroSpinT = 0;
     this._overlay = null;
@@ -125,6 +126,12 @@ export class App {
   _overlayEl(html) {
     const d = document.createElement('div'); d.className = 'overlay'; d.innerHTML = html;
     this.ui.appendChild(d); (this._overlays = this._overlays || []).push(d); this._overlay = d; return d;
+  }
+  /** Scale a rival by the chosen difficulty (Rookie / Pro / Champion). */
+  _rivalBp(bp) {
+    if (!bp) return bp;
+    const m = [{ s: 0.72, k: 0.82 }, { s: 1, k: 1 }, { s: 1.18, k: 1.15 }][this._diff != null ? this._diff : 1];
+    const b = cloneBlueprint(bp); b.speed = (b.speed || 2.4) * m.s; b.stiffness = (b.stiffness || 1) * m.k; return b;
   }
   /** A Zook you can actually compete with — an unbuilt (legless) one gets a
    *  default set of legs so contests are never a no-show. */
@@ -256,8 +263,11 @@ export class App {
     const d = this._overlayEl(`<div class="sheet">
       <div class="bar"><button class="mini-btn" data-back>‹</button><h2>Contests</h2><span style="width:40px"></span></div>
       <button class="con-card coop champ-card" data-champ><b>🏆 CHAMPIONSHIP</b><span>five contests, one champion — like a full episode</span></button>
+      <button class="m-guide diff-pick" data-diff><span>RIVAL</span><b>${['ROOKIE', 'PRO', 'CHAMPION'][this._diff]}</b></button>
       <div class="con-grid">${cards}</div></div>`);
     d.querySelector('[data-back]').addEventListener('click', () => { fb.press(); this.go('menu'); });
+    const df = d.querySelector('[data-diff]');
+    df.addEventListener('click', () => { fb.tick(); this._diff = (this._diff + 1) % 3; try { localStorage.setItem('fz-diff', this._diff); } catch (_) {} df.querySelector('b').textContent = ['ROOKIE', 'PRO', 'CHAMPION'][this._diff]; });
     d.querySelector('[data-champ]').addEventListener('click', () => { fb.confirm(); this._championship(); });
     d.querySelectorAll('.con-card[data-id]').forEach(b => b.addEventListener('click', () => {
       fb.confirm();
@@ -287,7 +297,7 @@ export class App {
     this._clear();
     const cs = new ContestScene({ scene: this.scene, world: this.world, RAPIER: this.RAPIER, camera: this.camera,
       onResult: ({ playerWon, line }) => { playerWon ? ch.wins++ : ch.losses++; this._champStandings(playerWon, line); } });
-    cs.enter(contest, this._legged(this.active.bp), opp.bp); this.mode = cs;
+    cs.enter(contest, this._legged(this.active.bp), this._rivalBp(opp.bp)); this.mode = cs;
     this._contestOverlay(`${this.active.name || 'You'} (${ch.wins})`, `${opp.name} (${ch.losses})`, `${ch.STAGES[ch.stage]} · ${ch.labels[ch.i]}`);
   }
   _champStandings(won, line) {
@@ -348,7 +358,7 @@ export class App {
         r.querySelector('[data-act=menu]').addEventListener('click', () => { fb.press(); this.go('contests'); });
       },
     });
-    cs.enter(contest, this._legged(green.bp), this._legged(red.bp));
+    cs.enter(contest, this._legged(green.bp), this._legged(this._rivalBp(red.bp)));
     this.mode = cs;
     this._contestOverlay(green.name || 'You', red.name, contest.name);
   }
