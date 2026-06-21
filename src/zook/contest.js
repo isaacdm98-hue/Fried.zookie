@@ -372,7 +372,7 @@ export class ContestScene {
     k.mesh.geometry.dispose(); k.mesh.material.dispose();
     // shards
     if (!this._shards) this._shards = [];
-    for (let i = 0; i < 9; i++) {
+    for (let i = 0; i < 6; i++) {
       const s = 0.07 + Math.random() * 0.1;
       const m = new THREE.Mesh(new THREE.TetrahedronGeometry(s),
         new THREE.MeshStandardMaterial({ color: k.color, roughness: 0.6, flatShading: true }));

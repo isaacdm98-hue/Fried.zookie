@@ -89,6 +89,7 @@ export class Builder {
       <div class="btopbar">
         <button class="b-back" title="Back"><img src="./assets/btn-back.png" alt="Back"/></button>
         <input class="name-in" value="${this.name}" maxlength="14" />
+        <button class="b-undo2" title="Undo">↶</button>
         <button class="b-dice" title="Surprise me">🎲</button>
         <button class="b-guide" title="Helper on/off">💬</button>
         <button class="b-walk" title="Walk in place">WALK</button>
@@ -110,6 +111,7 @@ export class Builder {
     const sw = () => walk.classList.toggle('on', this._walk); sw();
     walk.addEventListener('click', () => { this._walk = !this._walk; sw(); fb.tick(); });
     // tiny helper toggle — Fried only speaks when this is on
+    wrap.querySelector('.b-undo2').addEventListener('click', () => { if (this._undo.length) { this._redo.push(JSON.parse(JSON.stringify(this.bp))); this.bp = this._undo.pop(); this._sel = null; this._apply(); this._renderBar(); fb.press(); } else fb.tick(); });
     wrap.querySelector('.b-dice').addEventListener('click', () => { fb.confirm(); this._pushUndo(); this.bp = JSON.parse(JSON.stringify(randomExample().bp)); this._sel = null; this._apply(); this._renderBar(); if (this._helper) guide.pop('Surprise! Tweak it, or roll again.'); });
     const gb = wrap.querySelector('.b-guide');
     const gs = () => gb.classList.toggle('on', this._helper); gs();

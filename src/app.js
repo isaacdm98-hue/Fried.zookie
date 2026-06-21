@@ -18,6 +18,7 @@ import { Knob, Switch } from './zook/controls.js';
 import { ZookRun, requestTilt } from './zook/run.js';
 import { guide, TIPS } from './sys/guide.js';
 import { fb, unlockAudio, setMuted } from './sys/feedback.js';
+import { music } from './sys/music.js';
 import { Link } from './net/link.js';
 import { makeQR, startScan } from './net/qr.js';
 
@@ -165,6 +166,9 @@ export class App {
     // The hero Zook belongs to the title screen (which frames it). Every other
     // screen builds its own scene, so keep their backgrounds clean.
     this._hideHero();
+    // Ambient soundtrack per mode (workshop noodly, run driving, etc.).
+    const MOOD = { workshop: 'build', test: 'build', run: 'run', contestRun: 'contest' };
+    music.play(MOOD[screen] || 'menu');
     ({
       title: () => this._title(),
       menu: () => this._menu(),
@@ -229,7 +233,7 @@ export class App {
     gt.classList.toggle('off', !guide.enabled);
     const mt = d.querySelector('[data-mute]');
     mt.classList.toggle('off', this._muted);
-    mt.addEventListener('click', () => { this._muted = !this._muted; setMuted(this._muted); try { localStorage.setItem('fz-mute', this._muted ? '1' : '0'); } catch (_) {} if (!this._muted) fb.tick(); mt.querySelector('b').textContent = this._muted ? 'OFF' : 'ON'; mt.classList.toggle('off', this._muted); });
+    mt.addEventListener('click', () => { this._muted = !this._muted; setMuted(this._muted); music.mute(this._muted); try { localStorage.setItem('fz-mute', this._muted ? '1' : '0'); } catch (_) {} if (!this._muted) fb.tick(); mt.querySelector('b').textContent = this._muted ? 'OFF' : 'ON'; mt.classList.toggle('off', this._muted); });
   }
 
   // ── Workshop ─────────────────────────────────────────────────────────────
@@ -273,6 +277,7 @@ export class App {
     for (let i = ids.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [ids[i], ids[j]] = [ids[j], ids[i]]; }
     const rounds = ids.slice(0, 3).map(id => ({ contest: CONTESTS.find(c => c.id === id) }));
     rounds.push({ contest: { id: 'relay', name: 'Grand Final Relay', desc: 'the decider — first Zook home wins the episode', goal: 'race' }, relay: true });
+    music.play('champ');
     this._champ = { opp, rounds, labels: ['CONTEST 1', 'CONTEST 2', 'CONTEST 3', 'RELAY DECIDER'], i: 0, wins: 0, losses: 0, stage, STAGES };
     guide.now(`${STAGES[stage]}! Your Zook versus ${opp.name} — three contests then the Grand Final relay. Best side wins the episode!`);
     this._champRound();

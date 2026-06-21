@@ -793,3 +793,10 @@ h2 { display: inline-flex; align-items: center; }
 
 /* Winner card sits up top so the champ can dance underneath it. */
 .result-modal.top { margin: calc(7vh + env(safe-area-inset-top)) auto auto; }
+
+/* Round-2b: topbar mini buttons, comfier bottom controls */
+.b-undo2, .b-dice { flex: 0 0 auto; width: 36px; height: 36px; border-radius: 9px; cursor: pointer;
+  border: 1px solid rgba(0,0,0,0.5); font-size: 15px; color: #ece7db; background: linear-gradient(180deg,#32353d,#23262c); }
+.b-undo2:active, .b-dice:active { transform: scale(0.93); }
+.run-pads { bottom: calc(28px + env(safe-area-inset-bottom)); }
+.test-tools { bottom: calc(30px + env(safe-area-inset-bottom)); }

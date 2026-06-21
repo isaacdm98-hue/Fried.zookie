@@ -18,6 +18,9 @@ function ac() {
 /** Call once from the first tap so audio is unlocked. */
 export function unlockAudio() { ac(); }
 export function setMuted(m) { muted = m; }
+/** Shared with the music module so everything runs on one AudioContext. */
+export function audioCtx() { return ac(); }
+export function isMuted() { return muted; }
 
 function tone(freq, dur, type = 'square', gain = 0.06) {
   if (muted) return;
