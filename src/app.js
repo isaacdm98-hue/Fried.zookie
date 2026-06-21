@@ -16,6 +16,11 @@ import { ContestScene, CONTESTS } from './zook/contest.js';
 import { EXAMPLES, loadRoster, randomExample } from './zook/library.js';
 import { guide, TIPS } from './sys/guide.js';
 import { fb, unlockAudio, setMuted } from './sys/feedback.js';
+import { Link } from './net/link.js';
+import { makeQR, startScan } from './net/qr.js';
+
+// Online is restricted to static-arena contests so streamed state stays in sync.
+const ONLINE_IDS = ['sprint', 'hurdles', 'sumo', 'weakest', 'tag'];
 
 export class App {
   constructor({ scene, world, RAPIER, camera, canvas, ui }) {
@@ -29,7 +34,7 @@ export class App {
       onBack: () => this.go('menu'),
     });
     this._countdownEl = null;
-    if (typeof window !== 'undefined') window.__app = this;   // debug handle
+    if (typeof window !== 'undefined') { window.__app = this; window.__Link = Link; }   // debug handle
   }
 
   // ── loop hooks ────────────────────────────────────────────────────────────
@@ -40,6 +45,11 @@ export class App {
       this._heroZook.step(dt, { walk: true }); this._heroZook.syncMeshes();
     }
     if (this.mode && this.mode.update) this.mode.update(dt);
+    // Host streams the live contest state to the joiner (~20 Hz).
+    if (this._netRole === 'host' && this._link && this.mode && this.mode.serializeState) {
+      this._netT = (this._netT || 0) + dt;
+      if (this._netT >= 0.05) { this._netT = 0; this._link.send({ type: 'state', ...this.mode.serializeState() }); }
+    }
     if (this._countdownEl) {
       const l = (this.mode && this.mode.countLabel != null) ? this.mode.countLabel : null;
       this._countdownEl.textContent = l || '';
@@ -86,6 +96,7 @@ export class App {
       contests: () => this._contests(),
       contestRun: () => this._contestRun(opts),
       versus: () => this._versus(),
+      online: () => this._online(),
       myzooks: () => this._myzooks(),
     }[screen] || (() => this._menu()))();
   }
@@ -129,7 +140,8 @@ export class App {
         <div class="menu-grid">
           <button class="m-btn" data-go="workshop"><b>BUILD</b><span>make a Zook</span></button>
           <button class="m-btn" data-go="contests"><b>CONTESTS</b><span>vs a rival</span></button>
-          <button class="m-btn" data-go="versus"><b>VERSUS</b><span>2-player link</span></button>
+          <button class="m-btn" data-go="versus"><b>VERSUS</b><span>same phone</span></button>
+          <button class="m-btn" data-go="online"><b>ONLINE</b><span>QR link-up</span></button>
           <button class="m-btn" data-go="myzooks"><b>MY ZOOKS</b><span>your roster</span></button>
         </div>
       </div>`);
@@ -243,5 +255,126 @@ export class App {
       this.active = { name: z.name, bp };
       this.go('workshop');
     }));
+  }
+
+  // ── Online (QR-linked WebRTC) ─────────────────────────────────────────────
+  _netClose() { try { this._link?.close(); } catch (_) {} this._link = null; this._netRole = null; this._peer = null; }
+
+  _online() {
+    this._netClose();
+    const d = this._overlayEl(`<div class="sheet">
+      <div class="bar"><button class="mini-btn" data-back>‹</button><h2>Online Link</h2><span style="width:40px"></span></div>
+      <div class="link-panel" id="onl"></div></div>`);
+    d.querySelector('[data-back]').addEventListener('click', () => { fb.press(); this._netClose(); this.go('menu'); });
+    const box = d.querySelector('#onl');
+    box.innerHTML = `<div class="link-anim"><span class="link-dot"></span><span class="link-dot"></span><span class="link-dot"></span></div>
+      <p class="link-status">Two phones, no server — pair with a QR.</p>
+      <div class="row"><button class="m-btn" data-r="host"><b>HOST</b><span>show a code</span></button>
+      <button class="m-btn" data-r="join"><b>JOIN</b><span>scan a code</span></button></div>`;
+    box.querySelector('[data-r=host]').onclick = () => { fb.press(); this._hostFlow(box); };
+    box.querySelector('[data-r=join]').onclick = () => { fb.press(); this._joinFlow(box); };
+    guide.now('Online! One phone hosts and shows a QR, the other scans it. No server — just your two phones.');
+  }
+
+  async _hostFlow(box) {
+    box.innerHTML = `<p class="link-status">Starting…</p>`;
+    const l = this._link = new Link(); this._netRole = 'host';
+    l.onOpen = () => { box.innerHTML = `<p class="link-status">Connected! Waiting for Player 2’s Zook…</p>`; };
+    l.onMessage = (m) => { if (m.type === 'hello') { this._peer = { name: m.name, bp: m.bp }; this._hostPick(box); } };
+    let code; try { code = await l.host(); } catch (e) { box.innerHTML = `<p class="link-status">Couldn’t start (${e.message}).</p>`; return; }
+    const qr = await makeQR(code);
+    box.innerHTML = `<p class="link-status">1 · Show this to Player 2</p>`;
+    box.appendChild(qr);
+    const row = document.createElement('div');
+    row.innerHTML = `<button class="mini-btn wide" data-scan>2 · SCAN THEIR REPLY</button>
+      <details class="net-fallback"><summary>or paste reply code</summary><textarea class="net-code" placeholder="paste reply"></textarea><button class="mini-btn" data-paste>USE CODE</button></details>`;
+    box.appendChild(row);
+    row.querySelector('[data-scan]').onclick = () => this._scan(async (t) => { try { await l.accept(t); } catch (_) {} });
+    row.querySelector('[data-paste]').onclick = async () => { try { await l.accept(row.querySelector('.net-code').value); } catch (_) {} };
+  }
+
+  _hostPick(box) {
+    const cs = CONTESTS.filter(c => ONLINE_IDS.includes(c.id));
+    box.innerHTML = `<p class="link-status">Connected to ${this._peer.name}! Pick a contest:</p><div class="con-grid"></div>`;
+    const grid = box.querySelector('.con-grid');
+    cs.forEach(c => { const b = document.createElement('button'); b.className = 'con-card'; b.innerHTML = `<b>${c.name}</b><span>${c.desc}</span>`;
+      b.onclick = () => { fb.confirm(); this._runHostContest(c); }; grid.appendChild(b); });
+  }
+
+  _runHostContest(contest) {
+    const green = this.active, red = this._peer;
+    this._link.send({ type: 'start', contest: contest.id, greenBp: green.bp, redBp: red.bp });
+    this._clear();
+    const cs = new ContestScene({ scene: this.scene, world: this.world, RAPIER: this.RAPIER, camera: this.camera,
+      onResult: ({ playerWon, line }) => {
+        this._link.send({ type: 'result', winner: playerWon ? 'green' : 'red', line });
+        this._resultOverlay(playerWon, line, () => this._online());
+      } });
+    cs.enter(contest, green.bp, red.bp);
+    this.mode = cs;
+    this._contestOverlay(green.name || 'You', red.name, contest.name);
+  }
+
+  async _joinFlow(box) {
+    this._netRole = 'join';
+    box.innerHTML = `<p class="link-status">Scan the host’s QR code…</p>
+      <details class="net-fallback" open><summary>or paste host code</summary><textarea class="net-code" placeholder="paste host code"></textarea><button class="mini-btn" data-paste>USE CODE</button></details>
+      <button class="mini-btn wide" data-scan>OPEN SCANNER</button>`;
+    const go = async (hostCode) => {
+      const l = this._link = new Link();
+      l.onOpen = () => { l.send({ type: 'hello', name: this.active.name, bp: this.active.bp }); };
+      l.onMessage = (m) => this._joinMsg(m);
+      let reply; try { reply = await l.join(hostCode); } catch (e) { box.innerHTML = `<p class="link-status">Bad code (${e.message}).</p>`; return; }
+      const qr = await makeQR(reply);
+      box.innerHTML = `<p class="link-status">Show this reply to the host</p>`; box.appendChild(qr);
+      const f = document.createElement('details'); f.className = 'net-fallback'; f.innerHTML = `<summary>or copy reply code</summary><textarea class="net-code" readonly>${reply}</textarea>`;
+      box.appendChild(f);
+    };
+    box.querySelector('[data-scan]').onclick = () => this._scan(go);
+    box.querySelector('[data-paste]').onclick = () => go(box.querySelector('.net-code').value);
+  }
+
+  _joinMsg(m) {
+    if (m.type === 'start') {
+      const contest = CONTESTS.find(c => c.id === m.contest);
+      this._clear();
+      const cs = new ContestScene({ scene: this.scene, world: this.world, RAPIER: this.RAPIER, camera: this.camera, onResult: () => {} });
+      cs.enter(contest, m.greenBp, m.redBp, { remote: true });
+      this.mode = cs;
+      this._contestOverlay('Host', this.active.name, contest.name);
+    } else if (m.type === 'state' && this.mode && this.mode.applyState) {
+      this.mode.applyState(m);
+    } else if (m.type === 'result') {
+      this._resultOverlay(m.winner === 'red', m.line, () => this._online());
+    }
+  }
+
+  async _scan(onCode) {
+    const ov = this._overlayEl(`<div class="scan-wrap"><video class="scan-video" playsinline></video>
+      <p class="link-status">point at the QR</p><button class="mini-btn" data-x>CANCEL</button></div>`);
+    const video = ov.querySelector('video');
+    let stop = () => {};
+    ov.querySelector('[data-x]').onclick = () => { stop(); ov.remove(); };
+    try {
+      stop = await startScan(video, (code) => { stop(); ov.remove(); onCode(code); });
+    } catch (e) {
+      ov.querySelector('.link-status').textContent = 'Camera unavailable — paste the code instead.';
+    }
+  }
+
+  _contestOverlay(greenName, redName, contestName) {
+    const d = this._overlayEl(`
+      <div class="con-hud"><span class="tag green">${greenName}</span><span class="vs">${contestName}</span><span class="tag red">${redName}</span></div>
+      <div class="countdown"></div>`);
+    this._countdownEl = d.querySelector('.countdown');
+  }
+
+  _resultOverlay(playerWon, line, again) {
+    const r = this._overlayEl(`<div class="result-modal">
+      <h1 class="${playerWon ? 'win' : 'lose'}">${playerWon ? 'YOU WIN!' : 'YOU LOSE'}</h1>
+      <p>${line || ''}</p>
+      <div class="row"><button class="m-btn" data-act="again"><b>AGAIN</b></button><button class="m-btn" data-act="menu"><b>MENU</b></button></div></div>`);
+    r.querySelector('[data-act=again]').onclick = () => { fb.press(); again(); };
+    r.querySelector('[data-act=menu]').onclick = () => { fb.press(); this._netClose(); this.go('menu'); };
   }
 }

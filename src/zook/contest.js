@@ -26,6 +26,7 @@ export const CONTESTS = [
 ];
 
 const GREEN = 0x37c46a, RED = 0xe8466e;
+const r3 = (n) => Math.round(n * 100) / 100;
 
 export class ContestScene {
   constructor({ scene, world, RAPIER, camera, onResult }) {
@@ -37,15 +38,17 @@ export class ContestScene {
     this._ball = null; this._ballMesh = null; this._platform = null; this._doors = []; this._dynamic = [];
   }
 
-  enter(contest, greenBp, redBp) {
+  enter(contest, greenBp, redBp, opts = {}) {
     this.contest = contest;
+    this.remote = !!opts.remote;      // joiner renders streamed state, no sim
+    this._remoteCount = null; this._lastState = null;
     this._buildEnv(contest);
 
     const startZ = contest.goal === 'race' ? 7 : 2.4;
     this.green = this._spawn(greenBp, { x: contest.goal === 'race' ? -1 : -1.4, z: startZ }, GREEN);
     this.red   = this._spawn(redBp,   { x: contest.goal === 'race' ?  1 :  1.4, z: startZ }, RED);
-    if (contest.goal === 'merry') { this.green.zook._body.setTranslation({ x: -1, y: 1, z: 0 }, true); this.red.zook._body.setTranslation({ x: 1, y: 1, z: 0 }, true); }
-    if (contest.goal === 'tag') { this.green.zook._body.setTranslation({ x: 0, y: 1, z: 4.5 }, true); this.red.zook._body.setTranslation({ x: 0, y: 1, z: -4.5 }, true); }
+    if (!this.remote && contest.goal === 'merry') { this.green.zook._body.setTranslation({ x: -1, y: 1, z: 0 }, true); this.red.zook._body.setTranslation({ x: 1, y: 1, z: 0 }, true); }
+    if (!this.remote && contest.goal === 'tag') { this.green.zook._body.setTranslation({ x: 0, y: 1, z: 4.5 }, true); this.red.zook._body.setTranslation({ x: 0, y: 1, z: -4.5 }, true); }
 
     this._t = 0; this._state = 'count'; this._count = 3; this._countT = 0;
     fb.count(false);
@@ -63,6 +66,7 @@ export class ContestScene {
 
   // ── lifecycle ────────────────────────────────────────────────────────────
   onStep(dt) {
+    if (this.remote) return;            // joiner: state comes from the host
     if (this._state === 'count') {
       this._countT += dt;
       if (this._countT >= 1) {
@@ -103,22 +107,44 @@ export class ContestScene {
     this._judge();
   }
 
-  update() {
+  update(dt = 1 / 60) {
+    if (this.remote) {
+      const s = this._lastState;
+      for (const [e, d] of [[this.green, s && s.g], [this.red, s && s.r]]) {
+        if (!e) continue;
+        e.zook.step(dt, { walk: true });                 // animate legs only (preview)
+        if (d) { e.zook.group.position.set(d[0], d[1], d[2]); e.zook.group.quaternion.set(d[3], d[4], d[5], d[6]); }
+        this._followRing(e);
+      }
+      this._frameCamera();
+      return;
+    }
     for (const e of [this.green, this.red]) if (e) { e.zook.syncMeshes(); this._followRing(e); }
     if (this._ball && this._ballMesh) {
       const t = this._ball.translation(); this._ballMesh.position.set(t.x, t.y, t.z);
     }
     for (const d of this._doors) { const t = d.body.translation(); d.mesh.position.set(t.x, t.y, t.z); }
     for (const o of this._dynamic) { const t = o.body.translation(), r = o.body.rotation(); o.mesh.position.set(t.x, t.y, t.z); o.mesh.quaternion.set(r.x, r.y, r.z, r.w); }
-    // Broadcast camera that frames BOTH Zooks — pulls back as they separate.
-    if (this.green && this.red) {
-      const a = this.green.zook.position, b = this.red.zook.position;
-      const mx = (a.x + b.x) / 2, mz = (a.z + b.z) / 2;
-      const dist = Math.hypot(a.x - b.x, a.z - b.z);
-      const back = Math.min(20, 8 + dist * 0.7);
-      setCamera({ x: mx + back * 0.45, y: back * 0.6, z: mz + back }, { x: mx, y: 0.4, z: mz });
-    }
+    this._frameCamera();
   }
+
+  // Broadcast camera that frames BOTH Zooks — pulls back as they separate.
+  _frameCamera() {
+    if (!this.green || !this.red) return;
+    const a = this.green.zook.position, b = this.red.zook.position;
+    const mx = (a.x + b.x) / 2, mz = (a.z + b.z) / 2;
+    const dist = Math.hypot(a.x - b.x, a.z - b.z);
+    const back = Math.min(20, 8 + dist * 0.7);
+    setCamera({ x: mx + back * 0.45, y: back * 0.6, z: mz + back }, { x: mx, y: 0.4, z: mz });
+  }
+
+  // ── networking (host streams these; joiner applies) ───────────────────────
+  serializeState() {
+    const t = (e) => { const p = e.zook.group.position, q = e.zook.group.quaternion;
+      return [r3(p.x), r3(p.y), r3(p.z), r3(q.x), r3(q.y), r3(q.z), r3(q.w)]; };
+    return { g: t(this.green), r: t(this.red), c: this.countLabel };
+  }
+  applyState(s) { this._lastState = s; this._remoteCount = s.c; }
 
   // ── judging ──────────────────────────────────────────────────────────────
   _finish(playerWon, line) {
@@ -157,7 +183,9 @@ export class ContestScene {
 
   // ── build ────────────────────────────────────────────────────────────────
   _spawn(bp, pos, color) {
-    const zook = new Zook(bp, { scene: this.scene, world: this.world, RAPIER: this.RAPIER, pos });
+    const zook = this.remote
+      ? new Zook(bp, { scene: this.scene, preview: true, pos })
+      : new Zook(bp, { scene: this.scene, world: this.world, RAPIER: this.RAPIER, pos });
     const ring = new THREE.Mesh(new THREE.RingGeometry(0.5, 0.7, 24),
       new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide }));
     ring.rotation.x = -Math.PI / 2; this.scene.add(ring); this._rings.push(ring);
@@ -245,6 +273,7 @@ export class ContestScene {
   }
 
   get countLabel() {
+    if (this.remote) return this._remoteCount;
     if (this._state === 'count') return this._count <= 0 ? 'GO!' : String(this._count);
     return null;
   }

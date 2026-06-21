@@ -518,3 +518,13 @@ body { -webkit-user-select: none; user-select: none; touch-action: none; }
   content: ''; position: absolute; top: 9px; left: 50%; width: 5px; height: 5px; margin-left: -2.5px;
   border-radius: 50%; background: #fff; box-shadow: 0 0 0 1.5px rgba(0,0,0,0.45), 0 0 5px rgba(255,255,255,0.6);
 }
+
+/* ── Online link UI ──────────────────────────────────────────────────────── */
+.link-panel canvas { display: block; margin: 10px auto; border-radius: 10px; box-shadow: 0 3px 10px rgba(80,55,20,0.3); }
+.net-fallback { margin-top: 10px; font-size: 11px; color: var(--sub); }
+.net-fallback summary { cursor: pointer; }
+.net-code { width: 100%; height: 54px; margin: 6px 0; font: 11px ui-monospace, monospace; border-radius: 8px;
+  border: 1px solid var(--line); padding: 6px; resize: none; background: var(--panel-2); color: var(--ink); }
+.scan-wrap { margin: auto; display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 20px; }
+.scan-video { width: min(320px, 86vw); height: min(320px, 86vw); object-fit: cover; border-radius: 16px;
+  background: #000; box-shadow: 0 6px 24px rgba(0,0,0,0.4); }
