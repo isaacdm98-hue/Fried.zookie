@@ -24,6 +24,7 @@ export const CONTESTS = [
   { id: 'dodge',   name: 'Dodgy Zook',     desc: 'Slip past the sliding doors.',                  goal: 'race', doors: true },
   { id: 'tag',     name: 'Zook Tag',       desc: 'Catch the rival before time runs out!',         goal: 'tag' },
   { id: 'smash',   name: 'Zook Smash',     desc: 'Smash through the blocks to the line.',          goal: 'race', smash: true },
+  { id: 'blockpush', name: 'Block Push',   desc: 'Shove your heavy block over the line first.',    goal: 'race', push: true },
   { id: 'china',   name: 'China Shop',     desc: 'Knock over more china than your rival!',         goal: 'china' },
 ];
 
@@ -331,6 +332,11 @@ export class ContestScene {
       if (c.doors) this._slidingDoors();
       if (c.smash) for (const z of [-1, -6, -11, -16, -21]) for (let i = 0; i < 4; i++)
         this._dynBox({ pos: { x: -2.4 + i * 1.6, y: 0.5 + Math.random() * 0.1, z }, size: { x: 1.3, y: 1.0, z: 1.0 }, color: 0xff8a1e, mass: 0.5 });
+      // Block Push (league event): a big rolling boulder sits in each lane — you
+      // bulldoze it down the track to the line. A stronger, lower build shoves it
+      // faster and straighter, so it's a real test of the build.
+      if (c.push) for (const s of [-1, 1])
+        this._dynBall({ pos: { x: s, y: 0.85, z: 4.0 }, r: 0.85, color: 0x4f74ff, density: 0.3 });
     } else if (c.goal === 'tag') {
       this._box({ pos: { x: 0, y: -0.2, z: 0 }, size: { x: 16, y: 0.4, z: 16 }, color: 0xeee7d6 });
     } else if (c.goal === 'china') {
@@ -380,12 +386,20 @@ export class ContestScene {
     }
   }
 
-  _dynBox({ pos, size, color = 0xff8a1e, mass = 0.5 }) {
+  _dynBox({ pos, size, color = 0xff8a1e, mass = 0.5, friction = 0.7 }) {
     const m = new THREE.Mesh(new THREE.BoxGeometry(size.x, size.y, size.z), new THREE.MeshStandardMaterial({ color, roughness: 0.7 }));
     m.castShadow = m.receiveShadow = true; this.scene.add(m); this._meshes.push(m);
     const R = this.RAPIER;
     const b = this.world.createRigidBody(R.RigidBodyDesc.dynamic().setTranslation(pos.x, pos.y, pos.z).setAdditionalMass(mass));
-    this.world.createCollider(R.ColliderDesc.cuboid(size.x / 2, size.y / 2, size.z / 2).setFriction(0.7).setRestitution(0.1), b);
+    this.world.createCollider(R.ColliderDesc.cuboid(size.x / 2, size.y / 2, size.z / 2).setFriction(friction).setRestitution(0.1), b);
+    this._dynamic.push({ mesh: m, body: b }); this._bodies.push(b); return b;
+  }
+  _dynBall({ pos, r = 0.85, color = 0x4f74ff, density = 0.3 }) {
+    const m = new THREE.Mesh(new THREE.SphereGeometry(r, 18, 14), new THREE.MeshStandardMaterial({ color, roughness: 0.55, flatShading: true }));
+    m.castShadow = m.receiveShadow = true; this.scene.add(m); this._meshes.push(m);
+    const R = this.RAPIER;
+    const b = this.world.createRigidBody(R.RigidBodyDesc.dynamic().setTranslation(pos.x, pos.y, pos.z).setLinearDamping(0.2).setAngularDamping(0.2));
+    this.world.createCollider(R.ColliderDesc.ball(r).setRestitution(0.2).setFriction(0.6).setDensity(density), b);
     this._dynamic.push({ mesh: m, body: b }); this._bodies.push(b); return b;
   }
 
