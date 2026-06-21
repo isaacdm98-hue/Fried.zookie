@@ -240,10 +240,14 @@ export class Zook {
     body.userData.isBody = true;                 // tap-target for placing parts
     this.group.add(body);
 
-    // Extra body blobs (modelling clay): scaled blobs merged onto the root.
+    // Extra body blobs (modelling clay): scaled blobs you attach to build up the
+    // shape and free-form limbs. Each is a full part — own scale, colour & skin.
     this._blobs = [];
     (bp.blobs || []).forEach((bl, i) => {
-      const mb = new THREE.Mesh(BLOB_GEO, bMat);
+      let bm = bMat;
+      if (bl.skin) { bm = mat(0, 0.5, 0.55); bm.color.set(0xffffff); bm.map = skinTexture(bl.skin); bm.flatShading = true; }
+      else if (bl.hue != null) { bm = mat(bl.hue, 0.55 + bri * 0.32); bm.flatShading = true; }
+      const mb = new THREE.Mesh(BLOB_GEO, bm);
       mb.scale.set(bl.sx || 0.7, bl.sy || 0.7, bl.sz || 0.7);
       mb.position.set(bl.x || 0, bl.y || 0, bl.z || 0);
       mb.castShadow = mb.receiveShadow = true;

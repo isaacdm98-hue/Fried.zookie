@@ -181,11 +181,15 @@ export class Builder {
           this._copyBtn(), this._mirrorBtn(), this._delBtn());
         hint('drag to move · WIDE/TALL/DEEP shape the part · COPY/MIRROR');
       } else if (s && s.type === 'blob' && this.bp.blobs[s.idx]) {
-        const bl = this.bp.blobs[s.idx];
-        el.append(K({ label: 'SIZE', min: 0.2, max: 1.8, step: 0.05, value: bl.sx, onChange: v => { this._pushUndo(); bl.sx = bl.sy = bl.sz = v; this._apply(); } }), this._delBtn());
-        hint('drag the blob to move it');
+        const bl = this.bp.blobs[s.idx]; const setb = (k, v) => { this._pushUndo(); bl[k] = v; this._apply(); };
+        el.append(
+          K({ label: 'WIDE', min: 0.2, max: 2.6, step: 0.1, value: bl.sx, format: v => v.toFixed(1), onChange: v => setb('sx', v) }),
+          K({ label: 'TALL', min: 0.2, max: 2.6, step: 0.1, value: bl.sy, format: v => v.toFixed(1), onChange: v => setb('sy', v) }),
+          K({ label: 'DEEP', min: 0.2, max: 2.6, step: 0.1, value: bl.sz, format: v => v.toFixed(1), onChange: v => setb('sz', v) }),
+          this._delBtn());
+        hint('drag to move · WIDE/TALL/DEEP or the box handles shape it');
       } else {
-        hint(this._addType === 'leg' ? 'TAP THE BODY where you want a leg' : 'TAP THE BODY to add a clay blob');
+        hint(this._addType === 'leg' ? 'TAP THE BODY where you want a leg' : 'TAP ANY PART to stack a clay blob (build limbs!)');
       }
     } else if (this._mode === 'move') {
       // Root motion (manual Ch13): the whole-Zook movement settings.
@@ -213,28 +217,30 @@ export class Builder {
         hint('CYCLE staggers · MODE/TURN/AIM set behaviour · PATH shapes the step');
       } else hint('tap a leg to tune its step · SPEED & STRIDE set pace, SHARP/SMOOTH the turns');
     } else { // paint — colour the WHOLE body, or a single selected part (like the kit's Colour tab)
-      const sel = this._sel, legSel = sel && sel.type === 'leg' && this.bp.legs[sel.idx];
+      const sel = this._sel;
+      const part = sel && (sel.type === 'leg' ? this.bp.legs[sel.idx] : sel.type === 'blob' ? this.bp.blobs[sel.idx] : null);
+      const setPart = (k, v) => { if (!part) return; this._pushUndo(); part[k] = v; if (sel.type === 'leg') { const p = this.bp.legs.find(l => l !== part && l.pair === part.pair); if (p) p[k] = v; } this._apply(); this._renderBar(); };
       const sw = document.createElement('div'); sw.className = 'swatches';
       [0.02, 0.07, 0.13, 0.22, 0.33, 0.45, 0.55, 0.63, 0.74, 0.88, 0.95].forEach(h => {
         const b = document.createElement('button'); b.className = 'swatch'; b.style.background = `hsl(${h * 360},72%,55%)`;
         b.addEventListener('click', () => { fb.tick();
-          if (legSel) this._editLeg('hue', h);
+          if (part) setPart('hue', h);
           else { this._pushUndo(); this.bp.hue = h; this.bp.footHue = h; this._apply(); } });
         sw.appendChild(b);
       });
       el.append(sw);
-      if (legSel) {
-        el.append(HueSlider({ label: 'THIS PART', value: legSel.hue != null ? legSel.hue : this.bp.footHue, onChange: v => this._editLeg('hue', v) }).root);
+      if (part) {
+        el.append(HueSlider({ label: 'THIS PART', value: part.hue != null ? part.hue : this.bp.footHue, onChange: v => setPart('hue', v) }).root);
         const clr = document.createElement('button'); clr.className = 'mini-btn'; clr.textContent = 'USE BODY COLOUR';
-        clr.addEventListener('click', () => { fb.press(); this._editLeg('hue', null); });
-        el.append(this._skinGrid(legSel.skin, n => this._editLeg('skin', n)), clr);
+        clr.addEventListener('click', () => { fb.press(); setPart('hue', null); });
+        el.append(this._skinGrid(part.skin, n => setPart('skin', n)), clr);
         hint('colour & SKIN the selected part · tap the body for everything');
       } else {
         el.append(
           HueSlider({ label: 'BODY', value: this.bp.hue, onChange: v => set('hue', v) }).root,
           HueSlider({ label: 'FEET', value: this.bp.footHue, onChange: v => set('footHue', v) }).root,
           this._skinGrid(this.bp.skin, n => { this._pushUndo(); this.bp.skin = n; this._apply(); }));
-        hint('pick a colour & a real Zook SKIN · tap a leg to paint just it');
+        hint('pick a colour & a real Zook SKIN · tap any part to paint just it');
       }
     }
   }
@@ -446,18 +452,24 @@ export class Builder {
       if (hit && hit.type === 'body') this._drag = { kind: 'shape', w: this.bp.width, h: this.bp.height, x: e.clientX, y: e.clientY };
       else this._orbit(e);
     } else if (this._mode === 'add') {
-      if (hit && hit.type === 'leg') { this._select({ type: 'leg', idx: hit.idx }); this._renderBar(); this._drag = this._legDrag(hit.idx); }
-      else if (hit && hit.type === 'blob') { this._select({ type: 'blob', idx: hit.idx }); this._renderBar(); this._drag = this._blobDrag(hit.idx, e); }
-      else if (hit && hit.type === 'body') {
-        const loc = this.zook.group.worldToLocal(hit.point.clone());
-        if (this._addType === 'blob') { this._addBlobAtLocal(loc); this._drag = this._blobDrag(this._sel.idx, e); }
-        else { const along = Math.max(-1, Math.min(1, loc.z / (this.bp.len * 0.46))); this._addLegAt(along, loc.x < 0 ? -1 : 1); this._drag = this._legDrag(this._sel.idx); }
-      } else this._orbit(e);
+      if (this._addType === 'blob') {
+        // Attach clay to ANY part (body, blob or leg) — build free-form limbs/shapes.
+        if (hit) { const loc = this.zook.group.worldToLocal(hit.point.clone()); this._addBlobAtLocal(loc); this._drag = this._blobDrag(this._sel.idx, e); }
+        else this._orbit(e);
+      } else { // leg
+        if (hit && hit.type === 'leg') { this._select({ type: 'leg', idx: hit.idx }); this._renderBar(); this._drag = this._legDrag(hit.idx); }
+        else if (hit && hit.type === 'body') {
+          const loc = this.zook.group.worldToLocal(hit.point.clone());
+          const along = Math.max(-1, Math.min(1, loc.z / (this.bp.len * 0.46))); this._addLegAt(along, loc.x < 0 ? -1 : 1); this._drag = this._legDrag(this._sel.idx);
+        } else this._orbit(e);
+      }
     } else if (this._mode === 'move') {
       if (hit && hit.type === 'leg') { this._select({ type: 'leg', idx: hit.idx }); this._renderBar(); this._drag = this._legDrag(hit.idx); }
+      else if (hit && hit.type === 'blob') { this._select({ type: 'blob', idx: hit.idx }); this._renderBar(); this._drag = this._blobDrag(hit.idx, e); }
       else this._orbit(e);
     } else if (this._mode === 'paint') {
       if (hit && hit.type === 'leg') { this._select({ type: 'leg', idx: hit.idx }); this._renderBar(); }
+      else if (hit && hit.type === 'blob') { this._select({ type: 'blob', idx: hit.idx }); this._renderBar(); }
       else if (hit && hit.type === 'body') { this._select(null); this._renderBar(); }
       else this._orbit(e);
     } else this._orbit(e);
