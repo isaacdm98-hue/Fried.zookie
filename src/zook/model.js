@@ -18,12 +18,16 @@ import * as THREE from 'three';
 
 export function defaultBlueprint() {
   return {
+    // Proportions follow the Zook Kit "Baseline Zook" (research paper, Table 1):
+    // ~10cm high × 30cm wide × 30cm long — i.e. WIDE and FLAT, which is what
+    // keeps it stable (Table 2: "falls over → increase width"). Our units are
+    // ~10× life size so the creature reads well on a phone.
     hue:       0.08,   // body colour 0..1
     footHue:   0.08,   // foot colour 0..1
-    len:       2.0,    // body length  (nose↔tail, Z)
-    width:     1.05,   // body width   (X)
-    height:    0.78,   // body height  (Y)
-    square:    0.6,    // 0 round … 1 boxy (default leans blocky)
+    len:       1.7,    // body length  (nose↔tail, Z)
+    width:     1.5,    // body width   (X) — wide for a stable stance
+    height:    0.58,   // body height  (Y) — low and flat
+    square:    0.55,   // 0 round … 1 boxy
     pointy:    0.35,   // nose taper 0..1
     flatEnd:   0.0,    // flatten the tail end 0..1
     flatSide:  0.0,    // flatten the sides 0..1
@@ -119,6 +123,40 @@ const HILITE    = new THREE.MeshStandardMaterial({ color: 0xffd479, emissive: 0x
 // Zook Kit (every part is a squished "Blob" mesh) so the creature reads as one.
 const BLOB_GEO  = new THREE.SphereGeometry(0.5, 10, 8);
 
+// ── Locomotion physics (the BAMZOOKi / Karma feel) ────────────────────────────
+// The Zook is one rigid body, but it walks through GENUINE foot-ground contact:
+// each leg's foot follows its IK path; while a foot is planted, it (a) holds the
+// body up with a support spring and (b) grips the floor, so the path's backstroke
+// drives the body forward — and the forces enter the body at the hips, off the
+// centre of mass, so the creature balances, wobbles and tips just like the real
+// thing. A good walker has to be *designed*: plant the feet, sweep them back,
+// stagger the cycle. Nothing is scripted.
+const GROUND_Y = 0;     // floor / table top in every arena
+const LIFT     = 0.55;  // swing-foot lift, as a fraction of leg reach
+const FREACH   = 0.55;  // forward foot travel (× stride × reach)
+const PLANT_H  = 0.34;  // path height below which the foot is "planted"
+const K_SUP    = 200;   // support-spring stiffness  (N per m of compression)
+const C_SUP    = 26;    // support-spring damping (near-critical → no pogo bounce)
+const MU       = 1.3;   // foot↔floor traction coefficient (caps grip by load)
+const GRIP     = 72;    // traction stiffness (N per m/s of contact slip)
+const F_MAX    = 70;    // hard clamp on any single foot's vertical force (no blowups)
+const UPRIGHT  = 0.4;   // body up·worldUp below this ⇒ flopped, feet can't get purchase
+
+function quatRot(q, v) {
+  // rotate vector v by quaternion q (x,y,z,w)
+  const ix =  q.w * v.x + q.y * v.z - q.z * v.y;
+  const iy =  q.w * v.y + q.z * v.x - q.x * v.z;
+  const iz =  q.w * v.z + q.x * v.y - q.y * v.x;
+  const iw = -q.x * v.x - q.y * v.y - q.z * v.z;
+  return {
+    x: ix * q.w + iw * -q.x + iy * -q.z - iz * -q.y,
+    y: iy * q.w + iw * -q.y + iz * -q.x - ix * -q.z,
+    z: iz * q.w + iw * -q.z + ix * -q.y - iy * -q.x,
+  };
+}
+function cross(a, b) { return { x: a.y * b.z - a.z * b.y, y: a.z * b.x - a.x * b.z, z: a.x * b.y - a.y * b.x }; }
+function legReach(leg) { const S = LEG_STYLES[leg.style] || LEG_STYLES.crawl; return leg.len * (S.u + S.l); }
+
 // ── Zook ─────────────────────────────────────────────────────────────────────
 
 export class Zook {
@@ -146,8 +184,11 @@ export class Zook {
   get dims() {
     const { len, width, height } = this.bp;
     const legs = ensureLegs(this.bp);
-    const maxLeg = legs.length ? Math.max(...legs.map(l => l.len)) : 0.5;
-    return { w: width, h: height, l: len, rest: maxLeg + height / 2 };
+    // Standing height: the hip sits a little below the body centre, and the leg
+    // reaches down to the floor from there. No legs ⇒ it rests on its belly.
+    const maxReach = legs.length ? Math.max(...legs.map(legReach)) : 0;
+    const rest = legs.length ? height * 0.32 + maxReach : height / 2;
+    return { w: width, h: height, l: len, rest };
   }
 
   // ── Geometry ──────────────────────────────────────────────────────────────
@@ -214,7 +255,9 @@ export class Zook {
       foot.scale.set(thick * 1.5, thick * 0.7, thick * 2.0); foot.position.set(0, -l, thick * 0.4); foot.castShadow = true; knee.add(foot);
       this.group.add(pivot);
       this._legs.push({ pivot, knee, foot, side: leg.side, swingMul: S.swing, moveType: leg.moveType || 'auto',
-        path: leg.path || defaultPath(), cycle: leg.cycle || 0, move: leg.move || 'two', _push: 0 });
+        path: leg.path || defaultPath(), cycle: leg.cycle || 0, move: leg.move || 'two', style: leg.style || 'crawl',
+        hip: { x, y: hipY, z }, reach: u + l, splay: S.splay, S,
+        _footLocal: null, _footPrev: null, _planted: false });
     });
 
     // Decorative parts (Add menu): antennae on the nose, a tail at the back.
@@ -242,22 +285,18 @@ export class Zook {
 
   _buildBody() {
     const { w, h, l, rest } = this.dims;
-    const legLen = rest - h / 2;
     const R = this.RAPIER;
+    // The body floats on its feet (the support springs hold it up). Light damping
+    // stops it drifting forever but the feet do the work. Spawn at rest height.
     const desc = R.RigidBodyDesc.dynamic()
-      .setTranslation(this._pos.x, rest, this._pos.z)
-      .setLinearDamping(1.2).setAngularDamping(1.4);
+      .setTranslation(this._pos.x, rest + 0.02, this._pos.z)
+      .setLinearDamping(0.45).setAngularDamping(2.4);
     this._body = this.world.createRigidBody(desc);
-    // Collider is a leg-height "skirt": it reaches from the body down to the
-    // feet, so the Zook stands at leg height instead of resting on its belly.
-    // Low friction so the emergent leg drive can actually move it; linear
-    // damping (above) keeps it from sliding forever.
-    const fullH = h + legLen;
-    const col = R.ColliderDesc.cuboid(w / 2, fullH / 2, l / 2)
-      .setTranslation(0, -legLen / 2, 0)
-      .setFriction(0.08).setRestitution(0).setDensity(0.9);
-    // Use the MIN friction rule so the table's high grip doesn't glue the body
-    // (locomotion is drive-based); the legs supply the "grip" conceptually.
+    // Just the body shape — sits well above the floor while standing, and only
+    // touches down (belly-flop) if the legs fail to hold it up. Low friction so
+    // a toppled body slides rather than sticking; the feet supply real grip.
+    const col = R.ColliderDesc.cuboid(w / 2, h / 2, l / 2)
+      .setFriction(0.3).setRestitution(0).setDensity(0.85);
     if (R.CoefficientCombineRule) col.setFrictionCombineRule(R.CoefficientCombineRule.Min);
     this.world.createCollider(col, this._body);
   }
@@ -281,104 +320,125 @@ export class Zook {
   jump() { if (this._body && this._onGround) this._body.applyImpulse({ x: 0, y: 7.5 * (this.bp.stiffness || 1), z: 0 }, true); }
 
   // ── Animation / driving ──────────────────────────────────────────────────────
-  _animateLegs(amount) {
+  // Drive every foot along its IK path → a body-local foot position, then aim the
+  // 2-blob leg at it (so feet visibly plant and stay on the floor) and remember
+  // the foot's local position + velocity for the contact-physics in step().
+  _animateLegs(amount, dt = 1 / 60) {
     const { speed, stride, footAngle } = this.bp;
+    const fwd = stride * FREACH;
     for (const leg of this._legs) {
-      const u = (this._t * speed + (leg.cycle || 0)) % 1;
-      if (leg.move === 'single') {
-        // Single-part movement (flipper/paddle): the whole leg sweeps round.
-        leg.pivot.rotation.x = Math.sin(u * Math.PI * 2) * stride * 1.6 * amount;
-        leg.knee.rotation.x = 0.1;
-        leg.foot.rotation.x = footAngle;
-        leg._push = amount * Math.max(0, -Math.cos(u * Math.PI * 2)) * stride * leg.swingMul;
-        continue;
-      }
-      // Two-part movement: foot follows its editable IK path.
-      const cur = samplePath(leg.path, u);
-      const prev = samplePath(leg.path, u - 0.04);
-      const df = cur.f - prev.f;                    // <0 ⇒ foot sweeping backward
-      leg.pivot.rotation.x = cur.f * stride * leg.swingMul * amount;
-      leg.knee.rotation.x = (0.08 + cur.h * 0.95) * amount + 0.04;
+      const reach = leg.reach;
+      const u  = (this._t * speed + (leg.cycle || 0));
+      const cur  = samplePath(leg.path, u);
+      const prev = samplePath(leg.path, u - speed * dt);
+      // Body-local foot offset from the hip. Planted ⇒ straight down to the floor;
+      // swinging ⇒ lifted and carried forward/back along the path.
+      const splayX = leg.side * Math.sin(leg.splay) * reach * 0.7;
+      const off = (p) => ({
+        x: leg.hip.x + splayX,
+        y: leg.hip.y - reach * (1 - p.h * LIFT * amount),
+        z: leg.hip.z - p.f * fwd * reach * amount,
+      });
+      const fl = off(cur), flp = off(prev);
+      leg._footLocal = fl;
+      leg._footVel = { x: (fl.x - flp.x) / dt, y: (fl.y - flp.y) / dt, z: (fl.z - flp.z) / dt };
+      leg._planted = (cur.h * amount) < PLANT_H;
+
+      // Visual 2-bone IK: aim the pivot at the foot, bend the knee to reach it.
+      const dx = fl.x - leg.hip.x, dy = fl.y - leg.hip.y, dz = fl.z - leg.hip.z;
+      const dist = Math.hypot(dx, dy, dz);
+      leg.pivot.rotation.x = Math.atan2(dz, -dy);
+      leg.pivot.rotation.z = leg.side * leg.splay;
+      leg.knee.rotation.x = Math.max(0, Math.min(2.3, (1 - dist / (reach * 0.99)) * 2.6));
       leg.foot.rotation.x = footAngle + cur.h * 0.3 * amount;
-      const planted = cur.h < 0.35;
-      leg._push = (planted ? Math.max(0, -df) : 0) * stride * amount;
     }
-    this._bob = Math.sin(this._t * 2 * Math.PI * speed) * 0.02 * amount;
+    this._bob = 0;
   }
 
   /** @param {{walk?:boolean, target?:{x,z}}} inputs */
   step(dt, inputs = {}) {
     this._t += dt;
     const walk = inputs.walk !== false;
-    this._animateLegs(walk ? 1 : 0);
+    this._animateLegs(walk ? 1 : 0, dt);
     if (this.preview || !this._body) return;
 
-    const { speed, stride } = this.bp;
-    const b = this._body, rot = b.rotation();
+    const stiff = this.bp.stiffness || 1;
+    const b = this._body, rot = b.rotation(), pos = b.translation();
+    const lv = b.linvel(), av = b.angvel();
     const yaw = Math.atan2(2 * (rot.w * rot.y + rot.x * rot.z), 1 - 2 * (rot.y * rot.y + rot.z * rot.z));
-    const fwdX = -Math.sin(yaw), fwdZ = -Math.cos(yaw);
-    const pos = b.translation();
-    this._onGround = pos.y < this.dims.rest * 1.4;
 
-    // Steer toward a floor target if given (manual: Zooks move toward a target).
+    // Steer toward a floor target (manual: Zooks turn by slowing one side's legs).
     let steer = 0;
     if (inputs.target) {
       const want = Math.atan2(-(inputs.target.x - pos.x), -(inputs.target.z - pos.z));
       let d = want - yaw; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI;
       steer = Math.max(-1, Math.min(1, d * this.bp.turnSharp));
     } else if (inputs.steerLeft) steer = 1; else if (inputs.steerRight) steer = -1;
-    // Turn smoothness damps the steer response.
     this._steer += (steer - this._steer) * (1 - this.bp.turnSmooth * 0.6);
 
-    // Emergent locomotion: each leg only propels during its planted backstroke,
-    // so motion arises from the gait itself. Staggering the legs (Movement
-    // Cycle) keeps a foot pushing at all times → smoother, faster; legs in
-    // unison give a lurching, weaker gait. Stride, speed and leg count all feed
-    // in naturally, exactly as building a real Zook should reward.
     // Antennae do Part Targeting — lean toward the floor target.
     if (this._antennae.length && inputs.target) {
       const want = Math.atan2(-(inputs.target.x - pos.x), -(inputs.target.z - pos.z));
       let d = want - yaw; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI;
       for (const a of this._antennae) a.rotation.y += (Math.max(-1, Math.min(1, d)) * 0.6 - a.rotation.y) * 0.2;
     }
-    if (walk && this._onGround) {
-      // Drive emerges from the feet: each leg's planted backstroke (from its IK
-      // path) contributes. Movement Type slows the inside legs when turning, so
-      // turning emerges from leg asymmetry (manual Ch13).
-      let push = 0;
-      for (const leg of this._legs) {
-        let p = leg._push || 0;
-        const mt = leg.moveType || 'auto';
-        const eff = mt === 'always' ? 0 : mt === 'left' ? 1 : mt === 'right' ? -1 : leg.side;
-        if (eff !== 0 && Math.sign(this._steer) === Math.sign(eff) && Math.abs(this._steer) > 0.05) p *= 1 - Math.min(0.7, Math.abs(this._steer) * 0.7);
-        push += p;
-      }
-      const stiff = this.bp.stiffness || 1;
-      // Lower drive: a sloppy gait barely moves — you must tune the cycle, path
-      // and leg layout to make a good walker (as in the real Zook Kit).
-      const drive = push * speed * 30 * stiff;
-      b.applyImpulse({ x: fwdX * drive * dt, y: 0, z: fwdZ * drive * dt }, true);
-    }
-    // Steering: only turn while feet can grip the ground.
-    if (this._onGround && Math.abs(this._steer) > 0.01) {
-      b.applyTorqueImpulse({ x: 0, y: this._steer * 1.4 * dt, z: 0 }, true);
-    }
-    // Self-righting: stiffer limbs hold the Zook upright more firmly.
-    const up = 9 * (this.bp.stiffness || 1);
-    b.applyTorqueImpulse({ x: -rot.x * up * dt, y: 0, z: -rot.z * up * dt }, true);
 
-    // Anisotropic grip (MathEngine PrimarySlip/SecondarySlip): feet grip
-    // sideways while the body drives forward — kills skating, so the Zook goes
-    // where it faces instead of sliding.
-    if (this._onGround) {
-      const v = b.linvel();
-      const fc = v.x * fwdX + v.z * fwdZ;
-      const lx = v.x - fc * fwdX, lz = v.z - fc * fwdZ;
-      b.setLinvel({ x: fc * fwdX + lx * 0.22, y: v.y, z: fc * fwdZ + lz * 0.22 }, true);
+    // ── Genuine foot–ground contact ────────────────────────────────────────────
+    // For each planted foot: a support spring holds the body up, and traction
+    // grips the floor. The path sweeps the foot backwards, so the gripped foot
+    // drives the body FORWARD; forces apply at the hip (off-COM) → real balance.
+    // If the body has toppled (up-axis well off vertical) the feet can't get any
+    // purchase, so it simply flops — a badly-built Zook genuinely fails, exactly
+    // like the real Zook Kit. This gate also stops a tip becoming a blow-up.
+    const upY = 1 - 2 * (rot.x * rot.x + rot.z * rot.z);   // body up · world up
+    let planted = 0;
+    if (upY > UPRIGHT) {
+      for (const leg of this._legs) {
+        if (!leg._footLocal) continue;
+        const flw = quatRot(rot, leg._footLocal);
+        const F = { x: pos.x + flw.x, y: pos.y + flw.y, z: pos.z + flw.z };
+        if (!(leg._planted && F.y <= GROUND_Y + 0.14)) continue;
+        planted++;
+        const hipw = quatRot(rot, leg.hip);
+        const H = { x: pos.x + hipw.x, y: pos.y + hipw.y, z: pos.z + hipw.z };
+        // contact-point velocity = body linear + ω×r + foot actuation (path) velocity
+        const r = { x: F.x - pos.x, y: F.y - pos.y, z: F.z - pos.z };
+        const wxr = cross(av, r);
+        const act = quatRot(rot, leg._footVel);
+        const cl = (n) => n < -8 ? -8 : n > 8 ? 8 : n;     // clamp slip → no spikes
+        const vc = { x: cl(lv.x + wxr.x + act.x), y: cl(lv.y + wxr.y + act.y), z: cl(lv.z + wxr.z + act.z) };
+        // Support: spring up on how far the foot is below the floor, damped + clamped.
+        let Fy = K_SUP * stiff * Math.max(0, GROUND_Y - F.y) - C_SUP * vc.y;
+        Fy = Fy < 0 ? 0 : Fy > F_MAX ? F_MAX : Fy;
+        // Traction: oppose horizontal slip, capped by friction × load (μN).
+        let Tx = -GRIP * vc.x, Tz = -GRIP * vc.z;
+        // Movement Type: slow the inside legs when turning (manual Ch13) → the
+        // backstroke is weaker on one side, so the Zook arcs round.
+        const mt = leg.moveType || 'auto';
+        const side = mt === 'always' ? 0 : mt === 'left' ? 1 : mt === 'right' ? -1 : leg.side;
+        if (side !== 0 && Math.sign(this._steer) === Math.sign(side) && Math.abs(this._steer) > 0.05) {
+          const k = 1 - Math.min(0.7, Math.abs(this._steer) * 0.7); Tx *= k; Tz *= k;
+        }
+        const Tmag = Math.hypot(Tx, Tz), Tmax = MU * Fy + 1.5;
+        if (Tmag > Tmax) { const s = Tmax / Tmag; Tx *= s; Tz *= s; }
+        b.applyImpulseAtPoint({ x: Tx * dt, y: Fy * dt, z: Tz * dt }, H, true);
+      }
     }
-    // Cap the turn rate (MaxAngularVelocity) for controlled steering.
-    const av = b.angvel(); const maxA = 3.2;
-    if (Math.abs(av.y) > maxA) b.setAngvel({ x: av.x, y: Math.sign(av.y) * maxA, z: av.z }, true);
+    this._onGround = planted > 0;
+
+    if (this._onGround) {
+      // A gentle steering nudge so target-seeking is responsive (the real turning
+      // still comes from the leg asymmetry above). Only while feet grip.
+      if (Math.abs(this._steer) > 0.01) b.applyTorqueImpulse({ x: 0, y: this._steer * 0.7 * dt, z: 0 }, true);
+      // Mild self-righting — recovers small wobbles but won't lift a real flop
+      // back up; a top-heavy or lopsided Zook stays down (it's a bad design).
+      const upK = 3.2 * stiff;
+      b.applyTorqueImpulse({ x: -rot.x * upK * dt, y: 0, z: -rot.z * upK * dt }, true);
+    }
+
+    // Cap the turn rate for controlled steering (Karma MaxAngularVelocity).
+    const a2 = b.angvel(), maxA = 3.0;
+    if (Math.abs(a2.y) > maxA) b.setAngvel({ x: a2.x, y: Math.sign(a2.y) * maxA, z: a2.z }, true);
   }
 
   syncMeshes() {
