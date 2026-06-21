@@ -45,14 +45,25 @@ export class App {
   onStep(dt) { if (this.mode && this.mode.onStep) this.mode.onStep(dt); }
   update(dt) {
     if (this._hero) {
-      if (this._heroSpin !== false) { this._heroSpinT += dt * 0.5; this._hero.rotation.y = this._heroSpinT; }
-      this._heroZook.step(dt, { walk: true }); this._heroZook.syncMeshes();
-      // A bit of life: breathing, and a daft little wiggle every few seconds.
       this._heroT = (this._heroT || 0) + dt;
-      const g = this._heroZook.group;
-      g.scale.set(1, 1 + Math.sin(this._heroT * 2.4) * 0.025, 1);
-      const w = this._heroT % 5;
-      g.rotation.z = w < 0.5 ? Math.sin(w * Math.PI * 8) * 0.07 : 0;
+      this._heroZook.step(dt, { walk: true }); this._heroZook.syncMeshes();
+      const g = this._heroZook.group, t = this._heroT, rest = this._heroZook.dims.rest;
+      if (this._heroSilly) {
+        // A daft little routine on a loop: butt-in-the-air wiggle, bouncy hops,
+        // a happy spin, then a shimmy. Pure silliness for the title screen.
+        const seg = (t * 0.5) % 4;
+        let rx = 0, ry = Math.PI, rz = 0, hop = 0;
+        if (seg < 1)      { rx = 0.95; ry = Math.PI + Math.sin(t * 11) * 0.6; }            // 🍑 butt in the air, waggling
+        else if (seg < 2) { hop = Math.abs(Math.sin(t * 9)) * 0.55; }                       // bouncy hops
+        else if (seg < 3) { ry = Math.PI + (seg - 2) * Math.PI * 2; hop = 0.12; }           // happy spin
+        else              { rz = Math.sin(t * 10) * 0.3; hop = Math.abs(Math.sin(t * 6)) * 0.15; } // shimmy
+        g.rotation.set(rx, ry, rz);
+        g.position.y = rest + hop;
+        g.scale.set(1, 1 + Math.sin(t * 4) * 0.05, 1);
+      } else {
+        if (this._heroSpin !== false) { this._heroSpinT += dt * 0.5; this._hero.rotation.y = this._heroSpinT; }
+        g.scale.set(1, 1 + Math.sin(t * 2.4) * 0.025, 1);
+      }
     }
     // Motion Player: drive the remote contest from recorded frames.
     if (this._replay && this.mode && this.mode.applyState) {
@@ -134,7 +145,7 @@ export class App {
     plinth.position.y = -0.15; plinth.receiveShadow = true; this._hero.add(plinth);
     this._heroZook = new Zook(bp || this.active.bp, { preview: true, showArrow: false });
     this._hero.add(this._heroZook.group);
-    this._heroSpin = true; this._heroSpinT = 0; this._hero.rotation.y = 0;
+    this._heroSpin = true; this._heroSilly = false; this._heroSpinT = 0; this._hero.rotation.y = 0;
     setCamera({ x: 0, y: 2.0, z: 4.8 }, { x: 0, y: 0.4, z: 0 }, true);
   }
   _hideHero() {
@@ -164,8 +175,10 @@ export class App {
   _title() {
     // Hero Zook facing the user; the hand-drawn (animated APNG) doodle is shown
     // as a DOM image so it actually animates.
-    this._showHero(this.active.bp);
-    this._heroSpin = false; this._hero.rotation.y = 0; this._heroZook.group.rotation.y = Math.PI;
+    // Show a lively legged example so the silly routine has legs to fling about.
+    if (!this._titleBp) this._titleBp = randomExample().bp;
+    this._showHero(this._titleBp);
+    this._heroSpin = false; this._heroSilly = true; this._hero.rotation.y = 0; this._heroZook.group.rotation.y = Math.PI;
     setCamera({ x: 0, y: 1.5, z: 5.2 }, { x: 0, y: 1.0, z: 0 }, true);
 
     const d = this._overlayEl(`
