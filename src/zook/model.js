@@ -409,11 +409,26 @@ function patternTexture(kind) {
   const c = document.createElement('canvas'); c.width = c.height = 64;
   const x = c.getContext('2d');
   x.fillStyle = '#fff'; x.fillRect(0, 0, 64, 64);
-  x.fillStyle = 'rgba(0,0,0,0.32)';
+  const dark = 'rgba(0,0,0,0.30)', mid = 'rgba(0,0,0,0.16)';
+  x.fillStyle = dark;
   if (kind === 'stripes') { for (let i = 0; i < 64; i += 16) x.fillRect(i, 0, 7, 64); }
   else if (kind === 'spots') { for (let a = 8; a < 64; a += 20) for (let b = 8; b < 64; b += 20) { x.beginPath(); x.arc(a, b, 5, 0, 7); x.fill(); } }
+  else if (kind === 'dots') { for (let a = 6; a < 64; a += 12) for (let b = 6; b < 64; b += 12) { x.beginPath(); x.arc(a, b, 2.4, 0, 7); x.fill(); } }
+  else if (kind === 'checker') { for (let a = 0; a < 64; a += 16) for (let b = 0; b < 64; b += 16) if (((a + b) / 16) % 2 === 0) x.fillRect(a, b, 16, 16); }
+  else if (kind === 'camo') {
+    x.fillStyle = mid; blobs(x, 7, 9, 13);
+    x.fillStyle = dark; blobs(x, 6, 5, 9);
+  } else if (kind === 'plaster') {
+    for (let i = 0; i < 420; i++) { x.fillStyle = `rgba(0,0,0,${Math.random() * 0.18})`; x.fillRect(Math.random() * 64, Math.random() * 64, 1.5, 1.5); }
+  }
   const tex = new THREE.CanvasTexture(c);
-  tex.wrapS = tex.wrapT = THREE.RepeatWrapping; tex.repeat.set(3, 2);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping; tex.repeat.set(kind === 'camo' || kind === 'plaster' ? 2 : 3, 2);
   _patCache[kind] = tex;
   return tex;
+}
+function blobs(x, n, rmin, rmax) {
+  for (let i = 0; i < n; i++) {
+    const cx = Math.random() * 64, cy = Math.random() * 64, r = rmin + Math.random() * (rmax - rmin);
+    x.beginPath(); x.ellipse(cx, cy, r, r * (0.6 + Math.random() * 0.5), Math.random() * 3, 0, 7); x.fill();
+  }
 }

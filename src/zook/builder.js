@@ -280,12 +280,21 @@ export class Builder {
         el.append(r, note);
       },
       paint: (el) => {
+        // Modern colour swatches — quick-pick a body+feet colour.
+        const sw = document.createElement('div'); sw.className = 'swatches';
+        [0.02, 0.07, 0.13, 0.22, 0.33, 0.45, 0.55, 0.63, 0.74, 0.88, 0.95].forEach(h => {
+          const b = document.createElement('button'); b.className = 'swatch';
+          b.style.background = `hsl(${h * 360},72%,55%)`;
+          b.addEventListener('click', () => { this._pushUndo(); this.bp.hue = h; this.bp.footHue = h; this._apply(); fb.tick(); this._refresh(); });
+          sw.appendChild(b);
+        });
         const hue  = HueSlider({ label: 'BODY COLOUR', value: this.bp.hue,     onChange: v => set('hue', v) });
         const feet = HueSlider({ label: 'FEET COLOUR', value: this.bp.footHue, onChange: v => set('footHue', v) });
         const pat = Selector({ label: 'PATTERN', value: this.bp.pattern,
-          options: [{ v: 'none', t: 'PLAIN' }, { v: 'stripes', t: 'STRIPES' }, { v: 'spots', t: 'SPOTS' }],
+          options: [{ v: 'none', t: 'PLAIN' }, { v: 'stripes', t: 'STRIPES' }, { v: 'spots', t: 'SPOTS' },
+                    { v: 'dots', t: 'DOTS' }, { v: 'checker', t: 'CHECK' }, { v: 'camo', t: 'CAMO' }, { v: 'plaster', t: 'SPECK' }],
           onChange: v => { this._pushUndo(); this.bp.pattern = v; this._apply(); } });
-        el.append(hue.root, feet.root, pat.root);
+        el.append(sw, hue.root, feet.root, pat.root);
       },
     };
   }
