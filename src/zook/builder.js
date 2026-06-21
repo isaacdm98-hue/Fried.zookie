@@ -13,7 +13,7 @@
  */
 
 import * as THREE from 'three';
-import { Zook, defaultBlueprint, makeLeg, newPairId, ensureLegs, defaultPath } from './model.js';
+import { Zook, defaultBlueprint, makeLeg, newPairId, ensureLegs, defaultPath, SKINS } from './model.js';
 import { Knob, Switch, HueSlider, Selector } from './controls.js';
 import { setCamera } from '../engine/renderer.js';
 import { saveZook, randomExample } from './library.js';
@@ -227,20 +227,32 @@ export class Builder {
         el.append(HueSlider({ label: 'THIS PART', value: legSel.hue != null ? legSel.hue : this.bp.footHue, onChange: v => this._editLeg('hue', v) }).root);
         const clr = document.createElement('button'); clr.className = 'mini-btn'; clr.textContent = 'USE BODY COLOUR';
         clr.addEventListener('click', () => { fb.press(); this._editLeg('hue', null); });
-        el.append(clr);
-        hint('colouring the selected part · tap the body to colour everything');
+        el.append(this._skinGrid(legSel.skin, n => this._editLeg('skin', n)), clr);
+        hint('colour & SKIN the selected part · tap the body for everything');
       } else {
         el.append(
           HueSlider({ label: 'BODY', value: this.bp.hue, onChange: v => set('hue', v) }).root,
           HueSlider({ label: 'FEET', value: this.bp.footHue, onChange: v => set('footHue', v) }).root,
-          Selector({ label: 'PATTERN', value: this.bp.pattern,
-            options: [{ v: 'none', t: 'PLAIN' }, { v: 'stripes', t: 'STRIPE' }, { v: 'spots', t: 'SPOTS' }, { v: 'dots', t: 'DOTS' }, { v: 'checker', t: 'CHECK' }, { v: 'camo', t: 'CAMO' }, { v: 'plaster', t: 'SPECK' }],
-            onChange: v => { this._pushUndo(); this.bp.pattern = v; this._apply(); } }).root);
-        hint('pick a colour · tap a leg to colour just that part');
+          this._skinGrid(this.bp.skin, n => { this._pushUndo(); this.bp.skin = n; this._apply(); }));
+        hint('pick a colour & a real Zook SKIN · tap a leg to paint just it');
       }
     }
   }
 
+  // A grid of the real Zook Kit skin textures, plus PLAIN. `onPick(name|null)`.
+  _skinGrid(current, onPick) {
+    const wrap = document.createElement('div'); wrap.className = 'skin-grid';
+    const none = document.createElement('button'); none.className = 'skin plain' + (current ? '' : ' on'); none.textContent = 'PLAIN';
+    none.addEventListener('click', () => { fb.tick(); onPick(null); this._renderBar(); });
+    wrap.appendChild(none);
+    SKINS.forEach(name => {
+      const b = document.createElement('button'); b.className = 'skin' + (current === name ? ' on' : '');
+      b.style.backgroundImage = `url(./assets/skins/${name}.png)`; b.title = name;
+      b.addEventListener('click', () => { fb.tick(); onPick(name); this._renderBar(); });
+      wrap.appendChild(b);
+    });
+    return wrap;
+  }
   _delBtn() {
     const b = document.createElement('button'); b.className = 'mini-btn'; b.textContent = 'DELETE';
     b.addEventListener('click', () => { fb.press(); this._deleteSel(); });

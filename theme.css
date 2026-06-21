@@ -490,6 +490,14 @@ body { -webkit-user-select: none; user-select: none; touch-action: none; }
 .swatch { width: 30px; height: 30px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.85);
   box-shadow: 0 1px 3px rgba(120,90,40,0.4), inset 0 1px 2px rgba(255,255,255,0.5); cursor: pointer; }
 .swatch:active { transform: scale(0.9); }
+/* Real Zook-Kit skin texture picker */
+.skin-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: 8px;
+  max-height: 30vh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.skin { aspect-ratio: 1/1; border-radius: 8px; background-size: cover; background-position: center;
+  border: 2px solid rgba(0,0,0,0.25); cursor: pointer; padding: 0; }
+.skin.on { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
+.skin.plain { background: #e9e4d8; color: #6c6f78; font-size: 9px; font-weight: 800; letter-spacing: 0.05em; }
+.skin:active { transform: scale(0.92); }
 
 /* ════════════════════════════════════════════════════════════════════════════
    OP-Z style dials — flat colour circles with a filling value-arc + a clean

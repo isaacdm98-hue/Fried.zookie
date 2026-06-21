@@ -19,7 +19,7 @@ function generateServiceWorker() {
     .map(f => { try { return readFileSync(f, 'utf8'); } catch (_) { return ''; } }).join('\n');
   // Always ship app icons and the contest thumbnails (the latter are referenced
   // via a runtime-built path, so their names don't appear literally in the bundle).
-  const always = p => p.startsWith('icons') || p.startsWith('assets/contests');
+  const always = p => p.startsWith('icons') || p.startsWith('assets/contests') || p.startsWith('assets/skins');
   const walk = dir => {
     for (const name of readdirSync(dir)) {
       const p = `${dir}/${name}`;

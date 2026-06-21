@@ -73,11 +73,11 @@ export function defaultPath() {
 
 /** A new leg part. `pair` links mirror partners (same id, opposite side). */
 export function makeLeg(side, along, { len = 0.72, thick = 0.16, style = 'crawl', cycle = 0, pair = newPairId(), move = 'two', moveType = 'auto', target = 'off', path,
-  sx = 1, sy = 1, sz = 1, hue = null, muscle = 1 } = {}) {
+  sx = 1, sy = 1, sz = 1, hue = null, muscle = 1, skin = null } = {}) {
   // Per-part fields mirror the real Zook Kit (BuilderParts.lua): scalex/y/z, the
   // muscle PD strength (muscle_stiffness 1..10000 → our 0.3..2.5 multiplier) and
-  // an optional own colour. Defaults keep older blueprints working unchanged.
-  return { side, along, len, thick, style, cycle, pair, move, moveType, target, sx, sy, sz, hue, muscle, path: path || defaultPath() };
+  // an optional own colour / real skin texture. Defaults keep old blueprints working.
+  return { side, along, len, thick, style, cycle, pair, move, moveType, target, sx, sy, sz, hue, muscle, skin, path: path || defaultPath() };
 }
 
 /** Default crawl: pairs down the body, staggered movement cycles. */
@@ -98,7 +98,7 @@ export function ensureLegs(bp) {
   if (Array.isArray(bp.legs)) {
     // Back-compat: make sure every leg has a foot path + movement type.
     for (const l of bp.legs) { if (!Array.isArray(l.path)) l.path = defaultPath(); if (!l.move) l.move = 'two'; if (!l.moveType) l.moveType = 'auto'; if (!l.target) l.target = 'off';
-      if (l.sx == null) l.sx = 1; if (l.sy == null) l.sy = 1; if (l.sz == null) l.sz = 1; if (l.muscle == null) l.muscle = 1; if (l.hue === undefined) l.hue = null; }
+      if (l.sx == null) l.sx = 1; if (l.sy == null) l.sy = 1; if (l.sz == null) l.sz = 1; if (l.muscle == null) l.muscle = 1; if (l.hue === undefined) l.hue = null; if (l.skin === undefined) l.skin = null; }
     return bp.legs;
   }
   const pairs = bp.legPairs || 3;
@@ -220,12 +220,18 @@ export class Zook {
     const bri = Math.max(-1, Math.min(1, bp.bright || 0));
     const bMat = mat(bp.hue, 0.55 + bri * 0.32), lMat = mat(bp.footHue, 0.48 + bri * 0.28, 0.55);
     bMat.flatShading = true; lMat.flatShading = true;   // faceted, organic look
-    const tex = patternTexture(bp.pattern);
-    if (tex) {
-      const t = tex.clone(); t.needsUpdate = true;
-      const base = (bp.pattern === 'camo' || bp.pattern === 'plaster') ? 2 : 3;
-      const s = bp.patternScale || 1; t.repeat.set(base * s, 2 * s);
-      bMat.map = t;
+    // A real Zook Kit skin (full-colour photo texture) takes priority over the
+    // procedural pattern; it shows true colours, so the base tint goes neutral.
+    if (bp.skin) {
+      const sk = skinTexture(bp.skin); if (sk) { bMat.map = sk; bMat.color.set(0xffffff); bMat.color.offsetHSL(0, 0, bri * 0.25); }
+    } else {
+      const tex = patternTexture(bp.pattern);
+      if (tex) {
+        const t = tex.clone(); t.needsUpdate = true;
+        const base = (bp.pattern === 'camo' || bp.pattern === 'plaster') ? 2 : 3;
+        const s = bp.patternScale || 1; t.repeat.set(base * s, 2 * s);
+        bMat.map = t;
+      }
     }
 
     // Shapeable root body.
@@ -279,8 +285,11 @@ export class Zook {
       const thick = leg.thick * 1.5, len = leg.len, u = len * S.u, l = len * S.l;
       // Per-part 3-axis scale (scalex/y/z) and per-part colour, like the real kit.
       const sx = leg.sx || 1, sy = leg.sy || 1, sz = leg.sz || 1;
-      const lm = (i === this._highlight) ? HILITE : (leg.hue != null ? mat(leg.hue, 0.48 + bri * 0.28, 0.55) : lMat);
-      if (lm !== lMat && lm !== HILITE) lm.flatShading = true;
+      let lm;
+      if (i === this._highlight) lm = HILITE;
+      else if (leg.skin) { lm = mat(0, 0.5, 0.55); lm.color.set(0xffffff); lm.map = skinTexture(leg.skin); lm.flatShading = true; }
+      else if (leg.hue != null) { lm = mat(leg.hue, 0.48 + bri * 0.28, 0.55); lm.flatShading = true; }
+      else lm = lMat;
       const m = lm;
       // Hips sit slightly inside the body so the limb merges into it.
       const x = leg.side * bp.width * 0.4;
@@ -651,6 +660,20 @@ const LEG_STYLES = {
   push:    { u: 0.3,  l: 0.3,  splay: 0.25, footW: 3.6, footH: 0.6, footL: 1.0, swing: 1.2 },
   flipper: { u: 0.25, l: 0.5,  splay: 0.2,  footW: 3.0, footH: 0.3, footL: 2.2, swing: 1.6 },
 };
+
+// Real Zook Kit skin textures (the original .bmp set, converted to PNG). Loaded
+// on demand and cached; tiling, sRGB.
+export const SKINS = ['tiger', 'cheetah', 'leopard', 'giraffe', 'zebra', 'snakeskin', 'fishscales',
+  'bark', 'spots', 'stripes', 'brain', 'chameleon', 'elephant', 'bear', 'crystal', 'ice', 'lava',
+  'metal', 'rust', 'slime', 'circuit', 'chequer'];
+let _skinCache = {};
+function skinTexture(name) {
+  if (!name) return null;
+  if (_skinCache[name]) return _skinCache[name];
+  const t = new THREE.TextureLoader().load(`./assets/skins/${name}.png`);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
+  _skinCache[name] = t; return t;
+}
 
 // Generated grayscale pattern textures (white base shows the body hue).
 let _patCache = {};
