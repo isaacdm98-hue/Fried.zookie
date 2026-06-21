@@ -17,7 +17,7 @@ export const CONTESTS = [
   { id: 'sprint',  name: 'Sprint',         desc: 'First Zook to the finish line.',                goal: 'race' },
   { id: 'hurdles', name: 'Zook Hurdles',   desc: 'Over the hurdles and across the line.',         goal: 'race', hurdles: true },
   { id: 'sumo',    name: 'Zook Sumo',      desc: 'Barge your rival out of the ring.',             goal: 'ring', radius: 3.8 },
-  { id: 'weakest', name: 'Weakest Zook',   desc: 'Shove the weakest Zook into the pit.',          goal: 'ring', radius: 2.9 },
+  { id: 'weakest', name: 'Weakest Zook',   desc: 'Tug-of-war — drag your rival into the pit!',    goal: 'tug' },
   { id: 'merry',   name: 'Merry-Go-Zook',  desc: 'Stay on the spinning platform!',                goal: 'merry', radius: 3.6 },
   { id: 'ball',    name: 'Zookball',       desc: 'Boot the ball into the rival goal.',            goal: 'ball' },
   { id: 'marbles', name: 'Zook Marbles',   desc: 'Barge through the marbles to the line.',         goal: 'race', marbles: true },
@@ -56,6 +56,15 @@ export class ContestScene {
     this.red   = this._spawn(redBp,   { x: contest.goal === 'race' ?  1 :  1.4, z: startZ }, RED);
     if (!this.remote && contest.goal === 'merry') { this.green.zook._body.setTranslation({ x: -1, y: 1, z: 0 }, true); this.red.zook._body.setTranslation({ x: 1, y: 1, z: 0 }, true); }
     if (!this.remote && contest.goal === 'tag') { this.green.zook._body.setTranslation({ x: 0, y: 1, z: 4.5 }, true); this.red.zook._body.setTranslation({ x: 0, y: 1, z: -4.5 }, true); }
+    // Weakest Zook = tug-of-war: stand them apart on the two halves and tether
+    // them together (a rope joint), so the stronger walker drags the weaker in.
+    if (!this.remote && contest.goal === 'tug') {
+      this.green.zook._body.setTranslation({ x: -5, y: 1, z: 0 }, true);
+      this.red.zook._body.setTranslation({ x: 5, y: 1, z: 0 }, true);
+      const R = this.RAPIER;
+      const jd = R.JointData.rope(9.5, { x: 0, y: 0, z: 0 }, { x: 0, y: 0, z: 0 });
+      this._tether = this.world.createImpulseJoint(jd, this.green.zook._body, this.red.zook._body, true);
+    }
 
     this._t = 0; this._state = 'count'; this._count = 3; this._countT = 0;
     fb.count(false);
@@ -63,6 +72,7 @@ export class ContestScene {
   }
 
   exit() {
+    if (this._tether) { try { this.world.removeImpulseJoint(this._tether, true); } catch (_) {} this._tether = null; }
     for (const e of [this.green, this.red]) if (e) e.zook.dispose();
     for (const m of this._meshes) { this.scene.remove(m); m.geometry?.dispose?.(); }
     for (const b of this._bodies) { try { this.world.removeRigidBody(b); } catch (_) {} }
@@ -92,6 +102,7 @@ export class ContestScene {
     const drive = (me, foe) => {
       const c = this.contest;
       if (c.goal === 'race')  return { x: me === g ? -1 : 1, z: -40 };
+      if (c.goal === 'tug')   return { x: me === g ? -40 : 40, z: 0 };   // each hauls toward its own end
       if (c.goal === 'ring' || c.goal === 'merry') {
         if (c.goal === 'merry') return { x: 0, z: 0 };          // head to centre
         return foe.zook.position;                                // barge the rival
@@ -220,10 +231,14 @@ export class ContestScene {
         const win = this._chinaG >= this._chinaR;
         return this._finish(win, win ? `SMASH! ${this._chinaG} to ${this._chinaR} — a bull in a china shop!` : `Rival went full demolition: ${this._chinaR} to ${this._chinaG}.`);
       }
+    } else if (c.goal === 'tug') {
+      if (g.y < -1) return this._finish(false, 'Hauled into the pit! Rival had the muscle.');
+      if (r.y < -1) return this._finish(true,  'HEAVE! You dragged the rival into the pit!');
     }
     // time limit
     if (this._t > 30) {
       if (c.goal === 'race') return this._finish(g.z < r.z, g.z < r.z ? 'Ahead when the whistle blew — win!' : 'Behind at the whistle. So close.');
+      if (c.goal === 'tug') { const win = Math.abs(g.x) >= Math.abs(r.x); return this._finish(win, win ? 'You held your ground — strongest Zook!' : 'Rival out-muscled you. Beef it up!'); }
       const gc = Math.hypot(g.x, g.z), rc = Math.hypot(r.x, r.z);
       return this._finish(gc < rc, gc < rc ? 'You held the centre — champion!' : 'Rival held the middle. Tune it up!');
     }
@@ -254,6 +269,15 @@ export class ContestScene {
   }
 
   _buildEnv(c) {
+    if (c.goal === 'tug') {
+      // Tug-of-war table: two halves split by a central PIT, a coloured "home"
+      // wall behind each Zook (matches the Zook Kit's Weakest Zook layout).
+      for (const s of [-1, 1]) this._box({ pos: { x: s * 7, y: -0.2, z: 0 }, size: { x: 8, y: 0.4, z: 6 }, color: 0xcfc7b4 });
+      this._box({ pos: { x: -11.4, y: 0.6, z: 0 }, size: { x: 0.6, y: 2, z: 6 }, color: GREEN });   // green's home wall
+      this._box({ pos: { x:  11.4, y: 0.6, z: 0 }, size: { x: 0.6, y: 2, z: 6 }, color: RED });      // red's home wall
+      this._box({ pos: { x: 0, y: -2.6, z: 0 }, size: { x: 22, y: 0.4, z: 8 }, color: 0x6b6457 });   // pit floor below the gap
+      return;
+    }
     if (c.goal === 'race') {
       this._box({ pos: { x: 0, y: -0.2, z: -6 }, size: { x: 9, y: 0.4, z: 32 }, color: 0xeee7d6 });
       // finish line
