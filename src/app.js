@@ -8,7 +8,7 @@
  */
 
 import * as THREE from 'three';
-import { setCamera } from './engine/renderer.js';
+import { setCamera, prefersReducedMotion } from './engine/renderer.js';
 import { Zook, defaultBlueprint, blankBlueprint, cloneBlueprint, makeDefaultLegs } from './zook/model.js';
 import { Builder } from './zook/builder.js';
 import { Arena } from './zook/arena.js';
@@ -142,8 +142,13 @@ export class App {
     if (bp && Array.isArray(bp.legs) && bp.legs.length === 0) { const b = cloneBlueprint(bp); b.legs = makeDefaultLegs(3); return b; }
     return bp;
   }
+  /** Lifetime contests-won tally — a little progression to come back for. */
+  _trophies() { try { return +localStorage.getItem('fz-trophies') || 0; } catch (_) { return 0; } }
+  _addTrophy() { try { localStorage.setItem('fz-trophies', this._trophies() + 1); } catch (_) {} }
+
   /** A celebratory confetti burst over an overlay. */
   _confetti(mount, n = 90) {
+    if (prefersReducedMotion()) return;            // honour the OS "reduce motion" setting
     const colors = ['#f0782d', '#2bb6a6', '#3f6fd8', '#e8466e', '#ffd479', '#37c46a'];
     const w = document.createElement('div'); w.className = 'confetti';
     for (let i = 0; i < n; i++) {
@@ -263,8 +268,9 @@ export class App {
   _contests() {
     const cards = CONTESTS.map(c => `
       <button class="con-card" data-id="${c.id}"><b>${c.name}</b><span>${c.desc}</span></button>`).join('');
+    const trophies = this._trophies();
     const d = this._overlayEl(`<div class="sheet">
-      <div class="bar"><button class="mini-btn" data-back>‹</button><h2>Contests</h2><span style="width:40px"></span></div>
+      <div class="bar"><button class="mini-btn" data-back>‹</button><h2>Contests</h2><span class="trophy-tally" title="contests won">${trophies ? '🏆 ' + trophies : ''}</span></div>
       <button class="con-card coop champ-card" data-champ><b>🏆 CHAMPIONSHIP</b><span>five contests, one champion — like a full episode</span></button>
       <button class="m-guide diff-pick" data-diff><span>RIVAL</span><b>${['ROOKIE', 'PRO', 'CHAMPION'][this._diff]}</b></button>
       <div class="con-grid">${cards}</div></div>`);
@@ -344,6 +350,7 @@ export class App {
       scene: this.scene, world: this.world, RAPIER: this.RAPIER, camera: this.camera,
       onResult: ({ playerWon, line }) => {
         guide.now(line);
+        if (playerWon) this._addTrophy();
         this._lastRec = { contestId: contest.id, greenBp: green.bp, redBp: red.bp, frames: cs.getRecording().slice() };
         const r = this._overlayEl(`
           <div class="result-modal ${playerWon ? 'top' : ''}">

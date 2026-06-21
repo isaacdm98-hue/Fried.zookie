@@ -8,6 +8,19 @@ const _camCurTarget  = new THREE.Vector3(0, 0, 0);
 
 let _camera = null;
 let _instant = false;
+let _shake = 0;                       // current screen-shake energy (decays each frame)
+const _shakeOff = new THREE.Vector3();
+
+/** True if the user has asked the OS to minimise motion (accessibility). */
+export function prefersReducedMotion() {
+  try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (_) { return false; }
+}
+
+/** Add a punch of screen-shake (0..1). Used on impacts, finishes and flops. */
+export function shakeCamera(amount = 0.5) {
+  if (prefersReducedMotion()) return;
+  _shake = Math.min(1, _shake + amount);
+}
 
 // ── Public API ───────────────────────────────────────────────────────────────
 
@@ -19,7 +32,9 @@ let _instant = false;
 export function initRenderer(canvas) {
   // Renderer
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
-  renderer.setPixelRatio(window.devicePixelRatio);
+  // Cap the pixel ratio: phones report up to 3–4×, which quadruples the fill
+  // cost for no visible gain. 2× keeps it crisp and holds 60fps on mobile.
+  renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
   renderer.setSize(canvas.clientWidth, canvas.clientHeight);
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type    = THREE.PCFSoftShadowMap;
@@ -108,5 +123,12 @@ export function updateCamera(dt) {
   _camCurTarget.lerp(_camGoalTarget, alpha);
 
   _camera.position.copy(_camCurPos);
+  // Screen-shake: a quick decaying jitter on the camera position for impact.
+  if (_shake > 0.001) {
+    const s = _shake * _shake * 0.6;   // ease-out so it settles smoothly
+    _shakeOff.set((Math.random() * 2 - 1) * s, (Math.random() * 2 - 1) * s, 0);
+    _camera.position.add(_shakeOff);
+    _shake *= Math.pow(0.001, dt);     // ~exponential decay, frame-rate independent
+  } else _shake = 0;
   _camera.lookAt(_camCurTarget);
 }

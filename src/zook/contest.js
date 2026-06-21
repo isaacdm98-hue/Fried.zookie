@@ -9,7 +9,7 @@
 
 import * as THREE from 'three';
 import { Zook } from './model.js';
-import { setCamera } from '../engine/renderer.js';
+import { setCamera, shakeCamera } from '../engine/renderer.js';
 import { fb } from '../sys/feedback.js';
 
 /** Contest catalogue (names & blurbs straight from the manual). */
@@ -163,6 +163,7 @@ export class ContestScene {
           if (k.owner === 'g') this._chinaG++; else this._chinaR++;
           k.smashed = true;
           this._smashCup(k);
+          fb.thud(); shakeCamera(0.18);   // crockery goes flying — feel the smash
         }
       }
     }
@@ -247,6 +248,7 @@ export class ContestScene {
     this._state = 'done';
     this._victor = playerWon ? this.green : this.red; this._danceT = 0;   // victory dance
     playerWon ? fb.win() : fb.lose();
+    shakeCamera(playerWon ? 0.7 : 0.4);   // a punch of juice on the result
     if (this.onResult) this.onResult({ playerWon, line });
   }
 

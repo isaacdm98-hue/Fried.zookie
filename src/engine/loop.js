@@ -55,12 +55,26 @@ export function startLoop({ world, renderer, scene, camera, clock, onStep, onFra
 
   tick();
 
+  // Pause when the tab/app is backgrounded: stops burning battery on a screen
+  // nobody's looking at, and avoids a giant catch-up delta on return.
+  const onVisibility = () => {
+    if (document.hidden) {
+      running = false;
+      if (rafId !== null) { cancelAnimationFrame(rafId); rafId = null; }
+    } else if (!running) {
+      running = true; clock.getDelta();   // discard the long gap so we resume smoothly
+      tick();
+    }
+  };
+  document.addEventListener('visibilitychange', onVisibility);
+
   return function stopLoop() {
     running = false;
     if (rafId !== null) {
       cancelAnimationFrame(rafId);
       rafId = null;
     }
+    document.removeEventListener('visibilitychange', onVisibility);
     clock.stop();
   };
 }

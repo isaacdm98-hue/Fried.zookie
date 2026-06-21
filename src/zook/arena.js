@@ -10,7 +10,7 @@
 
 import * as THREE from 'three';
 import { Zook } from './model.js';
-import { setCamera } from '../engine/renderer.js';
+import { setCamera, shakeCamera } from '../engine/renderer.js';
 import { fb } from '../sys/feedback.js';
 import { guide } from '../sys/guide.js';
 
@@ -38,7 +38,9 @@ export class Arena {
     this.zook = null; this._statics = []; this._dyn = []; this._meshes = [];
     this._marker = null; this.target = null; this._envIdx = 0;
     this._ray = new THREE.Raycaster(); this._plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
-    this._float = false; this._timer = 0; this._timing = false; this._best = {};
+    this._float = false; this._timer = 0; this._timing = false;
+    // Personal bests survive between sessions so records are worth chasing.
+    try { this._best = JSON.parse(localStorage.getItem('fz-best') || '{}') || {}; } catch (_) { this._best = {}; }
     this._topSpeed = 0; this._lastPos = null;
     this._onPointer = this._onPointer.bind(this);
   }
@@ -55,7 +57,7 @@ export class Arena {
     this._buildBase();
     this._buildEnv(ENVIRONMENTS[this._envIdx].id);
     this.zook = new Zook(this.bp, { scene: this.scene, world: this.world, RAPIER: this.RAPIER, pos: { x: 0, z: TL / 2 - 3 } });
-    this.zook.onFlop = () => { fb.oof(); guide.now('Ha! Right on its back. Give it a wider stance, eh?'); };
+    this.zook.onFlop = () => { fb.oof(); shakeCamera(0.25); guide.now('Ha! Right on its back. Give it a wider stance, eh?'); };
     this._marker = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, 0.05, 24),
       new THREE.MeshStandardMaterial({ color: 0xff3344, emissive: 0x551015, roughness: 0.4 }));
     this.scene.add(this._marker);
@@ -132,7 +134,7 @@ export class Arena {
       if (Math.hypot(zp.x - wp.x, zp.z - wp.z) < 1.2) {
         this._lapIdx = (this._lapIdx + 1) % 4;
         if (this._lapIdx === 1 && !this._timing) { this._timing = true; this._timer = 0; }
-        else if (this._lapIdx === 0) { this._timing = false; this._best.lap = Math.min(this._best.lap || 99, this._timer); fb.win(); guide.now(`Lap done — ${this._timer.toFixed(2)}s — ${this._medal('lap', this._timer)}!`); }
+        else if (this._lapIdx === 0) { this._timing = false; this._best.lap = Math.min(this._best.lap || 99, this._timer); this._saveBest(); fb.win(); shakeCamera(0.4); guide.now(`Lap done — ${this._timer.toFixed(2)}s — ${this._medal('lap', this._timer)}!`); }
       }
     }
     this.zook.step(dt, { walk: true, target: this.target });
@@ -150,7 +152,8 @@ export class Arena {
         this._timing = false;
         const best = !this._best.sprint || this._timer < this._best.sprint;
         this._best.sprint = Math.min(this._best.sprint || 99, this._timer);
-        fb.win(); guide.now(`Finish! ${this._timer.toFixed(2)}s — ${this._medal('sprint', this._timer)}${best ? ' · new best!' : ''}`);
+        this._saveBest();
+        fb.win(); shakeCamera(0.4); guide.now(`Finish! ${this._timer.toFixed(2)}s — ${this._medal('sprint', this._timer)}${best ? ' · new best!' : ''}`);
       }
     }
   }
@@ -251,6 +254,8 @@ export class Arena {
     const jd = R.JointData.revolute({ x: 0, y: 0, z: 0 }, { x: 0, y: 0, z: 0 }, { x: 1, y: 0, z: 0 });
     this.world.createImpulseJoint(jd, anchor, body, true);
   }
+
+  _saveBest() { try { localStorage.setItem('fz-best', JSON.stringify(this._best)); } catch (_) {} }
 
   // Trial medals — give the tests goals worth chasing (faster = better).
   _medal(kind, v) {

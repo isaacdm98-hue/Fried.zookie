@@ -15,6 +15,16 @@ function ac() {
   return ctx;
 }
 
+// Hush audio while the app is backgrounded; resume on return (saves battery and
+// stops generative music droning to an empty room).
+if (typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', () => {
+    if (!ctx) return;
+    if (document.hidden) { try { ctx.suspend(); } catch (_) {} }
+    else if (!muted)     { try { ctx.resume(); } catch (_) {} }
+  });
+}
+
 /** Call once from the first tap so audio is unlocked. */
 export function unlockAudio() { ac(); }
 export function setMuted(m) { muted = m; }
