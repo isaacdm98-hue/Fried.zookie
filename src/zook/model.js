@@ -38,7 +38,12 @@ export function defaultBlueprint() {
     legThick:  0.16,   // default thickness for new legs
     antennae:  false,  // decorative part
     tail:      false,  // decorative part
+    antTarget: 'normal', // Part Targeting for antennae: off | normal(away) | inverted(toward)
+    tailTarget:'off',    // Part Targeting for the tail
+    targetAngle: 0.5,    // global Part Targeting Angle (how far targeted parts swing)
     pattern:   'none', // none | stripes | spots
+    patternScale: 1.0, // texture size (manual: scroll to size the texture)
+    bright:    0.0,    // body brightness -1..1 (manual: brightness slider)
     speed:     2.4,    // 1..4 cycle frequency (Hz)
     stride:    0.5,    // 0.3..1.3 swing amplitude
     footAngle: 0.2,
@@ -203,10 +208,16 @@ export class Zook {
     while (this.group.children.length) this.group.remove(this.group.children[0]);
     this._legs = []; this._antennae = [];
     const bp = this.bp;
-    const bMat = mat(bp.hue), lMat = mat(bp.footHue, 0.48, 0.55);
+    const bri = Math.max(-1, Math.min(1, bp.bright || 0));
+    const bMat = mat(bp.hue, 0.55 + bri * 0.32), lMat = mat(bp.footHue, 0.48 + bri * 0.28, 0.55);
     bMat.flatShading = true; lMat.flatShading = true;   // faceted, organic look
     const tex = patternTexture(bp.pattern);
-    if (tex) bMat.map = tex;
+    if (tex) {
+      const t = tex.clone(); t.needsUpdate = true;
+      const base = (bp.pattern === 'camo' || bp.pattern === 'plaster') ? 2 : 3;
+      const s = bp.patternScale || 1; t.repeat.set(base * s, 2 * s);
+      bMat.map = t;
+    }
 
     // Shapeable root body.
     const body = new THREE.Mesh(shapeBody(bp), bMat);
@@ -274,12 +285,16 @@ export class Zook {
         this._antennae.push(pivot);
       }
     }
+    this._tailPivot = null;
     if (bp.tail) {
       const tGeo = new THREE.ConeGeometry(bp.height * 0.22, bp.len * 0.5, 6);
+      const pivot = new THREE.Group();
+      pivot.position.set(0, bp.height * 0.2, bp.len * 0.45);
       const tail = new THREE.Mesh(tGeo, lMat);
-      tail.position.set(0, bp.height * 0.2, bp.len * 0.55);
+      tail.position.set(0, 0, bp.len * 0.1);
       tail.rotation.x = Math.PI * 0.62;
-      this.group.add(tail);
+      pivot.add(tail); this.group.add(pivot);
+      this._tailPivot = pivot;
     }
   }
 
@@ -376,11 +391,20 @@ export class Zook {
     } else if (inputs.steerLeft) steer = 1; else if (inputs.steerRight) steer = -1;
     this._steer += (steer - this._steer) * (1 - this.bp.turnSmooth * 0.6);
 
-    // Antennae do Part Targeting — lean toward the floor target.
-    if (this._antennae.length && inputs.target) {
+    // Part Targeting (manual Ch13): NORMAL swings a part AWAY from the target,
+    // INVERTED swings it TOWARD it, OFF leaves it be — scaled by Targeting Angle.
+    if (inputs.target) {
       const want = Math.atan2(-(inputs.target.x - pos.x), -(inputs.target.z - pos.z));
       let d = want - yaw; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI;
-      for (const a of this._antennae) a.rotation.y += (Math.max(-1, Math.min(1, d)) * 0.6 - a.rotation.y) * 0.2;
+      const ang = this.bp.targetAngle != null ? this.bp.targetAngle : 0.5;
+      const aim = (parts, mode) => {
+        const dir = mode === 'normal' ? -1 : mode === 'inverted' ? 1 : 0;
+        if (!dir) return;
+        const tgt = Math.max(-1, Math.min(1, d)) * ang * dir;
+        for (const p of parts) p.rotation.y += (tgt - p.rotation.y) * 0.2;
+      };
+      if (this._antennae.length) aim(this._antennae, this.bp.antTarget || 'normal');
+      if (this._tailPivot) aim([this._tailPivot], this.bp.tailTarget || 'off');
     }
 
     // ── Genuine foot–ground contact ────────────────────────────────────────────

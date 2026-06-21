@@ -227,12 +227,18 @@ export class Builder {
           K({ label: 'CYCLE',  min: 0, max: 1, step: 0.05, value: leg.cycle, format: v => v.toFixed(2), onChange: v => this._editLeg('cycle', v, false, true) }),
         );
 
+        const setR = (k, v) => { set(k, v); this._refresh(); };
+        const aimOpts = [{ v: 'off', t: 'OFF' }, { v: 'normal', t: 'AWAY' }, { v: 'inverted', t: 'TOWARD' }];
         const toggles = document.createElement('div'); toggles.className = 'deck-foot';
-        toggles.append(Switch({ label: 'ANTENNAE', value: this.bp.antennae, onChange: v => set('antennae', v) }).root,
-                       Switch({ label: 'TAIL', value: this.bp.tail, onChange: v => set('tail', v) }).root);
+        toggles.append(Switch({ label: 'ANTENNAE', value: this.bp.antennae, onChange: v => setR('antennae', v) }).root,
+                       Switch({ label: 'TAIL', value: this.bp.tail, onChange: v => setR('tail', v) }).root);
         const note = document.createElement('div'); note.className = 'deck-note';
         note.textContent = this._mirror ? 'MIRROR on — edits both sides · CYCLE is per-leg' : 'MIRROR off — placing single legs';
-        el.append(tb, mir.root, style.root, r, toggles, note);
+        el.append(tb, mir.root, style.root, r, toggles);
+        // Part Targeting (manual Ch13) for the decorative parts.
+        if (this.bp.antennae) el.append(Selector({ label: 'ANT AIM', value: this.bp.antTarget || 'normal', options: aimOpts, onChange: v => set('antTarget', v) }).root);
+        if (this.bp.tail) el.append(Selector({ label: 'TAIL AIM', value: this.bp.tailTarget || 'off', options: aimOpts, onChange: v => set('tailTarget', v) }).root);
+        el.append(note);
       },
       path: (el) => {
         const legs = this.bp.legs;
@@ -287,9 +293,10 @@ export class Builder {
           K({ label: 'STIFF',  min: 0.5, max: 2, step: 0.1, value: this.bp.stiffness, format: v => v.toFixed(1), onChange: v => set('stiffness', v) }),
           K({ label: 'TURN',   min: 0.5, max: 3, step: 0.1, value: this.bp.turnSharp, onChange: v => set('turnSharp', v) }),
           K({ label: 'SMOOTH', min: 0, max: 1, step: 0.05, value: this.bp.turnSmooth, format: v => `${Math.round(v * 100)}`, onChange: v => set('turnSmooth', v) }),
+          K({ label: 'AIM', min: 0, max: 1.2, step: 0.1, value: this.bp.targetAngle != null ? this.bp.targetAngle : 0.5, format: v => v.toFixed(1), onChange: v => set('targetAngle', v) }),
         );
         const note = document.createElement('div'); note.className = 'deck-note';
-        note.textContent = 'set each leg’s CYCLE on the ADD page to stagger the gait';
+        note.textContent = 'set each leg’s CYCLE on the ADD page to stagger the gait · AIM is the Part Targeting angle';
         el.append(r, note);
       },
       paint: (el) => {
@@ -307,7 +314,12 @@ export class Builder {
           options: [{ v: 'none', t: 'PLAIN' }, { v: 'stripes', t: 'STRIPES' }, { v: 'spots', t: 'SPOTS' },
                     { v: 'dots', t: 'DOTS' }, { v: 'checker', t: 'CHECK' }, { v: 'camo', t: 'CAMO' }, { v: 'plaster', t: 'SPECK' }],
           onChange: v => { this._pushUndo(); this.bp.pattern = v; this._apply(); } });
-        el.append(sw, hue.root, feet.root, pat.root);
+        const r2 = document.createElement('div'); r2.className = 'knob-row';
+        r2.append(
+          K({ label: 'BRIGHT', min: -1, max: 1, step: 0.1, value: this.bp.bright || 0, format: v => v.toFixed(1), onChange: v => set('bright', v) }),
+          K({ label: 'TEX SIZE', min: 0.5, max: 3, step: 0.25, value: this.bp.patternScale || 1, format: v => v.toFixed(2), onChange: v => set('patternScale', v) }),
+        );
+        el.append(sw, hue.root, feet.root, pat.root, r2);
       },
     };
   }
