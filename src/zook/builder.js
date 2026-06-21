@@ -172,8 +172,8 @@ export class Builder {
         const leg = this.bp.legs[s.idx];
         el.append(K({ label: 'LEN', min: 0.35, max: 1.2, step: 0.05, value: leg.len, onChange: v => this._editLeg('len', v) }),
           K({ label: 'THICK', min: 0.1, max: 0.32, step: 0.02, value: leg.thick, onChange: v => this._editLeg('thick', v) }),
-          this._delBtn());
-        hint('drag the leg to move it · its mirror follows');
+          this._copyBtn(), this._mirrorBtn(), this._delBtn());
+        hint('drag the leg to move it · COPY clones · MIRROR pairs it across');
       } else if (s && s.type === 'blob' && this.bp.blobs[s.idx]) {
         const bl = this.bp.blobs[s.idx];
         el.append(K({ label: 'SIZE', min: 0.2, max: 1.8, step: 0.05, value: bl.sx, onChange: v => { this._pushUndo(); bl.sx = bl.sy = bl.sz = v; this._apply(); } }), this._delBtn());
@@ -182,18 +182,29 @@ export class Builder {
         hint(this._addType === 'leg' ? 'TAP THE BODY where you want a leg' : 'TAP THE BODY to add a clay blob');
       }
     } else if (this._mode === 'move') {
+      // Root motion (manual Ch13): the whole-Zook movement settings.
       el.append(
         K({ label: 'SPEED', min: 1, max: 4, step: 0.1, value: this.bp.speed, onChange: v => set('speed', v) }),
         K({ label: 'STRIDE', min: 0.3, max: 1.3, step: 0.05, value: this.bp.stride, onChange: v => set('stride', v) }),
         K({ label: 'STIFF', min: 0.5, max: 2, step: 0.1, value: this.bp.stiffness, format: v => v.toFixed(1), onChange: v => set('stiffness', v) }),
-        K({ label: 'TURN', min: 0.5, max: 3, step: 0.1, value: this.bp.turnSharp, onChange: v => set('turnSharp', v) }),
+        K({ label: 'SHARP', min: 0.5, max: 3, step: 0.1, value: this.bp.turnSharp, onChange: v => set('turnSharp', v) }),
+        K({ label: 'SMOOTH', min: 0.5, max: 0.98, step: 0.02, value: this.bp.turnSmooth, format: v => v.toFixed(2), onChange: v => set('turnSmooth', v) }),
+        K({ label: 'AIM°', min: 0, max: 1.2, step: 0.05, value: this.bp.targetAngle, format: v => v.toFixed(2), onChange: v => set('targetAngle', v) }),
       );
       const s = this._sel;
       if (s && s.type === 'leg' && this.bp.legs[s.idx]) {
         const leg = this.bp.legs[s.idx];
-        el.append(K({ label: 'CYCLE', min: 0, max: 1, step: 0.05, value: leg.cycle, format: v => v.toFixed(2), onChange: v => { leg.cycle = v; this._apply(); } }), this._pathBtn());
-        hint('CYCLE staggers this leg · tap PATH to shape its step');
-      } else hint('tap a leg to tune its step · SPEED & STRIDE set the pace');
+        el.append(
+          K({ label: 'CYCLE', min: 0, max: 1, step: 0.05, value: leg.cycle, format: v => v.toFixed(2), onChange: v => { this._pushUndo(); leg.cycle = v; this._apply(); } }),
+          Selector({ label: 'MODE', value: leg.move || 'two',
+            options: [{ v: 'two', t: '2-PART' }, { v: 'single', t: '1-PART' }, { v: 'none', t: 'STILL' }], onChange: v => this._editLeg('move', v, true) }).root,
+          Selector({ label: 'TURN', value: leg.moveType || 'auto',
+            options: [{ v: 'auto', t: 'AUTO' }, { v: 'always', t: 'ALWAYS' }, { v: 'left', t: 'LEFT' }, { v: 'right', t: 'RIGHT' }], onChange: v => this._editLeg('moveType', v) }).root,
+          Selector({ label: 'AIM', value: leg.target || 'off',
+            options: [{ v: 'off', t: 'OFF' }, { v: 'normal', t: 'AWAY' }, { v: 'inverted', t: 'TOWARD' }], onChange: v => this._editLeg('target', v) }).root,
+          this._pathBtn());
+        hint('CYCLE staggers · MODE/TURN/AIM set behaviour · PATH shapes the step');
+      } else hint('tap a leg to tune its step · SPEED & STRIDE set pace, SHARP/SMOOTH the turns');
     } else { // paint
       const sw = document.createElement('div'); sw.className = 'swatches';
       [0.02, 0.07, 0.13, 0.22, 0.33, 0.45, 0.55, 0.63, 0.74, 0.88, 0.95].forEach(h => {
@@ -215,6 +226,37 @@ export class Builder {
     const b = document.createElement('button'); b.className = 'mini-btn'; b.textContent = 'DELETE';
     b.addEventListener('click', () => { fb.press(); this._deleteSel(); });
     return b;
+  }
+  _copyBtn() {
+    const b = document.createElement('button'); b.className = 'mini-btn'; b.textContent = 'COPY';
+    b.addEventListener('click', () => { fb.confirm(); this._copyLeg(); });
+    return b;
+  }
+  _mirrorBtn() {
+    const b = document.createElement('button'); b.className = 'mini-btn'; b.textContent = 'MIRROR';
+    b.addEventListener('click', () => { fb.confirm(); this._mirrorLeg(); });
+    return b;
+  }
+  // Copy (manual Ch7): an INDEPENDENT duplicate — its own pair id, nudged along
+  // the body so you can see it. Later edits don't touch the original.
+  _copyLeg() {
+    const s = this._sel; if (!s || s.type !== 'leg') return; const src = this.bp.legs[s.idx]; if (!src) return;
+    this._pushUndo();
+    const along = Math.max(-1, Math.min(1, (src.along || 0) + 0.18));
+    const dup = { ...src, along, pair: newPairId(), path: (src.path || []).map(p => ({ ...p })) };
+    this.bp.legs.push(dup);
+    this._select({ type: 'leg', idx: this.bp.legs.length - 1 });
+    this._apply(); this._renderBar();
+  }
+  // Mirror (manual Ch8): a LINKED partner on the opposite side (same pair id, so
+  // edits to either keep both in step), offset half a cycle for a natural gait.
+  _mirrorLeg() {
+    const s = this._sel; if (!s || s.type !== 'leg') return; const src = this.bp.legs[s.idx]; if (!src) return;
+    if (this.bp.legs.some(l => l !== src && l.pair === src.pair)) { if (this._helper) guide.pop('That leg already has a mirror partner.'); return; }
+    this._pushUndo();
+    const twin = { ...src, side: -src.side, cycle: ((src.cycle || 0) + 0.5) % 1, path: (src.path || []).map(p => ({ ...p })) };
+    this.bp.legs.push(twin);
+    this._apply(); this._renderBar();
   }
   _pathBtn() {
     const b = document.createElement('button'); b.className = 'mini-btn'; b.textContent = 'PATH ✎';
@@ -349,31 +391,64 @@ export class Builder {
   _onUp() { if (!this._drag) return; const k = this._drag.kind; this._drag = null; if (k === 'leg' || k === 'blob' || k === 'shape') { fb.tick(); this._renderBar(); } }
 
   // ── foot-path popover (MOVE) ────────────────────────────────────────────────
+  // The full IK editor from the manual (Ch12): drag points, tap empty space to
+  // ADD a point (inserted into the nearest segment so the loop stays sensible),
+  // and REMOVE the selected point. More points on the back-stroke = a slower,
+  // stronger push; fewer on the swing = a quick recovery.
   _openPath() {
     const leg = this._sel && this._sel.type === 'leg' && this.bp.legs[this._sel.idx]; if (!leg) return;
     if (!Array.isArray(leg.path)) leg.path = defaultPath();
+    let selPt = 0;
     const pop = document.createElement('div'); pop.className = 'overlay path-pop';
     pop.innerHTML = `<div class="path-card">
-      <div class="bar"><b>FOOT PATH</b><button class="mini-btn" data-x>DONE</button></div>
+      <div class="bar"><b>FOOT PATH</b><span class="path-tools"><button class="mini-btn" data-rm>REMOVE PT</button><button class="mini-btn" data-x>DONE</button></span></div>
       <div class="path-pad"><span class="pad-ax pad-fwd">◀ back · fwd ▶</span><span class="pad-ax pad-up">lift ▲</span><span class="pad-ground">ground</span></div>
-      <div class="deck-note">drag the points — low &amp; sweeping BACK pushes the Zook along</div></div>`;
+      <div class="deck-note">drag points · tap empty space to ADD · low &amp; sweeping BACK drives it</div></div>`;
     const pad = pop.querySelector('.path-pad');
-    const place = (dot, pt) => { dot.style.left = `${(pt.f + 1) / 2 * 100}%`; dot.style.top = `${(1 - pt.h) * 100}%`; };
-    leg.path.forEach((pt, i) => {
-      const dot = document.createElement('div'); dot.className = 'path-dot'; dot.textContent = i + 1; place(dot, pt);
-      let drag = false;
-      dot.addEventListener('pointerdown', ev => { drag = true; dot.setPointerCapture?.(ev.pointerId); ev.preventDefault(); ev.stopPropagation(); });
-      dot.addEventListener('pointermove', ev => {
-        if (!drag) return; const r = pad.getBoundingClientRect();
-        pt.f = Math.max(-1, Math.min(1, ((ev.clientX - r.left) / r.width) * 2 - 1));
-        pt.h = Math.max(0, Math.min(1, 1 - (ev.clientY - r.top) / r.height));
-        place(dot, pt); this._apply();
+    const xy = (ev) => { const r = pad.getBoundingClientRect();
+      return { f: Math.max(-1, Math.min(1, ((ev.clientX - r.left) / r.width) * 2 - 1)),
+               h: Math.max(0, Math.min(1, 1 - (ev.clientY - r.top) / r.height)) }; };
+    const render = () => {
+      pad.querySelectorAll('.path-dot, .path-link').forEach(n => n.remove());
+      const pts = leg.path;
+      // connecting links (so you can see the loop the foot traces)
+      for (let i = 0; i < pts.length; i++) {
+        const a = pts[i], b = pts[(i + 1) % pts.length];
+        const ax = (a.f + 1) / 2 * 100, ay = (1 - a.h) * 100, bx = (b.f + 1) / 2 * 100, by = (1 - b.h) * 100;
+        const link = document.createElement('div'); link.className = 'path-link';
+        const dx = bx - ax, dy = by - ay, len = Math.hypot(dx, dy);
+        link.style.left = ax + '%'; link.style.top = ay + '%'; link.style.width = len + '%';
+        link.style.transform = `rotate(${Math.atan2(dy, dx)}rad)`;
+        pad.appendChild(link);
+      }
+      pts.forEach((pt, i) => {
+        const dot = document.createElement('div'); dot.className = 'path-dot' + (i === selPt ? ' sel' : ''); dot.textContent = i + 1;
+        dot.style.left = `${(pt.f + 1) / 2 * 100}%`; dot.style.top = `${(1 - pt.h) * 100}%`;
+        let drag = false;
+        dot.addEventListener('pointerdown', ev => { drag = true; selPt = i; dot.setPointerCapture?.(ev.pointerId); ev.preventDefault(); ev.stopPropagation(); render(); });
+        dot.addEventListener('pointermove', ev => { if (!drag) return; const p = xy(ev); pt.f = p.f; pt.h = p.h;
+          dot.style.left = `${(pt.f + 1) / 2 * 100}%`; dot.style.top = `${(1 - pt.h) * 100}%`; this._apply(); });
+        dot.addEventListener('pointerup', ev => { drag = false; dot.releasePointerCapture?.(ev.pointerId); fb.tick(); render(); });
+        pad.appendChild(dot);
       });
-      dot.addEventListener('pointerup', ev => { drag = false; dot.releasePointerCapture?.(ev.pointerId); fb.tick(); });
-      pad.appendChild(dot);
+    };
+    // tap empty pad space → insert a point into the nearest segment
+    pad.addEventListener('pointerdown', ev => {
+      if (ev.target !== pad && !ev.target.classList.contains('path-link') && !ev.target.classList.contains('pad-ax') && !ev.target.classList.contains('pad-ground')) return;
+      const p = xy(ev), pts = leg.path; let best = 0, bd = 1e9;
+      for (let i = 0; i < pts.length; i++) {
+        const a = pts[i], b = pts[(i + 1) % pts.length], mf = (a.f + b.f) / 2, mh = (a.h + b.h) / 2;
+        const d = Math.hypot(mf - p.f, mh - p.h); if (d < bd) { bd = d; best = i; }
+      }
+      pts.splice(best + 1, 0, p); selPt = best + 1; this._pushUndo(); this._apply(); fb.confirm(); render();
+    });
+    pop.querySelector('[data-rm]').addEventListener('click', () => {
+      if (leg.path.length <= 3) { if (this._helper) guide.pop('A path needs at least 3 points.'); return; }
+      leg.path.splice(selPt, 1); selPt = Math.max(0, selPt - 1); this._pushUndo(); this._apply(); fb.press(); render();
     });
     pop.querySelector('[data-x]').addEventListener('click', () => { fb.press(); pop.remove(); });
     this.mount.appendChild(pop);
+    render();
   }
 
   _helpText() {

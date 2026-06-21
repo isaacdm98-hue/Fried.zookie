@@ -72,8 +72,8 @@ export function defaultPath() {
 }
 
 /** A new leg part. `pair` links mirror partners (same id, opposite side). */
-export function makeLeg(side, along, { len = 0.72, thick = 0.16, style = 'crawl', cycle = 0, pair = newPairId(), move = 'two', moveType = 'auto', path } = {}) {
-  return { side, along, len, thick, style, cycle, pair, move, moveType, path: path || defaultPath() };
+export function makeLeg(side, along, { len = 0.72, thick = 0.16, style = 'crawl', cycle = 0, pair = newPairId(), move = 'two', moveType = 'auto', target = 'off', path } = {}) {
+  return { side, along, len, thick, style, cycle, pair, move, moveType, target, path: path || defaultPath() };
 }
 
 /** Default crawl: pairs down the body, staggered movement cycles. */
@@ -93,7 +93,7 @@ export function makeDefaultLegs(pairs = 3) {
 export function ensureLegs(bp) {
   if (Array.isArray(bp.legs)) {
     // Back-compat: make sure every leg has a foot path + movement type.
-    for (const l of bp.legs) { if (!Array.isArray(l.path)) l.path = defaultPath(); if (!l.move) l.move = 'two'; if (!l.moveType) l.moveType = 'auto'; }
+    for (const l of bp.legs) { if (!Array.isArray(l.path)) l.path = defaultPath(); if (!l.move) l.move = 'two'; if (!l.moveType) l.moveType = 'auto'; if (!l.target) l.target = 'off'; }
     return bp.legs;
   }
   const pairs = bp.legPairs || 3;
@@ -291,6 +291,7 @@ export class Zook {
       this.group.add(pivot);
       this._legs.push({ pivot, knee, foot, side: leg.side, swingMul: S.swing, moveType: leg.moveType || 'auto',
         path: leg.path || defaultPath(), cycle: leg.cycle || 0, move: leg.move || 'two', style: leg.style || 'crawl',
+        target: leg.target || 'off',
         hip: { x, y: hipY, z }, reach: u + l, splay: S.splay, S,
         _footLocal: null, _footPrev: null, _planted: false });
     });
@@ -388,6 +389,14 @@ export class Zook {
     const fwd = stride * FREACH;
     for (const leg of this._legs) {
       const reach = leg.reach;
+      // "No movement" parts (Movement Mode = None): a static prop — they hold a
+      // neutral pose and never grip, so antennae/tails/fins don't propel.
+      if (leg.move === 'none') {
+        leg._footLocal = null;
+        leg.pivot.rotation.set(0, leg.pivot.rotation.y, leg.side * leg.splay);
+        leg.knee.rotation.x = 0.2; leg.foot.rotation.x = footAngle;
+        continue;
+      }
       const u  = (this._t * speed + (leg.cycle || 0));
       const cur  = samplePath(leg.path, u);
       const prev = samplePath(leg.path, u - speed * dt);
@@ -459,6 +468,15 @@ export class Zook {
       };
       if (this._antennae.length) aim(this._antennae, this.bp.antTarget || 'normal');
       if (this._tailPivot) aim([this._tailPivot], this.bp.tailTarget || 'off');
+      // Per-leg Part Targeting (manual Ch13): a limb can lean toward (INVERTED)
+      // or away from (NORMAL) the target — this is how you build a snake/worm
+      // spine that flexes as it tracks, or eyes/feelers that point at the goal.
+      for (const leg of this._legs) {
+        if (!leg.target || leg.target === 'off') continue;
+        const dir = leg.target === 'inverted' ? 1 : -1;
+        const tgt = Math.max(-1, Math.min(1, d)) * ang * dir;
+        leg.pivot.rotation.y += (tgt - leg.pivot.rotation.y) * 0.2;
+      }
     }
 
     // ── Genuine foot–ground contact ────────────────────────────────────────────
