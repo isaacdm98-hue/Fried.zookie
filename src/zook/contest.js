@@ -23,6 +23,7 @@ export const CONTESTS = [
   { id: 'marbles', name: 'Zook Marbles',   desc: 'Barge through the marbles to the line.',         goal: 'race', marbles: true },
   { id: 'dodge',   name: 'Dodgy Zook',     desc: 'Slip past the sliding doors.',                  goal: 'race', doors: true },
   { id: 'tag',     name: 'Zook Tag',       desc: 'Catch the rival before time runs out!',         goal: 'tag' },
+  { id: 'smash',   name: 'Zook Smash',     desc: 'Smash through the blocks to the line.',          goal: 'race', smash: true },
 ];
 
 const GREEN = 0x37c46a, RED = 0xe8466e;
@@ -221,6 +222,8 @@ export class ContestScene {
       if (c.hurdles) for (const z of [-2, -7, -12]) this._box({ pos: { x: 0, y: 0.25, z }, size: { x: 6, y: 0.5, z: 0.4 }, color: 0xff8a1e });
       if (c.marbles) this._marbles();
       if (c.doors) this._slidingDoors();
+      if (c.smash) for (const z of [-1, -6, -11]) for (let i = 0; i < 4; i++)
+        this._dynBox({ pos: { x: -2.4 + i * 1.6, y: 0.5 + Math.random() * 0.1, z }, size: { x: 1.3, y: 1.0, z: 1.0 }, color: 0xff8a1e, mass: 0.5 });
     } else if (c.goal === 'tag') {
       this._box({ pos: { x: 0, y: -0.2, z: 0 }, size: { x: 13, y: 0.4, z: 13 }, color: 0xeee7d6 });
     } else if (c.goal === 'ring' || c.goal === 'merry') {
@@ -242,6 +245,15 @@ export class ContestScene {
       this.world.createCollider(R.ColliderDesc.ball(0.35).setRestitution(0.5).setDensity(0.4), this._ball);
       this._bodies.push(this._ball); this._ballMesh = ball;
     }
+  }
+
+  _dynBox({ pos, size, color = 0xff8a1e, mass = 0.5 }) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(size.x, size.y, size.z), new THREE.MeshStandardMaterial({ color, roughness: 0.7 }));
+    m.castShadow = m.receiveShadow = true; this.scene.add(m); this._meshes.push(m);
+    const R = this.RAPIER;
+    const b = this.world.createRigidBody(R.RigidBodyDesc.dynamic().setTranslation(pos.x, pos.y, pos.z).setAdditionalMass(mass));
+    this.world.createCollider(R.ColliderDesc.cuboid(size.x / 2, size.y / 2, size.z / 2).setFriction(0.7).setRestitution(0.1), b);
+    this._dynamic.push({ mesh: m, body: b }); this._bodies.push(b); return b;
   }
 
   _marbles() {
