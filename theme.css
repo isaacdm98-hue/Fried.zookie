@@ -198,6 +198,10 @@ body { -webkit-user-select: none; user-select: none; touch-action: none; }
 .con-card b { font-size: 13px; letter-spacing: 0.06em; }
 .con-card span { font-size: 10px; color: var(--sub); line-height: 1.35; }
 .con-card:active { transform: scale(0.97); }
+.con-card.has-thumb { padding: 0; overflow: hidden; }
+.con-card.has-thumb .con-thumb { width: 100%; aspect-ratio: 1 / 1; object-fit: cover; display: block; background: #d9d3c6; }
+.con-card.has-thumb b { padding: 9px 12px 0; }
+.con-card.has-thumb span { padding: 0 12px 12px; }
 .con-hud { display: flex; align-items: center; justify-content: center; gap: 10px; margin: calc(12px + env(safe-area-inset-top)) auto 0;
   background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px; width: max-content; }
 .con-hud .tag { font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 6px; color: #fff; }

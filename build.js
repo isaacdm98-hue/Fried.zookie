@@ -17,11 +17,14 @@ function generateServiceWorker() {
   // gain. We match by basename against the shipped HTML/CSS/bundle/manifest.
   const haystack = ['index.html', 'theme.css', 'friedzooki.bundle.js', 'manifest.webmanifest']
     .map(f => { try { return readFileSync(f, 'utf8'); } catch (_) { return ''; } }).join('\n');
+  // Always ship app icons and the contest thumbnails (the latter are referenced
+  // via a runtime-built path, so their names don't appear literally in the bundle).
+  const always = p => p.startsWith('icons') || p.startsWith('assets/contests');
   const walk = dir => {
     for (const name of readdirSync(dir)) {
       const p = `${dir}/${name}`;
       if (statSync(p).isDirectory()) walk(p);
-      else if (haystack.includes(name)) files.push('./' + p);
+      else if (always(p) || haystack.includes(name)) files.push('./' + p);
     }
   };
   include.forEach(walk);

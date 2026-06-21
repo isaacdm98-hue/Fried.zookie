@@ -266,8 +266,12 @@ export class App {
 
   // ── Contests (select) ────────────────────────────────────────────────────
   _contests() {
+    // Real contest screenshots from the original game, lightly re-graded.
+    const THUMBS = new Set(['dodge', 'merry', 'weakest', 'ball', 'china', 'marbles', 'smash', 'sumo', 'hurdles', 'tag']);
     const cards = CONTESTS.map(c => `
-      <button class="con-card" data-id="${c.id}"><b>${c.name}</b><span>${c.desc}</span></button>`).join('');
+      <button class="con-card${THUMBS.has(c.id) ? ' has-thumb' : ''}" data-id="${c.id}">
+        ${THUMBS.has(c.id) ? `<img class="con-thumb" src="./assets/contests/${c.id}.png" alt="" loading="lazy"/>` : ''}
+        <b>${c.name}</b><span>${c.desc}</span></button>`).join('');
     const trophies = this._trophies();
     const d = this._overlayEl(`<div class="sheet">
       <div class="bar"><button class="mini-btn" data-back>‹</button><h2>Contests</h2><span class="trophy-tally" title="contests won">${trophies ? '🏆 ' + trophies : ''}</span></div>
