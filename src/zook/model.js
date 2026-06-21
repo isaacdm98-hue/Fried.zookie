@@ -60,8 +60,8 @@ export function defaultPath() {
 }
 
 /** A new leg part. `pair` links mirror partners (same id, opposite side). */
-export function makeLeg(side, along, { len = 0.72, thick = 0.16, style = 'crawl', cycle = 0, pair = newPairId(), move = 'two', path } = {}) {
-  return { side, along, len, thick, style, cycle, pair, move, path: path || defaultPath() };
+export function makeLeg(side, along, { len = 0.72, thick = 0.16, style = 'crawl', cycle = 0, pair = newPairId(), move = 'two', moveType = 'auto', path } = {}) {
+  return { side, along, len, thick, style, cycle, pair, move, moveType, path: path || defaultPath() };
 }
 
 /** Default crawl: pairs down the body, staggered movement cycles. */
@@ -81,7 +81,7 @@ export function makeDefaultLegs(pairs = 3) {
 export function ensureLegs(bp) {
   if (Array.isArray(bp.legs)) {
     // Back-compat: make sure every leg has a foot path + movement type.
-    for (const l of bp.legs) { if (!Array.isArray(l.path)) l.path = defaultPath(); if (!l.move) l.move = 'two'; }
+    for (const l of bp.legs) { if (!Array.isArray(l.path)) l.path = defaultPath(); if (!l.move) l.move = 'two'; if (!l.moveType) l.moveType = 'auto'; }
     return bp.legs;
   }
   const pairs = bp.legPairs || 3;
@@ -157,7 +157,7 @@ export class Zook {
       }
     });
     while (this.group.children.length) this.group.remove(this.group.children[0]);
-    this._legs = [];
+    this._legs = []; this._antennae = [];
     const bp = this.bp;
     const bMat = mat(bp.hue), lMat = mat(bp.footHue, 0.48, 0.55);
     bMat.flatShading = true; lMat.flatShading = true;   // faceted, organic look
@@ -210,18 +210,22 @@ export class Zook {
       const foot = new THREE.Mesh(BLOB_GEO, m);
       foot.scale.set(thick * 1.5, thick * 0.7, thick * 2.0); foot.position.set(0, -l, thick * 0.4); foot.castShadow = true; knee.add(foot);
       this.group.add(pivot);
-      this._legs.push({ pivot, knee, foot, side: leg.side, swingMul: S.swing,
+      this._legs.push({ pivot, knee, foot, side: leg.side, swingMul: S.swing, moveType: leg.moveType || 'auto',
         path: leg.path || defaultPath(), cycle: leg.cycle || 0, move: leg.move || 'two', _push: 0 });
     });
 
     // Decorative parts (Add menu): antennae on the nose, a tail at the back.
+    // Antennae do Part Targeting — they lean toward the floor target.
     if (bp.antennae) {
-      const aGeo = new THREE.CylinderGeometry(thick * 0.18, thick * 0.3, bp.height * 0.9, 6);
+      const at = bp.legThick;
+      const aGeo = new THREE.CylinderGeometry(at * 0.18, at * 0.3, bp.height * 0.9, 6);
       for (const sx of [-1, 1]) {
+        const pivot = new THREE.Group();
+        pivot.position.set(sx * bp.width * 0.18, bp.height * 0.5, -bp.len * 0.35);
         const a = new THREE.Mesh(aGeo, lMat);
-        a.position.set(sx * bp.width * 0.18, bp.height * 0.5, -bp.len * 0.35);
-        a.rotation.set(-0.5, 0, sx * 0.4);
-        this.group.add(a);
+        a.position.y = bp.height * 0.45; a.rotation.set(-0.5, 0, sx * 0.4);
+        pivot.add(a); this.group.add(pivot);
+        this._antennae.push(pivot);
       }
     }
     if (bp.tail) {
@@ -269,6 +273,9 @@ export class Zook {
   }
 
   setHighlight(i) { this._highlight = i; this._buildMeshes(); }
+
+  /** Hop (High Jump trial). */
+  jump() { if (this._body && this._onGround) this._body.applyImpulse({ x: 0, y: 7.5 * (this.bp.stiffness || 1), z: 0 }, true); }
 
   // ── Animation / driving ──────────────────────────────────────────────────────
   _animateLegs(amount) {
@@ -325,11 +332,24 @@ export class Zook {
     // Cycle) keeps a foot pushing at all times → smoother, faster; legs in
     // unison give a lurching, weaker gait. Stride, speed and leg count all feed
     // in naturally, exactly as building a real Zook should reward.
+    // Antennae do Part Targeting — lean toward the floor target.
+    if (this._antennae.length && inputs.target) {
+      const want = Math.atan2(-(inputs.target.x - pos.x), -(inputs.target.z - pos.z));
+      let d = want - yaw; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI;
+      for (const a of this._antennae) a.rotation.y += (Math.max(-1, Math.min(1, d)) * 0.6 - a.rotation.y) * 0.2;
+    }
     if (walk && this._onGround) {
       // Drive emerges from the feet: each leg's planted backstroke (from its IK
-      // path) contributes. Good paths + staggered cycles ⇒ smooth, fast Zooks.
+      // path) contributes. Movement Type slows the inside legs when turning, so
+      // turning emerges from leg asymmetry (manual Ch13).
       let push = 0;
-      for (const leg of this._legs) push += leg._push || 0;
+      for (const leg of this._legs) {
+        let p = leg._push || 0;
+        const mt = leg.moveType || 'auto';
+        const eff = mt === 'always' ? 0 : mt === 'left' ? 1 : mt === 'right' ? -1 : leg.side;
+        if (eff !== 0 && Math.sign(this._steer) === Math.sign(eff) && Math.abs(this._steer) > 0.05) p *= 1 - Math.min(0.7, Math.abs(this._steer) * 0.7);
+        push += p;
+      }
       const stiff = this.bp.stiffness || 1;
       const drive = push * speed * 42 * stiff;
       b.applyImpulse({ x: fwdX * drive * dt, y: 0, z: fwdZ * drive * dt }, true);

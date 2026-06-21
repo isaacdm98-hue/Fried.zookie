@@ -24,6 +24,7 @@ export const CONTESTS = [
   { id: 'dodge',   name: 'Dodgy Zook',     desc: 'Slip past the sliding doors.',                  goal: 'race', doors: true },
   { id: 'tag',     name: 'Zook Tag',       desc: 'Catch the rival before time runs out!',         goal: 'tag' },
   { id: 'smash',   name: 'Zook Smash',     desc: 'Smash through the blocks to the line.',          goal: 'race', smash: true },
+  { id: 'china',   name: 'China Shop',     desc: 'Knock over more china than your rival!',         goal: 'china' },
 ];
 
 const GREEN = 0x37c46a, RED = 0xe8466e;
@@ -38,6 +39,7 @@ export class ContestScene {
     this._t = 0; this._state = 'count'; this._count = 3; this._countT = 0;
     this._ball = null; this._ballMesh = null; this._platform = null; this._doors = []; this._dynamic = [];
     this._rec = []; this._recT = 0;     // motion-player recording
+    this._china = []; this._chinaG = 0; this._chinaR = 0;
   }
 
   getRecording() { return this._rec; }
@@ -66,6 +68,7 @@ export class ContestScene {
     for (const b of this._bodies) { try { this.world.removeRigidBody(b); } catch (_) {} }
     for (const r of this._rings) this.scene.remove(r);
     this._meshes = []; this._bodies = []; this._rings = []; this._doors = []; this._dynamic = [];
+    this._china = []; this._chinaG = 0; this._chinaR = 0;
     this.green = this.red = this._ball = this._ballMesh = this._platform = null;
   }
 
@@ -98,6 +101,11 @@ export class ContestScene {
         const rp = me.zook.position, gp = foe.zook.position;     // red flees
         return { x: rp.x + (rp.x - gp.x) * 3, z: rp.z + (rp.z - gp.z) * 3 };
       }
+      if (c.goal === 'china') {                                  // head for the nearest standing cup
+        const mp = me.zook.position; let best = null, bd = 1e9;
+        for (const k of this._china) { if (k.owner) continue; const t = k.body.translation(); const d = Math.hypot(t.x - mp.x, t.z - mp.z); if (d < bd) { bd = d; best = t; } }
+        return best ? { x: best.x, z: best.z } : { x: 0, z: 0 };
+      }
       return { x: 0, z: -10 };
     };
     g.zook.step(dt, { walk: true, target: drive(g, r) });
@@ -109,6 +117,19 @@ export class ContestScene {
       d.body.setNextKinematicTranslation({ x, y: d.y, z: d.z });
     }
     if (this._platform) this._spinPlatform(dt);
+    // China Shop: a knocked-over cup is credited to the nearer Zook.
+    if (this.contest.goal === 'china') {
+      for (const k of this._china) {
+        if (k.owner) continue;
+        const t = k.body.translation();
+        if (t.y < 0.25 || Math.hypot(t.x - k.start.x, t.z - k.start.z) > 1.2) {
+          const gp = g.zook.position, rp = r.zook.position;
+          k.owner = Math.hypot(t.x - gp.x, t.z - gp.z) <= Math.hypot(t.x - rp.x, t.z - rp.z) ? 'g' : 'r';
+          if (k.owner === 'g') this._chinaG++; else this._chinaR++;
+          fb.thud();
+        }
+      }
+    }
     this._judge();
   }
 
@@ -181,6 +202,11 @@ export class ContestScene {
     } else if (c.goal === 'tag') {
       if (Math.hypot(g.x - r.x, g.z - r.z) < 1.4) return this._finish(true, 'Tagged! You caught it!');
       if (this._t > 20) return this._finish(false, 'Time up — it got away!');
+    } else if (c.goal === 'china') {
+      if (this._chinaG + this._chinaR >= this._china.length || this._t > 25) {
+        const win = this._chinaG >= this._chinaR;
+        return this._finish(win, win ? `You smashed ${this._chinaG} to ${this._chinaR}!` : `Rival smashed ${this._chinaR} to ${this._chinaG}.`);
+      }
     }
     // time limit
     if (this._t > 30) {
@@ -226,6 +252,14 @@ export class ContestScene {
         this._dynBox({ pos: { x: -2.4 + i * 1.6, y: 0.5 + Math.random() * 0.1, z }, size: { x: 1.3, y: 1.0, z: 1.0 }, color: 0xff8a1e, mass: 0.5 });
     } else if (c.goal === 'tag') {
       this._box({ pos: { x: 0, y: -0.2, z: 0 }, size: { x: 13, y: 0.4, z: 13 }, color: 0xeee7d6 });
+    } else if (c.goal === 'china') {
+      this._box({ pos: { x: 0, y: -0.2, z: 0 }, size: { x: 12, y: 0.4, z: 12 }, color: 0xeee7d6 });
+      this._china = [];
+      for (let i = 0; i < 16; i++) {
+        const x = (Math.random() - 0.5) * 8, z = (Math.random() - 0.5) * 8;
+        const b = this._dynBox({ pos: { x, y: 0.45, z }, size: { x: 0.6, y: 0.9, z: 0.6 }, color: 0xdfeaf2, mass: 0.15 });
+        this._china.push({ body: b, start: { x, z }, owner: null });
+      }
     } else if (c.goal === 'ring' || c.goal === 'merry') {
       const disc = new THREE.Mesh(new THREE.CylinderGeometry(c.radius, c.radius + 0.2, 0.4, 40),
         new THREE.MeshStandardMaterial({ color: c.goal === 'merry' ? 0xf0782d : 0xeee7d6, roughness: 0.7 }));

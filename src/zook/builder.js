@@ -244,6 +244,9 @@ export class Builder {
         const move = Selector({ label: 'MOVEMENT', value: leg.move,
           options: [{ v: 'two', t: 'TWO-PART' }, { v: 'single', t: 'SINGLE' }],
           onChange: v => { this._pushUndo(); leg.move = v; this._apply(); this._refresh(); } });
+        const mtype = Selector({ label: 'TURN ROLE', value: leg.moveType || 'auto',
+          options: [{ v: 'auto', t: 'AUTO' }, { v: 'always', t: 'ALWAYS' }, { v: 'left', t: 'LEFT' }, { v: 'right', t: 'RIGHT' }],
+          onChange: v => { this._pushUndo(); leg.moveType = v; this._apply(); } });
 
         // Draggable IK pad: x = fore/aft, y = lift. Drag the numbered points.
         const pad = document.createElement('div'); pad.className = 'path-pad';
@@ -265,7 +268,7 @@ export class Builder {
         });
         const note = document.createElement('div'); note.className = 'deck-note';
         note.textContent = 'drag the foot path — points low & moving back PUSH the Zook along';
-        el.append(tb, move.root, pad, note);
+        el.append(tb, move.root, mtype.root, pad, note);
       },
       move: (el) => {
         const r = document.createElement('div'); r.className = 'knob-row';
