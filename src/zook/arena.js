@@ -261,10 +261,13 @@ export class Arena {
     const size = `${bp.len.toFixed(1)} × ${bp.width.toFixed(1)} × ${bp.height.toFixed(1)}`;
     const weight = (bp.len * bp.width * bp.height * 1.1).toFixed(2);
     const old = this.mount.querySelector('.passport'); if (old) { old.remove(); return; }
+    let photo = '';
+    try { photo = document.getElementById('scene').toDataURL('image/png'); } catch (_) {}
     const card = document.createElement('div'); card.className = 'passport';
     card.innerHTML = `
       <div class="pp-card">
         <h3>PASSPORT</h3>
+        ${photo ? `<img class="pp-photo" src="${photo}" alt="snapshot"/>` : ''}
         <div class="pp-row"><span>Size (L×W×H)</span><b>${size}</b></div>
         <div class="pp-row"><span>Weight</span><b>${weight}</b></div>
         <div class="pp-row"><span>Legs</span><b>${legs}</b></div>
