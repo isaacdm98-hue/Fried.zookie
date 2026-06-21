@@ -12,11 +12,16 @@ function generateServiceWorker() {
   const include = ['assets', 'fonts', 'icons'];
   const files = ['./', './index.html', './friedzooki.bundle.js',
                  './theme.css', './manifest.webmanifest'];
+  // Only ship files that are actually referenced — the asset library carries a
+  // lot of unused art/audio, and precaching it would bloat the install for no
+  // gain. We match by basename against the shipped HTML/CSS/bundle/manifest.
+  const haystack = ['index.html', 'theme.css', 'friedzooki.bundle.js', 'manifest.webmanifest']
+    .map(f => { try { return readFileSync(f, 'utf8'); } catch (_) { return ''; } }).join('\n');
   const walk = dir => {
     for (const name of readdirSync(dir)) {
       const p = `${dir}/${name}`;
       if (statSync(p).isDirectory()) walk(p);
-      else files.push('./' + p);
+      else if (haystack.includes(name)) files.push('./' + p);
     }
   };
   include.forEach(walk);
