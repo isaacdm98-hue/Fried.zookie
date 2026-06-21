@@ -64,6 +64,10 @@ export class ContestScene {
       const R = this.RAPIER;
       const jd = R.JointData.rope(9.5, { x: 0, y: 0, z: 0 }, { x: 0, y: 0, z: 0 });
       this._tether = this.world.createImpulseJoint(jd, this.green.zook._body, this.red.zook._body, true);
+      // visible cord between them so the tug-of-war reads clearly
+      const rope = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 1, 8),
+        new THREE.MeshStandardMaterial({ color: 0x7a6a52, roughness: 0.95 }));
+      this.scene.add(rope); this._meshes.push(rope); this._ropeMesh = rope;
     }
 
     this._t = 0; this._state = 'count'; this._count = 3; this._countT = 0;
@@ -85,7 +89,7 @@ export class ContestScene {
     if (this._shards) for (const sh of this._shards) { this.scene.remove(sh.mesh); sh.mesh.geometry?.dispose?.(); sh.mesh.material?.dispose?.(); }
     this._meshes = []; this._bodies = []; this._rings = []; this._doors = []; this._dynamic = []; this._shards = [];
     this._china = []; this._chinaG = 0; this._chinaR = 0;
-    this.green = this.red = this._ball = this._ballMesh = this._platform = null;
+    this.green = this.red = this._ball = this._ballMesh = this._platform = this._ropeMesh = null; this._victor = null;
   }
 
   // ── lifecycle ────────────────────────────────────────────────────────────
@@ -162,6 +166,7 @@ export class ContestScene {
         if (d) { e.zook.group.position.set(d[0], d[1], d[2]); e.zook.group.quaternion.set(d[3], d[4], d[5], d[6]); }
         this._followRing(e);
       }
+      if (this._ropeMesh) this._updateRope();
       this._frameCamera();
       return;
     }
@@ -190,6 +195,7 @@ export class ContestScene {
     for (const d of this._doors) { const t = d.body.translation(); d.mesh.position.set(t.x, t.y, t.z); }
     for (const o of this._dynamic) { const t = o.body.translation(), r = o.body.rotation(); o.mesh.position.set(t.x, t.y, t.z); o.mesh.quaternion.set(r.x, r.y, r.z, r.w); }
     this._stepShards(dt);
+    if (this._ropeMesh) this._updateRope();
     this._frameCamera();
   }
 
@@ -202,6 +208,8 @@ export class ContestScene {
       setCamera({ x: p.x, y: 2.0, z: p.z + 4.3 }, { x: p.x, y: 0.7, z: p.z });
       return;
     }
+    // Tug-of-war: frame the whole long table (both home walls) from above-side.
+    if (this.contest && this.contest.goal === 'tug') { setCamera({ x: 2, y: 11, z: 17 }, { x: 0, y: 0, z: 0 }); return; }
     if (!this.green || !this.red) return;
     const a = this.green.zook.position, b = this.red.zook.position;
     const mx = (a.x + b.x) / 2, mz = (a.z + b.z) / 2;
@@ -451,4 +459,26 @@ export class ContestScene {
     if (this._state === 'count') return this._count <= 0 ? 'GO!' : String(this._count);
     return null;
   }
+
+  // Live score shown in the HUD during a contest.
+  get scoreLabel() {
+    const c = this.contest; if (!c || this._state !== 'run' || !this.green || !this.red) return '';
+    if (c.goal === 'china') return `china  ${this._chinaG} – ${this._chinaR}`;
+    if (c.goal === 'tug') return Math.abs(this.green.zook.position.x) >= Math.abs(this.red.zook.position.x) ? 'you’re winning the haul!' : 'rival is hauling you in!';
+    if (c.goal === 'ball' && this._ball) { const z = this._ball.translation().z; return z < -1 ? 'ball in rival half ▸' : z > 1 ? '◂ ball in your half' : 'midfield'; }
+    if (c.goal === 'tag') return `${Math.max(0, 20 - this._t).toFixed(0)}s to catch it`;
+    return '';
+  }
+
+  _updateRope() {
+    if (!this._ropeMesh || !this.green || !this.red) return;
+    const a = this.green.zook.position, b = this.red.zook.position;
+    const dx = b.x - a.x, dy = b.y - a.y, dz = b.z - a.z, len = Math.hypot(dx, dy, dz) || 1;
+    this._ropeMesh.position.set((a.x + b.x) / 2, (a.y + b.y) / 2 + 0.15, (a.z + b.z) / 2);
+    this._ropeMesh.scale.set(1, len, 1);
+    this._ropeMesh.quaternion.setFromUnitVectors(_UP, _DIR.set(dx / len, dy / len, dz / len));
+  }
 }
+
+const _UP = new THREE.Vector3(0, 1, 0);
+const _DIR = new THREE.Vector3();

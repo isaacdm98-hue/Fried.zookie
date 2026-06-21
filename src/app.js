@@ -88,7 +88,9 @@ export class App {
       const l = (this.mode && this.mode.countLabel != null) ? this.mode.countLabel : null;
       this._countdownEl.textContent = l || '';
       this._countdownEl.style.opacity = l ? '1' : '0';
+      this._countdownEl.classList.toggle('go', l === 'GO!');
     }
+    if (this._scoreEl) this._scoreEl.textContent = (this.mode && this.mode.scoreLabel) || '';
   }
 
   // ── screen switching ────────────────────────────────────────────────────────
@@ -99,7 +101,7 @@ export class App {
     // a contest's VS bar + its result card) so none leaks onto the next screen.
     if (this._overlays) for (const o of this._overlays) o.remove();
     this._overlays = []; this._overlay = null;
-    this._countdownEl = null;
+    this._countdownEl = null; this._scoreEl = null;
     this._replay = null; this._scrub = null; this._lab = null; this._labUI = null; this._runScene = null;
     this._clearTabletop();
   }
@@ -702,9 +704,13 @@ export class App {
     const d = this._overlayEl(`
       <button class="game-back" data-back><img src="./assets/btn-back.png" alt="Menu"/></button>
       <div class="con-hud"><span class="tag green">${greenName}</span><span class="vs">${contestName}</span><span class="tag red">${redName}</span></div>
-      <div class="countdown"></div>${seamHtml}`);
+      <div class="con-score"></div>
+      <div class="countdown"></div>
+      <div class="vs-card"><div class="vs-row"><span class="tag green">${greenName}</span><b>VS</b><span class="tag red">${redName}</span></div><div class="vs-name">${contestName}</div></div>${seamHtml}`);
     d.querySelector('[data-back]').addEventListener('click', () => { fb.press(); this._exitGame(); });
     this._countdownEl = d.querySelector('.countdown');
+    this._scoreEl = d.querySelector('.con-score');
+    const vc = d.querySelector('.vs-card'); setTimeout(() => { if (vc) vc.remove(); }, 2200);
   }
 
   /** Leave any game (contest/champ/online/tabletop/run/lab) back to the menu. */
