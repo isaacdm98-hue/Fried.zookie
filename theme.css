@@ -237,3 +237,85 @@ body { -webkit-user-select: none; user-select: none; touch-action: none; }
   width: 50px; height: 50px; padding: 0; border: 0; background: none; cursor: pointer; z-index: 20; }
 .back-btn img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); }
 .back-btn:active { transform: scale(0.94); }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   OP-Z device skin — the builder deck becomes a dark, premium physical unit.
+   Scoped to .deck so the studio + creature stay bright. Bevels, inner shadows
+   and recessed display readouts give it real hardware feel.
+   ════════════════════════════════════════════════════════════════════════════ */
+.deck {
+  background:
+    linear-gradient(180deg, #2b2e35 0%, #1a1c21 42%, #131419 100%);
+  border-top: 1px solid rgba(255,255,255,0.12);
+  border-radius: 20px 20px 0 0;
+  box-shadow: 0 -12px 44px rgba(0,0,0,0.45),
+              inset 0 1px 0 rgba(255,255,255,0.10),
+              inset 0 0 0 1px rgba(0,0,0,0.5);
+  color: #ece7db;
+}
+/* device grip rail along the very top */
+.deck::before {
+  content: ''; position: absolute; top: 6px; left: 50%; transform: translateX(-50%);
+  width: 46px; height: 4px; border-radius: 3px;
+  background: rgba(255,255,255,0.14); box-shadow: 0 1px 0 rgba(0,0,0,0.4);
+}
+.deck .deck-head { margin-top: 4px; }
+
+/* name = small recessed display */
+.deck .name-in {
+  background: #0c0d10; color: #ffd479; letter-spacing: 0.06em;
+  border: 1px solid rgba(0,0,0,0.7);
+  box-shadow: inset 0 2px 5px rgba(0,0,0,0.7), inset 0 0 0 1px rgba(255,255,255,0.03);
+  text-shadow: 0 0 6px rgba(255,180,60,0.35);
+}
+
+/* dark tactile keys */
+.deck .mini-btn {
+  background: linear-gradient(180deg, #32353d, #23262c);
+  color: #e7e2d6; border: 1px solid rgba(0,0,0,0.6);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.10), 0 2px 4px rgba(0,0,0,0.5);
+}
+.deck .mini-btn:active { transform: translateY(1px); box-shadow: inset 0 2px 4px rgba(0,0,0,0.6); }
+
+/* tab strip = recessed well with lit key */
+.deck .tabs { background: #0c0d10; border: 1px solid rgba(0,0,0,0.7);
+  box-shadow: inset 0 2px 6px rgba(0,0,0,0.6); }
+.deck .tab { color: #7e828c; border-right: 1px solid rgba(0,0,0,0.5); }
+.deck .tab.on { color: #1a1206; background: linear-gradient(180deg, #ffb347, var(--accent));
+  box-shadow: 0 0 12px rgba(240,120,45,0.5), inset 0 1px 0 rgba(255,255,255,0.4); }
+
+/* labels + readouts */
+.deck .ctl-label { color: #8a8e98; }
+.deck .ctl-val { background: #0c0d10; color: #ffd479; border: 1px solid rgba(0,0,0,0.6);
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.7); text-shadow: 0 0 5px rgba(255,180,60,0.3); }
+
+/* knobs sit in dark recessed wells; colour caps pop */
+.deck .knob-dial {
+  box-shadow: inset 0 -3px 5px rgba(0,0,0,0.28), inset 0 2px 3px rgba(255,255,255,0.45),
+              0 2px 5px rgba(0,0,0,0.6), 0 0 0 4px rgba(0,0,0,0.35), 0 0 0 5px rgba(255,255,255,0.05);
+}
+
+/* switches */
+.deck .sw-track { background: #0c0d10; border: 1px solid rgba(0,0,0,0.7);
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.6); }
+.deck .sw-knob { background: linear-gradient(180deg, #f4f1ea, #cdc8bc); }
+.deck .switch.on .sw-track { background: linear-gradient(180deg, #ffb347, var(--accent));
+  box-shadow: 0 0 10px rgba(240,120,45,0.5); }
+
+/* segmented keys */
+.deck .seg-btn { background: linear-gradient(180deg, #32353d, #23262c); color: #8a8e98;
+  border: 1px solid rgba(0,0,0,0.6); box-shadow: inset 0 1px 0 rgba(255,255,255,0.08); }
+.deck .seg-btn.on { color: #1a1206; background: linear-gradient(180deg, #ffb347, var(--accent));
+  box-shadow: 0 0 10px rgba(240,120,45,0.45); }
+
+/* hue sliders */
+.deck .hue-track { border: 1px solid rgba(0,0,0,0.6); box-shadow: inset 0 1px 3px rgba(0,0,0,0.5); }
+.deck .hue-thumb { border-color: #ece7db; }
+
+.deck .deck-note { color: #6c6f78; }
+.deck .leg-count { color: #e7e2d6; }
+
+/* TEST = big lit action key */
+.deck .test-btn { background: linear-gradient(180deg, #ff9a3c, var(--accent));
+  box-shadow: 0 0 16px rgba(240,120,45,0.5), inset 0 1px 0 rgba(255,255,255,0.4); color: #fff; }
+.deck .save-btn { background: linear-gradient(180deg, #32353d, #23262c); color: #e7e2d6; }
