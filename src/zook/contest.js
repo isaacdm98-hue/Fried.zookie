@@ -110,11 +110,13 @@ export class ContestScene {
     }
     for (const d of this._doors) { const t = d.body.translation(); d.mesh.position.set(t.x, t.y, t.z); }
     for (const o of this._dynamic) { const t = o.body.translation(), r = o.body.rotation(); o.mesh.position.set(t.x, t.y, t.z); o.mesh.quaternion.set(r.x, r.y, r.z, r.w); }
-    // Camera frames the midpoint of the two Zooks.
+    // Broadcast camera that frames BOTH Zooks — pulls back as they separate.
     if (this.green && this.red) {
       const a = this.green.zook.position, b = this.red.zook.position;
       const mx = (a.x + b.x) / 2, mz = (a.z + b.z) / 2;
-      setCamera({ x: mx + 5, y: 5, z: mz + 9 }, { x: mx, y: 0.3, z: mz });
+      const dist = Math.hypot(a.x - b.x, a.z - b.z);
+      const back = Math.min(20, 8 + dist * 0.7);
+      setCamera({ x: mx + back * 0.45, y: back * 0.6, z: mz + back }, { x: mx, y: 0.4, z: mz });
     }
   }
 
