@@ -204,14 +204,52 @@ export class App {
       <button class="con-card" data-id="${c.id}"><b>${c.name}</b><span>${c.desc}</span></button>`).join('');
     const d = this._overlayEl(`<div class="sheet">
       <div class="bar"><button class="mini-btn" data-back>‹</button><h2>Contests</h2><span style="width:40px"></span></div>
+      <button class="con-card coop champ-card" data-champ><b>🏆 CHAMPIONSHIP</b><span>five contests, one champion — like a full episode</span></button>
       <div class="con-grid">${cards}</div></div>`);
     d.querySelector('[data-back]').addEventListener('click', () => { fb.press(); this.go('menu'); });
-    d.querySelectorAll('.con-card').forEach(b => b.addEventListener('click', () => {
+    d.querySelector('[data-champ]').addEventListener('click', () => { fb.confirm(); this._championship(); });
+    d.querySelectorAll('.con-card[data-id]').forEach(b => b.addEventListener('click', () => {
       fb.confirm();
       const contest = CONTESTS.find(c => c.id === b.dataset.id);
       this.go('contestRun', { contest, green: this.active, red: randomExample() });
     }));
     guide.now(TIPS.contest);
+  }
+
+  // ── Championship — a series of contests, like a TV episode ─────────────────
+  _championship() {
+    const ids = CONTESTS.map(c => c.id);
+    for (let i = ids.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [ids[i], ids[j]] = [ids[j], ids[i]]; }
+    this._champ = { ids: ids.slice(0, 5), opps: Array.from({ length: 5 }, () => randomExample()), i: 0, wins: 0, losses: 0 };
+    guide.now('Championship! Five contests, one champion. Make your Zook proud!');
+    this._champRound();
+  }
+  _champRound() {
+    const ch = this._champ, contest = CONTESTS.find(c => c.id === ch.ids[ch.i]), opp = ch.opps[ch.i];
+    this._clear();
+    const cs = new ContestScene({ scene: this.scene, world: this.world, RAPIER: this.RAPIER, camera: this.camera,
+      onResult: ({ playerWon, line }) => { playerWon ? ch.wins++ : ch.losses++; this._champStandings(playerWon, line); } });
+    cs.enter(contest, this.active.bp, opp.bp); this.mode = cs;
+    this._contestOverlay(`${this.active.name || 'You'} (${ch.wins})`, `${opp.name} (${ch.losses})`, `ROUND ${ch.i + 1}/5 · ${contest.name}`);
+    guide.now(`Round ${ch.i + 1}: ${contest.name} versus ${opp.name}!`);
+  }
+  _champStandings(won, line) {
+    const ch = this._champ; ch.i++;
+    const final = ch.i >= ch.ids.length;
+    if (final) {
+      const champ = ch.wins > ch.losses; champ ? fb.win() : fb.lose();
+      const r = this._overlayEl(`<div class="result-modal"><h1 class="${champ ? 'win' : 'lose'}">${champ ? '🏆 CHAMPION!' : 'NOT THIS TIME'}</h1>
+        <p>Final score — you ${ch.wins} : ${ch.losses} rivals</p>
+        <div class="row"><button class="m-btn" data-act="again"><b>NEW EPISODE</b></button><button class="m-btn" data-act="menu"><b>MENU</b></button></div></div>`);
+      r.querySelector('[data-act=again]').onclick = () => { fb.press(); this._championship(); };
+      r.querySelector('[data-act=menu]').onclick = () => { fb.press(); this.go('contests'); };
+      guide.now(champ ? 'CHAMPION! Your Zook is the best in the league!' : 'Beaten this time — back to the workshop to tune it up!');
+    } else {
+      const r = this._overlayEl(`<div class="result-modal"><h1 class="${won ? 'win' : 'lose'}">${won ? 'ROUND WON!' : 'ROUND LOST'}</h1>
+        <p>${line}</p><p class="champ-standings">Standings — you ${ch.wins} : ${ch.losses}</p>
+        <div class="row"><button class="m-btn" data-act="next"><b>NEXT ROUND ▶</b></button></div></div>`);
+      r.querySelector('[data-act=next]').onclick = () => { fb.press(); this._champRound(); };
+    }
   }
 
   // ── Contest run ──────────────────────────────────────────────────────────
