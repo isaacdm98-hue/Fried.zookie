@@ -31,6 +31,9 @@ export function defaultBlueprint() {
     pointy:    0.35,   // nose taper 0..1
     flatEnd:   0.0,    // flatten the tail end 0..1
     flatSide:  0.0,    // flatten the sides 0..1
+    // Extra body blobs (modelling-clay lumps) added to the root, each a scaled
+    // blob at an offset — build up an organic shape like the real Zook Kit.
+    blobs:     [],     // [{ x,y,z, sx,sy,sz }]
     // Legs are individual parts: each placed on the body with its own side,
     // along-body position, size, style and Movement Cycle (phase 0..1).
     // Mirroring is an optional action, not forced.
@@ -106,6 +109,7 @@ export function cloneBlueprint(b) {
     legs: Array.isArray(b.legs)
       ? b.legs.map(l => ({ ...l, path: Array.isArray(l.path) ? l.path.map(p => ({ ...p })) : l.path }))
       : b.legs,
+    blobs: Array.isArray(b.blobs) ? b.blobs.map(x => ({ ...x })) : [],
   };
 }
 
@@ -223,6 +227,18 @@ export class Zook {
     const body = new THREE.Mesh(shapeBody(bp), bMat);
     body.castShadow = body.receiveShadow = true;
     this.group.add(body);
+
+    // Extra body blobs (modelling clay): scaled blobs merged onto the root.
+    this._blobs = [];
+    (bp.blobs || []).forEach((bl, i) => {
+      const mb = new THREE.Mesh(BLOB_GEO, bMat);
+      mb.scale.set(bl.sx || 0.7, bl.sy || 0.7, bl.sz || 0.7);
+      mb.position.set(bl.x || 0, bl.y || 0, bl.z || 0);
+      mb.castShadow = mb.receiveShadow = true;
+      mb.userData.blobIndex = i;
+      this.group.add(mb);
+      this._blobs.push(mb);
+    });
 
     // Red direction arrow on the back (workshop only).
     if (this.showArrow) {
