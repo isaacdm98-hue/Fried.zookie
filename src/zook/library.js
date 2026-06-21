@@ -10,6 +10,15 @@ import { defaultBlueprint } from './model.js';
 
 const base = defaultBlueprint;
 
+/** A daft name to suggest for a new Zook. */
+const FUNNY_NAMES = [
+  'Sir Wobblesworth', 'Leg Zeppelin', 'Wobbledore', 'Trip Hazard', 'Sir Flops-a-Lot',
+  'Lord Lurch', 'Mc Stumble', 'Count Tumbula', 'Noodle Legs', 'Wobbly McWobbleface',
+  'Captain Carnage', 'General Flop', 'Tippy Longstocking', 'The Lurchminator', 'Sir Scuttle',
+  'Crab Boss', 'Hexapod Harry', 'Baron von Bumble', 'Scuttlebug', 'Sir Topples',
+];
+export function randomName() { return FUNNY_NAMES[Math.floor(Math.random() * FUNNY_NAMES.length)]; }
+
 /** Named example Zooks, each a tuned blueprint. */
 export const EXAMPLES = [
   { name: 'Spider',  bp: { ...base(), hue: 0.02, footHue: 0.02, len: 1.7, width: 1.3, height: 0.55, square: 0.5, pointy: 0.3, legPairs: 4, legLen: 0.95, speed: 3.0, stride: 0.7 } },

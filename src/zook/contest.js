@@ -150,6 +150,13 @@ export class ContestScene {
       return;
     }
     for (const e of [this.green, this.red]) if (e) { e.zook.syncMeshes(); this._followRing(e); }
+    // Victory dance — the winner hops and spins behind the result card.
+    if (this._victor && this._victor.zook) {
+      this._danceT = (this._danceT || 0) + dt;
+      const g = this._victor.zook.group;
+      g.position.y += Math.abs(Math.sin(this._danceT * 7)) * 0.5;
+      g.rotation.y = this._danceT * 5;
+    }
     // Record frames (~20Hz) for the Motion Player.
     this._recT += dt;
     if (this._recT >= 0.05 && this._rec.length < 1600) { this._recT = 0; this._rec.push(this.serializeState()); }
@@ -185,6 +192,7 @@ export class ContestScene {
   _finish(playerWon, line) {
     if (this._state === 'done') return;
     this._state = 'done';
+    this._victor = playerWon ? this.green : this.red; this._danceT = 0;   // victory dance
     playerWon ? fb.win() : fb.lose();
     if (this.onResult) this.onResult({ playerWon, line });
   }
@@ -192,32 +200,32 @@ export class ContestScene {
   _judge() {
     const c = this.contest, g = this.green.zook.position, r = this.red.zook.position;
     if (c.goal === 'race') {
-      if (g.z <= -18) return this._finish(true,  'Your Zook takes the win!');
-      if (r.z <= -18) return this._finish(false, 'The rival pips you to it!');
+      if (g.z <= -18) return this._finish(true,  'Across the line — get in! 🏁');
+      if (r.z <= -18) return this._finish(false, 'Pipped at the post. Gutting.');
     } else if (c.goal === 'ring' || c.goal === 'merry') {
       const R = c.radius, go = Math.hypot(g.x, g.z) > R || g.y < -1;
       const ro = Math.hypot(r.x, r.z) > R || r.y < -1;
-      if (ro && !go) return this._finish(true,  'Rival out — you win!');
-      if (go && !ro) return this._finish(false, 'You went out! Rival wins.');
-      if (go && ro)  return this._finish(false, 'Both out — rival wins on the tiebreak.');
+      if (ro && !go) return this._finish(true,  'Rival yeeted off the edge — you win!');
+      if (go && !ro) return this._finish(false, 'And off you go! Rival wins.');
+      if (go && ro)  return this._finish(false, 'Both off! Rival wins the tiebreak.');
     } else if (c.goal === 'ball' && this._ball) {
       const z = this._ball.translation().z;
-      if (z < -9)  return this._finish(true,  'GOAL! You score!');
-      if (z >  9)  return this._finish(false, 'Own goal! Rival scores.');
+      if (z < -9)  return this._finish(true,  'GOOOAL! Back of the net! ⚽');
+      if (z >  9)  return this._finish(false, 'Oof — own goal. Classic.');
     } else if (c.goal === 'tag') {
-      if (Math.hypot(g.x - r.x, g.z - r.z) < 1.4) return this._finish(true, 'Tagged! You caught it!');
-      if (this._t > 20) return this._finish(false, 'Time up — it got away!');
+      if (Math.hypot(g.x - r.x, g.z - r.z) < 1.4) return this._finish(true, 'Gotcha! Tagged it!');
+      if (this._t > 20) return this._finish(false, 'Time up — slippery little thing!');
     } else if (c.goal === 'china') {
       if (this._chinaG + this._chinaR >= this._china.length || this._t > 25) {
         const win = this._chinaG >= this._chinaR;
-        return this._finish(win, win ? `You smashed ${this._chinaG} to ${this._chinaR}!` : `Rival smashed ${this._chinaR} to ${this._chinaG}.`);
+        return this._finish(win, win ? `SMASH! ${this._chinaG} to ${this._chinaR} — a bull in a china shop!` : `Rival went full demolition: ${this._chinaR} to ${this._chinaG}.`);
       }
     }
     // time limit
     if (this._t > 30) {
-      if (c.goal === 'race') return this._finish(g.z < r.z, g.z < r.z ? 'You were ahead at time!' : 'Rival was ahead.');
+      if (c.goal === 'race') return this._finish(g.z < r.z, g.z < r.z ? 'Ahead when the whistle blew — win!' : 'Behind at the whistle. So close.');
       const gc = Math.hypot(g.x, g.z), rc = Math.hypot(r.x, r.z);
-      return this._finish(gc < rc, gc < rc ? 'You held the centre!' : 'Rival held the centre.');
+      return this._finish(gc < rc, gc < rc ? 'You held the centre — champion!' : 'Rival held the middle. Tune it up!');
     }
   }
 

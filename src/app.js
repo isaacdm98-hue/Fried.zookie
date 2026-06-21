@@ -13,7 +13,7 @@ import { Zook, defaultBlueprint, blankBlueprint } from './zook/model.js';
 import { Builder } from './zook/builder.js';
 import { Arena } from './zook/arena.js';
 import { ContestScene, CONTESTS } from './zook/contest.js';
-import { EXAMPLES, loadRoster, randomExample } from './zook/library.js';
+import { EXAMPLES, loadRoster, randomExample, randomName } from './zook/library.js';
 import { Knob, Switch } from './zook/controls.js';
 import { ZookRun, requestTilt } from './zook/run.js';
 import { guide, TIPS } from './sys/guide.js';
@@ -29,7 +29,7 @@ const TABLETOP_IDS = ['sumo', 'weakest', 'tag'];
 export class App {
   constructor({ scene, world, RAPIER, camera, canvas, ui }) {
     Object.assign(this, { scene, world, RAPIER, camera, canvas, ui });
-    this.active = { name: 'My Zook', bp: blankBlueprint() };
+    this.active = { name: randomName(), bp: blankBlueprint() };
     this.mode = null;            // gameplay mode with onStep/update/exit
     this._hero = null; this._heroSpin = true; this._heroSpinT = 0;
     this._overlay = null;
@@ -108,6 +108,20 @@ export class App {
   _overlayEl(html) {
     const d = document.createElement('div'); d.className = 'overlay'; d.innerHTML = html;
     this.ui.appendChild(d); this._overlay = d; return d;
+  }
+  /** A celebratory confetti burst over an overlay. */
+  _confetti(mount, n = 90) {
+    const colors = ['#f0782d', '#2bb6a6', '#3f6fd8', '#e8466e', '#ffd479', '#37c46a'];
+    const w = document.createElement('div'); w.className = 'confetti';
+    for (let i = 0; i < n; i++) {
+      const p = document.createElement('i');
+      p.style.left = Math.random() * 100 + '%';
+      p.style.background = colors[i % colors.length];
+      p.style.animationDelay = (Math.random() * 0.6).toFixed(2) + 's';
+      p.style.animationDuration = (1.5 + Math.random() * 1.6).toFixed(2) + 's';
+      w.appendChild(p);
+    }
+    mount.appendChild(w); setTimeout(() => w.remove(), 4200);
   }
   _showHero(bp) {
     this._hideHero();
@@ -248,6 +262,7 @@ export class App {
       const r = this._overlayEl(`<div class="result-modal"><h1 class="${won ? 'win' : 'lose'}">${won ? 'WON!' : 'LOST'}</h1>
         <p>${line}</p><p class="champ-standings">${ch.STAGES[ch.stage]} — you ${ch.wins} : ${ch.losses} ${ch.opp.name}</p>
         <div class="row"><button class="m-btn" data-act="next"><b>NEXT ▶</b></button></div></div>`);
+      if (won) this._confetti(r);
       r.querySelector('[data-act=next]').onclick = () => { fb.press(); this._champRound(); };
       return;
     }
@@ -259,6 +274,7 @@ export class App {
       const r = this._overlayEl(`<div class="result-modal"><h1 class="win">${ch.STAGES[ch.stage]} WON!</h1>
         <p>You beat ${ch.opp.name} ${ch.wins}–${ch.losses}. Through to the ${ch.STAGES[ch.stage + 1]}!</p>
         <div class="row"><button class="m-btn" data-act="next"><b>NEXT TIE ▶</b></button><button class="m-btn" data-act="menu"><b>MENU</b></button></div></div>`);
+      this._confetti(r);
       r.querySelector('[data-act=next]').onclick = () => { fb.press(); this._championship(ch.stage + 1); };
       r.querySelector('[data-act=menu]').onclick = () => { fb.press(); this.go('contests'); };
       guide.now(`Through to the ${ch.STAGES[ch.stage + 1]}!`);
@@ -267,6 +283,7 @@ export class App {
       const r = this._overlayEl(`<div class="result-modal"><h1 class="${champ ? 'win' : 'lose'}">${champ ? '🏆 CHAMPIONS!' : 'KNOCKED OUT'}</h1>
         <p>${champ ? 'You won the Grand Final — BAMZOOKi champions!' : `${ch.opp.name} edged it ${ch.losses}–${ch.wins}. Tune up and try again!`}</p>
         <div class="row"><button class="m-btn" data-act="again"><b>NEW RUN</b></button><button class="m-btn" data-act="menu"><b>MENU</b></button></div></div>`);
+      if (champ) this._confetti(r, 160);
       r.querySelector('[data-act=again]').onclick = () => { fb.press(); this._championship(0); };
       r.querySelector('[data-act=menu]').onclick = () => { fb.press(); this.go('contests'); };
       guide.now(champ ? 'BAMZOOKi CHAMPIONS! What a Zook!' : 'Knocked out — back to the workshop!');
@@ -290,6 +307,7 @@ export class App {
               <button class="m-btn" data-act="menu"><b>CONTESTS</b></button>
             </div>
           </div>`);
+        if (playerWon) this._confetti(r);
         r.querySelector('[data-act=again]').addEventListener('click', () => { fb.press(); this.go('contestRun', { contest, green, red }); });
         r.querySelector('[data-act=replay]').addEventListener('click', () => { fb.press(); this._motionPlayer(this._lastRec, { contest, green, red }); });
         r.querySelector('[data-act=menu]').addEventListener('click', () => { fb.press(); this.go('contests'); });
@@ -339,7 +357,7 @@ export class App {
       ${list('Saved', roster, 1)}
       ${list('Examples', EXAMPLES, 0)}</div>`);
     d.querySelector('[data-back]').addEventListener('click', () => { fb.press(); this.go('menu'); });
-    d.querySelector('[data-new]').addEventListener('click', () => { fb.confirm(); this.active = { name: 'My Zook', bp: blankBlueprint() }; this.go('workshop'); });
+    d.querySelector('[data-new]').addEventListener('click', () => { fb.confirm(); this.active = { name: randomName(), bp: blankBlueprint() }; this.go('workshop'); });
     d.querySelectorAll('.mz-item').forEach(b => b.addEventListener('click', () => {
       fb.press();
       const z = (+b.dataset.saved ? roster : EXAMPLES)[+b.dataset.i];

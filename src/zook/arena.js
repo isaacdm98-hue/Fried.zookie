@@ -55,6 +55,7 @@ export class Arena {
     this._buildBase();
     this._buildEnv(ENVIRONMENTS[this._envIdx].id);
     this.zook = new Zook(this.bp, { scene: this.scene, world: this.world, RAPIER: this.RAPIER, pos: { x: 0, z: TL / 2 - 3 } });
+    this.zook.onFlop = () => { fb.oof(); guide.now('Ha! Right on its back. Give it a wider stance, eh?'); };
     this._marker = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, 0.05, 24),
       new THREE.MeshStandardMaterial({ color: 0xff3344, emissive: 0x551015, roughness: 0.4 }));
     this.scene.add(this._marker);
@@ -131,7 +132,7 @@ export class Arena {
       if (Math.hypot(zp.x - wp.x, zp.z - wp.z) < 1.2) {
         this._lapIdx = (this._lapIdx + 1) % 4;
         if (this._lapIdx === 1 && !this._timing) { this._timing = true; this._timer = 0; }
-        else if (this._lapIdx === 0) { this._timing = false; this._best.lap = Math.min(this._best.lap || 99, this._timer); fb.win(); guide.now(`Lap done — ${this._timer.toFixed(2)}s!`); }
+        else if (this._lapIdx === 0) { this._timing = false; this._best.lap = Math.min(this._best.lap || 99, this._timer); fb.win(); guide.now(`Lap done — ${this._timer.toFixed(2)}s — ${this._medal('lap', this._timer)}!`); }
       }
     }
     this.zook.step(dt, { walk: true, target: this.target });
@@ -147,8 +148,9 @@ export class Arena {
       this._timer += dt;
       if (ENVIRONMENTS[this._envIdx].id === 'sprint' && p.z <= -TL / 2 + 3) {
         this._timing = false;
+        const best = !this._best.sprint || this._timer < this._best.sprint;
         this._best.sprint = Math.min(this._best.sprint || 99, this._timer);
-        fb.win(); guide.now(`Finish! ${this._timer.toFixed(2)}s. ${this._best.sprint === this._timer ? 'New best!' : ''}`);
+        fb.win(); guide.now(`Finish! ${this._timer.toFixed(2)}s — ${this._medal('sprint', this._timer)}${best ? ' · new best!' : ''}`);
       }
     }
   }
@@ -250,6 +252,14 @@ export class Arena {
     this.world.createImpulseJoint(jd, anchor, body, true);
   }
 
+  // Trial medals — give the tests goals worth chasing (faster = better).
+  _medal(kind, v) {
+    const T = { sprint: [13, 20], lap: [24, 34] }, H = { jump: [1.5, 1.0] };
+    if (T[kind]) { const [g, s] = T[kind]; return v <= g ? '🥇 GOLD' : v <= s ? '🥈 SILVER' : '🥉 BRONZE'; }
+    if (H[kind]) { const [g, s] = H[kind]; return v >= g ? '🥇 GOLD' : v >= s ? '🥈 SILVER' : '🥉 BRONZE'; }
+    return '';
+  }
+
   // ── HUD ────────────────────────────────────────────────────────────────────
   _fmt(t) { return t.toFixed(2) + 's'; }
   _buildHud() {
@@ -313,8 +323,8 @@ export class Arena {
         <div class="pp-row"><span>Legs</span><b>${legs}</b></div>
         <div class="pp-row"><span>Top speed</span><b>${this._topSpeed.toFixed(2)} m/s</b></div>
         <div class="pp-row"><span>Top jump</span><b>${(this._maxH || 0).toFixed(2)} m</b></div>
-        <div class="pp-row"><span>Best sprint</span><b>${this._best.sprint ? this._best.sprint.toFixed(2) + 's' : '—'}</b></div>
-        <div class="pp-row"><span>Best lap</span><b>${this._best.lap ? this._best.lap.toFixed(2) + 's' : '—'}</b></div>
+        <div class="pp-row"><span>Best sprint</span><b>${this._best.sprint ? this._best.sprint.toFixed(2) + 's  ' + this._medal('sprint', this._best.sprint) : '—'}</b></div>
+        <div class="pp-row"><span>Best lap</span><b>${this._best.lap ? this._best.lap.toFixed(2) + 's  ' + this._medal('lap', this._best.lap) : '—'}</b></div>
         <button class="chip wide" data-close>CLOSE</button>
       </div>`;
     card.querySelector('[data-close]').addEventListener('click', () => { fb.press(); card.remove(); });

@@ -762,3 +762,9 @@ h2 { display: inline-flex; align-items: center; }
 .bctl .ctl:nth-child(6n+4) .knob-dial { --cap: var(--cap5); }
 .bctl .ctl:nth-child(6n+5) .knob-dial { --cap: var(--cap1); }
 .bctl .ctl:nth-child(6n) .knob-dial { --cap: var(--cap2); }
+
+/* Victory confetti */
+.confetti { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 70; }
+.confetti i { position: absolute; top: -18px; width: 9px; height: 14px; border-radius: 2px;
+  opacity: 0.95; animation: conffall linear forwards; }
+@keyframes conffall { to { transform: translateY(112vh) rotate(900deg); } }

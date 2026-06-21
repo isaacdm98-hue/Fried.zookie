@@ -447,6 +447,9 @@ export class Zook {
     // purchase, so it simply flops — a badly-built Zook genuinely fails, exactly
     // like the real Zook Kit. This gate also stops a tip becoming a blow-up.
     const upY = 1 - 2 * (rot.x * rot.x + rot.z * rot.z);   // body up · world up
+    // Comedy flop: fire once when it topples (and re-arm when it gets back up).
+    if (upY < 0.25 && !this._flopped) { this._flopped = true; if (this.onFlop) this.onFlop(); }
+    else if (upY > 0.55) this._flopped = false;
     let planted = 0;
     if (upY > UPRIGHT) {
       for (const leg of this._legs) {

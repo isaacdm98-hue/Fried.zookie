@@ -73,4 +73,10 @@ export const fb = {
   lose()    { [392, 330, 262].forEach((f, i) => setTimeout(() => tone(f, 0.16, 'sawtooth', 0.06), i * 130)); buzz(60); },
   /** A soft thud / contact. */
   thud()    { tone(140, 0.08, 'sine', 0.09); buzz(15); },
+  /** Comedy "oof" — a quick descending blip when a Zook flops over. */
+  oof()     { if (muted) return; const a = ac(); if (!a) return; const o = a.createOscillator(), g = a.createGain();
+              o.type = 'sawtooth'; const t = a.currentTime;
+              o.frequency.setValueAtTime(300, t); o.frequency.exponentialRampToValueAtTime(90, t + 0.18);
+              g.gain.setValueAtTime(0.08, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.2);
+              o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + 0.2); buzz(20); },
 };
