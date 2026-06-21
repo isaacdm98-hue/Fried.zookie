@@ -331,7 +331,9 @@ export class ContestScene {
       this._box({ pos: { x: 0, y: -0.2, z: -12 }, size: { x: 9, y: 0.4, z: 46 }, color: 0xeee7d6 });
       // finish line (longer course so it's a proper race)
       this._box({ pos: { x: 0, y: 0.01, z: -26 }, size: { x: 7, y: 0.02, z: 0.4 }, color: 0x222222 });
-      if (c.hurdles) for (const z of [-2, -7, -12, -17, -22]) this._box({ pos: { x: 0, y: 0.25, z }, size: { x: 6, y: 0.5, z: 0.4 }, color: 0xff8a1e });
+      // Hurdles GROW in height down the track (faithful to HurdleEnv: thin walls
+      // across the lane, height stepping up +0.12 each).
+      if (c.hurdles) { let h = 0.4; for (const z of [-2, -7, -12, -17, -22]) { this._box({ pos: { x: 0, y: h / 2, z }, size: { x: 7, y: h, z: 0.4 }, color: 0xff8a1e }); h += 0.12; } }
       if (c.marbles) this._marbles();
       if (c.doors) this._slidingDoors();
       if (c.smash) for (const z of [-1, -6, -11, -16, -21]) for (let i = 0; i < 4; i++)
@@ -341,22 +343,23 @@ export class ContestScene {
       // faster and straighter, so it's a real test of the build.
       if (c.push) for (const s of [-1, 1])
         this._dynBall({ pos: { x: s, y: 0.85, z: 4.0 }, r: 0.85, color: 0x4f74ff, density: 0.3 });
-      // ── Assault-course obstacles (the real BAMZOOKi environments) ──────────────
-      // Ramps: long, gentle humps to climb up and over (SlopeEnv). Kept shallow so
-      // any reasonable build can crest them — peak ~0.45 high.
-      if (c.slope || c.assault) for (const z of [-1, -10, -19]) {
-        this._box({ pos: { x: 0, y: 0.1, z: z + 2.7 }, size: { x: 8, y: 0.25, z: 6 }, color: 0xd0a866, rot: { x: 0.14 } });
-        this._box({ pos: { x: 0, y: 0.1, z: z - 2.7 }, size: { x: 8, y: 0.25, z: 6 }, color: 0xc99a54, rot: { x: -0.14 } });
-      }
-      // Steps: a low staircase up then down (StepEnv) — climbable strides.
-      if (c.steps) { let zc = -1; for (const h of [0.22, 0.42, 0.62, 0.42, 0.22]) { this._box({ pos: { x: 0, y: h / 2, z: zc }, size: { x: 8, y: h, z: 2.4 }, color: 0xb9a98a }); zc -= 2.4; } }
-      // Zig-zag slalom: low staggered barriers to climb/weave through (ZigZagEnv).
+      // ── Real assault-course environments (from the decompiled World agents) ─────
+      // Ramps (SlopeEnv): a run of gentle humps to crest.
+      if (c.slope) for (const z of [-1, -10, -19]) this._ramp(z);
+      // Steps (StepEnv): a low staircase up and over.
+      if (c.steps) this._stairs(-1);
+      // Zig-zag (ZigZagEnv): staggered low barriers to weave/clamber.
       if (c.zigzag) for (let i = 0; i < 6; i++)
         this._box({ pos: { x: (i % 2 ? 1 : -1) * 2.2, y: 0.3, z: -2 - i * 3.4 }, size: { x: 5, y: 0.6, z: 0.5 }, color: 0xe06b3a });
-      // Assault course finale: a hump (above), then smash crates, then a hurdle.
+      // Full ASSAULT COURSE: the whole gauntlet chained down the track —
+      // growing hurdles → a ramp → smash crates → steps → a zig-zag → final hurdle.
       if (c.assault) {
-        for (let i = 0; i < 3; i++) this._dynBox({ pos: { x: -1.6 + i * 1.6, y: 0.5, z: -12 }, size: { x: 1.2, y: 1.0, z: 1.0 }, color: 0xff8a1e, mass: 0.45 });
-        this._box({ pos: { x: 0, y: 0.25, z: -22 }, size: { x: 6, y: 0.5, z: 0.4 }, color: 0xff8a1e });
+        let h = 0.4; for (const z of [3.5, 0.5]) { this._box({ pos: { x: 0, y: h / 2, z }, size: { x: 7, y: h, z: 0.4 }, color: 0xff8a1e }); h += 0.16; }
+        this._ramp(-4.5);
+        for (let i = 0; i < 3; i++) this._dynBox({ pos: { x: -1.6 + i * 1.6, y: 0.5, z: -9 }, size: { x: 1.2, y: 1.0, z: 1.0 }, color: 0xff8a1e, mass: 0.45 });
+        this._stairs(-13.5);
+        for (let i = 0; i < 3; i++) this._box({ pos: { x: (i % 2 ? 1 : -1) * 2.2, y: 0.3, z: -18 - i * 1.6 }, size: { x: 5, y: 0.6, z: 0.5 }, color: 0xe06b3a });
+        this._box({ pos: { x: 0, y: 0.35, z: -23.5 }, size: { x: 7, y: 0.7, z: 0.4 }, color: 0xff8a1e });
       }
     } else if (c.goal === 'tag') {
       this._box({ pos: { x: 0, y: -0.2, z: 0 }, size: { x: 16, y: 0.4, z: 16 }, color: 0xeee7d6 });
@@ -415,6 +418,13 @@ export class ContestScene {
     this.world.createCollider(R.ColliderDesc.cuboid(size.x / 2, size.y / 2, size.z / 2).setFriction(friction).setRestitution(0.1), b);
     this._dynamic.push({ mesh: m, body: b }); this._bodies.push(b); return b;
   }
+  // A gentle hump centred at z (up-ramp + down-ramp), crestable by any build.
+  _ramp(z) {
+    this._box({ pos: { x: 0, y: 0.1, z: z + 2.7 }, size: { x: 8, y: 0.25, z: 6 }, color: 0xd0a866, rot: { x: 0.14 } });
+    this._box({ pos: { x: 0, y: 0.1, z: z - 2.7 }, size: { x: 8, y: 0.25, z: 6 }, color: 0xc99a54, rot: { x: -0.14 } });
+  }
+  // A low staircase up then down, starting at z (StepEnv-style strides).
+  _stairs(z) { let zc = z; for (const h of [0.22, 0.42, 0.62, 0.42, 0.22]) { this._box({ pos: { x: 0, y: h / 2, z: zc }, size: { x: 8, y: h, z: 2.4 }, color: 0xb9a98a }); zc -= 2.4; } }
   _dynBall({ pos, r = 0.85, color = 0x4f74ff, density = 0.3 }) {
     const m = new THREE.Mesh(new THREE.SphereGeometry(r, 18, 14), new THREE.MeshStandardMaterial({ color, roughness: 0.55, flatShading: true }));
     m.castShadow = m.receiveShadow = true; this.scene.add(m); this._meshes.push(m);
