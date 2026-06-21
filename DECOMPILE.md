@@ -112,6 +112,24 @@ decrypt cleanly; copies live in `reference/decompiled/` (with `_decryptor.py`).
 Bonus: `.zook` genome files use a separate **password** scheme — the password is
 literally `"macaca mulatta"` (`genome_rhesus_macaque`, `genome_current_version=2`).
 
+### `.zook` creature archive format (identified; not statically decryptable)
+Layout: a 64-byte plaintext header `"Bonsai Engine - Archived information file. Version: 000000001. \n"`,
+a name line, a 5-byte marker `00 01 00 00 00`, then the payload (length always
+a multiple of 8): `salt(8) | keyCheck/first-block(8) | ciphertext`. The cipher
+stack, confirmed from the disassembly, is Crypto++'s **"Default" scheme with the
+block cipher swapped to Blowfish**: **Blowfish-CBC** (8-byte block, 16-byte key),
+key/IV derived by the Crypto++ **`Mash`** KDF over **SHA-1** from
+`passphrase("macaca mulatta") ‖ salt`, output **zlib-inflated** to a Lua-table
+genome (same syntax as `.contest`). Key VAs: Blowfish π-tables `0x93a840`/`0x93a888`,
+`Blowfish::UncheckedSetKey` `0x631020`, round fn `0x631200`, SHA-1 transform
+`0x63e860`, `GenerateKeyAndIV` `0x6219a0`, decrypt pipeline `0x5f9510`.
+Working pure-Python Blowfish/DES/SHA-1 + a `Mash` KDF were built, but an exact-KDF
+detail (inlined MSVC6 + Crypto++ templates) couldn't be pinned by static analysis;
+finishing needs a debugger breakpoint on `0x631020` of the running exe to capture
+the live key/IV. Our example roster is therefore **recreated from the manual's
+canonical descriptions** (Spider = two-part legs, Wormthing = Part-Targeting
+spine, etc.) rather than byte-exact genomes.
+
 ## Real physics constants (from decrypted `PhysicsConstants.ssx` + disassembly)
 
 The engine reads constants via `Config.Get(name, default)`. Script values that are
