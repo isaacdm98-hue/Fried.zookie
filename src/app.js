@@ -87,13 +87,26 @@ export class App {
 
   // ── Title ────────────────────────────────────────────────────────────────
   _title() {
+    // Hero Zook standing over the hand-drawn yellow panel (a textured plane).
+    this._showHero(this.active.bp);
+    const tex = new THREE.TextureLoader().load('./assets/blob-idea-yellow.png');
+    tex.colorSpace = THREE.SRGBColorSpace;
+    const panel = new THREE.Mesh(new THREE.PlaneGeometry(3.8, 3.8),
+      new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false }));
+    panel.position.set(0, 1.15, -1.4);
+    this._hero.add(panel);
+    setCamera({ x: 0, y: 1.5, z: 5.2 }, { x: 0, y: 1.05, z: 0 }, true);
+
     const d = this._overlayEl(`
       <div class="title-wrap">
-        <img class="title-doodle" src="./assets/blob-idea-yellow.png" alt="" />
-        <div class="big-logo"><span class="t-fried">Fried</span><span class="t-zooki">Zooki</span></div>
-        <div class="t-sub">build · tune · compete</div>
-        <button class="start-btn">TAP TO START</button>
-        <div class="t-foot">after CBBC's BAMZOOKi · made from the Zook-Kit manual</div>
+        <div class="title-top">
+          <img class="title-word" src="./assets/title-friedzooki.png" alt="FriedZooki" />
+          <div class="t-sub">build · tune · compete</div>
+        </div>
+        <div class="title-bot">
+          <button class="start-btn">TAP TO START</button>
+          <div class="t-foot">after CBBC's BAMZOOKi · made from the Zook-Kit manual</div>
+        </div>
       </div>`);
     const start = () => { unlockAudio(); fb.confirm(); guide.now(TIPS.menu); this.go('menu'); };
     d.querySelector('.start-btn').addEventListener('click', start);
