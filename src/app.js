@@ -140,12 +140,12 @@ export class App {
 
   // ── Test table ───────────────────────────────────────────────────────────
   _test() {
-    const arena = new Arena({ scene: this.scene, world: this.world, RAPIER: this.RAPIER, camera: this.camera, canvas: this.canvas });
+    const arena = new Arena({
+      scene: this.scene, world: this.world, RAPIER: this.RAPIER, camera: this.camera,
+      canvas: this.canvas, mount: this.ui, onBack: () => this.go('workshop'),
+    });
     arena.enter(this.active.bp);
     this.mode = arena;
-    const d = this._overlayEl(`<button class="back-btn"><img src="./assets/btn-back.png" alt="Back"/></button>`);
-    d.querySelector('.back-btn').addEventListener('click', () => { fb.press(); this.go('workshop'); });
-    guide.now(TIPS.test);
   }
 
   // ── Contests (select) ────────────────────────────────────────────────────
