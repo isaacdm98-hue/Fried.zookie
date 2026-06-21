@@ -9,7 +9,7 @@
 
 import * as THREE from 'three';
 import { setCamera } from './engine/renderer.js';
-import { Zook, defaultBlueprint } from './zook/model.js';
+import { Zook, defaultBlueprint, blankBlueprint } from './zook/model.js';
 import { Builder } from './zook/builder.js';
 import { Arena } from './zook/arena.js';
 import { ContestScene, CONTESTS } from './zook/contest.js';
@@ -29,7 +29,7 @@ const TABLETOP_IDS = ['sumo', 'weakest', 'tag'];
 export class App {
   constructor({ scene, world, RAPIER, camera, canvas, ui }) {
     Object.assign(this, { scene, world, RAPIER, camera, canvas, ui });
-    this.active = { name: 'My Zook', bp: defaultBlueprint() };
+    this.active = { name: 'My Zook', bp: blankBlueprint() };
     this.mode = null;            // gameplay mode with onStep/update/exit
     this._hero = null; this._heroSpin = true; this._heroSpinT = 0;
     this._overlay = null;
@@ -237,7 +237,6 @@ export class App {
       onResult: ({ playerWon, line }) => { playerWon ? ch.wins++ : ch.losses++; this._champStandings(playerWon, line); } });
     cs.enter(contest, this.active.bp, opp.bp); this.mode = cs;
     this._contestOverlay(`${this.active.name || 'You'} (${ch.wins})`, `${opp.name} (${ch.losses})`, `${ch.STAGES[ch.stage]} · ${ch.labels[ch.i]}`);
-    guide.now(`${ch.labels[ch.i]} — ${contest.name}! ${R.relay ? 'The decider!' : ''}`);
   }
   _champStandings(won, line) {
     const ch = this._champ; ch.i++;
@@ -295,13 +294,7 @@ export class App {
     });
     cs.enter(contest, green.bp, red.bp);
     this.mode = cs;
-    const d = this._overlayEl(`
-      <div class="con-hud"><span class="tag green">${green.name || 'You'}</span>
-        <span class="vs">${contest.name}</span>
-        <span class="tag red">${red.name}</span></div>
-      <div class="countdown"></div>`);
-    this._countdownEl = d.querySelector('.countdown');
-    guide.now(`${green.name || 'Your Zook'} versus ${red.name}! ${contest.desc}`);
+    this._contestOverlay(green.name || 'You', red.name, contest.name);
   }
 
   // ── Versus (DS-style local link) ─────────────────────────────────────────
@@ -343,7 +336,7 @@ export class App {
       ${list('Saved', roster, 1)}
       ${list('Examples', EXAMPLES, 0)}</div>`);
     d.querySelector('[data-back]').addEventListener('click', () => { fb.press(); this.go('menu'); });
-    d.querySelector('[data-new]').addEventListener('click', () => { fb.confirm(); this.active = { name: 'My Zook', bp: defaultBlueprint() }; this.go('workshop'); });
+    d.querySelector('[data-new]').addEventListener('click', () => { fb.confirm(); this.active = { name: 'My Zook', bp: blankBlueprint() }; this.go('workshop'); });
     d.querySelectorAll('.mz-item').forEach(b => b.addEventListener('click', () => {
       fb.press();
       const z = (+b.dataset.saved ? roster : EXAMPLES)[+b.dataset.i];
@@ -641,10 +634,15 @@ export class App {
       ? `<div class="seam seam-${seam}"><span>▸</span><span>▸</span><span>▸</span></div>
          <div class="tabletop-hint">lay phones edge-to-edge · line up the ▸ marks</div>` : '';
     const d = this._overlayEl(`
+      <button class="game-back" data-back><img src="./assets/btn-back.png" alt="Menu"/></button>
       <div class="con-hud"><span class="tag green">${greenName}</span><span class="vs">${contestName}</span><span class="tag red">${redName}</span></div>
       <div class="countdown"></div>${seamHtml}`);
+    d.querySelector('[data-back]').addEventListener('click', () => { fb.press(); this._exitGame(); });
     this._countdownEl = d.querySelector('.countdown');
   }
+
+  /** Leave any game (contest/champ/online/tabletop/run/lab) back to the menu. */
+  _exitGame() { this._champ = null; this._netClose(); this.go('menu'); }
 
   _resultOverlay(playerWon, line, again) {
     const r = this._overlayEl(`<div class="result-modal">

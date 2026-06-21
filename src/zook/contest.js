@@ -16,9 +16,9 @@ import { fb } from '../sys/feedback.js';
 export const CONTESTS = [
   { id: 'sprint',  name: 'Sprint',         desc: 'First Zook to the finish line.',                goal: 'race' },
   { id: 'hurdles', name: 'Zook Hurdles',   desc: 'Over the hurdles and across the line.',         goal: 'race', hurdles: true },
-  { id: 'sumo',    name: 'Zook Sumo',      desc: 'Barge your rival out of the ring.',             goal: 'ring', radius: 3.0 },
-  { id: 'weakest', name: 'Weakest Zook',   desc: 'Shove the weakest Zook into the pit.',          goal: 'ring', radius: 2.2 },
-  { id: 'merry',   name: 'Merry-Go-Zook',  desc: 'Stay on the spinning platform!',                goal: 'merry', radius: 2.8 },
+  { id: 'sumo',    name: 'Zook Sumo',      desc: 'Barge your rival out of the ring.',             goal: 'ring', radius: 3.8 },
+  { id: 'weakest', name: 'Weakest Zook',   desc: 'Shove the weakest Zook into the pit.',          goal: 'ring', radius: 2.9 },
+  { id: 'merry',   name: 'Merry-Go-Zook',  desc: 'Stay on the spinning platform!',                goal: 'merry', radius: 3.6 },
   { id: 'ball',    name: 'Zookball',       desc: 'Boot the ball into the rival goal.',            goal: 'ball' },
   { id: 'marbles', name: 'Zook Marbles',   desc: 'Barge through the marbles to the line.',         goal: 'race', marbles: true },
   { id: 'dodge',   name: 'Dodgy Zook',     desc: 'Slip past the sliding doors.',                  goal: 'race', doors: true },
@@ -242,7 +242,7 @@ export class ContestScene {
 
   _buildEnv(c) {
     if (c.goal === 'race') {
-      this._box({ pos: { x: 0, y: -0.2, z: -6 }, size: { x: 7, y: 0.4, z: 32 }, color: 0xeee7d6 });
+      this._box({ pos: { x: 0, y: -0.2, z: -6 }, size: { x: 9, y: 0.4, z: 32 }, color: 0xeee7d6 });
       // finish line
       this._box({ pos: { x: 0, y: 0.01, z: -18 }, size: { x: 7, y: 0.02, z: 0.4 }, color: 0x222222 });
       if (c.hurdles) for (const z of [-2, -7, -12]) this._box({ pos: { x: 0, y: 0.25, z }, size: { x: 6, y: 0.5, z: 0.4 }, color: 0xff8a1e });
@@ -251,9 +251,9 @@ export class ContestScene {
       if (c.smash) for (const z of [-1, -6, -11]) for (let i = 0; i < 4; i++)
         this._dynBox({ pos: { x: -2.4 + i * 1.6, y: 0.5 + Math.random() * 0.1, z }, size: { x: 1.3, y: 1.0, z: 1.0 }, color: 0xff8a1e, mass: 0.5 });
     } else if (c.goal === 'tag') {
-      this._box({ pos: { x: 0, y: -0.2, z: 0 }, size: { x: 13, y: 0.4, z: 13 }, color: 0xeee7d6 });
+      this._box({ pos: { x: 0, y: -0.2, z: 0 }, size: { x: 16, y: 0.4, z: 16 }, color: 0xeee7d6 });
     } else if (c.goal === 'china') {
-      this._box({ pos: { x: 0, y: -0.2, z: 0 }, size: { x: 12, y: 0.4, z: 12 }, color: 0xeee7d6 });
+      this._box({ pos: { x: 0, y: -0.2, z: 0 }, size: { x: 15, y: 0.4, z: 15 }, color: 0xeee7d6 });
       this._china = [];
       for (let i = 0; i < 16; i++) {
         const x = (Math.random() - 0.5) * 8, z = (Math.random() - 0.5) * 8;
@@ -270,7 +270,7 @@ export class ContestScene {
       this._bodies.push(b);
       if (c.goal === 'merry') this._platform = b;
     } else if (c.goal === 'ball') {
-      this._box({ pos: { x: 0, y: -0.2, z: 0 }, size: { x: 8, y: 0.4, z: 22 }, color: 0xeee7d6 });
+      this._box({ pos: { x: 0, y: -0.2, z: 0 }, size: { x: 11, y: 0.4, z: 22 }, color: 0xeee7d6 });
       for (const z of [-10, 10]) this._box({ pos: { x: 0, y: 1, z }, size: { x: 4, y: 2, z: 0.2 }, color: z < 0 ? GREEN : RED });
       const ball = new THREE.Mesh(new THREE.SphereGeometry(0.35, 16, 12), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4 }));
       ball.position.set(0, 0.35, 0); ball.castShadow = true; this.scene.add(ball); this._meshes.push(ball);

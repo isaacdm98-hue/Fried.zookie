@@ -136,6 +136,7 @@ export class ZookRun {
   _buildHud() {
     const h = document.createElement('div'); h.className = 'run-hud';
     h.innerHTML = `
+      <button class="game-back" data-back><img src="./assets/btn-back.png" alt="Menu"/></button>
       <div class="run-warn"></div>
       <div class="run-stats"><span class="run-combo">×0</span><div class="run-prog"><i></i></div><span class="run-spd">7.0</span></div>
       <div class="run-pads">

@@ -97,7 +97,6 @@ export class Builder {
       tabs.querySelectorAll('.tab').forEach(t => t.classList.toggle('on', t.dataset.p === this._page));
       this._builders[this._page](body);
       if (this.zook) this.zook.setHighlight((this._page === 'add' || this._page === 'path') ? Math.min(this._selLeg, this.bp.legs.length - 1) : -1);
-      if (TIPS[this._page] && this._lastTipPage !== this._page) { this._lastTipPage = this._page; guide.now(TIPS[this._page]); }
     };
     Object.entries(pages).forEach(([p, label]) => {
       const t = document.createElement('button'); t.className = 'tab'; t.dataset.p = p; t.textContent = label;
@@ -146,7 +145,7 @@ export class Builder {
 
   _delLeg() {
     const legs = this.bp.legs;
-    if (legs.length <= 1) { guide.now("Keep at least one leg, or it'll never move!"); return; }
+    if (!legs.length) return;
     this._pushUndo();
     const leg = legs[this._selLeg];
     const remove = this._mirror ? (l => l.pair === leg.pair) : (l => l === leg);
@@ -190,12 +189,21 @@ export class Builder {
       },
       add: (el) => {
         const legs = this.bp.legs;
+        const btn = (t, fn) => { const b = document.createElement('button'); b.className = 'mini-btn'; b.textContent = t; b.addEventListener('click', () => { fb.press(); fn(); }); return b; };
+        const mir = Switch({ label: 'MIRROR', value: this._mirror, onChange: v => { this._mirror = v; this._refresh(); } });
+        // Empty Zook: just prompt to add the first legs.
+        if (!legs.length) {
+          const tb0 = document.createElement('div'); tb0.className = 'leg-tools';
+          tb0.append(btn('+ LEG', () => this._addLeg()));
+          const note0 = document.createElement('div'); note0.className = 'deck-note';
+          note0.textContent = 'no legs yet — add some to make your Zook move';
+          el.append(tb0, mir.root, note0); return;
+        }
         this._selLeg = Math.max(0, Math.min(this._selLeg, legs.length - 1));
-        const leg = legs[this._selLeg] || legs[0];
+        const leg = legs[this._selLeg];
 
         // Toolbar: select ◀ ▶ · add · delete.
         const tb = document.createElement('div'); tb.className = 'leg-tools';
-        const btn = (t, fn) => { const b = document.createElement('button'); b.className = 'mini-btn'; b.textContent = t; b.addEventListener('click', () => { fb.press(); fn(); }); return b; };
         const lbl = document.createElement('span'); lbl.className = 'leg-count'; lbl.textContent = `LEG ${this._selLeg + 1}/${legs.length}`;
         tb.append(
           btn('◀', () => { this._selLeg = (this._selLeg - 1 + legs.length) % legs.length; this._refresh(); }),
@@ -205,7 +213,6 @@ export class Builder {
           btn('DEL', () => this._delLeg()),
         );
 
-        const mir = Switch({ label: 'MIRROR', value: this._mirror, onChange: v => { this._mirror = v; this._refresh(); } });
         const style = Selector({ label: 'LEG PART', value: leg.style,
           options: [{ v: 'crawl', t: 'CRAWL' }, { v: 'paddle', t: 'PADDLE' }, { v: 'stalk', t: 'STALK' },
                     { v: 'step', t: 'STEP' }, { v: 'stomp', t: 'STOMP' }, { v: 'push', t: 'PUSH' }, { v: 'flipper', t: 'FLIP' }],
@@ -229,6 +236,7 @@ export class Builder {
       },
       path: (el) => {
         const legs = this.bp.legs;
+        if (!legs.length) { const n = document.createElement('div'); n.className = 'deck-note'; n.textContent = 'add a leg on the ADD page first, then shape its step here'; el.append(n); return; }
         this._selLeg = Math.max(0, Math.min(this._selLeg, legs.length - 1));
         const leg = legs[this._selLeg];
 

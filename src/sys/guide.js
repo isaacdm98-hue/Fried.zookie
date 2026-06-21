@@ -45,9 +45,11 @@ function typeOut(text) {
   });
 }
 
+let _hideTimer = null;
 async function run() {
   if (speaking) return;
   speaking = true;
+  if (_hideTimer) { clearTimeout(_hideTimer); _hideTimer = null; }
   while (queue.length) {
     const { text, name, voiceRate } = queue.shift();
     nameEl.textContent = name || 'Fried';
@@ -56,6 +58,8 @@ async function run() {
     await typeOut(text);
   }
   speaking = false;
+  // Auto-hide so Fried isn't always on screen.
+  _hideTimer = setTimeout(() => { if (!speaking && !queue.length) bubble.classList.add('hidden'); }, 3200);
 }
 
 export const guide = {

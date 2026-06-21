@@ -88,6 +88,9 @@ export function ensureLegs(bp) {
   bp.legs = makeDefaultLegs(pairs).map(l => ({ ...l, len: bp.legLen || 0.72, thick: bp.legThick || 0.16, style: bp.legStyle || 'crawl' }));
   return bp.legs;
 }
+/** A brand-new Zook: just the root body, no legs — you build it yourself. */
+export function blankBlueprint() { return { ...defaultBlueprint(), legs: [] }; }
+
 export function cloneBlueprint(b) {
   return {
     ...b,
@@ -351,7 +354,9 @@ export class Zook {
         push += p;
       }
       const stiff = this.bp.stiffness || 1;
-      const drive = push * speed * 42 * stiff;
+      // Lower drive: a sloppy gait barely moves — you must tune the cycle, path
+      // and leg layout to make a good walker (as in the real Zook Kit).
+      const drive = push * speed * 30 * stiff;
       b.applyImpulse({ x: fwdX * drive * dt, y: 0, z: fwdZ * drive * dt }, true);
     }
     // Steering: only turn while feet can grip the ground.
@@ -361,6 +366,19 @@ export class Zook {
     // Self-righting: stiffer limbs hold the Zook upright more firmly.
     const up = 9 * (this.bp.stiffness || 1);
     b.applyTorqueImpulse({ x: -rot.x * up * dt, y: 0, z: -rot.z * up * dt }, true);
+
+    // Anisotropic grip (MathEngine PrimarySlip/SecondarySlip): feet grip
+    // sideways while the body drives forward — kills skating, so the Zook goes
+    // where it faces instead of sliding.
+    if (this._onGround) {
+      const v = b.linvel();
+      const fc = v.x * fwdX + v.z * fwdZ;
+      const lx = v.x - fc * fwdX, lz = v.z - fc * fwdZ;
+      b.setLinvel({ x: fc * fwdX + lx * 0.22, y: v.y, z: fc * fwdZ + lz * 0.22 }, true);
+    }
+    // Cap the turn rate (MaxAngularVelocity) for controlled steering.
+    const av = b.angvel(); const maxA = 3.2;
+    if (Math.abs(av.y) > maxA) b.setAngvel({ x: av.x, y: Math.sign(av.y) * maxA, z: av.z }, true);
   }
 
   syncMeshes() {

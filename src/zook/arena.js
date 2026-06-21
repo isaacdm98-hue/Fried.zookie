@@ -30,7 +30,7 @@ export const ENVIRONMENTS = [
   { id: 'highjump', name: 'HighJumpEnv', blurb: 'run up and JUMP the bar' },
 ];
 
-const TW = 6, TL = 26;
+const TW = 9, TL = 34;
 
 export class Arena {
   constructor({ scene, world, RAPIER, camera, canvas, mount, onBack }) {
