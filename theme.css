@@ -553,3 +553,18 @@ body { -webkit-user-select: none; user-select: none; touch-action: none; }
 .mp-bar .mini-btn { background: linear-gradient(180deg,#32353d,#23262c); color: #ece7db; border: 1px solid rgba(0,0,0,0.5); }
 .mp-bar .mini-btn.on { color: #1a1206; background: linear-gradient(180deg,#ffb347,var(--accent)); }
 .mp-scrub { flex: 1; accent-color: var(--accent); }
+
+/* ── ZOOK LAB (co-op) ────────────────────────────────────────────────────── */
+.con-card.coop { grid-column: 1 / -1; background: linear-gradient(180deg,#fff3d6,#ffe2a8); border-color: rgba(240,120,45,0.4); }
+.lab-screen { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center;
+  padding: calc(14px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom)); gap: 14px; background: var(--studio); }
+.lab-top { width: min(460px,94%); display: flex; align-items: center; gap: 12px; }
+.lab-score { font-weight: 800; font-size: 18px; color: var(--accent); }
+.lab-health { flex: 1; height: 16px; border-radius: 8px; background: var(--panel-2); overflow: hidden; border: 1px solid var(--line); }
+.lab-health i { display: block; height: 100%; width: 100%; background: #37c46a; transition: width 0.2s, background 0.2s; }
+.lab-cmd { width: min(460px,94%); text-align: center; font-size: 22px; font-weight: 800; color: var(--ink);
+  background: #fff; border: 2px solid var(--accent); border-radius: 14px; padding: 16px 12px; min-height: 30px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.12); }
+.lab-panel { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px 8px; place-items: center;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 18px 12px; width: min(460px,94%); }
+.lab-quit { align-self: center; margin-top: auto; }

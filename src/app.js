@@ -14,6 +14,7 @@ import { Builder } from './zook/builder.js';
 import { Arena } from './zook/arena.js';
 import { ContestScene, CONTESTS } from './zook/contest.js';
 import { EXAMPLES, loadRoster, randomExample } from './zook/library.js';
+import { Knob, Switch } from './zook/controls.js';
 import { guide, TIPS } from './sys/guide.js';
 import { fb, unlockAudio, setMuted } from './sys/feedback.js';
 import { Link } from './net/link.js';
@@ -54,6 +55,7 @@ export class App {
       this.mode.applyState(R.frames[idx]);
       if (this._scrub && document.activeElement !== this._scrub) this._scrub.value = (R.t / R.dur) * 1000;
     }
+    if (this._lab && this._lab.role === 'host') this._labTick(dt);
     if (this.mode && this.mode.update) this.mode.update(dt);
     // Host streams the live contest state to the joiner (~20 Hz).
     if (this._netRole === 'host' && this._link && this.mode && this.mode.serializeState) {
@@ -73,7 +75,7 @@ export class App {
     this.mode = null;
     if (this._overlay) { this._overlay.remove(); this._overlay = null; }
     this._countdownEl = null;
-    this._replay = null; this._scrub = null;
+    this._replay = null; this._scrub = null; this._lab = null; this._labUI = null;
     this._clearTabletop();
   }
 
@@ -319,6 +321,86 @@ export class App {
   }
   _contestRunResultBack(back) { this.go('contestRun', back); }
 
+  // ── ZOOK LAB — Spaceteam-style co-op (shout the commands) ─────────────────
+  _labLabels() {
+    const POOL = ['FLUX', 'GIZMO', 'CRANK', 'VALVE', 'WARP', 'PRISM', 'TURBO', 'SPROCKET', 'VENT', 'CORE', 'BLASTER', 'NACELLE'];
+    for (let i = POOL.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [POOL[i], POOL[j]] = [POOL[j], POOL[i]]; }
+    return POOL;   // shuffled; host takes 0..4, joiner 5..9 (disjoint labels)
+  }
+  _labGenPanel(prefix, labels) {
+    return labels.map((label, i) => i < 3
+      ? { id: prefix + i, label, type: 'knob', value: Math.floor(Math.random() * 10), min: 0, max: 9 }
+      : { id: prefix + i, label, type: 'switch', value: Math.random() < 0.5 });
+  }
+  _labCmd(panel, vals) {
+    const c = panel[Math.floor(Math.random() * panel.length)];
+    let want, text;
+    if (c.type === 'knob') { do { want = Math.floor(Math.random() * 10); } while (want === vals[c.id]); text = `Set ${c.label} to ${want}`; }
+    else { want = !vals[c.id]; text = `${want ? 'ENGAGE' : 'CUT'} the ${c.label}`; }
+    return { targetId: c.id, want, text, t: c.type === 'knob' ? 9 : 7 };
+  }
+  _labRenderPanel(mount, panel, onChange) {
+    const wrap = document.createElement('div'); wrap.className = 'lab-panel';
+    panel.forEach(c => {
+      if (c.type === 'knob') wrap.appendChild(Knob({ label: c.label, min: c.min, max: c.max, step: 1, value: c.value, format: v => String(Math.round(v)), onChange: v => onChange(c.id, Math.round(v)) }).root);
+      else wrap.appendChild(Switch({ label: c.label, value: c.value, onChange: v => onChange(c.id, v) }).root);
+    });
+    mount.appendChild(wrap);
+  }
+  _labOverlay() {
+    const d = this._overlayEl(`<div class="lab-screen">
+      <div class="lab-top"><span class="lab-score">0</span><div class="lab-health"><i></i></div></div>
+      <div class="lab-cmd">get ready…</div>
+      <div class="lab-mount"></div>
+      <button class="mini-btn lab-quit" data-x>QUIT</button></div>`);
+    d.querySelector('[data-x]').onclick = () => { fb.press(); this._netClose(); this.go('menu'); };
+    this._labUI = d; return d;
+  }
+  _labSetUI(cmd, health, score) {
+    const d = this._labUI; if (!d) return;
+    d.querySelector('.lab-cmd').textContent = cmd;
+    d.querySelector('.lab-score').textContent = `★ ${score}`;
+    const bar = d.querySelector('.lab-health i'); bar.style.width = Math.max(0, health) + '%';
+    bar.style.background = health < 35 ? '#e8466e' : '#37c46a';
+  }
+
+  _labHost() {
+    this._clear();
+    const labels = this._labLabels();
+    const panelA = this._labGenPanel('A', labels.slice(0, 5)), panelB = this._labGenPanel('B', labels.slice(5, 10));
+    const vals = {}; [...panelA, ...panelB].forEach(c => vals[c.id] = c.value);
+    const L = this._lab = { role: 'host', panelA, panelB, vals, health: 100, score: 0, over: false, netT: 0 };
+    L.cmdA = this._labCmd(panelB, vals); L.cmdB = this._labCmd(panelA, vals);
+    this._link.send({ type: 'lab-setup', panel: panelB });
+    this._link.send({ type: 'lab', cmd: L.cmdB.text, health: 100, score: 0 });
+    this._link.onMessage = (m) => this._labMsgHost(m);
+    const d = this._labOverlay();
+    this._labRenderPanel(d.querySelector('.lab-mount'), panelA, (id, v) => this._labHostLocal(id, v));
+    this._labSetUI(L.cmdA.text, 100, 0); guide.now(L.cmdA.text + '!');
+  }
+  _labHostLocal(id, val) {
+    const L = this._lab; if (!L || L.over) return; L.vals[id] = val;
+    if (L.cmdB.targetId === id && val === L.cmdB.want) { L.score++; fb.confirm(); L.cmdB = this._labCmd(L.panelA, L.vals); this._link.send({ type: 'lab', cmd: L.cmdB.text, health: L.health, score: L.score }); this._labWin(); }
+  }
+  _labMsgHost(m) {
+    const L = this._lab; if (!L || L.over) return;
+    if (m.type === 'ctl') { L.vals[m.id] = m.val;
+      if (L.cmdA.targetId === m.id && m.val === L.cmdA.want) { L.score++; fb.confirm(); L.cmdA = this._labCmd(L.panelB, L.vals); guide.now(L.cmdA.text + '!'); this._labSetUI(L.cmdA.text, L.health, L.score); this._labWin(); } }
+  }
+  _labTick(dt) {
+    const L = this._lab; if (!L || L.role !== 'host' || L.over) return;
+    L.cmdA.t -= dt; L.cmdB.t -= dt;
+    if (L.cmdA.t <= 0) { L.health -= 12; fb.thud(); L.cmdA = this._labCmd(L.panelB, L.vals); guide.now(L.cmdA.text + '!'); }
+    if (L.cmdB.t <= 0) { L.health -= 12; fb.thud(); L.cmdB = this._labCmd(L.panelA, L.vals); this._link.send({ type: 'lab', cmd: L.cmdB.text, health: L.health, score: L.score }); }
+    L.netT += dt; if (L.netT >= 0.4) { L.netT = 0; this._link.send({ type: 'lab', cmd: L.cmdB.text, health: L.health, score: L.score }); }
+    this._labSetUI(L.cmdA.text, L.health, L.score); this._labWin();
+  }
+  _labWin() {
+    const L = this._lab; if (L.over) return;
+    if (L.health <= 0) { L.over = true; this._link.send({ type: 'lab-end', win: false }); this._resultOverlay(false, 'The core blew! Work on your shouting.', () => this._online()); }
+    else if (L.score >= 15) { L.over = true; this._link.send({ type: 'lab-end', win: true }); fb.win(); this._resultOverlay(true, 'Core stable — you saved the lab together!', () => this._online()); }
+  }
+
   // ── Online (QR-linked WebRTC) ─────────────────────────────────────────────
   _netClose() { try { this._link?.close(); } catch (_) {} this._link = null; this._netRole = null; this._peer = null; }
 
@@ -372,6 +454,10 @@ export class App {
       const grid = box.querySelector('.con-grid');
       cs.forEach(c => { const b = document.createElement('button'); b.className = 'con-card'; b.innerHTML = `<b>${c.name}</b><span>${c.desc}</span>`;
         b.onclick = () => { fb.confirm(); this._runHostContest(c, this._tabletop); }; grid.appendChild(b); });
+      const coop = document.createElement('button'); coop.className = 'con-card coop';
+      coop.innerHTML = `<b>⚙ ZOOK LAB · CO-OP</b><span>shout the commands — keep the core alive!</span>`;
+      coop.onclick = () => { fb.confirm(); this._labHost(); };
+      grid.appendChild(coop);
     };
     render();
   }
@@ -423,6 +509,16 @@ export class App {
       this.mode.applyState(m);
     } else if (m.type === 'result') {
       this._resultOverlay(m.winner === 'red', m.line, () => this._online());
+    } else if (m.type === 'lab-setup') {
+      this._clear(); this._lab = { role: 'join' };
+      const d = this._labOverlay();
+      this._labRenderPanel(d.querySelector('.lab-mount'), m.panel, (id, v) => this._link.send({ type: 'ctl', id, val: v }));
+      this._labSetUI('get ready…', 100, 0);
+    } else if (m.type === 'lab') {
+      this._labSetUI(m.cmd, m.health, m.score);
+      if (m.cmd !== this._labLastCmd) { this._labLastCmd = m.cmd; guide.now(m.cmd + '!'); }
+    } else if (m.type === 'lab-end') {
+      this._resultOverlay(m.win, m.win ? 'Core stable — you saved the lab together!' : 'The core blew! Try again.', () => this._online());
     }
   }
 
