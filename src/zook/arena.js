@@ -158,8 +158,13 @@ export class Arena {
     this.zook.syncMeshes();
     for (const d of this._dyn) { const t = d.body.translation(), r = d.body.rotation(); d.mesh.position.set(t.x, t.y, t.z); d.mesh.quaternion.set(r.x, r.y, r.z, r.w); }
     if (this._marker) this._marker.rotation.y += 0.04;
+    // Smoothly follow the Zook in both X and Z so it never wanders off-screen.
     const p = this.zook.position;
-    setCamera({ x: 5.0, y: 3.8, z: p.z + 5 }, { x: 0, y: 0.4, z: p.z - 1.5 });
+    if (!this._camAt) this._camAt = { x: p.x, z: p.z };
+    this._camAt.x += (p.x - this._camAt.x) * 0.09;
+    this._camAt.z += (p.z - this._camAt.z) * 0.09;
+    const cx = this._camAt.x, cz = this._camAt.z;
+    setCamera({ x: cx + 5.0, y: this._float ? 4.4 : 3.8, z: cz + 5 }, { x: cx, y: this._float ? 1.6 : 0.4, z: cz - 1.2 });
     if (this._timeEl) this._timeEl.textContent = this._fmt(this._timer);
   }
 

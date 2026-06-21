@@ -33,7 +33,7 @@ export class App {
     this.mode = null;            // gameplay mode with onStep/update/exit
     this._hero = null; this._heroSpin = true; this._heroSpinT = 0;
     this._overlay = null;
-    this._builder = new Builder({ scene, mount: ui,
+    this._builder = new Builder({ scene, mount: ui, camera, canvas,
       onTest: (bp, name) => { this.active = { bp, name }; this.go('test'); },
       onBack: () => this.go('menu'),
     });
@@ -176,8 +176,12 @@ export class App {
           <button class="m-btn" data-go="run"><b>ZOOK RUN</b><span>tilt racer</span></button>
           <button class="m-btn" data-go="myzooks"><b>MY ZOOKS</b><span>your roster</span></button>
         </div>
+        <button class="m-guide" data-guide><span>FRIED'S TIPS</span><b>${guide.enabled ? 'ON' : 'OFF'}</b></button>
       </div>`);
     d.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => { fb.press(); this.go(b.dataset.go); }));
+    const gt = d.querySelector('[data-guide]');
+    gt.addEventListener('click', () => { fb.tick(); guide.setEnabled(!guide.enabled); gt.querySelector('b').textContent = guide.enabled ? 'ON' : 'OFF'; gt.classList.toggle('off', !guide.enabled); });
+    gt.classList.toggle('off', !guide.enabled);
   }
 
   // ── Workshop ─────────────────────────────────────────────────────────────

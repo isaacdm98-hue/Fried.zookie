@@ -62,13 +62,19 @@ async function run() {
   _hideTimer = setTimeout(() => { if (!speaking && !queue.length) bubble.classList.add('hidden'); }, 3200);
 }
 
+let enabled = true;
+try { enabled = localStorage.getItem('fz-guide') !== 'off'; } catch (_) {}
+
 export const guide = {
   /** Queue a line. Returns nothing; lines play in order. */
-  say(text, opts = {}) { ensure(); queue.push({ text, ...opts }); run(); },
+  say(text, opts = {}) { if (!enabled) return; ensure(); queue.push({ text, ...opts }); run(); },
   /** Speak immediately, clearing the queue (e.g. on screen change). */
-  now(text, opts = {}) { ensure(); queue = [{ text, ...opts }]; if (!speaking) run(); },
+  now(text, opts = {}) { if (!enabled) return; ensure(); queue = [{ text, ...opts }]; if (!speaking) run(); },
   hide() { if (bubble) { bubble.classList.add('hidden'); queue = []; } },
   setName(n) { if (nameEl) nameEl.textContent = n; },
+  /** Turn Fried's commentary on/off (persisted). */
+  setEnabled(on) { enabled = !!on; try { localStorage.setItem('fz-guide', on ? 'on' : 'off'); } catch (_) {} if (!on) { queue = []; this.hide(); } },
+  get enabled() { return enabled; },
 };
 
 // A few manual-flavoured lines, keyed by screen, for curation.

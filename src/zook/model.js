@@ -264,6 +264,7 @@ export class Zook {
       low.scale.set(thick * 0.9, l * 1.1, thick * 0.9); low.position.y = -l / 2; low.castShadow = true; knee.add(low);
       const foot = new THREE.Mesh(BLOB_GEO, m);
       foot.scale.set(thick * 1.5, thick * 0.7, thick * 2.0); foot.position.set(0, -l, thick * 0.4); foot.castShadow = true; knee.add(foot);
+      up.userData.legIndex = i; low.userData.legIndex = i; foot.userData.legIndex = i;   // for touch-picking
       this.group.add(pivot);
       this._legs.push({ pivot, knee, foot, side: leg.side, swingMul: S.swing, moveType: leg.moveType || 'auto',
         path: leg.path || defaultPath(), cycle: leg.cycle || 0, move: leg.move || 'two', style: leg.style || 'crawl',

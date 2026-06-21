@@ -17,9 +17,14 @@ import { guide, TIPS } from '../sys/guide.js';
 import { fb } from '../sys/feedback.js';
 
 export class Builder {
-  /** @param {{ scene, mount, onTest, onBack }} o */
-  constructor({ scene, mount, onTest, onBack }) {
-    this.scene = scene; this.mount = mount; this.onTest = onTest; this.onBack = onBack;
+  /** @param {{ scene, mount, camera, canvas, onTest, onBack }} o */
+  constructor({ scene, mount, camera, canvas, onTest, onBack }) {
+    this.scene = scene; this.mount = mount; this.camera = camera; this.canvas = canvas;
+    this.onTest = onTest; this.onBack = onBack;
+    this._ray = new THREE.Raycaster(); this._drag = null; this._spinPaused = false;
+    this._onPointerDown = this._onPointerDown.bind(this);
+    this._onPointerMove = this._onPointerMove.bind(this);
+    this._onPointerUp = this._onPointerUp.bind(this);
     this.bp = defaultBlueprint();
     this.name = 'My Zook';
     this.zook = null; this.turntable = null; this._deck = null;
@@ -51,19 +56,87 @@ export class Builder {
 
     setCamera({ x: 0, y: 2.4, z: 4.6 }, { x: 0, y: 1.0, z: 0 }, true);
     this._buildPanel();
+    if (this.canvas) {
+      this.canvas.addEventListener('pointerdown', this._onPointerDown);
+      window.addEventListener('pointermove', this._onPointerMove);
+      window.addEventListener('pointerup', this._onPointerUp);
+    }
     guide.now(TIPS.build);
   }
 
   exit() {
+    if (this.canvas) {
+      this.canvas.removeEventListener('pointerdown', this._onPointerDown);
+      window.removeEventListener('pointermove', this._onPointerMove);
+      window.removeEventListener('pointerup', this._onPointerUp);
+    }
+    this._drag = null;
     if (this.zook) { this.zook.dispose(); this.zook = null; }
     if (this.turntable) { this.scene.remove(this.turntable); this.turntable = null; }
     if (this._deck) { this._deck.remove(); this._deck = null; }
   }
 
   update(dt) {
-    this._spin += dt * 0.5;
+    // Stop the turntable while you're working on legs (ADD/PATH) or dragging, so
+    // you can touch-drag parts precisely; otherwise it slowly turns to show off.
+    this._spinPaused = this._drag != null || (this._open && (this._page === 'add' || this._page === 'path'));
+    if (!this._spinPaused) this._spin += dt * 0.5;
     if (this.turntable) this.turntable.rotation.y = this._spin;
     if (this.zook) { this.zook.step(dt, { walk: this._walk }); this.zook.syncMeshes(); }
+  }
+
+  // ── direct touch manipulation: tap a leg to select it, drag it along the body
+  // (its mirror partner follows). Mirrors the Zook Kit's drag-to-place parts.
+  _toScreen(x, y, z) {
+    const v = new THREE.Vector3(x, y, z);
+    this.zook.group.localToWorld(v); v.project(this.camera);
+    const r = this.canvas.getBoundingClientRect();
+    return { x: (v.x * 0.5 + 0.5) * r.width + r.left, y: (-v.y * 0.5 + 0.5) * r.height + r.top };
+  }
+
+  _pickLeg(e) {
+    if (!this.zook) return -1;
+    const r = this.canvas.getBoundingClientRect();
+    const nx = ((e.clientX - r.left) / r.width) * 2 - 1, ny = -((e.clientY - r.top) / r.height) * 2 + 1;
+    this._ray.setFromCamera({ x: nx, y: ny }, this.camera);
+    const hits = this._ray.intersectObjects(this.zook.group.children, true);
+    for (const h of hits) {
+      let o = h.object;
+      while (o) { if (o.userData && o.userData.legIndex != null) return o.userData.legIndex; o = o.parent; }
+    }
+    return -1;
+  }
+
+  _onPointerDown(e) {
+    const idx = this._pickLeg(e);
+    if (idx < 0) return;
+    e.preventDefault();
+    this._selLeg = idx;
+    if (!this._open || (this._page !== 'add' && this._page !== 'path')) { this._page = 'add'; this._open = true; }
+    this._renderPage();
+    const leg = this.bp.legs[idx];
+    const x = leg.side * this.bp.width * 0.4, y = -this.bp.height * 0.32;
+    this._drag = { idx, A: this._toScreen(x, y, -this.bp.len * 0.46), B: this._toScreen(x, y, this.bp.len * 0.46) };
+    fb.tick();
+  }
+
+  _onPointerMove(e) {
+    if (!this._drag) return;
+    const { A, B } = this._drag;
+    const abx = B.x - A.x, aby = B.y - A.y, len2 = abx * abx + aby * aby || 1;
+    let t = ((e.clientX - A.x) * abx + (e.clientY - A.y) * aby) / len2;
+    t = Math.max(0, Math.min(1, t));
+    const along = Math.round((-1 + t * 2) * 20) / 20;
+    const leg = this.bp.legs[this._drag.idx]; if (!leg) return;
+    leg.along = along;
+    const partner = this.bp.legs.find(l => l !== leg && l.pair === leg.pair);
+    if (partner) partner.along = along;            // mirrored legs move together
+    this._apply();
+  }
+
+  _onPointerUp() {
+    if (!this._drag) return;
+    this._drag = null; fb.tick(); this._refresh();
   }
 
   _apply() { if (this.zook) this.zook.setBlueprint(this.bp); }
