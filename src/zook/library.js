@@ -6,9 +6,23 @@
  * for the Zooks the player builds.
  */
 
-import { defaultBlueprint } from './model.js';
+import { defaultBlueprint, makeDefaultLegs } from './model.js';
 
 const base = defaultBlueprint;
+
+// Build a staggered set of mirrored legs, then stamp shared per-leg properties
+// (length, thickness, style, movement type, part-targeting) across them.
+function legsFor(pairs, { len = 0.72, thick = 0.16, style = 'crawl', moveType = 'auto', target = 'off', spread = 0.42 } = {}) {
+  const legs = makeDefaultLegs(pairs);
+  const n = pairs;
+  legs.forEach((l, i) => {
+    l.len = len; l.thick = thick; l.style = style; l.moveType = moveType; l.target = target;
+    // spread the pairs along the body so long creatures read as segmented
+    const p = Math.floor(i / 2);
+    l.along = n > 1 ? spread * (0.5 - p / (n - 1)) * 2 : 0;
+  });
+  return legs;
+}
 
 /** A daft name to suggest for a new Zook. */
 const FUNNY_NAMES = [
@@ -20,13 +34,23 @@ const FUNNY_NAMES = [
 export function randomName() { return FUNNY_NAMES[Math.floor(Math.random() * FUNNY_NAMES.length)]; }
 
 /** Named example Zooks, each a tuned blueprint. */
+// The original Zook Kit example roster (Spider, Wormthing, Ant, Twigger, Leapsa,
+// Scrabber), recreated faithfully — proportions and gaits echo the manual's
+// descriptions, with the new movement features (Wormthing flexes its spine via
+// Part Targeting; styles vary per creature).
 export const EXAMPLES = [
-  { name: 'Spider',  bp: { ...base(), hue: 0.02, footHue: 0.02, len: 1.7, width: 1.3, height: 0.55, square: 0.5, pointy: 0.3, legPairs: 4, legLen: 0.95, speed: 3.0, stride: 0.7 } },
-  { name: 'Worm',    bp: { ...base(), hue: 0.33, footHue: 0.33, len: 3.0, width: 0.7, height: 0.6, square: 0.3, pointy: 0.6, legPairs: 4, legLen: 0.4, speed: 3.4, stride: 0.6 } },
-  { name: 'Ant',     bp: { ...base(), hue: 0.07, footHue: 0.02, len: 2.2, width: 0.9, height: 0.7, square: 0.45, pointy: 0.5, legPairs: 3, legLen: 0.7, speed: 2.8, stride: 0.8 } },
-  { name: 'Tank',    bp: { ...base(), hue: 0.58, footHue: 0.58, len: 2.0, width: 1.6, height: 1.0, square: 0.85, pointy: 0.1, legPairs: 3, legLen: 0.6, speed: 2.0, stride: 0.6 } },
-  { name: 'Twigger', bp: { ...base(), hue: 0.13, footHue: 0.13, len: 1.5, width: 0.8, height: 0.5, square: 0.4, pointy: 0.5, legPairs: 2, legLen: 1.1, speed: 2.6, stride: 0.9 } },
-  { name: 'Nipper',  bp: { ...base(), hue: 0.92, footHue: 0.92, len: 1.4, width: 1.1, height: 0.6, square: 0.6, pointy: 0.4, legPairs: 3, legLen: 0.65, speed: 3.2, stride: 0.75 } },
+  { name: 'Spider',   bp: { ...base(), hue: 0.02, footHue: 0.02, len: 1.8, width: 1.55, height: 0.48, square: 0.45, pointy: 0.3, speed: 3.0, stride: 0.7,  turnSharp: 1.6,
+      legs: legsFor(4, { len: 0.9,  thick: 0.15, style: 'crawl', spread: 0.4 }) } },
+  { name: 'Wormthing',bp: { ...base(), hue: 0.33, footHue: 0.30, len: 3.2, width: 1.0, height: 0.45, square: 0.3,  pointy: 0.55, speed: 3.0, stride: 0.6,  targetAngle: 0.5,
+      legs: legsFor(5, { len: 0.5,  thick: 0.14, style: 'crawl', target: 'inverted', spread: 0.46 }) } },
+  { name: 'Ant',      bp: { ...base(), hue: 0.07, footHue: 0.02, len: 2.2, width: 1.0, height: 0.6,  square: 0.45, pointy: 0.5,  speed: 2.8, stride: 0.8,
+      legs: legsFor(3, { len: 0.7,  thick: 0.15, style: 'crawl', spread: 0.44 }) } },
+  { name: 'Twigger',  bp: { ...base(), hue: 0.14, footHue: 0.14, len: 1.6, width: 1.3, height: 0.5, square: 0.4,  pointy: 0.5,  speed: 2.6, stride: 0.8,
+      legs: legsFor(3, { len: 0.95, thick: 0.13, style: 'crawl', spread: 0.42 }) } },
+  { name: 'Leapsa',   bp: { ...base(), hue: 0.55, footHue: 0.55, len: 1.5, width: 1.35, height: 0.55, square: 0.6, pointy: 0.35, speed: 2.6, stride: 0.85, stiffness: 1.1,
+      legs: legsFor(3, { len: 0.8,  thick: 0.18, style: 'stomp', spread: 0.4 }) } },
+  { name: 'Scrabber', bp: { ...base(), hue: 0.6,  footHue: 0.6,  len: 1.6, width: 1.5, height: 0.45, square: 0.55, pointy: 0.3,  speed: 3.3, stride: 0.65,
+      legs: legsFor(4, { len: 0.55, thick: 0.16, style: 'push',  spread: 0.42 }) } },
 ];
 
 export function randomExample() { return EXAMPLES[Math.floor(Math.random() * EXAMPLES.length)]; }
