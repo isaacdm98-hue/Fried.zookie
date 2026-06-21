@@ -568,3 +568,21 @@ body { -webkit-user-select: none; user-select: none; touch-action: none; }
 .lab-panel { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px 8px; place-items: center;
   background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 18px 12px; width: min(460px,94%); }
 .lab-quit { align-self: center; margin-top: auto; }
+
+/* ── ZOOK RUN (tilt racer) ───────────────────────────────────────────────── */
+.run-hud { position: fixed; inset: 0; pointer-events: none; }
+.run-hud > * { pointer-events: auto; }
+.run-warn { position: fixed; top: calc(76px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%);
+  font-size: 22px; font-weight: 800; letter-spacing: 0.06em; color: var(--ink); background: #fff; border: 2px solid var(--accent);
+  border-radius: 14px; padding: 10px 18px; min-width: 170px; text-align: center; box-shadow: 0 4px 14px rgba(0,0,0,0.15); opacity: 0; }
+.run-warn.live { opacity: 1; } .run-warn.good { opacity: 1; color: #37c46a; border-color: #37c46a; } .run-warn.bad { opacity: 1; color: #e8466e; border-color: #e8466e; }
+.run-stats { position: fixed; top: calc(16px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 10px; background: rgba(20,21,26,0.82); color: #ffd479; padding: 6px 12px; border-radius: 10px; font-weight: 700; font-size: 13px; }
+.run-prog { width: 130px; height: 8px; background: rgba(255,255,255,0.18); border-radius: 4px; overflow: hidden; }
+.run-prog i { display: block; height: 100%; width: 0; background: var(--accent); }
+.run-pads { position: fixed; bottom: calc(20px + env(safe-area-inset-bottom)); left: 0; right: 0; display: flex; justify-content: space-between; align-items: flex-end; padding: 0 18px; }
+.run-pad { width: 74px; height: 74px; border-radius: 50%; font-size: 28px; border: none; color: #fff;
+  background: linear-gradient(180deg,#ff9a3c,var(--accent)); box-shadow: 0 4px 12px rgba(240,120,45,0.5); }
+.run-pad.on { transform: scale(0.92); filter: brightness(1.15); }
+.run-pad-col { display: flex; flex-direction: column; gap: 10px; }
+.run-pad-col .run-pad { width: 64px; height: 52px; border-radius: 14px; font-size: 22px; background: linear-gradient(180deg,#5a86e0,#2b53b0); box-shadow: 0 4px 12px rgba(43,83,176,0.5); }

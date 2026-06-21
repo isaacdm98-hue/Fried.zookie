@@ -15,6 +15,7 @@ import { Arena } from './zook/arena.js';
 import { ContestScene, CONTESTS } from './zook/contest.js';
 import { EXAMPLES, loadRoster, randomExample } from './zook/library.js';
 import { Knob, Switch } from './zook/controls.js';
+import { ZookRun, requestTilt } from './zook/run.js';
 import { guide, TIPS } from './sys/guide.js';
 import { fb, unlockAudio, setMuted } from './sys/feedback.js';
 import { Link } from './net/link.js';
@@ -75,7 +76,7 @@ export class App {
     this.mode = null;
     if (this._overlay) { this._overlay.remove(); this._overlay = null; }
     this._countdownEl = null;
-    this._replay = null; this._scrub = null; this._lab = null; this._labUI = null;
+    this._replay = null; this._scrub = null; this._lab = null; this._labUI = null; this._runScene = null;
     this._clearTabletop();
   }
 
@@ -131,6 +132,7 @@ export class App {
       contestRun: () => this._contestRun(opts),
       versus: () => this._versus(),
       online: () => this._online(),
+      run: () => this._run(),
       myzooks: () => this._myzooks(),
     }[screen] || (() => this._menu()))();
   }
@@ -176,6 +178,7 @@ export class App {
           <button class="m-btn" data-go="contests"><b>CONTESTS</b><span>vs a rival</span></button>
           <button class="m-btn" data-go="versus"><b>VERSUS</b><span>same phone</span></button>
           <button class="m-btn" data-go="online"><b>ONLINE</b><span>QR link-up</span></button>
+          <button class="m-btn" data-go="run"><b>ZOOK RUN</b><span>tilt racer</span></button>
           <button class="m-btn" data-go="myzooks"><b>MY ZOOKS</b><span>your roster</span></button>
         </div>
       </div>`);
@@ -321,6 +324,38 @@ export class App {
   }
   _contestRunResultBack(back) { this.go('contestRun', back); }
 
+  // ── ZOOK RUN (tilt-timing racer) ──────────────────────────────────────────
+  async _run() {
+    await requestTilt();
+    this._clear();
+    const r = new ZookRun({ scene: this.scene, camera: this.camera, canvas: this.canvas, mount: this.ui,
+      bp: this.active.bp, seed: (Date.now() & 0xffff) || 1, onExit: () => this.go('menu') });
+    r.enter(); this.mode = r;
+  }
+  // Online race: same seed, each renders its own Zook; compare finish times.
+  async _runRaceHost() {
+    const seed = (Date.now() & 0xffff) || 1;
+    this._link.onMessage = (m) => { if (m.type === 'run-done') { this._runOpp = m.time; if (this._runScene) this._runResolve(this._runScene); } };
+    this._link.send({ type: 'run-start', seed });
+    this._runStart(seed, 'host');
+  }
+  async _runStart(seed, role) {
+    await requestTilt();
+    this._clear();
+    this._runMine = null; this._runOpp = null; this._runRole = role;
+    const r = new ZookRun({ scene: this.scene, camera: this.camera, canvas: this.canvas, mount: this.ui,
+      bp: this.active.bp, seed, vsName: this._peer ? this._peer.name : 'Rival',
+      onExit: () => { this._netClose(); this.go('menu'); },
+      onFinish: (time) => { this._runMine = time; this._link.send({ type: 'run-done', time }); this._runResolve(r); } });
+    r.enter(); this.mode = r; this._runScene = r;
+  }
+  _runResolve(r) {
+    if (this._runMine == null) return;
+    if (this._runOpp == null) { r.result(`You finished ${this._runMine.toFixed(1)}s — waiting for rival…`); return; }
+    const won = this._runMine <= this._runOpp;
+    r.result(`${won ? 'YOU WIN!' : 'Rival wins'} — you ${this._runMine.toFixed(1)}s vs ${this._runOpp.toFixed(1)}s`);
+  }
+
   // ── ZOOK LAB — Spaceteam-style co-op (shout the commands) ─────────────────
   _labLabels() {
     const POOL = ['FLUX', 'GIZMO', 'CRANK', 'VALVE', 'WARP', 'PRISM', 'TURBO', 'SPROCKET', 'VENT', 'CORE', 'BLASTER', 'NACELLE'];
@@ -458,6 +493,10 @@ export class App {
       coop.innerHTML = `<b>⚙ ZOOK LAB · CO-OP</b><span>shout the commands — keep the core alive!</span>`;
       coop.onclick = () => { fb.confirm(); this._labHost(); };
       grid.appendChild(coop);
+      const race = document.createElement('button'); race.className = 'con-card coop';
+      race.innerHTML = `<b>🏁 ZOOK RUN · RACE</b><span>tilt-timing race, same track — first home wins</span>`;
+      race.onclick = () => { fb.confirm(); this._runRaceHost(); };
+      grid.appendChild(race);
     };
     render();
   }
@@ -519,6 +558,10 @@ export class App {
       if (m.cmd !== this._labLastCmd) { this._labLastCmd = m.cmd; guide.now(m.cmd + '!'); }
     } else if (m.type === 'lab-end') {
       this._resultOverlay(m.win, m.win ? 'Core stable — you saved the lab together!' : 'The core blew! Try again.', () => this._online());
+    } else if (m.type === 'run-start') {
+      this._runStart(m.seed, 'join');
+    } else if (m.type === 'run-done') {
+      this._runOpp = m.time; if (this._runScene) this._runResolve(this._runScene);
     }
   }
 
