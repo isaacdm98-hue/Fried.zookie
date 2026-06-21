@@ -249,14 +249,20 @@ export class Zook {
       this.group.add(arrow);
     }
 
-    // Eyes near the nose (forward = -Z).
-    const eyeR = bp.height * 0.16, noseZ = -bp.len / 2 * (1 - bp.pointy * 0.45);
+    // Big friendly googly eyes near the nose (forward = -Z); pupil + glint face
+    // the viewer. Each eye is a group so we can blink it (squash on Y).
+    this._eyes = [];
+    const eyeR = bp.height * 0.21, noseZ = -bp.len / 2 * (1 - bp.pointy * 0.45);
     for (const sx of [-1, 1]) {
+      const eye = new THREE.Group();
+      eye.position.set(sx * bp.width * 0.26, bp.height * 0.27, noseZ + eyeR * 0.25);
       const w = new THREE.Mesh(new THREE.SphereGeometry(eyeR, 16, 12), EYE_WHITE);
-      w.position.set(sx * bp.width * 0.24, bp.height * 0.24, noseZ + eyeR * 0.3);
-      const p = new THREE.Mesh(new THREE.SphereGeometry(eyeR * 0.5, 12, 10), EYE_DARK);
-      p.position.set(sx * bp.width * 0.24, bp.height * 0.24, noseZ - eyeR * 0.15);
-      this.group.add(w, p);
+      const p = new THREE.Mesh(new THREE.SphereGeometry(eyeR * 0.56, 12, 10), EYE_DARK);
+      p.position.set(sx * eyeR * 0.1, -eyeR * 0.04, -eyeR * 0.55);
+      const glint = new THREE.Mesh(new THREE.SphereGeometry(eyeR * 0.2, 8, 8), EYE_WHITE);
+      glint.position.set(sx * eyeR * 0.3, eyeR * 0.24, -eyeR * 0.72);
+      eye.add(w, p, glint);
+      this.group.add(eye); this._eyes.push(eye);
     }
 
     // Legs: individual parts, each with its own placement, size, style and
@@ -393,6 +399,14 @@ export class Zook {
     this._t += dt;
     const walk = inputs.walk !== false;
     this._animateLegs(walk ? 1 : 0, dt);
+    // Idle blink — a quick eye-squash every few seconds for a bit of life.
+    if (this._eyes && this._eyes.length) {
+      if (this._blinkT == null) this._blinkT = Math.random() * 3;
+      this._blinkT += dt;
+      const c = this._blinkT % 3.8;
+      const s = c > 3.6 ? Math.max(0.12, 1 - Math.sin((c - 3.6) / 0.2 * Math.PI)) : 1;
+      for (const e of this._eyes) e.scale.y = s;
+    }
     if (this.preview || !this._body) return;
 
     const stiff = this.bp.stiffness || 1;

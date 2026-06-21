@@ -236,8 +236,8 @@ body { -webkit-user-select: none; user-select: none; touch-action: none; }
 .guide.talking .g-eye { animation: blink 0.28s steps(2) infinite; }
 @keyframes blink { 50% { height: 3px; } }
 /* Hand-drawn (animated APNG) speech bubble. */
-.guide-bubble { flex: 1; background: url('./assets/bubble-large.png') center/100% 100% no-repeat;
-  padding: 16px 20px 20px; filter: drop-shadow(0 3px 10px rgba(0,0,0,0.18)); }
+.guide-bubble { flex: 1; background: rgba(255,255,255,0.96); border: 1px solid var(--line);
+  border-radius: 14px; padding: 9px 13px; box-shadow: 0 4px 14px rgba(0,0,0,0.14); }
 .guide-name { font-size: 9px; font-weight: 800; letter-spacing: 0.18em; color: var(--accent); }
 .guide-text { margin: 2px 0 0; font-size: 12px; line-height: 1.4; color: var(--ink); min-height: 16px; }
 

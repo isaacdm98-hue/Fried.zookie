@@ -82,13 +82,13 @@ export const guide = {
 
 // A few manual-flavoured lines, keyed by screen, for curation.
 export const TIPS = {
-  title:   "Now then! Welcome to FriedZooki. Tap to begin, and let's build ourselves a Zook!",
-  menu:    "What shall we do? Build a new Zook, enter a contest, or link up for two-player!",
-  build:   "This round part is the body — the root. Use the dials to stretch and squash it. The red arrow shows the way it'll go!",
-  add:     "Now add some legs! More legs, more grip. Mirror makes a matching pair on the other side.",
-  move:    "Make it move! Movement Cycle staggers the legs so it doesn't trip. Speed and Stride set the pace.",
-  paint:   "Give it some colour! Pick a shade for the body and the feet. Make it YOURS.",
-  test:    "Tap the floor to set a target — your Zook will scurry to it. Tap the Zook to float it for a better look!",
-  contest: "Two Zooks enter, one wins! Green is yours, red is the rival. Pick a contest and we'll find out who's best.",
-  versus:  "Link up! Player one, then player two — pass it along, just like the old handhelds. Best Zook takes it!",
+  title:   "Now then! Welcome to FriedZooki. Tap to begin — let's build something with far too many legs.",
+  menu:    "What's it to be? Build a magnificent beast, enter a contest, or thrash a mate in two-player.",
+  build:   "This blobby bit's the body. Squish it, stretch it — go on, it likes it.",
+  add:     "Tap the body to bolt on legs. More legs, more chaos. It's basically science.",
+  move:    "Make it walk! Stagger the leg cycle or it'll faceplant — funny, but slow.",
+  paint:   "Give it a paint job. Tasteful masterpiece, or a crime against colour. Your call.",
+  test:    "Tap the floor and watch it scuttle off. Tap the Zook to float it up for a nosey.",
+  contest: "Two Zooks enter. One wobbles away a champion. Green's yours — go on, believe!",
+  versus:  "Pass the phone like it's 2004. Loser does the washing up.",
 };

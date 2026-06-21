@@ -263,7 +263,7 @@ export class Arena {
       </div>
       <div class="test-timer">⏱ <span class="t-val">0.00s</span></div>
       <div class="test-tools">
-        <button class="chip" data-tool="float"><img class="chip-ic" src="./assets/icon-eye.png" alt=""/>FLOAT</button>
+        <button class="chip" data-tool="float">FLOAT</button>
         <button class="chip" data-tool="jump">JUMP</button>
         <button class="chip" data-tool="time">START</button>
         <button class="chip" data-tool="reset">RESET</button>
