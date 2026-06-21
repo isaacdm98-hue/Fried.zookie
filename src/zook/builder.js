@@ -130,7 +130,7 @@ export class Builder {
 
   _setMode(m) {
     this._mode = m;
-    if (m !== 'add' && m !== 'move') this._select(null);
+    if (m === 'shape') this._select(null);   // add/move/paint keep the selection (paint a chosen part)
     this._deck.querySelectorAll('.bmode').forEach(c => c.classList.toggle('on', c.dataset.m === m));
     this._renderBar();
     if (this._helper) guide.pop(this._helpText());
@@ -170,10 +170,13 @@ export class Builder {
       const s = this._sel;
       if (s && s.type === 'leg' && this.bp.legs[s.idx]) {
         const leg = this.bp.legs[s.idx];
+        // Per-part size like the real kit: overall LENgth + 3-axis scale (W/H/D).
         el.append(K({ label: 'LEN', min: 0.35, max: 1.2, step: 0.05, value: leg.len, onChange: v => this._editLeg('len', v) }),
-          K({ label: 'THICK', min: 0.1, max: 0.32, step: 0.02, value: leg.thick, onChange: v => this._editLeg('thick', v) }),
+          K({ label: 'WIDE', min: 0.4, max: 2.6, step: 0.1, value: leg.sx || 1, format: v => v.toFixed(1), onChange: v => this._editLeg('sx', v) }),
+          K({ label: 'TALL', min: 0.4, max: 2.0, step: 0.1, value: leg.sy || 1, format: v => v.toFixed(1), onChange: v => this._editLeg('sy', v) }),
+          K({ label: 'DEEP', min: 0.4, max: 2.6, step: 0.1, value: leg.sz || 1, format: v => v.toFixed(1), onChange: v => this._editLeg('sz', v) }),
           this._copyBtn(), this._mirrorBtn(), this._delBtn());
-        hint('drag the leg to move it · COPY clones · MIRROR pairs it across');
+        hint('drag to move · WIDE/TALL/DEEP shape the part · COPY/MIRROR');
       } else if (s && s.type === 'blob' && this.bp.blobs[s.idx]) {
         const bl = this.bp.blobs[s.idx];
         el.append(K({ label: 'SIZE', min: 0.2, max: 1.8, step: 0.05, value: bl.sx, onChange: v => { this._pushUndo(); bl.sx = bl.sy = bl.sz = v; this._apply(); } }), this._delBtn());
@@ -196,6 +199,7 @@ export class Builder {
         const leg = this.bp.legs[s.idx];
         el.append(
           K({ label: 'CYCLE', min: 0, max: 1, step: 0.05, value: leg.cycle, format: v => v.toFixed(2), onChange: v => { this._pushUndo(); leg.cycle = v; this._apply(); } }),
+          K({ label: 'MUSCLE', min: 0.4, max: 2.2, step: 0.1, value: leg.muscle || 1, format: v => v.toFixed(1), onChange: v => this._editLeg('muscle', v) }),
           Selector({ label: 'MODE', value: leg.move || 'two',
             options: [{ v: 'two', t: '2-PART' }, { v: 'single', t: '1-PART' }, { v: 'none', t: 'STILL' }], onChange: v => this._editLeg('move', v, true) }).root,
           Selector({ label: 'TURN', value: leg.moveType || 'auto',
@@ -205,20 +209,32 @@ export class Builder {
           this._pathBtn());
         hint('CYCLE staggers · MODE/TURN/AIM set behaviour · PATH shapes the step');
       } else hint('tap a leg to tune its step · SPEED & STRIDE set pace, SHARP/SMOOTH the turns');
-    } else { // paint
+    } else { // paint — colour the WHOLE body, or a single selected part (like the kit's Colour tab)
+      const sel = this._sel, legSel = sel && sel.type === 'leg' && this.bp.legs[sel.idx];
       const sw = document.createElement('div'); sw.className = 'swatches';
       [0.02, 0.07, 0.13, 0.22, 0.33, 0.45, 0.55, 0.63, 0.74, 0.88, 0.95].forEach(h => {
         const b = document.createElement('button'); b.className = 'swatch'; b.style.background = `hsl(${h * 360},72%,55%)`;
-        b.addEventListener('click', () => { this._pushUndo(); this.bp.hue = h; this.bp.footHue = h; this._apply(); fb.tick(); });
+        b.addEventListener('click', () => { fb.tick();
+          if (legSel) this._editLeg('hue', h);
+          else { this._pushUndo(); this.bp.hue = h; this.bp.footHue = h; this._apply(); } });
         sw.appendChild(b);
       });
-      el.append(sw,
-        HueSlider({ label: 'BODY', value: this.bp.hue, onChange: v => set('hue', v) }).root,
-        HueSlider({ label: 'FEET', value: this.bp.footHue, onChange: v => set('footHue', v) }).root,
-        Selector({ label: 'PATTERN', value: this.bp.pattern,
-          options: [{ v: 'none', t: 'PLAIN' }, { v: 'stripes', t: 'STRIPE' }, { v: 'spots', t: 'SPOTS' }, { v: 'dots', t: 'DOTS' }, { v: 'checker', t: 'CHECK' }, { v: 'camo', t: 'CAMO' }, { v: 'plaster', t: 'SPECK' }],
-          onChange: v => { this._pushUndo(); this.bp.pattern = v; this._apply(); } }).root);
-      hint('pick a colour for the body and the feet');
+      el.append(sw);
+      if (legSel) {
+        el.append(HueSlider({ label: 'THIS PART', value: legSel.hue != null ? legSel.hue : this.bp.footHue, onChange: v => this._editLeg('hue', v) }).root);
+        const clr = document.createElement('button'); clr.className = 'mini-btn'; clr.textContent = 'USE BODY COLOUR';
+        clr.addEventListener('click', () => { fb.press(); this._editLeg('hue', null); });
+        el.append(clr);
+        hint('colouring the selected part · tap the body to colour everything');
+      } else {
+        el.append(
+          HueSlider({ label: 'BODY', value: this.bp.hue, onChange: v => set('hue', v) }).root,
+          HueSlider({ label: 'FEET', value: this.bp.footHue, onChange: v => set('footHue', v) }).root,
+          Selector({ label: 'PATTERN', value: this.bp.pattern,
+            options: [{ v: 'none', t: 'PLAIN' }, { v: 'stripes', t: 'STRIPE' }, { v: 'spots', t: 'SPOTS' }, { v: 'dots', t: 'DOTS' }, { v: 'checker', t: 'CHECK' }, { v: 'camo', t: 'CAMO' }, { v: 'plaster', t: 'SPECK' }],
+            onChange: v => { this._pushUndo(); this.bp.pattern = v; this._apply(); } }).root);
+        hint('pick a colour · tap a leg to colour just that part');
+      }
     }
   }
 
@@ -357,6 +373,10 @@ export class Builder {
       } else this._orbit(e);
     } else if (this._mode === 'move') {
       if (hit && hit.type === 'leg') { this._select({ type: 'leg', idx: hit.idx }); this._renderBar(); this._drag = this._legDrag(hit.idx); }
+      else this._orbit(e);
+    } else if (this._mode === 'paint') {
+      if (hit && hit.type === 'leg') { this._select({ type: 'leg', idx: hit.idx }); this._renderBar(); }
+      else if (hit && hit.type === 'body') { this._select(null); this._renderBar(); }
       else this._orbit(e);
     } else this._orbit(e);
   }

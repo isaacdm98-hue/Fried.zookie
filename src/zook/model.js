@@ -72,8 +72,12 @@ export function defaultPath() {
 }
 
 /** A new leg part. `pair` links mirror partners (same id, opposite side). */
-export function makeLeg(side, along, { len = 0.72, thick = 0.16, style = 'crawl', cycle = 0, pair = newPairId(), move = 'two', moveType = 'auto', target = 'off', path } = {}) {
-  return { side, along, len, thick, style, cycle, pair, move, moveType, target, path: path || defaultPath() };
+export function makeLeg(side, along, { len = 0.72, thick = 0.16, style = 'crawl', cycle = 0, pair = newPairId(), move = 'two', moveType = 'auto', target = 'off', path,
+  sx = 1, sy = 1, sz = 1, hue = null, muscle = 1 } = {}) {
+  // Per-part fields mirror the real Zook Kit (BuilderParts.lua): scalex/y/z, the
+  // muscle PD strength (muscle_stiffness 1..10000 → our 0.3..2.5 multiplier) and
+  // an optional own colour. Defaults keep older blueprints working unchanged.
+  return { side, along, len, thick, style, cycle, pair, move, moveType, target, sx, sy, sz, hue, muscle, path: path || defaultPath() };
 }
 
 /** Default crawl: pairs down the body, staggered movement cycles. */
@@ -93,7 +97,8 @@ export function makeDefaultLegs(pairs = 3) {
 export function ensureLegs(bp) {
   if (Array.isArray(bp.legs)) {
     // Back-compat: make sure every leg has a foot path + movement type.
-    for (const l of bp.legs) { if (!Array.isArray(l.path)) l.path = defaultPath(); if (!l.move) l.move = 'two'; if (!l.moveType) l.moveType = 'auto'; if (!l.target) l.target = 'off'; }
+    for (const l of bp.legs) { if (!Array.isArray(l.path)) l.path = defaultPath(); if (!l.move) l.move = 'two'; if (!l.moveType) l.moveType = 'auto'; if (!l.target) l.target = 'off';
+      if (l.sx == null) l.sx = 1; if (l.sy == null) l.sy = 1; if (l.sz == null) l.sz = 1; if (l.muscle == null) l.muscle = 1; if (l.hue === undefined) l.hue = null; }
     return bp.legs;
   }
   const pairs = bp.legPairs || 3;
@@ -272,7 +277,11 @@ export class Zook {
     legs.forEach((leg, i) => {
       const S = LEG_STYLES[leg.style] || LEG_STYLES.crawl;
       const thick = leg.thick * 1.5, len = leg.len, u = len * S.u, l = len * S.l;
-      const m = (i === this._highlight) ? HILITE : lMat;
+      // Per-part 3-axis scale (scalex/y/z) and per-part colour, like the real kit.
+      const sx = leg.sx || 1, sy = leg.sy || 1, sz = leg.sz || 1;
+      const lm = (i === this._highlight) ? HILITE : (leg.hue != null ? mat(leg.hue, 0.48 + bri * 0.28, 0.55) : lMat);
+      if (lm !== lMat && lm !== HILITE) lm.flatShading = true;
+      const m = lm;
       // Hips sit slightly inside the body so the limb merges into it.
       const x = leg.side * bp.width * 0.4;
       const z = leg.along * bp.len * 0.46;
@@ -281,17 +290,17 @@ export class Zook {
       pivot.rotation.z = leg.side * S.splay;
       // Upper limb: a stretched blob whose top overlaps the body (attached).
       const up = new THREE.Mesh(BLOB_GEO, m);
-      up.scale.set(thick, u * 1.15, thick); up.position.y = -u / 2; up.castShadow = true; pivot.add(up);
+      up.scale.set(thick * sx, u * 1.15 * sy, thick * sz); up.position.y = -u / 2; up.castShadow = true; pivot.add(up);
       const knee = new THREE.Group(); knee.position.y = -u; knee.rotation.z = -leg.side * S.splay; pivot.add(knee);
       const low = new THREE.Mesh(BLOB_GEO, m);
-      low.scale.set(thick * 0.9, l * 1.1, thick * 0.9); low.position.y = -l / 2; low.castShadow = true; knee.add(low);
+      low.scale.set(thick * 0.9 * sx, l * 1.1 * sy, thick * 0.9 * sz); low.position.y = -l / 2; low.castShadow = true; knee.add(low);
       const foot = new THREE.Mesh(BLOB_GEO, m);
-      foot.scale.set(thick * 1.5, thick * 0.7, thick * 2.0); foot.position.set(0, -l, thick * 0.4); foot.castShadow = true; knee.add(foot);
+      foot.scale.set(thick * 1.5 * sx, thick * 0.7, thick * 2.0 * sz); foot.position.set(0, -l, thick * 0.4); foot.castShadow = true; knee.add(foot);
       up.userData.legIndex = i; low.userData.legIndex = i; foot.userData.legIndex = i;   // for touch-picking
       this.group.add(pivot);
       this._legs.push({ pivot, knee, foot, side: leg.side, swingMul: S.swing, moveType: leg.moveType || 'auto',
         path: leg.path || defaultPath(), cycle: leg.cycle || 0, move: leg.move || 'two', style: leg.style || 'crawl',
-        target: leg.target || 'off',
+        target: leg.target || 'off', muscle: leg.muscle || 1,
         hip: { x, y: hipY, z }, reach: u + l, splay: S.splay, S,
         _footLocal: null, _footPrev: null, _planted: false });
     });
@@ -527,10 +536,13 @@ export class Zook {
         const act = quatRot(rot, leg._footVel);
         const cl = (n) => n < -8 ? -8 : n > 8 ? 8 : n;     // clamp slip → no spikes
         const vc = { x: cl(lv.x + wxr.x + act.x), y: cl(lv.y + wxr.y + act.y), z: cl(lv.z + wxr.z + act.z) };
+        // Per-part muscle strength (muscle_stiffness): a beefier leg PUSHES harder —
+        // it grips more before slipping — so where you put your strong legs matters.
+        const mus = leg.muscle || 1;
         // Support: spring up on how far the foot is below the floor, damped + clamped.
         let Fy = K_SUP * stiff * Math.max(0, GROUND_Y - F.y) - C_SUP * vc.y;
         Fy = Fy < 0 ? 0 : Fy > F_MAX ? F_MAX : Fy;
-        // Traction: oppose horizontal slip, capped by friction × load (μN).
+        // Traction: oppose horizontal slip (drives the body forward off the sweep).
         let Tx = -GRIP * vc.x, Tz = -GRIP * vc.z;
         // Movement Type: slow the inside legs when turning (manual Ch13) → the
         // backstroke is weaker on one side, so the Zook arcs round.
@@ -540,7 +552,7 @@ export class Zook {
           const k = 1 - Math.min(0.7, Math.abs(this._steer) * 0.7); Tx *= k; Tz *= k;
         }
         Tx *= settle; Tz *= settle;     // un-settled feet skitter (cadence sweet-spot)
-        const Tmag = Math.hypot(Tx, Tz), Tmax = MU * Fy + 1.5;
+        const Tmag = Math.hypot(Tx, Tz), Tmax = MU * Fy * mus + 1.5;   // strong legs grip more before slipping
         if (Tmag > Tmax) { const s = Tmax / Tmag; Tx *= s; Tz *= s; }
         b.applyImpulseAtPoint({ x: Tx * dt * boost, y: Fy * dt, z: Tz * dt * boost }, H, true);
       }
