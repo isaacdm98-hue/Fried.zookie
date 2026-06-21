@@ -1,0 +1,87 @@
+-- Behaviour: Counter
+
+
+
+
+function main()
+	return Behaviour
+end
+
+
+-- Behaviours Description -------------------------------------------------------
+
+Behaviour = {}
+
+
+Behaviour.paramaters = function()
+	local paramDefs = {
+		AgentEnum("winner", "Winner"),
+		{ name = "heightgroup", label = "Height Group", edit = "0", default = "0" }, 
+		{ name = "height", label = "Height", edit = "0", default = "0" }}	
+	return paramDefs
+end
+	
+
+Behaviour.events = function()
+	return { "Counted" }
+end
+
+
+Behaviour.validate = function()
+	ValidateAgent("winner", "Winner")
+	ValidateNumber("heightgroup", "Height Group")
+	ValidateNumber("height", "Height")
+	return
+end
+
+
+Behaviour.initialize = function(data)
+	
+	Trace("initializing counter")
+	
+	-- init behaviour code
+	Behaviour.params = Params()
+	local height = tonumber(Behaviour.params.height)
+	local group = tonumber(Behaviour.params.heightgroup)
+	
+	local count = 0
+
+	for i, v in AllAgents do
+		local g = Agent.SendMessage("GetGroup", v)
+		if g ~= 0 and g ~= nil then
+			if g == group then
+				local pos = Agent.SendMessage("GetPosition", v)
+				if Vector.GetY(pos) < height then
+					count = count+1
+				end
+			end
+		end
+	end
+	
+	local table= {}
+	table.player = {}
+	table.score = {}
+	table.player[1] = Behaviour.params.winner
+	table.score[1] = count
+	
+
+	BroadcastEvent("Counted", { scoreboard = table })
+	
+	
+end
+
+	
+Behaviour.finalize = function(data)
+	-- reset/end behaviour code		
+end
+	
+	
+Behaviour.callback = function(data)
+	-- callback event code
+end
+
+
+Behaviour.update = function(data)
+	-- general monitoring code
+	-- data.simTime & data.realTime are given to the Behaviour.update as recorded at begining of update for all behaviours
+end

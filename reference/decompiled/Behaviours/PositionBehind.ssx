@@ -1,0 +1,77 @@
+-- Behaviour: PositionBehind
+
+
+
+
+
+function main()
+	return Behaviour
+end
+
+
+-- Behaviours Description -------------------------------------------------------
+
+Behaviour = {}
+
+
+Behaviour.paramaters = function()
+	local paramDefs = {
+		AgentEnum("owner", "Owner"),
+		AgentEnum("target", "Target"),
+		{ name = "distance", label = "Distance", top = 1, default = 0, min = 0, max = 100, scale = 1 }
+	}
+	
+	return paramDefs
+end
+	
+
+Behaviour.events = function()
+	return {}
+end
+
+
+Behaviour.validate = function()
+	ValidateAgent("owner", "Owner")
+	ValidateAgent("target", "Target")
+	return
+end
+
+
+Behaviour.initialize = function(data)
+	
+	Trace("initializing positionbehind")
+	Behaviour.params = Params()
+	
+	Behaviour.position()
+	
+end
+
+	
+Behaviour.finalize = function(data)
+	-- reset/end behaviour code		
+end
+	
+	
+Behaviour.callback = function(data)
+	-- callback event code
+end
+
+
+Behaviour.update = function(data)
+	-- general monitoring code
+	-- data.simTime & data.realTime are given to the Behaviour.update as recorded at begining of update for all behaviours
+	Behaviour.position()
+end
+
+
+Behaviour.position = function()
+	local targetPosition = Agent.SendMessage("Position",Agents(Behaviour.params.target))
+	local ownerPosition = Agent.SendMessage("Position", Agents(Behaviour.params.owner))
+	local diff = targetPosition - ownerPosition
+	local length = Vector.GetLength(diff)
+	local unit = diff / length
+	local behind = unit * Behaviour.params.distance
+	local position = targetPosition + behind
+	Agent.SendMessage("SetPosition", Owner(), { position = position } )
+end
+

@@ -1,0 +1,71 @@
+-- Note: Lua stack size is set by a command line argument "Bonsai -s SIZE". The default is 4096
+
+
+-- Note: memory managed pools will resize beyond the values set here and shrink back to them,
+-- but using memory within a pre-allocated pool space is lots faster.
+
+
+-- Sets the number of engine ticks it takes to complete garbage collection. The number_of_chunks 
+-- determines the number of divisions garbage is divided into. chunk_time determines the
+-- number of cycles it takes to clear one chunk. To complete garbage collection takes number_of_chunks
+-- * chunk_time cycles. The minumum setting for number_of_chunks is 1 and chunk time is 1 though it  is 
+-- recomended much higher for both.  number_of_string_chunks deternimes the number of chunks string collection
+-- is divided into. One chunk of string collection is performed on each cycle. Note: this must be closly synced to
+-- data collection to allow enough freeing of strings to be reused for variable names for that data.
+
+
+local number_of_chunks = 30
+local chunk_time = 20
+local number_of_string_chunks = (number_of_chunks * chunk_time) * 10 -- presuming a large percentage of the strings are used for variable names that a re constantly freed and reused
+--local number_of_chunks = 1
+--local chunk_time = 1
+--local number_of_string_chunks = 1
+System.SetGC(number_of_chunks, chunk_time, number_of_string_chunks)
+
+
+
+-- presume a number of governor and world agents that can simultaniously exist
+local agentPoolSize = Agent.SetGovernorAgentPoolSize( 10 ) + Agent.SetWorldAgentPoolSize( 50 ) 
+
+
+
+-- Set number of stacked messages (i.e. inter Agent & inter VM) 
+local stackedMessages = 50
+System.SetMessageStackSize(stackedMessages);
+
+
+
+-- presume the number of messages simultanuously flying round the system. These may
+-- include active Timers, PostedMessages, as well as message stacks 
+-- (i.e. agent sends to agent, who sends to another agent)
+-- Unstacked, singly sent messages (SendMessage, System messages) and are not a memory consuption 
+-- as they are disposed of immediatly after the call has completed
+local averageTimersPerAgent = 2
+local averagePostsPerAgent = 2
+System.SetMessagePoolSize( (agentPoolSize * (averageTimersPerAgent+averagePostsPerAgent)) + stackedMessages );
+
+
+
+-- set number of function definitions the system will simultaniously support
+local sharedFunctions = 200;
+local noFunctionsPerAgent = 20;
+local totalFunctions = System.SetFunctionPoolSize((agentPoolSize * noFunctionsPerAgent) + sharedFunctions)
+
+
+local stringVarsPerAgent = 50
+System.SetStringPoolSize((agentPoolSize * (noFunctionsPerAgent + stringVarsPerAgent)) + sharedFunctions);
+
+
+-- set up size of memory managed pools for script data types
+SetPoolSize( agentPoolSize * 2 )		-- VM data types (may be returned as message sender by Agent.From)
+Agent.SetPoolSize( agentPoolSize * 2 )
+World.SetPoolSize( 50 )	
+
+-- presume a number of agents to be regularly active and an allocation of each data for each of those active agent
+local activeAgents = agentPoolSize/4;
+Vector.SetPoolSize( activeAgents * 25 )
+Quatn.SetPoolSize( activeAgents * 25 )
+Spot.SetPoolSize( activeAgents * 25 )
+Matrix.SetPoolSize( activeAgents * 25 )
+Attributes.SetPoolSize( activeAgents * 5 )
+

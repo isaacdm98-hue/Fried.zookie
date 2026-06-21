@@ -1,0 +1,28 @@
+-- AccessCodedTableKey - read/write key value in an encrypted table file
+
+HEADER = "Coded table Version 1."
+
+function main(path, file, encryption_key, mode, key, value)
+
+	local fullfile = path.."/"..file
+	if System.IsValidPath(fullfile) then
+		local table = System.ReadArchiveTable(fullfile, encryption_key)
+		if mode == "read" then
+			return table[key]
+		elseif  mode == "write" then
+			 table[key] = value
+			 System.WriteArchiveTable(fullfile, encryption_key, HEADER, table)
+			return value
+		end
+	else
+		if mode == "read" then
+			return nil
+		elseif  mode == "write" then
+			local table = {}
+			table[key] = value
+			System.WriteArchiveTable(fullfile, encryption_key, HEADER, table)
+			return value
+		end
+	end
+	
+end

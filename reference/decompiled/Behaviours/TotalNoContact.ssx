@@ -1,0 +1,105 @@
+-- Behaviour: NoContact
+
+
+
+
+
+function main()
+	return Behaviour
+end
+
+
+-- Behaviours Description -------------------------------------------------------
+
+Behaviour = {}
+
+
+Behaviour.paramaters = function()
+	local paramDefs = { { name = "timeout", label = "Timeout", edit = "0", default = "0" }, 
+		AgentEnum("winner", "Winner"),}	
+	return paramDefs
+end
+	
+
+Behaviour.events = function()
+	return { "NoContact" }
+end
+
+
+Behaviour.validate = function()
+	ValidateNumber("timeout", "Timeout")
+	ValidateAgent("winner", "Winner")
+	return
+end
+
+
+Behaviour.initialize = function(data)
+	
+	Trace("initializing nocontact")
+	
+	-- init behaviour code
+	Behaviour.params = Params()
+	Behaviour.timeout = tonumber(Behaviour.params.timeout)
+	Behaviour.time = World.SimTime()
+	Behaviour.agents = {}
+	Behaviour.lastAgent = 0
+	Behaviour.total = 0
+	
+	SendMessage("AddCallback", Owner(), { agent = "all", receiver = Agent.Me(), message = "Callback" }, {} )
+	
+end
+
+	
+Behaviour.finalize = function(data)
+	-- reset/end behaviour code	
+	SendMessage("RemoveCallback", Owner(), { agent = "all", receiver = Agent.Me(), message = "Callback" }, {ImmediateEvent()} )	
+end
+	
+	
+Behaviour.callback = function(data)
+	-- callback event code
+	
+	if data.contact ~= nil then
+		-- this is a contact callback
+		local exists = false
+		for i,v in Behaviour.agents do
+			if Equals(v.agent, data.contact.agent) then
+				v.lastContact = Behaviour.time
+				exists = 1
+				break
+			end
+		end
+		
+		if exists == false then
+			Behaviour.lastAgent = Behaviour.lastAgent+1
+			Behaviour.agents[Behaviour.lastAgent] = { agent = data.contact.agent, lastContact = Behaviour.time }
+		end
+		
+	end
+		
+end
+
+
+Behaviour.update = function(data)
+	-- general monitoring code
+	-- data.simTime & data.realTime are given to the Behaviour.update as recorded at begining of update for all behaviours
+	
+	for i,v in Behaviour.agents do
+		if Behaviour.time - v.lastContact> Behaviour.timeout then
+			if not Agent.SendMessage( "TestIntersect", Owner(), Behaviour.agents[i].agent ) then
+				Behaviour.total = Behaviour.total + 1
+				--local spec = Agent.SendMessage( "GetSpec", Behaviour.agents[i].agent )
+				table = {}
+				table.player = {}
+				table.score = {}
+				table.player[1] = Behaviour.params.winner
+				table.score[1] = Behaviour.total
+				CallManager({ name = "score",  scoreboard = table })
+			end
+			Behaviour.agents[i] = nil
+		end
+end
+	
+	Behaviour.time = data.simTime
+	
+end

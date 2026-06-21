@@ -1,0 +1,48 @@
+-- create container variables needed for testcontest script
+
+function main(spec)
+	if spec.geometries == nil then
+		spec.geometries = {}
+	end
+
+	if spec.shape == "cubeb" then
+		CreateCompositeCube(  spec.movable, spec.position, spec.rotation, spec.scale, spec.geometries )
+	end
+	--~ System.WriteTable( "during.txt",  spec)
+
+	if getn( spec.geometries ) == 0 then
+		spec.geometries = nil
+	end
+
+	return spec
+end
+	
+function CreateCompositeCube( movable, position, rotation, scale, geometries )
+	local maxSize = 4
+	local nX = Number.ceil( Vector.GetX( scale ) / maxSize )
+	local nY = Number.ceil( Vector.GetY( scale ) / maxSize )
+	local nZ = Number.ceil( Vector.GetZ( scale ) / maxSize )
+	local sX = Vector.GetX( scale ) / nX
+	local sY = Vector.GetY( scale ) / nY
+	local sZ = Vector.GetZ( scale ) / nZ
+	local subScale = Vector.New( sX, sY, sZ )
+	local nGeometries = 0
+	for iX = 1, nX do
+		for iY = 1, nY do
+			for iZ = 1, nZ do
+				--local p = position + (- 0.5 * scale + Vector.New( (iX-1) *sX, (iY-1)*sY, (iZ-1)*sZ ) + 0.5 * subScale ) *rotation
+				local p = (- 0.5 * scale + Vector.New( (iX-1) *sX, (iY-1)*sY, (iZ-1)*sZ ) + 0.5 * subScale ) --*rotation
+				local spec = {}
+				spec.movable = movable
+				spec.position = p
+				spec.rotation = Quatn.New() --rotation
+				spec.scale = subScale
+				spec.shape = "cube"
+				Trace("Sub cube position % scale %", p, subScale )
+				geometries[ getn( geometries ) + 1 ] = spec
+			end
+		end
+	end
+	System.WriteTable( "during_geometries.txt",  geometries)
+end
+

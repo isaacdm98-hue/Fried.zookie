@@ -1,0 +1,166 @@
+-- Behaviour: RandomMoveNoScore
+
+
+
+
+
+function main()
+	return Behaviour
+end
+
+
+-- Behaviours Description -------------------------------------------------------
+
+Behaviour = {}
+
+
+Behaviour.paramaters = function()
+	local paramDefs = {
+		AgentEnum("target", "Base Target"),
+		AgentList("targets", "Contact targets"),
+		{ name = "distanceX", label = "Max Distance X", default = 0, min = 0, max = 100, scale = 1 },
+		{ name = "distanceY", label = "Max Distance Y", default = 0, min = 0, max = 100, scale = 1 },
+		{ name = "distanceZ", label = "Max Distance Z", default = 0, min = 0, max = 100, scale = 1 },
+		{ name = "time", label = "Time",  default = -1, min = -1, max = 300},
+		{ name = "startRandom", label = "Start random",  default = false, check = 1 }
+
+	}
+	
+	return paramDefs
+end
+	
+
+Behaviour.events = function()
+	return {"Move", "EndScore" }
+end
+
+
+Behaviour.validate = function()
+	ValidateAgent("target", "Base Target")
+	ValidateAgentList("targets", "Contact targets")
+	return
+end
+
+
+Behaviour.initialize = function(data)
+	
+	Trace("initializing randommovenoscore")
+	
+	-- init behaviour code
+	Behaviour.params = Params()
+	
+	-- params:
+	-- distance
+	-- target
+	
+	Behaviour.score = {}
+	if Behaviour.params.targets ~= nil then
+		for index, value in Behaviour.params.targets do
+		
+			local target = Agents(value)
+			SendMessage("AddCallback", Owner(), { agent = target, receiver = Agent.Me(), message = "Callback" }, {} )
+			Behaviour.score[index] = 0		
+		end
+	end
+	
+	Behaviour.started = false
+	Behaviour.last_contact = 0
+	
+end
+
+	
+Behaviour.finalize = function(data)
+	-- reset/end behaviour code		
+
+	for index, value in Behaviour.params.targets do
+
+		local target = Agents(value)
+		SendMessage("RemoveCallback", Owner(), { agent = target, receiver = Agent.Me(), message = "Callback" }, {ImmediateEvent()} )
+
+		
+	end
+end	
+	
+
+Behaviour.callback = function(data)
+	-- callback event code	
+	if data.contact ~= nil then
+		local position = Behaviour.move()
+		BroadcastEvent("Move", { position = position})
+		
+		local time = World.SimTime()
+		if time > Behaviour.last_contact + 0.1 then
+			for index, value in Behaviour.params.targets do
+				if Equals(data.contact.agent, Agents(value)) == 1 then
+					Behaviour.score[index] = Behaviour.score[index]+1
+				end
+			end
+			
+			local table= {}
+			table.player = {}
+			table.score = {}
+			local i = 0
+			for index, value in Behaviour.params.targets do
+				i = i+1
+				table.player[i] = value
+				table.score[i] = Behaviour.score[index]
+			end
+			Behaviour.last_contact = time
+		end
+		
+	end
+	
+
+end
+
+
+Behaviour.update = function(data)
+	
+	if Behaviour.started == false then
+		if Behaviour.params.startRandom ~= 1 then
+			-- uses set up poistion to start from
+			Behaviour.startTime = World.SimTime()
+		else
+			-- first position is random
+			Behaviour.move()
+		end
+		Behaviour.started = 1
+		return
+	end
+	
+	-- general monitoring code
+	-- data.simTime & data.realTime are given to the Behaviour.update as recorded at begining of update for all behaviours
+	if Behaviour.params.time <= 0 then
+		return
+	end
+	
+	local diff = data.simTime - Behaviour.startTime
+	local limit = Behaviour.params.time
+	if diff  >= limit then
+		Behaviour.move()
+	end
+	
+end
+
+
+Behaviour.move = function()
+	
+	local x = Number.random() * Behaviour.params.distanceX
+	local y = Number.random() * Behaviour.params.distanceY
+	local z = Number.random() * Behaviour.params.distanceZ
+	if Number.random() > 0.5 then
+		x = -x
+	end
+	if Number.random() > 0.5 then
+		y = -y
+	end
+	if Number.random() > 0.5 then
+		z = -z
+	end
+	local position = Agent.SendMessage("Position", Agents(Behaviour.params.target)) + Vector.New(x, y, z)
+	Agent.SendMessage("SetPosition", Owner(), { position =  position })
+
+	Behaviour.startTime = World.SimTime()
+	return position
+	
+end

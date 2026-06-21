@@ -1,0 +1,66 @@
+-- Behaviour: Counter
+
+
+
+
+function main()
+	return Behaviour
+end
+
+
+-- Behaviours Description -------------------------------------------------------
+
+Behaviour = {}
+
+
+Behaviour.paramaters = function()
+	local paramDefs = {
+		AgentEnum("loser", "Loser")
+	}
+	return paramDefs
+end
+	
+
+Behaviour.events = function()
+	return { "Loser" }
+end
+
+
+Behaviour.validate = function()
+	ValidateAgent("loser", "Loser")
+	return
+end
+
+
+Behaviour.initialize = function(data)
+	
+	Trace("initializing loser")
+	
+	Behaviour.params = Params()
+	
+	local table= {}
+	table.player = {}
+	table.score = {}
+	table.player[1] = Behaviour.params.loser
+	table.score[1] = 0
+	
+	BroadcastEvent("Loser", { scoreboard = table })
+	
+	
+end
+
+	
+Behaviour.finalize = function(data)
+	-- reset/end behaviour code		
+end
+	
+	
+Behaviour.callback = function(data)
+	-- callback event code
+end
+
+
+Behaviour.update = function(data)
+	-- general monitoring code
+	-- data.simTime & data.realTime are given to the Behaviour.update as recorded at begining of update for all behaviours
+end

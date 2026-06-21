@@ -1,0 +1,11 @@
+# Sets window title to Product name and app name (if product composed of mulitple apps) otherwise just the Product Name
+function main(appName)
+	--~ Execute( "LoadConfigTable", System.GetLabeledPath("ROOT") .. "/Product.inf" ) -- sets up 'product_name' and version (and whether this is a component that should be specified on the task bar)
+	--~ local title = "Untitled"
+	--~ if Config.Get("package_components","_SINGLECOMPONENT") == "_SINGLECOMPONENT" then
+		--~ title = Config.Get("package_name",appName) .. " v" .. Config.Get(Config.Get("package_name","Unknown Package"), "DEV") .. " (build " .. Config.Get("install_build_num", "0") .. "." .. System.BuildNumber() .. ")"
+	--~ else
+		--~ title = appName .. " - " .. Config.Get("package_name",appName) .. " v" .. Config.Get(Config.Get("package_name","Unknown Package"), "XX") .. " (build " .. Config.Get("install_build_num", "0") .. "." .. System.BuildNumber() .. ")"
+	--~ end	
+	Config.Set( "window_title",  appName )
+end

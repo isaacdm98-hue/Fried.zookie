@@ -1,0 +1,58 @@
+-- Behaviour: Freeze
+
+
+
+
+
+function main()
+	return Behaviour
+end
+
+
+-- Behaviours Description -------------------------------------------------------
+
+Behaviour = {}
+
+
+Behaviour.paramaters = function()
+	local paramDefs = {
+		{ name = "speed", label = "Speed", top = 1, default = 1, min = 1, max = 5, scale = 1 }
+	}
+	
+	return paramDefs
+end
+	
+
+Behaviour.events = function()
+	return {}
+end
+
+
+Behaviour.validate = function()
+	return
+end
+
+
+Behaviour.initialize = function(data)
+	
+	Trace("initializing freeze")
+	Behaviour.params = Params()
+	SendMessage("StopMoving", Owner(), { speed =  Behaviour.params.speed }, {ImmediateEvent()} )
+	
+end
+
+	
+Behaviour.finalize = function(data)
+	-- reset/end behaviour code		
+end
+	
+	
+Behaviour.callback = function(data)
+	-- callback event code
+end
+
+
+Behaviour.update = function(data)
+	-- general monitoring code
+	-- data.simTime & data.realTime are given to the Behaviour.update as recorded at begining of update for all behaviours
+end

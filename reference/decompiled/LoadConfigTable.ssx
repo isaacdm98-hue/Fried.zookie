@@ -1,0 +1,6 @@
+function main(filename)
+	local settings = System.ReadTable( filename)
+	for index, value in settings do
+		Config.Set( index, value )
+	end
+end

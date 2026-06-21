@@ -1,0 +1,42 @@
+local inHouse =  Config.Get("studio_mode", false);
+if inHouse ~= false then
+	Config.Set("product_directory", ".")
+	Config.Set("default_teams_directory", "./Teams/")
+	Config.Set("product", ".")
+else
+	-- BAMZOOKi product config
+	local product = Config.Get("product", "BAMZOOKi")
+	--Directories are created under the HOME directory (Application Data)
+	local product_dir = System.CreateHomeDirectory(product)
+	Config.Set("product_directory", product_dir)
+	
+	-- make product directory writeable but not applicationdata superdir
+	System.AddValidWriteSubdir(product_dir)
+	local home = System.GetLabeledPath("HOME")
+	System.RemoveValidWritePath(home)
+	
+	local root = System.GetLabeledPath("ROOT")
+	if System.IsValidPath(product_dir .. "/Teams/myZooks") == false then
+		System.CreateHomeDirectory(product.."/Teams")
+		System.CreateHomeDirectory(product.."/Teams/myZooks")
+		System.CopyDirectory( root.."/NewTeam", product_dir.."/Teams/myZooks", 0 )
+	end
+	if System.IsValidPath(product_dir .. "/Contests") == false then
+		System.CopyDirectory( root.."/Contests", product_dir.."/Contests", 0 )
+	end
+	if System.IsValidPath(product_dir .. "/Videos") == false then
+		System.CreateHomeDirectory(product.."/Videos")
+	end
+
+	System.CreateHomeDirectory(product.."/Bonsai")
+	System.CreateHomeDirectory(product.."/Bonsai/Scripts")
+	System.CreateHomeDirectory(product.."/Bonsai/Agents")
+	System.CreateHomeDirectory(product.."/Bonsai/Agents/Governor")
+	System.CreateHomeDirectory(product.."/Bonsai/Agents/World")
+	
+		
+	Config.Set("default_teams_directory", product_dir .. "/Teams/")
+end
+
+Config.Set("registration_email", "register@gamewaredevelopment.com")
+

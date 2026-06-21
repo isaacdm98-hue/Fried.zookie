@@ -1,0 +1,80 @@
+
+
+function main (option)
+
+	local services
+	if Config.Get("bamzooki_extra", false) == 1 then
+		if Config.Get("bamzooki_extra_upgrade", false) == 1 then
+			services = { "CBBC", "Gameware" } -- gameware upgrade to bbc product
+		else
+			services =  { "Gameware" }
+		end
+	else
+		services = { "CBBC" }
+	end
+	
+	if option == 0 then
+		return services
+	end
+	
+	local current_service = AccessRegistry("read", "web_service", nil)
+	if current_service == nil then
+		current_service = services[1]
+	end
+	
+	if option == 1 then
+		-- configure
+		-- Download the OnlineConfiguration agent. This configures everything else.
+		if current_service ==  "Gameware" then
+			-- web_server:   server housing the OnlineConfiguration agent
+			Config.Set("web_server", "www.zooklabs.com")
+			--~ Config.Set("web_server", "bamzooki.2ne1.com")
+			--~ Config.Set("web_server", "www.gamewaredevelopment.com")
+			--~ Config.Set("web_server", "192.168.42.145")
+			--~ Config.Set("web_server", "baldrick.2ne1.com")
+			-- web_agent_path:   path on server to agents
+			Config.Set("web_agent_path", "/bonsai/agents/")
+			--~ Config.Set("web_agent_path", "/upload/")
+			-- web_online_configuration_agent:   name of online configuration agent
+			Config.Set("web_online_configuration_agent", "OnlineConfigGW")
+
+			-- web_registration_site:   Where you go to register yourself
+			Config.Set("web_registration_site", "www.zooklabs.com")
+			-- web_site_url:   Launch page for web browser
+			Config.Set("web_site_url", "http://www.zooklabs.com/")
+		elseif current_service ==  "CBBC" then
+			-- web_server:   server housing the OnlineConfiguration agent
+
+			--~ Config.Set("web_server", "192.168.42.145")
+			--~ Config.Set("web_agent_path", "/BAMZOOKi/bonsai/agents/")
+			
+			--~ Config.Set("web_server", "www.gamewaredevelopment.com")
+			--~ Config.Set("web_agent_path", "/BAMZOOKi/CBBC/Bonsai/Agents/")
+
+			-- Dev3
+			--~ Config.Set("web_server", "dev3.mh.bbc.co.uk")
+			-- Live
+			Config.Set("web_server", "www.bbc.co.uk")
+			Config.Set("web_agent_path", "/cbbc/bamzooki/bonsai/agents/")
+
+			Config.Set("web_online_configuration_agent", "OnlineConfigCBBC")
+
+			-- web_registration_site:   Where you go to register yourself
+			Config.Set("web_registration_site", "http://www.bbc.co.uk/cbbc/bamzooki")
+			-- web_site_url:   Launch page for web browser
+			Config.Set("web_site_url", "http://www.bbc.co.uk/cbbc/bamzooki")
+
+		end
+	end
+	
+	return current_service
+	
+end
+	
+
+function AccessRegistry(mode, key, value)
+	local path = Config.Get("product_directory", ".")
+	local encryptionKey = Config.Get("registry_key", "")
+	return Execute("AccessCodedTableKey", path, "Registry.sdx", encryptionKey, mode, key, value)
+end
+	

@@ -1,0 +1,41 @@
+-- set variables to alter contests for studio config
+
+function main()
+	Config.Set( "episode", "Test" )
+	Config.Set("munki_trace", 1)
+	Config.Set( "bluescreen_colour_red", 0 )
+	Config.Set( "bluescreen_colour_green", 0 )
+	Config.Set( "bluescreen_colour_blue", 1 )
+	Config.Set("shadow_volume_length", 3)
+	Config.Set("mesh_resolution", 2)
+	Config.Set("fogging", 0)		-- 0 = no fogging | 1 = go foggng
+	
+	-- world scale is got remotly by tv camera client machines so we can have realworld and sim world on differant scales
+	-- WARNING - should this be '1' now?
+	local worldScale = 0.04
+	Config.Set("worldscale", worldScale)
+	
+	local x_off = 0
+	local y_off = 0
+	local z_off = 0
+	local table_offset = Vector.New(x_off, y_off, z_off)
+
+	---SetWorldOffset now caters for scale local table_offset = Vector.New(x_off/worldScale, y_off/worldScale, z_off/worldScale)
+
+
+	Config.Set("worldOffset", table_offset)
+
+	Config.Set( "blueteam_red", 4/255 )
+	Config.Set( "blueteam_green", 220/255 )
+	Config.Set( "blueteam_blue", 224/255 )
+	Config.Set( "redteam_red", 247/255 )
+	Config.Set( "redteam_green", 38/255 )
+	Config.Set( "redteam_blue", 27/255 )
+
+	--Sets up object colour
+	
+	Config.Set( "contestobject_red", 158/255 )
+	Config.Set( "contestobject_green", 157/255 )
+	Config.Set( "contestobject_blue", 157/255 )
+end
+	

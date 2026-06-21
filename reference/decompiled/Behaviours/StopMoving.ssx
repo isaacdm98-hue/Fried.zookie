@@ -1,0 +1,58 @@
+-- Behaviour: StopMoving
+
+
+
+
+
+function main()
+	return Behaviour
+end
+
+
+-- Behaviours Description -------------------------------------------------------
+
+Behaviour = {}
+
+
+Behaviour.paramaters = function()
+	local paramDefs = {
+		
+	}
+	
+	return paramDefs
+end
+	
+
+Behaviour.events = function()
+	return {}
+end
+
+
+Behaviour.validate = function()
+	return
+end
+
+
+Behaviour.initialize = function(data)
+	
+	Trace("initializing move stop")
+	Behaviour.params = Params()
+	SendMessage("HaltMove", Owner(), {}, {} )
+	
+end
+
+	
+Behaviour.finalize = function(data)
+	-- reset/end behaviour code		
+end
+	
+	
+Behaviour.callback = function(data)
+	-- callback event code
+end
+
+
+Behaviour.update = function(data)
+	-- general monitoring code
+	-- data.simTime & data.realTime are given to the Behaviour.update as recorded at begining of update for all behaviours
+end

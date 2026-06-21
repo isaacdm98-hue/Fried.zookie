@@ -1,0 +1,82 @@
+-- Behaviour: Timer
+
+
+
+
+
+function main()
+	return Behaviour
+end
+
+
+-- Behaviours Description -------------------------------------------------------
+
+Behaviour = {}
+
+
+Behaviour.paramaters = function()
+	local paramDefs = {
+		{ name = "time", label = "Time",  default = 1, min = 1, max = 1000},
+		{ name = "repeat_times", label = "Repeat",  default = 1, min = 1, max = 1000 }
+	}
+	
+	return paramDefs
+end
+	
+
+Behaviour.events = function()
+	return {"Timer" }
+end
+
+
+Behaviour.validate = function()
+	return
+end
+
+
+Behaviour.initialize = function(data)
+	
+	Trace("initializing timer")
+	
+	-- init behaviour code
+	Behaviour.params = Params()
+	Behaviour.started = false
+	
+end
+
+	
+Behaviour.finalize = function(data)
+	-- reset/end behaviour code		
+end	
+	
+
+Behaviour.callback = function(data)
+	-- callback event code	
+end
+
+
+Behaviour.update = function(data)
+	
+	if Behaviour.params.repeat_times == 0  then
+		return 
+	end
+	
+	
+	if Behaviour.started == false then
+		-- uses set up poistion to start from
+		Behaviour.startTime = data.simTime
+		Behaviour.started = 1
+		return
+	end
+	
+	local diff = data.simTime - Behaviour.startTime
+	local limit = Behaviour.params.time
+	if diff  >= limit then
+		BroadcastEvent("Timer", {})
+		Behaviour.params.repeat_times = Behaviour.params.repeat_times -1
+		Behaviour.startTime = data.simTime
+
+	end
+	
+end
+

@@ -1,0 +1,47 @@
+--SoftConfiguration
+
+function main(product)
+
+	if Config.Get("safe_mode", false) == 1 then
+		return
+	end
+	
+	
+	local scripts = Config.Get("product_directory", ".").."/Bonsai/Scripts/"
+
+	
+
+	-- boot other script if present	
+	local bootScripts = AccessRegistry("read", product.."_soft_boot", nil)
+	if bootScripts == nil then
+		return
+	end
+	
+	for i,v in bootScripts do
+		local file = scripts..v
+		if System.IsValidPath(file) == 1 then
+			local code = Bin.DecryptScript(Bin.ReadFile(file)..".ssx")
+			ExecuteString(code)
+		end
+	end
+	
+	
+	-- run encrypted soft  boot script is exists
+	local file = scripts..product.."_init.ssx"
+	if System.IsValidPath(file) == 1 then
+		local code =  Bin.DecryptScript(Bin.ReadFile(file))
+		ExecuteString(code, product)
+	end
+		
+end
+
+
+
+-- SUPPORT FUNCITONS ---------------------------------------------------------------------------------------------------------------------
+
+function AccessRegistry(mode, key, value)
+	local path = Config.Get("product_directory", ".")
+	local encryptionKey = Config.Get("registry_key", "")
+	return Execute("AccessCodedTableKey", path, "Registry.sdx", encryptionKey, mode, key, value)
+end
+	

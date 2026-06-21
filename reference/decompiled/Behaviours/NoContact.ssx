@@ -1,0 +1,98 @@
+-- Behaviour: NoContact
+
+
+
+
+
+function main()
+	return Behaviour
+end
+
+
+-- Behaviours Description -------------------------------------------------------
+
+Behaviour = {}
+
+
+Behaviour.paramaters = function()
+	local paramDefs = { AgentEnum("target", "Target"), { name = "timeout", label = "Timeout", edit = "0", default = "0" }, }	
+	return paramDefs
+end
+	
+
+Behaviour.events = function()
+	return { "NoContact" }
+end
+
+
+Behaviour.validate = function()
+	ValidateAgent("target", "Target")
+	ValidateNumber("timeout", "Timeout")
+	return
+end
+
+
+Behaviour.initialize = function(data)
+	
+	Trace("initializing nocontact")
+	
+	-- init behaviour code
+	Behaviour.params = Params()
+	Behaviour.timeout = tonumber(Behaviour.params.timeout)
+	Behaviour.target = Agents(Behaviour.params.target)
+	Behaviour.time = World.SimTime()
+	Behaviour.lastContact = Behaviour.time
+	Behaviour.active = 1
+	
+	if Agent.GetClass(Owner()) == "Evo" then
+		-- evos are complicated so let the target be the listener as it will have less parts
+		SendMessage("AddCallback", Behaviour.target, { agent = Owner(), receiver = Agent.Me(), message = "Callback" }, {} )
+	else
+		SendMessage("AddCallback", Owner(), { agent = Behaviour.target, receiver = Agent.Me(), message = "Callback" }, {} )
+	end
+	
+end
+
+	
+Behaviour.finalize = function(data)
+	-- reset/end behaviour code	
+	if Agent.GetClass(Owner()) == "Evo" then
+		-- zooks are complicated so let the target be the listener as it will have less parts
+		SendMessage("RemoveCallback", Behaviour.target, { agent = Owner(), receiver = Agent.Me(), message = "Callback" }, {ImmediateEvent()} )
+	else
+		SendMessage("RemoveCallback", Owner(), { agent = Behaviour.target, receiver = Agent.Me(), message = "Callback" }, {ImmediateEvent()} )
+	end	
+end
+	
+	
+Behaviour.callback = function(data)
+	-- callback event code
+	
+	if data.contact ~= nil then
+		-- this is a contact callback
+		Behaviour.lastContact = Behaviour.time
+	end
+		
+end
+
+
+Behaviour.update = function(data)
+	-- general monitoring code
+	-- data.simTime & data.realTime are given to the Behaviour.update as recorded at begining of update for all behaviours
+	Behaviour.time = data.simTime
+	
+	if Behaviour.active == 1 and Behaviour.time - Behaviour.lastContact > Behaviour.timeout then
+	
+		if Agent.GetClass(Owner()) == "Evo" then
+			-- zooks are complicated so let the target be the listener as it will have less parts
+			SendMessage("RemoveCallback", Behaviour.target, { agent = Owner(), receiver = Agent.Me(), message = "Callback" }, {ImmediateEvent()} )
+		else
+			SendMessage("RemoveCallback", Owner(), { agent = Behaviour.target, receiver = Agent.Me(), message = "Callback" }, {ImmediateEvent()} )
+		end	
+		
+		BroadcastEvent("NoContact", { target = Behaviour.target })
+		Behaviour.active = false
+	
+	end
+	
+end

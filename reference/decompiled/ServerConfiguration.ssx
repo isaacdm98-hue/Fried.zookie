@@ -1,0 +1,15 @@
+-- frequency of network updates in seconds
+Config.Set("visual_broadcast", 0.02);
+
+-- sets the ip address of the server
+
+--Config.Set("server", "10.0.0.8")
+Config.Set("server", "10.134.20.0") 
+--Config.Set("server", "10.134.20.100") 
+
+
+-- sets address of RMT server (local if blank)
+Config.Set("rmt_server","10.134.20.103")	
+
+-- sets address of Contest Monitor server (local if blank)
+Config.Set("contest_monitor_server", "10.134.20.103")

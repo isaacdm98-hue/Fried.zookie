@@ -1,0 +1,98 @@
+-- Behaviour: MonitorDistance
+
+
+
+
+
+function main()
+	return Behaviour
+end
+
+
+-- Behaviours Description -------------------------------------------------------
+
+Behaviour = {}
+
+
+Behaviour.paramaters = function()
+	local paramDefs = {
+		AgentEnum("target", "Target"),
+		{ name = "distance", label = "Distance", top = 1, default = 0, min = -100, max = 100, scale = 1 }				
+	}
+	
+	return paramDefs
+end
+	
+
+Behaviour.events = function()
+	return { "Distance", "Reset" }
+end
+
+
+Behaviour.validate = function()
+	ValidateAgent("target", "Target")
+	return
+end
+
+
+Behaviour.initialize = function(data)
+	
+	Trace("initializing monitordistance")
+	Behaviour.params = Params()
+	
+	local distance = Behaviour.distance()
+
+	if ((Behaviour.params.distance < 0 and distance < -Behaviour.params.distance) or
+	 (Behaviour.params.distance > 0 and distance > Behaviour.params.distance))  then
+		 -- in alert zone, do we require alert or has it been done
+		Behaviour.alert = false
+	else
+		-- not in alert zone, we require an alert next time
+		Behaviour.alert = 1
+	end
+	
+end
+
+	
+Behaviour.finalize = function(data)
+	-- reset/end behaviour code		
+end
+	
+	
+Behaviour.callback = function(data)
+	-- callback event code
+end
+
+
+Behaviour.update = function(data)
+	-- general monitoring code
+	-- data.simTime & data.realTime are given to the Behaviour.update as recorded at begining of update for all behaviours
+	local distance = Behaviour.distance()
+	
+	--if negative distance requires alert when less than, posative distance require alert when greater than
+	if ((Behaviour.params.distance < 0 and distance < -Behaviour.params.distance) or
+	 (Behaviour.params.distance > 0 and distance > Behaviour.params.distance))  then
+		 -- in alert zone, do we require alert or has it been done
+		 if Behaviour.alert == 1 then
+			 Behaviour.alert = false
+			 BroadcastEvent("Distance", {})
+		end
+	else
+		-- not in alert zone, we require an alert next time
+		if Behaviour.alert == false then
+			BroadcastEvent("Reset", {})
+			Behaviour.alert = 1
+		end
+	end
+	
+end
+
+
+Behaviour.distance = function()
+	local targetPosition = Agent.SendMessage("Position", Agents(Behaviour.params.target))
+	local myPosition = Agent.SendMessage("Position", Owner())
+	local diff = targetPosition - myPosition
+	local length = Vector.GetLength(diff)
+	return length
+end
+

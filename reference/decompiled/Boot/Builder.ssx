@@ -1,0 +1,52 @@
+	-- This builder can operate as "BAMZOOKi Zook Kit" OR "BAMZOOKi Zook Kit Extra"
+	Config.Set("app_name","Zook-kit")
+	Execute("BuildConfiguration") -- done early as it sets builder_name to either "BAMZOOKi Zook Kit" OR "BAMZOOKi Zook Kit Extra"
+
+	Config.Set( "throw_bad_messages" , false )
+	Execute("MemoryConfiguration")
+	Execute("ProductConfiguration")
+	Config.Set( "exclusive", 1 )
+	
+	--~ Execute("MakeWindowCaption", Config.Get("builder_name", "Builder"))
+	Execute("MakeWindowCaption", Config.Get( "full_package_string", "" ))
+	
+	Config.Set( "physically_connected_integrity", false )
+	Config.Set( "auto_set_inertial_tensor", 1 )
+	Execute("PhysicsConstants")
+	Config.Set( "show_invisible", 0 )
+	Config.Set( "panel_colour_red", 1 )
+	Config.Set( "panel_colour_green", 1 )
+	Config.Set( "panel_colour_blue", 1 )
+	Config.Set( "panel_colour_alpha", .6 )
+	Config.Set( "bluescreen_colour_red", 0 )
+	Config.Set( "bluescreen_colour_green", 0.6667 )	
+	Config.Set( "bluescreen_colour_blue", 0.678 )
+	Config.Set("fogging", 1)		-- 0 = no fogging | 1 = go foggng
+	Config.Set( "fog_start", 40 )
+	Config.Set( "fog_end", 80 )
+	Config.Set("target_red", 1)
+	Config.Set("target_green", 0)
+	Config.Set("target_blue", 0)
+	--Config.Set("stencil_shadows", 0)
+	--Config.Set("shadow_volume_length", 1.0)
+	--Config.Set("mesh_resolution", 2)
+	local dir = Config.Get("product_directory", ".")
+	Execute( "LoadConfigTable", dir .. "/Builder.cfg" )
+
+	Config.Set("registry_key", "its mad out there")
+	Execute("SoftConfiguration", "Builder") -- must be after product config
+	Execute("BuildConfiguration") -- must be run after executing LoadConfigTable so the values are not overwritted AND BEFORE GENOME CONFIG SO BUILD DEFINES IF BLOODLINE IN USE
+	Execute( "GenomeConfiguration" ) -- must be run after executing LoadConfigTable so the values are not overwritted
+
+	mainWindow = Agent.Create("SimpleFrame")
+	
+	world = World.Create()
+	Agent.Create("GlobalKeys", world)
+
+	builder = Agent.Create("Builder", world, mainWindow)
+
+	System.MainLoop()
+	
+	Agent.Destroy( builder )
+	World.Destroy(world)
+	Agent.Destroy(mainWindow)

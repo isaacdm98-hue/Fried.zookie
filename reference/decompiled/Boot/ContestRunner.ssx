@@ -1,0 +1,46 @@
+Config.Set("app_name","Simulator")
+Execute("BuildConfiguration")
+
+Execute("MemoryConfiguration")
+Execute("ProductConfiguration")
+--Execute("WebConfiguration", 1)
+Config.Set( "exclusive", 1 )
+
+Execute("MakeWindowCaption", Config.Get( "full_package_string", "" ))
+
+Config.Set( "physically_connected_integrity", false )
+Config.Set( "auto_set_inertial_tensor", 1 )
+Execute("PhysicsConstants")
+Config.Set( "show_invisible", 0 )
+Config.Set( "panel_colour_red", 1 )
+Config.Set( "panel_colour_green", 1 )
+Config.Set( "panel_colour_blue", 1 )
+Config.Set( "panel_colour_alpha", .6 )
+Config.Set( "bluescreen_colour_red", 0 )
+Config.Set( "bluescreen_colour_green", 0.667 ) -- 170 (0.66666666666666666666666666666667)
+Config.Set( "bluescreen_colour_blue", 0.678 ) -- 173 (0.67843137254901960784313725490196)
+Config.Set("fogging", 1)		-- 0 = no fogging | 1 = go foggng
+Config.Set( "fog_start", 40 )
+Config.Set( "fog_end", 80 )
+Config.Set("target_red", 1)
+Config.Set("target_green", 0)
+Config.Set("target_blue", 0)
+--Config.Set("stencil_shadows", 0)
+--Config.Set("shadow_volume_length", 1.0)
+--Config.Set("mesh_resolution", 2)
+local dir = Config.Get("product_directory", ".")
+Execute( "LoadConfigTable", dir .. "ContestRunner.cfg" )
+
+Execute( "GenomeConfiguration" ) -- must be run after executing LoadConfigTable so the values are not overwritted
+Config.Set( "auto_GUI_resize", false )
+
+mainWindow = Agent.Create("SimpleFrame")
+
+
+editor = Agent.Create("ContestRunner")
+
+System.MainLoop()
+
+Agent.Destroy( editor )
+Agent.Destroy(mainWindow)
+

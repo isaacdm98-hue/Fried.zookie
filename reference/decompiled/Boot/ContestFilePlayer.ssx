@@ -1,0 +1,92 @@
+Config.Set("app_name","Motion Player")
+Execute("BuildConfiguration")
+
+Execute("PlaybackMemoryConfiguration")
+Execute("ServerConfiguration")
+Execute("ProductConfiguration")
+
+Execute("MakeWindowCaption", Config.Get( "full_package_string", "" ))
+
+Config.Set("worldscale", 1) -- set default value to be overwritten in studio settings
+Execute("StudioSettings")
+Execute("PhysicsConstants") -- to set random seed
+
+Config.Set("target_red", 1)
+Config.Set("target_green", 0)
+Config.Set("target_blue", 0)
+--Config.Set("stencil_shadows", 1)		-- no shadows by default on the contest simulation machine
+Config.Set("v_sync",false)
+Config.Set("supress_textures",false)
+Config.Set("shadow_catcher_height", -6.25)
+Config.Set("max_tick_size", 0.0625 )
+Config.Set("texture_path", "NewTeam/Textures;Agents/World/Target")
+--Config.Set("anamorphic", 1 )
+
+--Config variables  (substitute 1-4 for N) - see SplitScreen.agent for defaults
+-- cameraN_zook    number specifying zook to track -1 = none     0 = zook1 & zook5    1 = zook1(green)   5 = zook5(red)
+-- cameraN_target    vector specifying what point the camera is pointer at (only relevant for cameraN_zook = -1)
+-- cameraN_offset    vector specifying position of camera relative to target
+-- cameraN_angle   number specifying vertical FOV angle of camera in degrees (horizontal angle is calulated depending on "anamorphic" - see below)
+-- anamorphic   false (default) for ordinary aspect ratio calculated on window size  1 for anamorphic (maps 4:3 to 16:9)
+
+Config.Set( "auto_GUI_resize", false )
+
+
+local dir = Config.Get("product_directory", ".")
+Execute( "LoadConfigTable", dir .. "/ContestFilePlayer.cfg" )
+
+local mainWindow = Agent.Create("SimpleFrame")
+
+world = World.Create(2)
+
+Agent.Create("GlobalKeys", world)
+local splitScreen = Agent.Create("SplitScreen", world, {} )
+local visualPlayer = Agent.Create( "VisualFilePlayer", world, splitScreen )
+
+local commandline = System.GetCommandLine()
+local start, finish = String.strfind( commandline, "-f" )
+local title = ""
+local tempFile
+VIDEO_PATH = Config.Get("product_directory", ".").."/Videos/"
+if start ~= nil then
+	file = String.strsub( commandline, finish + 2 )
+	--local debug = { file = file }
+	--System.WriteTable( Config.Get("product_directory", ".").."/".."test", debug )
+	if String.strsub( file, 1, 1 ) == "\"" then
+		file = String.strsub( file, 2 )
+	end
+	if String.strsub( file, -1 ) == "\"" then
+		file = String.strsub( file, 1, -2 )
+	end	
+	-- about to do pattern searching for base name. filebase= String.strsub( file, String.strfind( file, "\.bvz$", -1) )
+	
+	if file ~= nil then
+		tempFile= Number.random(999999) .. ".bmv"
+		System.Unzip( file, VIDEO_PATH..tempFile )
+		Agent.PostMessage("SetTitleFromFilename",visualPlayer, 0.03, file)
+		Agent.PostMessage("OpenFileNoUI",visualPlayer, 0.03, VIDEO_PATH..tempFile)
+	else
+		Agent.PostMessage("SelectFile",visualPlayer, 0.03)
+	end
+else
+	Agent.PostMessage("SelectFile",visualPlayer, 0.03)
+end
+
+System.MainLoop()
+
+Trace ("Cleaning up")
+-- get temp file name before we zap the agent
+local visplayerTemp = Agent.SendMessage( "GetTempName", visualPlayer )
+Agent.Zap()
+
+-- safe to clean up now
+if tempFile ~= nil then
+	Trace ("Cleaning up tempFile" .. tempFile)
+	System.DeleteFile( VIDEO_PATH..tempFile )
+end
+if visplayerTemp ~= nil then
+	Trace ("Cleaning up visplayerTemp" .. visplayerTemp)
+	System.DeleteFile(visplayerTemp)
+end
+
+	

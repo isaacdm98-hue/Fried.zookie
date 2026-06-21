@@ -1,0 +1,128 @@
+-- Behaviour: Follow
+
+
+
+
+
+function main()
+	return Behaviour
+end
+
+
+-- Behaviours Description -------------------------------------------------------
+
+Behaviour = {}
+
+
+Behaviour.paramaters = function()
+	local paramDefs = {
+		AgentList("targets", "Targets"),
+		{ name = "loop", label = "Loop",  default = 0, min = 0, max = 1000},
+		{ name = "startRandom", label = "Start random",  default = false, check = 1 }
+	}
+	
+	return paramDefs
+end
+	
+
+Behaviour.events = function()
+	return { "Contact", "Loop", "Finished" }
+end
+
+
+Behaviour.validate = function()
+	ValidateAgentList("targets", "Targets")
+	return
+end
+
+
+Behaviour.initialize = function(data)
+	
+	Trace("initializing follow")
+	
+	-- init behaviour code
+	Behaviour.params = Params()
+	
+	Behaviour.currentTarget = 0
+	Behaviour.totalTargets = 0
+	Behaviour.loop = Behaviour.params.loop
+	for index, value in Behaviour.params.targets do
+		Behaviour.totalTargets = Behaviour.totalTargets+1
+	end
+	if Behaviour.params.startRandom == 1 then
+		local n = Number.random()
+		Behaviour.currentTarget = Number.floor(n * Behaviour.totalTargets)
+	end
+	
+	Behaviour.setNextTarget()
+	
+	
+end
+
+	
+Behaviour.finalize = function(data)
+	-- reset/end behaviour code		
+end
+	
+	
+Behaviour.callback = function(data)
+	-- callback event code
+	
+	if data.contact ~= nil then
+		-- this is a contact callback
+		
+		if Agent.GetClass(Owner()) == "Evo" then
+			-- zooks are complicated so let the target be the listener as it will have less parts
+			SendMessage("RemoveCallback", Behaviour.target, { agent = Owner(), receiver = Agent.Me(), message = "Callback" }, {ImmediateEvent()} )
+		else
+			SendMessage("RemoveCallback", Owner(), { agent = Behaviour.target, receiver = Agent.Me(), message = "Callback" }, {ImmediateEvent()} )
+		end
+		
+		BroadcastEvent("Contact", { target = Behaviour.target })
+
+		Behaviour.setNextTarget()		
+		
+	end
+	
+end
+
+
+Behaviour.update = function(data)
+	-- general monitoring code
+	-- data.simTime & data.realTime are given to the Behaviour.update as recorded at begining of update for all behaviours
+end
+
+
+Behaviour.setNextTarget = function()
+
+	if (Behaviour.currentTarget == Behaviour.totalTargets and Behaviour.loop <= 0) then
+		BroadcastEvent("Finished", {})
+	else
+		
+		if Behaviour.currentTarget == Behaviour.totalTargets then
+			Behaviour.currentTarget = 0
+			Behaviour.loop = Behaviour.loop - 1
+			BroadcastEvent("Loop", {})
+		end
+		
+		Behaviour.currentTarget = Behaviour.currentTarget+1
+	
+		Behaviour.target = Agents(Behaviour.params.targets[Behaviour.currentTarget])
+		
+		Behaviour.segment = Agent.SendMessage("TargetSegmentID", Behaviour.target)
+		if Behaviour.segment == nil then
+			Throw("Can not set target. Root segment not attainable from agent: %", Behaviour.target)
+		end
+				
+		SendMessage("SetTarget", Owner(), { target = Behaviour.target, segment = Behaviour.segment }, { Event("Contact") })
+		
+		if Agent.GetClass(Owner()) == "Evo" then
+			-- evos are complicated so let the target be the listener as it will have less parts
+			SendMessage("AddCallback", Behaviour.target, { agent = Owner(), receiver = Agent.Me(), message = "Callback" }, {Event("Contact")} )
+		else
+			SendMessage("AddCallback", Owner(), { agent = Behaviour.target, receiver = Agent.Me(), message = "Callback" }, {Event("Contact")} )
+		end
+		
+	end
+end
+	

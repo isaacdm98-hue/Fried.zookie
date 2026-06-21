@@ -340,7 +340,7 @@ export class Zook {
     // can win). Grip is friction-limited by weight (μ·N summed ≈ μ·mg whatever
     // the foot count), so legs change STABILITY and gait, never a forced optimum.
     const col = R.ColliderDesc.cuboid(w / 2, h / 2, l / 2)
-      .setFriction(0.3).setRestitution(0).setDensity(0.95);
+      .setFriction(0.3).setRestitution(0.3).setDensity(0.95);   // Restitution 0.3 = real Karma default
     if (R.CoefficientCombineRule) col.setFrictionCombineRule(R.CoefficientCombineRule.Min);
     this.world.createCollider(col, this._body);
 

@@ -1,0 +1,93 @@
+-- Behaviour: Finish
+
+
+
+
+function main()
+	return Behaviour
+end
+
+
+-- Behaviours Description -------------------------------------------------------
+
+Behaviour = {}
+
+
+Behaviour.paramaters = function()
+	local paramDefs = {{ name = "invert", label = "Invert winner", check = false, default = false }}	
+	return paramDefs
+end
+	
+
+Behaviour.events = function()
+	return { "Finish" }
+end
+
+
+Behaviour.validate = function()
+	return
+end
+
+
+Behaviour.initialize = function(data)
+	
+	Trace("initializing finish")
+	
+	-- init behaviour code
+	Behaviour.params = Params()
+	BroadcastEvent("Finish", {})
+	if data.event.data.scoreboard ~= nil then
+		--scoreboard already created
+		CallManager({ name = "finish", scoreboard = data.event.data.scoreboard })
+	elseif data.event.data.target ~= nil then
+		local winner = 1
+		local other = 0
+		if Behaviour.params.invert == 1 then
+			winner = 0
+			other = 1
+		end
+		local group = Agent.SendMessage("GetGroup", data.event.data.target)
+		local index = 0
+		table = {}
+		table.player = {}
+		table.score = {}
+		
+		for i, v in AllAgents do
+			if Agent.GetClass(v) == "Evo" then
+				local g = Agent.SendMessage("GetGroup", v)
+				if g ~= nil and g ~= 0 then
+					index = index+1
+					table.player[index] = i
+					if g == group then
+						table.score[index] = winner
+					else
+						table.score[index] = other
+					end
+				end
+			end
+		end
+		
+				
+		CallManager({ name = "finish",  scoreboard = table })
+	
+	else
+		CallManager({ name = "finish",  scoreboard = nil })
+	end
+	
+end
+
+	
+Behaviour.finalize = function(data)
+	-- reset/end behaviour code		
+end
+	
+	
+Behaviour.callback = function(data)
+	-- callback event code
+end
+
+
+Behaviour.update = function(data)
+	-- general monitoring code
+	-- data.simTime & data.realTime are given to the Behaviour.update as recorded at begining of update for all behaviours
+end

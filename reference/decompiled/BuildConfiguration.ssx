@@ -1,0 +1,73 @@
+# Sets product settings that are set during build process
+function main()
+	-- NOTE: constants of the format _LIKETHIS are replaced during the build process
+	local PACKAGENAME
+	local PACKAGEVERSION
+	local PACKAGECOMPONENTS
+	local BUILDER_NAME
+	local PRODUCTLINE
+	local PRODUCTLINENAME
+	-- The following is incremented with each installation created on the build machine
+	-- Do not edit manually
+	local	INSTALL_BUILD_NUM
+
+	if false then
+		PACKAGENAME= "BAMZOOKi"
+		PACKAGEVERSION= "3.0"
+		PACKAGECOMPONENTS= "_SINGLECOMPONENT"
+		BUILDER_NAME= "BAMZOOKi Zook kit"
+		PRODUCTLINE= "BAMZOOKi"
+		PRODUCTLINENAME= "BAMZOOKi"
+		INSTALL_BUILD_NUM="0"
+	else
+		PACKAGENAME= "BAMZOOKi"
+		PACKAGEVERSION= "3.1"
+		PACKAGECOMPONENTS= "_SINGLECOMPONENT"
+		BUILDER_NAME= "BAMZOOKi Zook Kit"
+		PRODUCTLINE= "BAMZOOKi"
+		PRODUCTLINENAME= "BAMZOOKi"
+		INSTALL_BUILD_NUM="115"
+	end
+
+	-- this var is used to advertise zook-kit version compatibility, used by online agents
+	Config.Set( "BAMZOOKi Zook Kit" , PACKAGEVERSION )
+
+	-- A global package name set by the installer, e.g. BAMZOOKi, Zooklabs, etc.
+	Config.Set( "package_name", PACKAGENAME )
+	-- This is a global package version set by the installer
+	Config.Set( PACKAGENAME , PACKAGEVERSION )
+	-- Package version in a constant variable name
+	Config.Set( "package_version" , PACKAGEVERSION )
+
+	-- If a product is composed of components then this 
+	-- these will be refactored and phased out
+	Config.Set( "package_components", PACKAGECOMPONENTS )
+	-- Set what mode the builder runs as (BAMZOOKi Zook Kit/BAMZOOKi Zook Kit Extra)
+	Config.Set("builder_name", BUILDER_NAME )
+	-- used for user app dir name
+	local unaltered_BUILDER_NAME = "_BUILDER".."NAME"
+	if BUILDER_NAME == "BAMZOOKi Zook Kit Extra" then -- or BUILDER_NAME == unaltered_BUILDER_NAME then
+		Config.Set("bamzooki_extra", 1)
+	else
+		Config.Set("bamzooki_extra", 0)
+	end
+	
+	-- Product line
+	Config.Set("product", PRODUCTLINE)
+	Config.Set("product_name", PRODUCTLINENAME)
+	local unalteredBAMZOOKi = "_PRODUCT".."LINE"
+	if PRODUCTLINE == unalteredBAMZOOKi then
+		-- in house pre build
+		Config.Set("product", "BAMZOOKi")
+		Config.Set("product_name", "BAMZOOKi")
+	end		
+	
+	Config.Set("install_build_num", INSTALL_BUILD_NUM)
+	Config.Set("the_package_string", PACKAGENAME .. " " .. Config.Get("app_name","Software") .. " v" .. PACKAGEVERSION)
+	Config.Set("full_package_string", Config.Get("the_package_string","") .. " (build " .. Config.Get("install_build_num", "") .. "." .. System.BuildNumber() .. ")")
+	
+	--these lines found commented at start of elstree set-up 2005. We uncommented them
+	if Config.Get("studio_mode", false) ~= false then
+		Config.Set("product", ".")
+	end
+end

@@ -1,0 +1,26 @@
+Number.randomseed(System.AbsoluteTime())
+Config.Set( "unknown_physics_error_message",	"One of the Zooks being simulated has caused a simulation error. Use this Zook with caution. The application will now exit." )
+
+Config.Set( "pixel_offset", 0.5 )
+Config.Set( "Cardan_Stiffness", 1000 )
+Config.Set( "Cardan_Damping", 100000 )
+
+--Config.Set( "Friction", 5000 )
+--Config.Set( "Restitution", 0.01 )
+Config.Set( "AngularApproachSpeed", 4 )
+Config.Set("contest_unit_scale", 40)
+Config.Set("max_tick_size", 0.02)
+--Config.Set( "PrimarySlip",0.1)
+--Config.Set( "SecondarySlip",0.01)
+--Config.Set( "MaxAdhesiveForce",0.10)
+
+--Config.Set( "LinearVelocityDamping", 00.00 )
+--Config.Set( "AngularVelocityDamping", 0.50 )
+--Config.Set( "MaxAngularVelocity",1)
+
+--Config.Set( "Softness",020.0)
+
+
+--Config.Set( "Physics_Sim_Epsilon",0.1)
+--Config.Set( "Physics_Sim_Gamma",0.5)
+

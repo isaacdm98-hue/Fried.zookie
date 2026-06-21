@@ -1,0 +1,14 @@
+-- Genome Configuration
+--
+--Note: *** must be run after executing LoadConfigTable so the values are not overwritted ***
+
+
+function main()
+	Config.Set("genome_force_save_archive", 1) -- forces saving archive format even if inhouse USED ON FOR TESTING ONLY
+	Config.Set("genome_min_version", 1)
+	Config.Set("genome_current_version", 2)
+	Config.Set("genome_rhesus_macaque", "macaca mulatta") -- encryption password "macaca mulatta" or false to only load unarchived ascii files
+	--~ Config.Set("genome_rhesus_macaque", false) -- encryption password "macaca mulatta" or false to only load unarchived ascii files
+	Config.Set("genome_archive_header", "\nThis zook file is not compatible with this software. Please upgrade your software.")
+end
+	

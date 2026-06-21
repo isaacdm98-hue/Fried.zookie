@@ -1,0 +1,86 @@
+-- Behaviour: ListenContact
+
+
+
+
+
+function main()
+	return Behaviour
+end
+
+
+-- Behaviours Description -------------------------------------------------------
+
+Behaviour = {}
+
+
+Behaviour.paramaters = function()
+	local paramDefs = { AgentEnum("target", "Target")}	
+	return paramDefs
+end
+	
+
+Behaviour.events = function()
+	return { "Contact" }
+end
+
+
+Behaviour.validate = function()
+	ValidateAgent("target", "Target")
+	return
+end
+
+
+Behaviour.initialize = function(data)
+	
+	Trace("initializing listencontact")
+	
+	-- init behaviour code
+	Behaviour.params = Params()
+	Behaviour.target = Agents(Behaviour.params.target)
+	
+	if Agent.GetClass(Owner()) == "Evo" then
+		-- evos are complicated so let the target be the listener as it will have less parts
+		SendMessage("AddCallback", Behaviour.target, { agent = Owner(), receiver = Agent.Me(), message = "Callback" }, {} )
+	else
+		SendMessage("AddCallback", Owner(), { agent = Behaviour.target, receiver = Agent.Me(), message = "Callback" }, {} )
+	end
+	
+end
+
+	
+Behaviour.finalize = function(data)
+	-- reset/end behaviour code		
+	if Agent.GetClass(Owner()) == "Evo" then
+		-- zooks are complicated so let the target be the listener as it will have less parts
+		SendMessage("RemoveCallback", Behaviour.target, { agent = Owner(), receiver = Agent.Me(), message = "Callback" }, {ImmediateEvent()} )
+	else
+		SendMessage("RemoveCallback", Owner(), { agent = Behaviour.target, receiver = Agent.Me(), message = "Callback" }, {ImmediateEvent()} )
+	end	
+end
+	
+	
+Behaviour.callback = function(data)
+	-- callback event code
+	
+	if data.contact ~= nil then
+		-- this is a contact callback
+		
+		if Agent.GetClass(Owner()) == "Evo" then
+			-- zooks are complicated so let the target be the listener as it will have less parts
+			SendMessage("RemoveCallback", Behaviour.target, { agent = Owner(), receiver = Agent.Me(), message = "Callback" }, {ImmediateEvent()} )
+		else
+			SendMessage("RemoveCallback", Owner(), { agent = Behaviour.target, receiver = Agent.Me(), message = "Callback" }, {ImmediateEvent()} )
+		end
+		
+		BroadcastEvent("Contact", { target = Behaviour.target })
+		
+	end
+		
+end
+
+
+Behaviour.update = function(data)
+	-- general monitoring code
+	-- data.simTime & data.realTime are given to the Behaviour.update as recorded at begining of update for all behaviours
+end
