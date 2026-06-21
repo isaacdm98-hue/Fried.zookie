@@ -281,9 +281,57 @@ export class App {
     d.querySelectorAll('.con-card[data-id]').forEach(b => b.addEventListener('click', () => {
       fb.confirm();
       const contest = CONTESTS.find(c => c.id === b.dataset.id);
-      this.go('contestRun', { contest, green: this.active, red: randomExample() });
+      this._pickFighters(contest);
     }));
     guide.now(TIPS.contest);
+  }
+
+  // The pool of Zooks you can field: your current build, your saved roster, and
+  // the built-in examples — deduped by name.
+  _fighterPool() {
+    const pool = [], seen = new Set();
+    const add = (name, bp, active) => { if (!bp || seen.has(name)) return; seen.add(name); pool.push({ name, bp, _active: !!active }); };
+    if (this.active && this.active.bp && (this.active.bp.legs || []).length) add(this.active.name || 'My Zook', this.active.bp, true);
+    loadRoster().forEach(z => add(z.name, z.bp));
+    EXAMPLES.forEach(e => add(e.name, e.bp));
+    return pool;
+  }
+
+  // Pick which two Zooks battle — the manual's flow: choose your fighters, then
+  // the contest. You pick YOU and the RIVAL from the same pool.
+  _pickFighters(contest) {
+    const pool = this._fighterPool();
+    let gi = Math.max(0, pool.findIndex(p => p._active)), ri = 0;
+    ri = pool.length > 1 ? (gi + 1) % pool.length : 0;
+    const chip = (p) => `hsl(${(p.bp.hue || 0) * 360},70%,55%)`;
+    const d = this._overlayEl(`<div class="sheet">
+      <div class="bar"><button class="mini-btn" data-back>‹</button><h2>${contest.name}</h2><span style="width:40px"></span></div>
+      <p class="fp-tip">Choose your fighters</p>
+      <div class="fp-wrap">
+        <div class="fp-col" data-side="g"><div class="fp-head green">YOU</div><div class="fp-list"></div></div>
+        <div class="fp-vs">VS</div>
+        <div class="fp-col" data-side="r"><div class="fp-head red">RIVAL</div><div class="fp-list"></div></div>
+      </div>
+      <button class="m-btn fp-go" data-go><b>GO ▶</b></button></div>`);
+    const render = () => {
+      ['g', 'r'].forEach(side => {
+        const list = d.querySelector(`.fp-col[data-side=${side}] .fp-list`); list.innerHTML = '';
+        pool.forEach((p, i) => {
+          const sel = side === 'g' ? i === gi : i === ri;
+          const btn = document.createElement('button'); btn.className = 'fp-item' + (sel ? ' on' : '');
+          btn.innerHTML = `<span class="fp-chip" style="background:${chip(p)}"></span><span class="fp-name">${p.name}</span>`;
+          btn.addEventListener('click', () => { fb.tick();
+            if (side === 'g') { gi = i; if (ri === gi) ri = (gi + 1) % pool.length; }
+            else { ri = i; if (ri === gi) gi = (ri + 1) % pool.length; }
+            render(); });
+          list.appendChild(btn);
+        });
+      });
+    };
+    render();
+    d.querySelector('[data-back]').addEventListener('click', () => { fb.press(); this._contests(); });
+    d.querySelector('[data-go]').addEventListener('click', () => { fb.confirm();
+      this.go('contestRun', { contest, green: { ...pool[gi] }, red: { ...pool[ri] } }); });
   }
 
   // ── Championship — a TV episode: 3 contests + a Grand Final relay ─────────
