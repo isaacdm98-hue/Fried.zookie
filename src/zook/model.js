@@ -207,7 +207,12 @@ export class Zook {
     // Standing height: the hip sits a little below the body centre, and the leg
     // reaches down to the floor from there. No legs ⇒ it rests on its belly.
     const maxReach = legs.length ? Math.max(...legs.map(legReach)) : 0;
-    const rest = legs.length ? height * 0.32 + maxReach : height / 2;
+    const legRest = legs.length ? height * 0.32 + maxReach : 0;
+    // Movable clay limbs also prop the body up: a limb anchored at body-local y
+    // reaching `sy` down wants its tip on the floor → body centre at (sy − y).
+    const movers = (this.bp.blobs || []).filter(b => b.move && b.move !== 'none');
+    const moverRest = movers.length ? Math.max(...movers.map(b => Math.max(0.3, b.sy || 0.7) - (b.y || 0))) : 0;
+    const rest = Math.max(legRest, moverRest) || height / 2;
     return { w: width, h: height, l: len, rest };
   }
 
@@ -248,20 +253,37 @@ export class Zook {
 
     // Extra body blobs (modelling clay): scaled blobs you attach to build up the
     // shape and free-form limbs. Each is a full part — own scale, colour & skin.
-    this._blobs = [];
+    this._blobs = []; this._movers = [];
     (bp.blobs || []).forEach((bl, i) => {
       let bm = bMat;
       if (bl.skin) { bm = mat(0, 0.5, 0.55); bm.color.set(0xffffff); bm.map = skinTexture(bl.skin); bm.flatShading = true; }
       else if (bl.hue != null) { bm = mat(bl.hue, 0.55 + bri * 0.32); bm.flatShading = true; }
       const mb = new THREE.Mesh(blobGeo(bl.mesh), bm);
       mb.scale.set(bl.sx || 0.7, bl.sy || 0.7, bl.sz || 0.7);
-      mb.position.set(bl.x || 0, bl.y || 0, bl.z || 0);
-      // Position pane orientation (BuilderParts: pitch/yaw/roll) — Twist = roll.
       if (bl.twist || bl.pitch || bl.yaw) mb.rotation.set(bl.pitch || 0, bl.yaw || 0, bl.twist || 0);
       mb.castShadow = mb.receiveShadow = true;
       mb.userData.blobIndex = i;
-      this.group.add(mb);
-      this._blobs.push(mb);
+      // A clay part with Movement (BuilderParts `leg_type` 1 = Single part) becomes a
+      // limb: it hangs from a pivot at its anchor and sweeps along a foot path, so a
+      // part you sculpt long & low can paddle the floor and propel the Zook. Static
+      // parts (the default) are placed directly, exactly as before.
+      if (bl.move && bl.move !== 'none') {
+        const pivot = new THREE.Group();
+        pivot.position.set(bl.x || 0, bl.y || 0, bl.z || 0);
+        pivot.rotation.set(bl.pitch || 0, bl.yaw || 0, bl.twist || 0);
+        mb.position.set(0, -(bl.sy || 0.7) * 0.5, 0);   // hang below the pivot → a lever to sweep
+        pivot.add(mb); this.group.add(pivot);
+        this._blobs.push(mb);
+        this._movers.push({ pivot, mesh: mb, hip: { x: bl.x || 0, y: bl.y || 0, z: bl.z || 0 },
+          reach: Math.max(0.3, bl.sy || 0.7), path: bl.path || defaultPath(), cycle: bl.cycle || 0,
+          move: bl.move, moveType: bl.moveType || 'auto', target: bl.target || 'off', muscle: bl.muscle || 1,
+          side: (bl.x || 0) < 0 ? -1 : 1, twist: bl.twist || 0,
+          _footLocal: null, _footVel: null, _planted: false, _settle: 0, _vlock: null });
+      } else {
+        mb.position.set(bl.x || 0, bl.y || 0, bl.z || 0);
+        this.group.add(mb);
+        this._blobs.push(mb);
+      }
     });
 
     // Red direction arrow on the back (workshop only).
@@ -467,6 +489,21 @@ export class Zook {
       leg.knee.rotation.x = Math.max(0, Math.min(2.3, (1 - dist / (reach * 0.99)) * 2.6));
       leg.foot.rotation.x = footAngle + cur.h * 0.3 * amount;
     }
+
+    // Movable clay parts (single-part movement): a hanging limb that sweeps along
+    // its foot path and grips the floor through the SAME contact model as legs.
+    for (const mv of this._movers || []) {
+      const reach = mv.reach;
+      const u = (this._t * speed + (mv.cycle || 0));
+      const cur = samplePath(mv.path, u), prev = samplePath(mv.path, u - speed * dt);
+      const off = (p) => ({ x: mv.hip.x, y: mv.hip.y - reach * (1 - p.h * LIFT * amount), z: mv.hip.z - p.f * fwd * reach * amount });
+      const fl = off(cur), flp = off(prev);
+      mv._footLocal = fl;
+      mv._footVel = { x: (fl.x - flp.x) / dt, y: (fl.y - flp.y) / dt, z: (fl.z - flp.z) / dt };
+      mv._planted = (cur.h * amount) < PLANT_H;
+      // Aim the hanging part toward where its tip is (so it visibly sweeps/paddles).
+      mv.pivot.rotation.x = Math.atan2(fl.z - mv.hip.z, -(fl.y - mv.hip.y)) * amount;
+    }
     this._bob = 0;
   }
 
@@ -537,8 +574,10 @@ export class Zook {
     if (upY < 0.25 && !this._flopped) { this._flopped = true; if (this.onFlop) this.onFlop(); }
     else if (upY > 0.55) this._flopped = false;
     let planted = 0;
+    // Legs and any movable clay parts both grip the floor through this one model.
+    const limbs = (this._movers && this._movers.length) ? [...this._legs, ...this._movers] : this._legs;
     if (upY > UPRIGHT) {
-      for (const leg of this._legs) {
+      for (const leg of limbs) {
         if (!leg._footLocal) continue;
         const flw = quatRot(rot, leg._footLocal);
         const F = { x: pos.x + flw.x, y: pos.y + flw.y, z: pos.z + flw.z };

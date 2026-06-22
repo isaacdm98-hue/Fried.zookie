@@ -82,6 +82,11 @@ and the *contest targets*. Concrete facts used by FriedZooki:
     (`cubosity`) — all 0–1.
   - *Part `mesh` enum* `{ Blob, Cube, Sphere }` + *Position* pane **Twist** (`roll`):
     clay parts can now be a **Blob, Box or Ball** and be **twisted**.
+  - *Movable clay parts* (`leg_type` = Single part): any sculpted part can be given
+    **Movement** (Cycle, Muscle, Turn side, foot Path) — it hangs from a pivot at its
+    anchor, sweeps along the path and grips the floor through the **same foot-contact
+    model as legs**, so a limb you sculpt long & low actually walks. (Static parts —
+    the default — are unchanged, so existing Zooks are unaffected.)
   - *Joint*: Movement Type `{No / Single / Two part}` (`leg_type`), turn side `{Auto,
     Left, Right, Always}` (`ik_side`), **Movement Cycle** 0–1 (`leg_phase`), Part
     Targeting `{Normal, Inverted, Off}` (`spine`).

@@ -230,7 +230,23 @@ export class Builder {
             options: [{ v: 'off', t: 'OFF' }, { v: 'normal', t: 'AWAY' }, { v: 'inverted', t: 'TOWARD' }], onChange: v => this._editLeg('target', v) }).root,
           this._pathBtn());
         hint('CYCLE staggers · MODE/TURN/AIM set behaviour · PATH shapes the step');
-      } else hint('tap a leg to tune its step · SPEED & STRIDE set pace, SHARP/SMOOTH the turns');
+      } else if (s && s.type === 'blob' && this.bp.blobs[s.idx]) {
+        // Give a sculpted clay part its own movement — the original's "single part
+        // movement" for limbs/flippers/tails. A part sculpted long & low can paddle.
+        const bl = this.bp.blobs[s.idx]; const setb = (k, v) => { this._pushUndo(); bl[k] = v; this._apply(); };
+        el.append(Selector({ label: 'MOVE', value: bl.move || 'none',
+          options: [{ v: 'none', t: 'STILL' }, { v: 'single', t: 'MOVE' }],
+          onChange: v => { this._pushUndo(); bl.move = v; if (v !== 'none' && !Array.isArray(bl.path)) bl.path = defaultPath(); this._apply(); this._renderBar(); } }).root);
+        if (bl.move && bl.move !== 'none') {
+          el.append(
+            K({ label: 'CYCLE', min: 0, max: 1, step: 0.05, value: bl.cycle || 0, format: v => v.toFixed(2), onChange: v => setb('cycle', v) }),
+            K({ label: 'MUSCLE', min: 0.4, max: 2.2, step: 0.1, value: bl.muscle || 1, format: v => v.toFixed(1), onChange: v => setb('muscle', v) }),
+            Selector({ label: 'TURN', value: bl.moveType || 'auto',
+              options: [{ v: 'auto', t: 'AUTO' }, { v: 'always', t: 'ALWAYS' }, { v: 'left', t: 'LEFT' }, { v: 'right', t: 'RIGHT' }], onChange: v => setb('moveType', v) }).root,
+            this._pathBtn());
+          hint('this clay part paddles now — sculpt it long & low so its tip reaches the floor!');
+        } else hint('STILL = decoration · MOVE makes this part oscillate & paddle the floor');
+      } else hint('tap a leg or clay part to tune its movement · SPEED & STRIDE set pace');
     } else { // paint — colour the WHOLE body, or a single selected part (like the kit's Colour tab)
       const sel = this._sel;
       const part = sel && (sel.type === 'leg' ? this.bp.legs[sel.idx] : sel.type === 'blob' ? this.bp.blobs[sel.idx] : null);
@@ -531,8 +547,13 @@ export class Builder {
   // ADD a point (inserted into the nearest segment so the loop stays sensible),
   // and REMOVE the selected point. More points on the back-stroke = a slower,
   // stronger push; fewer on the swing = a quick recovery.
+  // The selected movable part (a leg, or a clay part given movement).
+  _selPart() {
+    const s = this._sel; if (!s) return null;
+    return s.type === 'leg' ? this.bp.legs[s.idx] : s.type === 'blob' ? this.bp.blobs[s.idx] : null;
+  }
   _openPath() {
-    const leg = this._sel && this._sel.type === 'leg' && this.bp.legs[this._sel.idx]; if (!leg) return;
+    const leg = this._selPart(); if (!leg) return;
     if (!Array.isArray(leg.path)) leg.path = defaultPath();
     let selPt = 0;
     const pop = document.createElement('div'); pop.className = 'overlay path-pop';
