@@ -20,6 +20,30 @@ const E = new THREE.Euler(), Q = new THREE.Quaternion(), V = new THREE.Vector3()
 const compose = (x, y, z, rx, ry, rz) =>
   new THREE.Matrix4().compose(new THREE.Vector3(x, y, z), Q.setFromEuler(E.set(rx, ry, rz)), ONE);
 
+// The authentic connection (BuilderParts.lua UpdatePositions): cast a ray from the
+// parent centre toward the part, hit the parent SURFACE, and seat the part there —
+// offset by half its length so its near end sits ON the surface (no floating gap).
+// The genome's stored posx/y/z gives the outward direction; we re-seat onto the
+// parent's actual (ellipsoid) surface and keep the part's local roll/pitch/yaw.
+const D2R = Math.PI / 180;
+const _zUp = new THREE.Vector3(0, 0, 1);
+function localMat(b, parentHalf) {
+  const pos = new THREE.Vector3(b.x || 0, b.y || 0, b.z || 0);
+  const d = pos.lengthSq() > 1e-6 ? pos.clone().normalize() : new THREE.Vector3(0, 0, 1);
+  // ray vs parent ellipsoid (half extents) → surface point along d
+  const hx = parentHalf.x || 0.5, hy = parentHalf.y || 0.5, hz = parentHalf.z || 0.5;
+  const q = Math.sqrt((d.x / hx) ** 2 + (d.y / hy) ** 2 + (d.z / hz) ** 2);
+  const S = d.clone().multiplyScalar(q > 1e-6 ? 1 / q : Math.min(hx, hy, hz));
+  // orientation: aim the part's length (+z) outward along d, then the genome's local roll/pitch/yaw
+  const baseRot = new THREE.Quaternion().setFromUnitVectors(_zUp, d);
+  const adj = new THREE.Quaternion().setFromEuler(new THREE.Euler(b.pitch || 0, b.yaw || 0, b.twist || 0, 'ZXY'));
+  const rot = baseRot.multiply(adj);
+  const halfLen = (b.sz || 0.4) / 2;
+  const childZ = _zUp.clone().applyQuaternion(rot);
+  const center = S.clone().add(childZ.multiplyScalar(halfLen * 0.92));   // slight overlap → seams read as joined
+  return new THREE.Matrix4().compose(center, rot, ONE);
+}
+
 /** Flatten the blueprint into a part list (root body + clay tree) with each part's
  *  body-LOCAL matrix, resolving the parent tree and connection angles. */
 export function layout(bp) {
@@ -43,7 +67,9 @@ export function layout(bp) {
   for (const i of order) {
     const b = blobs[i];
     const parentMat = (b.parent != null && matOf[b.parent]) ? matOf[b.parent] : parts[0].mat;
-    const local = compose(b.x || 0, b.y || 0, b.z || 0, b.pitch || 0, b.yaw || 0, b.twist || 0);
+    const parentHalf = (b.parent == null || b.parent < 0) ? parts[0].half
+      : { x: (blobs[b.parent].sx || 0.4) / 2, y: (blobs[b.parent].sy || 0.4) / 2, z: (blobs[b.parent].sz || 0.4) / 2 };
+    const local = localMat(b, parentHalf);
     const mat = parentMat.clone().multiply(local);
     matOf[i] = mat;
     parts.push({ idx: i, parent: b.parent == null ? 0 : null, parentBlob: b.parent, mat,
