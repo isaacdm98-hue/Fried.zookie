@@ -39340,7 +39340,7 @@
     }
     _copyBtn() {
       const b2 = document.createElement("button");
-      b2.className = "mini-btn";
+      b2.className = "mini-btn b-copy";
       b2.textContent = "COPY";
       b2.addEventListener("click", () => {
         fb.confirm();
@@ -39350,7 +39350,7 @@
     }
     _mirrorBtn() {
       const b2 = document.createElement("button");
-      b2.className = "mini-btn";
+      b2.className = "mini-btn b-mirror";
       b2.textContent = "MIRROR";
       b2.addEventListener("click", () => {
         fb.confirm();

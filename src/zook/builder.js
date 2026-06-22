@@ -270,12 +270,12 @@ export class Builder {
     return b;
   }
   _copyBtn() {
-    const b = document.createElement('button'); b.className = 'mini-btn'; b.textContent = 'COPY';
+    const b = document.createElement('button'); b.className = 'mini-btn b-copy'; b.textContent = 'COPY';
     b.addEventListener('click', () => { fb.confirm(); this._copyLeg(); });
     return b;
   }
   _mirrorBtn() {
-    const b = document.createElement('button'); b.className = 'mini-btn'; b.textContent = 'MIRROR';
+    const b = document.createElement('button'); b.className = 'mini-btn b-mirror'; b.textContent = 'MIRROR';
     b.addEventListener('click', () => { fb.confirm(); this._mirrorLeg(); });
     return b;
   }

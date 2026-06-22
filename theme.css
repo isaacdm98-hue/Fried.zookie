@@ -312,6 +312,9 @@ body { -webkit-user-select: none; user-select: none; touch-action: none; }
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.10), 0 2px 4px rgba(0,0,0,0.5);
 }
 .deck .mini-btn:active { transform: translateY(1px); box-shadow: inset 0 2px 4px rgba(0,0,0,0.6); }
+/* Zook Kit kept Copy red and Mirror green — match the original. */
+.deck .mini-btn.b-copy   { background: linear-gradient(180deg, #ef5a7e, #d23a5e); color: #fff; border-color: #a82a4a; }
+.deck .mini-btn.b-mirror { background: linear-gradient(180deg, #45cf78, #2bb15e); color: #06351c; border-color: #1f8a48; }
 
 /* tab strip = recessed well with lit key */
 .deck .tabs { background: #0c0d10; border: 1px solid rgba(0,0,0,0.7);
