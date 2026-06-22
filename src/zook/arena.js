@@ -152,12 +152,20 @@ export class Arena {
     this._lastPos = { x: p.x, z: p.z };
     if (this._timing) {
       this._timer += dt;
-      if (ENVIRONMENTS[this._envIdx].id === 'sprint' && p.z <= -TL / 2 + 3) {
+      const isSprint = ENVIRONMENTS[this._envIdx].id === 'sprint';
+      if (isSprint && p.z <= -TL / 2 + 3) {
         this._timing = false;
         const best = !this._best.sprint || this._timer < this._best.sprint;
         this._best.sprint = Math.min(this._best.sprint || 99, this._timer);
         this._saveBest();
         fb.win(); shakeCamera(0.4); guide.now(`Finish! ${this._timer.toFixed(2)}s — ${this._medal('sprint', this._timer)}${best ? ' · new best!' : ''}`);
+      } else if (isSprint && this._timer >= 20.05) {
+        // SprintEnv.lua: the dash is a 20-second trial. If the Zook hasn't crossed
+        // the line, the run still ends and is scored on distance covered (cm/sec).
+        this._timing = false;
+        const start = TL / 2 - 3, dist = Math.max(0, start - p.z);
+        const speed = (dist * 4) / 20;   // SprintEnv: (distance·4)/time → cm/sec
+        fb.press(); guide.now(`Time! 20s up — ${dist.toFixed(1)}m covered (${speed.toFixed(1)} cm/sec). Tune it faster!`);
       }
     }
   }
@@ -217,7 +225,8 @@ export class Arena {
     const O = 0xff8a1e;
     if (id === 'box') return;
     if (id === 'sprint') { this._static({ pos: { x: 0, y: 0.02, z: -TL / 2 + 3 }, size: { x: TW, y: 0.04, z: 0.5 }, color: 0x222222 }); return; }
-    if (id === 'hurdle') { for (let i = 0; i < 4; i++) this._static({ pos: { x: 0, y: 0.25 + i * 0.12, z: 4 - i * 4 }, size: { x: TW - 0.6, y: 0.5 + i * 0.24, z: 0.3 }, color: O }); return; }
+    // HurdleEnv.lua: 6 hurdles across the lane, height stepping up 0.5 → +0.1 each.
+    if (id === 'hurdle') { for (let i = 0; i < 6; i++) { const h = 0.5 + i * 0.1; this._static({ pos: { x: 0, y: h / 2, z: 6 - i * 5 }, size: { x: TW - 0.6, y: h, z: 0.3 }, color: O }); } return; }
     if (id === 'zigzag') { for (let i = 0; i < 6; i++) this._static({ pos: { x: (i % 2 ? 1 : -1) * 1.6, y: 0.6, z: 6 - i * 2.6 }, size: { x: 0.6, y: 1.2, z: 0.6 }, color: O }); return; }
     if (id === 'slope') { for (let i = 0; i < 3; i++) this._static({ pos: { x: 0, y: 0.3 + i * 0.2, z: 4 - i * 5 }, size: { x: TW, y: 0.4, z: 3.4 }, color: O, rot: { x: -0.2 - i * 0.12 } }); return; }
     if (id === 'step') { for (let i = 0; i < 4; i++) this._static({ pos: { x: 0, y: 0.2 + i * 0.4, z: 2 - i * 1.4 }, size: { x: TW, y: 0.4 + i * 0.8, z: 1.4 }, color: O }); return; }

@@ -333,7 +333,8 @@ export class ContestScene {
       this._box({ pos: { x: 0, y: 0.01, z: -26 }, size: { x: 7, y: 0.02, z: 0.4 }, color: 0x222222 });
       // Hurdles GROW in height down the track (faithful to HurdleEnv: thin walls
       // across the lane, height stepping up +0.12 each).
-      if (c.hurdles) { let h = 0.4; for (const z of [-2, -7, -12, -17, -22]) { this._box({ pos: { x: 0, y: h / 2, z }, size: { x: 7, y: h, z: 0.4 }, color: 0xff8a1e }); h += 0.12; } }
+      // HurdleEnv.lua: 6 hurdles across the lane, height stepping up 0.5 → +0.1 each.
+      if (c.hurdles) { let h = 0.5; for (const z of [-1, -5, -9, -13, -17, -21]) { this._box({ pos: { x: 0, y: h / 2, z }, size: { x: 7, y: h, z: 0.4 }, color: 0xff8a1e }); h += 0.1; } }
       if (c.marbles) this._marbles();
       if (c.doors) this._slidingDoors();
       if (c.smash) for (const z of [-1, -6, -11, -16, -21]) for (let i = 0; i < 4; i++)

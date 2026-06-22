@@ -40054,7 +40054,8 @@
       this._lastPos = { x: p2.x, z: p2.z };
       if (this._timing) {
         this._timer += dt;
-        if (ENVIRONMENTS[this._envIdx].id === "sprint" && p2.z <= -TL / 2 + 3) {
+        const isSprint = ENVIRONMENTS[this._envIdx].id === "sprint";
+        if (isSprint && p2.z <= -TL / 2 + 3) {
           this._timing = false;
           const best = !this._best.sprint || this._timer < this._best.sprint;
           this._best.sprint = Math.min(this._best.sprint || 99, this._timer);
@@ -40062,6 +40063,12 @@
           fb.win();
           shakeCamera(0.4);
           guide.now(`Finish! ${this._timer.toFixed(2)}s \u2014 ${this._medal("sprint", this._timer)}${best ? " \xB7 new best!" : ""}`);
+        } else if (isSprint && this._timer >= 20.05) {
+          this._timing = false;
+          const start = TL / 2 - 3, dist = Math.max(0, start - p2.z);
+          const speed = dist * 4 / 20;
+          fb.press();
+          guide.now(`Time! 20s up \u2014 ${dist.toFixed(1)}m covered (${speed.toFixed(1)} cm/sec). Tune it faster!`);
         }
       }
     }
@@ -40139,7 +40146,10 @@
         return;
       }
       if (id === "hurdle") {
-        for (let i2 = 0; i2 < 4; i2++) this._static({ pos: { x: 0, y: 0.25 + i2 * 0.12, z: 4 - i2 * 4 }, size: { x: TW - 0.6, y: 0.5 + i2 * 0.24, z: 0.3 }, color: O2 });
+        for (let i2 = 0; i2 < 6; i2++) {
+          const h2 = 0.5 + i2 * 0.1;
+          this._static({ pos: { x: 0, y: h2 / 2, z: 6 - i2 * 5 }, size: { x: TW - 0.6, y: h2, z: 0.3 }, color: O2 });
+        }
         return;
       }
       if (id === "zigzag") {
@@ -40764,10 +40774,10 @@
         this._box({ pos: { x: 0, y: -0.2, z: -12 }, size: { x: 9, y: 0.4, z: 46 }, color: 15656918 });
         this._box({ pos: { x: 0, y: 0.01, z: -26 }, size: { x: 7, y: 0.02, z: 0.4 }, color: 2236962 });
         if (c2.hurdles) {
-          let h2 = 0.4;
-          for (const z2 of [-2, -7, -12, -17, -22]) {
+          let h2 = 0.5;
+          for (const z2 of [-1, -5, -9, -13, -17, -21]) {
             this._box({ pos: { x: 0, y: h2 / 2, z: z2 }, size: { x: 7, y: h2, z: 0.4 }, color: 16747038 });
-            h2 += 0.12;
+            h2 += 0.1;
           }
         }
         if (c2.marbles) this._marbles();
