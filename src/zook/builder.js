@@ -174,6 +174,11 @@ export class Builder {
         el.append(Selector({ label: 'STYLE', value: this._legStyle || 'crawl',
           options: [{ v: 'crawl', t: 'CRAWL' }, { v: 'paddle', t: 'PADDLE' }, { v: 'stalk', t: 'STALK' }, { v: 'step', t: 'STEP' }, { v: 'stomp', t: 'STOMP' }, { v: 'push', t: 'PUSH' }, { v: 'flipper', t: 'FLIP' }],
           onChange: v => { this._legStyle = v; if (this._sel && this._sel.type === 'leg') this._editLeg('style', v, true); } }).root);
+      } else if (!(this._sel && this._sel.type === 'blob')) {
+        // Pick the mesh for the next clay part (BuilderParts `mesh` enum).
+        el.append(Selector({ label: 'MESH', value: this._blobMesh || 'blob',
+          options: [{ v: 'blob', t: 'BLOB' }, { v: 'cube', t: 'BOX' }, { v: 'sphere', t: 'BALL' }],
+          onChange: v => { this._blobMesh = v; } }).root);
       }
       const s = this._sel;
       if (s && s.type === 'leg' && this.bp.legs[s.idx]) {
@@ -188,11 +193,16 @@ export class Builder {
       } else if (s && s.type === 'blob' && this.bp.blobs[s.idx]) {
         const bl = this.bp.blobs[s.idx]; const setb = (k, v) => { this._pushUndo(); bl[k] = v; this._apply(); };
         el.append(
-          K({ label: 'WIDE', min: 0.2, max: 2.6, step: 0.1, value: bl.sx, format: v => v.toFixed(1), onChange: v => setb('sx', v) }),
-          K({ label: 'TALL', min: 0.2, max: 2.6, step: 0.1, value: bl.sy, format: v => v.toFixed(1), onChange: v => setb('sy', v) }),
-          K({ label: 'DEEP', min: 0.2, max: 2.6, step: 0.1, value: bl.sz, format: v => v.toFixed(1), onChange: v => setb('sz', v) }),
+          // BuilderParts `mesh` enum {Blob, Cube, Sphere} + Position-pane Twist (roll).
+          Selector({ label: 'MESH', value: bl.mesh || 'blob',
+            options: [{ v: 'blob', t: 'BLOB' }, { v: 'cube', t: 'BOX' }, { v: 'sphere', t: 'BALL' }],
+            onChange: v => { setb('mesh', v); this._renderBar(); } }).root,
+          K({ label: 'WIDE', min: 0.2, max: 3, step: 0.1, value: bl.sx, format: v => v.toFixed(1), onChange: v => setb('sx', v) }),
+          K({ label: 'TALL', min: 0.2, max: 3, step: 0.1, value: bl.sy, format: v => v.toFixed(1), onChange: v => setb('sy', v) }),
+          K({ label: 'DEEP', min: 0.2, max: 3, step: 0.1, value: bl.sz, format: v => v.toFixed(1), onChange: v => setb('sz', v) }),
+          K({ label: 'TWIST', min: -3.14, max: 3.14, step: 0.08, value: bl.twist || 0, format: v => `${Math.round(v * 57.3)}°`, onChange: v => setb('twist', v) }),
           this._delBtn());
-        hint('drag to move · WIDE/TALL/DEEP or the box handles shape it');
+        hint('drag to move · MESH picks Blob/Box/Ball · TWIST rolls it · box handles scale');
       } else {
         hint(this._addType === 'leg' ? 'TAP THE BODY where you want a leg' : 'TAP ANY PART to stack a clay blob (build limbs!)');
       }
@@ -384,7 +394,7 @@ export class Builder {
   }
   _addBlobAtLocal(loc) {
     this._pushUndo();
-    this.bp.blobs.push({ x: loc.x, y: loc.y, z: loc.z, sx: 0.6, sy: 0.6, sz: 0.6 });
+    this.bp.blobs.push({ x: loc.x, y: loc.y, z: loc.z, sx: 0.6, sy: 0.6, sz: 0.6, mesh: this._blobMesh || 'blob', twist: 0 });
     this._select({ type: 'blob', idx: this.bp.blobs.length - 1 });
     this._apply(); this._renderBar(); fb.confirm();
   }

@@ -75,6 +75,19 @@ and the *contest targets*. Concrete facts used by FriedZooki:
   one leg at 0 and its mirror at 0.5); Part Targeting (toward/away) + Angle.
 - **Build is modelling-clay** (manual Ch6, paper Fig.2): every part is a squished
   "blob"; legs are a blob stretched long with a second blob added at the end.
+- **Builder attribute schema** (decompiled `BuilderParts.lua`, `myAttributeGroups`)
+  — the exact panes/sliders the Zook Kit shows, now mirrored in the workshop:
+  - *Shape*: Width/Height/Length (`scale x/y/z`, 0.1–3), **Pointiness** (`bias`),
+    **Flatten End** (`flatness`), **Flatten Side** (`asymmetry`), **Squareness**
+    (`cubosity`) — all 0–1.
+  - *Part `mesh` enum* `{ Blob, Cube, Sphere }` + *Position* pane **Twist** (`roll`):
+    clay parts can now be a **Blob, Box or Ball** and be **twisted**.
+  - *Joint*: Movement Type `{No / Single / Two part}` (`leg_type`), turn side `{Auto,
+    Left, Right, Always}` (`ik_side`), **Movement Cycle** 0–1 (`leg_phase`), Part
+    Targeting `{Normal, Inverted, Off}` (`spine`).
+  - *Master IK*: **Cycle Speed** (`zook_speed`), **Turn Sharpness**, **Turning
+    Smoothness**, **Part Targeting Angle** (`max_spine_angle`, 0–90°).
+  - per-part `muscle_stiffness` / `muscle_damping` (the Karma PD muscle gains).
 - **Trial performance targets** (paper Table 3, "Gold Performance Parameters"):
   | Level | Sprint | Block Push | Hurdles |
   |---|---|---|---|

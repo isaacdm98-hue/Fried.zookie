@@ -136,6 +136,12 @@ const HILITE    = new THREE.MeshStandardMaterial({ color: 0xffd479, emissive: 0x
 // Shared unit blob (low-poly sphere) — limbs are scaled blobs, like the real
 // Zook Kit (every part is a squished "Blob" mesh) so the creature reads as one.
 const BLOB_GEO  = new THREE.SphereGeometry(0.5, 10, 8);
+// Clay parts can be a Blob, a Box or a Ball — the original BuilderParts `mesh`
+// enum { Cube, Sphere, Blob }. Shared geometries (never per-instance disposed).
+const CUBE_GEO  = new THREE.BoxGeometry(1, 1, 1);
+const BALL_GEO  = new THREE.SphereGeometry(0.5, 16, 12);
+const SHARED_GEO = new Set([BLOB_GEO, CUBE_GEO, BALL_GEO]);
+const blobGeo = (m) => m === 'cube' ? CUBE_GEO : m === 'sphere' ? BALL_GEO : BLOB_GEO;
 
 // ── Locomotion physics (the BAMZOOKi / Karma feel) ────────────────────────────
 // The Zook is one rigid body, but it walks through GENUINE foot-ground contact:
@@ -210,7 +216,7 @@ export class Zook {
     // Dispose the previous build's unique geometries/materials (not shared ones).
     this.group.traverse(o => {
       if (o.isMesh) {
-        if (o.geometry && o.geometry !== BLOB_GEO) o.geometry.dispose();
+        if (o.geometry && !SHARED_GEO.has(o.geometry)) o.geometry.dispose();
         if (o.material && o.material !== HILITE && o.material !== EYE_WHITE && o.material !== EYE_DARK && o.material !== ARROW_MAT) o.material.dispose();
       }
     });
@@ -247,9 +253,11 @@ export class Zook {
       let bm = bMat;
       if (bl.skin) { bm = mat(0, 0.5, 0.55); bm.color.set(0xffffff); bm.map = skinTexture(bl.skin); bm.flatShading = true; }
       else if (bl.hue != null) { bm = mat(bl.hue, 0.55 + bri * 0.32); bm.flatShading = true; }
-      const mb = new THREE.Mesh(BLOB_GEO, bm);
+      const mb = new THREE.Mesh(blobGeo(bl.mesh), bm);
       mb.scale.set(bl.sx || 0.7, bl.sy || 0.7, bl.sz || 0.7);
       mb.position.set(bl.x || 0, bl.y || 0, bl.z || 0);
+      // Position pane orientation (BuilderParts: pitch/yaw/roll) — Twist = roll.
+      if (bl.twist || bl.pitch || bl.yaw) mb.rotation.set(bl.pitch || 0, bl.yaw || 0, bl.twist || 0);
       mb.castShadow = mb.receiveShadow = true;
       mb.userData.blobIndex = i;
       this.group.add(mb);
@@ -617,7 +625,7 @@ export class Zook {
   }
   dispose() {
     if (this.scene) this.scene.remove(this.group);
-    this.group.traverse(o => { if (o.isMesh && o.geometry && o.geometry !== BLOB_GEO) o.geometry.dispose(); });
+    this.group.traverse(o => { if (o.isMesh && o.geometry && !SHARED_GEO.has(o.geometry)) o.geometry.dispose(); });
     if (this._body && this.world) { try { this.world.removeRigidBody(this._body); } catch (_) {} this._body = null; }
   }
 }

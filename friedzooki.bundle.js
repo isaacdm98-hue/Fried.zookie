@@ -37731,6 +37731,10 @@
   var ARROW_MAT = new MeshStandardMaterial({ color: 16724804, roughness: 0.5, emissive: 3342336 });
   var HILITE = new MeshStandardMaterial({ color: 16766073, emissive: 15759405, emissiveIntensity: 0.5, roughness: 0.4, flatShading: true });
   var BLOB_GEO = new SphereGeometry(0.5, 10, 8);
+  var CUBE_GEO = new BoxGeometry(1, 1, 1);
+  var BALL_GEO = new SphereGeometry(0.5, 16, 12);
+  var SHARED_GEO = /* @__PURE__ */ new Set([BLOB_GEO, CUBE_GEO, BALL_GEO]);
+  var blobGeo = (m2) => m2 === "cube" ? CUBE_GEO : m2 === "sphere" ? BALL_GEO : BLOB_GEO;
   var GROUND_Y = 0;
   var LIFT = 0.55;
   var FREACH = 0.55;
@@ -37792,7 +37796,7 @@
     _buildMeshes() {
       this.group.traverse((o2) => {
         if (o2.isMesh) {
-          if (o2.geometry && o2.geometry !== BLOB_GEO) o2.geometry.dispose();
+          if (o2.geometry && !SHARED_GEO.has(o2.geometry)) o2.geometry.dispose();
           if (o2.material && o2.material !== HILITE && o2.material !== EYE_WHITE && o2.material !== EYE_DARK && o2.material !== ARROW_MAT) o2.material.dispose();
         }
       });
@@ -37838,9 +37842,10 @@
           bm = mat(bl.hue, 0.55 + bri * 0.32);
           bm.flatShading = true;
         }
-        const mb = new Mesh(BLOB_GEO, bm);
+        const mb = new Mesh(blobGeo(bl.mesh), bm);
         mb.scale.set(bl.sx || 0.7, bl.sy || 0.7, bl.sz || 0.7);
         mb.position.set(bl.x || 0, bl.y || 0, bl.z || 0);
+        if (bl.twist || bl.pitch || bl.yaw) mb.rotation.set(bl.pitch || 0, bl.yaw || 0, bl.twist || 0);
         mb.castShadow = mb.receiveShadow = true;
         mb.userData.blobIndex = i2;
         this.group.add(mb);
@@ -38192,7 +38197,7 @@
     dispose() {
       if (this.scene) this.scene.remove(this.group);
       this.group.traverse((o2) => {
-        if (o2.isMesh && o2.geometry && o2.geometry !== BLOB_GEO) o2.geometry.dispose();
+        if (o2.isMesh && o2.geometry && !SHARED_GEO.has(o2.geometry)) o2.geometry.dispose();
       });
       if (this._body && this.world) {
         try {
@@ -39171,6 +39176,15 @@
               if (this._sel && this._sel.type === "leg") this._editLeg("style", v2, true);
             }
           }).root);
+        } else if (!(this._sel && this._sel.type === "blob")) {
+          el2.append(Selector({
+            label: "MESH",
+            value: this._blobMesh || "blob",
+            options: [{ v: "blob", t: "BLOB" }, { v: "cube", t: "BOX" }, { v: "sphere", t: "BALL" }],
+            onChange: (v2) => {
+              this._blobMesh = v2;
+            }
+          }).root);
         }
         const s2 = this._sel;
         if (s2 && s2.type === "leg" && this.bp.legs[s2.idx]) {
@@ -39193,12 +39207,23 @@
             this._apply();
           };
           el2.append(
-            K2({ label: "WIDE", min: 0.2, max: 2.6, step: 0.1, value: bl.sx, format: (v2) => v2.toFixed(1), onChange: (v2) => setb("sx", v2) }),
-            K2({ label: "TALL", min: 0.2, max: 2.6, step: 0.1, value: bl.sy, format: (v2) => v2.toFixed(1), onChange: (v2) => setb("sy", v2) }),
-            K2({ label: "DEEP", min: 0.2, max: 2.6, step: 0.1, value: bl.sz, format: (v2) => v2.toFixed(1), onChange: (v2) => setb("sz", v2) }),
+            // BuilderParts `mesh` enum {Blob, Cube, Sphere} + Position-pane Twist (roll).
+            Selector({
+              label: "MESH",
+              value: bl.mesh || "blob",
+              options: [{ v: "blob", t: "BLOB" }, { v: "cube", t: "BOX" }, { v: "sphere", t: "BALL" }],
+              onChange: (v2) => {
+                setb("mesh", v2);
+                this._renderBar();
+              }
+            }).root,
+            K2({ label: "WIDE", min: 0.2, max: 3, step: 0.1, value: bl.sx, format: (v2) => v2.toFixed(1), onChange: (v2) => setb("sx", v2) }),
+            K2({ label: "TALL", min: 0.2, max: 3, step: 0.1, value: bl.sy, format: (v2) => v2.toFixed(1), onChange: (v2) => setb("sy", v2) }),
+            K2({ label: "DEEP", min: 0.2, max: 3, step: 0.1, value: bl.sz, format: (v2) => v2.toFixed(1), onChange: (v2) => setb("sz", v2) }),
+            K2({ label: "TWIST", min: -3.14, max: 3.14, step: 0.08, value: bl.twist || 0, format: (v2) => `${Math.round(v2 * 57.3)}\xB0`, onChange: (v2) => setb("twist", v2) }),
             this._delBtn()
           );
-          hint("drag to move \xB7 WIDE/TALL/DEEP or the box handles shape it");
+          hint("drag to move \xB7 MESH picks Blob/Box/Ball \xB7 TWIST rolls it \xB7 box handles scale");
         } else {
           hint(this._addType === "leg" ? "TAP THE BODY where you want a leg" : "TAP ANY PART to stack a clay blob (build limbs!)");
         }
@@ -39521,7 +39546,7 @@
     }
     _addBlobAtLocal(loc) {
       this._pushUndo();
-      this.bp.blobs.push({ x: loc.x, y: loc.y, z: loc.z, sx: 0.6, sy: 0.6, sz: 0.6 });
+      this.bp.blobs.push({ x: loc.x, y: loc.y, z: loc.z, sx: 0.6, sy: 0.6, sz: 0.6, mesh: this._blobMesh || "blob", twist: 0 });
       this._select({ type: "blob", idx: this.bp.blobs.length - 1 });
       this._apply();
       this._renderBar();
