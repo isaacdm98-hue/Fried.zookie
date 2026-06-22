@@ -291,6 +291,16 @@ export class Zook {
       mb.scale.set(bl.sx || 0.7, bl.sy || 0.7, bl.sz || 0.7);
       mb.castShadow = mb.receiveShadow = true;
       mb.userData.blobIndex = i;
+      // Authentic Zook Kit rule: a part MUST attach to its parent (root parts to
+      // the body). A root part can't float free — clamp its anchor so its volume
+      // still overlaps the body box, i.e. it stays physically connected.
+      if (pv == null) {
+        const D = this.dims;
+        const hx = D.w / 2 + (bl.sx || 0.7) * 0.45, hy = D.h / 2 + (bl.sy || 0.7) * 0.45, hz = D.l / 2 + (bl.sz || 0.7) * 0.45;
+        bl.x = Math.max(-hx, Math.min(hx, bl.x || 0));
+        bl.y = Math.max(-hy, Math.min(hy, bl.y || 0));
+        bl.z = Math.max(-hz, Math.min(hz, bl.z || 0));
+      }
       const ax = bl.x || 0, ay = bl.y || 0, az = bl.z || 0;
       if (bl.move === 'two') {
         const sx = bl.sx || 0.7, sy = bl.sy || 0.7, sz = bl.sz || 0.7;
