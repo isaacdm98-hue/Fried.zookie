@@ -17,6 +17,7 @@ import { Zook, defaultBlueprint, makeLeg, newPairId, ensureLegs, defaultPath, SK
 import { Knob, Switch, HueSlider, Selector } from './controls.js';
 import { setCamera } from '../engine/renderer.js';
 import { saveZook, randomExample } from './library.js';
+import { ensurePassport, recordMod } from './passport.js';
 import { guide, TIPS } from '../sys/guide.js';
 import { fb } from '../sys/feedback.js';
 
@@ -39,10 +40,11 @@ export class Builder {
     this._onUp = this._onUp.bind(this);
   }
 
-  enter(blueprint, name) {
+  enter(blueprint, name, { creator } = {}) {
     if (blueprint) this.bp = { ...blueprint };
     if (name) this.name = name;
     ensureLegs(this.bp); if (!Array.isArray(this.bp.blobs)) this.bp.blobs = [];
+    ensurePassport(this.bp, { creator });   // every Zook carries a genome passport
     this._sel = null;
 
     this.turntable = new THREE.Group();
@@ -81,7 +83,13 @@ export class Builder {
   }
 
   _apply() { if (this.zook) this.zook.setBlueprint(this.bp, this._sel && this._sel.type === 'leg' ? this._sel.idx : -1); }
-  _pushUndo() { this._undo.push(JSON.parse(JSON.stringify(this.bp))); if (this._undo.length > 40) this._undo.shift(); this._redo.length = 0; }
+  _pushUndo(type) {
+    this._undo.push(JSON.parse(JSON.stringify(this.bp))); if (this._undo.length > 40) this._undo.shift(); this._redo.length = 0;
+    // Stamp the genome passport with the kind of edit (creative/physical/dynamic/
+    // cosmetic). Structural ops pass 'creative' explicitly; otherwise infer from
+    // the current build deck — shape→physical, move→dynamic, paint→cosmetic.
+    recordMod(this.bp, type || { shape: 'physical', add: 'physical', move: 'dynamic', paint: 'cosmetic' }[this._mode] || 'physical');
+  }
 
   // ── chrome ──────────────────────────────────────────────────────────────────
   // A thin LEFT side-panel (drawing-app style): mode tabs + the mode's tactile
@@ -200,9 +208,12 @@ export class Builder {
           K({ label: 'WIDE', min: 0.2, max: 3, step: 0.1, value: bl.sx, format: v => v.toFixed(1), onChange: v => setb('sx', v) }),
           K({ label: 'TALL', min: 0.2, max: 3, step: 0.1, value: bl.sy, format: v => v.toFixed(1), onChange: v => setb('sy', v) }),
           K({ label: 'DEEP', min: 0.2, max: 3, step: 0.1, value: bl.sz, format: v => v.toFixed(1), onChange: v => setb('sz', v) }),
+          // Position pane orientation (BuilderParts roll/pitch/yaw): Twist + Pitch + Yaw.
           K({ label: 'TWIST', min: -3.14, max: 3.14, step: 0.08, value: bl.twist || 0, format: v => `${Math.round(v * 57.3)}°`, onChange: v => setb('twist', v) }),
+          K({ label: 'PITCH', min: -3.14, max: 3.14, step: 0.08, value: bl.pitch || 0, format: v => `${Math.round(v * 57.3)}°`, onChange: v => setb('pitch', v) }),
+          K({ label: 'YAW', min: -3.14, max: 3.14, step: 0.08, value: bl.yaw || 0, format: v => `${Math.round(v * 57.3)}°`, onChange: v => setb('yaw', v) }),
           this._delBtn());
-        hint('drag to move · MESH picks Blob/Box/Ball · TWIST rolls it · box handles scale');
+        hint('drag to move · MESH picks Blob/Box/Ball · TWIST/PITCH/YAW orient it · box handles scale');
       } else {
         hint(this._addType === 'leg' ? 'TAP THE BODY where you want a leg' : 'TAP ANY PART to stack a clay blob (build limbs!)');
       }
@@ -309,7 +320,7 @@ export class Builder {
   // the body so you can see it. Later edits don't touch the original.
   _copyLeg() {
     const s = this._sel; if (!s || s.type !== 'leg') return; const src = this.bp.legs[s.idx]; if (!src) return;
-    this._pushUndo();
+    this._pushUndo('creative');
     const along = Math.max(-1, Math.min(1, (src.along || 0) + 0.18));
     const dup = { ...src, along, pair: newPairId(), path: (src.path || []).map(p => ({ ...p })) };
     this.bp.legs.push(dup);
@@ -321,7 +332,7 @@ export class Builder {
   _mirrorLeg() {
     const s = this._sel; if (!s || s.type !== 'leg') return; const src = this.bp.legs[s.idx]; if (!src) return;
     if (this.bp.legs.some(l => l !== src && l.pair === src.pair)) { if (this._helper) guide.pop('That leg already has a mirror partner.'); return; }
-    this._pushUndo();
+    this._pushUndo('creative');
     const twin = { ...src, side: -src.side, cycle: ((src.cycle || 0) + 0.5) % 1, path: (src.path || []).map(p => ({ ...p })) };
     this.bp.legs.push(twin);
     this._apply(); this._renderBar();
@@ -386,7 +397,7 @@ export class Builder {
     this._apply(); if (rebuild) this._renderBar();
   }
   _deleteSel() {
-    const s = this._sel; if (!s) return; this._pushUndo();
+    const s = this._sel; if (!s) return; this._pushUndo('creative');
     if (s.type === 'leg') {
       const leg = this.bp.legs[s.idx]; this.bp.legs = this.bp.legs.filter(l => l !== leg && l.pair !== leg.pair);
     } else { this.bp.blobs.splice(s.idx, 1); }
@@ -394,7 +405,7 @@ export class Builder {
   }
 
   _addLegAt(along, side) {
-    this._pushUndo();
+    this._pushUndo('creative');
     const legs = this.bp.legs, last = legs[legs.length - 1];
     const len = last ? last.len : 0.72, thick = last ? last.thick : this.bp.legThick, style = this._legStyle || (last ? last.style : 'crawl');
     if (this._mirror) {
@@ -409,8 +420,8 @@ export class Builder {
     this._apply(); this._renderBar(); fb.confirm();
   }
   _addBlobAtLocal(loc) {
-    this._pushUndo();
-    this.bp.blobs.push({ x: loc.x, y: loc.y, z: loc.z, sx: 0.6, sy: 0.6, sz: 0.6, mesh: this._blobMesh || 'blob', twist: 0 });
+    this._pushUndo('creative');
+    this.bp.blobs.push({ x: loc.x, y: loc.y, z: loc.z, sx: 0.6, sy: 0.6, sz: 0.6, mesh: this._blobMesh || 'blob', twist: 0, pitch: 0, yaw: 0 });
     this._select({ type: 'blob', idx: this.bp.blobs.length - 1 });
     this._apply(); this._renderBar(); fb.confirm();
   }

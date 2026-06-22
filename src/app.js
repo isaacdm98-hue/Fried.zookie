@@ -252,7 +252,7 @@ export class App {
   }
 
   // ── Workshop ─────────────────────────────────────────────────────────────
-  _workshop(opts) { this.mode = this._builder; this._builder.enter(opts.bp || this.active.bp, opts.name || this.active.name); }
+  _workshop(opts) { this.mode = this._builder; this._builder.enter(opts.bp || this.active.bp, opts.name || this.active.name, { creator: this.active && this.active.creator }); }
 
   // ── Test table ───────────────────────────────────────────────────────────
   _test() {
@@ -260,7 +260,7 @@ export class App {
       scene: this.scene, world: this.world, RAPIER: this.RAPIER, camera: this.camera,
       canvas: this.canvas, mount: this.ui, onBack: () => this.go('workshop'),
     });
-    arena.enter(this.active.bp);
+    arena.enter(this.active.bp, this.active.name);
     this.mode = arena;
   }
 
@@ -474,10 +474,13 @@ export class App {
     d.querySelector('[data-new]').addEventListener('click', () => { fb.confirm(); this.active = { name: randomName(), bp: blankBlueprint() }; this.go('workshop'); });
     d.querySelectorAll('.mz-item').forEach(b => b.addEventListener('click', () => {
       fb.press();
-      const z = (+b.dataset.saved ? roster : EXAMPLES)[+b.dataset.i];
+      const saved = +b.dataset.saved;
+      const z = (saved ? roster : EXAMPLES)[+b.dataset.i];
       const bp = { ...defaultBlueprint(), ...z.bp };
       if (!z.bp.legs) delete bp.legs;   // let it rebuild legs from the example's own fields
-      this.active = { name: z.name, bp };
+      // Built-in examples are "strays" born to the show; editing one adopts it
+      // into your bloodline. Your own saved Zooks keep their stored passport.
+      this.active = { name: z.name, bp, creator: saved ? undefined : 'BAMZOOKi Studios' };
       this.go('workshop');
     }));
   }

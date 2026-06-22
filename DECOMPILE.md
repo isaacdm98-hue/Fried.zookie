@@ -93,6 +93,18 @@ and the *contest targets*. Concrete facts used by FriedZooki:
   - *Master IK*: **Cycle Speed** (`zook_speed`), **Turn Sharpness**, **Turning
     Smoothness**, **Part Targeting Angle** (`max_spine_angle`, 0–90°).
   - per-part `muscle_stiffness` / `muscle_damping` (the Karma PD muscle gains).
+  - *Position pane orientation* — clay parts expose **Twist / Pitch / Yaw** (`roll`/
+    `pitch`/`yaw`) so any part can be freely oriented.
+- **Zook Passport / genome identity** (decompiled `ZookPassport.lua`): every Zook
+  carries a passport that travels with the genome — an 8-hex **UID**, a 16-hex
+  **moniker**, an **owner** + **born/adopted** date, an **ownership bloodline**
+  (adopt a stray Zook someone else built and your generation is appended), and a
+  per-owner record of the four official **modification classes** — `CREATIVE_MOD`
+  (add/remove parts), `PHYSICAL_MOD` (scale/shape/position), `DYNAMIC_MOD`
+  (movement), `COSMETIC_MOD` (colour/skin). The test-table Passport card shows all
+  of this plus real **cm / kg / component** stats (1 unit ≈ 18 cm; Wizard limits
+  H 15 / W 40 / L 35 cm, ≤ 2 kg, ≤ 25 parts). Built-in examples are "strays" born
+  to *BAMZOOKi Studios*; editing one adopts it into your line. See `passport.js`.
 - **Trial performance targets** (paper Table 3, "Gold Performance Parameters"):
   | Level | Sprint | Block Push | Hurdles |
   |---|---|---|---|

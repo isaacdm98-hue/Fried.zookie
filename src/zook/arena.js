@@ -13,6 +13,7 @@ import { Zook } from './model.js';
 import { setCamera, shakeCamera } from '../engine/renderer.js';
 import { fb } from '../sys/feedback.js';
 import { guide } from '../sys/guide.js';
+import { passportView } from './passport.js';
 
 export const ENVIRONMENTS = [
   { id: 'box',    name: 'BoxEnv',    blurb: 'a plain table, no obstacles' },
@@ -45,8 +46,8 @@ export class Arena {
     this._onPointer = this._onPointer.bind(this);
   }
 
-  enter(blueprint) {
-    this.bp = blueprint;
+  enter(blueprint, name) {
+    this.bp = blueprint; this.name = name || this.name || 'My Zook';
     this._spawnAll();
     this.canvas.addEventListener('pointerdown', this._onPointer);
     this._buildHud();
@@ -333,25 +334,38 @@ export class Arena {
     tb.classList.toggle('on', this._timing); tb.textContent = this._timing ? 'STOP' : 'START';
   }
   _passport() {
-    const bp = this.bp, legs = this.zook.bp.legs.length;
-    const size = `${bp.len.toFixed(1)} × ${bp.width.toFixed(1)} × ${bp.height.toFixed(1)}`;
-    const weight = (bp.len * bp.width * bp.height * 1.1).toFixed(2);
     const old = this.mount.querySelector('.passport'); if (old) { old.remove(); return; }
+    const bp = this.bp, pv = passportView(bp), st = pv.stats;
+    const name = (this.name || 'My Zook');
+    const size = `${st.L.toFixed(0)} × ${st.W.toFixed(0)} × ${st.H.toFixed(0)} cm`;
     let photo = '';
     try { photo = document.getElementById('scene').toDataURL('image/png'); } catch (_) {}
+    // Bloodline — the chain of owners that have held this genome (adopt a stray
+    // and your generation is appended), each with their share of the tweaks.
+    const blood = pv.bloodline.map((g, i) =>
+      `<div class="pp-blood"><span>${i === 0 ? '★' : '↳'} ${g.owner}</span><i>${g.date}</i><b>${g.share}%</b></div>`).join('');
+    const modline = pv.mods.map(m => `${m.label} ${m.count}`).join(' · ');
     const card = document.createElement('div'); card.className = 'passport';
     card.innerHTML = `
       <div class="pp-card">
-        <h3>PASSPORT</h3>
+        <h3>ZOOK PASSPORT</h3>
         ${photo ? `<img class="pp-photo" src="${photo}" alt="snapshot"/>` : ''}
-        <div class="pp-row"><span>Size (L×W×H)</span><b>${size}</b></div>
-        <div class="pp-row"><span>Weight</span><b>${weight}</b></div>
-        <div class="pp-row"><span>Legs</span><b>${legs}</b></div>
-        <div class="pp-row"><span>Top speed</span><b>${this._topSpeed.toFixed(2)} m/s</b></div>
-        <div class="pp-row"><span>Top jump</span><b>${(this._maxH || 0).toFixed(2)} m</b></div>
-        <div class="pp-row"><span>Best sprint</span><b>${this._best.sprint ? this._best.sprint.toFixed(2) + 's  ' + this._medal('sprint', this._best.sprint) : '—'}</b></div>
-        <div class="pp-row"><span>Best lap</span><b>${this._best.lap ? this._best.lap.toFixed(2) + 's  ' + this._medal('lap', this._best.lap) : '—'}</b></div>
-        <div class="pp-row"><span>Best jump</span><b>${this._best.jump ? this._best.jump.toFixed(2) + 'm  ' + this._medal('jump', this._best.jump) : '—'}</b></div>
+        <div class="pp-name">${name}</div>
+        <div class="pp-ids"><span>UID ${pv.uid}</span><span>${pv.owner} · born ${pv.born}</span></div>
+        <div class="pp-grid">
+          <div class="pp-row"><span>Size (L×W×H)</span><b>${size}</b></div>
+          <div class="pp-row"><span>Weight</span><b>${st.weight.toFixed(2)} kg</b></div>
+          <div class="pp-row"><span>Components</span><b>${st.components}</b></div>
+          <div class="pp-row"><span>Top speed</span><b>${this._topSpeed.toFixed(2)} m/s</b></div>
+          <div class="pp-row"><span>Top jump</span><b>${(this._maxH || 0).toFixed(2)} m</b></div>
+          <div class="pp-row"><span>Best sprint</span><b>${this._best.sprint ? this._best.sprint.toFixed(2) + 's ' + this._medal('sprint', this._best.sprint) : '—'}</b></div>
+          <div class="pp-row"><span>Best lap</span><b>${this._best.lap ? this._best.lap.toFixed(2) + 's ' + this._medal('lap', this._best.lap) : '—'}</b></div>
+          <div class="pp-row"><span>Best jump</span><b>${this._best.jump ? this._best.jump.toFixed(2) + 'm ' + this._medal('jump', this._best.jump) : '—'}</b></div>
+        </div>
+        <div class="pp-sub">BLOODLINE · ${pv.generations} owner${pv.generations > 1 ? 's' : ''}</div>
+        <div class="pp-bloodwrap">${blood}</div>
+        <div class="pp-sub">THIS OWNER'S CHANGES</div>
+        <div class="pp-mods">${modline}</div>
         <button class="chip wide" data-close>CLOSE</button>
       </div>`;
     card.querySelector('[data-close]').addEventListener('click', () => { fb.press(); card.remove(); });

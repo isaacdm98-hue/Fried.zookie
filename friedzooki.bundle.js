@@ -2301,16 +2301,16 @@
   // node_modules/qrcode/lib/renderer/utils.js
   var require_utils2 = __commonJS({
     "node_modules/qrcode/lib/renderer/utils.js"(exports) {
-      function hex2rgba(hex) {
-        if (typeof hex === "number") {
-          hex = hex.toString();
+      function hex2rgba(hex2) {
+        if (typeof hex2 === "number") {
+          hex2 = hex2.toString();
         }
-        if (typeof hex !== "string") {
+        if (typeof hex2 !== "string") {
           throw new Error("Color should be defined as hex string");
         }
-        let hexCode = hex.slice().replace("#", "").split("");
+        let hexCode = hex2.slice().replace("#", "").split("");
         if (hexCode.length < 3 || hexCode.length === 5 || hexCode.length > 8) {
-          throw new Error("Invalid hex color: " + hex);
+          throw new Error("Invalid hex color: " + hex2);
         }
         if (hexCode.length === 3 || hexCode.length === 4) {
           hexCode = Array.prototype.concat.apply([], hexCode.map(function(c2) {
@@ -17665,11 +17665,11 @@
       this.b = scalar;
       return this;
     }
-    setHex(hex, colorSpace = SRGBColorSpace) {
-      hex = Math.floor(hex);
-      this.r = (hex >> 16 & 255) / 255;
-      this.g = (hex >> 8 & 255) / 255;
-      this.b = (hex & 255) / 255;
+    setHex(hex2, colorSpace = SRGBColorSpace) {
+      hex2 = Math.floor(hex2);
+      this.r = (hex2 >> 16 & 255) / 255;
+      this.g = (hex2 >> 8 & 255) / 255;
+      this.b = (hex2 & 255) / 255;
       ColorManagement.toWorkingColorSpace(this, colorSpace);
       return this;
     }
@@ -17746,17 +17746,17 @@
             console.warn("THREE.Color: Unknown color model " + style);
         }
       } else if (m2 = /^\#([A-Fa-f\d]+)$/.exec(style)) {
-        const hex = m2[1];
-        const size = hex.length;
+        const hex2 = m2[1];
+        const size = hex2.length;
         if (size === 3) {
           return this.setRGB(
-            parseInt(hex.charAt(0), 16) / 15,
-            parseInt(hex.charAt(1), 16) / 15,
-            parseInt(hex.charAt(2), 16) / 15,
+            parseInt(hex2.charAt(0), 16) / 15,
+            parseInt(hex2.charAt(1), 16) / 15,
+            parseInt(hex2.charAt(2), 16) / 15,
             colorSpace
           );
         } else if (size === 6) {
-          return this.setHex(parseInt(hex, 16), colorSpace);
+          return this.setHex(parseInt(hex2, 16), colorSpace);
         } else {
           console.warn("THREE.Color: Invalid hex color " + style);
         }
@@ -17766,9 +17766,9 @@
       return this;
     }
     setColorName(style, colorSpace = SRGBColorSpace) {
-      const hex = _colorKeywords[style.toLowerCase()];
-      if (hex !== void 0) {
-        this.setHex(hex, colorSpace);
+      const hex2 = _colorKeywords[style.toLowerCase()];
+      if (hex2 !== void 0) {
+        this.setHex(hex2, colorSpace);
       } else {
         console.warn("THREE.Color: Unknown color " + style);
       }
@@ -38837,6 +38837,85 @@
     return list;
   }
 
+  // src/zook/passport.js
+  var MOD_TYPES = ["creative", "physical", "dynamic", "cosmetic"];
+  var MOD_LABEL = { creative: "Creative", physical: "Physical", dynamic: "Movement", cosmetic: "Cosmetic" };
+  function hex(n2) {
+    let s2 = "";
+    for (let i2 = 0; i2 < n2; i2++) s2 += Math.floor(Math.random() * 16).toString(16);
+    return s2.toUpperCase();
+  }
+  function genUID(len = 8) {
+    return hex(len);
+  }
+  function today() {
+    return (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
+  }
+  function zeroMods() {
+    return { creative: 0, physical: 0, dynamic: 0, cosmetic: 0 };
+  }
+  function ownerName() {
+    try {
+      return localStorage.getItem("fz-owner") || "You";
+    } catch (_2) {
+      return "You";
+    }
+  }
+  function ensurePassport(bp, { creator } = {}) {
+    if (!bp) return bp;
+    let p2 = bp.passport;
+    if (!p2 || !p2.uid) {
+      p2 = bp.passport = { uid: genUID(8), moniker: genUID(16), born: today(), lineage: [] };
+    }
+    if (!Array.isArray(p2.lineage) || !p2.lineage.length) {
+      p2.lineage = [{ owner: creator || ownerName(), uid: genUID(8), date: p2.born || today(), mods: zeroMods() }];
+    }
+    return bp;
+  }
+  function adopt(bp) {
+    ensurePassport(bp);
+    const me = ownerName();
+    const l2 = bp.passport.lineage;
+    if (l2[l2.length - 1].owner !== me) l2.push({ owner: me, uid: genUID(8), date: today(), mods: zeroMods() });
+    return l2[l2.length - 1];
+  }
+  function recordMod(bp, type) {
+    if (!bp || !MOD_TYPES.includes(type)) return;
+    const gen = adopt(bp);
+    gen.mods[type] = (gen.mods[type] || 0) + 1;
+  }
+  function ownerTotal(g2) {
+    return MOD_TYPES.reduce((s2, t2) => s2 + (g2.mods[t2] || 0), 0);
+  }
+  var U2CM = 18;
+  function realStats(bp) {
+    const legs = bp.legs || [], blobs2 = bp.blobs || [];
+    const L2 = bp.len * U2CM, W2 = bp.width * U2CM, H2 = bp.height * U2CM;
+    let vol = bp.len * bp.width * bp.height * 0.52;
+    for (const l2 of legs) vol += (l2.len || 0.72) * 0.16 * 0.16 * 7 * (l2.sx || 1) * (l2.sy || 1) * (l2.sz || 1) * 0.5;
+    for (const b2 of blobs2) vol += (b2.sx || 0.7) * (b2.sy || 0.7) * (b2.sz || 0.7) * 0.52;
+    const weight = vol * 1.15;
+    const components = 1 + legs.length + blobs2.length + (bp.antennae ? 2 : 0) + (bp.tail ? 1 : 0);
+    return { L: L2, W: W2, H: H2, weight, components };
+  }
+  function passportView(bp) {
+    ensurePassport(bp);
+    const p2 = bp.passport, l2 = p2.lineage;
+    const grandTotal = l2.reduce((s2, g2) => s2 + ownerTotal(g2), 0) || 1;
+    const cur = l2[l2.length - 1];
+    return {
+      uid: p2.uid,
+      moniker: p2.moniker,
+      born: p2.born,
+      owner: cur.owner,
+      ownerSince: cur.date,
+      generations: l2.length,
+      bloodline: l2.map((g2) => ({ owner: g2.owner, date: g2.date, share: Math.round(ownerTotal(g2) / grandTotal * 100) })),
+      mods: MOD_TYPES.map((t2) => ({ key: t2, label: MOD_LABEL[t2], count: cur.mods[t2] || 0 })),
+      stats: realStats(bp)
+    };
+  }
+
   // src/sys/guide.js
   var bubble = null;
   var avatar = null;
@@ -39003,11 +39082,12 @@
       this._onMove = this._onMove.bind(this);
       this._onUp = this._onUp.bind(this);
     }
-    enter(blueprint, name) {
+    enter(blueprint, name, { creator } = {}) {
       if (blueprint) this.bp = { ...blueprint };
       if (name) this.name = name;
       ensureLegs(this.bp);
       if (!Array.isArray(this.bp.blobs)) this.bp.blobs = [];
+      ensurePassport(this.bp, { creator });
       this._sel = null;
       this.turntable = new Group();
       this.scene.add(this.turntable);
@@ -39058,10 +39138,11 @@
     _apply() {
       if (this.zook) this.zook.setBlueprint(this.bp, this._sel && this._sel.type === "leg" ? this._sel.idx : -1);
     }
-    _pushUndo() {
+    _pushUndo(type) {
       this._undo.push(JSON.parse(JSON.stringify(this.bp)));
       if (this._undo.length > 40) this._undo.shift();
       this._redo.length = 0;
+      recordMod(this.bp, type || { shape: "physical", add: "physical", move: "dynamic", paint: "cosmetic" }[this._mode] || "physical");
     }
     // ── chrome ──────────────────────────────────────────────────────────────────
     // A thin LEFT side-panel (drawing-app style): mode tabs + the mode's tactile
@@ -39265,10 +39346,13 @@
             K2({ label: "WIDE", min: 0.2, max: 3, step: 0.1, value: bl.sx, format: (v2) => v2.toFixed(1), onChange: (v2) => setb("sx", v2) }),
             K2({ label: "TALL", min: 0.2, max: 3, step: 0.1, value: bl.sy, format: (v2) => v2.toFixed(1), onChange: (v2) => setb("sy", v2) }),
             K2({ label: "DEEP", min: 0.2, max: 3, step: 0.1, value: bl.sz, format: (v2) => v2.toFixed(1), onChange: (v2) => setb("sz", v2) }),
+            // Position pane orientation (BuilderParts roll/pitch/yaw): Twist + Pitch + Yaw.
             K2({ label: "TWIST", min: -3.14, max: 3.14, step: 0.08, value: bl.twist || 0, format: (v2) => `${Math.round(v2 * 57.3)}\xB0`, onChange: (v2) => setb("twist", v2) }),
+            K2({ label: "PITCH", min: -3.14, max: 3.14, step: 0.08, value: bl.pitch || 0, format: (v2) => `${Math.round(v2 * 57.3)}\xB0`, onChange: (v2) => setb("pitch", v2) }),
+            K2({ label: "YAW", min: -3.14, max: 3.14, step: 0.08, value: bl.yaw || 0, format: (v2) => `${Math.round(v2 * 57.3)}\xB0`, onChange: (v2) => setb("yaw", v2) }),
             this._delBtn()
           );
-          hint("drag to move \xB7 MESH picks Blob/Box/Ball \xB7 TWIST rolls it \xB7 box handles scale");
+          hint("drag to move \xB7 MESH picks Blob/Box/Ball \xB7 TWIST/PITCH/YAW orient it \xB7 box handles scale");
         } else {
           hint(this._addType === "leg" ? "TAP THE BODY where you want a leg" : "TAP ANY PART to stack a clay blob (build limbs!)");
         }
@@ -39468,7 +39552,7 @@
       if (!s2 || s2.type !== "leg") return;
       const src = this.bp.legs[s2.idx];
       if (!src) return;
-      this._pushUndo();
+      this._pushUndo("creative");
       const along = Math.max(-1, Math.min(1, (src.along || 0) + 0.18));
       const dup = { ...src, along, pair: newPairId(), path: (src.path || []).map((p2) => ({ ...p2 })) };
       this.bp.legs.push(dup);
@@ -39487,7 +39571,7 @@
         if (this._helper) guide.pop("That leg already has a mirror partner.");
         return;
       }
-      this._pushUndo();
+      this._pushUndo("creative");
       const twin = { ...src, side: -src.side, cycle: ((src.cycle || 0) + 0.5) % 1, path: (src.path || []).map((p2) => ({ ...p2 })) };
       this.bp.legs.push(twin);
       this._apply();
@@ -39594,7 +39678,7 @@
     _deleteSel() {
       const s2 = this._sel;
       if (!s2) return;
-      this._pushUndo();
+      this._pushUndo("creative");
       if (s2.type === "leg") {
         const leg = this.bp.legs[s2.idx];
         this.bp.legs = this.bp.legs.filter((l2) => l2 !== leg && l2.pair !== leg.pair);
@@ -39606,7 +39690,7 @@
       this._renderBar();
     }
     _addLegAt(along, side) {
-      this._pushUndo();
+      this._pushUndo("creative");
       const legs = this.bp.legs, last = legs[legs.length - 1];
       const len = last ? last.len : 0.72, thick = last ? last.thick : this.bp.legThick, style = this._legStyle || (last ? last.style : "crawl");
       if (this._mirror) {
@@ -39623,8 +39707,8 @@
       fb.confirm();
     }
     _addBlobAtLocal(loc) {
-      this._pushUndo();
-      this.bp.blobs.push({ x: loc.x, y: loc.y, z: loc.z, sx: 0.6, sy: 0.6, sz: 0.6, mesh: this._blobMesh || "blob", twist: 0 });
+      this._pushUndo("creative");
+      this.bp.blobs.push({ x: loc.x, y: loc.y, z: loc.z, sx: 0.6, sy: 0.6, sz: 0.6, mesh: this._blobMesh || "blob", twist: 0, pitch: 0, yaw: 0 });
       this._select({ type: "blob", idx: this.bp.blobs.length - 1 });
       this._apply();
       this._renderBar();
@@ -40005,8 +40089,9 @@
       this._lastPos = null;
       this._onPointer = this._onPointer.bind(this);
     }
-    enter(blueprint) {
+    enter(blueprint, name) {
       this.bp = blueprint;
+      this.name = name || this.name || "My Zook";
       this._spawnAll();
       this.canvas.addEventListener("pointerdown", this._onPointer);
       this._buildHud();
@@ -40444,33 +40529,43 @@
       tb.textContent = this._timing ? "STOP" : "START";
     }
     _passport() {
-      const bp = this.bp, legs = this.zook.bp.legs.length;
-      const size = `${bp.len.toFixed(1)} \xD7 ${bp.width.toFixed(1)} \xD7 ${bp.height.toFixed(1)}`;
-      const weight = (bp.len * bp.width * bp.height * 1.1).toFixed(2);
       const old = this.mount.querySelector(".passport");
       if (old) {
         old.remove();
         return;
       }
+      const bp = this.bp, pv = passportView(bp), st = pv.stats;
+      const name = this.name || "My Zook";
+      const size = `${st.L.toFixed(0)} \xD7 ${st.W.toFixed(0)} \xD7 ${st.H.toFixed(0)} cm`;
       let photo = "";
       try {
         photo = document.getElementById("scene").toDataURL("image/png");
       } catch (_2) {
       }
+      const blood = pv.bloodline.map((g2, i2) => `<div class="pp-blood"><span>${i2 === 0 ? "\u2605" : "\u21B3"} ${g2.owner}</span><i>${g2.date}</i><b>${g2.share}%</b></div>`).join("");
+      const modline = pv.mods.map((m2) => `${m2.label} ${m2.count}`).join(" \xB7 ");
       const card = document.createElement("div");
       card.className = "passport";
       card.innerHTML = `
       <div class="pp-card">
-        <h3>PASSPORT</h3>
+        <h3>ZOOK PASSPORT</h3>
         ${photo ? `<img class="pp-photo" src="${photo}" alt="snapshot"/>` : ""}
-        <div class="pp-row"><span>Size (L\xD7W\xD7H)</span><b>${size}</b></div>
-        <div class="pp-row"><span>Weight</span><b>${weight}</b></div>
-        <div class="pp-row"><span>Legs</span><b>${legs}</b></div>
-        <div class="pp-row"><span>Top speed</span><b>${this._topSpeed.toFixed(2)} m/s</b></div>
-        <div class="pp-row"><span>Top jump</span><b>${(this._maxH || 0).toFixed(2)} m</b></div>
-        <div class="pp-row"><span>Best sprint</span><b>${this._best.sprint ? this._best.sprint.toFixed(2) + "s  " + this._medal("sprint", this._best.sprint) : "\u2014"}</b></div>
-        <div class="pp-row"><span>Best lap</span><b>${this._best.lap ? this._best.lap.toFixed(2) + "s  " + this._medal("lap", this._best.lap) : "\u2014"}</b></div>
-        <div class="pp-row"><span>Best jump</span><b>${this._best.jump ? this._best.jump.toFixed(2) + "m  " + this._medal("jump", this._best.jump) : "\u2014"}</b></div>
+        <div class="pp-name">${name}</div>
+        <div class="pp-ids"><span>UID ${pv.uid}</span><span>${pv.owner} \xB7 born ${pv.born}</span></div>
+        <div class="pp-grid">
+          <div class="pp-row"><span>Size (L\xD7W\xD7H)</span><b>${size}</b></div>
+          <div class="pp-row"><span>Weight</span><b>${st.weight.toFixed(2)} kg</b></div>
+          <div class="pp-row"><span>Components</span><b>${st.components}</b></div>
+          <div class="pp-row"><span>Top speed</span><b>${this._topSpeed.toFixed(2)} m/s</b></div>
+          <div class="pp-row"><span>Top jump</span><b>${(this._maxH || 0).toFixed(2)} m</b></div>
+          <div class="pp-row"><span>Best sprint</span><b>${this._best.sprint ? this._best.sprint.toFixed(2) + "s " + this._medal("sprint", this._best.sprint) : "\u2014"}</b></div>
+          <div class="pp-row"><span>Best lap</span><b>${this._best.lap ? this._best.lap.toFixed(2) + "s " + this._medal("lap", this._best.lap) : "\u2014"}</b></div>
+          <div class="pp-row"><span>Best jump</span><b>${this._best.jump ? this._best.jump.toFixed(2) + "m " + this._medal("jump", this._best.jump) : "\u2014"}</b></div>
+        </div>
+        <div class="pp-sub">BLOODLINE \xB7 ${pv.generations} owner${pv.generations > 1 ? "s" : ""}</div>
+        <div class="pp-bloodwrap">${blood}</div>
+        <div class="pp-sub">THIS OWNER'S CHANGES</div>
+        <div class="pp-mods">${modline}</div>
         <button class="chip wide" data-close>CLOSE</button>
       </div>`;
       card.querySelector("[data-close]").addEventListener("click", () => {
@@ -42065,7 +42160,7 @@
     // ── Workshop ─────────────────────────────────────────────────────────────
     _workshop(opts) {
       this.mode = this._builder;
-      this._builder.enter(opts.bp || this.active.bp, opts.name || this.active.name);
+      this._builder.enter(opts.bp || this.active.bp, opts.name || this.active.name, { creator: this.active && this.active.creator });
     }
     // ── Test table ───────────────────────────────────────────────────────────
     _test() {
@@ -42078,7 +42173,7 @@
         mount: this.ui,
         onBack: () => this.go("workshop")
       });
-      arena.enter(this.active.bp);
+      arena.enter(this.active.bp, this.active.name);
       this.mode = arena;
     }
     // ── Contests (select) ────────────────────────────────────────────────────
@@ -42373,10 +42468,11 @@
       });
       d2.querySelectorAll(".mz-item").forEach((b2) => b2.addEventListener("click", () => {
         fb.press();
-        const z2 = (+b2.dataset.saved ? roster : EXAMPLES)[+b2.dataset.i];
+        const saved = +b2.dataset.saved;
+        const z2 = (saved ? roster : EXAMPLES)[+b2.dataset.i];
         const bp = { ...defaultBlueprint(), ...z2.bp };
         if (!z2.bp.legs) delete bp.legs;
-        this.active = { name: z2.name, bp };
+        this.active = { name: z2.name, bp, creator: saved ? void 0 : "BAMZOOKi Studios" };
         this.go("workshop");
       }));
     }
