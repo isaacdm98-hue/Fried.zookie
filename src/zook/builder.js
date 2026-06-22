@@ -400,7 +400,16 @@ export class Builder {
     const s = this._sel; if (!s) return; this._pushUndo('creative');
     if (s.type === 'leg') {
       const leg = this.bp.legs[s.idx]; this.bp.legs = this.bp.legs.filter(l => l !== leg && l.pair !== leg.pair);
-    } else { this.bp.blobs.splice(s.idx, 1); }
+    } else {
+      // Removing a clay part removes everything attached to it (its whole subtree),
+      // then re-indexes the surviving parts' parent links so the tree stays valid.
+      const blobs = this.bp.blobs, kill = new Set([s.idx]);
+      for (let grew = true; grew;) { grew = false; blobs.forEach((b, i) => { if (!kill.has(i) && b.parent != null && kill.has(b.parent)) { kill.add(i); grew = true; } }); }
+      const survivors = [], map = {};
+      blobs.forEach((b, i) => { if (!kill.has(i)) { map[i] = survivors.length; survivors.push(b); } });
+      survivors.forEach(b => { if (b.parent != null) b.parent = map[b.parent] != null ? map[b.parent] : null; });
+      this.bp.blobs = survivors;
+    }
     this._select(null); this._apply(); this._renderBar();
   }
 
@@ -419,11 +428,23 @@ export class Builder {
     }
     this._apply(); this._renderBar(); fb.confirm();
   }
-  _addBlobAtLocal(loc) {
+  _addBlobAtLocal(loc, parent = null) {
     this._pushUndo('creative');
-    this.bp.blobs.push({ x: loc.x, y: loc.y, z: loc.z, sx: 0.6, sy: 0.6, sz: 0.6, mesh: this._blobMesh || 'blob', twist: 0, pitch: 0, yaw: 0 });
+    const b = { x: loc.x, y: loc.y, z: loc.z, sx: 0.6, sy: 0.6, sz: 0.6, mesh: this._blobMesh || 'blob', twist: 0, pitch: 0, yaw: 0 };
+    if (parent != null) { b.parent = parent; b.sx = b.sy = b.sz = 0.45; }   // a child part starts smaller
+    this.bp.blobs.push(b);
     this._select({ type: 'blob', idx: this.bp.blobs.length - 1 });
     this._apply(); this._renderBar(); fb.confirm();
+  }
+
+  // Attach a new clay part as a CHILD of an existing part (the part tree). The tap
+  // point is converted into the parent part's own local frame, so the child sits
+  // on its surface and rides its motion — attach moving parts to moving parts.
+  _addBlobChild(parentIdx, worldPoint) {
+    const obj = this.zook._blobObj && this.zook._blobObj[parentIdx];
+    let loc = { x: 0, y: 0, z: 0 };
+    if (obj) { obj.updateWorldMatrix(true, false); const v = obj.worldToLocal(worldPoint.clone()); loc = { x: v.x, y: v.y, z: v.z }; }
+    this._addBlobAtLocal(loc, parentIdx);
   }
 
   // ── touch interaction (touch = mouse) ───────────────────────────────────────
@@ -445,8 +466,9 @@ export class Builder {
     }
     return null;
   }
-  _toScreen(x, y, z) {
-    const v = new THREE.Vector3(x, y, z); this.zook.group.localToWorld(v); v.project(this.camera);
+  _toScreen(x, y, z, frame) {
+    const f = frame || this.zook.group; f.updateWorldMatrix(true, false);
+    const v = new THREE.Vector3(x, y, z); f.localToWorld(v); v.project(this.camera);
     const r = this.canvas.getBoundingClientRect();
     return { x: (v.x * 0.5 + 0.5) * r.width + r.left, y: (-v.y * 0.5 + 0.5) * r.height + r.top };
   }
@@ -456,7 +478,9 @@ export class Builder {
   }
   _blobDrag(idx, e) {
     const bl = this.bp.blobs[idx];
-    const O = this._toScreen(bl.x, bl.y, bl.z), Pz = this._toScreen(bl.x, bl.y, bl.z + 1), Py = this._toScreen(bl.x, bl.y + 1, bl.z);
+    // For a child part, drag in its PARENT's frame so x/y/z stays parent-local.
+    const frame = (bl.parent != null && this.zook._blobObj && this.zook._blobObj[bl.parent]) ? this.zook._blobObj[bl.parent] : this.zook.group;
+    const O = this._toScreen(bl.x, bl.y, bl.z, frame), Pz = this._toScreen(bl.x, bl.y, bl.z + 1, frame), Py = this._toScreen(bl.x, bl.y + 1, bl.z, frame);
     return { kind: 'blob', idx, az: { x: Pz.x - O.x, y: Pz.y - O.y }, ay: { x: Py.x - O.x, y: Py.y - O.y }, startPx: { x: e.clientX, y: e.clientY }, sz: bl.z, sy: bl.y };
   }
 
@@ -495,8 +519,11 @@ export class Builder {
       else this._orbit(e);
     } else if (this._mode === 'add') {
       if (this._addType === 'blob') {
-        // Attach clay to ANY part (body, blob or leg) — build free-form limbs/shapes.
-        if (hit) { const loc = this.zook.group.worldToLocal(hit.point.clone()); this._addBlobAtLocal(loc); this._drag = this._blobDrag(this._sel.idx, e); }
+        // Attach clay to ANY part — tapping the BODY adds a root part; tapping an
+        // existing clay part attaches a CHILD onto it (the hierarchical part tree),
+        // so you can chain parts and grow limbs off limbs, infinitely.
+        if (hit && hit.type === 'blob') { this._addBlobChild(hit.idx, hit.point); this._drag = this._blobDrag(this._sel.idx, e); }
+        else if (hit) { const loc = this.zook.group.worldToLocal(hit.point.clone()); this._addBlobAtLocal(loc); this._drag = this._blobDrag(this._sel.idx, e); }
         else this._orbit(e);
       } else { // leg
         if (hit && hit.type === 'leg') { this._select({ type: 'leg', idx: hit.idx }); this._renderBar(); this._drag = this._legDrag(hit.idx); }
