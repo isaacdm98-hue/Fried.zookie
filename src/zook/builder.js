@@ -246,7 +246,7 @@ export class Builder {
         // movement" for limbs/flippers/tails. A part sculpted long & low can paddle.
         const bl = this.bp.blobs[s.idx]; const setb = (k, v) => { this._pushUndo(); bl[k] = v; this._apply(); };
         el.append(Selector({ label: 'MOVE', value: bl.move || 'none',
-          options: [{ v: 'none', t: 'STILL' }, { v: 'single', t: 'MOVE' }],
+          options: [{ v: 'none', t: 'STILL' }, { v: 'single', t: 'PADDLE' }, { v: 'two', t: '2-PART' }],
           onChange: v => { this._pushUndo(); bl.move = v; if (v !== 'none' && !Array.isArray(bl.path)) bl.path = defaultPath(); this._apply(); this._renderBar(); } }).root);
         if (bl.move && bl.move !== 'none') {
           el.append(
@@ -255,8 +255,8 @@ export class Builder {
             Selector({ label: 'TURN', value: bl.moveType || 'auto',
               options: [{ v: 'auto', t: 'AUTO' }, { v: 'always', t: 'ALWAYS' }, { v: 'left', t: 'LEFT' }, { v: 'right', t: 'RIGHT' }], onChange: v => setb('moveType', v) }).root,
             this._pathBtn());
-          hint('this clay part paddles now — sculpt it long & low so its tip reaches the floor!');
-        } else hint('STILL = decoration · MOVE makes this part oscillate & paddle the floor');
+          hint(bl.move === 'two' ? '2-PART grows a knee & foot below — your clay is the thigh; it walks like a leg' : 'PADDLE makes this part sweep — sculpt it long & low so its tip reaches the floor!');
+        } else hint('STILL = decoration · PADDLE oscillates · 2-PART grows a knee & walks');
       } else hint('tap a leg or clay part to tune its movement · SPEED & STRIDE set pace');
     } else { // paint — colour the WHOLE body, or a single selected part (like the kit's Colour tab)
       const sel = this._sel;

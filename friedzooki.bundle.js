@@ -37791,7 +37791,10 @@
       const maxReach = legs.length ? Math.max(...legs.map(legReach)) : 0;
       const legRest = legs.length ? height * 0.32 + maxReach : 0;
       const movers = (this.bp.blobs || []).filter((b2) => b2.move && b2.move !== "none");
-      const moverRest = movers.length ? Math.max(...movers.map((b2) => Math.max(0.3, b2.sy || 0.7) - (b2.y || 0))) : 0;
+      const moverRest = movers.length ? Math.max(...movers.map((b2) => {
+        const down = b2.move === "two" ? (b2.sy || 0.7) * 1.55 : b2.sy || 0.7;
+        return Math.max(0.3, down) - (b2.y || 0);
+      })) : 0;
       const rest = Math.max(legRest, moverRest) || height / 2;
       return { w: width, h: height, l: len, rest };
     }
@@ -37851,7 +37854,51 @@
         if (bl.twist || bl.pitch || bl.yaw) mb.rotation.set(bl.pitch || 0, bl.yaw || 0, bl.twist || 0);
         mb.castShadow = mb.receiveShadow = true;
         mb.userData.blobIndex = i2;
-        if (bl.move && bl.move !== "none") {
+        if (bl.move === "two") {
+          const sx = bl.sx || 0.7, sy = bl.sy || 0.7, sz = bl.sz || 0.7;
+          const u2 = sy, l2 = sy * 0.55, tk = Math.max(0.12, (sx + sz) * 0.18);
+          const pivot = new Group();
+          pivot.position.set(bl.x || 0, bl.y || 0, bl.z || 0);
+          pivot.rotation.y = bl.yaw || 0;
+          mb.position.set(0, -u2 / 2, 0);
+          pivot.add(mb);
+          const knee = new Group();
+          knee.position.y = -u2;
+          pivot.add(knee);
+          const low = new Mesh(BLOB_GEO, bm);
+          low.scale.set(tk, l2 * 1.1, tk);
+          low.position.y = -l2 / 2;
+          low.castShadow = true;
+          knee.add(low);
+          const foot = new Mesh(BLOB_GEO, bm);
+          foot.scale.set(tk * 1.4, tk * 0.7, tk * 1.9);
+          foot.position.set(0, -l2, tk * 0.4);
+          foot.castShadow = true;
+          knee.add(foot);
+          low.userData.blobIndex = i2;
+          foot.userData.blobIndex = i2;
+          this.group.add(pivot);
+          this._blobs.push(mb);
+          this._legs.push({
+            pivot,
+            knee,
+            foot,
+            side: (bl.x || 0) < 0 ? -1 : 1,
+            moveType: bl.moveType || "auto",
+            path: bl.path || defaultPath(),
+            cycle: bl.cycle || 0,
+            move: "two",
+            style: "crawl",
+            target: bl.target || "off",
+            muscle: bl.muscle || 1,
+            hip: { x: bl.x || 0, y: bl.y || 0, z: bl.z || 0 },
+            reach: u2 + l2,
+            splay: 0,
+            _footLocal: null,
+            _footPrev: null,
+            _planted: false
+          });
+        } else if (bl.move && bl.move !== "none") {
           const pivot = new Group();
           pivot.position.set(bl.x || 0, bl.y || 0, bl.z || 0);
           pivot.rotation.set(bl.pitch || 0, bl.yaw || 0, bl.twist || 0);
@@ -39406,7 +39453,7 @@
           el2.append(Selector({
             label: "MOVE",
             value: bl.move || "none",
-            options: [{ v: "none", t: "STILL" }, { v: "single", t: "MOVE" }],
+            options: [{ v: "none", t: "STILL" }, { v: "single", t: "PADDLE" }, { v: "two", t: "2-PART" }],
             onChange: (v2) => {
               this._pushUndo();
               bl.move = v2;
@@ -39427,8 +39474,8 @@
               }).root,
               this._pathBtn()
             );
-            hint("this clay part paddles now \u2014 sculpt it long & low so its tip reaches the floor!");
-          } else hint("STILL = decoration \xB7 MOVE makes this part oscillate & paddle the floor");
+            hint(bl.move === "two" ? "2-PART grows a knee & foot below \u2014 your clay is the thigh; it walks like a leg" : "PADDLE makes this part sweep \u2014 sculpt it long & low so its tip reaches the floor!");
+          } else hint("STILL = decoration \xB7 PADDLE oscillates \xB7 2-PART grows a knee & walks");
         } else hint("tap a leg or clay part to tune its movement \xB7 SPEED & STRIDE set pace");
       } else {
         const sel = this._sel;

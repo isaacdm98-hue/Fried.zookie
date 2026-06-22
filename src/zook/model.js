@@ -211,7 +211,10 @@ export class Zook {
     // Movable clay limbs also prop the body up: a limb anchored at body-local y
     // reaching `sy` down wants its tip on the floor → body centre at (sy − y).
     const movers = (this.bp.blobs || []).filter(b => b.move && b.move !== 'none');
-    const moverRest = movers.length ? Math.max(...movers.map(b => Math.max(0.3, b.sy || 0.7) - (b.y || 0))) : 0;
+    const moverRest = movers.length ? Math.max(...movers.map(b => {
+      const down = b.move === 'two' ? (b.sy || 0.7) * 1.55 : (b.sy || 0.7);   // two-part adds a shin
+      return Math.max(0.3, down) - (b.y || 0);
+    })) : 0;
     const rest = Math.max(legRest, moverRest) || height / 2;
     return { w: width, h: height, l: len, rest };
   }
@@ -263,11 +266,29 @@ export class Zook {
       if (bl.twist || bl.pitch || bl.yaw) mb.rotation.set(bl.pitch || 0, bl.yaw || 0, bl.twist || 0);
       mb.castShadow = mb.receiveShadow = true;
       mb.userData.blobIndex = i;
-      // A clay part with Movement (BuilderParts `leg_type` 1 = Single part) becomes a
-      // limb: it hangs from a pivot at its anchor and sweeps along a foot path, so a
-      // part you sculpt long & low can paddle the floor and propel the Zook. Static
-      // parts (the default) are placed directly, exactly as before.
-      if (bl.move && bl.move !== 'none') {
+      // A clay part with Movement becomes a limb. Single part (BuilderParts
+      // `leg_type` 1) hangs from a pivot and sweeps/paddles; Two part (`leg_type`
+      // 2) grows a knee + foot below the clay "thigh" and walks with the full
+      // two-bone leg IK — the clay you sculpt IS the upper leg. Static parts (the
+      // default) are placed directly, exactly as before.
+      if (bl.move === 'two') {
+        const sx = bl.sx || 0.7, sy = bl.sy || 0.7, sz = bl.sz || 0.7;
+        const u = sy, l = sy * 0.55, tk = Math.max(0.12, (sx + sz) * 0.18);
+        const pivot = new THREE.Group();
+        pivot.position.set(bl.x || 0, bl.y || 0, bl.z || 0);
+        pivot.rotation.y = bl.yaw || 0;
+        mb.position.set(0, -u / 2, 0); pivot.add(mb);            // the clay is the thigh
+        const knee = new THREE.Group(); knee.position.y = -u; pivot.add(knee);
+        const low = new THREE.Mesh(BLOB_GEO, bm); low.scale.set(tk, l * 1.1, tk); low.position.y = -l / 2; low.castShadow = true; knee.add(low);
+        const foot = new THREE.Mesh(BLOB_GEO, bm); foot.scale.set(tk * 1.4, tk * 0.7, tk * 1.9); foot.position.set(0, -l, tk * 0.4); foot.castShadow = true; knee.add(foot);
+        low.userData.blobIndex = i; foot.userData.blobIndex = i;
+        this.group.add(pivot); this._blobs.push(mb);
+        this._legs.push({ pivot, knee, foot, side: (bl.x || 0) < 0 ? -1 : 1, moveType: bl.moveType || 'auto',
+          path: bl.path || defaultPath(), cycle: bl.cycle || 0, move: 'two', style: 'crawl',
+          target: bl.target || 'off', muscle: bl.muscle || 1,
+          hip: { x: bl.x || 0, y: bl.y || 0, z: bl.z || 0 }, reach: u + l, splay: 0,
+          _footLocal: null, _footPrev: null, _planted: false });
+      } else if (bl.move && bl.move !== 'none') {
         const pivot = new THREE.Group();
         pivot.position.set(bl.x || 0, bl.y || 0, bl.z || 0);
         pivot.rotation.set(bl.pitch || 0, bl.yaw || 0, bl.twist || 0);
