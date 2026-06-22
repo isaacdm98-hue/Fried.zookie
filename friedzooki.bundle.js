@@ -39136,12 +39136,15 @@
       };
       this._coach(this._mode === "add" && (this.bp.legs || []).length === 0 && this._addType === "leg" ? "\u{1F446} Tap the body to add a leg" : "");
       if (this._mode === "shape") {
+        const pct = (v2) => `${Math.round(v2 * 100)}`;
         el2.append(
           K2({ label: "LENGTH", min: 1, max: 3.2, step: 0.1, value: this.bp.len, onChange: (v2) => set("len", v2) }),
           K2({ label: "WIDTH", min: 0.5, max: 1.8, step: 0.05, value: this.bp.width, onChange: (v2) => set("width", v2) }),
           K2({ label: "HEIGHT", min: 0.4, max: 1.4, step: 0.05, value: this.bp.height, onChange: (v2) => set("height", v2) }),
-          K2({ label: "SQUARE", min: 0, max: 1, step: 0.05, value: this.bp.square, format: (v2) => `${Math.round(v2 * 100)}`, onChange: (v2) => set("square", v2) }),
-          K2({ label: "POINTY", min: 0, max: 1, step: 0.05, value: this.bp.pointy, format: (v2) => `${Math.round(v2 * 100)}`, onChange: (v2) => set("pointy", v2) })
+          K2({ label: "SQUARE", min: 0, max: 1, step: 0.05, value: this.bp.square, format: pct, onChange: (v2) => set("square", v2) }),
+          K2({ label: "POINTY", min: 0, max: 1, step: 0.05, value: this.bp.pointy, format: pct, onChange: (v2) => set("pointy", v2) }),
+          K2({ label: "FLAT-END", min: 0, max: 1, step: 0.05, value: this.bp.flatEnd || 0, format: pct, onChange: (v2) => set("flatEnd", v2) }),
+          K2({ label: "FLAT-SIDE", min: 0, max: 1, step: 0.05, value: this.bp.flatSide || 0, format: pct, onChange: (v2) => set("flatSide", v2) })
         );
         hint("drag the body to stretch it \xB7 drag the floor to spin it round");
       } else if (this._mode === "add") {
@@ -39829,18 +39832,24 @@
       const d2 = this._diagnose();
       return (tips[this._mode] || "") + (d2.startsWith("Looking") ? "" : " \u2014 " + d2);
     }
-    // Coach the build from the real Zook Kit fix-it table (research paper, Table 2).
+    // Coach the build straight from the BAMZOOKi research paper's fix-it table
+    // (Table 2: Possible Zook Problems and Solutions) — the same remedies the real
+    // designers used for the Sprint / Hurdles / Block Push trials.
     _diagnose() {
       const bp = this.bp, legs = bp.legs || [];
       const L2 = legs.filter((l2) => l2.side < 0).length, R2 = legs.filter((l2) => l2.side > 0).length;
       if (!legs.length) return "No legs yet \u2014 switch to ADD and tap the body to place some!";
       if (legs.length < 2) return "One leg won't do \u2014 it'll just flop. Add more, on both sides!";
       if (L2 === 0 || R2 === 0) return "All the legs are on one side \u2014 mirror them or it'll topple over.";
-      if (bp.width < 0.9) return "It's narrow and will tip \u2014 widen the body for a stable stance.";
+      if (bp.width < 0.9) return "It's narrow and will tip \u2014 increase the WIDTH for a stable stance.";
       const phases = new Set(legs.map((l2) => Math.round((l2.cycle || 0) * 12)));
-      if (phases.size < 2) return "Every leg steps together \u2014 stagger each leg's CYCLE so it doesn't limp.";
+      if (phases.size < 2) return "Every leg steps together \u2014 stagger each leg's CYCLE (a pair wants 0 and 0.5).";
       if (bp.stride < 0.5) return "Small steps! Raise STRIDE on the MOVE page for a longer step.";
+      const avgLen = legs.reduce((s2, l2) => s2 + (l2.len || 0.72), 0) / legs.length;
+      if (bp.stride >= 0.9 && avgLen < 0.6) return "Big stride but stubby legs \u2014 lengthen the legs (LEN) so they can reach it.";
+      if (legs.every((l2) => (l2.muscle || 1) <= 1) && bp.stride >= 0.8) return "For more shove, raise a leg's MUSCLE \u2014 stronger legs push harder before they slip.";
       if (bp.speed < 2) return "It'll walk, not run \u2014 raise SPEED to quicken the gait cycle.";
+      if (legs.some((l2) => l2.move === "two")) return "Looking sharp! For obstacle courses, shape the foot PATH higher for more step height.";
       return "Looking sharp! Send it to the test table and see how it scurries.";
     }
   };

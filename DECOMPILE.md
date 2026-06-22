@@ -60,6 +60,36 @@ FriedZooki approximates the *output* (genuine foot–ground contact) rather than
 simulating every powered Cardan, but the controls are mapped 1:1 so a build tunes
 the same knobs.
 
+## From the manual (v3.1) and the BAMZOOKi research paper
+
+The original **Zook-kit manual v3.1** (BBC) and the academic paper *"CBBC BAMZOOKi
+as a Tool for Engineering Design Research"* (Rea, Hawley, Corney, Ritchie, Sung,
+Salamon — Heriot-Watt / Drexel / Strathclyde) are the authority for the *builder*
+and the *contest targets*. Concrete facts used by FriedZooki:
+
+- **Root-part shape panel = seven sliders** (manual Ch3): Width, Height, Length,
+  **Pointiness**, **Flatten End**, **Flatten Side**, Squareness. All seven are now
+  exposed in the workshop SHAPE deck (`flatEnd`/`flatSide` feed `shapeBody`).
+- **Movement menu** (manual Ch10–13): Movement Mode = *No movement / Single part /
+  Two part*; Movement Type (turn behaviour); **Movement Cycle** (a leg pair wants
+  one leg at 0 and its mirror at 0.5); Part Targeting (toward/away) + Angle.
+- **Build is modelling-clay** (manual Ch6, paper Fig.2): every part is a squished
+  "blob"; legs are a blob stretched long with a second blob added at the end.
+- **Trial performance targets** (paper Table 3, "Gold Performance Parameters"):
+  | Level | Sprint | Block Push | Hurdles |
+  |---|---|---|---|
+  | Apprentice | 75 cm/s | 30 cm | — |
+  | Master | 75 cm/s | 30 cm | 30 cm |
+  | Wizard | 100 cm/s | 50 cm | 35 cm |
+  Wizard size/weight limits: Height 15 cm, Width 40 cm, Length 35 cm, Weight 2 kg,
+  **25 components**. (Our units are ~10× life size, so these map to *feel* — the
+  trial medals are tuned to FriedZooki's scale, not 1:1 cm.)
+- **Fix-it table** (paper Table 2, "Possible Zook Problems and Solutions") — drives
+  the workshop coach (`Builder._diagnose`): *walks not runs → ↑gait cycle speed;
+  small steps → ↑stride / ↑leg length / ↑leg pushing power; limps/unstable → adjust
+  leg phase within the gait cycle; falls over → ↑width; can't clear hurdles →
+  change gait for more step height / ground clearance.*
+
 ## Contest system (Lua "behaviours" + "agents")
 
 `.contest` files are **Lua tables**: a list of `behaviours` (event-driven rules)

@@ -153,12 +153,17 @@ export class Builder {
     this._coach(this._mode === 'add' && (this.bp.legs || []).length === 0 && this._addType === 'leg' ? '👆 Tap the body to add a leg' : '');
 
     if (this._mode === 'shape') {
+      const pct = v => `${Math.round(v * 100)}`;
+      // The root-part shape panel — the manual's seven sliders (Ch3): Width,
+      // Height, Length, Pointiness, Flatten End, Flatten Side, Squareness.
       el.append(
         K({ label: 'LENGTH', min: 1.0, max: 3.2, step: 0.1, value: this.bp.len, onChange: v => set('len', v) }),
         K({ label: 'WIDTH', min: 0.5, max: 1.8, step: 0.05, value: this.bp.width, onChange: v => set('width', v) }),
         K({ label: 'HEIGHT', min: 0.4, max: 1.4, step: 0.05, value: this.bp.height, onChange: v => set('height', v) }),
-        K({ label: 'SQUARE', min: 0, max: 1, step: 0.05, value: this.bp.square, format: v => `${Math.round(v * 100)}`, onChange: v => set('square', v) }),
-        K({ label: 'POINTY', min: 0, max: 1, step: 0.05, value: this.bp.pointy, format: v => `${Math.round(v * 100)}`, onChange: v => set('pointy', v) }),
+        K({ label: 'SQUARE', min: 0, max: 1, step: 0.05, value: this.bp.square, format: pct, onChange: v => set('square', v) }),
+        K({ label: 'POINTY', min: 0, max: 1, step: 0.05, value: this.bp.pointy, format: pct, onChange: v => set('pointy', v) }),
+        K({ label: 'FLAT-END', min: 0, max: 1, step: 0.05, value: this.bp.flatEnd || 0, format: pct, onChange: v => set('flatEnd', v) }),
+        K({ label: 'FLAT-SIDE', min: 0, max: 1, step: 0.05, value: this.bp.flatSide || 0, format: pct, onChange: v => set('flatSide', v) }),
       );
       hint('drag the body to stretch it · drag the floor to spin it round');
     } else if (this._mode === 'add') {
@@ -583,18 +588,30 @@ export class Builder {
     return (tips[this._mode] || '') + (d.startsWith('Looking') ? '' : ' — ' + d);
   }
 
-  // Coach the build from the real Zook Kit fix-it table (research paper, Table 2).
+  // Coach the build straight from the BAMZOOKi research paper's fix-it table
+  // (Table 2: Possible Zook Problems and Solutions) — the same remedies the real
+  // designers used for the Sprint / Hurdles / Block Push trials.
   _diagnose() {
     const bp = this.bp, legs = bp.legs || [];
     const L = legs.filter(l => l.side < 0).length, R = legs.filter(l => l.side > 0).length;
     if (!legs.length) return "No legs yet — switch to ADD and tap the body to place some!";
     if (legs.length < 2) return "One leg won't do — it'll just flop. Add more, on both sides!";
     if (L === 0 || R === 0) return "All the legs are on one side — mirror them or it'll topple over.";
-    if (bp.width < 0.9) return "It's narrow and will tip — widen the body for a stable stance.";
+    // Table 2, Hurdles: \"unstable and sometimes falls over → increase width\".
+    if (bp.width < 0.9) return "It's narrow and will tip — increase the WIDTH for a stable stance.";
+    // Table 2, Sprint: \"appears to limp / unstable → adjust phase of legs within the gait cycle\".
     const phases = new Set(legs.map(l => Math.round((l.cycle || 0) * 12)));
-    if (phases.size < 2) return "Every leg steps together — stagger each leg's CYCLE so it doesn't limp.";
+    if (phases.size < 2) return "Every leg steps together — stagger each leg's CYCLE (a pair wants 0 and 0.5).";
+    // Table 2, Sprint: \"takes small steps → increase stride length\".
     if (bp.stride < 0.5) return "Small steps! Raise STRIDE on the MOVE page for a longer step.";
+    // Table 2, Sprint: \"legs too slow to increase stride → increase leg pushing power / length\".
+    const avgLen = legs.reduce((s, l) => s + (l.len || 0.72), 0) / legs.length;
+    if (bp.stride >= 0.9 && avgLen < 0.6) return "Big stride but stubby legs — lengthen the legs (LEN) so they can reach it.";
+    if (legs.every(l => (l.muscle || 1) <= 1) && bp.stride >= 0.8) return "For more shove, raise a leg's MUSCLE — stronger legs push harder before they slip.";
+    // Table 2, Sprint: \"walks rather than runs → increase the gait cycle speed\".
     if (bp.speed < 2) return "It'll walk, not run — raise SPEED to quicken the gait cycle.";
+    // Table 2, Hurdles: \"can't get onto the larger hurdles → change gait to increase step height\".
+    if (legs.some(l => l.move === 'two')) return "Looking sharp! For obstacle courses, shape the foot PATH higher for more step height.";
     return "Looking sharp! Send it to the test table and see how it scurries.";
   }
 }
