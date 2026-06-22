@@ -526,6 +526,14 @@ export class ContestScene {
     if (c.goal === 'tug') return Math.abs(this.green.zook.position.x) >= Math.abs(this.red.zook.position.x) ? 'you’re winning the haul!' : 'rival is hauling you in!';
     if (c.goal === 'ball' && this._ball) { const z = this._ball.translation().z; return z < -1 ? 'ball in rival half ▸' : z > 1 ? '◂ ball in your half' : 'midfield'; }
     if (c.goal === 'tag') return `${Math.max(0, 20 - this._t).toFixed(0)}s to catch it`;
+    if (c.goal === 'race') {
+      // Leader + distance-to-line, like a TV race graphic. Finish line is at z=-26;
+      // the leader is whichever Zook is furthest down-track (most negative z).
+      const g = this.green.zook.position.z, r = this.red.zook.position.z;
+      const toLine = Math.max(0, Math.min(g, r) + 26).toFixed(0);
+      const lead = Math.abs(g - r) < 0.4 ? 'neck and neck' : (g < r ? '▸ you lead' : 'rival leads ◂');
+      return `${lead} · ${toLine}m to line`;
+    }
     return '';
   }
 
