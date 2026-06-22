@@ -136,6 +136,7 @@ const HILITE    = new THREE.MeshStandardMaterial({ color: 0xffd479, emissive: 0x
 // Shared unit blob (low-poly sphere) — limbs are scaled blobs, like the real
 // Zook Kit (every part is a squished "Blob" mesh) so the creature reads as one.
 const BLOB_GEO  = new THREE.SphereGeometry(0.5, 10, 8);
+const ONE_V     = new THREE.Vector3(1, 1, 1);   // shared unit-scale for matrix compose
 // Clay parts can be a Blob, a Box or a Ball — the original BuilderParts `mesh`
 // enum { Cube, Sphere, Blob }. Shared geometries (never per-instance disposed).
 const CUBE_GEO  = new THREE.BoxGeometry(1, 1, 1);
@@ -210,7 +211,7 @@ export class Zook {
     const legRest = legs.length ? height * 0.32 + maxReach : 0;
     // Movable clay limbs also prop the body up: a limb anchored at body-local y
     // reaching `sy` down wants its tip on the floor → body centre at (sy − y).
-    const movers = (this.bp.blobs || []).filter(b => b.move && b.move !== 'none');
+    const movers = (this.bp.blobs || []).filter(b => b.move && b.move !== 'none' && (b.parent == null || b.parent < 0));
     const moverRest = movers.length ? Math.max(...movers.map(b => {
       const down = b.move === 'two' ? (b.sy || 0.7) * 1.55 : (b.sy || 0.7);   // two-part adds a shin
       return Math.max(0.3, down) - (b.y || 0);
@@ -254,58 +255,87 @@ export class Zook {
     body.userData.isBody = true;                 // tap-target for placing parts
     this.group.add(body);
 
-    // Extra body blobs (modelling clay): scaled blobs you attach to build up the
-    // shape and free-form limbs. Each is a full part — own scale, colour & skin.
-    this._blobs = []; this._movers = [];
-    (bp.blobs || []).forEach((bl, i) => {
+    // Extra body blobs (modelling clay): a HIERARCHICAL part TREE, exactly like
+    // the real kit — every part attaches to a PARENT part (`bl.parent`, an index
+    // into blobs; null = the body) via its own pitch/yaw/twist connection angles,
+    // nested as deep as you like. A part is a full component: own scale, colour,
+    // skin and (optionally) Movement, so you can attach moving parts to moving
+    // parts and grow a leg straight off the head. Each part is an UNSCALED Group
+    // (so children never inherit a parent's stretch); the scaled mesh hangs inside
+    // it and children hook onto the Group.
+    this._blobs = []; this._movers = []; this._blobObj = []; this._blobMat = [];
+    const blobs = bp.blobs || [];
+    const composeM = (x, y, z, rx, ry, rz) => new THREE.Matrix4().compose(
+      new THREE.Vector3(x, y, z), new THREE.Quaternion().setFromEuler(new THREE.Euler(rx, ry, rz)), ONE_V);
+    const posOf = (m) => { const v = new THREE.Vector3(); v.setFromMatrixPosition(m); return { x: v.x, y: v.y, z: v.z }; };
+    // Build parents before children (topological by `parent`); cycles fall through.
+    const order = [], placed = new Array(blobs.length).fill(false);
+    for (let g = 0; g <= blobs.length && order.length < blobs.length; g++)
+      for (let i = 0; i < blobs.length; i++) {
+        if (placed[i]) continue;
+        const p = blobs[i].parent;
+        if (p == null || p < 0 || p >= blobs.length || placed[p]) { order.push(i); placed[i] = true; }
+      }
+    for (let i = 0; i < blobs.length; i++) if (!placed[i]) order.push(i);
+
+    for (const i of order) {
+      const bl = blobs[i];
+      const pv = (bl.parent != null && bl.parent >= 0 && bl.parent < blobs.length) ? bl.parent : null;
+      const nested = pv != null && this._blobObj[pv] != null;
+      const parentObj = nested ? this._blobObj[pv] : this.group;
+      const parentMat = (nested && this._blobMat[pv]) ? this._blobMat[pv] : new THREE.Matrix4();
       let bm = bMat;
       if (bl.skin) { bm = mat(0, 0.5, 0.55); bm.color.set(0xffffff); bm.map = skinTexture(bl.skin); bm.flatShading = true; }
       else if (bl.hue != null) { bm = mat(bl.hue, 0.55 + bri * 0.32); bm.flatShading = true; }
       const mb = new THREE.Mesh(blobGeo(bl.mesh), bm);
       mb.scale.set(bl.sx || 0.7, bl.sy || 0.7, bl.sz || 0.7);
-      if (bl.twist || bl.pitch || bl.yaw) mb.rotation.set(bl.pitch || 0, bl.yaw || 0, bl.twist || 0);
       mb.castShadow = mb.receiveShadow = true;
       mb.userData.blobIndex = i;
-      // A clay part with Movement becomes a limb. Single part (BuilderParts
-      // `leg_type` 1) hangs from a pivot and sweeps/paddles; Two part (`leg_type`
-      // 2) grows a knee + foot below the clay "thigh" and walks with the full
-      // two-bone leg IK — the clay you sculpt IS the upper leg. Static parts (the
-      // default) are placed directly, exactly as before.
+      const ax = bl.x || 0, ay = bl.y || 0, az = bl.z || 0;
       if (bl.move === 'two') {
         const sx = bl.sx || 0.7, sy = bl.sy || 0.7, sz = bl.sz || 0.7;
         const u = sy, l = sy * 0.55, tk = Math.max(0.12, (sx + sz) * 0.18);
         const pivot = new THREE.Group();
-        pivot.position.set(bl.x || 0, bl.y || 0, bl.z || 0);
+        pivot.position.set(ax, ay, az);
         pivot.rotation.y = bl.yaw || 0;
         mb.position.set(0, -u / 2, 0); pivot.add(mb);            // the clay is the thigh
         const knee = new THREE.Group(); knee.position.y = -u; pivot.add(knee);
         const low = new THREE.Mesh(BLOB_GEO, bm); low.scale.set(tk, l * 1.1, tk); low.position.y = -l / 2; low.castShadow = true; knee.add(low);
         const foot = new THREE.Mesh(BLOB_GEO, bm); foot.scale.set(tk * 1.4, tk * 0.7, tk * 1.9); foot.position.set(0, -l, tk * 0.4); foot.castShadow = true; knee.add(foot);
         low.userData.blobIndex = i; foot.userData.blobIndex = i;
-        this.group.add(pivot); this._blobs.push(mb);
-        this._legs.push({ pivot, knee, foot, side: (bl.x || 0) < 0 ? -1 : 1, moveType: bl.moveType || 'auto',
+        parentObj.add(pivot); this._blobs.push(mb);
+        const hipMat = parentMat.clone().multiply(composeM(ax, ay, az, 0, bl.yaw || 0, 0));
+        this._blobObj[i] = knee;                                  // children ride the lower leg
+        this._blobMat[i] = hipMat.clone().multiply(composeM(0, -u, 0, 0, 0, 0));
+        this._legs.push({ pivot, knee, foot, side: (ax) < 0 ? -1 : 1, moveType: bl.moveType || 'auto',
           path: bl.path || defaultPath(), cycle: bl.cycle || 0, move: 'two', style: 'crawl',
-          target: bl.target || 'off', muscle: bl.muscle || 1,
-          hip: { x: bl.x || 0, y: bl.y || 0, z: bl.z || 0 }, reach: u + l, splay: 0,
+          target: bl.target || 'off', muscle: bl.muscle || 1, _nested: nested, _swing: u * 0.5,
+          hip: nested ? { x: 0, y: 0, z: 0 } : posOf(hipMat), reach: u + l, splay: 0,
           _footLocal: null, _footPrev: null, _planted: false });
       } else if (bl.move && bl.move !== 'none') {
         const pivot = new THREE.Group();
-        pivot.position.set(bl.x || 0, bl.y || 0, bl.z || 0);
+        pivot.position.set(ax, ay, az);
         pivot.rotation.set(bl.pitch || 0, bl.yaw || 0, bl.twist || 0);
         mb.position.set(0, -(bl.sy || 0.7) * 0.5, 0);   // hang below the pivot → a lever to sweep
-        pivot.add(mb); this.group.add(pivot);
+        pivot.add(mb); parentObj.add(pivot);
         this._blobs.push(mb);
-        this._movers.push({ pivot, mesh: mb, hip: { x: bl.x || 0, y: bl.y || 0, z: bl.z || 0 },
+        const hipMat = parentMat.clone().multiply(composeM(ax, ay, az, bl.pitch || 0, bl.yaw || 0, bl.twist || 0));
+        this._blobObj[i] = pivot; this._blobMat[i] = hipMat;
+        this._movers.push({ pivot, mesh: mb, hip: nested ? { x: 0, y: 0, z: 0 } : posOf(hipMat),
           reach: Math.max(0.3, bl.sy || 0.7), path: bl.path || defaultPath(), cycle: bl.cycle || 0,
           move: bl.move, moveType: bl.moveType || 'auto', target: bl.target || 'off', muscle: bl.muscle || 1,
-          side: (bl.x || 0) < 0 ? -1 : 1, twist: bl.twist || 0,
+          side: (ax) < 0 ? -1 : 1, twist: bl.twist || 0, _nested: nested,
           _footLocal: null, _footVel: null, _planted: false, _settle: 0, _vlock: null });
       } else {
-        mb.position.set(bl.x || 0, bl.y || 0, bl.z || 0);
-        this.group.add(mb);
+        const grp = new THREE.Group();
+        grp.position.set(ax, ay, az);
+        grp.rotation.set(bl.pitch || 0, bl.yaw || 0, bl.twist || 0);
+        grp.add(mb); parentObj.add(grp);
         this._blobs.push(mb);
+        this._blobObj[i] = grp;
+        this._blobMat[i] = parentMat.clone().multiply(composeM(ax, ay, az, bl.pitch || 0, bl.yaw || 0, bl.twist || 0));
       }
-    });
+    }
 
     // Red direction arrow on the back (workshop only).
     if (this.showArrow) {
@@ -474,6 +504,17 @@ export class Zook {
         leg.knee.rotation.x = 0.2; leg.foot.rotation.x = footAngle;
         continue;
       }
+      // Nested limb (hung off another part): articulate in its own local frame so
+      // it rides the parent's motion; it doesn't grip the floor (the root limbs
+      // do the propelling), so a chain of moving parts stays stable.
+      if (leg._nested) {
+        leg._footLocal = null; leg._vlock = null;
+        const p = samplePath(leg.path, this._t * speed + (leg.cycle || 0));
+        leg.pivot.rotation.x = (p.f - 0.5) * 1.2 * amount;
+        leg.knee.rotation.x = 0.3 + p.h * 0.9 * amount;
+        leg.foot.rotation.x = footAngle;
+        continue;
+      }
       const u  = (this._t * speed + (leg.cycle || 0));
       const cur  = samplePath(leg.path, u);
       const prev = samplePath(leg.path, u - speed * dt);
@@ -514,6 +555,12 @@ export class Zook {
     // Movable clay parts (single-part movement): a hanging limb that sweeps along
     // its foot path and grips the floor through the SAME contact model as legs.
     for (const mv of this._movers || []) {
+      if (mv._nested) {   // hung off another part — sweep locally, no floor grip
+        mv._footLocal = null;
+        const p = samplePath(mv.path, this._t * speed + (mv.cycle || 0));
+        mv.pivot.rotation.x = (p.f - 0.5) * 1.3 * amount;
+        continue;
+      }
       const reach = mv.reach;
       const u = (this._t * speed + (mv.cycle || 0));
       const cur = samplePath(mv.path, u), prev = samplePath(mv.path, u - speed * dt);
