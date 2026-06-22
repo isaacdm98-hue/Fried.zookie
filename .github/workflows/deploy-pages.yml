@@ -1,13 +1,16 @@
 name: Deploy PWA to GitHub Pages
 
 # Builds the static PWA and publishes it to GitHub Pages, giving an installable
-# URL (https://<owner>.github.io/Fried.zookie/). Runs on every push to the work
-# branch or main, and can be triggered by hand from the Actions tab.
+# URL (https://<owner>.github.io/Fried.zookie/).
+#
+# ONE-TIME SETUP (required, owner only): repo Settings → Pages → "Build and
+# deployment" → Source = "GitHub Actions". The Actions token cannot enable Pages
+# itself, so until that switch is flipped the deploy step has nothing to publish to.
+#
+# This runs ONLY on manual trigger (Actions tab → "Deploy PWA to GitHub Pages" →
+# Run workflow), so ordinary pushes never produce a failed run. Once Pages is
+# enabled, run it once and it will publish — and stay published on each manual run.
 on:
-  push:
-    branches:
-      - claude/bamzookie-tactile-redesign-gw0a5h
-      - main
   workflow_dispatch:
 
 permissions:
