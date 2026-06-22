@@ -7,6 +7,7 @@
  */
 
 import { defaultBlueprint, makeDefaultLegs } from './model.js';
+import { REAL_ZOOKS } from './zooks-data.js';
 
 const base = defaultBlueprint;
 
@@ -38,20 +39,13 @@ export function randomName() { return FUNNY_NAMES[Math.floor(Math.random() * FUN
 // Scrabber), recreated faithfully — proportions and gaits echo the manual's
 // descriptions, with the new movement features (Wormthing flexes its spine via
 // Part Targeting; styles vary per creature).
-export const EXAMPLES = [
-  { name: 'Spider',   bp: { ...base(), hue: 0.02, footHue: 0.02, len: 1.8, width: 1.55, height: 0.48, square: 0.45, pointy: 0.3, speed: 3.0, stride: 0.7,  turnSharp: 1.6,
-      legs: legsFor(4, { len: 0.9,  thick: 0.15, style: 'crawl', spread: 0.4 }) } },
-  { name: 'Wormthing',bp: { ...base(), hue: 0.33, footHue: 0.30, len: 3.2, width: 1.0, height: 0.45, square: 0.3,  pointy: 0.55, speed: 3.0, stride: 0.6,  targetAngle: 0.5,
-      legs: legsFor(5, { len: 0.5,  thick: 0.14, style: 'crawl', target: 'inverted', spread: 0.46 }) } },
-  { name: 'Ant',      bp: { ...base(), hue: 0.07, footHue: 0.02, len: 2.2, width: 1.0, height: 0.6,  square: 0.45, pointy: 0.5,  speed: 2.8, stride: 0.8, antennae: true, antTarget: 'normal',
-      legs: legsFor(3, { len: 0.7,  thick: 0.15, style: 'crawl', spread: 0.44 }) } },
-  { name: 'Twigger',  bp: { ...base(), hue: 0.14, footHue: 0.14, len: 1.6, width: 1.3, height: 0.5, square: 0.4,  pointy: 0.5,  speed: 2.6, stride: 0.8, antennae: true, antTarget: 'normal',
-      legs: legsFor(3, { len: 0.95, thick: 0.13, style: 'crawl', spread: 0.42 }) } },
-  { name: 'Leapsa',   bp: { ...base(), hue: 0.55, footHue: 0.55, len: 1.5, width: 1.35, height: 0.55, square: 0.6, pointy: 0.35, speed: 2.6, stride: 0.85, stiffness: 1.1,
-      legs: legsFor(3, { len: 0.8,  thick: 0.18, style: 'stomp', spread: 0.4 }) } },
-  { name: 'Scrabber', bp: { ...base(), hue: 0.6,  footHue: 0.6,  len: 1.6, width: 1.5, height: 0.45, square: 0.55, pointy: 0.3,  speed: 3.3, stride: 0.65,
-      legs: legsFor(4, { len: 0.55, thick: 0.16, style: 'push',  spread: 0.42 }) } },
-];
+// The authentic Series-1 roster, decoded straight from the original encrypted
+// .zook genome files (see tools/decode-zooks.mjs). Each carries its real part
+// tree — body proportions, every clay part's position/scale/mesh/colour and the
+// limbs' movement — so these ARE the original Spider, Wormthing, Ant, Twigger,
+// Leapsa and Scrabber, not lookalikes. Legs are expressed as clay parts (the
+// genome has no separate "leg" objects), so the leg array stays empty.
+export const EXAMPLES = REAL_ZOOKS.map(z => ({ name: z.name, bp: { ...base(), legs: [], antennae: false, ...z.bp } }));
 
 export function randomExample() { return EXAMPLES[Math.floor(Math.random() * EXAMPLES.length)]; }
 

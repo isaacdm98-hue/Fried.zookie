@@ -286,6 +286,7 @@ export class Zook {
       const parentMat = (nested && this._blobMat[pv]) ? this._blobMat[pv] : new THREE.Matrix4();
       let bm = bMat;
       if (bl.skin) { bm = mat(0, 0.5, 0.55); bm.color.set(0xffffff); bm.map = skinTexture(bl.skin); bm.flatShading = true; }
+      else if (bl.rgb != null) { bm = mat(0, 0.5, 0.55); bm.color.setHex(bl.rgb); bm.flatShading = true; }   // exact genome colour (real Zooks)
       else if (bl.hue != null) { bm = mat(bl.hue, 0.55 + bri * 0.32); bm.flatShading = true; }
       const mb = new THREE.Mesh(blobGeo(bl.mesh), bm);
       mb.scale.set(bl.sx || 0.7, bl.sy || 0.7, bl.sz || 0.7);
