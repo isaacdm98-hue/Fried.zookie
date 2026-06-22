@@ -39,18 +39,22 @@ export function decodeZook(file) {
   throw new Error('no zlib/Blowfish payload found in ' + file);
 }
 
-/** Walk the XML and return a flat list of bodysolid nodes with parent links. */
+/** Walk the XML → flat list of bodysolid nodes with parent links + IK gait paths. */
 function parseGenome(xml) {
   const body = xml.slice(xml.indexOf('<genome'));
   const re = /<\/?([A-Za-z_]+)([^>]*?)>/g; let m; const stack = []; const solids = [];
+  const attrsOf = (s) => { const o = {}; const ar = /([A-Za-z_]+)\s*=\s*"([^"]*)"/g; let a; while ((a = ar.exec(s))) o[a[1]] = a[2]; return o; };
   while ((m = re.exec(body))) {
     if (body[m.index + 1] === '/') { stack.pop(); continue; }
     if (m[1] === 'bodysolid') {
-      const attrs = {}; const ar = /([A-Za-z_]+)\s*=\s*"([^"]*)"/g; let a;
-      while ((a = ar.exec(m[2]))) attrs[a[1]] = a[2];
       const pb = [...stack].reverse().find((s) => s.tag === 'bodysolid');
-      solids.push({ attrs, parentIdx: pb ? pb.idx : null, idx: solids.length });
+      solids.push({ attrs: attrsOf(m[2]), parentIdx: pb ? pb.idx : null, idx: solids.length, gait: [] });
       stack.push({ tag: 'bodysolid', idx: solids.length - 1 });
+    } else if (m[1] === 'point') {            // an IK foot-path point — belongs to the enclosing leg
+      const pb = [...stack].reverse().find((s) => s.tag === 'bodysolid');
+      const a = attrsOf(m[2]);
+      if (pb) solids[pb.idx].gait.push({ x: r3(f(a.x)), y: r3(f(a.y)), z: r3(f(a.z)) });
+      stack.push({ tag: m[1], idx: null });
     } else stack.push({ tag: m[1], idx: null });
   }
   return solids;
@@ -64,11 +68,25 @@ function rgb2hue(a) {
 }
 const r3 = (n) => +n.toFixed(3);
 
-/** Convert a parsed genome into the app blueprint (root = body, children = clay tree). */
+// Blob superquadric shape params (graphics), as authored in the genome.
+const shapeOf = (a) => ({ bias: r3(f(a.bias)), flatness: r3(f(a.flatness)), asymmetry: r3(f(a.asymmetry)), cubosity: r3(f(a.cubosity)) });
+// Dedupe an IK gait path (the genome stores the loop twice) → one clean loop.
+function cleanGait(pts) {
+  if (!pts.length) return undefined;
+  const half = pts.slice(0, pts.length / 2);
+  const same = half.length && half.every((p, i) => pts[i + half.length] && p.x === pts[i + half.length].x && p.y === pts[i + half.length].y && p.z === pts[i + half.length].z);
+  return (same ? half : pts);
+}
+
+/** Convert a parsed genome into the app blueprint (root = body, children = clay tree).
+ *  Captures the FULL genome: shape deformation (graphics), muscle stiffness/damping
+ *  and the IK foot-path (physics), and theta/phi connection — everything the exact
+ *  graphics + physics engine needs. */
 function toBlueprint(name, solids) {
   const root = solids.find((s) => s.parentIdx === null) || solids[0]; const ra = root.attrs;
   // genome scalex = X (width), scaley = Y (height), scalez = Z (length)
-  const bp = { width: r3(f(ra.scalex) || 1), height: r3(f(ra.scaley) || 1), len: r3(f(ra.scalez) || 1.6), hue: r3(rgb2hue(ra)), blobs: [] };
+  const bp = { width: r3(f(ra.scalex) || 1), height: r3(f(ra.scaley) || 1), len: r3(f(ra.scalez) || 1.6),
+    hue: r3(rgb2hue(ra)), bodyRgb: hex(ra), bodyMesh: (ra.mesh || 'Blob').toLowerCase(), bodyShape: shapeOf(ra), blobs: [] };
   const blobOf = {};
   for (const s of solids) {
     if (s === root) continue;
@@ -76,17 +94,23 @@ function toBlueprint(name, solids) {
     const parent = s.parentIdx === root.idx ? null : (blobOf[s.parentIdx] ?? null);
     const b = { x: r3(f(a.posx)), y: r3(f(a.posy)), z: r3(f(a.posz)),
       sx: r3(f(a.scalex) || 0.4), sy: r3(f(a.scaley) || 0.4), sz: r3(f(a.scalez) || 0.4),
-      mesh: (a.mesh || 'Blob').toLowerCase(), rgb: hex(a), parent };
+      mesh: (a.mesh || 'Blob').toLowerCase(), rgb: hex(a), parent,
+      shape: shapeOf(a),
+      // Connection on the parent surface (authentic theta/phi), kept in degrees.
+      theta: r3(f(a.theta)), phi: r3(f(a.phi)), mirror: +f(a.mirror_group) || 0 };
     const p = r3(f(a.pitch) * D2R), y = r3(f(a.yaw) * D2R), t = r3(f(a.roll) * D2R);
     if (Math.abs(p) > 0.001) b.pitch = p; if (Math.abs(y) > 0.001) b.yaw = y; if (Math.abs(t) > 0.001) b.twist = t;
     if (moving) {
       // leg_type 2 = part+parent form a 2-bone IK leg; the parent is already its
       // own part, so the moving part is a single hanging segment here. We keep the
-      // real leg_type for the articulated engine.
+      // real leg_type, muscle params and foot-path for the articulated engine.
       b.move = 'single'; b.legType = +lt; b.cycle = r3(f(a.leg_phase));
-      b.muscle = +Math.max(0.4, Math.min(2.2, (f(a.muscle_stiffness) || 5000) / 5000)).toFixed(2);
+      b.muscleStiffness = +f(a.muscle_stiffness) || 5000; b.muscleDamping = +f(a.muscle_damping) || 5000;
+      b.muscle = +Math.max(0.4, Math.min(2.2, (b.muscleStiffness) / 5000)).toFixed(2);
       const sd = a.ik_side || 'Auto';
       b.moveType = sd === 'Left side' ? 'left' : sd === 'Right side' ? 'right' : sd === 'Always' ? 'always' : 'auto';
+      const gait = cleanGait(s.gait);
+      if (gait) b.gait = gait;
     }
     blobOf[s.idx] = bp.blobs.length; bp.blobs.push(b);
   }
