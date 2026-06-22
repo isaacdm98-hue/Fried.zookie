@@ -117,8 +117,33 @@ export function buildArticulated({ bp, world, RAPIER, pos = { x: 0, y: 0, z: 0 }
     const restRel = qp.clone().invert().multiply(qc);      // parent-local rest orientation of child
     const b = p.blob || {};
     const ms = (b.muscleStiffness || 5000) / 5000, md = (b.muscleDamping || 5000) / 5000;
-    muscles.push({ parent, child: p, restRel, target: restRel.clone(),
-      K: 1.6 * ms, C: 1.4 * md });
+    const m = { parent, child: p, restRel, target: restRel.clone(), K: 1.6 * ms, C: 1.4 * md };
+    // Gait: the decoded IK foot-path → a set of directions the leg aims through.
+    // Sweeping the leg toward each point in turn makes the foot plant & push, so
+    // walking emerges from the muscles (nothing scripts the body forward).
+    if (b.move && b.gait && b.gait.length >= 2) {
+      m.gait = b.gait.map((g) => new THREE.Vector3(g.x, g.y, g.z).normalize());
+      m.phase = b.cycle || 0;
+    }
+    muscles.push(m);
+  }
+
+  // Advance the gait clock and re-aim each leg's muscle target toward the sampled
+  // foot-path direction (in the leg's rest frame). Called once per tick before drive().
+  const GAIT_RATE = 0.9;     // foot-path loops per second (cadence)
+  const _zAxis = new THREE.Vector3(0, 0, 1), _dir = new THREE.Vector3(), _delta = new THREE.Quaternion();
+  let _t = 0;
+  function gait(dt) {
+    _t += dt;
+    for (const m of muscles) {
+      if (!m.gait) continue;
+      const n = m.gait.length, u = ((_t * GAIT_RATE + m.phase) % 1 + 1) % 1;
+      const f = u * n, i = Math.floor(f) % n, j = (i + 1) % n, s = f - Math.floor(f);
+      _dir.copy(m.gait[i]).lerp(m.gait[j], s);
+      if (_dir.lengthSq() < 1e-6) _dir.set(0, 0, 1); else _dir.normalize();
+      _delta.setFromUnitVectors(_zAxis, _dir);
+      m.target.copy(m.restRel).multiply(_delta);
+    }
   }
 
   // PD muscle servo — call once per physics tick before world.step(). Torque is
@@ -152,7 +177,7 @@ export function buildArticulated({ bp, world, RAPIER, pos = { x: 0, y: 0, z: 0 }
 
   return { parts, bodies, joints, muscles, lift,
     rootBody: parts[0].body,
-    drive,
+    drive, gait,
     readTransforms() { return parts.map((p) => ({ idx: p.idx, t: p.body.translation(), r: p.body.rotation() })); },
     dispose() { for (const j of joints) try { world.removeImpulseJoint(j, true); } catch (_) {} for (const b of bodies) try { world.removeRigidBody(b); } catch (_) {} },
   };
@@ -182,7 +207,7 @@ export class ArticulatedZook {
     this.onFlop = null;
     this.syncMeshes();
   }
-  step(dt, _inputs) { this._A.drive(); }          // muscles; world.step() is driven by the loop
+  step(dt, _inputs) { this._A.gait(dt || 1 / 60); this._A.drive(); }   // gait + muscles; world.step() driven by the loop
   syncMeshes() {
     const T = this._A.readTransforms();
     for (let i = 0; i < this._meshes.length; i++) {
