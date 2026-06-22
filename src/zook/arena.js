@@ -33,6 +33,24 @@ export const ENVIRONMENTS = [
 
 const TW = 9, TL = 34;
 
+// The real BAMZOOKi *scored trials*, ported exactly from the decompiled `*Env`
+// Lua (timeouts, metrics & scoring formulas). The decompile holds NO medal/grade
+// thresholds (those lived in external .contest data), so a trial reports its raw
+// canonical achievement number + unit, just like the original.
+//   • Sprint/Hurdles  cm/sec  = (distance·4) / time     (SprintEnv/Hurdles.lua)
+//   • BlockPush        cm     = lead block's displacement at 13s   (BlockPush.lua)
+//   • HighJump         cm     = max over 10s of the Zook's lift    (HighJump.lua)
+//   • Lap              sec    = time to round the four waypoints    (Lap.lua)
+// The `*4` factor is contest_unit_scale(40)/10 (PhysicsConstants.ssx).
+const START_Z = TL / 2 - 3, FINISH_Z = -TL / 2 + 3;     // forward-dash lane (arena units)
+const TRIALS = {
+  sprint:    { unit: 'cm/sec', timeout: 20.05, kind: 'dash',   higher: true,  course: START_Z - FINISH_Z },
+  hurdle:    { unit: 'cm/sec', timeout: 20.05, kind: 'dash',   higher: true,  course: START_Z - FINISH_Z },
+  blockpush: { unit: 'cm',     timeout: 13.05, kind: 'push',   higher: true },
+  highjump:  { unit: 'cm',     timeout: 10.05, kind: 'height', higher: true },
+  lap:       { unit: 'sec',    timeout: 60.05, kind: 'lap',    higher: false },
+};
+
 export class Arena {
   constructor({ scene, world, RAPIER, camera, canvas, mount, onBack }) {
     Object.assign(this, { scene, world, RAPIER, camera, canvas, mount, onBack });
@@ -55,6 +73,10 @@ export class Arena {
   }
 
   _spawnAll() {
+    // Reset run state BEFORE building the environment, so env build can stash its
+    // own state (lap waypoints, push blocks) without it being wiped afterwards.
+    this._float = false; this._timer = 0; this._timing = false; this._topSpeed = 0; this._lastPos = null;
+    this._maxH = 0; this._lap = null; this._lapIdx = 0; this._laps = 0; this._pushBlocks = null; this._trialDone = false;
     this._buildBase();
     this._buildEnv(ENVIRONMENTS[this._envIdx].id);
     this.zook = new Zook(this.bp, { scene: this.scene, world: this.world, RAPIER: this.RAPIER, pos: { x: 0, z: TL / 2 - 3 } });
@@ -64,8 +86,6 @@ export class Arena {
     this.scene.add(this._marker);
     this.target = { x: 0, z: -TL / 2 + 4 };
     this._marker.position.set(0, 0.03, this.target.z);
-    this._float = false; this._timer = 0; this._timing = false; this._topSpeed = 0; this._lastPos = null;
-    this._maxH = 0; this._lap = null; this._lapIdx = 0; this._laps = 0; this._pushBlocks = null;
     setCamera({ x: 5.5, y: 4.5, z: TL / 2 + 1 }, { x: 0, y: 0, z: 0 }, true);
   }
 
@@ -103,7 +123,10 @@ export class Arena {
     if (this._ray.ray.intersectPlane(this._plane, p)) {
       this.target = { x: Math.max(-TW / 2, Math.min(TW / 2, p.x)), z: Math.max(-TL / 2, Math.min(TL / 2, p.z)) };
       this._marker.position.set(this.target.x, 0.03, this.target.z);
-      if (ENVIRONMENTS[this._envIdx].id === 'sprint' && !this._timing && !this._float) { this._timing = true; this._timer = 0; }
+      // Any scored trial starts its clock the moment you send the Zook off.
+      if (TRIALS[ENVIRONMENTS[this._envIdx].id] && !this._timing && !this._trialDone && !this._float) {
+        this._timing = true; this._timer = 0; this._maxH = 0;
+      }
     }
   }
 
@@ -127,48 +150,61 @@ export class Arena {
       return;
     }
     const env = ENVIRONMENTS[this._envIdx].id;
-    // LapEnv: cycle through four waypoints, time a full lap.
+    const trial = TRIALS[env];
+    // LapEnv: round four waypoints in order; the clock is the metric.
     if (env === 'lap' && this._lap) {
       const wp = this._lap[this._lapIdx]; this.target = wp;
       if (this._marker) this._marker.position.set(wp.x, 0.03, wp.z);
       const zp = this.zook.position;
-      if (Math.hypot(zp.x - wp.x, zp.z - wp.z) < 1.2) {
-        this._lapIdx = (this._lapIdx + 1) % 4;
-        if (this._lapIdx === 1 && !this._timing) { this._timing = true; this._timer = 0; }
-        else if (this._lapIdx === 0) { this._timing = false; this._best.lap = Math.min(this._best.lap || 99, this._timer); this._saveBest(); fb.win(); shakeCamera(0.4); guide.now(`Lap done — ${this._timer.toFixed(2)}s — ${this._medal('lap', this._timer)}!`); }
+      if (this._timing && Math.hypot(zp.x - wp.x, zp.z - wp.z) < 1.2) {
+        this._lapIdx += 1;
+        if (this._lapIdx >= this._lap.length) this._endTrial(env, this._timer);   // finished the lap
       }
     }
     this.zook.step(dt, { walk: true, target: this.target });
-    // timing + top speed + jump height
+    // timing + top speed + jump height (lift = how far the body rose above its rest stance)
     const p = this.zook.position;
-    this._maxH = Math.max(this._maxH || 0, p.y - this.zook.dims.rest);
-    // High Jump trial: record the best clearance (persisted), with a medal.
-    if (ENVIRONMENTS[this._envIdx].id === 'highjump' && this._maxH > (this._best.jump || 0) + 0.02) {
-      this._best.jump = this._maxH; this._saveBest();
-    }
+    if (this._timing) this._maxH = Math.max(this._maxH || 0, p.y - this.zook.dims.rest);
     if (this._lastPos) {
       const v = Math.hypot(p.x - this._lastPos.x, p.z - this._lastPos.z) / dt;
       this._topSpeed = Math.max(this._topSpeed, v);
     }
     this._lastPos = { x: p.x, z: p.z };
-    if (this._timing) {
+    if (this._timing && trial) {
       this._timer += dt;
-      const isSprint = ENVIRONMENTS[this._envIdx].id === 'sprint';
-      if (isSprint && p.z <= -TL / 2 + 3) {
-        this._timing = false;
-        const best = !this._best.sprint || this._timer < this._best.sprint;
-        this._best.sprint = Math.min(this._best.sprint || 99, this._timer);
-        this._saveBest();
-        fb.win(); shakeCamera(0.4); guide.now(`Finish! ${this._timer.toFixed(2)}s — ${this._medal('sprint', this._timer)}${best ? ' · new best!' : ''}`);
-      } else if (isSprint && this._timer >= 20.05) {
-        // SprintEnv.lua: the dash is a 20-second trial. If the Zook hasn't crossed
-        // the line, the run still ends and is scored on distance covered (cm/sec).
-        this._timing = false;
-        const start = TL / 2 - 3, dist = Math.max(0, start - p.z);
-        const speed = (dist * 4) / 20;   // SprintEnv: (distance·4)/time → cm/sec
-        fb.press(); guide.now(`Time! 20s up — ${dist.toFixed(1)}m covered (${speed.toFixed(1)} cm/sec). Tune it faster!`);
+      if (trial.kind === 'dash') {
+        if (p.z <= FINISH_Z) this._endTrial(env, (trial.course * 4) / this._timer);          // crossed the line
+        else if (this._timer >= trial.timeout) this._endTrial(env, (Math.max(0, START_Z - p.z) * 4) / this._timer);
+      } else if (trial.kind === 'push') {
+        if (this._timer >= trial.timeout) this._endTrial(env, this._leadBlockPush());
+      } else if (trial.kind === 'height') {
+        if (this._timer >= trial.timeout) this._endTrial(env, this._maxH);
+      } else if (trial.kind === 'lap') {
+        if (this._timer >= trial.timeout) this._endTrial(env, this._timer);                   // ran out of time
       }
     }
+  }
+
+  // BlockPush.lua: score = how far the LEAD block (nearest the Zook) was shoved.
+  _leadBlockPush() {
+    if (!this._pushBlocks || !this._pushBlocks.length) return 0;
+    let lead = 0, best = -Infinity;
+    this._pushBlocks.forEach((b, i) => { if (this._pushStart[i] > best) { best = this._pushStart[i]; lead = i; } });
+    return Math.max(0, this._pushStart[lead] - this._pushBlocks[lead].translation().z) * 4;
+  }
+
+  // Finish a scored trial: record the personal best (higher or lower is better,
+  // per the trial), celebrate and report the canonical achievement number.
+  _endTrial(env, value) {
+    if (!this._timing) return;
+    this._timing = false; this._trialDone = true;
+    const t = TRIALS[env]; value = Math.max(0, value);
+    const prev = this._best[env];
+    const isBest = prev == null || (t.higher ? value > prev : value < prev);
+    if (isBest) { this._best[env] = value; this._saveBest(); }
+    fb.win(); shakeCamera(0.4);
+    const shown = t.unit === 'sec' ? `${value.toFixed(2)} sec` : `${value.toFixed(1)} ${t.unit}`;
+    guide.now(`Trial over — ${shown}${isBest ? ' · new best!' : ''}`);
   }
 
   update() {
@@ -198,11 +234,14 @@ export class Arena {
     this.world.createCollider(R.ColliderDesc.cuboid(size.x / 2, size.y / 2, size.z / 2).setFriction(friction), body);
     this._statics.push(body); return body;
   }
-  _dynBox({ pos, size, color = 0xff8a1e, mass = 1 }) {
+  _dynBox({ pos, size, color = 0xff8a1e, mass = 1, slideZ = false }) {
     const m = new THREE.Mesh(new THREE.BoxGeometry(size.x, size.y, size.z), this._mat(color));
     m.castShadow = m.receiveShadow = true; this.scene.add(m); this._meshes.push(m);
     const R = this.RAPIER;
-    const body = this.world.createRigidBody(R.RigidBodyDesc.dynamic().setTranslation(pos.x, pos.y, pos.z).setAdditionalMass(mass));
+    const desc = R.RigidBodyDesc.dynamic().setTranslation(pos.x, pos.y, pos.z).setAdditionalMass(mass);
+    // BlockPush.lua blocks are `prismatic=(0,0,1)` — they may only SLIDE along Z.
+    if (slideZ) desc.enabledTranslations(false, false, true).enabledRotations(false, false, false);
+    const body = this.world.createRigidBody(desc);
     this.world.createCollider(R.ColliderDesc.cuboid(size.x / 2, size.y / 2, size.z / 2).setFriction(0.8).setRestitution(0.1), body);
     this._dyn.push({ mesh: m, body }); return body;
   }
@@ -243,13 +282,19 @@ export class Arena {
       return;
     }
     if (id === 'blockpush') {
+      // BlockPush.lua: a column of 10 wide blocks ahead of the Zook, each on a
+      // Z-only prismatic slider — shove the lead block as far as you can in 13s.
       this._pushBlocks = [];
-      for (let i = 0; i < 5; i++) this._pushBlocks.push(this._dynBox({ pos: { x: -2 + i, y: 0.5, z: -2 }, size: { x: 0.9, y: 0.9, z: 0.9 }, color: O, mass: 0.5 }));
+      for (let i = 0; i < 10; i++) this._pushBlocks.push(this._dynBox({ pos: { x: 0, y: 0.6, z: -2 - i * 1.1 }, size: { x: 2.6, y: 1.2, z: 0.6 }, color: O, mass: 1.3, slideZ: true }));
       this._pushStart = this._pushBlocks.map(b => b.translation().z);
       return;
     }
     if (id === 'highjump') {
-      this._barH = 0.6; this._bar = this._static({ pos: { x: 0, y: this._barH, z: -2 }, size: { x: TW, y: 0.2, z: 0.3 }, color: O });
+      // HighJump.lua: a plain flat arena — the trial measures how high the Zook can
+      // launch its whole body off the floor within 10s (no bar to clear). A faint
+      // ring marks the launch spot.
+      const ring = new THREE.Mesh(new THREE.RingGeometry(1.0, 1.25, 28), new THREE.MeshBasicMaterial({ color: 0x3f6fd8, side: THREE.DoubleSide, transparent: true, opacity: 0.6 }));
+      ring.rotation.x = -Math.PI / 2; ring.position.set(0, 0.03, -2); this.scene.add(ring); this._meshes.push(ring);
       return;
     }
   }
@@ -306,10 +351,16 @@ export class Arena {
     hud.querySelectorAll('[data-tool]').forEach(b => b.addEventListener('click', () => this._tool(b.dataset.tool)));
     this._syncHud();
   }
+  // The scored trials' goal text — the real BAMZOOKi achievement metric & limit.
   _target(id) {
-    if (id === 'sprint') return '🥇 under 13s · 🥈 under 20s';
-    if (id === 'lap') return '🥇 under 24s · 🥈 under 34s';
-    if (id === 'highjump') return '🥇 over 1.5m · 🥈 over 1.0m — tap JUMP!';
+    const t = TRIALS[id]; if (!t) return '';
+    const best = this._best && this._best[id] != null
+      ? ` · best ${t.unit === 'sec' ? this._best[id].toFixed(2) + 's' : this._best[id].toFixed(1) + ' ' + t.unit}` : '';
+    if (id === 'sprint')    return `dash to the line — score in cm/sec · ${t.timeout - 0.05}s limit${best}`;
+    if (id === 'hurdle')    return `clear the ramps — score in cm/sec · ${t.timeout - 0.05}s limit${best}`;
+    if (id === 'blockpush') return `shove the lead block — score in cm · ${t.timeout - 0.05}s limit${best}`;
+    if (id === 'highjump')  return `launch off the floor — score in cm · ${t.timeout - 0.05}s · tap JUMP!${best}`;
+    if (id === 'lap')       return `round the 4 waypoints — score in seconds · ${t.timeout - 0.05}s limit${best}`;
     return '';
   }
   _cycleEnv(d) {
@@ -318,7 +369,7 @@ export class Arena {
     const e = this._hud.querySelector('.env-name');
     e.innerHTML = `<b>${env.name}</b><span>${tgt || env.blurb}</span>`;
     this._reset();
-    guide.now(`${env.name} — ${env.blurb}.${tgt ? ' Beat the clock for GOLD!' : ''}`);
+    guide.now(`${env.name} — ${env.blurb}.${tgt ? ' Tap the floor to start the trial!' : ''}`);
   }
   _tool(t) {
     if (t === 'jump') { fb.press(); this.zook && this.zook.jump(); }
