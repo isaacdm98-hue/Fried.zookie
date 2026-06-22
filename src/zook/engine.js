@@ -86,7 +86,7 @@ export function layout(bp) {
 }
 
 /** Build the articulated body in a Rapier world. Returns handles for stepping/reading. */
-export function buildArticulated({ bp, world, RAPIER, pos = { x: 0, y: 0, z: 0 } }) {
+export function buildArticulated({ bp, world, RAPIER, pos = { x: 0, y: 0, z: 0 }, muscleK = 60, muscleC = 14 }) {
   const parts = layout(bp);
   // Lift the whole creature so its lowest point starts just above the floor.
   let minY = Infinity;
@@ -115,6 +115,10 @@ export function buildArticulated({ bp, world, RAPIER, pos = { x: 0, y: 0, z: 0 }
       : RAPIER.ColliderDesc.cuboid(p.half.x, p.half.y, p.half.z))
       .setDensity(0.7).setFriction(1.4).setRestitution(0.05);
     if (RAPIER.CoefficientCombineRule) col.setFrictionCombineRule(RAPIER.CoefficientCombineRule.Max);
+    // Self-collidability OFF (Karma.SetAgentCollidabilityOff, Evo.lua:127): a Zook's
+    // own parts pass through each other (membership bit 0x0002, filter excludes it),
+    // but still collide with the world. Stops packed legs from shoving joints apart.
+    col.setCollisionGroups(0x0002FFFD);
     world.createCollider(col, rb);
     p.body = rb; bodies.push(rb); colliders.push(col);
   }
@@ -132,7 +136,14 @@ export function buildArticulated({ bp, world, RAPIER, pos = { x: 0, y: 0, z: 0 }
       return connWorld.clone().applyMatrix4(inv);
     };
     const l1 = toLocal(a1, r1), l2 = toLocal(a2, r2);
-    const jd = RAPIER.JointData.spherical({ x: l1.x, y: l1.y, z: l1.z }, { x: l2.x, y: l2.y, z: l2.z });
+    // Generic joint with all THREE translations hard-locked → the parent/child
+    // anchor points stay rigidly coincident (a limb can never separate), while
+    // rotation is left free for the muscle. (Spherical impulse joints expose no
+    // motor here, and external torque was opening them; locking translations fixes
+    // the attachment by construction — the real cardanconnector behaviour.)
+    const AX = RAPIER.JointAxesMask;
+    const lockT = AX.X | AX.Y | AX.Z;
+    const jd = RAPIER.JointData.generic({ x: l1.x, y: l1.y, z: l1.z }, { x: l2.x, y: l2.y, z: l2.z }, { x: 1, y: 0, z: 0 }, lockT);
     joints.push(world.createImpulseJoint(jd, parent.body, p.body, true));
     // Muscle: a PD spring/damper that drives the joint toward a target relative
     // orientation (the rest pose by default; the gait shifts the target). This is
@@ -143,7 +154,11 @@ export function buildArticulated({ bp, world, RAPIER, pos = { x: 0, y: 0, z: 0 }
     const restRel = qp.clone().invert().multiply(qc);      // parent-local rest orientation of child
     const b = p.blob || {};
     const ms = (b.muscleStiffness || 5000) / 5000, md = (b.muscleDamping || 5000) / 5000;
-    const m = { parent, child: p, restRel, target: restRel.clone(), K: 1.6 * ms, C: 1.4 * md };
+    // Inertia estimate so muscle torque scales with the part (a tiny leg and a big
+    // body get proportional torque) — this stops a one-size torque from yanking the
+    // joint open. Torque = I·(Kp·angleErr − Kd·angvel), capped at I·MAXACC.
+    const I = Math.max(1e-4, p.body.mass() * (p.half.x * p.half.x + p.half.y * p.half.y + p.half.z * p.half.z));
+    const m = { parent, child: p, restRel, target: restRel.clone(), I, Kp: muscleK * ms, Kd: muscleC * md };
     // Gait: the decoded IK foot-path → a set of directions the leg aims through.
     // Sweeping the leg toward each point in turn makes the foot plant & push, so
     // walking emerges from the muscles (nothing scripts the body forward).
@@ -178,7 +193,7 @@ export function buildArticulated({ bp, world, RAPIER, pos = { x: 0, y: 0, z: 0 }
   // the heavier root/parents anchor the chain instead. Overdamped + clamped to stay
   // stable under the 50 Hz explicit step.
   const _qp = new THREE.Quaternion(), _qc = new THREE.Quaternion(), _qt = new THREE.Quaternion(), _qe = new THREE.Quaternion(), _ax = new THREE.Vector3();
-  const TMAX = 3.5, WMAX = 14;
+  const MAXACC = 90, WMAX = 16;            // angular-accel cap (rad/s²) and a hard spin clamp
   function drive() {
     for (const m of muscles) {
       const rp = m.parent.body.rotation(), rc = m.child.body.rotation();
@@ -189,13 +204,13 @@ export function buildArticulated({ bp, world, RAPIER, pos = { x: 0, y: 0, z: 0 }
       const s = Math.sqrt(Math.max(1e-9, 1 - _qe.w * _qe.w)), ang = 2 * Math.acos(Math.min(1, _qe.w));
       _ax.set(_qe.x / s, _qe.y / s, _qe.z / s);
       const wc = m.child.body.angvel();
-      let tx = m.K * _ax.x * ang - m.C * wc.x;
-      let ty = m.K * _ax.y * ang - m.C * wc.y;
-      let tz = m.K * _ax.z * ang - m.C * wc.z;
-      const mag = Math.hypot(tx, ty, tz);
-      if (mag > TMAX) { const k = TMAX / mag; tx *= k; ty *= k; tz *= k; }
-      m.child.body.addTorque({ x: tx, y: ty, z: tz }, true);
-      // hard cap runaway spin so a stiff chain can never explode
+      // desired angular acceleration (PD), capped, then scaled by inertia → torque
+      let ax = m.Kp * _ax.x * ang - m.Kd * wc.x;
+      let ay = m.Kp * _ax.y * ang - m.Kd * wc.y;
+      let az = m.Kp * _ax.z * ang - m.Kd * wc.z;
+      const amag = Math.hypot(ax, ay, az);
+      if (amag > MAXACC) { const k = MAXACC / amag; ax *= k; ay *= k; az *= k; }
+      m.child.body.addTorque({ x: ax * m.I, y: ay * m.I, z: az * m.I }, true);
       const ws = Math.hypot(wc.x, wc.y, wc.z);
       if (ws > WMAX) { const k = WMAX / ws; m.child.body.setAngvel({ x: wc.x * k, y: wc.y * k, z: wc.z * k }, true); }
     }
