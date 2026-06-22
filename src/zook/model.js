@@ -142,7 +142,50 @@ const ONE_V     = new THREE.Vector3(1, 1, 1);   // shared unit-scale for matrix 
 const CUBE_GEO  = new THREE.BoxGeometry(1, 1, 1);
 const BALL_GEO  = new THREE.SphereGeometry(0.5, 16, 12);
 const SHARED_GEO = new Set([BLOB_GEO, CUBE_GEO, BALL_GEO]);
-const blobGeo = (m) => m === 'cube' ? CUBE_GEO : m === 'sphere' ? BALL_GEO : BLOB_GEO;
+
+// ── The "Blob" — the Zook Kit's deformable clay mesh ─────────────────────────
+// A superellipsoid driven by the four genome shape params (BuilderParts.lua):
+//   cubosity  "Squareness"   round sphere → boxy        (superellipse exponent)
+//   bias      "Pointiness"   taper toward one end (egg/teardrop)
+//   flatness  "Flatten End"  blunter/flatter end caps
+//   asymmetry "Flatten Side" flatten one side
+// Geometries are cached per (quantised) shape and shared (never per-instance freed).
+const _blobCache = new Map();
+const _spow = (a, p) => Math.sign(a) * Math.pow(Math.abs(a), p);
+function makeBlobGeo(shape) {
+  const bias = shape && shape.bias != null ? shape.bias : 0.5;
+  const flat = (shape && shape.flatness) || 0, asym = (shape && shape.asymmetry) || 0, cub = (shape && shape.cubosity) || 0;
+  const key = [bias, flat, asym, cub].map((v) => Math.round(v * 16)).join(',');
+  let geo = _blobCache.get(key);
+  if (geo) return geo;
+  const segU = 24, segV = 16, n = Math.max(0.18, 1 - 0.82 * cub), point = (bias - 0.5) * 2;
+  const pos = [], idx = [];
+  for (let iv = 0; iv <= segV; iv++) {
+    const v = -Math.PI / 2 + Math.PI * iv / segV;
+    const cv = _spow(Math.cos(v), n), sv = _spow(Math.sin(v), n);
+    for (let iu = 0; iu <= segU; iu++) {
+      const u = -Math.PI + 2 * Math.PI * iu / segU;
+      let x = cv * _spow(Math.cos(u), n), y = sv, z = cv * _spow(Math.sin(u), n);
+      const tz = (z + 1) / 2;                                  // 0 at -Z … 1 at +Z (length axis)
+      const rs = point >= 0 ? 1 - point * tz * 0.8 : 1 + point * (1 - tz) * 0.8;   // pointiness taper
+      x *= rs; y *= rs;
+      z = _spow(z, 1 - 0.5 * flat);                            // blunter end caps
+      if (asym > 0 && x > 0) x *= 1 - asym * 0.55;             // flatten one side
+      pos.push(x * 0.5, y * 0.5, z * 0.5);
+    }
+  }
+  for (let iv = 0; iv < segV; iv++) for (let iu = 0; iu < segU; iu++) {
+    const a = iv * (segU + 1) + iu, b = a + 1, c = a + segU + 1, d = c + 1;
+    idx.push(a, c, b, b, c, d);
+  }
+  geo = new THREE.BufferGeometry();
+  geo.setIndex(idx);
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  geo.computeVertexNormals();
+  _blobCache.set(key, geo); SHARED_GEO.add(geo);
+  return geo;
+}
+const blobGeo = (m, shape) => m === 'cube' ? CUBE_GEO : m === 'sphere' ? BALL_GEO : makeBlobGeo(shape);
 
 // ── Locomotion physics (the BAMZOOKi / Karma feel) ────────────────────────────
 // The Zook is one rigid body, but it walks through GENUINE foot-ground contact:
@@ -288,7 +331,7 @@ export class Zook {
       if (bl.skin) { bm = mat(0, 0.5, 0.55); bm.color.set(0xffffff); bm.map = skinTexture(bl.skin); bm.flatShading = true; }
       else if (bl.rgb != null) { bm = mat(0, 0.5, 0.55); bm.color.setHex(bl.rgb); bm.flatShading = true; }   // exact genome colour (real Zooks)
       else if (bl.hue != null) { bm = mat(bl.hue, 0.55 + bri * 0.32); bm.flatShading = true; }
-      const mb = new THREE.Mesh(blobGeo(bl.mesh), bm);
+      const mb = new THREE.Mesh(blobGeo(bl.mesh, bl.shape), bm);
       mb.scale.set(bl.sx || 0.7, bl.sy || 0.7, bl.sz || 0.7);
       mb.castShadow = mb.receiveShadow = true;
       mb.userData.blobIndex = i;
