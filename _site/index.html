@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <title>FriedZooki</title>
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <meta name="theme-color" content="#ece9e2" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="FriedZooki" />
+  <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
+  <link rel="icon" href="./icons/icon-192.png" />
+  <link rel="stylesheet" href="./theme.css?v=7" />
+</head>
+<body>
+  <canvas id="scene"></canvas>
+
+  <!-- UI overlay: the workshop deck + arena back button mount here -->
+  <div id="ui"></div>
+
+  <!-- LOADING -->
+  <section id="screen-loading" class="screen show">
+    <div class="logo"><span class="fried">Fried</span>Zooki</div>
+    <p id="boot-step" class="muted">warming up…</p>
+    <div class="boot-bar"><i></i></div>
+  </section>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+        let refreshing = false;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          if (refreshing) return; refreshing = true; location.reload();
+        });
+      });
+    }
+    const showErr = m => { const el = document.getElementById('boot-step'); if (el) el.textContent = '⚠ ' + m; };
+    window.addEventListener('error', e => showErr((e.message || 'error') + (e.filename ? ' @ ' + e.filename.split('/').pop() + ':' + e.lineno : '')));
+    window.addEventListener('unhandledrejection', e => showErr((e.reason && e.reason.message) || String(e.reason)));
+  </script>
+  <script src="./friedzooki.bundle.js?v=5"></script>
+</body>
+</html>

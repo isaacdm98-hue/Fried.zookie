@@ -1,0 +1,150 @@
+{
+  "intro": [
+    {
+      "file": "intro_0.ogg",
+      "text": "Ah. There you are. Welcome, welcome, to the curious and rather wonderful world of Bamzooki."
+    },
+    {
+      "file": "intro_1.ogg",
+      "text": "Here, you shall be part inventor, part coach, and part proud parent to creatures of your very own design."
+    }
+  ],
+  "title": [
+    {
+      "file": "title_0.ogg",
+      "text": "Back again? Splendid. The arena awaits."
+    },
+    {
+      "file": "title_1.ogg",
+      "text": "Ah, the home of champions. Where shall we wander today?"
+    }
+  ],
+  "build": [
+    {
+      "file": "build_0.ogg",
+      "text": "Now then. Let us build ourselves a creature."
+    },
+    {
+      "file": "build_1.ogg",
+      "text": "To the workshop! Twiddle, tweak, and tinker to your heart's content."
+    },
+    {
+      "file": "build_2.ogg",
+      "text": "A blank canvas, and a head full of mischief. Perfect."
+    }
+  ],
+  "coach_power": [
+    {
+      "file": "coach_power_0.ogg",
+      "text": "Power, dear friend, is how hard those little legs will push. Be bold."
+    }
+  ],
+  "coach_legs": [
+    {
+      "file": "coach_legs_0.ogg",
+      "text": "More legs means more grip \u2014 though rather more to carry about, of course."
+    }
+  ],
+  "coach_stride": [
+    {
+      "file": "coach_stride_0.ogg",
+      "text": "Stride sets the sweep of each step. Long and loping, or quick and busy. The choice is yours."
+    }
+  ],
+  "save": [
+    {
+      "file": "save_0.ogg",
+      "text": "Saved, and immortalised. A fine addition to your menagerie."
+    },
+    {
+      "file": "save_1.ogg",
+      "text": "There. Catalogued for posterity. Do try not to lose it."
+    }
+  ],
+  "race_start": [
+    {
+      "file": "race_start_0.ogg",
+      "text": "And they're off! Do try to contain your excitement."
+    },
+    {
+      "file": "race_start_1.ogg",
+      "text": "Here we go, then. May the most peculiar creature win."
+    },
+    {
+      "file": "race_start_2.ogg",
+      "text": "The race is underway. Hold on to something."
+    }
+  ],
+  "lead_change": [
+    {
+      "file": "lead_change_0.ogg",
+      "text": "Aha! A change at the very front!"
+    },
+    {
+      "file": "lead_change_1.ogg",
+      "text": "Would you look at that \u2014 a new leader emerges!"
+    },
+    {
+      "file": "lead_change_2.ogg",
+      "text": "The lead changes hands. The plot, as they say, thickens."
+    }
+  ],
+  "collision": [
+    {
+      "file": "collision_0.ogg",
+      "text": "Oof. That was a proper coming-together."
+    },
+    {
+      "file": "collision_1.ogg",
+      "text": "Crunch! Well, that's gratitude for you."
+    }
+  ],
+  "win": [
+    {
+      "file": "win_0.ogg",
+      "text": "Magnificent! A triumph of design and sheer audacity."
+    },
+    {
+      "file": "win_1.ogg",
+      "text": "Victory! I do hope you're suitably pleased with yourself."
+    },
+    {
+      "file": "win_2.ogg",
+      "text": "First across the line. Bravo. Truly, bravo."
+    }
+  ],
+  "lose": [
+    {
+      "file": "lose_0.ogg",
+      "text": "Ah. Well. Not every masterpiece is appreciated in its own time."
+    },
+    {
+      "file": "lose_1.ogg",
+      "text": "So very nearly. Back to the workshop, I think."
+    },
+    {
+      "file": "lose_2.ogg",
+      "text": "A noble effort, undone by physics. It happens to the best of us."
+    }
+  ],
+  "new_record": [
+    {
+      "file": "new_record_0.ogg",
+      "text": "A new personal best! Someone's been practising."
+    },
+    {
+      "file": "new_record_1.ogg",
+      "text": "Record broken! I'm almost lost for words. Almost."
+    }
+  ],
+  "champion": [
+    {
+      "file": "champion_0.ogg",
+      "text": "Champion of all Bamzooki! Take a bow, you magnificent creature."
+    },
+    {
+      "file": "champion_1.ogg",
+      "text": "The trophy is yours. History will remember this peculiar little beast."
+    }
+  ]
+}
