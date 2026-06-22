@@ -14,6 +14,7 @@
  */
 import * as THREE from 'three';
 import { ENGINE } from './engine-constants.js';
+import { makeBlobGeo } from './model.js';
 
 const E = new THREE.Euler(), Q = new THREE.Quaternion(), V = new THREE.Vector3(), ONE = new THREE.Vector3(1, 1, 1);
 const compose = (x, y, z, rx, ry, rz) =>
@@ -155,6 +156,45 @@ export function buildArticulated({ bp, world, RAPIER, pos = { x: 0, y: 0, z: 0 }
     readTransforms() { return parts.map((p) => ({ idx: p.idx, t: p.body.translation(), r: p.body.rotation() })); },
     dispose() { for (const j of joints) try { world.removeImpulseJoint(j, true); } catch (_) {} for (const b of bodies) try { world.removeRigidBody(b); } catch (_) {} },
   };
+}
+
+/**
+ * ArticulatedZook — the real engine wrapped with graphics, exposing the same
+ * surface the arena expects (step / syncMeshes / position / dims / _body). Each
+ * part is rendered as its genome Blob (superellipsoid) so it looks like the exe.
+ */
+export class ArticulatedZook {
+  constructor(bp, { scene, world, RAPIER, pos = { x: 0, y: 0, z: 0 } }) {
+    this.bp = bp; this.scene = scene; this._spawn = { x: pos.x || 0, z: pos.z || 0 };
+    this._A = buildArticulated({ bp, world, RAPIER, pos: { x: pos.x || 0, y: 0.4, z: pos.z || 0 } });
+    this.group = new THREE.Group(); scene.add(this.group);
+    this._meshes = this._A.parts.map((p) => {
+      const shape = p.root ? bp.bodyShape : (p.blob && p.blob.shape);
+      const rgb = p.root ? (bp.bodyRgb != null ? bp.bodyRgb : 0xcf5a5a) : (p.blob && p.blob.rgb != null ? p.blob.rgb : 0xcf5a5a);
+      const geo = p.mesh === 'cube' ? new THREE.BoxGeometry(1, 1, 1) : p.mesh === 'sphere' ? new THREE.SphereGeometry(0.5, 16, 12) : makeBlobGeo(shape);
+      const mat = new THREE.MeshStandardMaterial({ color: rgb, roughness: 0.62, metalness: 0.02 });
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.scale.set(p.half.x * 2, p.half.y * 2, p.half.z * 2);
+      mesh.castShadow = mesh.receiveShadow = true;
+      this.group.add(mesh); return mesh;
+    });
+    this._body = this._A.rootBody;       // arena float/camera reads this
+    this.onFlop = null;
+    this.syncMeshes();
+  }
+  step(dt, _inputs) { this._A.drive(); }          // muscles; world.step() is driven by the loop
+  syncMeshes() {
+    const T = this._A.readTransforms();
+    for (let i = 0; i < this._meshes.length; i++) {
+      const t = T[i].t, r = T[i].r;
+      this._meshes[i].position.set(t.x, t.y, t.z);
+      this._meshes[i].quaternion.set(r.x, r.y, r.z, r.w);
+    }
+  }
+  get position() { const t = this._A.rootBody.translation(); return { x: t.x, y: t.y, z: t.z }; }
+  get dims() { return { rest: 0.6, w: this.bp.width || 1, h: this.bp.height || 1, l: this.bp.len || 1.6 }; }
+  jump() { this._A.rootBody.applyImpulse({ x: 0, y: 5, z: 0 }, true); }
+  dispose() { this._A.dispose(); if (this.group.parent) this.group.parent.remove(this.group); }
 }
 
 export { ENGINE };

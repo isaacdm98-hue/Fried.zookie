@@ -152,7 +152,7 @@ const SHARED_GEO = new Set([BLOB_GEO, CUBE_GEO, BALL_GEO]);
 // Geometries are cached per (quantised) shape and shared (never per-instance freed).
 const _blobCache = new Map();
 const _spow = (a, p) => Math.sign(a) * Math.pow(Math.abs(a), p);
-function makeBlobGeo(shape) {
+export function makeBlobGeo(shape) {
   const bias = shape && shape.bias != null ? shape.bias : 0.5;
   const flat = (shape && shape.flatness) || 0, asym = (shape && shape.asymmetry) || 0, cub = (shape && shape.cubosity) || 0;
   const key = [bias, flat, asym, cub].map((v) => Math.round(v * 16)).join(',');

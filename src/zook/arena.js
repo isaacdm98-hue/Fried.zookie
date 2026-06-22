@@ -10,6 +10,7 @@
 
 import * as THREE from 'three';
 import { Zook } from './model.js';
+import { ArticulatedZook } from './engine.js';
 import { setCamera, shakeCamera } from '../engine/renderer.js';
 import { fb } from '../sys/feedback.js';
 import { guide } from '../sys/guide.js';
@@ -79,7 +80,13 @@ export class Arena {
     this._maxH = 0; this._lap = null; this._lapIdx = 0; this._laps = 0; this._pushBlocks = null; this._trialDone = false;
     this._buildBase();
     this._buildEnv(ENVIRONMENTS[this._envIdx].id);
-    this.zook = new Zook(this.bp, { scene: this.scene, world: this.world, RAPIER: this.RAPIER, pos: { x: 0, z: TL / 2 - 3 } });
+    // Real (decoded-genome) Zooks have no separate leg array and a blob part tree
+    // — run them on the authentic articulated engine; legacy-built creatures keep
+    // the classic model until the builder produces the genome tree too.
+    const articulated = (!this.bp.legs || this.bp.legs.length === 0) && (this.bp.blobs || []).length > 2;
+    this.zook = articulated
+      ? new ArticulatedZook(this.bp, { scene: this.scene, world: this.world, RAPIER: this.RAPIER, pos: { x: 0, z: TL / 2 - 3 } })
+      : new Zook(this.bp, { scene: this.scene, world: this.world, RAPIER: this.RAPIER, pos: { x: 0, z: TL / 2 - 3 } });
     this.zook.onFlop = () => { fb.oof(); shakeCamera(0.25); guide.now('Ha! Right on its back. Give it a wider stance, eh?'); };
     this._marker = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, 0.05, 24),
       new THREE.MeshStandardMaterial({ color: 0xff3344, emissive: 0x551015, roughness: 0.4 }));
