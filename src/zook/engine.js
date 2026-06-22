@@ -78,9 +78,16 @@ export function buildArticulated({ bp, world, RAPIER, pos = { x: 0, y: 0, z: 0 }
     const rb = world.createRigidBody(
       RAPIER.RigidBodyDesc.dynamic().setTranslation(V.x, V.y, V.z)
         .setRotation({ x: Q.x, y: Q.y, z: Q.z, w: Q.w })
-        .setLinearDamping(0.2).setAngularDamping(0.6));
-    const col = RAPIER.ColliderDesc.cuboid(p.half.x, p.half.y, p.half.z)
-      .setDensity(0.6).setFriction(1.0).setRestitution(0.1);
+        .setLinearDamping(0.2).setAngularDamping(0.6)
+        .setCcdEnabled(true));     // continuous collision → thin/fast parts can't tunnel through the floor
+    // A slightly rounded box (the part's real footprint) with high friction so feet
+    // grip and the body genuinely rests on the floor instead of sliding through it.
+    const rad = Math.min(p.half.x, p.half.y, p.half.z) * 0.35;
+    const col = (RAPIER.ColliderDesc.roundCuboid
+      ? RAPIER.ColliderDesc.roundCuboid(Math.max(0.01, p.half.x - rad), Math.max(0.01, p.half.y - rad), Math.max(0.01, p.half.z - rad), rad)
+      : RAPIER.ColliderDesc.cuboid(p.half.x, p.half.y, p.half.z))
+      .setDensity(0.7).setFriction(1.4).setRestitution(0.05);
+    if (RAPIER.CoefficientCombineRule) col.setFrictionCombineRule(RAPIER.CoefficientCombineRule.Max);
     world.createCollider(col, rb);
     p.body = rb; bodies.push(rb); colliders.push(col);
   }
