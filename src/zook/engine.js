@@ -85,6 +85,7 @@ export function buildArticulated({ bp, world, RAPIER, pos = { x: 0, y: 0, z: 0 }
     p.body = rb; bodies.push(rb); colliders.push(col);
   }
   // Joints at each child's connection point (its near end on the length axis).
+  const muscles = [];
   for (const p of parts) {
     if (p.root) continue;
     const parent = parts[p.parentPart];
@@ -99,9 +100,51 @@ export function buildArticulated({ bp, world, RAPIER, pos = { x: 0, y: 0, z: 0 }
     const l1 = toLocal(a1, r1), l2 = toLocal(a2, r2);
     const jd = RAPIER.JointData.spherical({ x: l1.x, y: l1.y, z: l1.z }, { x: l2.x, y: l2.y, z: l2.z });
     joints.push(world.createImpulseJoint(jd, parent.body, p.body, true));
+    // Muscle: a PD spring/damper that drives the joint toward a target relative
+    // orientation (the rest pose by default; the gait shifts the target). This is
+    // the Cardan stiffness/damping made explicit — pose is held by muscles, not by
+    // a kinematic hack, so locomotion stays emergent.
+    const qp = new THREE.Quaternion(r1.x, r1.y, r1.z, r1.w);
+    const qc = new THREE.Quaternion(r2.x, r2.y, r2.z, r2.w);
+    const restRel = qp.clone().invert().multiply(qc);      // parent-local rest orientation of child
+    const b = p.blob || {};
+    const ms = (b.muscleStiffness || 5000) / 5000, md = (b.muscleDamping || 5000) / 5000;
+    muscles.push({ parent, child: p, restRel, target: restRel.clone(),
+      K: 1.6 * ms, C: 1.4 * md });
   }
-  return { parts, bodies, joints, lift,
+
+  // PD muscle servo — call once per physics tick before world.step(). Torque is
+  // applied to the CHILD only (a servo toward its target angle relative to the
+  // parent); a reaction on the parent feeds back up the chain and pumps energy, so
+  // the heavier root/parents anchor the chain instead. Overdamped + clamped to stay
+  // stable under the 50 Hz explicit step.
+  const _qp = new THREE.Quaternion(), _qc = new THREE.Quaternion(), _qt = new THREE.Quaternion(), _qe = new THREE.Quaternion(), _ax = new THREE.Vector3();
+  const TMAX = 3.5, WMAX = 14;
+  function drive() {
+    for (const m of muscles) {
+      const rp = m.parent.body.rotation(), rc = m.child.body.rotation();
+      _qp.set(rp.x, rp.y, rp.z, rp.w); _qc.set(rc.x, rc.y, rc.z, rc.w);
+      _qt.copy(_qp).multiply(m.target);                    // world target orientation for the child
+      _qe.copy(_qt).multiply(_qc.clone().invert());        // error rotation (world)
+      if (_qe.w < 0) { _qe.x = -_qe.x; _qe.y = -_qe.y; _qe.z = -_qe.z; _qe.w = -_qe.w; }
+      const s = Math.sqrt(Math.max(1e-9, 1 - _qe.w * _qe.w)), ang = 2 * Math.acos(Math.min(1, _qe.w));
+      _ax.set(_qe.x / s, _qe.y / s, _qe.z / s);
+      const wc = m.child.body.angvel();
+      let tx = m.K * _ax.x * ang - m.C * wc.x;
+      let ty = m.K * _ax.y * ang - m.C * wc.y;
+      let tz = m.K * _ax.z * ang - m.C * wc.z;
+      const mag = Math.hypot(tx, ty, tz);
+      if (mag > TMAX) { const k = TMAX / mag; tx *= k; ty *= k; tz *= k; }
+      m.child.body.addTorque({ x: tx, y: ty, z: tz }, true);
+      // hard cap runaway spin so a stiff chain can never explode
+      const ws = Math.hypot(wc.x, wc.y, wc.z);
+      if (ws > WMAX) { const k = WMAX / ws; m.child.body.setAngvel({ x: wc.x * k, y: wc.y * k, z: wc.z * k }, true); }
+    }
+  }
+
+  return { parts, bodies, joints, muscles, lift,
     rootBody: parts[0].body,
+    drive,
     readTransforms() { return parts.map((p) => ({ idx: p.idx, t: p.body.translation(), r: p.body.rotation() })); },
     dispose() { for (const j of joints) try { world.removeImpulseJoint(j, true); } catch (_) {} for (const b of bodies) try { world.removeRigidBody(b); } catch (_) {} },
   };
