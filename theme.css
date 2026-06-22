@@ -16,10 +16,13 @@
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-html, body { margin: 0; height: 100%; overflow: hidden; background: var(--studio); color: var(--ink); }
+html, body { margin: 0; height: 100vh; height: 100dvh; overflow: hidden; background: var(--studio); color: var(--ink); }
 body { -webkit-user-select: none; user-select: none; touch-action: none; }
 
-#scene { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+/* Fill the DYNAMIC viewport (incl. the home-indicator / safe area) so there is
+   never a flat strip at the screen bottom. inset:0 + 100dvh, and the WebGL canvas
+   keeps its CSS size (the renderer no longer writes inline px heights). */
+#scene { position: fixed; inset: 0; width: 100vw; height: 100vh; height: 100dvh; display: block; background: var(--studio); }
 
 #ui { position: fixed; inset: 0; pointer-events: none; z-index: 10; }
 #ui > * { pointer-events: auto; }

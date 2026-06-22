@@ -35,7 +35,13 @@ export function initRenderer(canvas) {
   // Cap the pixel ratio: phones report up to 3–4×, which quadruples the fill
   // cost for no visible gain. 2× keeps it crisp and holds 60fps on mobile.
   renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
-  renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+  // updateStyle=false: never write an inline px width/height onto the canvas —
+  // CSS (position:fixed; inset:0; 100dvh) owns the layout so the canvas always
+  // fills the dynamic viewport edge-to-edge. (Letting three set inline px heights
+  // left a flat strip at the screen bottom whenever the measured height lagged the
+  // visual viewport / safe area.) We size the drawing buffer to the real viewport.
+  const _vp = () => ({ w: Math.round(window.innerWidth), h: Math.round(window.innerHeight) });
+  { const { w, h } = _vp(); renderer.setSize(w, h, false); }
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type    = THREE.PCFSoftShadowMap;
   renderer.outputColorSpace   = THREE.SRGBColorSpace;
@@ -76,14 +82,17 @@ export function initRenderer(canvas) {
   rim.position.set(-4, 6, -4);
   scene.add(rim);
 
-  // Resize handler
-  window.addEventListener('resize', () => {
-    const w = canvas.clientWidth;
-    const h = canvas.clientHeight;
+  // Resize handler — track the *visual* viewport so the buffer follows the screen
+  // as mobile browser chrome / the keyboard / safe areas change, with no flat strip.
+  const onResize = () => {
+    const { w, h } = _vp();
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
-    renderer.setSize(w, h);
-  });
+    renderer.setSize(w, h, false);
+  };
+  window.addEventListener('resize', onResize);
+  window.addEventListener('orientationchange', onResize);
+  if (window.visualViewport) window.visualViewport.addEventListener('resize', onResize);
 
   const clock = new THREE.Clock();
   return { renderer, scene, camera, clock };

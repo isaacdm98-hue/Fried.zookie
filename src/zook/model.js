@@ -447,6 +447,32 @@ export class Zook {
     if (R.CoefficientCombineRule) col.setFrictionCombineRule(R.CoefficientCombineRule.Min);
     this.world.createCollider(col, this._body);
 
+    // Sculpted clay is SOLID: every static clay part gets its own collider on the
+    // body's compound rigid body, so a low belly / chunky shape genuinely rests on
+    // and bumps the floor & obstacles (it used to be visual-only and pass through).
+    // Only fully-static parts are added — a part with any moving ancestor flexes,
+    // so it can't be a fixed collider (that needs the articulated bodies, later).
+    const blobs = this.bp.blobs || [];
+    const movingAncestor = (i) => {
+      let p = blobs[i] && blobs[i].parent, g = 0;
+      while (p != null && p >= 0 && p < blobs.length && g++ < blobs.length) {
+        if (blobs[p].move && blobs[p].move !== 'none') return true;
+        p = blobs[p].parent;
+      }
+      return false;
+    };
+    const _p = new THREE.Vector3(), _q = new THREE.Quaternion(), _s = new THREE.Vector3();
+    blobs.forEach((bl, i) => {
+      if ((bl.move && bl.move !== 'none') || movingAncestor(i) || !this._blobMat[i]) return;
+      this._blobMat[i].decompose(_p, _q, _s);
+      const sx = (bl.sx || 0.7) * 0.5, sy = (bl.sy || 0.7) * 0.5, sz = (bl.sz || 0.7) * 0.5;
+      const cc = R.ColliderDesc.cuboid(sx, sy, sz)
+        .setTranslation(_p.x, _p.y, _p.z).setRotation({ x: _q.x, y: _q.y, z: _q.z, w: _q.w })
+        .setFriction(0.3).setRestitution(0.3).setDensity(0.6);
+      if (R.CoefficientCombineRule) cc.setFrictionCombineRule(R.CoefficientCombineRule.Min);
+      this.world.createCollider(cc, this._body);
+    });
+
     // "Wonkiness": how lop-sided / under-built this Zook is. A balanced design
     // walks clean; a strange one (legs all one side, too few, too narrow) gets a
     // comical seeded waddle — random across designs but predictable for any given
