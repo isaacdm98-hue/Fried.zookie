@@ -40170,7 +40170,12 @@
         return;
       }
       if (id === "step") {
-        for (let i2 = 0; i2 < 4; i2++) this._static({ pos: { x: 0, y: 0.2 + i2 * 0.4, z: 2 - i2 * 1.4 }, size: { x: TW, y: 0.4 + i2 * 0.8, z: 1.4 }, color: O2 });
+        let top = 0;
+        const seq = [1, 1, 1, 1, -1, -1, -1, -1];
+        for (let i2 = 0; i2 < seq.length; i2++) {
+          top = Math.max(0.15, top + seq[i2] * 0.15);
+          this._static({ pos: { x: 0, y: top / 2, z: 5 - i2 * 1.5 }, size: { x: TW, y: top, z: 1.5 }, color: O2 });
+        }
         return;
       }
       if (id === "strong") {
