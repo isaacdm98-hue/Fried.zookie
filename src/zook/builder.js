@@ -29,7 +29,7 @@ export class Builder {
     this.name = 'My Zook';
     this.zook = null; this.turntable = null; this._deck = null;
     this._mode = 'shape'; this._walk = false; this._helper = false;   // creature stands still while you build (walks only in Test / WALK preview)
-    this._mirror = true; this._addType = 'leg';
+    this._mirror = true; this._addType = 'blob';
     this._sel = null;            // { type:'leg'|'blob', idx }
     this._drag = null;
     this._selBox = null; this._handles = [];
@@ -158,7 +158,7 @@ export class Builder {
     const set = (k, v) => { this._pushUndo(); this.bp[k] = v; this._apply(); };
     const hint = (t) => { this._hintEl.textContent = t; };
     // Cold-start coach: a big hint over the model until the first leg is placed.
-    this._coach(this._mode === 'add' && (this.bp.legs || []).length === 0 && this._addType === 'leg' ? '👆 Tap the body to add a leg' : '');
+    this._coach(this._mode === 'add' && (this.bp.blobs || []).length === 0 ? '👆 Tap the body to grow a clay part — give it movement to make a leg' : '');
 
     if (this._mode === 'shape') {
       const pct = v => `${Math.round(v * 100)}`;
@@ -175,14 +175,11 @@ export class Builder {
       );
       hint('drag the body to stretch it · drag the floor to spin it round');
     } else if (this._mode === 'add') {
-      const type = Selector({ label: 'PART', value: this._addType,
-        options: [{ v: 'leg', t: 'LEG' }, { v: 'blob', t: 'BLOB' }], onChange: v => { this._addType = v; this._select(null); this._renderBar(); } });
-      el.append(type.root, Switch({ label: 'MIRROR', value: this._mirror, onChange: v => { this._mirror = v; } }).root);
-      if (this._addType === 'leg') {
-        el.append(Selector({ label: 'STYLE', value: this._legStyle || 'crawl',
-          options: [{ v: 'crawl', t: 'CRAWL' }, { v: 'paddle', t: 'PADDLE' }, { v: 'stalk', t: 'STALK' }, { v: 'step', t: 'STEP' }, { v: 'stomp', t: 'STOMP' }, { v: 'push', t: 'PUSH' }, { v: 'flipper', t: 'FLIP' }],
-          onChange: v => { this._legStyle = v; if (this._sel && this._sel.type === 'leg') this._editLeg('style', v, true); } }).root);
-      } else if (!(this._sel && this._sel.type === 'blob')) {
+      // Unified model (like the real Zook Kit): there is no separate "leg" — you
+      // grow a clay BLOB onto a part, then give it movement (in MOVE) to make a leg.
+      this._addType = 'blob';
+      el.append(Switch({ label: 'MIRROR', value: this._mirror, onChange: v => { this._mirror = v; } }).root);
+      if (!(this._sel && this._sel.type === 'blob')) {
         // Pick the mesh for the next clay part (BuilderParts `mesh` enum).
         el.append(Selector({ label: 'MESH', value: this._blobMesh || 'blob',
           options: [{ v: 'blob', t: 'BLOB' }, { v: 'cube', t: 'BOX' }, { v: 'sphere', t: 'BALL' }],
