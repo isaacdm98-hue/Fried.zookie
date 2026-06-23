@@ -83,7 +83,7 @@ export class Arena {
     // Real (decoded-genome) Zooks have no separate leg array and a blob part tree
     // — run them on the authentic articulated engine; legacy-built creatures keep
     // the classic model until the builder produces the genome tree too.
-    const articulated = (!this.bp.legs || this.bp.legs.length === 0) && (this.bp.blobs || []).length > 2;
+    const articulated = (!this.bp.legs || this.bp.legs.length === 0) && (this.bp.blobs || []).length >= 1;
     this.zook = articulated
       ? new ArticulatedZook(this.bp, { scene: this.scene, world: this.world, RAPIER: this.RAPIER, pos: { x: 0, z: TL / 2 - 3 } })
       : new Zook(this.bp, { scene: this.scene, world: this.world, RAPIER: this.RAPIER, pos: { x: 0, z: TL / 2 - 3 } });
