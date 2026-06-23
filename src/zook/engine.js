@@ -164,7 +164,11 @@ export function buildArticulated({ bp, world, RAPIER, pos = { x: 0, y: 0, z: 0 }
     // walking emerges from the muscles (nothing scripts the body forward).
     if (b.move && b.gait && b.gait.length >= 2) {
       m.gait = b.gait.map((g) => new THREE.Vector3(g.x, g.y, g.z).normalize());
-      m.phase = b.cycle || 0;
+      m.phase = b.cycle || 0; m.clock = m.phase;
+      // Which side of the body the leg is on (GetNodeSide): used for steering — the
+      // inside legs of a turn are slowed so the Zook pivots toward its target.
+      const cx = new THREE.Vector3().setFromMatrixPosition(p.mat).x;
+      m.side = cx < -0.05 ? -1 : cx > 0.05 ? 1 : 0;   // -1 left, +1 right, 0 centre
       // A moving leg gets a stronger but well-damped muscle: enough to plant and
       // push through the foot-path, but capped so it can't punch the body skyward.
       m.Kp *= 1.8; m.Kd *= 2.0; m.maxacc = 130;
@@ -176,12 +180,17 @@ export function buildArticulated({ bp, world, RAPIER, pos = { x: 0, y: 0, z: 0 }
   // foot-path direction (in the leg's rest frame). Called once per tick before drive().
   const GAIT_RATE = 0.9;     // foot-path loops per second (cadence)
   const _zAxis = new THREE.Vector3(0, 0, 1), _dir = new THREE.Vector3(), _delta = new THREE.Quaternion();
-  let _t = 0;
-  function gait(dt) {
-    _t += dt;
+  // steer ∈ [-1,1]: +1 = target is to the right of travel → slow the right legs to
+  // pivot right; −1 = mirror. Each leg keeps its own phase clock so slowing one side
+  // desynchronises the gait and the body turns (differential drive).
+  function gait(dt, steer = 0) {
     for (const m of muscles) {
       if (!m.gait) continue;
-      const n = m.gait.length, u = ((_t * GAIT_RATE + m.phase) % 1 + 1) % 1;
+      let rate = GAIT_RATE;
+      if (steer > 0 && m.side > 0) rate *= Math.max(0.2, 1 - steer * 0.9);
+      else if (steer < 0 && m.side < 0) rate *= Math.max(0.2, 1 + steer * 0.9);
+      m.clock += dt * rate;
+      const n = m.gait.length, u = (m.clock % 1 + 1) % 1;
       const f = u * n, i = Math.floor(f) % n, j = (i + 1) % n, s = f - Math.floor(f);
       _dir.copy(m.gait[i]).lerp(m.gait[j], s);
       if (_dir.lengthSq() < 1e-6) _dir.set(0, 0, 1); else _dir.normalize();
@@ -251,7 +260,16 @@ export class ArticulatedZook {
     this.onFlop = null;
     this.syncMeshes();
   }
-  step(dt, _inputs) { this._A.gait(dt || 1 / 60); this._A.drive(); }   // gait + muscles; world.step() driven by the loop
+  step(dt, _inputs) {
+    // Gait + muscles (world.step() is driven by the loop). Target-steering is held
+    // at 0 for now: a Zook doesn't reliably face its travel direction, so biasing
+    // body-side legs toward a world target can curve it the wrong way. Proper
+    // steering needs a per-Zook forward calibration (measure the body-local travel
+    // direction over a warmup, then steer relative to that) — the scaffold (per-leg
+    // phase clocks + leg side) is in place for it.
+    this._A.gait(dt || 1 / 60, 0);
+    this._A.drive();
+  }
   syncMeshes() {
     const T = this._A.readTransforms();
     for (let i = 0; i < this._meshes.length; i++) {
