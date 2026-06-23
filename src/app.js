@@ -168,6 +168,8 @@ export class App {
     const plinth = new THREE.Mesh(new THREE.CylinderGeometry(1.8, 2.0, 0.3, 48),
       new THREE.MeshStandardMaterial({ color: 0xd7d3c9, roughness: 0.7 }));
     plinth.position.y = -0.15; plinth.receiveShadow = true; this._hero.add(plinth);
+    // Title hero uses the legacy renderer (its idle animation is tuned to that
+    // Zook's size/origin); Build and Test use the unified engine renderer.
     this._heroZook = new Zook(bp || this.active.bp, { preview: true, showArrow: false });
     this._hero.add(this._heroZook.group);
     this._heroSpin = true; this._heroSilly = false; this._heroSpinT = 0; this._hero.rotation.y = 0;
