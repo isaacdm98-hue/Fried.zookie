@@ -136,10 +136,13 @@ export class App {
     const m = [{ s: 0.72, k: 0.82 }, { s: 1, k: 1 }, { s: 1.18, k: 1.15 }][this._diff != null ? this._diff : 1];
     const b = cloneBlueprint(bp); b.speed = (b.speed || 2.4) * m.s; b.stiffness = (b.stiffness || 1) * m.k; return b;
   }
-  /** A Zook you can actually compete with — an unbuilt (legless) one gets a
-   *  default set of legs so contests are never a no-show. */
+  /** A Zook you can actually compete with. A blob-tree creature (the unified model)
+   *  competes as-is on the articulated engine; only a completely EMPTY Zook (no legs
+   *  and no parts) gets a default set of legs so a contest is never a no-show. */
   _legged(bp) {
-    if (bp && Array.isArray(bp.legs) && bp.legs.length === 0) { const b = cloneBlueprint(bp); b.legs = makeDefaultLegs(3); return b; }
+    if (bp && Array.isArray(bp.legs) && bp.legs.length === 0 && (!bp.blobs || bp.blobs.length === 0)) {
+      const b = cloneBlueprint(bp); b.legs = makeDefaultLegs(3); return b;
+    }
     return bp;
   }
   /** Lifetime contests-won tally — a little progression to come back for. */

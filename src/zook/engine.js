@@ -281,6 +281,17 @@ export class ArticulatedZook {
   get position() { const t = this._A.rootBody.translation(); return { x: t.x, y: t.y, z: t.z }; }
   get dims() { return { rest: 0.6, w: this.bp.width || 1, h: this.bp.height || 1, l: this.bp.len || 1.6 }; }
   jump() { this._A.rootBody.applyImpulse({ x: 0, y: 5, z: 0 }, true); }
+  // Teleport the WHOLE body (all parts together) so a contest placing the Zook can't
+  // tear the articulation apart — shift every part by the same delta and zero velocity.
+  moveTo(p) {
+    const t = this._A.rootBody.translation();
+    const dx = (p.x || 0) - t.x, dy = (p.y || 0) - t.y, dz = (p.z || 0) - t.z;
+    for (const b of this._A.bodies) {
+      const bt = b.translation();
+      b.setTranslation({ x: bt.x + dx, y: bt.y + dy, z: bt.z + dz }, true);
+      b.setLinvel({ x: 0, y: 0, z: 0 }, true); b.setAngvel({ x: 0, y: 0, z: 0 }, true);
+    }
+  }
   dispose() { this._A.dispose(); if (this.group.parent) this.group.parent.remove(this.group); }
 }
 

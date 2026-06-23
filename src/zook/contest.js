@@ -9,6 +9,7 @@
 
 import * as THREE from 'three';
 import { Zook } from './model.js';
+import { ArticulatedZook } from './engine.js';
 import { setCamera, shakeCamera } from '../engine/renderer.js';
 import { fb } from '../sys/feedback.js';
 
@@ -59,13 +60,16 @@ export class ContestScene {
     const startZ = contest.goal === 'race' ? 7 : 2.4;
     this.green = this._spawn(greenBp, { x: contest.goal === 'race' ? -1 : -1.4, z: startZ }, GREEN);
     this.red   = this._spawn(redBp,   { x: contest.goal === 'race' ?  1 :  1.4, z: startZ }, RED);
-    if (!this.remote && contest.goal === 'merry') { this.green.zook._body.setTranslation({ x: -1, y: 1, z: 0 }, true); this.red.zook._body.setTranslation({ x: 1, y: 1, z: 0 }, true); }
-    if (!this.remote && contest.goal === 'tag') { this.green.zook._body.setTranslation({ x: 0, y: 1, z: 4.5 }, true); this.red.zook._body.setTranslation({ x: 0, y: 1, z: -4.5 }, true); }
+    // Place a contestant — moveTo shifts the whole articulated body together; the
+    // legacy Zook just teleports its single body.
+    const place = (z, p) => { if (z.moveTo) z.moveTo(p); else z._body.setTranslation(p, true); };
+    if (!this.remote && contest.goal === 'merry') { place(this.green.zook, { x: -1, y: 1, z: 0 }); place(this.red.zook, { x: 1, y: 1, z: 0 }); }
+    if (!this.remote && contest.goal === 'tag') { place(this.green.zook, { x: 0, y: 1, z: 4.5 }); place(this.red.zook, { x: 0, y: 1, z: -4.5 }); }
     // Weakest Zook = tug-of-war: stand them apart on the two halves and tether
     // them together (a rope joint), so the stronger walker drags the weaker in.
     if (!this.remote && contest.goal === 'tug') {
-      this.green.zook._body.setTranslation({ x: -5, y: 1, z: 0 }, true);
-      this.red.zook._body.setTranslation({ x: 5, y: 1, z: 0 }, true);
+      place(this.green.zook, { x: -5, y: 1, z: 0 });
+      place(this.red.zook, { x: 5, y: 1, z: 0 });
       const R = this.RAPIER;
       const jd = R.JointData.rope(9.5, { x: 0, y: 0, z: 0 }, { x: 0, y: 0, z: 0 });
       this._tether = this.world.createImpulseJoint(jd, this.green.zook._body, this.red.zook._body, true);
@@ -295,9 +299,14 @@ export class ContestScene {
 
   // ── build ────────────────────────────────────────────────────────────────
   _spawn(bp, pos, color) {
+    // A legless blob-tree Zook (the unified/genome model) runs on the authentic
+    // articulated engine; remote previews and legacy creatures use the classic Zook.
+    const articulated = !this.remote && (!bp.legs || bp.legs.length === 0) && (bp.blobs || []).length >= 1;
     const zook = this.remote
       ? new Zook(bp, { scene: this.scene, preview: true, pos })
-      : new Zook(bp, { scene: this.scene, world: this.world, RAPIER: this.RAPIER, pos });
+      : articulated
+        ? new ArticulatedZook(bp, { scene: this.scene, world: this.world, RAPIER: this.RAPIER, pos })
+        : new Zook(bp, { scene: this.scene, world: this.world, RAPIER: this.RAPIER, pos });
     const ring = new THREE.Mesh(new THREE.RingGeometry(0.5, 0.7, 24),
       new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide }));
     ring.rotation.x = -Math.PI / 2; this.scene.add(ring); this._rings.push(ring);
