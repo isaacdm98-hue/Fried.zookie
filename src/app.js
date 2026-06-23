@@ -23,9 +23,9 @@ import { Link } from './net/link.js';
 import { makeQR, startScan } from './net/qr.js';
 
 // Online is restricted to static-arena contests so streamed state stays in sync.
-const ONLINE_IDS = ['sprint', 'hurdles', 'sumo', 'weakest', 'tag'];
+const ONLINE_IDS = ['hurdles', 'sumo', 'weakest', 'dodge'];
 // Cross-screen "tabletop" arenas (bird's-eye; action crosses the seam).
-const TABLETOP_IDS = ['sumo', 'weakest', 'tag'];
+const TABLETOP_IDS = ['sumo', 'weakest', 'merry'];
 
 export class App {
   constructor({ scene, world, RAPIER, camera, canvas, ui }) {
@@ -350,9 +350,9 @@ export class App {
     const opp = randomExample();
     // A balanced episode like the show: a racing event, a battle, and a skill
     // contest, then the Grand Final relay decider.
-    const RACES = ['sprint', 'hurdles', 'ramps', 'steps', 'marbles', 'smash', 'blockpush', 'dodge', 'zigzag', 'assault'];
-    const BATTLES = ['sumo', 'weakest', 'tag', 'merry'];
-    const SKILL = ['china', 'ball'];
+    const RACES = ['dodge', 'hurdles', 'marbles', 'smash'];
+    const BATTLES = ['merry', 'weakest', 'sumo'];
+    const SKILL = ['ball'];
     const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
     const rounds = [pick(RACES), pick(BATTLES), pick(SKILL)]
       .map(id => ({ contest: CONTESTS.find(c => c.id === id) }))

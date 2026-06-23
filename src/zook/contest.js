@@ -13,24 +13,20 @@ import { ArticulatedZook } from './engine.js';
 import { setCamera, shakeCamera } from '../engine/renderer.js';
 import { fb } from '../sys/feedback.js';
 
-/** Contest catalogue (names & blurbs straight from the manual). */
+/** The authentic BAMZOOKi Simulator contests — exactly the head-to-head roster from
+ *  the manual (Dodgy / Merry-Go / Weakest / Hurdles / Marbles / Smash / Sumo /
+ *  Zookball), in manual order. (Solo trials — Sprint, Block Push, High Jump, Lap —
+ *  belong in the builder's Test menu, not here.) Arena recode is tracked against
+ *  reference/decompile/03-contests-and-scoring.md. */
 export const CONTESTS = [
-  { id: 'sprint',  name: 'Sprint',         desc: 'First Zook to the finish line.',                goal: 'race' },
-  { id: 'hurdles', name: 'Zook Hurdles',   desc: 'Over the hurdles and across the line.',         goal: 'race', hurdles: true },
-  { id: 'sumo',    name: 'Zook Sumo',      desc: 'Barge your rival out of the ring.',             goal: 'ring', radius: 3.8 },
-  { id: 'weakest', name: 'Weakest Zook',   desc: 'Tug-of-war — drag your rival into the pit!',    goal: 'tug' },
-  { id: 'merry',   name: 'Merry-Go-Zook',  desc: 'Stay on the spinning platform!',                goal: 'merry', radius: 3.6 },
-  { id: 'ball',    name: 'Zookball',       desc: 'Boot the ball into the rival goal.',            goal: 'ball' },
-  { id: 'marbles', name: 'Zook Marbles',   desc: 'Barge through the marbles to the line.',         goal: 'race', marbles: true },
-  { id: 'dodge',   name: 'Dodgy Zook',     desc: 'Slip past the sliding doors.',                  goal: 'race', doors: true },
-  { id: 'tag',     name: 'Zook Tag',       desc: 'Catch the rival before time runs out!',         goal: 'tag' },
-  { id: 'smash',   name: 'Zook Smash',     desc: 'Smash through the blocks to the line.',          goal: 'race', smash: true },
-  { id: 'blockpush', name: 'Block Push',   desc: 'Shove your heavy block over the line first.',    goal: 'race', push: true },
-  { id: 'ramps',   name: 'Ramp Run',       desc: 'Up and over the ramps to the line.',            goal: 'race', slope: true },
-  { id: 'steps',   name: 'Step Climb',     desc: 'Clamber over the staircase course.',            goal: 'race', steps: true },
-  { id: 'zigzag',  name: 'Zig-Zag',        desc: 'Weave the slalom barriers to the finish.',      goal: 'race', zigzag: true },
-  { id: 'assault', name: 'Assault Course', desc: 'Ramps, crates and a hurdle — the full gauntlet.', goal: 'race', assault: true },
-  { id: 'china',   name: 'China Shop',     desc: 'Knock over more china than your rival!',         goal: 'china' },
+  { id: 'dodge',   name: 'Dodgy Zook',     desc: 'Weave past the sliding doors to the line.',   goal: 'race', doors: true },
+  { id: 'merry',   name: 'Merry Go Zook',  desc: 'Last Zook left on the spinning table wins.',  goal: 'merry', radius: 3.6 },
+  { id: 'weakest', name: 'Weakest Zook',   desc: 'Drag your rival into the pit.',               goal: 'tug' },
+  { id: 'hurdles', name: 'Zook Hurdles',   desc: 'Over the hurdles and across the line first.', goal: 'race', hurdles: true },
+  { id: 'marbles', name: 'Zook Marbles',   desc: 'Push through the marbles to the finish.',     goal: 'race', marbles: true },
+  { id: 'smash',   name: 'Zook Smash',     desc: 'Barge through the obstructions to the line.', goal: 'race', smash: true },
+  { id: 'sumo',    name: 'Zook Sumo',      desc: 'Barge your rival out of the ring.',           goal: 'ring', radius: 3.8 },
+  { id: 'ball',    name: 'Zookball',       desc: 'Boot the ball into the rival goal.',          goal: 'ball' },
 ];
 
 const GREEN = 0x37c46a, RED = 0xe8466e;

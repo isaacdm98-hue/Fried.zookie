@@ -123,7 +123,10 @@ function toBlueprint(name, solids) {
       const q = Math.sqrt((dx / ph.x) ** 2 + (dy / ph.y) ** 2 + (dz / ph.z) ** 2);
       const tt = q > 1e-6 ? 1 / q : Math.min(ph.x, ph.y, ph.z);
       const support = Math.abs(dx) * ch.x + Math.abs(dy) * ch.y + Math.abs(dz) * ch.z;
-      const dist = tt + support * 0.85;     // 0.85 = slight overlap so seams read joined
+      // Seat the part's near face ~18% inside the parent's (box) surface, so it stays
+      // visually joined even where the rendered Blob is pulled in by its shape params
+      // (bias/flatness/asymmetry/cubosity) — there's no physics in the static preview.
+      const dist = tt * 0.82 + support;
       b.x = r3(dx * dist); b.y = r3(dy * dist); b.z = r3(dz * dist);
     }
     blobOf[s.idx] = bp.blobs.length; bp.blobs.push(b);
