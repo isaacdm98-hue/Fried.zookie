@@ -75,11 +75,13 @@ export class Builder {
     if (this.zook) { this.zook.dispose(); this.zook = null; }
     if (this.turntable) { this.scene.remove(this.turntable); this.turntable = null; }
     if (this._deck) { this._deck.remove(); this._deck = null; }
+    if (this._fdials) { this._fdials.remove(); this._fdials = null; this._fdialEls = null; }
   }
 
   update(dt) {
     if (this.zook) { this.zook.step(dt, { walk: this._walk }); this.zook.syncMeshes(); }
     this._updateSelBox();
+    this._positionFloatDials();
   }
 
   _apply() { if (this.zook) this.zook.setBlueprint(this.bp, this._sel && this._sel.type === 'leg' ? this._sel.idx : -1); }
@@ -144,6 +146,7 @@ export class Builder {
     if (m === 'shape') this._select(null);   // add/move/paint keep the selection (paint a chosen part)
     this._deck.querySelectorAll('.bmode').forEach(c => c.classList.toggle('on', c.dataset.m === m));
     this._renderBar();
+    this._renderFloatDials();
     if (this._helper) guide.pop(this._helpText());
   }
 
@@ -352,6 +355,68 @@ export class Builder {
     this._sel = sel;
     if (this.zook) this.zook.setHighlight(sel && sel.type === 'leg' ? sel.idx : -1);
     this._updateSelBox();
+    this._renderFloatDials();
+  }
+
+  // ── Floating dials (Feather-style): a few contextual dials hovering around the
+  // selected part for the current touch mode, instead of hunting a fixed panel. ──
+  _ensureFloatLayer() {
+    if (this._fdials) return;
+    this._fdials = document.createElement('div'); this._fdials.className = 'fdials';
+    this.mount.appendChild(this._fdials);
+  }
+  _floatDialSpecs() {
+    const s = this._sel; if (!s || s.type !== 'blob' || !this.bp.blobs[s.idx]) return [];
+    const bl = this.bp.blobs[s.idx];
+    const setb = (k, v) => { bl[k] = v; this._apply(); };
+    const f1 = v => v.toFixed(1), pc = v => `${Math.round(v * 100)}`, deg = v => `${Math.round(v * 57.3)}°`;
+    if (this._mode === 'move') {
+      const sh = bl.shape || {};
+      const out = [{ label: 'MOVE', cycle: true, options: [['none', 'STILL'], ['single', 'PADDLE'], ['two', '2-PART']], value: bl.move || 'none',
+        set: v => { bl.move = v; if (v !== 'none' && !Array.isArray(bl.path)) bl.path = defaultPath(); this._apply(); this._renderFloatDials(); } }];
+      if (bl.move && bl.move !== 'none') out.push(
+        { label: 'CYCLE', min: 0, max: 1, step: 0.05, value: bl.cycle || 0, format: v => v.toFixed(2), set: v => setb('cycle', v) },
+        { label: 'MUSCLE', min: 0.4, max: 2.2, step: 0.1, value: bl.muscle || 1, format: f1, set: v => setb('muscle', v) });
+      return out;
+    }
+    if (this._mode === 'paint') {
+      return [{ label: 'HUE', hue: true, value: bl.hue != null ? bl.hue : 0.6, set: v => { delete bl.rgb; setb('hue', v); } }];
+    }
+    // shape (default): mould the clay
+    return [
+      { label: 'WIDE', min: 0.2, max: 3, step: 0.1, value: bl.sx, format: f1, set: v => setb('sx', v) },
+      { label: 'TALL', min: 0.2, max: 3, step: 0.1, value: bl.sy, format: f1, set: v => setb('sy', v) },
+      { label: 'DEEP', min: 0.2, max: 3, step: 0.1, value: bl.sz, format: f1, set: v => setb('sz', v) },
+      { label: 'POINTY', min: 0, max: 1, step: 0.05, value: (bl.shape && bl.shape.bias != null) ? bl.shape.bias : 0.5, format: pc, set: v => { bl.shape = { ...(bl.shape || {}), bias: v }; this._apply(); } },
+    ];
+  }
+  _renderFloatDials() {
+    this._ensureFloatLayer();
+    this._fdials.innerHTML = ''; this._fdialEls = [];
+    for (const sp of this._floatDialSpecs()) {
+      const holder = document.createElement('div'); holder.className = 'fdial';
+      let w;
+      if (sp.options) w = Selector({ label: sp.label, value: sp.value, options: sp.options.map(([v, t]) => ({ v, t })), onChange: sp.set });
+      else if (sp.hue) w = HueSlider ? HueSlider({ label: sp.label, value: sp.value, onChange: sp.set }) : Knob({ label: sp.label, min: 0, max: 1, step: 0.02, value: sp.value, onChange: sp.set });
+      else w = Knob({ label: sp.label, min: sp.min, max: sp.max, step: sp.step, value: sp.value, format: sp.format, onChange: sp.set });
+      holder.appendChild(w.root); this._fdials.appendChild(holder); this._fdialEls.push(holder);
+    }
+    this._positionFloatDials();
+  }
+  _positionFloatDials() {
+    if (!this._fdials) return;
+    const els = this._fdialEls || []; const obj = els.length ? this._selObj() : null;
+    if (!obj) { this._fdials.style.display = 'none'; return; }
+    this._fdials.style.display = '';
+    const v = new THREE.Vector3(); obj.getWorldPosition(v); v.project(this.camera);
+    const r = this.canvas.getBoundingClientRect();
+    const cx = r.left + (v.x * 0.5 + 0.5) * r.width, cy = r.top + (-v.y * 0.5 + 0.5) * r.height;
+    const n = els.length, rad = 104, spread = Math.min(0.62, 1.7 / Math.max(1, n));
+    els.forEach((el, i) => {
+      const ang = -Math.PI / 2 + (i - (n - 1) / 2) * spread;
+      el.style.left = `${Math.round(cx + Math.cos(ang) * rad)}px`;
+      el.style.top = `${Math.round(cy + Math.sin(ang) * rad - 24)}px`;
+    });
   }
 
   // ── The see-through selection box (the Zook Kit signature) ──────────────────

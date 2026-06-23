@@ -62,6 +62,14 @@ body { -webkit-user-select: none; user-select: none; touch-action: none; }
 .fp-go { margin-top: 10px; }
 .muted { color: var(--sub); font-size: 12px; letter-spacing: 0.06em; }
 
+/* ── Floating contextual dials (hover around the selected part) ───────────── */
+.fdials { position: fixed; inset: 0; z-index: 45; pointer-events: none; }
+.fdial { position: fixed; transform: translate(-50%, -50%); pointer-events: auto;
+  background: rgba(236, 233, 226, 0.92); border-radius: 14px; padding: 5px 8px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.22); backdrop-filter: blur(3px);
+  border: 1px solid var(--line); }
+.fdial .ctl-val { background: var(--panel); }
+
 /* ── Controller deck ─────────────────────────────────────────────────────── */
 .deck {
   position: fixed; left: 50%; bottom: 0; transform: translate(-50%, 0);
