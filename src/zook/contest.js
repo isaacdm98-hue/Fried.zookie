@@ -405,8 +405,13 @@ export class ContestScene {
       this._bodies.push(b);
       if (c.goal === 'merry') this._platform = b;
     } else if (c.goal === 'ball') {
-      this._box({ pos: { x: 0, y: -0.2, z: 0 }, size: { x: 11, y: 0.4, z: 22 }, color: 0xeee7d6 });
-      for (const z of [-10, 10]) this._box({ pos: { x: 0, y: 1, z }, size: { x: 4, y: 2, z: 0.2 }, color: z < 0 ? GREEN : RED });
+      // Zookball pitch — a grass field walled on the long sides, with a real GOAL
+      // (two posts, a crossbar and a net) at each end. Boot the ball through the
+      // rival's goal mouth; the net catches it and the ball's z trips the score.
+      this._box({ pos: { x: 0, y: -0.2, z: 0 }, size: { x: 11, y: 0.4, z: 24 }, color: 0x6fb36a });   // grass
+      this._box({ pos: { x: 0, y: 0.011, z: 0 }, size: { x: 11, y: 0.02, z: 0.18 }, color: 0xffffff });  // halfway line
+      for (const s of [-1, 1]) this._box({ pos: { x: s * 5.6, y: 0.45, z: 0 }, size: { x: 0.3, y: 1, z: 24 }, color: 0xeee7d6 }); // touchlines
+      this._goal(-11, GREEN); this._goal(11, RED);
       const ball = new THREE.Mesh(new THREE.SphereGeometry(0.35, 16, 12), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4 }));
       ball.position.set(0, 0.35, 0); ball.castShadow = true; this.scene.add(ball); this._meshes.push(ball);
       const R = this.RAPIER, bd = R.RigidBodyDesc.dynamic().setTranslation(0, 0.35, 0).setLinearDamping(0.4);
@@ -414,6 +419,17 @@ export class ContestScene {
       this.world.createCollider(R.ColliderDesc.ball(0.35).setRestitution(0.5).setDensity(0.4), this._ball);
       this._bodies.push(this._ball); this._ballMesh = ball;
     }
+  }
+
+  // A football goal at end z: white posts + crossbar (the open mouth faces the
+  // pitch) and a coloured net catching the ball just behind the line.
+  _goal(z, color) {
+    const dir = z < 0 ? 1 : -1, W = 4.2, H = 2.3;
+    this._box({ pos: { x: -W / 2, y: H / 2, z }, size: { x: 0.2, y: H, z: 0.2 }, color: 0xffffff });   // left post
+    this._box({ pos: { x: W / 2, y: H / 2, z }, size: { x: 0.2, y: H, z: 0.2 }, color: 0xffffff });    // right post
+    this._box({ pos: { x: 0, y: H, z }, size: { x: W, y: 0.2, z: 0.2 }, color: 0xffffff });            // crossbar
+    this._box({ pos: { x: 0, y: H / 2, z: z + dir * 1.1 }, size: { x: W, y: H, z: 0.1 }, color });       // back net
+    for (const s of [-1, 1]) this._box({ pos: { x: s * W / 2, y: H / 2, z: z + dir * 0.55 }, size: { x: 0.1, y: H, z: 1.1 }, color }); // side nets
   }
 
   _dynBox({ pos, size, color = 0xff8a1e, mass = 0.5, friction = 0.7 }) {
