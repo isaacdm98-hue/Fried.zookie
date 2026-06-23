@@ -38764,7 +38764,7 @@
       if (up.lengthSq() < 1e-6) up.copy(e2);
       up.normalize();
       const fwdInPlane = { x: e1.dot(e1), y: e1.dot(e2) }, upInPlane = { x: up.dot(e1), y: up.dot(e2) };
-      const stiff = 240, damp = 24;
+      const stiff = Math.min(240, 70 + 24 * legSpecs.length), damp = stiff * 0.1;
       const hipJ = makeRevolute(hip, axisW);
       hipJ.configureMotorPosition(0, stiff, damp);
       for (let k2 = 1; k2 < n2 - 1; k2++) {
@@ -38774,6 +38774,22 @@
       const ankleJ = n2 > 1 ? makeRevolute(foot, axisW) : null;
       if (ankleJ) ankleJ.configureMotorPosition(0, stiff, damp);
       const reach = L1 + L2;
+      const raw = foot.blob && foot.blob.gait || null;
+      let path = null;
+      if (raw && raw.length >= 2) {
+        const q0 = raw[0];
+        path = raw.map((q2) => ({ s: q2.z - q0.z, u: q2.y - q0.y }));
+        let mx = 0;
+        for (const p2 of path) mx = Math.max(mx, Math.hypot(p2.s, p2.u));
+        const cap = reach * 0.8;
+        if (mx > cap) {
+          const k2 = cap / mx;
+          for (const p2 of path) {
+            p2.s *= k2;
+            p2.u *= k2;
+          }
+        }
+      }
       legs.push({
         hipJ,
         ankleJ,
@@ -38786,6 +38802,7 @@
         clock: foot.blob && foot.blob.cycle || 0,
         stiff,
         damp,
+        path,
         stride: Math.min(0.62, 0.85 * reach),
         lift: Math.min(0.34, 0.5 * reach)
       });
@@ -38795,7 +38812,7 @@
       if (p2.root || claimed[i2]) continue;
       makeFixed(p2);
     }
-    const GAIT_RATE = 1.9, CLAMP = 1.4;
+    const GAIT_RATE = 1.9, CLAMP = 1.4, FOOTPATH_DIR = -1;
     const clamp2 = (v2) => Math.max(-CLAMP, Math.min(CLAMP, v2));
     const VMAX = 14, WMAX = 24;
     function governVelocities() {
@@ -38818,10 +38835,18 @@
       governVelocities();
       for (const lg of legs) {
         lg.clock += dt * GAIT_RATE;
-        const ph = 2 * Math.PI * lg.clock;
-        const horiz = lg.stride * Math.cos(ph);
-        const s2 = Math.sin(ph);
-        const vert = s2 < 0 ? lg.lift * -s2 : 0;
+        let horiz, vert;
+        if (lg.path) {
+          const N2 = lg.path.length, u2 = (lg.clock % 1 + 1) % 1 * N2;
+          const i2 = Math.floor(u2) % N2, f2 = u2 - Math.floor(u2), a2 = lg.path[i2], b2 = lg.path[(i2 + 1) % N2];
+          horiz = (a2.s + (b2.s - a2.s) * f2) * FOOTPATH_DIR;
+          vert = a2.u + (b2.u - a2.u) * f2;
+        } else {
+          const ph = 2 * Math.PI * lg.clock;
+          horiz = lg.stride * Math.cos(ph);
+          const s2 = Math.sin(ph);
+          vert = s2 < 0 ? lg.lift * -s2 : 0;
+        }
         const px = lg.restTip.x + lg.fwdInPlane.x * horiz + lg.upInPlane.x * vert;
         const py = lg.restTip.y + lg.fwdInPlane.y * horiz + lg.upInPlane.y * vert;
         const { thighAng, footAng } = lg.ik(px, py);

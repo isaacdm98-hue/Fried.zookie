@@ -185,13 +185,13 @@ export function buildArticulated({ bp, world, RAPIER, pos = { x: 0, y: 0, z: 0 }
     }
     if (!ok || !chain.length || chain.length > 4) continue;        // very long chains are spines, not legs
     chain.reverse();                                               // hip-first … foot-last
-    // Only DRIVE chains that hang DOWN to the ground (a real leg): the foot tip must sit
-    // below the hip. This rejects a worm/snake's spine (a long chain that runs sideways),
-    // which would otherwise be lumped into a giant rigid bar and flung by the hip motor.
+    // Only DRIVE a chain that hangs DOWN to the ground (a real ground leg): the foot tip
+    // must sit below its hip. This rejects a worm/snake spine and any limb that arches up
+    // (those would be flung when lumped into a driven bar). Such parts stay rigidly welded.
     const hipP = parts[chain[0]], footP = parts[chain[chain.length - 1]];
     const fa2 = footP.jg.a2, fAnk = footP.jg.connWorld;
     const tipY = fa2.y + (fa2.y - fAnk.y);                         // far end of the foot
-    if (hipP.jg.connWorld.y - tipY < 0.1) continue;                // not a downward leg → leave as hold-pose
+    if (hipP.jg.connWorld.y - tipY < 0.1) continue;                // not a downward leg → hold-pose
     for (const c of chain) claimed[c] = true;
     legSpecs.push(chain.map((c) => parts[c]));
   }
@@ -231,19 +231,31 @@ export function buildArticulated({ bp, world, RAPIER, pos = { x: 0, y: 0, z: 0 }
     const up = _Y.clone().sub(axisW.clone().multiplyScalar(_Y.dot(axisW)));
     if (up.lengthSq() < 1e-6) up.copy(e2); up.normalize();
     const fwdInPlane = { x: e1.dot(e1), y: e1.dot(e2) }, upInPlane = { x: up.dot(e1), y: up.dot(e2) };
-    const stiff = 240, damp = 24;
+    // Motor gain scales with leg count: many legs share the body's weight so each can be
+    // stiff (a strong gait), but a lone leg must be gentle or it catapults the whole body.
+    const stiff = Math.min(240, 70 + 24 * legSpecs.length), damp = stiff * 0.1;
     const hipJ = makeRevolute(hip, axisW); hipJ.configureMotorPosition(0, stiff, damp);
     for (let k = 1; k < n - 1; k++) { const j = makeRevolute(segs[k], axisW); j.configureMotorPosition(0, 300, 30); }
     const ankleJ = (n > 1) ? makeRevolute(foot, axisW) : null;
     if (ankleJ) ankleJ.configureMotorPosition(0, stiff, damp);
-    // Stride & lift scale with the leg's reach so a small leg gets a small step (a fixed
-    // absolute step would fling a tiny limb). Reach = full extension of the 2-link.
-    // Stride/lift are mostly absolute (the proven walk), but never exceed the leg's own
-    // reach — a tiny limb gets a tiny step. The motor clamp + velocity governor catch the
-    // rest, so we don't have to shrink healthy legs to protect small ones.
+    // Replay the AUTHORED IK foot-path (genome ik_positions) when present: a closed loop
+    // of (z=fore-aft, y=up) offsets in the leg's sagittal plane, expressed relative to the
+    // path's start so the foot leaves its rest pose smoothly. This is the real per-creature
+    // gait (stance sweep + lift) — far more faithful than a generic sine. Legs without an
+    // authored path fall back to a reach-scaled cos sweep + swing-phase lift.
     const reach = L1 + L2;
+    const raw = (foot.blob && foot.blob.gait) || null;
+    let path = null;
+    if (raw && raw.length >= 2) {
+      const q0 = raw[0];
+      path = raw.map((q) => ({ s: q.z - q0.z, u: q.y - q0.y }));
+      // Scale the loop down if its excursion would over-reach the leg (small legs were flung).
+      let mx = 0; for (const p of path) mx = Math.max(mx, Math.hypot(p.s, p.u));
+      const cap = reach * 0.8;
+      if (mx > cap) { const k = cap / mx; for (const p of path) { p.s *= k; p.u *= k; } }
+    }
     legs.push({ hipJ, ankleJ, ik, restThigh, restFoot, restTip: { x: PT.x, y: PT.y },
-      fwdInPlane, upInPlane, clock: (foot.blob && foot.blob.cycle) || 0, stiff, damp,
+      fwdInPlane, upInPlane, clock: (foot.blob && foot.blob.cycle) || 0, stiff, damp, path,
       stride: Math.min(0.62, 0.85 * reach), lift: Math.min(0.34, 0.5 * reach) });
   }
 
@@ -258,7 +270,7 @@ export function buildArticulated({ bp, world, RAPIER, pos = { x: 0, y: 0, z: 0 }
 
   // Advance the gait: move each leg's FOOT along its planted/lifted loop, solve the
   // analytic 2-link IK, and set the hip + ankle motor targets (relative angle from rest).
-  const GAIT_RATE = 1.9, CLAMP = 1.4;
+  const GAIT_RATE = 1.9, CLAMP = 1.4, FOOTPATH_DIR = -1;   // sign maps path fore-aft → world forward
   const clamp = (v) => Math.max(-CLAMP, Math.min(CLAMP, v));        // no single step can fling a limb
   // Velocity governor: a long fixed-joint chain (e.g. a 40-part worm) can fail to
   // converge in the solver and inject energy. Cap every part's speed so no Zook can
@@ -276,10 +288,17 @@ export function buildArticulated({ bp, world, RAPIER, pos = { x: 0, y: 0, z: 0 }
     governVelocities();
     for (const lg of legs) {
       lg.clock += dt * GAIT_RATE;
-      const ph = 2 * Math.PI * lg.clock;
-      const horiz = lg.stride * Math.cos(ph);                     // +front … −back (stance sweeps back)
-      const s = Math.sin(ph);
-      const vert = s < 0 ? lg.lift * (-s) : 0;                    // lift during the forward swing only
+      let horiz, vert;
+      if (lg.path) {                                              // replay the authored foot-path loop
+        const N = lg.path.length, u = (((lg.clock % 1) + 1) % 1) * N;
+        const i = Math.floor(u) % N, f = u - Math.floor(u), a = lg.path[i], b = lg.path[(i + 1) % N];
+        horiz = (a.s + (b.s - a.s) * f) * FOOTPATH_DIR;
+        vert = (a.u + (b.u - a.u) * f);
+      } else {
+        const ph = 2 * Math.PI * lg.clock;
+        horiz = lg.stride * Math.cos(ph);                         // +front … −back (stance sweeps back)
+        const s = Math.sin(ph); vert = s < 0 ? lg.lift * (-s) : 0;  // lift during the forward swing only
+      }
       const px = lg.restTip.x + lg.fwdInPlane.x * horiz + lg.upInPlane.x * vert;
       const py = lg.restTip.y + lg.fwdInPlane.y * horiz + lg.upInPlane.y * vert;
       const { thighAng, footAng } = lg.ik(px, py);
