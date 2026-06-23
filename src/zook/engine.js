@@ -183,15 +183,8 @@ export function buildArticulated({ bp, world, RAPIER, pos = { x: 0, y: 0, z: 0 }
       if (par != null && parts[par] && parts[par].root) break;     // reached the hip segment
       cur = par;
     }
-    if (!ok || !chain.length || chain.length > 4) continue;        // very long chains are spines, not legs
+    if (!ok || !chain.length || chain.length > 6) continue;        // long chains are spines, not legs
     chain.reverse();                                               // hip-first … foot-last
-    // Only DRIVE a chain that hangs DOWN to the ground (a real ground leg): the foot tip
-    // must sit below its hip. This rejects a worm/snake spine and any limb that arches up
-    // (those would be flung when lumped into a driven bar). Such parts stay rigidly welded.
-    const hipP = parts[chain[0]], footP = parts[chain[chain.length - 1]];
-    const fa2 = footP.jg.a2, fAnk = footP.jg.connWorld;
-    const tipY = fa2.y + (fa2.y - fAnk.y);                         // far end of the foot
-    if (hipP.jg.connWorld.y - tipY < 0.1) continue;                // not a downward leg → hold-pose
     for (const c of chain) claimed[c] = true;
     legSpecs.push(chain.map((c) => parts[c]));
   }
@@ -218,7 +211,7 @@ export function buildArticulated({ bp, world, RAPIER, pos = { x: 0, y: 0, z: 0 }
     const L2 = (n > 1) ? Math.hypot(PT.x - PA.x, PT.y - PA.y) : 1e-3;
     const restThigh = (n > 1) ? Math.atan2(PA.y, PA.x) : Math.atan2(PT.y, PT.x);
     const restFoot = Math.atan2(PT.y - PA.y, PT.x - PA.x);
-    const bend = ((restThigh - Math.atan2(PT.y, PT.x)) >= 0) ? 1 : -1;
+    let bend = ((restThigh - Math.atan2(PT.y, PT.x)) >= 0) ? 1 : -1;
     function ik(px, py) {                                            // 2-link → (thigh, foot) angles
       let D = Math.hypot(px, py);
       D = Math.max(Math.abs(L1 - L2) + 1e-3, Math.min(L1 + L2 - 1e-3, D));
@@ -231,6 +224,20 @@ export function buildArticulated({ bp, world, RAPIER, pos = { x: 0, y: 0, z: 0 }
     const up = _Y.clone().sub(axisW.clone().multiplyScalar(_Y.dot(axisW)));
     if (up.lengthSq() < 1e-6) up.copy(e2); up.normalize();
     const fwdInPlane = { x: e1.dot(e1), y: e1.dot(e2) }, upInPlane = { x: up.dot(e1), y: up.dot(e2) };
+    // STANDING foot target: straight down from the hip to the floor, in plane coords. Driving
+    // the foot here (not to its decoded rest tip) means EVERY leg plants on the ground — even
+    // legs the genome arches upward (Ant/Leapsa) get pulled down into a real stance. Capped to
+    // the leg's reach so a short leg just extends fully instead of being yanked.
+    const standDrop = Math.min(H.y, (L1 + L2) * 0.92);
+    const anchor = { x: -standDrop * e1.y, y: -standDrop * e2.y };
+    // Pick the knee-bend branch that actually reaches the ground anchor with the knee raised
+    // (a natural leg), regardless of how the rest pose was authored.
+    const bendDown = (() => {
+      const tryB = (bb) => { const sv = bend; bend = bb; const r = ik(anchor.x, anchor.y); bend = sv;
+        const kx = L1 * Math.cos(r.thighAng), ky = L1 * Math.sin(r.thighAng); return ky; };
+      return tryB(1) >= tryB(-1) ? 1 : -1;   // knee higher = more natural
+    })();
+    bend = bendDown;
     // Motor gain scales with leg count: many legs share the body's weight so each can be
     // stiff (a strong gait), but a lone leg must be gentle or it catapults the whole body.
     const stiff = Math.min(240, 70 + 24 * legSpecs.length), damp = stiff * 0.1;
@@ -254,7 +261,7 @@ export function buildArticulated({ bp, world, RAPIER, pos = { x: 0, y: 0, z: 0 }
       const cap = reach * 0.8;
       if (mx > cap) { const k = cap / mx; for (const p of path) { p.s *= k; p.u *= k; } }
     }
-    legs.push({ hipJ, ankleJ, ik, restThigh, restFoot, restTip: { x: PT.x, y: PT.y },
+    legs.push({ hipJ, ankleJ, ik, restThigh, restFoot, anchor,
       fwdInPlane, upInPlane, clock: (foot.blob && foot.blob.cycle) || 0, stiff, damp, path,
       stride: Math.min(0.62, 0.85 * reach), lift: Math.min(0.34, 0.5 * reach) });
   }
@@ -299,8 +306,8 @@ export function buildArticulated({ bp, world, RAPIER, pos = { x: 0, y: 0, z: 0 }
         horiz = lg.stride * Math.cos(ph);                         // +front … −back (stance sweeps back)
         const s = Math.sin(ph); vert = s < 0 ? lg.lift * (-s) : 0;  // lift during the forward swing only
       }
-      const px = lg.restTip.x + lg.fwdInPlane.x * horiz + lg.upInPlane.x * vert;
-      const py = lg.restTip.y + lg.fwdInPlane.y * horiz + lg.upInPlane.y * vert;
+      const px = lg.anchor.x + lg.fwdInPlane.x * horiz + lg.upInPlane.x * vert;
+      const py = lg.anchor.y + lg.fwdInPlane.y * horiz + lg.upInPlane.y * vert;
       const { thighAng, footAng } = lg.ik(px, py);
       lg.hipJ.configureMotorPosition(clamp(thighAng - lg.restThigh), lg.stiff, lg.damp);
       if (lg.ankleJ) lg.ankleJ.configureMotorPosition(clamp((footAng - thighAng) - (lg.restFoot - lg.restThigh)), lg.stiff, lg.damp);

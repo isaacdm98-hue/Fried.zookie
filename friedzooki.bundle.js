@@ -38723,12 +38723,8 @@
         if (par != null && parts[par] && parts[par].root) break;
         cur = par;
       }
-      if (!ok || !chain.length || chain.length > 4) continue;
+      if (!ok || !chain.length || chain.length > 6) continue;
       chain.reverse();
-      const hipP = parts[chain[0]], footP = parts[chain[chain.length - 1]];
-      const fa2 = footP.jg.a2, fAnk = footP.jg.connWorld;
-      const tipY = fa2.y + (fa2.y - fAnk.y);
-      if (hipP.jg.connWorld.y - tipY < 0.1) continue;
       for (const c2 of chain) claimed[c2] = true;
       legSpecs.push(chain.map((c2) => parts[c2]));
     }
@@ -38759,11 +38755,25 @@
       const L2 = n2 > 1 ? Math.hypot(PT.x - PA2.x, PT.y - PA2.y) : 1e-3;
       const restThigh = n2 > 1 ? Math.atan2(PA2.y, PA2.x) : Math.atan2(PT.y, PT.x);
       const restFoot = Math.atan2(PT.y - PA2.y, PT.x - PA2.x);
-      const bend = restThigh - Math.atan2(PT.y, PT.x) >= 0 ? 1 : -1;
+      let bend = restThigh - Math.atan2(PT.y, PT.x) >= 0 ? 1 : -1;
       const up = _Y.clone().sub(axisW.clone().multiplyScalar(_Y.dot(axisW)));
       if (up.lengthSq() < 1e-6) up.copy(e2);
       up.normalize();
       const fwdInPlane = { x: e1.dot(e1), y: e1.dot(e2) }, upInPlane = { x: up.dot(e1), y: up.dot(e2) };
+      const standDrop = Math.min(H2.y, (L1 + L2) * 0.92);
+      const anchor = { x: -standDrop * e1.y, y: -standDrop * e2.y };
+      const bendDown = (() => {
+        const tryB = (bb) => {
+          const sv = bend;
+          bend = bb;
+          const r2 = ik(anchor.x, anchor.y);
+          bend = sv;
+          const kx = L1 * Math.cos(r2.thighAng), ky = L1 * Math.sin(r2.thighAng);
+          return ky;
+        };
+        return tryB(1) >= tryB(-1) ? 1 : -1;
+      })();
+      bend = bendDown;
       const stiff = Math.min(240, 70 + 24 * legSpecs.length), damp = stiff * 0.1;
       const hipJ = makeRevolute(hip, axisW);
       hipJ.configureMotorPosition(0, stiff, damp);
@@ -38796,7 +38806,7 @@
         ik,
         restThigh,
         restFoot,
-        restTip: { x: PT.x, y: PT.y },
+        anchor,
         fwdInPlane,
         upInPlane,
         clock: foot.blob && foot.blob.cycle || 0,
@@ -38847,8 +38857,8 @@
           const s2 = Math.sin(ph);
           vert = s2 < 0 ? lg.lift * -s2 : 0;
         }
-        const px = lg.restTip.x + lg.fwdInPlane.x * horiz + lg.upInPlane.x * vert;
-        const py = lg.restTip.y + lg.fwdInPlane.y * horiz + lg.upInPlane.y * vert;
+        const px = lg.anchor.x + lg.fwdInPlane.x * horiz + lg.upInPlane.x * vert;
+        const py = lg.anchor.y + lg.fwdInPlane.y * horiz + lg.upInPlane.y * vert;
         const { thighAng, footAng } = lg.ik(px, py);
         lg.hipJ.configureMotorPosition(clamp2(thighAng - lg.restThigh), lg.stiff, lg.damp);
         if (lg.ankleJ) lg.ankleJ.configureMotorPosition(clamp2(footAng - thighAng - (lg.restFoot - lg.restThigh)), lg.stiff, lg.damp);
