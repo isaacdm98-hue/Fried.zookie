@@ -158,13 +158,16 @@ export function buildArticulated({ bp, world, RAPIER, pos = { x: 0, y: 0, z: 0 }
     // body get proportional torque) — this stops a one-size torque from yanking the
     // joint open. Torque = I·(Kp·angleErr − Kd·angvel), capped at I·MAXACC.
     const I = Math.max(1e-4, p.body.mass() * (p.half.x * p.half.x + p.half.y * p.half.y + p.half.z * p.half.z));
-    const m = { parent, child: p, restRel, target: restRel.clone(), I, Kp: muscleK * ms, Kd: muscleC * md };
+    const m = { parent, child: p, restRel, target: restRel.clone(), I, Kp: muscleK * ms, Kd: muscleC * md, maxacc: 90 };
     // Gait: the decoded IK foot-path → a set of directions the leg aims through.
     // Sweeping the leg toward each point in turn makes the foot plant & push, so
     // walking emerges from the muscles (nothing scripts the body forward).
     if (b.move && b.gait && b.gait.length >= 2) {
       m.gait = b.gait.map((g) => new THREE.Vector3(g.x, g.y, g.z).normalize());
       m.phase = b.cycle || 0;
+      // A moving leg gets a stronger but well-damped muscle: enough to plant and
+      // push through the foot-path, but capped so it can't punch the body skyward.
+      m.Kp *= 1.8; m.Kd *= 2.0; m.maxacc = 130;
     }
     muscles.push(m);
   }
@@ -208,8 +211,8 @@ export function buildArticulated({ bp, world, RAPIER, pos = { x: 0, y: 0, z: 0 }
       let ax = m.Kp * _ax.x * ang - m.Kd * wc.x;
       let ay = m.Kp * _ax.y * ang - m.Kd * wc.y;
       let az = m.Kp * _ax.z * ang - m.Kd * wc.z;
-      const amag = Math.hypot(ax, ay, az);
-      if (amag > MAXACC) { const k = MAXACC / amag; ax *= k; ay *= k; az *= k; }
+      const amag = Math.hypot(ax, ay, az), cap = m.maxacc || MAXACC;
+      if (amag > cap) { const k = cap / amag; ax *= k; ay *= k; az *= k; }
       m.child.body.addTorque({ x: ax * m.I, y: ay * m.I, z: az * m.I }, true);
       const ws = Math.hypot(wc.x, wc.y, wc.z);
       if (ws > WMAX) { const k = WMAX / ws; m.child.body.setAngvel({ x: wc.x * k, y: wc.y * k, z: wc.z * k }, true); }
