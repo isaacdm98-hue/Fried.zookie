@@ -399,11 +399,22 @@ export class ContestScene {
         new THREE.MeshStandardMaterial({ color: c.goal === 'merry' ? 0xf0782d : 0xeee7d6, roughness: 0.7 }));
       const dy = c.goal === 'ring' ? -1.3 : -0.2;
       disc.position.y = dy; disc.receiveShadow = true; this.scene.add(disc); this._meshes.push(disc);
-      const R = this.RAPIER, d = R.RigidBodyDesc.fixed().setTranslation(0, dy, 0);
+      const R = this.RAPIER;
+      // Merry-Go is a KINEMATIC turntable that really rotates — its surface friction
+      // drags the Zooks round and flings them off; Sumo's ring is a fixed disc.
+      const d = (c.goal === 'merry' ? R.RigidBodyDesc.kinematicPositionBased() : R.RigidBodyDesc.fixed()).setTranslation(0, dy, 0);
       const b = this.world.createRigidBody(d);
-      this.world.createCollider(R.ColliderDesc.cylinder(c.goal === 'ring' ? 1.3 : 0.2, c.radius).setFriction(1.0), b);
+      this.world.createCollider(R.ColliderDesc.cylinder(c.goal === 'ring' ? 1.3 : 0.2, c.radius).setFriction(c.goal === 'merry' ? 1.6 : 1.0), b);
       this._bodies.push(b);
-      if (c.goal === 'merry') this._platform = b;
+      if (c.goal === 'merry') {
+        // contrasting spokes on top so the spin is visible
+        for (let i = 0; i < 4; i++) {
+          const spoke = new THREE.Mesh(new THREE.BoxGeometry(c.radius * 1.9, 0.05, 0.25),
+            new THREE.MeshStandardMaterial({ color: i % 2 ? 0xffd479 : 0xd95f1a, roughness: 0.6 }));
+          spoke.rotation.y = i * Math.PI / 4; spoke.position.y = 0.22; disc.add(spoke);
+        }
+        this._platform = b; this._platformMesh = disc; this._platformAng = 0;
+      }
     } else if (c.goal === 'ball') {
       // Zookball pitch — a grass field walled on the long sides, with a real GOAL
       // (two posts, a crossbar and a net) at each end. Boot the ball through the
@@ -528,11 +539,12 @@ export class ContestScene {
   }
 
   _spinPlatform(dt) {
-    // Drift the Zooks tangentially to mimic a rotating platform.
-    for (const e of [this.green, this.red]) {
-      const p = e.zook.position;
-      e.zook._body.applyImpulse({ x: -p.z * 0.15 * dt, y: 0, z: p.x * 0.15 * dt }, true);
-    }
+    // Rotate the kinematic turntable — Rapier drags whatever's standing on it via
+    // friction, so the Zooks are carried round and slung outward (stay on to win).
+    this._platformAng = (this._platformAng || 0) + dt * 1.5;     // ~1.5 rad/s
+    const h = this._platformAng / 2;
+    if (this._platform.setNextKinematicRotation) this._platform.setNextKinematicRotation({ x: 0, y: Math.sin(h), z: 0, w: Math.cos(h) });
+    if (this._platformMesh) this._platformMesh.rotation.y = this._platformAng;
   }
 
   get countLabel() {
