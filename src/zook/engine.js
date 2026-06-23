@@ -253,12 +253,15 @@ export class ArticulatedZook {
     }
   }
   // Build one mesh per part (body + clay), tagged for the builder's hit-testing.
+  // In preview, each part also gets an UNSCALED frame Object3D at its transform —
+  // the builder uses these (`_blobObj`) for add/drag coordinate math, like the
+  // legacy Zook did, so attaching and dragging parts works.
   _makeMeshes(parts) {
-    for (let i = this.group.children.length - 1; i >= 0; i--) {
-      const c = this.group.children[i]; this.group.remove(c);
-      if (c.material && c.material !== _HILITE) c.material.dispose();
+    while (this.group.children.length) {
+      const c = this.group.children.pop();
+      c.traverse((o) => { if (o.isMesh && o.material && o.material !== _HILITE) o.material.dispose(); });
     }
-    this._meshes = []; this._blobs = [];
+    this._meshes = []; this._blobs = []; this._blobObj = [];
     for (const p of parts) {
       const shape = p.root ? this.bp.bodyShape : (p.blob && p.blob.shape);
       const rgb = p.root ? (this.bp.bodyRgb != null ? this.bp.bodyRgb : 0xcf5a5a) : (p.blob && p.blob.rgb != null ? p.blob.rgb : 0xcf5a5a);
@@ -268,12 +271,44 @@ export class ArticulatedZook {
       mesh.castShadow = mesh.receiveShadow = true;
       mesh.userData.baseMat = mesh.material;
       if (p.root) mesh.userData.isBody = true; else mesh.userData.blobIndex = p.idx;
-      if (this.preview && p.mat) { p.mat.decompose(V, Q, _S); mesh.position.copy(V); mesh.quaternion.copy(Q); }
-      this.group.add(mesh); this._meshes.push(mesh);
+      if (this.preview && p.mat) {
+        p.mat.decompose(V, Q, _S);
+        const frame = new THREE.Object3D(); frame.position.copy(V); frame.quaternion.copy(Q);
+        frame.add(mesh); this.group.add(frame);
+        if (!p.root) this._blobObj[p.idx] = frame;
+      } else {
+        this.group.add(mesh);
+      }
+      this._meshes.push(mesh);
       if (!p.root) this._blobs[p.idx] = mesh;
     }
+    this._meshKinds = parts.map((p) => p.root ? (this.bp.bodyMesh || 'blob') : (p.mesh || 'blob'));
   }
-  _buildPreview(bp) { this.bp = bp; this._makeMeshes(layout(bp)); this.setHighlight(this._hi); }
+  // Update existing meshes in place (no create/dispose) — used during a drag/edit so
+  // the builder never churns geometry/materials each frame (the mobile freeze).
+  _updateMeshes(parts) {
+    for (let i = 0; i < parts.length; i++) {
+      const p = parts[i], mesh = this._meshes[i]; if (!mesh) continue;
+      const shape = p.root ? this.bp.bodyShape : (p.blob && p.blob.shape);
+      const rgb = p.root ? (this.bp.bodyRgb != null ? this.bp.bodyRgb : 0xcf5a5a) : (p.blob && p.blob.rgb != null ? p.blob.rgb : 0xcf5a5a);
+      if (p.mesh !== 'cube' && p.mesh !== 'sphere') mesh.geometry = makeBlobGeo(shape);
+      mesh.scale.set(p.half.x * 2, p.half.y * 2, p.half.z * 2);
+      if (mesh.userData.baseMat) mesh.userData.baseMat.color.setHex(rgb);
+      if (mesh.parent && mesh.parent !== this.group && p.mat) { p.mat.decompose(V, Q, _S); mesh.parent.position.copy(V); mesh.parent.quaternion.copy(Q); }
+    }
+  }
+  _buildPreview(bp) {
+    this.bp = bp;
+    const parts = layout(bp);
+    const kinds = parts.map((p) => p.root ? (bp.bodyMesh || 'blob') : (p.mesh || 'blob'));
+    if (this._meshes && this._meshes.length === parts.length && this._meshKinds &&
+        kinds.length === this._meshKinds.length && kinds.every((k, i) => k === this._meshKinds[i])) {
+      this._updateMeshes(parts);          // same structure → cheap in-place update
+    } else {
+      this._makeMeshes(parts);            // structure changed → full rebuild
+    }
+    this.setHighlight(this._hi);
+  }
   // Builder API ----------------------------------------------------------------
   setBlueprint(bp, hi = -1) { this.bp = bp; this._hi = hi; if (this.preview) this._buildPreview(bp); }
   setHighlight(idx) {

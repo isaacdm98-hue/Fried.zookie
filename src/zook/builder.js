@@ -512,11 +512,13 @@ export class Builder {
   // Attach a new clay part as a CHILD of an existing part (the part tree). The tap
   // point is converted into the parent part's own local frame, so the child sits
   // on its surface and rides its motion — attach moving parts to moving parts.
-  _addBlobChild(parentIdx, worldPoint) {
-    const obj = this.zook._blobObj && this.zook._blobObj[parentIdx];
-    let loc = { x: 0, y: 0, z: 0 };
-    if (obj) { obj.updateWorldMatrix(true, false); const v = obj.worldToLocal(worldPoint.clone()); loc = { x: v.x, y: v.y, z: v.z }; }
-    this._addBlobAtLocal(loc, parentIdx);
+  _addBlobChild(parentIdx) {
+    // Attach the new part at the parent's FAR END (its +z tip), extending the limb
+    // outward segment-by-segment — like the manual: squash a blob, then add the next
+    // blob to its end. Tapping the body (not a part) still places where you tapped.
+    const p = this.bp.blobs[parentIdx]; if (!p) return;
+    const childSz = 0.45;
+    this._addBlobAtLocal({ x: 0, y: 0, z: (p.sz || 0.6) / 2 + childSz / 2 }, parentIdx);
   }
 
   // ── touch interaction (touch = mouse) ───────────────────────────────────────
@@ -594,7 +596,7 @@ export class Builder {
         // Attach clay to ANY part — tapping the BODY adds a root part; tapping an
         // existing clay part attaches a CHILD onto it (the hierarchical part tree),
         // so you can chain parts and grow limbs off limbs, infinitely.
-        if (hit && hit.type === 'blob') { this._addBlobChild(hit.idx, hit.point); this._drag = this._blobDrag(this._sel.idx, e); }
+        if (hit && hit.type === 'blob') { this._addBlobChild(hit.idx); this._drag = this._blobDrag(this._sel.idx, e); }
         else if (hit) { const loc = this.zook.group.worldToLocal(hit.point.clone()); this._addBlobAtLocal(loc); this._drag = this._blobDrag(this._sel.idx, e); }
         else this._orbit(e);
       } else { // leg
