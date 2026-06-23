@@ -10,6 +10,7 @@
 import * as THREE from 'three';
 import { setCamera, prefersReducedMotion } from './engine/renderer.js';
 import { Zook, defaultBlueprint, blankBlueprint, cloneBlueprint, makeDefaultLegs } from './zook/model.js';
+import { ArticulatedZook } from './zook/engine.js';
 import { Builder } from './zook/builder.js';
 import { Arena } from './zook/arena.js';
 import { ContestScene, CONTESTS } from './zook/contest.js';
@@ -54,17 +55,14 @@ export class App {
       this._heroZook.step(dt, { walk: true }); this._heroZook.syncMeshes();
       const g = this._heroZook.group, t = this._heroT, rest = this._heroZook.dims.rest;
       if (this._heroSilly) {
-        // A daft little routine on a loop: butt-in-the-air wiggle, bouncy hops,
-        // a happy spin, then a shimmy. Pure silliness for the title screen.
-        const seg = (t * 0.5) % 4;
-        let rx = 0, ry = Math.PI, rz = 0, hop = 0;
-        if (seg < 1)      { rx = 0.95; ry = Math.PI + Math.sin(t * 11) * 0.6; }            // 🍑 butt in the air, waggling
-        else if (seg < 2) { hop = Math.abs(Math.sin(t * 9)) * 0.55; }                       // bouncy hops
-        else if (seg < 3) { ry = Math.PI + (seg - 2) * Math.PI * 2; hop = 0.12; }           // happy spin
-        else              { rz = Math.sin(t * 10) * 0.3; hop = Math.abs(Math.sin(t * 6)) * 0.15; } // shimmy
-        g.rotation.set(rx, ry, rz);
+        // A gentle idle for the title Zook — a slow look around, a soft sway and a
+        // little bob. Calm and characterful, not the old frantic spin/shimmy.
+        const ry = Math.PI + Math.sin(t * 0.7) * 0.28;             // slow look left/right
+        const rz = Math.sin(t * 1.0) * 0.05;                        // soft sway
+        const hop = Math.max(0, Math.sin(t * 1.5)) * 0.1;           // a soft bob
+        g.rotation.set(0, ry, rz);
         g.position.y = rest + hop;
-        g.scale.set(1, 1 + Math.sin(t * 4) * 0.05, 1);
+        g.scale.set(1, 1 + Math.sin(t * 2.2) * 0.03, 1);
       } else {
         if (this._heroSpin !== false) { this._heroSpinT += dt * 0.5; this._hero.rotation.y = this._heroSpinT; }
         g.scale.set(1, 1 + Math.sin(t * 2.4) * 0.025, 1);
