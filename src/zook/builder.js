@@ -197,6 +197,7 @@ export class Builder {
         hint('drag to move · WIDE/TALL/DEEP shape the part · COPY/MIRROR');
       } else if (s && s.type === 'blob' && this.bp.blobs[s.idx]) {
         const bl = this.bp.blobs[s.idx]; const setb = (k, v) => { this._pushUndo(); bl[k] = v; this._apply(); };
+        const sh = bl.shape || {}; const setsh = (k, v) => { this._pushUndo(); bl.shape = { ...sh, [k]: v }; this._apply(); };
         el.append(
           // BuilderParts `mesh` enum {Blob, Cube, Sphere} + Position-pane Twist (roll).
           Selector({ label: 'MESH', value: bl.mesh || 'blob',
@@ -205,12 +206,18 @@ export class Builder {
           K({ label: 'WIDE', min: 0.2, max: 3, step: 0.1, value: bl.sx, format: v => v.toFixed(1), onChange: v => setb('sx', v) }),
           K({ label: 'TALL', min: 0.2, max: 3, step: 0.1, value: bl.sy, format: v => v.toFixed(1), onChange: v => setb('sy', v) }),
           K({ label: 'DEEP', min: 0.2, max: 3, step: 0.1, value: bl.sz, format: v => v.toFixed(1), onChange: v => setb('sz', v) }),
+          // Blob clay deformation (BuilderParts shape pane): Pointiness/Flatten End/
+          // Flatten Side/Squareness — the superquadric params the engine renders.
+          K({ label: 'POINTY', min: 0, max: 1, step: 0.05, value: sh.bias != null ? sh.bias : 0.5, format: pct, onChange: v => setsh('bias', v) }),
+          K({ label: 'FLAT-END', min: 0, max: 1, step: 0.05, value: sh.flatness || 0, format: pct, onChange: v => setsh('flatness', v) }),
+          K({ label: 'FLAT-SIDE', min: 0, max: 1, step: 0.05, value: sh.asymmetry || 0, format: pct, onChange: v => setsh('asymmetry', v) }),
+          K({ label: 'SQUARE', min: 0, max: 1, step: 0.05, value: sh.cubosity || 0, format: pct, onChange: v => setsh('cubosity', v) }),
           // Position pane orientation (BuilderParts roll/pitch/yaw): Twist + Pitch + Yaw.
           K({ label: 'TWIST', min: -3.14, max: 3.14, step: 0.08, value: bl.twist || 0, format: v => `${Math.round(v * 57.3)}°`, onChange: v => setb('twist', v) }),
           K({ label: 'PITCH', min: -3.14, max: 3.14, step: 0.08, value: bl.pitch || 0, format: v => `${Math.round(v * 57.3)}°`, onChange: v => setb('pitch', v) }),
           K({ label: 'YAW', min: -3.14, max: 3.14, step: 0.08, value: bl.yaw || 0, format: v => `${Math.round(v * 57.3)}°`, onChange: v => setb('yaw', v) }),
           this._delBtn());
-        hint('drag to move · MESH picks Blob/Box/Ball · TWIST/PITCH/YAW orient it · box handles scale');
+        hint('MESH picks the clay · POINTY/FLAT/SQUARE mould it · TWIST/PITCH/YAW orient · box handles scale');
       } else {
         hint(this._addType === 'leg' ? 'TAP THE BODY where you want a leg' : 'TAP ANY PART to stack a clay blob (build limbs!)');
       }
