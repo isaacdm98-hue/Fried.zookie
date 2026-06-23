@@ -112,6 +112,20 @@ function toBlueprint(name, solids) {
       const gait = cleanGait(s.gait);
       if (gait) b.gait = gait;
     }
+    // Pre-seat onto the parent surface so the part TOUCHES with the engine's raw
+    // placement (the engine no longer re-seats — builder and sim share one model).
+    const pa = s.parentIdx === root.idx ? ra : solids[s.parentIdx].attrs;
+    const ph = { x: (f(pa.scalex) || 1) / 2, y: (f(pa.scaley) || 1) / 2, z: (f(pa.scalez) || 1) / 2 };
+    const ch = { x: b.sx / 2, y: b.sy / 2, z: b.sz / 2 };
+    const len = Math.hypot(b.x, b.y, b.z);
+    if (len > 1e-4) {
+      const dx = b.x / len, dy = b.y / len, dz = b.z / len;
+      const q = Math.sqrt((dx / ph.x) ** 2 + (dy / ph.y) ** 2 + (dz / ph.z) ** 2);
+      const tt = q > 1e-6 ? 1 / q : Math.min(ph.x, ph.y, ph.z);
+      const support = Math.abs(dx) * ch.x + Math.abs(dy) * ch.y + Math.abs(dz) * ch.z;
+      const dist = tt + support * 0.85;     // 0.85 = slight overlap so seams read joined
+      b.x = r3(dx * dist); b.y = r3(dy * dist); b.z = r3(dz * dist);
+    }
     blobOf[s.idx] = bp.blobs.length; bp.blobs.push(b);
   }
   return { name, bp };
