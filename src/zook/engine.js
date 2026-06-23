@@ -16,7 +16,7 @@ import * as THREE from 'three';
 import { ENGINE } from './engine-constants.js';
 import { makeBlobGeo } from './model.js';
 
-const E = new THREE.Euler(), Q = new THREE.Quaternion(), V = new THREE.Vector3(), ONE = new THREE.Vector3(1, 1, 1);
+const E = new THREE.Euler(), Q = new THREE.Quaternion(), V = new THREE.Vector3(), ONE = new THREE.Vector3(1, 1, 1), _S = new THREE.Vector3();
 const compose = (x, y, z, rx, ry, rz) =>
   new THREE.Matrix4().compose(new THREE.Vector3(x, y, z), Q.setFromEuler(E.set(rx, ry, rz)), ONE);
 
@@ -227,41 +227,66 @@ export function buildArticulated({ bp, world, RAPIER, pos = { x: 0, y: 0, z: 0 }
   };
 }
 
+const _PREVIEW_BOX = new THREE.BoxGeometry(1, 1, 1), _PREVIEW_BALL = new THREE.SphereGeometry(0.5, 16, 12);
+const _HILITE = new THREE.MeshStandardMaterial({ color: 0xffd479, emissive: 0xf0782d, emissiveIntensity: 0.5, roughness: 0.4 });
+
 /**
- * ArticulatedZook — the real engine wrapped with graphics, exposing the same
- * surface the arena expects (step / syncMeshes / position / dims / _body). Each
- * part is rendered as its genome Blob (superellipsoid) so it looks like the exe.
+ * ArticulatedZook — the ONE Zook used everywhere. With a physics world it runs the
+ * real engine (test/contests); with `preview:true` it renders the exact same part
+ * meshes statically for the BUILDER, so what you design is what you simulate — same
+ * body Blob, same materials, one blob per part (no synthesised knee/foot).
+ * Exposes the builder's selection surface: `_blobs[idx]`, `userData.blobIndex`/`isBody`,
+ * `setBlueprint`, `setHighlight`.
  */
 export class ArticulatedZook {
-  constructor(bp, { scene, world, RAPIER, pos = { x: 0, y: 0, z: 0 } }) {
-    this.bp = bp; this.scene = scene; this._spawn = { x: pos.x || 0, z: pos.z || 0 };
-    this._A = buildArticulated({ bp, world, RAPIER, pos: { x: pos.x || 0, y: 0.4, z: pos.z || 0 } });
+  constructor(bp, { scene, world, RAPIER, pos = { x: 0, y: 0, z: 0 }, preview = false }) {
+    this.bp = bp; this.scene = scene; this.preview = !!preview; this.world = world; this.RAPIER = RAPIER;
+    this._spawn = { x: pos.x || 0, z: pos.z || 0 };
     this.group = new THREE.Group(); scene.add(this.group);
-    this._meshes = this._A.parts.map((p) => {
-      const shape = p.root ? bp.bodyShape : (p.blob && p.blob.shape);
-      const rgb = p.root ? (bp.bodyRgb != null ? bp.bodyRgb : 0xcf5a5a) : (p.blob && p.blob.rgb != null ? p.blob.rgb : 0xcf5a5a);
-      const geo = p.mesh === 'cube' ? new THREE.BoxGeometry(1, 1, 1) : p.mesh === 'sphere' ? new THREE.SphereGeometry(0.5, 16, 12) : makeBlobGeo(shape);
-      const mat = new THREE.MeshStandardMaterial({ color: rgb, roughness: 0.62, metalness: 0.02 });
-      const mesh = new THREE.Mesh(geo, mat);
+    this.onFlop = null; this._hi = -1; this._legs = [];   // no separate legs (unified blob model)
+    if (this.preview) { this._buildPreview(bp); }
+    else {
+      this._A = buildArticulated({ bp, world, RAPIER, pos: { x: pos.x || 0, y: 0.4, z: pos.z || 0 } });
+      this._body = this._A.rootBody;
+      this._makeMeshes(this._A.parts);
+      this.syncMeshes();
+    }
+  }
+  // Build one mesh per part (body + clay), tagged for the builder's hit-testing.
+  _makeMeshes(parts) {
+    for (let i = this.group.children.length - 1; i >= 0; i--) {
+      const c = this.group.children[i]; this.group.remove(c);
+      if (c.material && c.material !== _HILITE) c.material.dispose();
+    }
+    this._meshes = []; this._blobs = [];
+    for (const p of parts) {
+      const shape = p.root ? this.bp.bodyShape : (p.blob && p.blob.shape);
+      const rgb = p.root ? (this.bp.bodyRgb != null ? this.bp.bodyRgb : 0xcf5a5a) : (p.blob && p.blob.rgb != null ? p.blob.rgb : 0xcf5a5a);
+      const geo = p.mesh === 'cube' ? _PREVIEW_BOX : p.mesh === 'sphere' ? _PREVIEW_BALL : makeBlobGeo(shape);
+      const mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: rgb, roughness: 0.62, metalness: 0.02 }));
       mesh.scale.set(p.half.x * 2, p.half.y * 2, p.half.z * 2);
       mesh.castShadow = mesh.receiveShadow = true;
-      this.group.add(mesh); return mesh;
-    });
-    this._body = this._A.rootBody;       // arena float/camera reads this
-    this.onFlop = null;
-    this.syncMeshes();
+      mesh.userData.baseMat = mesh.material;
+      if (p.root) mesh.userData.isBody = true; else mesh.userData.blobIndex = p.idx;
+      if (this.preview && p.mat) { p.mat.decompose(V, Q, _S); mesh.position.copy(V); mesh.quaternion.copy(Q); }
+      this.group.add(mesh); this._meshes.push(mesh);
+      if (!p.root) this._blobs[p.idx] = mesh;
+    }
   }
-  step(dt, _inputs) {
-    // Gait + muscles (world.step() is driven by the loop). Target-steering is held
-    // at 0 for now: a Zook doesn't reliably face its travel direction, so biasing
-    // body-side legs toward a world target can curve it the wrong way. Proper
-    // steering needs a per-Zook forward calibration (measure the body-local travel
-    // direction over a warmup, then steer relative to that) — the scaffold (per-leg
-    // phase clocks + leg side) is in place for it.
-    this._A.gait(dt || 1 / 60, 0);
-    this._A.drive();
+  _buildPreview(bp) { this.bp = bp; this._makeMeshes(layout(bp)); this.setHighlight(this._hi); }
+  // Builder API ----------------------------------------------------------------
+  setBlueprint(bp, hi = -1) { this.bp = bp; this._hi = hi; if (this.preview) this._buildPreview(bp); }
+  setHighlight(idx) {
+    this._hi = idx;
+    if (!this._blobs) return;
+    this._blobs.forEach((m) => { if (m && m.userData.baseMat) m.material = m.userData.baseMat; });
+    const sel = idx != null && idx >= 0 && this._blobs[idx];
+    if (sel) sel.material = _HILITE;
   }
+  // Simulation API -------------------------------------------------------------
+  step(dt, _inputs) { if (!this.preview) { this._A.gait(dt || 1 / 60, 0); this._A.drive(); } }
   syncMeshes() {
+    if (this.preview || !this._A) return;
     const T = this._A.readTransforms();
     for (let i = 0; i < this._meshes.length; i++) {
       const t = T[i].t, r = T[i].r;
@@ -269,12 +294,13 @@ export class ArticulatedZook {
       this._meshes[i].quaternion.set(r.x, r.y, r.z, r.w);
     }
   }
-  get position() { const t = this._A.rootBody.translation(); return { x: t.x, y: t.y, z: t.z }; }
+  get position() { const t = this.preview ? { x: 0, y: 0, z: 0 } : this._A.rootBody.translation(); return { x: t.x, y: t.y, z: t.z }; }
   get dims() { return { rest: 0.6, w: this.bp.width || 1, h: this.bp.height || 1, l: this.bp.len || 1.6 }; }
-  jump() { this._A.rootBody.applyImpulse({ x: 0, y: 5, z: 0 }, true); }
+  jump() { if (!this.preview) this._A.rootBody.applyImpulse({ x: 0, y: 5, z: 0 }, true); }
   // Teleport the WHOLE body (all parts together) so a contest placing the Zook can't
   // tear the articulation apart — shift every part by the same delta and zero velocity.
   moveTo(p) {
+    if (this.preview) return;
     const t = this._A.rootBody.translation();
     const dx = (p.x || 0) - t.x, dy = (p.y || 0) - t.y, dz = (p.z || 0) - t.z;
     for (const b of this._A.bodies) {
@@ -283,7 +309,7 @@ export class ArticulatedZook {
       b.setLinvel({ x: 0, y: 0, z: 0 }, true); b.setAngvel({ x: 0, y: 0, z: 0 }, true);
     }
   }
-  dispose() { this._A.dispose(); if (this.group.parent) this.group.parent.remove(this.group); }
+  dispose() { if (this._A) this._A.dispose(); if (this.group.parent) this.group.parent.remove(this.group); }
 }
 
 export { ENGINE };

@@ -14,6 +14,7 @@
 
 import * as THREE from 'three';
 import { Zook, defaultBlueprint, makeLeg, newPairId, ensureLegs, defaultPath, SKINS } from './model.js';
+import { ArticulatedZook } from './engine.js';
 import { Knob, Switch, HueSlider, Selector } from './controls.js';
 import { setCamera } from '../engine/renderer.js';
 import { saveZook, randomExample } from './library.js';
@@ -55,7 +56,9 @@ export class Builder {
     this.turntable.position.y = 0.5;
     this.turntable.rotation.y = -0.5;            // a friendly 3/4 view to start
 
-    this.zook = new Zook(this.bp, { preview: true, showArrow: true });
+    // The builder preview IS the engine (preview mode): same Blob meshes, same body,
+    // one blob per part — so what you design is exactly what Test simulates.
+    this.zook = new ArticulatedZook(this.bp, { scene: this.scene, preview: true });
     this.turntable.add(this.zook.group);
 
     setCamera({ x: -0.7, y: 2.4, z: 5.2 }, { x: -0.7, y: 1.05, z: 0 }, true);
