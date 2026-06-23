@@ -34141,10 +34141,10 @@
       }
     }
   };
-  var X = class _X2 {
+  var X = class _X {
     static __wrap(A2) {
       A2 >>>= 0;
-      const I2 = Object.create(_X2.prototype);
+      const I2 = Object.create(_X.prototype);
       return I2.__wbg_ptr = A2, I2;
     }
     __destroy_into_raw() {
@@ -37533,7 +37533,7 @@
     await gg.init();
     const world = new gg.World({ x: 0, y: -9.81, z: 0 });
     try {
-      world.numSolverIterations = 14;
+      world.numSolverIterations = 8;
     } catch (_2) {
     }
     return { world, RAPIER: gg };
@@ -38623,23 +38623,7 @@
     }
     return parts;
   }
-  var _X = new Vector3(1, 0, 0);
-  var _Y = new Vector3(0, 1, 0);
-  var _Z = new Vector3(0, 0, 1);
-  var HALFPI = Math.PI / 2;
-  function bakeIK(points, mirror) {
-    return points.map((p2) => {
-      const x2 = mirror ? -(p2.x || 0) : p2.x || 0, y2 = p2.y || 0, z2 = p2.z || 0;
-      const r2 = Math.hypot(x2, z2);
-      return { ax: Math.atan2(y2, r2), ay: -Math.atan2(x2, z2) };
-    });
-  }
-  function sampleCurve(s2, t2) {
-    const n2 = s2.length, u2 = (t2 % 1 + 1) % 1 * n2;
-    const i2 = Math.floor(u2) % n2, f2 = u2 - Math.floor(u2), a2 = s2[i2], b2 = s2[(i2 + 1) % n2];
-    return { ax: a2.ax + (b2.ax - a2.ax) * f2, ay: a2.ay + (b2.ay - a2.ay) * f2 };
-  }
-  function buildArticulated({ bp, world, RAPIER, pos = { x: 0, y: 0, z: 0 } }) {
+  function buildArticulated({ bp, world, RAPIER, pos = { x: 0, y: 0, z: 0 }, muscleK = 60, muscleC = 14 }) {
     const parts = layout(bp);
     let minY = Infinity;
     const baseMat = new Matrix4().makeTranslation(pos.x, pos.y, pos.z);
@@ -38656,10 +38640,10 @@
       m2.premultiply(new Matrix4().makeTranslation(0, lift, 0));
       m2.decompose(V2, Q2, new Vector3());
       const rb = world.createRigidBody(
-        RAPIER.RigidBodyDesc.dynamic().setTranslation(V2.x, V2.y, V2.z).setRotation({ x: Q2.x, y: Q2.y, z: Q2.z, w: Q2.w }).setLinearDamping(0.2).setAngularDamping(0.85).setCcdEnabled(true)
+        RAPIER.RigidBodyDesc.dynamic().setTranslation(V2.x, V2.y, V2.z).setRotation({ x: Q2.x, y: Q2.y, z: Q2.z, w: Q2.w }).setLinearDamping(0.2).setAngularDamping(0.6).setCcdEnabled(true)
       );
       const rad = Math.min(p2.half.x, p2.half.y, p2.half.z) * 0.35;
-      const col = (RAPIER.ColliderDesc.roundCuboid ? RAPIER.ColliderDesc.roundCuboid(Math.max(0.01, p2.half.x - rad), Math.max(0.01, p2.half.y - rad), Math.max(0.01, p2.half.z - rad), rad) : RAPIER.ColliderDesc.cuboid(p2.half.x, p2.half.y, p2.half.z)).setDensity(1).setFriction(1.1).setRestitution(0.02);
+      const col = (RAPIER.ColliderDesc.roundCuboid ? RAPIER.ColliderDesc.roundCuboid(Math.max(0.01, p2.half.x - rad), Math.max(0.01, p2.half.y - rad), Math.max(0.01, p2.half.z - rad), rad) : RAPIER.ColliderDesc.cuboid(p2.half.x, p2.half.y, p2.half.z)).setDensity(0.7).setFriction(1.4).setRestitution(0.05);
       if (RAPIER.CoefficientCombineRule) col.setFrictionCombineRule(RAPIER.CoefficientCombineRule.Max);
       col.setCollisionGroups(196605);
       const collider = world.createCollider(col, rb);
@@ -38668,39 +38652,184 @@
       bodies.push(rb);
       colliders.push(collider);
     }
-    const muscles = [];
-    for (const p2 of parts) {
-      if (p2.root) continue;
+    const motors = [];
+    const legs = [];
+    const _X = new Vector3(1, 0, 0), _Y = new Vector3(0, 1, 0), _Z = new Vector3(0, 0, 1);
+    const MModel = RAPIER.MotorModel ? RAPIER.MotorModel.AccelerationBased : void 0;
+    function jointGeom(p2) {
       const parent = parts[p2.parentPart];
-      const ct = p2.body.translation(), cr = p2.body.rotation();
-      const cpos = new Vector3(ct.x, ct.y, ct.z), cq = new Quaternion(cr.x, cr.y, cr.z, cr.w);
-      const pt = parent.body.translation(), pr = parent.body.rotation();
-      const ppos = new Vector3(pt.x, pt.y, pt.z), pq = new Quaternion(pr.x, pr.y, pr.z, pr.w);
-      const connectWorld = new Vector3(0, 0, -p2.half.z).applyQuaternion(cq).add(cpos);
-      const aParent = connectWorld.clone().sub(ppos).applyQuaternion(pq.clone().invert());
-      const aChild = new Vector3(0, 0, -p2.half.z);
-      const jd = RAPIER.JointData.spherical({ x: aParent.x, y: aParent.y, z: aParent.z }, { x: aChild.x, y: aChild.y, z: aChild.z });
+      const a1 = parent.body.translation(), r1 = parent.body.rotation();
+      const a2 = p2.body.translation(), r2 = p2.body.rotation();
+      const cW = new Vector3(a2.x, a2.y, a2.z), pWc = new Vector3(a1.x, a1.y, a1.z);
+      const dir = pWc.clone().sub(cW);
+      if (dir.lengthSq() < 1e-9) dir.set(0, 0, -1);
+      dir.normalize();
+      const qp = new Quaternion(r1.x, r1.y, r1.z, r1.w);
+      const qc = new Quaternion(r2.x, r2.y, r2.z, r2.w);
+      const dL = dir.clone().applyQuaternion(qc.clone().invert());
+      const support = Math.abs(dL.x) * p2.half.x + Math.abs(dL.y) * p2.half.y + Math.abs(dL.z) * p2.half.z;
+      const connWorld = cW.clone().add(dir.clone().multiplyScalar(support));
+      const toLocal = (t2, r4) => {
+        const inv = new Matrix4().compose(new Vector3(t2.x, t2.y, t2.z), new Quaternion(r4.x, r4.y, r4.z, r4.w), ONE).invert();
+        return connWorld.clone().applyMatrix4(inv);
+      };
+      return { parent, a1, r1, a2, r2, qp, qc, connWorld, l1: toLocal(a1, r1), l2: toLocal(a2, r2) };
+    }
+    parts.forEach((p2) => {
+      if (!p2.root) p2.jg = jointGeom(p2);
+    });
+    function makeRevolute(p2, axisWorld) {
+      const jg = p2.jg, { parent, l1, l2, qp } = jg;
+      const axisP = axisWorld.clone().applyQuaternion(qp.clone().invert()).normalize();
+      const jd = RAPIER.JointData.revolute({ x: l1.x, y: l1.y, z: l1.z }, { x: l2.x, y: l2.y, z: l2.z }, { x: axisP.x, y: axisP.y, z: axisP.z });
+      const j2 = world.createImpulseJoint(jd, parent.body, p2.body, true);
+      if (j2.configureMotorModel && MModel !== void 0) j2.configureMotorModel(MModel);
+      joints.push(j2);
+      return j2;
+    }
+    function makeFixed(p2) {
+      const { parent, l1, l2, qp, qc } = p2.jg;
+      const f2 = qc.clone().conjugate().multiply(qp);
+      const jd = RAPIER.JointData.fixed(
+        { x: l1.x, y: l1.y, z: l1.z },
+        { x: 0, y: 0, z: 0, w: 1 },
+        { x: l2.x, y: l2.y, z: l2.z },
+        { x: f2.x, y: f2.y, z: f2.z, w: f2.w }
+      );
       joints.push(world.createImpulseJoint(jd, parent.body, p2.body, true));
-      const b2 = p2.blob || {};
-      const curve = b2.move && b2.gait && b2.gait.length >= 2 ? bakeIK(b2.gait, (b2.phi || 0) < 0) : null;
-      muscles.push({
-        child: p2.body,
-        parent: parent.body,
-        qRelRest: pq.clone().invert().multiply(cq),
-        // child-rel-parent at rest (cardan zero)
-        curve,
-        phase: b2.cycle != null ? b2.cycle : 0,
-        K: 5 * ((b2.muscleStiffness || 1e3) / 1e3),
-        // PD gains (Rapier-tuned from the genome muscle)
-        C: 5.2 * ((b2.muscleDamping || 1e3) / 1e3)
+    }
+    const angIn = (d2, e1, e2) => Math.atan2(d2.dot(e2), d2.dot(e1));
+    const claimed = new Array(parts.length).fill(false);
+    const hasMovingChild = new Array(parts.length).fill(false);
+    for (let i2 = 0; i2 < parts.length; i2++) {
+      const p2 = parts[i2];
+      if (!p2.root && p2.blob && p2.blob.move) {
+        const pp = p2.parentPart;
+        if (pp != null && parts[pp] && !parts[pp].root) hasMovingChild[pp] = true;
+      }
+    }
+    const legSpecs = [];
+    for (let i2 = 0; i2 < parts.length; i2++) {
+      const leaf = parts[i2];
+      if (leaf.root || !(leaf.blob && leaf.blob.move) || hasMovingChild[i2]) continue;
+      const chain = [];
+      let cur = i2, ok = true;
+      while (cur != null && !parts[cur].root) {
+        if (claimed[cur]) {
+          ok = false;
+          break;
+        }
+        chain.push(cur);
+        const par = parts[cur].parentPart;
+        if (par != null && parts[par] && parts[par].root) break;
+        cur = par;
+      }
+      if (!ok || !chain.length || chain.length > 6) continue;
+      chain.reverse();
+      for (const c2 of chain) claimed[c2] = true;
+      legSpecs.push(chain.map((c2) => parts[c2]));
+    }
+    for (const p2 of parts) if (p2.collider) p2.collider.setFriction(0.18);
+    for (const segs of legSpecs) for (const s2 of segs) if (s2.collider) s2.collider.setFriction(1.7);
+    let legIx = 0;
+    for (const segs of legSpecs) {
+      let ik = function(px, py) {
+        let D2 = Math.hypot(px, py);
+        D2 = Math.max(Math.abs(L1 - L2) + 1e-3, Math.min(L1 + L2 - 1e-3, D2));
+        const base2 = Math.atan2(py, px);
+        let c1 = (L1 * L1 + D2 * D2 - L2 * L2) / (2 * L1 * D2);
+        c1 = Math.max(-1, Math.min(1, c1));
+        const thighAng = base2 + bend * Math.acos(c1);
+        const footAng = Math.atan2(py - L1 * Math.sin(thighAng), px - L1 * Math.cos(thighAng));
+        return { thighAng, footAng };
+      };
+      const n2 = segs.length, hip = segs[0], foot = segs[n2 - 1];
+      const axisW = _X.clone().applyQuaternion(hip.jg.qc).normalize();
+      const e1 = _Z.clone().sub(axisW.clone().multiplyScalar(_Z.dot(axisW)));
+      if (e1.lengthSq() < 1e-6) e1.copy(_X).sub(axisW.clone().multiplyScalar(_X.dot(axisW)));
+      e1.normalize();
+      const e2 = axisW.clone().cross(e1).normalize();
+      const H2 = hip.jg.connWorld.clone();
+      const ankle = foot.jg.connWorld.clone();
+      const footPos = new Vector3(foot.jg.a2.x, foot.jg.a2.y, foot.jg.a2.z);
+      const tip = footPos.clone().add(footPos.clone().sub(ankle));
+      const planar = (q2) => ({ x: q2.clone().sub(H2).dot(e1), y: q2.clone().sub(H2).dot(e2) });
+      const PA2 = n2 > 1 ? planar(ankle) : { x: 0, y: 0 }, PT = planar(tip);
+      const L1 = n2 > 1 ? Math.hypot(PA2.x, PA2.y) : Math.hypot(PT.x, PT.y);
+      const L2 = n2 > 1 ? Math.hypot(PT.x - PA2.x, PT.y - PA2.y) : 1e-3;
+      const restThigh = n2 > 1 ? Math.atan2(PA2.y, PA2.x) : Math.atan2(PT.y, PT.x);
+      const restFoot = Math.atan2(PT.y - PA2.y, PT.x - PA2.x);
+      let bend = restThigh - Math.atan2(PT.y, PT.x) >= 0 ? 1 : -1;
+      const up = _Y.clone().sub(axisW.clone().multiplyScalar(_Y.dot(axisW)));
+      if (up.lengthSq() < 1e-6) up.copy(e2);
+      up.normalize();
+      const fwdInPlane = { x: e1.dot(e1), y: e1.dot(e2) }, upInPlane = { x: up.dot(e1), y: up.dot(e2) };
+      const standDrop = Math.min(H2.y, (L1 + L2) * 0.92);
+      const anchor = { x: -standDrop * e1.y, y: -standDrop * e2.y };
+      const bendDown = (() => {
+        const tryB = (bb) => {
+          const sv = bend;
+          bend = bb;
+          const r2 = ik(anchor.x, anchor.y);
+          bend = sv;
+          const kx = L1 * Math.cos(r2.thighAng), ky = L1 * Math.sin(r2.thighAng);
+          return ky;
+        };
+        return tryB(1) >= tryB(-1) ? 1 : -1;
+      })();
+      bend = bendDown;
+      const stiff = Math.min(240, 70 + 24 * legSpecs.length), damp = stiff * 0.1;
+      const hipJ = makeRevolute(hip, axisW);
+      hipJ.configureMotorPosition(0, stiff, damp);
+      for (let k2 = 1; k2 < n2 - 1; k2++) {
+        const j2 = makeRevolute(segs[k2], axisW);
+        j2.configureMotorPosition(0, 300, 30);
+      }
+      const ankleJ = n2 > 1 ? makeRevolute(foot, axisW) : null;
+      if (ankleJ) ankleJ.configureMotorPosition(0, stiff, damp);
+      const reach = L1 + L2;
+      const raw = foot.blob && foot.blob.gait || null;
+      let stride, lift2;
+      if (raw && raw.length >= 2) {
+        let zmn = 1e9, zmx = -1e9, ymn = 1e9, ymx = -1e9;
+        for (const q2 of raw) {
+          zmn = Math.min(zmn, q2.z);
+          zmx = Math.max(zmx, q2.z);
+          ymn = Math.min(ymn, q2.y);
+          ymx = Math.max(ymx, q2.y);
+        }
+        stride = (zmx - zmn) / 2;
+        lift2 = ymx - ymn;
+      } else {
+        stride = 0.32 * reach;
+        lift2 = 0.28 * reach;
+      }
+      stride = Math.max(0.12, Math.min(stride, reach * 0.55));
+      lift2 = Math.max(0.08, Math.min(lift2, reach * 0.5));
+      legs.push({
+        hipJ,
+        ankleJ,
+        ik,
+        restThigh,
+        restFoot,
+        anchor,
+        fwdInPlane,
+        upInPlane,
+        clock: foot.blob && foot.blob.cycle != null ? foot.blob.cycle : legIx++ % 2 * 0.5,
+        stiff,
+        damp,
+        stride,
+        lift: lift2
       });
     }
-    const GAIT_CADENCE = 0.7;
-    const TMAX = 9;
-    const VMAX = 16, WMAX = 26;
-    let clock = 0, amp = 0;
-    const qP = new Quaternion(), qC = new Quaternion(), qRel = new Quaternion(), qDev = new Quaternion(), qRestInv = new Quaternion();
-    const torque = new Vector3(), lx = new Vector3(), ly = new Vector3(), lz = new Vector3(), wRel = new Vector3(), eul = new Euler();
+    for (let i2 = 0; i2 < parts.length; i2++) {
+      const p2 = parts[i2];
+      if (p2.root || claimed[i2]) continue;
+      makeFixed(p2);
+    }
+    const GAIT_RATE = 1.9, CLAMP = 1.4, FOOTPATH_DIR = -1;
+    const clamp2 = (v2) => Math.max(-CLAMP, Math.min(CLAMP, v2));
+    const VMAX = 14, WMAX = 24;
     function governVelocities() {
       for (const rb of bodies) {
         const v2 = rb.linvel();
@@ -38715,45 +38844,21 @@
           const k2 = WMAX / ws;
           rb.setAngvel({ x: w2.x * k2, y: w2.y * k2, z: w2.z * k2 }, true);
         }
-        const t2 = rb.translation();
-        if (t2.y < -0.3) {
-          rb.setTranslation({ x: t2.x, y: -0.3, z: t2.z }, true);
-          if (v2.y < 0) rb.setLinvel({ x: v2.x, y: 0, z: v2.z }, true);
-        }
       }
     }
     function gait(dt, steer = 0) {
       governVelocities();
-      clock += dt * GAIT_CADENCE;
-      amp = Math.min(1, amp + dt * 0.35);
-      for (const m2 of muscles) {
-        const pr = m2.parent.rotation(), cr = m2.child.rotation();
-        qP.set(pr.x, pr.y, pr.z, pr.w);
-        qC.set(cr.x, cr.y, cr.z, cr.w);
-        qRel.copy(qP).invert().multiply(qC);
-        qRestInv.copy(m2.qRelRest).invert();
-        qDev.copy(qRestInv).multiply(qRel);
-        eul.setFromQuaternion(qDev, "XYZ");
-        let tAx = 0, tAy = 0;
-        if (m2.curve) {
-          const s2 = sampleCurve(m2.curve, clock + m2.phase);
-          tAx = s2.ax * amp;
-          tAy = s2.ay * amp;
-        }
-        tAx = Math.max(-HALFPI, Math.min(HALFPI, tAx));
-        tAy = Math.max(-HALFPI, Math.min(HALFPI, tAy));
-        const cw = m2.child.angvel(), pw = m2.parent.angvel();
-        wRel.set(cw.x - pw.x, cw.y - pw.y, cw.z - pw.z);
-        lx.copy(_X).applyQuaternion(qC);
-        ly.copy(_Y).applyQuaternion(qC);
-        lz.copy(_Z).applyQuaternion(qC);
-        torque.set(0, 0, 0);
-        torque.addScaledVector(lx, m2.K * (tAx - eul.x) - m2.C * wRel.dot(lx));
-        torque.addScaledVector(ly, m2.K * (tAy - eul.y) - m2.C * wRel.dot(ly));
-        torque.addScaledVector(lz, m2.K * 1.5 * (0 - eul.z) - m2.C * wRel.dot(lz));
-        if (torque.length() > TMAX) torque.setLength(TMAX);
-        m2.child.applyTorqueImpulse({ x: torque.x * dt, y: torque.y * dt, z: torque.z * dt }, true);
-        m2.parent.applyTorqueImpulse({ x: -torque.x * dt, y: -torque.y * dt, z: -torque.z * dt }, true);
+      for (const lg of legs) {
+        lg.clock += dt * GAIT_RATE;
+        const ph = 2 * Math.PI * lg.clock;
+        const horiz = lg.stride * Math.cos(ph) * FOOTPATH_DIR;
+        const s2 = Math.sin(ph);
+        const vert = s2 < 0 ? lg.lift * -s2 : 0;
+        const px = lg.anchor.x + lg.fwdInPlane.x * horiz + lg.upInPlane.x * vert;
+        const py = lg.anchor.y + lg.fwdInPlane.y * horiz + lg.upInPlane.y * vert;
+        const { thighAng, footAng } = lg.ik(px, py);
+        lg.hipJ.configureMotorPosition(clamp2(thighAng - lg.restThigh), lg.stiff, lg.damp);
+        if (lg.ankleJ) lg.ankleJ.configureMotorPosition(clamp2(footAng - thighAng - (lg.restFoot - lg.restThigh)), lg.stiff, lg.damp);
       }
     }
     function drive() {
@@ -38762,7 +38867,8 @@
       parts,
       bodies,
       joints,
-      muscles,
+      motors,
+      legs,
       lift,
       rootBody: parts[0].body,
       drive,
@@ -38807,6 +38913,10 @@
         this.syncMeshes();
       }
     }
+    // Build one mesh per part (body + clay), tagged for the builder's hit-testing.
+    // In preview, each part also gets an UNSCALED frame Object3D at its transform —
+    // the builder uses these (`_blobObj`) for add/drag coordinate math, like the
+    // legacy Zook did, so attaching and dragging parts works.
     _makeMeshes(parts) {
       while (this.group.children.length) {
         const c2 = this.group.children.pop();
@@ -38843,6 +38953,8 @@
       }
       this._meshKinds = parts.map((p2) => p2.root ? this.bp.bodyMesh || "blob" : p2.mesh || "blob");
     }
+    // Update existing meshes in place (no create/dispose) — used during a drag/edit so
+    // the builder never churns geometry/materials each frame (the mobile freeze).
     _updateMeshes(parts) {
       for (let i2 = 0; i2 < parts.length; i2++) {
         const p2 = parts[i2], mesh = this._meshes[i2];
@@ -38870,6 +38982,7 @@
       }
       this.setHighlight(this._hi);
     }
+    // Builder API ----------------------------------------------------------------
     setBlueprint(bp, hi = -1) {
       this.bp = bp;
       this._hi = hi;
@@ -38884,6 +38997,7 @@
       const sel = idx != null && idx >= 0 && this._blobs[idx];
       if (sel) sel.material = _HILITE;
     }
+    // Simulation API -------------------------------------------------------------
     step(dt, _inputs) {
       if (!this.preview) {
         this._A.gait(dt || 1 / 60, 0);
@@ -38909,6 +39023,8 @@
     jump() {
       if (!this.preview) this._A.rootBody.applyImpulse({ x: 0, y: 5, z: 0 }, true);
     }
+    // Teleport the WHOLE body (all parts together) so a contest placing the Zook can't
+    // tear the articulation apart — shift every part by the same delta and zero velocity.
     moveTo(p2) {
       if (this.preview) return;
       const t2 = this._A.rootBody.translation();
