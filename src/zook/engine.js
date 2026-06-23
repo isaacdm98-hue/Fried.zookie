@@ -103,8 +103,8 @@ export function buildArticulated({ bp, world, RAPIER, pos = { x: 0, y: 0, z: 0 }
     // own parts pass through each other (membership bit 0x0002, filter excludes it),
     // but still collide with the world. Stops packed legs from shoving joints apart.
     col.setCollisionGroups(0x0002FFFD);
-    world.createCollider(col, rb);
-    p.body = rb; bodies.push(rb); colliders.push(col);
+    const collider = world.createCollider(col, rb);
+    p.body = rb; p.collider = collider; bodies.push(rb); colliders.push(collider);
   }
   // ── Joints & legs ────────────────────────────────────────────────────────────
   // The original engine drove each leg's FOOT along an authored loop (the genome's
@@ -189,11 +189,20 @@ export function buildArticulated({ bp, world, RAPIER, pos = { x: 0, y: 0, z: 0 }
     legSpecs.push(chain.map((c) => parts[c]));
   }
 
+  // LEGS grip the floor; the BODY (and any welded stubs) is slippery so it slides instead
+  // of pinning the Zook in place when it sags down — the gripping legs then actually propel
+  // it. (Uniform high friction made the Ant's belly drag and scrabble without moving; making
+  // only the tiny foot-tip grip starved the Spider, whose long leg segments do the gripping —
+  // so the whole leg chain grips.)
+  for (const p of parts) if (p.collider) p.collider.setFriction(0.18);
+  for (const segs of legSpecs) for (const s of segs) if (s.collider) s.collider.setFriction(1.7);
+
   // Build each leg's joints + analytic 2-link IK geometry. We lump any intermediate
   // segments into ONE rigid "upper" link: only the HIP (first joint) and ANKLE (last
   // joint) are driven; middle joints hold their rest pose rigidly. So every leg — spider
   // (2-bone), ant (3-bone), twigger (6-bone) — becomes a clean 2-link problem the
   // analytic solver handles, with a big propulsive hip sweep and a lifting ankle.
+  let legIx = 0;
   for (const segs of legSpecs) {
     const n = segs.length, hip = segs[0], foot = segs[n - 1];
     const axisW = _X.clone().applyQuaternion(hip.jg.qc).normalize();   // shared lateral hinge axis
@@ -245,25 +254,23 @@ export function buildArticulated({ bp, world, RAPIER, pos = { x: 0, y: 0, z: 0 }
     for (let k = 1; k < n - 1; k++) { const j = makeRevolute(segs[k], axisW); j.configureMotorPosition(0, 300, 30); }
     const ankleJ = (n > 1) ? makeRevolute(foot, axisW) : null;
     if (ankleJ) ankleJ.configureMotorPosition(0, stiff, damp);
-    // Replay the AUTHORED IK foot-path (genome ik_positions) when present: a closed loop
-    // of (z=fore-aft, y=up) offsets in the leg's sagittal plane, expressed relative to the
-    // path's start so the foot leaves its rest pose smoothly. This is the real per-creature
-    // gait (stance sweep + lift) — far more faithful than a generic sine. Legs without an
-    // authored path fall back to a reach-scaled cos sweep + swing-phase lift.
+    // Drive a clean walking ellipse — foot plants and sweeps BACK (propelling the body),
+    // then lifts and swings forward — sized by the AUTHENTIC stride & lift read from the
+    // genome's ik_positions foot-path (its fore-aft and vertical excursion). This keeps each
+    // creature's real step size/timing while guaranteeing propulsion (raw-path replay only
+    // shuffled). Phase offset = the genome's per-limb Movement Cycle.
     const reach = L1 + L2;
     const raw = (foot.blob && foot.blob.gait) || null;
-    let path = null;
+    let stride, lift;
     if (raw && raw.length >= 2) {
-      const q0 = raw[0];
-      path = raw.map((q) => ({ s: q.z - q0.z, u: q.y - q0.y }));
-      // Scale the loop down if its excursion would over-reach the leg (small legs were flung).
-      let mx = 0; for (const p of path) mx = Math.max(mx, Math.hypot(p.s, p.u));
-      const cap = reach * 0.8;
-      if (mx > cap) { const k = cap / mx; for (const p of path) { p.s *= k; p.u *= k; } }
-    }
-    legs.push({ hipJ, ankleJ, ik, restThigh, restFoot, anchor,
-      fwdInPlane, upInPlane, clock: (foot.blob && foot.blob.cycle) || 0, stiff, damp, path,
-      stride: Math.min(0.62, 0.85 * reach), lift: Math.min(0.34, 0.5 * reach) });
+      let zmn = 1e9, zmx = -1e9, ymn = 1e9, ymx = -1e9;
+      for (const q of raw) { zmn = Math.min(zmn, q.z); zmx = Math.max(zmx, q.z); ymn = Math.min(ymn, q.y); ymx = Math.max(ymx, q.y); }
+      stride = (zmx - zmn) / 2; lift = (ymx - ymn);
+    } else { stride = 0.32 * reach; lift = 0.28 * reach; }
+    stride = Math.max(0.12, Math.min(stride, reach * 0.55));
+    lift = Math.max(0.08, Math.min(lift, reach * 0.5));
+    legs.push({ hipJ, ankleJ, ik, restThigh, restFoot, anchor, fwdInPlane, upInPlane,
+      clock: (foot.blob && foot.blob.cycle != null) ? foot.blob.cycle : (legIx++ % 2) * 0.5, stiff, damp, stride, lift });
   }
 
   // Everything not part of a leg gets a rigid weld. This includes "moving" parts that
@@ -295,17 +302,10 @@ export function buildArticulated({ bp, world, RAPIER, pos = { x: 0, y: 0, z: 0 }
     governVelocities();
     for (const lg of legs) {
       lg.clock += dt * GAIT_RATE;
-      let horiz, vert;
-      if (lg.path) {                                              // replay the authored foot-path loop
-        const N = lg.path.length, u = (((lg.clock % 1) + 1) % 1) * N;
-        const i = Math.floor(u) % N, f = u - Math.floor(u), a = lg.path[i], b = lg.path[(i + 1) % N];
-        horiz = (a.s + (b.s - a.s) * f) * FOOTPATH_DIR;
-        vert = (a.u + (b.u - a.u) * f);
-      } else {
-        const ph = 2 * Math.PI * lg.clock;
-        horiz = lg.stride * Math.cos(ph);                         // +front … −back (stance sweeps back)
-        const s = Math.sin(ph); vert = s < 0 ? lg.lift * (-s) : 0;  // lift during the forward swing only
-      }
+      const ph = 2 * Math.PI * lg.clock;
+      const horiz = lg.stride * Math.cos(ph) * FOOTPATH_DIR;       // fore-aft sweep
+      const s = Math.sin(ph);
+      const vert = s < 0 ? lg.lift * (-s) : 0;                     // stance: foot down & sweeping back; swing: lifted
       const px = lg.anchor.x + lg.fwdInPlane.x * horiz + lg.upInPlane.x * vert;
       const py = lg.anchor.y + lg.fwdInPlane.y * horiz + lg.upInPlane.y * vert;
       const { thighAng, footAng } = lg.ik(px, py);

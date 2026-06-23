@@ -38646,10 +38646,11 @@
       const col = (RAPIER.ColliderDesc.roundCuboid ? RAPIER.ColliderDesc.roundCuboid(Math.max(0.01, p2.half.x - rad), Math.max(0.01, p2.half.y - rad), Math.max(0.01, p2.half.z - rad), rad) : RAPIER.ColliderDesc.cuboid(p2.half.x, p2.half.y, p2.half.z)).setDensity(0.7).setFriction(1.4).setRestitution(0.05);
       if (RAPIER.CoefficientCombineRule) col.setFrictionCombineRule(RAPIER.CoefficientCombineRule.Max);
       col.setCollisionGroups(196605);
-      world.createCollider(col, rb);
+      const collider = world.createCollider(col, rb);
       p2.body = rb;
+      p2.collider = collider;
       bodies.push(rb);
-      colliders.push(col);
+      colliders.push(collider);
     }
     const motors = [];
     const legs = [];
@@ -38728,6 +38729,9 @@
       for (const c2 of chain) claimed[c2] = true;
       legSpecs.push(chain.map((c2) => parts[c2]));
     }
+    for (const p2 of parts) if (p2.collider) p2.collider.setFriction(0.18);
+    for (const segs of legSpecs) for (const s2 of segs) if (s2.collider) s2.collider.setFriction(1.7);
+    let legIx = 0;
     for (const segs of legSpecs) {
       let ik = function(px, py) {
         let D2 = Math.hypot(px, py);
@@ -38785,21 +38789,23 @@
       if (ankleJ) ankleJ.configureMotorPosition(0, stiff, damp);
       const reach = L1 + L2;
       const raw = foot.blob && foot.blob.gait || null;
-      let path = null;
+      let stride, lift2;
       if (raw && raw.length >= 2) {
-        const q0 = raw[0];
-        path = raw.map((q2) => ({ s: q2.z - q0.z, u: q2.y - q0.y }));
-        let mx = 0;
-        for (const p2 of path) mx = Math.max(mx, Math.hypot(p2.s, p2.u));
-        const cap = reach * 0.8;
-        if (mx > cap) {
-          const k2 = cap / mx;
-          for (const p2 of path) {
-            p2.s *= k2;
-            p2.u *= k2;
-          }
+        let zmn = 1e9, zmx = -1e9, ymn = 1e9, ymx = -1e9;
+        for (const q2 of raw) {
+          zmn = Math.min(zmn, q2.z);
+          zmx = Math.max(zmx, q2.z);
+          ymn = Math.min(ymn, q2.y);
+          ymx = Math.max(ymx, q2.y);
         }
+        stride = (zmx - zmn) / 2;
+        lift2 = ymx - ymn;
+      } else {
+        stride = 0.32 * reach;
+        lift2 = 0.28 * reach;
       }
+      stride = Math.max(0.12, Math.min(stride, reach * 0.55));
+      lift2 = Math.max(0.08, Math.min(lift2, reach * 0.5));
       legs.push({
         hipJ,
         ankleJ,
@@ -38809,12 +38815,11 @@
         anchor,
         fwdInPlane,
         upInPlane,
-        clock: foot.blob && foot.blob.cycle || 0,
+        clock: foot.blob && foot.blob.cycle != null ? foot.blob.cycle : legIx++ % 2 * 0.5,
         stiff,
         damp,
-        path,
-        stride: Math.min(0.62, 0.85 * reach),
-        lift: Math.min(0.34, 0.5 * reach)
+        stride,
+        lift: lift2
       });
     }
     for (let i2 = 0; i2 < parts.length; i2++) {
@@ -38845,18 +38850,10 @@
       governVelocities();
       for (const lg of legs) {
         lg.clock += dt * GAIT_RATE;
-        let horiz, vert;
-        if (lg.path) {
-          const N2 = lg.path.length, u2 = (lg.clock % 1 + 1) % 1 * N2;
-          const i2 = Math.floor(u2) % N2, f2 = u2 - Math.floor(u2), a2 = lg.path[i2], b2 = lg.path[(i2 + 1) % N2];
-          horiz = (a2.s + (b2.s - a2.s) * f2) * FOOTPATH_DIR;
-          vert = a2.u + (b2.u - a2.u) * f2;
-        } else {
-          const ph = 2 * Math.PI * lg.clock;
-          horiz = lg.stride * Math.cos(ph);
-          const s2 = Math.sin(ph);
-          vert = s2 < 0 ? lg.lift * -s2 : 0;
-        }
+        const ph = 2 * Math.PI * lg.clock;
+        const horiz = lg.stride * Math.cos(ph) * FOOTPATH_DIR;
+        const s2 = Math.sin(ph);
+        const vert = s2 < 0 ? lg.lift * -s2 : 0;
         const px = lg.anchor.x + lg.fwdInPlane.x * horiz + lg.upInPlane.x * vert;
         const py = lg.anchor.y + lg.fwdInPlane.y * horiz + lg.upInPlane.y * vert;
         const { thighAng, footAng } = lg.ik(px, py);
