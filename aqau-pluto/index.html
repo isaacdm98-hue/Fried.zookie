@@ -1181,6 +1181,18 @@ body.aq-anim .btn, body.aq-anim .chip, body.aq-anim .icon-btn, body.aq-anim .too
 /* Live drawing: the boiling-line filter wobbles every hand-drawn stroke. */
 body.aq-live .aq-frame-svg, body.aq-live .aq-uline-svg, body.aq-live #wb-svg g { filter: url(#aq-boil); }
 .aq-uline-svg { position: absolute; }
+/* The pond doodles ripple like wet ink; the splash sigil breathes. */
+body.aq-live .living { filter: url(#aq-boil); }
+body.aq-live .splash .mark { filter: url(#aq-boil); }
+@keyframes aqBreath { 0%,100% { transform: scale(1) rotate(-1deg); } 50% { transform: scale(1.05) rotate(1.5deg); } }
+body.aq-anim .splash .mark { animation: aqBreath 3.2s ease-in-out infinite; }
+/* Paper grain shifts in steps so the whole surface feels drawn-by-hand, alive. */
+@keyframes aqGrain { to { background-position: 240px 140px; } }
+body.aq-anim::before { animation: aqGrain 1.1s steps(5) infinite; }
+@media (prefers-reduced-motion: reduce) {
+  body.aq-anim .splash .mark, body.aq-anim::before { animation: none; }
+  body.aq-live .living, body.aq-live .splash .mark { filter: none; }
+}
 </style>
 </head>
 <body>
