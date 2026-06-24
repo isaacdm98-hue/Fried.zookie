@@ -17,6 +17,19 @@ available on `web-llm` as lighter fallbacks.
 Both runtimes sit behind one interface (`engine.chat.completions.create`), so the
 rest of the app doesn't care which is loaded.
 
+**The clever way (Web Worker).** Gemma loads and generates inside a dedicated
+**Web Worker** — the pattern the webml-community spaces use and the recommended
+way to run WebGPU inference. The main thread never freezes during the long
+first-time shader compile (the thing that made it look hung, and what trips up
+iPhone), and the worker raises the WebGPU device limits internally. If a worker
+can't be used, it falls back to the same load on the main thread.
+
+**Gemma is the brain everywhere.** Once loaded it powers every surface: building
+& editing apps in chat, the slash commands, code-section explanations,
+auto-naming cartridges, the astrology readings (today / natal / transits), the
+notebook's improve/continue/summarise, the Atelier's "draw this" SVG, and the
+startup knowledge prebuild.
+
 Gemma 4 is **multimodal**, so it's loaded the same way the model card and the
 webml-community space load it — the dedicated `Gemma4ForConditionalGeneration` +
 `AutoProcessor` (not the generic text-generation pipeline, which is what made the
