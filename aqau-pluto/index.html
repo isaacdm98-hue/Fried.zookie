@@ -603,6 +603,29 @@ body::before {
 }
 .face-act:active { transform: scale(0.94); }
 .face-act.show { display: block; }
+/* live design controls overlaid on the preview */
+.design-panel {
+  position: absolute;
+  top: 38px; right: 8px;
+  z-index: 5;
+  width: 208px;
+  background: var(--paper-2, #f3ecdd);
+  border: 1px solid var(--bone-4);
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.22);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.design-panel .dp-row {
+  display: flex; align-items: center; justify-content: space-between;
+  font-family: 'IBM Plex Mono', monospace; font-size: 10px;
+  color: var(--bone-2); letter-spacing: .5px;
+}
+.design-panel .dp-row input[type=color] { width: 34px; height: 22px; border: 1px solid var(--bone-4); border-radius: 6px; background: none; padding: 0; cursor: pointer; }
+.design-panel .dp-row input[type=range] { width: 110px; }
+.design-panel .dp-acts { display: flex; gap: 6px; margin-top: 4px; justify-content: flex-end; }
 .preview-frame {
   flex: 1;
   border: none;
@@ -1320,10 +1343,24 @@ body.aq-live::before { animation: aqGrain 1.1s steps(5) infinite; }
         <div class="face front" id="face-front">
           <span class="face-tab">Preview</span>
           <div class="face-acts">
+            <button class="face-act small" id="design-open" title="Live design controls">🎚</button>
             <button class="face-act small" id="dl-open" title="Download HTML">⤓</button>
             <button class="face-act" id="fs-open" title="Run fullscreen">▶ Run</button>
           </div>
           <iframe class="preview-frame" id="preview-frame" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals" title="preview"></iframe>
+          <div class="design-panel" id="design-panel" style="display:none;">
+            <div class="dp-row"><span>accent</span><input type="color" id="dp-accent" value="#c87b5a"></div>
+            <div class="dp-row"><span>background</span><input type="color" id="dp-bg" value="#ffffff"></div>
+            <div class="dp-row"><span>text</span><input type="color" id="dp-fg" value="#1a1a1a"></div>
+            <div class="dp-row"><span>text size</span><input type="range" id="dp-scale" min="0.7" max="1.6" step="0.05" value="1"></div>
+            <div class="dp-row"><span>roundness</span><input type="range" id="dp-radius" min="0" max="32" step="1" value="8"></div>
+            <div class="dp-row"><span>line height</span><input type="range" id="dp-lh" min="1" max="2.2" step="0.05" value="1.5"></div>
+            <div class="dp-row"><span>dark</span><input type="checkbox" id="dp-dark"></div>
+            <div class="dp-acts">
+              <button class="chip" id="dp-reset">reset</button>
+              <button class="chip" id="dp-bake" title="Write these into the code">✓ bake in</button>
+            </div>
+          </div>
           <div class="face-empty" id="preview-empty">
             <div class="glyph">◯</div>
             <p>Tell Aqau Pluto what to make. Preview lives here.</p>
@@ -1354,6 +1391,7 @@ body.aq-live::before { animation: aqGrain 1.1s steps(5) infinite; }
       <div id="chat-attach-chip" class="attach-chip" style="display:none;"></div>
       <div class="chat-input-row">
         <textarea class="chat-input" id="chat-input" rows="1" placeholder="say something to aqau pluto…"></textarea>
+        <button class="chat-web" id="chat-agent" aria-label="Agent build" title="agent: plan → build → self-review → fix">⚡</button>
         <button class="chat-web" id="chat-attach" aria-label="Attach image or audio" title="attach an image or audio (multimodal)">＋</button>
         <button class="chat-web" id="chat-web" aria-label="Web research" title="answer the next message with the web">⌕</button>
         <button class="chat-mic" id="chat-mic" aria-label="Voice">●</button>
@@ -1428,8 +1466,13 @@ body.aq-live::before { animation: aqGrain 1.1s steps(5) infinite; }
         <button class="tool" data-tool="line" title="Line">╱</button>
         <button class="tool" data-tool="rect" title="Rectangle">▭</button>
         <button class="tool" data-tool="ellipse" title="Ellipse">◯</button>
+        <button class="tool" data-tool="polygon" title="Polygon">⬠</button>
+        <button class="tool" data-tool="star" title="Star">★</button>
+        <button class="tool" data-tool="text" title="Text">T</button>
+        <button class="tool" data-tool="eyedrop" title="Pick colour">⊙</button>
         <button class="tool" data-tool="erase" title="Erase">⌫</button>
         <button class="tool" id="atelier-fill" title="Fill shapes">▣</button>
+        <button class="tool" id="atelier-mirror" title="Mirror / symmetry">⧉</button>
         <button class="tool" id="atelier-3d" title="3D sketch">◳</button>
         <span class="tool-sep"></span>
         <span class="swatches" id="atelier-swatches"></span>
@@ -1547,6 +1590,13 @@ body.aq-live::before { animation: aqGrain 1.1s steps(5) infinite; }
       <option value="soft">Soft &amp; calm</option>
       <option value="terminal">Terminal green</option>
       <option value="playful">Playful</option>
+      <option value="glass">Glassmorphism</option>
+      <option value="swiss">Swiss / grid</option>
+      <option value="y2k">Y2K / aero</option>
+      <option value="clay">Claymorphism</option>
+      <option value="cyber">Cyberpunk neon</option>
+      <option value="newsprint">Newspaper</option>
+      <option value="darkpro">Dark pro</option>
     </select>
   </div>
   <div class="field">
@@ -1687,7 +1737,7 @@ const RT = {
   activeNote: null,
   activeDesign: null,
   paper: null,
-  atelier: { tool: 'brush', color: '#e8ddc8', size: 4, fill: false, undo: [], start: null, preview: null },
+  atelier: { tool: 'brush', color: '#e8ddc8', size: 4, fill: false, mirror: false, sides: 5, undo: [], start: null, preview: null },
 };
 
 /* ===================== ROUTING ===================== */
@@ -2775,7 +2825,9 @@ function paintPreview() {
     frame.classList.add('show');
     fsBtn.classList.add('show');
     dlBtn.classList.add('show');
+    frame.onload = () => { try { if (c.tokens) frame.contentWindow.postMessage({ __aqp: 'tokens', tokens: c.tokens }, '*'); } catch {} };
     frame.srcdoc = ensureHTMLDoc(c.code);
+    syncDesignControls(c);
   } else {
     empty.style.display = 'flex';
     frame.classList.remove('show');
@@ -2786,8 +2838,43 @@ function paintPreview() {
 }
 
 function ensureHTMLDoc(code) {
-  if (/<!doctype html|<html[\s>]/i.test(code)) return code;
-  return `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{font-family:system-ui,Georgia,serif;padding:16px;color:#1a1a1a;background:#fff;line-height:1.5;}*{box-sizing:border-box}</style></head><body>${code}</body></html>`;
+  let doc;
+  if (/<!doctype html|<html[\s>]/i.test(code)) doc = code;
+  else doc = `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{font-family:system-ui,Georgia,serif;padding:16px;color:#1a1a1a;background:#fff;line-height:1.5;}*{box-sizing:border-box}</style></head><body>${code}</body></html>`;
+  return injectPreviewRuntime(doc);
+}
+
+// Injects a tiny runtime into every preview so the design knobs work live and
+// runtime errors report back to the studio (the agentic auto-fix loop reads these).
+const PREVIEW_RUNTIME = '<scr' + 'ipt>' + String.raw`(function(){
+  if(window.__aqp)return; window.__aqp=1;
+  var S=document.createElement('style'); var D=document.createElement('style');
+  D.textContent='html.__aqp_dark{filter:invert(1) hue-rotate(180deg);background:#111!important}html.__aqp_dark img,html.__aqp_dark video,html.__aqp_dark canvas,html.__aqp_dark svg,html.__aqp_dark [style*="background-image"]{filter:invert(1) hue-rotate(180deg)}';
+  function ready(){ (document.head||document.documentElement).appendChild(S); (document.head||document.documentElement).appendChild(D); }
+  if(document.head) ready(); else document.addEventListener('DOMContentLoaded',ready);
+  function apply(t){
+    if(!t)return; var css='';
+    if(t.accent){var n=['--accent','--accent-color','--primary','--primary-color','--color-primary','--brand','--brand-color','--theme','--theme-color','--main','--main-color'];
+      css+=':root{'+n.map(function(x){return x+':'+t.accent}).join(';')+'}';
+      css+='a{color:'+t.accent+'!important}button,.btn,[class*=btn],[class*=button],input[type=submit],input[type=button]{background:'+t.accent+'!important;border-color:'+t.accent+'!important}::selection{background:'+t.accent+'}*{accent-color:'+t.accent+'}';}
+    if(t.bg)css+='html,body{background:'+t.bg+'!important}';
+    if(t.fg)css+='body,p,li,span,h1,h2,h3,h4,h5,h6,td,th,label,a{color:'+t.fg+'!important}';
+    if(t.radius!=null)css+='*{border-radius:'+t.radius+'px!important}';
+    if(t.scale)document.documentElement.style.fontSize=(100*t.scale)+'%';
+    if(t.lh)css+='body{line-height:'+t.lh+'!important}';
+    S.textContent=css;
+    document.documentElement.classList.toggle('__aqp_dark',!!t.dark);
+  }
+  window.__aqpApply=apply;
+  window.addEventListener('message',function(e){var d=e.data; if(d&&d.__aqp==='tokens')apply(d.tokens);});
+  function report(msg,src){try{parent.postMessage({__aqpErr:1,msg:String(msg).slice(0,300),src:src},'*');}catch(_){}}
+  window.addEventListener('error',function(ev){report((ev.message||'error')+(ev.lineno?(' (line '+ev.lineno+')'):''),'js');});
+  window.addEventListener('unhandledrejection',function(ev){report((ev.reason&&ev.reason.message)||ev.reason||'promise rejection','promise');});
+})();` + '</scr' + 'ipt>';
+function injectPreviewRuntime(doc) {
+  if (/<\/body>/i.test(doc)) return doc.replace(/<\/body>/i, PREVIEW_RUNTIME + '</body>');
+  if (/<\/html>/i.test(doc)) return doc.replace(/<\/html>/i, PREVIEW_RUNTIME + '</html>');
+  return doc + PREVIEW_RUNTIME;
 }
 
 function paintCode() {
@@ -2905,6 +2992,157 @@ $('dl-open').onclick = async () => {
   document.body.removeChild(a);
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 };
+
+/* ===================== LIVE DESIGN CONTROLS ===================== */
+// Knobs overlaid on the preview that drive design tokens live (postMessaged into
+// the iframe runtime), then optionally "baked" into the code so they persist.
+const DESIGN_DEFAULTS = { accent: '#c87b5a', bg: '#ffffff', fg: '#1a1a1a', scale: 1, radius: 8, lh: 1.5, dark: false };
+function pushTokens(c) {
+  if (!c) return;
+  const frame = $('preview-frame');
+  try { frame.contentWindow && frame.contentWindow.postMessage({ __aqp: 'tokens', tokens: c.tokens || {} }, '*'); } catch {}
+}
+function syncDesignControls(c) {
+  const t = Object.assign({}, DESIGN_DEFAULTS, c.tokens || {});
+  const set = (id, v, prop) => { const el = $(id); if (el) el[prop || 'value'] = v; };
+  set('dp-accent', t.accent); set('dp-bg', t.bg); set('dp-fg', t.fg);
+  set('dp-scale', t.scale); set('dp-radius', t.radius); set('dp-lh', t.lh);
+  set('dp-dark', t.dark, 'checked');
+}
+function readDesignControls() {
+  return {
+    accent: $('dp-accent').value, bg: $('dp-bg').value, fg: $('dp-fg').value,
+    scale: +$('dp-scale').value, radius: +$('dp-radius').value, lh: +$('dp-lh').value,
+    dark: $('dp-dark').checked,
+  };
+}
+function onDesignChange() {
+  const c = activeCart(); if (!c) return;
+  c.tokens = readDesignControls();
+  pushTokens(c);
+  saveState();
+}
+$('design-open').onclick = () => {
+  const p = $('design-panel');
+  const c = activeCart();
+  if (!c || !c.code) { toast('build something first'); return; }
+  const showing = p.style.display !== 'none';
+  p.style.display = showing ? 'none' : 'flex';
+  if (!showing) syncDesignControls(c);
+};
+['dp-accent', 'dp-bg', 'dp-fg', 'dp-scale', 'dp-radius', 'dp-lh', 'dp-dark'].forEach(id => {
+  const el = $(id); if (el) el.addEventListener('input', onDesignChange);
+});
+$('dp-reset').onclick = () => { const c = activeCart(); if (!c) return; c.tokens = null; syncDesignControls(c); pushTokens(c); saveState(); toast('design reset'); };
+$('dp-bake').onclick = () => {
+  const c = activeCart(); if (!c || !c.code) return;
+  const t = c.tokens; if (!t) { toast('nothing to bake'); return; }
+  // Write the tokens as a leading override block so exports/runs keep the look.
+  const css = bakeTokensCSS(t);
+  // strip any previous baked block, then inject fresh
+  c.code = c.code.replace(/<style id="__aqp_baked">[\s\S]*?<\/style>\s*/i, '');
+  if (/<\/head>/i.test(c.code)) c.code = c.code.replace(/<\/head>/i, css + '</head>');
+  else if (/<body[^>]*>/i.test(c.code)) c.code = c.code.replace(/(<body[^>]*>)/i, '$1' + css);
+  else c.code = css + c.code;
+  c.tokens = null; // baked, so reset the live overlay
+  c.sections = sliceSections(c.code);
+  paintPreview(); paintCode();
+  saveState();
+  toast('✓ baked into the code');
+};
+function bakeTokensCSS(t) {
+  let css = '';
+  if (t.accent) { const n = ['--accent','--accent-color','--primary','--primary-color','--color-primary','--brand','--theme','--main-color']; css += ':root{' + n.map(x => x + ':' + t.accent).join(';') + '}'; css += 'a{color:' + t.accent + '!important}button,.btn,[class*=btn],[class*=button],input[type=submit]{background:' + t.accent + '!important;border-color:' + t.accent + '!important}*{accent-color:' + t.accent + '}'; }
+  if (t.bg) css += 'html,body{background:' + t.bg + '!important}';
+  if (t.fg) css += 'body,p,li,span,h1,h2,h3,h4,h5,h6,td,th,label,a{color:' + t.fg + '!important}';
+  if (t.radius != null) css += '*{border-radius:' + t.radius + 'px!important}';
+  if (t.scale) css += 'html{font-size:' + (100 * t.scale) + '%}';
+  if (t.lh) css += 'body{line-height:' + t.lh + '!important}';
+  if (t.dark) css += 'html{filter:invert(1) hue-rotate(180deg);background:#111!important}html img,html video,html canvas,html svg{filter:invert(1) hue-rotate(180deg)}';
+  return '<style id="__aqp_baked">' + css + '</style>';
+}
+
+/* ===================== AGENTIC LOOP (claude-code style) ===================== */
+// Elite agentic coding: the studio plans, builds, self-reviews and fixes — and
+// auto-repairs runtime errors the preview reports back. Bounded so it always halts.
+let lastErrSig = '', lastErrAt = 0;
+window.addEventListener('message', (e) => {
+  const d = e.data;
+  if (!d || !d.__aqpErr) return;
+  const c = activeCart(); if (!c || !c.code) return;
+  const sig = d.msg || '';
+  const now = Date.now();
+  if (sig === lastErrSig && now - lastErrAt < 4000) return; // debounce repeats
+  lastErrSig = sig; lastErrAt = now;
+  if (RT.generating) return; // don't pile on mid-build
+  if (RT.agentMode || RT.autoFix) { autoFixError(c, sig); return; }
+  pushChatNote(c, `⚠ preview error: <em>${escapeHTML(truncate(sig, 140))}</em> <button class="chip" data-action="autofix" style="margin-top:4px;">⚒ fix it</button>`);
+  RT.pendingFix = sig;
+});
+function autoFixError(c, errMsg) {
+  if (!c.code) return;
+  pushChatNote(c, `⚒ <em>auto-fixing: ${escapeHTML(truncate(errMsg, 120))}</em>`);
+  const p = `The current build throws this runtime error in the browser:\n\n${errMsg}\n\nFind the cause and fix it. Output the full corrected HTML.`;
+  c.log.push({ role: 'user', content: p }); streamReply(c, p);
+}
+async function runAgent(c, goal) {
+  if (RT.generating) { toast('busy — let the current reply finish'); return; }
+  RT.agentMode = true;
+  setAgentBadge(true);
+  try {
+    pushChatNote(c, `⚡ <em>agent: ${escapeHTML(truncate(goal, 120))}</em>`);
+    // 1 — plan
+    let plan = '';
+    try { plan = await genOnce([
+      { role: 'system', content: personaSystemPrompt() },
+      { role: 'user', content: `Plan a single-file web build for: ${goal}. Reply with 3–6 terse build steps, one per line, no preamble, no code.` },
+    ], { max_tokens: 220, temperature: 0.5 }); } catch {}
+    if (plan) pushChatNote(c, '<em>plan</em><br>' + escapeHTML(plan).replace(/\n/g, '<br>'));
+    // 2 — build
+    const brief = activeBriefText();
+    const buildPrompt = `${goal}. Build it as a single self-contained HTML file (inline CSS + JS), responsive, no external dependencies. ${brief || ''} Output the full HTML.`;
+    c.log.push({ role: 'user', content: buildPrompt });
+    await streamReply(c, buildPrompt);
+    // 3 — self-review + fix, bounded
+    for (let round = 0; round < 2 && !RT.abort; round++) {
+      if (!c.code) break;
+      let critique = '';
+      try { critique = await genOnce([
+        { role: 'system', content: 'You are a terse senior reviewer. Reply with up to 3 concrete, important problems in the build (one per line), or exactly "OK" if it is solid. No praise, no code.' },
+        { role: 'user', content: 'Review this build against the goal "' + goal + '":\n\n' + truncate(c.code, 6000) },
+      ], { max_tokens: 200, temperature: 0.3 }); } catch {}
+      if (!critique || /^\s*ok\b/i.test(critique)) { pushChatNote(c, '<em>review: looks solid ✓</em>'); break; }
+      pushChatNote(c, '<em>review · round ' + (round + 1) + '</em><br>' + escapeHTML(critique).replace(/\n/g, '<br>'));
+      const fixPrompt = 'Address these review points and output the full updated HTML:\n' + critique;
+      c.log.push({ role: 'user', content: fixPrompt });
+      await streamReply(c, fixPrompt);
+    }
+    pushChatNote(c, '⚡ <em>agent done.</em>');
+  } finally {
+    RT.agentMode = false;
+    setAgentBadge(false);
+  }
+}
+function setAgentBadge(on) {
+  const b = $('chat-agent'); if (b) b.classList.toggle('armed', on);
+  const s = $('stat-model'); if (s) s.classList.toggle('agenting', on);
+}
+// /doctor — environment diagnostics, claude-code style.
+async function runDoctor(c) {
+  pushChatNote(c, '<em>diagnostics…</em>');
+  const lines = [];
+  const gpu = LAST_GPU || await checkWebGPU();
+  if (gpu && gpu.ok) lines.push(`✓ WebGPU · ${(gpu.maxBufferSize/1024/1024|0)} MB max buffer${gpu.hasShaderF16 ? ' · shader-f16' : ''}`);
+  else lines.push(`✗ WebGPU unavailable (${gpu?.reason || '—'})`);
+  if (RT.modelLoaded) { const p = profileFor(RT.modelId); lines.push(`✓ model · ${p?.pretty || RT.modelId} (${p?.runtime || '—'})`); }
+  else lines.push('✗ no model loaded');
+  lines.push((RT.online ? '✓' : '·') + ' network · ' + (RT.online ? 'online' : 'offline'));
+  lines.push('· web research · ' + (S.useWeb === false ? 'off' : 'on'));
+  lines.push('· memory · ' + ((S.memory?.facts || []).length) + ' facts' + (S.memory?.natal ? ' + natal' : ''));
+  lines.push('· builds here · ' + ((c.versions?.length || 0) + (c.code ? 1 : 0)));
+  try { lines.push('· storage · ' + await storageReadout()); } catch {}
+  pushChatNote(c, '<em>doctor</em><br>' + lines.map(escapeHTML).join('<br>'));
+}
 
 /* ===================== CHAT ===================== */
 function appendMsg(role, content, note) {
@@ -4142,12 +4380,24 @@ async function ensurePaper() {
       activeId = ev.pointerId;
       try { canvas.setPointerCapture(ev.pointerId); } catch {}
       ev.preventDefault();
+      const pt = toProj(ev);
+      // Eyedropper: lift a colour off whatever is under the pointer.
+      if (A.tool === 'eyedrop') { eyedropAt(pt); activeId = null; return; }
       pushAtelierUndo();
       A.preview = null;
-      const pt = toProj(ev);
+      // Text: drop an editable label where you tap.
+      if (A.tool === 'text') {
+        const t = prompt('text:'); if (t && t.trim()) {
+          const item = new P.PointText({ point: pt, content: t.trim(), fillColor: stroke(), fontFamily: 'Caveat, cursive', fontSize: Math.max(14, A.size * 5) });
+          if (A.mirror) item.clone().scale(-1, 1, P.view.center);
+        }
+        activeId = null; P.view.update(); return;
+      }
       if (A.tool === 'brush') {
         A.cur = new P.Path({ strokeColor: stroke(), strokeWidth: penW(ev), strokeCap: 'round', strokeJoin: 'round' });
         A.cur.add(pt);
+        A.curM = A.mirror ? new P.Path({ strokeColor: stroke(), strokeWidth: penW(ev), strokeCap: 'round', strokeJoin: 'round' }) : null;
+        if (A.curM) A.curM.add(mirrorPt(P, pt));
       } else if (A.tool === 'erase') { eraseAt(pt); }
       else { A.start = pt; }
       P.view.update();
@@ -4159,21 +4409,26 @@ async function ensurePaper() {
       const pt = toProj(ev);
       if (A.tool === 'brush' && A.cur) {
         A.cur.add(pt);
-        if (ev.pointerType === 'pen') A.cur.strokeWidth = penW(ev); // gentle pressure feel
+        if (A.curM) A.curM.add(mirrorPt(P, pt));
+        if (ev.pointerType === 'pen') { A.cur.strokeWidth = penW(ev); if (A.curM) A.curM.strokeWidth = penW(ev); } // gentle pressure feel
       } else if (A.tool === 'erase') { eraseAt(pt); }
       else if (A.start) {
-        if (A.preview) A.preview.remove();
+        if (A.preview) { A.preview.remove(); }
+        if (A.previewM) { A.previewM.remove(); A.previewM = null; }
         A.preview = shapeFrom(P, A.tool, A.start, pt, stroke(), A.size);
+        if (A.mirror && A.preview) A.previewM = A.preview.clone().scale(-1, 1, P.view.center);
       }
       P.view.update();
     };
     const onUp = (ev) => {
       if (ev.pointerId !== activeId) return;
       const pt = toProj(ev);
-      if (A.tool === 'brush' && A.cur) { A.cur.simplify(6); A.cur = null; }
+      if (A.tool === 'brush' && A.cur) { A.cur.simplify(6); A.cur = null; if (A.curM) { A.curM.simplify(6); A.curM = null; } }
       else if (A.start && A.tool !== 'erase') {
         if (A.preview) A.preview.remove();
-        shapeFrom(P, A.tool, A.start, pt, stroke(), A.size);
+        if (A.previewM) { A.previewM.remove(); A.previewM = null; }
+        const shp = shapeFrom(P, A.tool, A.start, pt, stroke(), A.size);
+        if (A.mirror && shp) shp.clone().scale(-1, 1, P.view.center);
         A.start = null; A.preview = null;
       }
       activeId = null;
@@ -4199,12 +4454,30 @@ function shapeFrom(P, tool, a, b, color, size) {
   if (fill) fill.alpha = 0.45;
   if (tool === 'rect') return new P.Path.Rectangle({ rectangle: rect, strokeColor: color, strokeWidth: size, fillColor: fill });
   if (tool === 'ellipse') return new P.Path.Ellipse({ rectangle: rect, strokeColor: color, strokeWidth: size, fillColor: fill });
+  if (tool === 'polygon' || tool === 'star') {
+    const center = new P.Point((a.x + b.x) / 2, (a.y + b.y) / 2);
+    const radius = Math.max(4, center.getDistance(b));
+    const sides = RT.atelier.sides || 5;
+    let item;
+    if (tool === 'star') item = new P.Path.Star({ center, points: sides, radius1: radius, radius2: radius * 0.5, strokeColor: color, strokeWidth: size, fillColor: fill });
+    else item = new P.Path.RegularPolygon({ center, sides, radius, strokeColor: color, strokeWidth: size, fillColor: fill });
+    item.rotate(-90); // point upward
+    return item;
+  }
   return null;
 }
+function mirrorPt(P, pt) { return new P.Point(2 * P.view.center.x - pt.x, pt.y); }
 function eraseAt(point) {
   const P = RT.paper; if (!P) return;
   const hit = P.project.hitTest(point, { stroke: true, fill: true, tolerance: Math.max(6, RT.atelier.size) });
   if (hit && hit.item) hit.item.remove();
+}
+function eyedropAt(point) {
+  const P = RT.paper; if (!P) return;
+  const hit = P.project.hitTest(point, { stroke: true, fill: true, tolerance: 10 });
+  const col = hit && hit.item && (hit.item.fillColor || hit.item.strokeColor);
+  if (!col) { toast('nothing to pick there'); return; }
+  try { RT.atelier.color = col.toCSS(true); toast('picked ' + RT.atelier.color); document.querySelectorAll('#atelier-swatches .swatch').forEach(s => s.classList.remove('on')); haptic(); } catch {}
 }
 function pushAtelierUndo() {
   const P = RT.paper; if (!P) return;
@@ -4287,6 +4560,13 @@ const DESIGN_BRIEFS = {
   soft: 'Soft & calm: rounded corners, pastel tones, gentle shadows, airy spacing, friendly.',
   terminal: 'Terminal: near-black background, green monospace text, minimal chrome, faint scanline feel.',
   playful: 'Playful: bright primary colours, big rounded buttons, bouncy motion, cheerful.',
+  glass: 'Glassmorphism: frosted translucent panels, backdrop-blur, soft vivid gradient background, thin light borders, layered depth.',
+  swiss: 'Swiss / International: strict grid, Helvetica-like sans, lots of negative space, red-and-black accents, typographic hierarchy, no decoration.',
+  y2k: 'Y2K / frutiger aero: glossy gradients, chrome and aqua, bubbly buttons, lens flares, optimistic early-2000s web.',
+  clay: 'Claymorphism: puffy 3D clay shapes, soft double shadows (inner + outer), rounded pastel blocks, tactile and friendly.',
+  cyber: 'Cyberpunk: dark base, neon magenta/cyan glow, scanlines, glitch accents, monospace, high-tech HUD feel.',
+  newsprint: 'Newspaper: black-on-cream, dense serif columns, hairline rules, drop-cap headlines, halftone imagery feel.',
+  darkpro: 'Dark pro: charcoal surfaces, one calm accent colour, crisp sans, subtle borders, dense but legible — a focused tool UI.',
 };
 function activeBriefText() {
   const b = DESIGN_BRIEFS[S.designBrief || 'none'];
@@ -4295,25 +4575,83 @@ function activeBriefText() {
 
 /* ===================== SLASH COMMANDS (claude-code) ===================== */
 const COMMAND_HELP = [
-  '/improve — refine the current build',
-  '/smaller — simplify it',
-  '/prettier — sharpen the visual design',
-  '/accessible — semantics, contrast, keyboard, aria',
-  '/faster — make it lighter',
-  '/deck <topic> — build a slide deck',
-  '/draw <thing> — open the Atelier and draw it',
-  '/remember <fact> — keep something in memory',
-  '/memory — show what I remember',
-  '/forget — clear my memory',
+  '<b>agentic</b>',
+  '/agent &lt;goal&gt; — plan → build → self-review → fix',
+  '/review — critique the current build · /doctor — diagnostics',
+  '<b>refine the current build</b>',
+  '/improve · /smaller · /prettier · /faster',
+  '/accessible · /responsive · /dark · /animate',
+  '/refactor · /comment · /seo · /debug',
+  '/explain — describe how it works (no rebuild)',
+  '<b>make something new</b>',
+  '/deck &lt;topic&gt; · /game &lt;idea&gt; · /landing &lt;product&gt;',
+  '/component &lt;name&gt; · /palette &lt;mood&gt; · /clone &lt;url&gt;',
+  '/plan &lt;goal&gt; — break a goal into steps',
+  '/draw &lt;thing&gt; — open the Atelier and draw it',
+  '<b>versions</b>',
+  '/versions — list saved builds · /revert [n] — roll back',
+  '<b>memory</b>',
+  '/remember &lt;fact&gt; · /memory · /forget',
   '/help — this list',
 ].join('\n');
+// Refinements — need an existing build to act on.
 const BUILD_COMMANDS = {
   improve: 'Improve the current build: tighten the code, fix bugs, keep the behaviour. Output the full updated HTML.',
   smaller: 'Make the current build simpler and smaller without losing the point. Output the full HTML.',
   prettier: 'Refine the visual design of the current build so it feels more considered and intentional. Output the full HTML.',
   accessible: 'Improve accessibility of the current build: semantic HTML, colour contrast, keyboard support, aria labels. Output the full HTML.',
-  faster: 'Make the current build lighter and faster — less code, fewer reflows. Output the full HTML.',
+  faster: 'Make the current build lighter and faster — less code, fewer reflows, defer non-critical work. Output the full HTML.',
+  responsive: 'Make the current build fully responsive: fluid layout, sensible breakpoints, touch-friendly targets, no horizontal scroll on phones. Output the full HTML.',
+  dark: 'Add a polished dark mode to the current build: respect prefers-color-scheme and add a manual toggle that persists. Keep contrast accessible. Output the full HTML.',
+  animate: 'Add tasteful motion to the current build: subtle entrance and hover transitions, respect prefers-reduced-motion. Nothing gaudy. Output the full HTML.',
+  refactor: 'Refactor the current build for clarity: clean structure, clear names, remove dead code, factor repeated logic. Keep behaviour identical. Output the full HTML.',
+  comment: 'Add clear, concise comments to the current build explaining the non-obvious parts. Change nothing else. Output the full HTML.',
+  seo: 'Improve the current build for SEO and sharing: title, meta description, semantic headings, Open Graph and Twitter card tags, lang attribute. Output the full HTML.',
+  debug: 'Carefully review the current build for bugs and edge cases, fix what you find, and add minimal guards. Keep the behaviour and design. Output the full HTML.',
 };
+// Generative — build something new from the argument.
+function generativeCommandPrompt(cmd, arg, brief) {
+  const b = brief || 'Clean, considered, confident style.';
+  switch (cmd) {
+    case 'deck': return `Build a single-file HTML slide deck about: ${arg || 'a topic of your choosing'}. Arrow-key and swipe navigation, one idea per slide, big type, a progress indicator. ${b} Output the full HTML.`;
+    case 'game': return `Build a small, complete, single-file HTML5 game: ${arg || 'a simple arcade game'}. Canvas or DOM, keyboard + touch controls, a score and a restart, runs offline. ${b} Output the full HTML.`;
+    case 'landing': return `Build a single-file HTML landing page for: ${arg || 'a product of your choosing'}. Hero with a clear value prop, features, social proof, a call to action, footer. Responsive. ${b} Output the full HTML.`;
+    case 'component': return `Build a single self-contained HTML page demonstrating a "${arg || 'button'}" UI component in several states, with the markup, styles and any JS inline, plus a short usage note. ${b} Output the full HTML.`;
+    case 'palette': return `Build a single-file HTML colour-palette page for the mood: ${arg || 'calm and warm'}. Show 5–6 swatches with hex codes, a suggested pairing for text/background, and a tiny preview card using the palette. Click a swatch to copy its hex. ${b} Output the full HTML.`;
+    default: return arg;
+  }
+}
+const GENERATIVE = ['deck', 'game', 'landing', 'component', 'palette'];
+function listVersions(c) {
+  const v = c.versions || [];
+  if (!v.length && !c.code) { pushChatNote(c, '<em>no builds yet.</em>'); return; }
+  const rows = [];
+  v.forEach((ver, i) => rows.push(`${i + 1}. saved ${timeAgo(ver.time)}`));
+  rows.push(`${v.length + 1}. current${c.code ? '' : ' (empty)'}`);
+  pushChatNote(c, '<em>builds — /revert &lt;n&gt; to roll back</em><br>' + rows.map(escapeHTML).join('<br>'));
+}
+function revertVersion(c, n) {
+  const v = c.versions || [];
+  if (!v.length) { pushChatNote(c, '<em>no earlier build to revert to.</em>'); return; }
+  let idx = Number.isFinite(n) && n >= 1 && n <= v.length ? n - 1 : v.length - 1; // default: most recent saved
+  // Push current onto history so the revert itself is undoable, then restore.
+  const restored = v[idx];
+  c.versions = v.slice(0, idx).concat(v.slice(idx + 1));
+  if (c.code) { c.versions.push({ code: c.code, time: Date.now() }); c.versions = c.versions.slice(-3); }
+  c.code = restored.code;
+  c.sections = sliceSections(c.code);
+  paintPreview(); paintCode(); paintQuickChips();
+  saveState();
+  pushChatNote(c, `<em>reverted to build ${idx + 1}.</em>`);
+}
+function timeAgo(t) {
+  if (!t) return 'earlier';
+  const s = Math.max(0, Math.round((Date.now() - t) / 1000));
+  if (s < 60) return s + 's ago';
+  const m = Math.round(s / 60); if (m < 60) return m + 'm ago';
+  const h = Math.round(m / 60); if (h < 24) return h + 'h ago';
+  return Math.round(h / 24) + 'd ago';
+}
 function handleCommand(c, text) {
   const parts = text.slice(1).split(/\s+/);
   const cmd = (parts.shift() || '').toLowerCase();
@@ -4324,9 +4662,53 @@ function handleCommand(c, text) {
   if (cmd === 'memory') { const f = (S.memory?.facts || []); pushChatNote(c, f.length || S.memory?.natal ? (S.memory.natal ? '<em>' + escapeHTML(truncate(S.memory.natal, 200)) + '</em><br>' : '') + f.map(x => '· ' + escapeHTML(x)).join('<br>') : '<em>nothing remembered yet.</em>'); return; }
   if (cmd === 'forget') { S.memory = { facts: [], natal: '', natalFor: '' }; saveState(); pushChatNote(c, '<em>memory cleared.</em>'); return; }
   if (cmd === 'draw') { openAtelier(); newDesign(); if (arg) { $('atelier-prompt').value = arg; aiDraw(); } return; }
-  if (cmd === 'deck') {
-    const brief = activeBriefText();
-    const p = `Build a single-file HTML slide deck about: ${arg || 'a topic of your choosing'}. Arrow-key and swipe navigation between slides, one idea per slide, big type. ${brief || 'Clean, minimal, confident style.'} Output the full HTML.`;
+  if (cmd === 'versions' || cmd === 'history') { listVersions(c); return; }
+  if (cmd === 'revert' || cmd === 'undo') { revertVersion(c, parseInt(arg, 10)); return; }
+  if (cmd === 'agent') {
+    const goal = arg || c.firstPrompt;
+    if (!goal) { pushChatNote(c, '<em>what should I build? /agent &lt;goal&gt;</em>'); return; }
+    if (!c.firstPrompt) { c.firstPrompt = goal; c.name = truncate(goal.split(/[.,;\n?!]/)[0], 28); $('work-title').textContent = c.name; }
+    runAgent(c, goal); return;
+  }
+  if (cmd === 'doctor') { runDoctor(c); return; }
+  if (cmd === 'review') {
+    if (!c.code) { pushChatNote(c, '<em>nothing built yet to review.</em>'); return; }
+    (async () => {
+      pushChatNote(c, '<em>reviewing…</em>');
+      let critique = '';
+      try { critique = await genOnce([
+        { role: 'system', content: 'You are a terse senior reviewer. List up to 4 concrete, important problems (one per line), or "OK" if solid. No praise, no code.' },
+        { role: 'user', content: 'Review this build:\n\n' + truncate(c.code, 6000) },
+      ], { max_tokens: 240, temperature: 0.3 }); } catch (e) { pushChatNote(c, '<em>review failed.</em>'); return; }
+      if (/^\s*ok\b/i.test(critique)) { pushChatNote(c, '<em>review: looks solid ✓</em>'); return; }
+      pushChatNote(c, '<em>review</em><br>' + escapeHTML(critique).replace(/\n/g, '<br>') + '<br><button class="chip" data-action="apply-review" style="margin-top:4px;">⚒ apply fixes</button>');
+      RT.pendingReview = critique;
+    })();
+    return;
+  }
+  if (cmd === 'explain') {
+    if (!c.code) { pushChatNote(c, '<em>nothing built yet to explain.</em>'); return; }
+    const p = 'Explain how the current build works: its structure, the key parts, and any clever bits. Plain language, a few short paragraphs. Do NOT output code.';
+    c.log.push({ role: 'user', content: p }); streamReply(c, p); return;
+  }
+  if (cmd === 'plan') {
+    const p = `Break this goal into a short, ordered plan of concrete build steps (5–8 steps, one line each): ${arg || (c.firstPrompt || 'the current project')}. Markdown numbered list. Do NOT output code yet.`;
+    c.log.push({ role: 'user', content: p }); streamReply(c, p); return;
+  }
+  if (cmd === 'clone') {
+    if (!arg || !URL_RE.test(arg)) { pushChatNote(c, '<em>give a URL: /clone https://…</em>'); return; }
+    if (!webEnabled()) { pushChatNote(c, '<em>web is off or offline — can\'t read that page.</em>'); return; }
+    (async () => {
+      pushChatNote(c, '<em>reading the page…</em>');
+      let ground = '';
+      try { const ctx = await gatherContext(arg); if (ctx.length) ground = `The target page, read just now — match its layout, sections and tone (not pixels):\n${ctx.map(s => '- ' + s.source + ': ' + truncate(s.text, 1800)).join('\n')}`; } catch {}
+      const p = `Rebuild a clean, single-file HTML homage to the layout and feel of ${arg} (not a pixel copy). Self-contained, responsive. ${activeBriefText() || ''} Output the full HTML.`;
+      c.log.push({ role: 'user', content: p }); streamReply(c, p, ground);
+    })();
+    return;
+  }
+  if (GENERATIVE.includes(cmd)) {
+    const p = generativeCommandPrompt(cmd, arg, activeBriefText());
     c.log.push({ role: 'user', content: p }); streamReply(c, p); return;
   }
   if (BUILD_COMMANDS[cmd]) {
@@ -4385,6 +4767,18 @@ $('chat-web').onclick = () => {
   updateWebBtn();
   toast(RT.webNext ? 'next message will search the web' : 'web off');
 };
+$('chat-agent').onclick = () => {
+  if (!RT.modelLoaded) { toast('load a model first'); return; }
+  if (RT.generating) { toast('busy — let it finish'); return; }
+  const c = activeCart(); if (!c) return;
+  const inp = $('chat-input');
+  const goal = (inp.value || '').trim();
+  if (!goal) { toast('type what to build, then tap ⚡'); inp.focus(); return; }
+  inp.value = ''; inp.dispatchEvent(new Event('input'));
+  appendMsg('user', '⚡ ' + goal);
+  if (!c.firstPrompt) { c.firstPrompt = goal; c.name = truncate(goal.split(/[.,;\n?!]/)[0], 28); $('work-title').textContent = c.name; }
+  runAgent(c, goal);
+};
 
 $('notes-back').onclick = () => {
   if (RT.activeNote) { saveActiveNote(); renderNotesList(); }
@@ -4434,7 +4828,13 @@ function renderSwatches() {
 }
 document.querySelectorAll('#atelier-tools .tool[data-tool]').forEach(btn => {
   btn.onclick = () => {
-    RT.atelier.tool = btn.dataset.tool; haptic();
+    const t = btn.dataset.tool;
+    // Re-tapping polygon/star cycles its sides 3→8 so one button covers many shapes.
+    if ((t === 'polygon' || t === 'star') && RT.atelier.tool === t) {
+      RT.atelier.sides = RT.atelier.sides >= 8 ? 3 : (RT.atelier.sides || 5) + 1;
+      toast((t === 'star' ? 'star' : 'polygon') + ' · ' + RT.atelier.sides + ' points');
+    }
+    RT.atelier.tool = t; haptic();
     document.querySelectorAll('#atelier-tools .tool[data-tool]').forEach(b => b.classList.toggle('on', b === btn));
   };
 });
@@ -4447,6 +4847,7 @@ $('atelier-savebtn').onclick = saveDesign;
 $('atelier-use').onclick = useDrawingInBuild;
 $('atelier-draw').onclick = aiDraw;
 $('atelier-fill').onclick = () => { RT.atelier.fill = !RT.atelier.fill; $('atelier-fill').classList.toggle('on', RT.atelier.fill); haptic(); };
+$('atelier-mirror').onclick = () => { RT.atelier.mirror = !RT.atelier.mirror; $('atelier-mirror').classList.toggle('on', RT.atelier.mirror); toast(RT.atelier.mirror ? 'mirror on' : 'mirror off'); haptic(); };
 $('work-atelier').onclick = () => { if (S.activeCart) openAtelierForBuild(S.activeCart); };
 
 /* ===================== 3D SKETCH (three.js · Penzil-style) ===================== */
@@ -4556,6 +4957,8 @@ $('chat-log').addEventListener('click', (e) => {
   const b = e.target.closest('[data-action]');
   if (!b) return;
   if (b.dataset.action === 'draw-asset' && S.activeCart) openAtelierForBuild(S.activeCart);
+  if (b.dataset.action === 'autofix') { const c = activeCart(); if (c && RT.pendingFix) { const sig = RT.pendingFix; RT.pendingFix = null; autoFixError(c, sig); } }
+  if (b.dataset.action === 'apply-review') { const c = activeCart(); if (c && RT.pendingReview && c.code) { const cr = RT.pendingReview; RT.pendingReview = null; const p = 'Address these review points and output the full updated HTML:\n' + cr; c.log.push({ role: 'user', content: p }); streamReply(c, p); } }
 });
 $('atelier-prompt').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); aiDraw(); } });
 $('atelier-prompt').addEventListener('input', e => { const t = e.target; t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 100) + 'px'; });
