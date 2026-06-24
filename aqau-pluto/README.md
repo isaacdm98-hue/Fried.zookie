@@ -90,6 +90,12 @@ A vector drawing studio built on **paper.js**:
 - **Gemma draws it** (`✦`): describe something and Gemma returns an SVG that's
   imported straight onto the canvas — grounded with the web when online.
 
+**Apple Pencil & tools.** The canvas is driven by Pointer Events, so **Apple
+Pencil on iPad** works first-class — pressure-sensitive stroke width, palm
+rejection (touch is ignored while the pen is down) and pointer capture for smooth
+lines. Plus a fill toggle, a native colour picker, and **PNG + SVG export**. The
+whole UI also gives light **haptic** feedback on tap (mobile).
+
 **Draw assets into your builds.** In a cartridge, tap `✎` (or accept the
 "want to draw it yourself first?" prompt that appears when you mention a game,
 character, sprite, logo, etc.). You're dropped into the Atelier; draw it, tap

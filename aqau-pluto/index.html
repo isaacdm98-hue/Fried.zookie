@@ -1131,6 +1131,14 @@ body::before {
 .chat-msg .body h4 { font-family: 'Caveat', cursive; font-size: 17px; margin: 5px 0 2px; }
 .chat-msg .body ul { margin: 4px 0 4px 18px; }
 .chat-msg .body a { color: var(--ochre); }
+/* markdown preview reuse (notebook) */
+.md-body { font-family: 'EB Garamond', serif; font-size: 15px; line-height: 1.5; color: var(--bone); }
+.md-body .md-pre { background: var(--paper-3); border: 1px solid var(--bone-4); border-radius: 6px; padding: 8px 10px; overflow-x: auto; margin: 6px 0; font-family: 'IBM Plex Mono', monospace; font-size: 12px; white-space: pre; }
+.md-body code.md-code { background: var(--paper-3); border-radius: 4px; padding: 1px 5px; font-family: 'IBM Plex Mono', monospace; font-size: 0.9em; }
+.md-body h3 { font-family: 'Caveat', cursive; font-size: 21px; margin: 8px 0 2px; }
+.md-body h4 { font-family: 'Caveat', cursive; font-size: 18px; margin: 6px 0 2px; }
+.md-body ul { margin: 4px 0 4px 18px; }
+.md-body a { color: var(--ochre); }
 
 /* ─── GLOBAL HAND-DRAWN MOTION ─── */
 /* Entrance: elements settle into place as if just sketched down. */
@@ -1355,7 +1363,9 @@ body.aq-anim .btn, body.aq-anim .chip, body.aq-anim .icon-btn, body.aq-anim .too
     <div id="note-editor-wrap" class="note-editor" style="display:none;">
       <input type="text" id="note-title" class="note-title-input" placeholder="title" />
       <textarea id="note-body" class="note-body-input" placeholder="write here… markdown is fine. then ask Aqau Pluto to help."></textarea>
+      <div id="note-preview" class="note-body-input md-body" style="display:none; overflow-y:auto;"></div>
       <div class="note-acts">
+        <button class="chip" id="note-preview-btn">preview</button>
         <button class="chip" id="note-improve">improve</button>
         <button class="chip" id="note-continue">continue</button>
         <button class="chip" id="note-summary">summarise</button>
@@ -1382,6 +1392,7 @@ body.aq-anim .btn, body.aq-anim .chip, body.aq-anim .icon-btn, body.aq-anim .too
         <button class="tool" data-tool="rect" title="Rectangle">▭</button>
         <button class="tool" data-tool="ellipse" title="Ellipse">◯</button>
         <button class="tool" data-tool="erase" title="Erase">⌫</button>
+        <button class="tool" id="atelier-fill" title="Fill shapes">▣</button>
         <span class="tool-sep"></span>
         <span class="swatches" id="atelier-swatches"></span>
         <input type="range" id="atelier-size" min="1" max="48" value="4" class="size-range" title="Size" />
@@ -1389,6 +1400,7 @@ body.aq-anim .btn, body.aq-anim .chip, body.aq-anim .icon-btn, body.aq-anim .too
         <button class="tool" id="atelier-undo" title="Undo">↶</button>
         <button class="tool" id="atelier-clear" title="Clear">␡</button>
         <button class="tool" id="atelier-png" title="Export PNG">⤓</button>
+        <button class="tool" id="atelier-svg" title="Export SVG">⬡</button>
         <button class="tool" id="atelier-savebtn" title="Save to gallery">✓</button>
         <button class="tool" id="atelier-use" title="Use in the build" style="display:none;width:auto;padding:0 10px;border-color:var(--terracotta);color:var(--terracotta);font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;">→ use</button>
       </div>
@@ -1552,6 +1564,7 @@ const defaults = {
   designBrief: 'none',
   chartEngine: 'hand',
   handDrawn: true,
+  haptics: true,
   useWeb: true,
   activeCart: null,
   installAcked: false,
@@ -1580,7 +1593,7 @@ const RT = {
   activeNote: null,
   activeDesign: null,
   paper: null,
-  atelier: { tool: 'brush', color: '#e8ddc8', size: 4, undo: [], start: null, preview: null },
+  atelier: { tool: 'brush', color: '#e8ddc8', size: 4, fill: false, undo: [], start: null, preview: null },
 };
 
 /* ===================== ROUTING ===================== */
@@ -1624,6 +1637,7 @@ function toast(msg) {
 function isStandalone() {
   return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
 }
+function haptic(ms = 8) { if (S.haptics !== false && navigator.vibrate) { try { navigator.vibrate(ms); } catch {} } }
 
 /* ===================== MODEL PROFILES ===================== */
 // Gemma 4 (Google) is the main vibe-coding brain. It runs through transformers.js
@@ -3001,10 +3015,21 @@ async function drawWheel(svg, ps, mode, cusps, outer) {
     text(lx, ly, `${Math.floor(norm360(p.deg) % 30)}°${signOf(p.deg).slice(0, 3)}${p.retro ? ' ℞' : ''}`, { size: 9.5, font: "'Caveat', cursive", fill: '#e8ddc8aa' });
   });
 
-  // outer ring: transiting planets over the natal wheel
+  // outer ring: transiting planets over the natal wheel + transit→natal aspects
   if (outer) {
     circle(cx, cy, (rZ - 2) * 2, { strokeWidth: 0.5, stroke: '#c89a4a55' });
     const ro = rZ - 12;
+    // transit-to-natal aspect lines (faint, dashed feel via thin strokes)
+    for (let i = 0; i < outer.length; i++) for (let j = 0; j < ps.length; j++) {
+      let diff = Math.abs(outer[i].deg - ps[j].deg); if (diff > 180) diff = 360 - diff;
+      for (const a of ASPECTS) {
+        if (Math.abs(diff - a.angle) <= a.orb - 2) {
+          const [x1, y1] = xy(outer[i].deg, ro - 8), [x2, y2] = xy(ps[j].deg, rPl);
+          line(x1, y1, x2, y2, { stroke: a.color, strokeWidth: 0.5 });
+          break;
+        }
+      }
+    }
     outer.forEach(p => {
       const [px, py] = xy(p.deg, ro);
       circle(px, py, 16, { fill: '#0d0b09', fillStyle: 'solid', stroke: '#c89a4a', strokeWidth: 0.9 });
@@ -3297,6 +3322,10 @@ function openNote(id) {
   $('notes-title-mini').textContent = n.title || 'untitled';
   $('note-title').value = n.title === 'untitled' ? '' : (n.title || '');
   $('note-body').value = n.body || '';
+  // always open in edit mode
+  $('note-preview').style.display = 'none';
+  $('note-body').style.display = 'block';
+  $('note-preview-btn').textContent = 'preview';
 }
 function saveActiveNote() {
   const n = activeNote(); if (!n) return;
@@ -3434,38 +3463,67 @@ async function ensurePaper() {
     const P = mod.default || mod;
     const canvas = $('atelier-canvas');
     P.setup(canvas);
-    const tool = new P.Tool();
     const A = RT.atelier;
     const stroke = () => new P.Color(A.color);
-    tool.onMouseDown = (ev) => {
+
+    // Pointer Events so Apple Pencil works first-class on iPad: pressure-aware
+    // stroke width, palm rejection (ignore touch while the pen is down), and
+    // pointer capture for smooth strokes. Also covers mouse + finger uniformly.
+    const rectOf = () => canvas.getBoundingClientRect();
+    const toProj = (ev) => { const r = rectOf(); return P.view.viewToProject(new P.Point(ev.clientX - r.left, ev.clientY - r.top)); };
+    const penW = (ev) => (ev.pointerType === 'pen' && ev.pressure > 0) ? Math.max(0.5, A.size * (0.35 + ev.pressure * 1.5)) : A.size;
+    let activeId = null, penActive = false;
+
+    const onDown = (ev) => {
+      if (penActive && ev.pointerType === 'touch') return; // palm rejection
+      if (ev.pointerType === 'pen') penActive = true;
+      activeId = ev.pointerId;
+      try { canvas.setPointerCapture(ev.pointerId); } catch {}
+      ev.preventDefault();
       pushAtelierUndo();
       A.preview = null;
+      const pt = toProj(ev);
       if (A.tool === 'brush') {
-        A.cur = new P.Path({ strokeColor: stroke(), strokeWidth: A.size, strokeCap: 'round', strokeJoin: 'round' });
-        A.cur.add(ev.point);
-      } else if (A.tool === 'erase') {
-        eraseAt(ev.point);
-      } else {
-        A.start = ev.point;
-      }
+        A.cur = new P.Path({ strokeColor: stroke(), strokeWidth: penW(ev), strokeCap: 'round', strokeJoin: 'round' });
+        A.cur.add(pt);
+      } else if (A.tool === 'erase') { eraseAt(pt); }
+      else { A.start = pt; }
+      P.view.update();
     };
-    tool.onMouseDrag = (ev) => {
-      if (A.tool === 'brush' && A.cur) { A.cur.add(ev.point); }
-      else if (A.tool === 'erase') { eraseAt(ev.point); }
+    const onMove = (ev) => {
+      if (ev.pointerId !== activeId) return;
+      if (penActive && ev.pointerType === 'touch') return;
+      ev.preventDefault();
+      const pt = toProj(ev);
+      if (A.tool === 'brush' && A.cur) {
+        A.cur.add(pt);
+        if (ev.pointerType === 'pen') A.cur.strokeWidth = penW(ev); // gentle pressure feel
+      } else if (A.tool === 'erase') { eraseAt(pt); }
       else if (A.start) {
         if (A.preview) A.preview.remove();
-        A.preview = shapeFrom(P, A.tool, A.start, ev.point, stroke(), A.size);
-      }
-    };
-    tool.onMouseUp = (ev) => {
-      if (A.tool === 'brush' && A.cur) { A.cur.simplify(8); A.cur = null; }
-      else if (A.start && A.tool !== 'erase') {
-        if (A.preview) A.preview.remove();
-        shapeFrom(P, A.tool, A.start, ev.point, stroke(), A.size);
-        A.start = null; A.preview = null;
+        A.preview = shapeFrom(P, A.tool, A.start, pt, stroke(), A.size);
       }
       P.view.update();
     };
+    const onUp = (ev) => {
+      if (ev.pointerId !== activeId) return;
+      const pt = toProj(ev);
+      if (A.tool === 'brush' && A.cur) { A.cur.simplify(6); A.cur = null; }
+      else if (A.start && A.tool !== 'erase') {
+        if (A.preview) A.preview.remove();
+        shapeFrom(P, A.tool, A.start, pt, stroke(), A.size);
+        A.start = null; A.preview = null;
+      }
+      activeId = null;
+      if (ev.pointerType === 'pen') penActive = false;
+      try { canvas.releasePointerCapture(ev.pointerId); } catch {}
+      P.view.update();
+    };
+    canvas.addEventListener('pointerdown', onDown);
+    canvas.addEventListener('pointermove', onMove);
+    canvas.addEventListener('pointerup', onUp);
+    canvas.addEventListener('pointercancel', onUp);
+
     RT.paper = P;
     return P;
   })().catch((e) => { paperLoading = null; throw e; });
@@ -3475,8 +3533,10 @@ async function ensurePaper() {
 function shapeFrom(P, tool, a, b, color, size) {
   if (tool === 'line') return new P.Path.Line({ from: a, to: b, strokeColor: color, strokeWidth: size, strokeCap: 'round' });
   const rect = new P.Rectangle(a, b);
-  if (tool === 'rect') return new P.Path.Rectangle({ rectangle: rect, strokeColor: color, strokeWidth: size });
-  if (tool === 'ellipse') return new P.Path.Ellipse({ rectangle: rect, strokeColor: color, strokeWidth: size });
+  const fill = RT.atelier.fill ? new P.Color(RT.atelier.color) : null;
+  if (fill) fill.alpha = 0.45;
+  if (tool === 'rect') return new P.Path.Rectangle({ rectangle: rect, strokeColor: color, strokeWidth: size, fillColor: fill });
+  if (tool === 'ellipse') return new P.Path.Ellipse({ rectangle: rect, strokeColor: color, strokeWidth: size, fillColor: fill });
   return null;
 }
 function eraseAt(point) {
@@ -3511,6 +3571,18 @@ async function exportDesignPNG() {
   const a = document.createElement('a');
   a.href = url; a.download = ((activeDesign()?.name) || 'aqau-pluto') + '.png';
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+function exportDesignSVG() {
+  if (!RT.paper) { toast('nothing to export'); return; }
+  let svg = '';
+  try { svg = RT.paper.project.exportSVG({ asString: true, bounds: 'content' }); } catch { try { svg = RT.paper.project.exportSVG({ asString: true }); } catch {} }
+  if (!svg) { toast('nothing to export'); return; }
+  const blob = new Blob([svg], { type: 'image/svg+xml' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = ((activeDesign()?.name) || 'aqau-pluto') + '.svg';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 async function aiDraw() {
   if (!RT.modelLoaded) { toast('model not loaded'); return; }
@@ -3657,6 +3729,12 @@ $('note-continue').onclick = () => noteAssist('continue');
 $('note-summary').onclick = () => noteAssist('summary');
 $('note-title').addEventListener('input', () => { const n = activeNote(); if (n) $('notes-title-mini').textContent = $('note-title').value.trim() || 'untitled'; });
 $('note-body').addEventListener('change', saveActiveNote);
+$('note-preview-btn').onclick = () => {
+  const ta = $('note-body'), pv = $('note-preview'), btn = $('note-preview-btn');
+  const showing = pv.style.display !== 'none';
+  if (showing) { pv.style.display = 'none'; ta.style.display = 'block'; btn.textContent = 'preview'; }
+  else { pv.innerHTML = mdToHTML($('note-body').value || '*(empty)*'); pv.style.display = 'block'; ta.style.display = 'none'; btn.textContent = 'edit'; }
+};
 
 /* ===================== ATELIER WIRING ===================== */
 $('atelier-back').onclick = () => {
@@ -3675,14 +3753,20 @@ function renderSwatches() {
     s.onclick = () => {
       RT.atelier.color = col;
       [...wrap.children].forEach(c => c.classList.remove('on'));
-      s.classList.add('on');
+      s.classList.add('on'); haptic();
     };
     wrap.appendChild(s);
   });
+  // Custom colour picker (Apple Pencil / any device) — native swatch.
+  const picker = document.createElement('input');
+  picker.type = 'color'; picker.className = 'swatch'; picker.value = '#c87b5a';
+  picker.title = 'custom colour'; picker.style.padding = '0'; picker.style.cursor = 'pointer';
+  picker.oninput = () => { RT.atelier.color = picker.value; [...wrap.children].forEach(c => c.classList.remove('on')); };
+  wrap.appendChild(picker);
 }
 document.querySelectorAll('#atelier-tools .tool[data-tool]').forEach(btn => {
   btn.onclick = () => {
-    RT.atelier.tool = btn.dataset.tool;
+    RT.atelier.tool = btn.dataset.tool; haptic();
     document.querySelectorAll('#atelier-tools .tool[data-tool]').forEach(b => b.classList.toggle('on', b === btn));
   };
 });
@@ -3690,9 +3774,11 @@ $('atelier-size').addEventListener('input', e => { RT.atelier.size = +e.target.v
 $('atelier-undo').onclick = atelierUndo;
 $('atelier-clear').onclick = () => { pushAtelierUndo(); try { RT.paper?.project.activeLayer.removeChildren(); RT.paper?.view.update(); } catch {} };
 $('atelier-png').onclick = exportDesignPNG;
+$('atelier-svg').onclick = exportDesignSVG;
 $('atelier-savebtn').onclick = saveDesign;
 $('atelier-use').onclick = useDrawingInBuild;
 $('atelier-draw').onclick = aiDraw;
+$('atelier-fill').onclick = () => { RT.atelier.fill = !RT.atelier.fill; $('atelier-fill').classList.toggle('on', RT.atelier.fill); haptic(); };
 $('work-atelier').onclick = () => { if (S.activeCart) openAtelierForBuild(S.activeCart); };
 // Tappable suggestions inside the chat log (e.g. "draw the main character").
 $('chat-log').addEventListener('click', (e) => {
@@ -3710,6 +3796,11 @@ $('chat-log').addEventListener('click', (e) => {
 $('atelier-prompt').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); aiDraw(); } });
 $('atelier-prompt').addEventListener('input', e => { const t = e.target; t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 100) + 'px'; });
 renderSwatches();
+
+// Tactile feedback across the whole UI (mobile only; honours the haptics pref).
+document.addEventListener('pointerdown', (e) => {
+  if (e.target.closest && e.target.closest('.icon-btn,.btn,.chip,.tool,.swatch,.stat-btn,.face-act,.chat-send,.chat-mic,.chat-web,.cartridge,.model-card,.flip-hint')) haptic(6);
+}, { passive: true });
 
 /* ===================== SETTINGS ===================== */
 const sheetEl = $('sheet');
