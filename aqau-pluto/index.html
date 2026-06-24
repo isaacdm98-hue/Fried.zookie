@@ -1874,15 +1874,22 @@ async function loadTransformers(modelId, profile) {
       try { await RT.engine.unload(); } catch {}
       RT.modelLoaded = false;
     }
+    if (!('gpu' in navigator)) throw new Error('WebGPU not available — Gemma needs it. Use iOS 18+ Safari or a WebGPU browser.');
     if (!TJS) {
       phaseEl.textContent = 'loading the runtime';
-      TJS = await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@4');
+      // Pinned to match the webml-community Gemma 4 WebGPU setup.
+      TJS = await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.2.0');
       try { TJS.env.allowLocalModels = false; } catch {}
     }
 
+    // q4f16 needs the shader-f16 GPU feature; fall back to q4 where it's absent
+    // (e.g. some iOS GPUs) so Gemma still loads instead of erroring out.
+    let dtype = profile.dtype || 'q4f16';
+    if (dtype === 'q4f16' && LAST_GPU && LAST_GPU.hasShaderF16 === false) { dtype = 'q4'; readoutEl.textContent = 'no f16 — using q4'; }
+
     const fileProgress = {};
     const generator = await TJS.pipeline('text-generation', modelId, {
-      dtype: profile.dtype || 'q4f16',
+      dtype,
       device: 'webgpu',
       progress_callback: (r) => {
         if (r && r.file && typeof r.progress === 'number') fileProgress[r.file] = r.progress;
@@ -2607,9 +2614,56 @@ async function chartPositions(mode) {
   if (mode === 'natal') { const b = birthMoment(); if (b) return positionsFor(b); }
   return positionsFor(new Date());
 }
+
+/* ── HOUSES (geocode birthplace → Ascendant/MC → equal-house cusps) ── */
+const toRad = (d) => d * Math.PI / 180, toDeg = (r) => r * 180 / Math.PI;
+function meanObliquity(date) {
+  const T = (date.getTime() / 86400000 + 2440587.5 - 2451545.0) / 36525;
+  return 23.439291 - 0.0130042 * T - 1.64e-7 * T * T;
+}
+async function geocodeBirth() {
+  if (!S.user.birthPlace) return null;
+  if (S.user.birthGeo && S.user.birthGeo.place === S.user.birthPlace) return S.user.birthGeo;
+  if (!webEnabled()) return S.user.birthGeo || null;
+  try {
+    const url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent(S.user.birthPlace);
+    const j = await (await fetch(url, { headers: { 'Accept': 'application/json' } })).json();
+    if (j && j[0]) { S.user.birthGeo = { place: S.user.birthPlace, lat: +j[0].lat, lng: +j[0].lon }; saveState(); return S.user.birthGeo; }
+  } catch (e) { console.warn('geocode failed', e); }
+  return S.user.birthGeo || null;
+}
+async function ascMc(date, lat, lng) {
+  try {
+    const A = await ensureAE();
+    if (!A.SiderealTime) return null;
+    const lst = norm360(A.SiderealTime(date) * 15 + lng); // GAST hours → deg + east longitude
+    const e = toRad(meanObliquity(date)), ramc = toRad(lst);
+    const asc = norm360(toDeg(Math.atan2(Math.cos(ramc), -(Math.sin(ramc) * Math.cos(e) + Math.tan(toRad(lat)) * Math.sin(e)))));
+    const mc = norm360(toDeg(Math.atan2(Math.sin(ramc), Math.cos(ramc) * Math.cos(e))));
+    return { asc, mc };
+  } catch (e) { console.warn('ascMc failed', e); return null; }
+}
+async function chartCusps(mode) {
+  if (mode !== 'natal') return null;
+  const b = birthMoment(); if (!b) return null;
+  const geo = await geocodeBirth(); if (!geo) return null;
+  const am = await ascMc(b, geo.lat, geo.lng); if (!am) return null;
+  const cusps = []; for (let i = 0; i < 12; i++) cusps.push(norm360(am.asc + i * 30));
+  cusps.asc = am.asc; cusps.mc = am.mc; // equal-house system
+  return cusps;
+}
+const houseOf = (deg, asc) => (asc == null ? null : Math.floor(norm360(deg - asc) / 30) + 1);
+
 async function positionsString(mode) {
   const ps = await chartPositions(mode);
-  return ps.map(p => `${p.p} ${Math.floor(norm360(p.deg)%30)}°${signOf(p.deg)}${p.retro ? ' ℞' : ''}`).join(', ');
+  const cusps = (mode === 'natal') ? await chartCusps(mode) : null;
+  const asc = cusps && cusps.asc;
+  let s = ps.map(p => {
+    const h = houseOf(p.deg, asc);
+    return `${p.p} ${Math.floor(norm360(p.deg) % 30)}°${signOf(p.deg)}${p.retro ? ' ℞' : ''}${h ? ` (h${h})` : ''}`;
+  }).join(', ');
+  if (asc != null) s += `; Ascendant ${Math.floor(norm360(asc) % 30)}°${signOf(asc)}, MC ${Math.floor(norm360(cusps.mc) % 30)}°${signOf(cusps.mc)} (equal houses)`;
+  return s;
 }
 
 /* ── ASPECTS ── */
@@ -2698,31 +2752,33 @@ async function renderWhiteboard() {
   const svg = $('wb-svg');
   const host = $('wb-chart');
   const ps = await chartPositions(mode);
+  const cusps = await chartCusps(mode); // null unless natal + geocoded birthplace
 
   // Progressive enhancement: Kibo AstrologyChart2 if the user chose it.
-  if (S.chartEngine === 'astrochart2' && await tryAstrochart(ps)) {
+  if (S.chartEngine === 'astrochart2' && await tryAstrochart(ps, cusps)) {
     svg.style.display = 'none'; if (host) host.style.display = 'block';
     return;
   }
   if (host) host.style.display = 'none';
   svg.style.display = 'block';
-  await drawWheel(svg, ps, mode);
+  await drawWheel(svg, ps, mode, cusps);
 }
 
-async function tryAstrochart(ps) {
+async function tryAstrochart(ps, cusps) {
   const host = $('wb-chart'); if (!host) return false;
   try {
     if (!window.astrology) await import('https://cdn.jsdelivr.net/npm/astrochart2@0.7.3/dist/astrochart2.js');
     const ns = window.astrology;
     if (!ns || !ns.Universe) return false;
     host.innerHTML = '';
-    const data = { points: ps.map(p => ({ name: p.p, angle: p.deg, isRetrograde: p.retro })), cusps: Array.from({ length: 12 }, (_, i) => ({ angle: i * 30 })) };
+    const cuspData = (cusps && cusps.length === 12) ? cusps.map(a => ({ angle: a })) : Array.from({ length: 12 }, (_, i) => ({ angle: i * 30 }));
+    const data = { points: ps.map(p => ({ name: p.p, angle: p.deg, isRetrograde: p.retro })), cusps: cuspData };
     new ns.Universe(host.id).radix().setData(data);
     return !!host.querySelector('svg');
   } catch (e) { console.warn('astrochart2 failed, using hand-drawn wheel', e); return false; }
 }
 
-async function drawWheel(svg, ps, mode) {
+async function drawWheel(svg, ps, mode, cusps) {
   svg.innerHTML = '';
   const cx = 200, cy = 300, R = 152, rZ = R - 26, rPl = rZ - 14, rAsp = rPl - 16;
   const xy = (deg, r) => { const a = (norm360(deg) - 90) * Math.PI / 180; return [cx + Math.cos(a) * r, cy + Math.sin(a) * r]; };
@@ -2754,6 +2810,19 @@ async function drawWheel(svg, ps, mode) {
     line(x1, y1, x2, y2, { stroke: '#e8ddc855', strokeWidth: major ? 0.8 : 0.4 });
   }
 
+  // house cusps (natal, when we have a real Ascendant) + ASC/MC markers
+  if (cusps && cusps.length === 12) {
+    cusps.forEach((cd, i) => {
+      const [x1, y1] = xy(cd, rPl), [x2, y2] = xy(cd, rAsp - 8);
+      const axis = (i % 3 === 0); // angular houses 1/4/7/10
+      line(x1, y1, x2, y2, { stroke: axis ? '#c89a4a' : '#e8ddc844', strokeWidth: axis ? 1 : 0.5 });
+      const [nx, ny] = xy(cd + 15, rAsp - 4);
+      text(nx, ny, String(i + 1), { size: 8, font: "'IBM Plex Mono', monospace", fill: '#e8ddc866' });
+    });
+    const mark = (deg, lbl) => { const [mx, my] = xy(deg, R + 8); text(mx, my + 3, lbl, { size: 10, font: "'IBM Plex Mono', monospace", fill: '#c89a4a' }); };
+    mark(cusps.asc, 'ASC'); mark(cusps.mc, 'MC');
+  }
+
   // aspect lines (under planets)
   aspectsBetween(ps).forEach(({ a, i, j }) => {
     const [x1, y1] = xy(ps[i].deg, rAsp), [x2, y2] = xy(ps[j].deg, rAsp);
@@ -2777,7 +2846,7 @@ async function drawWheel(svg, ps, mode) {
   // title
   const when = mode === 'natal' ? `your chart · ${S.user.birthDate}` : `the sky · ${new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}`;
   text(cx, 34, when, { font: "'Caveat', cursive", size: 21 });
-  text(cx, 52, mode === 'natal' ? 'natal positions' : 'live transits', { font: "'IBM Plex Mono', monospace", size: 8.5, fill: '#e8ddc877' });
+  text(cx, 52, mode === 'natal' ? (cusps ? 'natal · equal houses' : 'natal positions') : 'live transits', { font: "'IBM Plex Mono', monospace", size: 8.5, fill: '#e8ddc877' });
 
   animateDrawIn(g);
 }
@@ -2821,7 +2890,8 @@ async function askWhiteboard(question) {
 
   RT.generating = true;
 
-  const transitsStr = await positionsString((RT.chartMode === 'natal' && birthMoment()) ? 'natal' : 'today');
+  const natal = (RT.chartMode === 'natal' && birthMoment());
+  const transitsStr = await positionsString(natal ? 'natal' : 'today');
   const userInfo = [
     S.user.birthDate && `Born ${S.user.birthDate}`,
     S.user.birthTime && `at ${S.user.birthTime}`,
@@ -2840,7 +2910,7 @@ async function askWhiteboard(question) {
 
   const messages = [
     { role:'system', content: personaSystemPrompt() },
-    { role:'system', content: `Today's approximate transits: ${transitsStr}.\nUser: ${userInfo || '(no birth data)'}.\nNo code in this mode. Three short paragraphs maximum. No woo.${noThink}` },
+    { role:'system', content: `${natal ? 'Their natal chart' : "Today's transits"} (accurate): ${transitsStr}.\nUser: ${userInfo || '(no birth data)'}.\n${natal ? 'Read the natal chart — signs, houses, aspects.' : 'Read the live sky.'} No code in this mode. Three short paragraphs maximum. No woo.${noThink}` },
     ...(ground ? [{ role:'system', content: ground }] : []),
     { role:'user', content: question },
   ];

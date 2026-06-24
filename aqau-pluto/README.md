@@ -17,6 +17,13 @@ available on `web-llm` as lighter fallbacks.
 Both runtimes sit behind one interface (`engine.chat.completions.create`), so the
 rest of the app doesn't care which is loaded.
 
+To make it run reliably as an installed PWA: the runtime is pinned to `@4.2.0`;
+WebGPU is required and checked up front with a clear message if missing; the
+`q4f16` weights need the GPU `shader-f16` feature, so on GPUs without it (some
+iOS) it **falls back to `q4`** instead of failing; and the service worker passes
+model/CDN traffic straight through so transformers.js manages its own weight
+cache. Install to the home screen so the ~1.5 GB download stays cached.
+
 ### Startup prebuild (many requests up front)
 On first load, once the model is ready, Aqau Pluto fires a burst of requests to
 already "know" itself and the sky before you ask:
@@ -36,6 +43,10 @@ Results are cached in `localStorage`, so the burst only runs once per model/day.
   5° ticks, planets at true longitude with degree/sign labels, and **aspect
   lines** (conjunction/sextile/square/trine/opposition with orbs). Toggle
   **natal ↔ today** with `◑` (natal needs birth data).
+- **Real houses**: with a birth time and place, the birthplace is geocoded
+  (OpenStreetMap Nominatim) and the **Ascendant + MC** are computed, drawing
+  **equal-house cusps** on the wheel and feeding planet houses into the reading.
+  Falls back to a sign-only wheel offline or without a location.
 - **Hand-drawn, drawn live**: the chart is rendered with
   [rough.js](https://github.com/rough-stuff/rough) (the engine behind Excalidraw)
   and animates its strokes in as if sketched by hand. AI drawings in the Atelier
