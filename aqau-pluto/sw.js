@@ -4,7 +4,7 @@
 // Cross-origin requests (HF weights, esm.run, jsdelivr, fonts, web research)
 // are passed straight through — see the fetch handler.
 
-const VERSION = 'aqau-pluto-v21-nocache-retry';
+const VERSION = 'aqau-pluto-v22-opfs'
 const SHELL = [
   './',
   './index.html',
