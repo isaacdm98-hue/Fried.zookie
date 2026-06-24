@@ -41,6 +41,8 @@ jobs:
           cp -r assets icons _site/
           # Aqau Pluto — the Gemma 4 vibe-coding studio PWA (served at /aqau-pluto/)
           cp -r aqau-pluto _site/aqau-pluto
+          # Gemma 4 — minimal on-device LLM PWA (served at /gemma4-pwa/)
+          cp -r gemma4-pwa _site/gemma4-pwa
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
