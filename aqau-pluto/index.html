@@ -1118,6 +1118,42 @@ body::before {
 /* astrology chart host (astrochart2 engine) */
 .wb-chart { width: 100%; height: 100%; overflow: hidden; display: flex; align-items: center; justify-content: center; }
 .wb-chart svg { width: 100%; height: 100%; max-width: 100%; }
+
+/* ─── GLOBAL HAND-DRAWN MOTION ─── */
+/* Entrance: elements settle into place as if just sketched down. */
+@keyframes aqIn {
+  from { opacity: 0; transform: translateY(9px) rotate(-0.5deg) scale(0.984); }
+  60%  { opacity: 1; }
+  to   { opacity: 1; transform: translateY(0) rotate(0) scale(1); }
+}
+@keyframes aqScreen {
+  from { opacity: 0; transform: scale(0.992); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes aqPop {
+  0% { transform: scale(0.6); opacity: 0; }
+  70% { transform: scale(1.08); }
+  100% { transform: scale(1); opacity: 1; }
+}
+body.aq-anim .screen[data-active="true"] { animation: aqScreen 0.4s ease both; }
+/* 'backwards' (not 'both') so elements revert to their own CSS transform after —
+   keeps the cartridges' hand-placed tilt instead of flattening it. */
+body.aq-anim .aq-in { animation: aqIn 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) backwards; }
+body.aq-anim .aq-pop { animation: aqPop 0.45s cubic-bezier(0.2, 0.8, 0.3, 1.2) backwards; }
+/* A touch more life on the press of every tappable thing. */
+body.aq-anim .btn:active, body.aq-anim .chip:active, body.aq-anim .icon-btn:active,
+body.aq-anim .model-card:active, body.aq-anim .cartridge:active, body.aq-anim .tool:active,
+body.aq-anim .face-act:active, body.aq-anim .swatch:active { transform: scale(0.93) rotate(-0.6deg); }
+body.aq-anim .btn, body.aq-anim .chip, body.aq-anim .icon-btn, body.aq-anim .tool, body.aq-anim .face-act {
+  transition: transform 0.12s cubic-bezier(0.2, 0.8, 0.3, 1.2), border-color 0.15s, background 0.15s, opacity 0.15s;
+}
+/* Rough.js sketch-frame sits behind a card; the card's own border is hidden. */
+.aq-framed { position: relative; border-color: transparent !important; }
+.aq-frame-svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; z-index: 0; }
+.aq-framed > *:not(.aq-frame-svg) { position: relative; z-index: 1; }
+@media (prefers-reduced-motion: reduce) {
+  body.aq-anim .screen[data-active="true"], body.aq-anim .aq-in, body.aq-anim .aq-pop { animation: none; }
+}
 </style>
 </head>
 <body>
@@ -1432,6 +1468,30 @@ body::before {
 
 <div class="toast" id="toast"></div>
 
+<script>
+/* Early, classic-script safety net: surface fatal errors instead of a frozen
+   splash, and never let the splash trap the user. Runs before the module. */
+(function () {
+  function note(msg) {
+    try { var s = document.getElementById('splash'); if (s) { var sub = s.querySelector('.sub'); if (sub) sub.textContent = '⚠ ' + msg; } } catch (e) {}
+    try {
+      var t = document.getElementById('toast');
+      if (t) { t.textContent = String(msg).slice(0, 120); t.classList.add('show'); setTimeout(function () { t.classList.remove('show'); }, 4000); }
+    } catch (e) {}
+    console.error('[aqau pluto]', msg);
+  }
+  window.addEventListener('error', function (e) {
+    note((e.message || 'error') + (e.filename ? (' @ ' + String(e.filename).split('/').pop() + ':' + e.lineno) : ''));
+  });
+  window.addEventListener('unhandledrejection', function (e) {
+    note((e.reason && e.reason.message) || String(e.reason || 'promise rejected'));
+  });
+  window.addEventListener('load', function () {
+    setTimeout(function () { var s = document.getElementById('splash'); if (s) s.classList.add('gone'); }, 4500);
+  });
+})();
+</script>
+
 <script type="module">
 import * as webllm from "https://esm.run/@mlc-ai/web-llm";
 
@@ -1596,6 +1656,7 @@ async function boot() {
 
   setOnline(navigator.onLine);
   updateWebBtn();
+  setAnimEnabled();
 
   // visualViewport offset for keyboard
   if (window.visualViewport) {
@@ -1709,6 +1770,7 @@ async function renderModelList() {
     if (S.modelId ? (m.id === S.modelId) : m.main) preselect = card;
   }
   if (preselect) selectModelCard(preselect.dataset.modelId, preselect);
+  aqReveal([...list.children]);
 }
 
 function selectModelCard(id, cardEl) {
@@ -1992,6 +2054,7 @@ function renderHome() {
     [...pager.children].forEach((d, i) => d.classList.toggle('on', i === idx));
   };
 
+  aqReveal([...deck.children], { frame: true, step: 60 });
   seedFromKnowledge();
 }
 
@@ -2188,6 +2251,7 @@ function appendMsg(role, content, note) {
     el.innerHTML = `<div class="from">${role === 'assistant' ? 'aqau pluto' : (S.user.name || 'you')}</div><div class="body"></div>`;
     el.querySelector('.body').textContent = content;
   }
+  if (handMotion()) el.classList.add('aq-in');
   log.appendChild(el);
   log.scrollTop = log.scrollHeight;
   return el;
@@ -2596,6 +2660,39 @@ function animateDrawIn(container) {
   container.querySelectorAll('text').forEach((t, k) => { t.style.opacity = 0; t.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 280, delay: 220 + k * 8, fill: 'forwards' }); t.style.opacity = 1; });
 }
 
+/* ── GLOBAL UI MOTION ── reveal lists, sketch-frame cards, master switch ── */
+function setAnimEnabled() {
+  document.body.classList.toggle('aq-anim', S.handDrawn !== false);
+}
+// Stagger a set of freshly-rendered elements into view (and optionally draw a
+// hand-drawn rough frame behind each). Runs after a frame so sizes are settled.
+function aqReveal(els, { frame = false, step = 45 } = {}) {
+  if (!handMotion() || !els || !els.length) return;
+  requestAnimationFrame(() => {
+    els.forEach((el, i) => {
+      if (!el) return;
+      el.style.animationDelay = (i * step) + 'ms';
+      el.classList.add('aq-in');
+      if (frame) roughFrame(el);
+    });
+  });
+}
+async function roughFrame(el, { stroke = '#e8ddc8', strokeWidth = 1.1, roughness = 1.3 } = {}) {
+  if (!handMotion() || !el) return;
+  if (el.querySelector(':scope > .aq-frame-svg')) return;
+  let r; try { r = await ensureRough(); } catch { return; }
+  const w = Math.round(el.clientWidth), h = Math.round(el.clientHeight);
+  if (!w || !h) return;
+  try {
+    const svg = svgEl('svg', { class: 'aq-frame-svg', viewBox: `0 0 ${w} ${h}`, preserveAspectRatio: 'none' });
+    const rc = r.svg(svg);
+    svg.appendChild(rc.rectangle(3, 3, w - 6, h - 6, { stroke, strokeWidth, roughness, bowing: 1.4 }));
+    el.classList.add('aq-framed');
+    el.insertBefore(svg, el.firstChild);
+    animateDrawIn(svg);
+  } catch (e) { /* never let decoration break a render */ }
+}
+
 async function renderWhiteboard() {
   const mode = (RT.chartMode === 'natal' && birthMoment()) ? 'natal' : 'today';
   const svg = $('wb-svg');
@@ -2946,6 +3043,7 @@ function renderNotesList() {
     el.onclick = () => openNote(n.id);
     list.appendChild(el);
   });
+  aqReveal([...list.children], { frame: true });
 }
 function newNote() {
   const n = { id: 'n' + Date.now().toString(36), title: 'untitled', body: '', created: Date.now() };
@@ -3016,7 +3114,7 @@ async function useDrawingInBuild() {
   const cartId = RT.atelierFor; if (!cartId) return;
   const c = S.cartridges.find(x => x.id === cartId);
   if (!c) { RT.atelierFor = null; updateAtelierUseBtn(); return; }
-  await ensurePaper();
+  try { await ensurePaper(); } catch { toast('drawing engine offline'); return; }
   let svg = '';
   try { svg = RT.paper.project.exportSVG({ asString: true, bounds: 'content' }); } catch { try { svg = RT.paper.project.exportSVG({ asString: true }); } catch {} }
   if (!svg || !/<path|<rect|<circle|<ellipse|<line|<polyline|<polygon|<g[\s>]/i.test(svg)) { toast('draw something first'); return; }
@@ -3055,6 +3153,7 @@ function renderDesignList() {
     el.onclick = () => openDesign(d.id);
     list.appendChild(el);
   });
+  aqReveal([...list.children], { frame: true });
 }
 
 function newDesign() {
@@ -3068,7 +3167,7 @@ async function openDesign(id) {
   $('design-list-wrap').style.display = 'none';
   $('atelier-stage').style.display = 'flex';
   $('atelier-title').textContent = d.name || 'untitled';
-  await ensurePaper();
+  try { await ensurePaper(); } catch { toast('drawing engine offline — connect once to fetch it'); return; }
   const P = RT.paper;
   try {
     P.project.activeLayer.removeChildren();
@@ -3091,6 +3190,7 @@ async function ensurePaper() {
   if (paperLoading) return paperLoading;
   paperLoading = (async () => {
     const mod = await import('https://esm.run/paper');
+    if (!mod) throw new Error('paper.js unavailable');
     const P = mod.default || mod;
     const canvas = $('atelier-canvas');
     P.setup(canvas);
@@ -3128,7 +3228,7 @@ async function ensurePaper() {
     };
     RT.paper = P;
     return P;
-  })();
+  })().catch((e) => { paperLoading = null; throw e; });
   return paperLoading;
 }
 
@@ -3178,7 +3278,7 @@ async function aiDraw() {
   const prompt = $('atelier-prompt').value.trim();
   if (!prompt) { toast('say what to draw'); return; }
   if (!RT.activeDesign) newDesign();
-  await ensurePaper();
+  try { await ensurePaper(); } catch { toast('drawing engine offline'); return; }
   $('atelier-prompt').value = '';
   toast('Gemma is drawing…');
   let ctx = [];
@@ -3396,6 +3496,7 @@ function closeSettings() {
   S.useWeb = $('set-useweb').value !== 'off';
   saveState();
   updateWebBtn();
+  setAnimEnabled();
 }
 $('set-close').onclick = closeSettings;
 sheetBg.onclick = closeSettings;
@@ -3423,10 +3524,20 @@ if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('sw.js').catch(err => console.warn('sw register failed', err));
   });
+  // When a new service worker takes over (new version deployed), reload once so
+  // the freshly-cached app shell is used instead of a stale one.
+  let swRefreshing = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (swRefreshing) return; swRefreshing = true; location.reload();
+  });
 }
 
 /* ===================== GO ===================== */
-boot();
+boot().catch((e) => {
+  console.error('boot failed', e);
+  try { document.getElementById('splash')?.classList.add('gone'); } catch {}
+  toast('startup hiccup: ' + (e?.message || e));
+});
 </script>
 <!-- ===== LIVING LAYER (additive: APNG pond + listening swirl + hand-drawn icons) ===== -->
 <style id="living-css">

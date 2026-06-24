@@ -80,6 +80,18 @@ native C++ app and Penzil is a Vue + three.js *3D* tool — neither ports verbat
 to a single-file PWA, so a true 3D grease-pencil mode is a clear next step rather
 than a half-working stub.)
 
+### A hand-drawn, animated UI everywhere
+The whole interface has the sketched-live feel, not just the chart: screens fade
+in, cards and chat messages settle into place with a staggered "drawn-in" motion,
+home/notes/drawing cards get a [rough.js](https://github.com/rough-stuff/rough)
+hand-drawn frame, and every tappable thing has a little tactile press. It all
+honours `prefers-reduced-motion` and the **Hand-drawn motion** switch in Settings.
+
+A classic-script safety net surfaces any fatal error (instead of a frozen splash),
+the service worker auto-reloads when a new version ships, and the CDN-loaded
+engines (Gemma, paper.js, rough.js, astronomy-engine, astrochart2) all fail soft
+with a toast and a fallback rather than breaking the app.
+
 ### Design briefs + slash commands
 - **Design briefs** (Settings) — pick a house style (editorial, brutalist, soft,
   terminal, playful) and Gemma honours it on every build. This is open-design's
