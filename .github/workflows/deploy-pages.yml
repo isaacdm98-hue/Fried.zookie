@@ -39,6 +39,8 @@ jobs:
           mkdir -p _site
           cp index.html friedzooki.bundle.js sw.js theme.css manifest.webmanifest _site/
           cp -r assets icons _site/
+          # Aqau Pluto — the Gemma 4 vibe-coding studio PWA (served at /aqau-pluto/)
+          cp -r aqau-pluto _site/aqau-pluto
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

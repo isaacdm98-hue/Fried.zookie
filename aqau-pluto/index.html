@@ -1,0 +1,2902 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<title>Aqau Pluto</title>
+
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Aqau Pluto" />
+<meta name="theme-color" content="#0d0b09" />
+<link rel="manifest" href="manifest.json" />
+<link rel="apple-touch-icon" href="apple-touch-icon.png" />
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=IBM+Plex+Mono:wght@300;400;500&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet" />
+
+<style>
+:root {
+  --paper: #0d0b09;
+  --paper-2: #14100d;
+  --paper-3: #1a1612;
+  --bone: #e8ddc8;
+  --bone-2: #e8ddc8cc;
+  --bone-3: #e8ddc888;
+  --bone-4: #e8ddc844;
+  --bone-5: #e8ddc822;
+  --terracotta: #c87b5a;
+  --lichen: #8a9b6e;
+  --slate: #5e7589;
+  --ochre: #c89a4a;
+  --safe-top: env(safe-area-inset-top);
+  --safe-bot: env(safe-area-inset-bottom);
+  --kb-offset: 0px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  height: 100%;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--paper);
+  color: var(--bone);
+  font-family: 'EB Garamond', 'Cochin', Georgia, serif;
+  font-size: 17px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%;
+  overscroll-behavior: none;
+  touch-action: manipulation;
+}
+
+body {
+  background:
+    radial-gradient(circle at 20% 25%, var(--paper-3) 0%, transparent 55%),
+    radial-gradient(circle at 80% 80%, var(--paper-2) 0%, transparent 60%),
+    var(--paper);
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.05;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  background-size: 240px 240px;
+}
+
+#app {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: var(--kb-offset, 0);
+  z-index: 2;
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+.script { font-family: 'Caveat', cursive; font-weight: 500; }
+.mono { font-family: 'IBM Plex Mono', monospace; letter-spacing: 0.5px; }
+
+.screen {
+  position: absolute;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+}
+.screen[data-active="true"] { display: flex; }
+
+/* ─── TOPBAR ─── */
+.topbar {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: calc(var(--safe-top) + 8px) 16px 4px;
+  min-height: calc(var(--safe-top) + 50px);
+}
+.topbar h1 {
+  font-family: 'Caveat', cursive;
+  font-size: 26px;
+  font-weight: 500;
+  color: var(--bone);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.topbar h1 .sigil { font-family: 'EB Garamond', serif; font-size: 21px; }
+.topbar .right { display: flex; gap: 8px; }
+.topbar .left { display: flex; gap: 8px; align-items: center; }
+.topbar .title-mini {
+  font-family: 'Caveat', cursive;
+  font-size: 19px;
+  color: var(--bone);
+  flex: 1;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 8px;
+}
+
+.icon-btn {
+  width: 34px; height: 34px;
+  border: 1px solid var(--bone-3);
+  background: transparent;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-family: 'EB Garamond', serif;
+  font-size: 15px;
+  color: var(--bone-2);
+  transition: transform 0.15s, border-color 0.15s;
+  flex-shrink: 0;
+}
+.icon-btn:active { transform: scale(0.92); }
+.icon-btn.warm { border-color: var(--terracotta); color: var(--terracotta); }
+.icon-btn:disabled { opacity: 0.3; }
+
+/* ─── BUTTONS ─── */
+.btn {
+  background: var(--bone);
+  color: var(--paper);
+  border: none;
+  padding: 12px 22px;
+  border-radius: 999px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: transform 0.15s, opacity 0.15s;
+}
+.btn:active { transform: scale(0.96); }
+.btn:disabled { opacity: 0.35; }
+.btn.warm { background: var(--terracotta); color: var(--paper); }
+.btn.ghost {
+  background: transparent;
+  color: var(--bone-2);
+  border: 1px solid var(--bone-3);
+}
+.btn-text {
+  background: none;
+  border: none;
+  color: var(--bone-3);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 10px 4px;
+  cursor: pointer;
+}
+
+/* ─── GATE / GPU / LOADING ─── */
+.gate {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 28px;
+  text-align: center;
+  overflow-y: auto;
+}
+.gate .mark {
+  font-family: 'EB Garamond', serif;
+  font-size: 56px;
+  margin-bottom: 14px;
+  line-height: 1;
+}
+.gate h2 {
+  font-family: 'Caveat', cursive;
+  font-size: 30px;
+  font-weight: 500;
+  margin-bottom: 12px;
+  line-height: 1.1;
+}
+.gate p {
+  font-family: 'EB Garamond', serif;
+  font-size: 16px;
+  color: var(--bone-2);
+  margin-bottom: 12px;
+  font-style: italic;
+  max-width: 360px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.gate p.note {
+  font-style: normal;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: var(--bone-3);
+  margin-top: 18px;
+  text-transform: uppercase;
+}
+.gate .install-steps {
+  text-align: left;
+  background: var(--paper-2);
+  border: 1px solid var(--bone-4);
+  border-radius: 12px;
+  padding: 14px 18px;
+  margin: 18px auto;
+  font-family: 'EB Garamond', serif;
+  font-size: 15px;
+  color: var(--bone-2);
+  max-width: 360px;
+}
+.gate .install-steps ol { padding-left: 20px; }
+.gate .install-steps li { margin-bottom: 6px; }
+.gate .install-steps li:last-child { margin-bottom: 0; }
+.gate .status {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1px;
+  margin-top: 12px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  display: inline-block;
+}
+.gate .status.ok { color: var(--lichen); border: 1px solid var(--lichen); }
+.gate .status.bad { color: var(--terracotta); border: 1px solid var(--terracotta); }
+.gate .status.thinking { color: var(--bone-3); border: 1px solid var(--bone-4); }
+.gate .actions {
+  margin-top: 18px;
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* ─── MODEL PICKER ─── */
+.picker-head {
+  padding: 30px 24px 12px;
+  flex-shrink: 0;
+}
+.picker-head h2 {
+  font-family: 'Caveat', cursive;
+  font-size: 30px;
+  font-weight: 500;
+  margin-bottom: 2px;
+  line-height: 1;
+}
+.picker-head p {
+  font-family: 'EB Garamond', serif;
+  font-style: italic;
+  color: var(--bone-3);
+  font-size: 15px;
+}
+.model-list {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 20px 12px;
+}
+.model-card {
+  background: var(--paper-2);
+  border: 1px solid var(--bone-4);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.15s, background 0.15s;
+}
+.model-card:active { transform: scale(0.99); }
+.model-card.selected {
+  border-color: var(--terracotta);
+  background: var(--paper-3);
+}
+.model-card.recommended { border-color: var(--lichen); }
+.model-card .name {
+  font-family: 'Caveat', cursive;
+  font-size: 21px;
+  line-height: 1;
+  margin-bottom: 4px;
+  color: var(--bone);
+}
+.model-card .meta {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: var(--bone-3);
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+.model-card .note {
+  font-family: 'EB Garamond', serif;
+  font-style: italic;
+  font-size: 13.5px;
+  color: var(--bone-2);
+}
+.tag {
+  display: inline-block;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 8.5px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 999px;
+  border: 1px solid var(--bone-4);
+}
+.tag.code { color: var(--ochre); border-color: var(--ochre); }
+.tag.general { color: var(--lichen); border-color: var(--lichen); }
+.tag.tight { color: var(--terracotta); border-color: var(--terracotta); }
+.tag.tiny { color: var(--slate); border-color: var(--slate); }
+.tag.recommended { background: var(--lichen); color: var(--paper); border-color: var(--lichen); }
+.tag.cached { background: var(--ochre); color: var(--paper); border-color: var(--ochre); }
+
+.picker-foot {
+  padding: 12px 20px calc(var(--safe-bot) + 14px);
+  flex-shrink: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(to top, var(--paper) 0%, transparent 100%);
+}
+
+/* ─── LOADING ─── */
+.loading-pad {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: center;
+  padding: 0 28px;
+}
+.load-phase {
+  font-family: 'Caveat', cursive;
+  font-size: 28px;
+  font-weight: 500;
+  margin-bottom: 6px;
+  min-height: 34px;
+}
+.load-readout {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: var(--bone-3);
+  word-break: break-all;
+  min-height: 26px;
+  margin-bottom: 18px;
+}
+.load-bar {
+  height: 4px;
+  background: var(--bone-5);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+.load-fill {
+  height: 100%;
+  background: var(--terracotta);
+  width: 0%;
+  transition: width 0.3s;
+}
+.load-aside {
+  font-family: 'EB Garamond', serif;
+  font-style: italic;
+  font-size: 13.5px;
+  color: var(--bone-3);
+  margin-top: 8px;
+}
+
+/* ─── HOME (DECK) ─── */
+.deck-intro {
+  padding: 4px 24px 8px;
+  flex-shrink: 0;
+}
+.deck-intro .greeting {
+  font-family: 'Caveat', cursive;
+  font-size: 30px;
+  font-weight: 500;
+  line-height: 1.1;
+  margin-bottom: 4px;
+}
+.deck-intro .sub {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--bone-3);
+}
+.deck-scroll {
+  flex: 1;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  gap: 16px;
+  min-height: 0;
+}
+.deck-scroll::-webkit-scrollbar { display: none; }
+
+.cartridge {
+  flex: 0 0 78%;
+  max-width: 300px;
+  height: 88%;
+  max-height: 440px;
+  scroll-snap-align: center;
+  background: var(--paper-2);
+  border: 1px solid var(--bone-3);
+  border-radius: 10px;
+  padding: 18px 18px 22px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  cursor: pointer;
+  transform: rotate(-0.5deg);
+  box-shadow: 4px 6px 0 var(--paper-3);
+  transition: transform 0.18s ease;
+}
+.cartridge:nth-child(even) { transform: rotate(0.4deg); }
+.cartridge:active { transform: rotate(0deg) scale(0.98); }
+.cartridge.new {
+  background: transparent;
+  border-style: dashed;
+  align-items: center;
+  justify-content: center;
+}
+.cartridge .cart-top {
+  display: flex;
+  justify-content: space-between;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--bone-3);
+}
+.cartridge .cart-name {
+  font-family: 'Caveat', cursive;
+  font-size: 32px;
+  line-height: 1.05;
+  font-weight: 500;
+  color: var(--bone);
+  margin: 16px 0 10px;
+  word-wrap: break-word;
+}
+.cartridge .cart-tag {
+  font-family: 'EB Garamond', serif;
+  font-style: italic;
+  color: var(--bone-2);
+  font-size: 14.5px;
+  line-height: 1.35;
+  margin-bottom: 14px;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.cartridge .cart-meta {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--bone-3);
+  border-top: 1px dashed var(--bone-4);
+  padding-top: 8px;
+  display: flex;
+  justify-content: space-between;
+}
+.cartridge.new .plus {
+  font-size: 48px;
+  font-family: 'EB Garamond', serif;
+  font-weight: 300;
+  color: var(--bone-2);
+  line-height: 1;
+}
+.cartridge.new .plus-label {
+  font-family: 'Caveat', cursive;
+  font-size: 21px;
+  margin-top: 8px;
+  color: var(--bone-2);
+}
+
+.deck-pager {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 0 6px;
+  flex-shrink: 0;
+}
+.deck-pager span {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--bone-3);
+  opacity: 0.3;
+}
+.deck-pager span.on { opacity: 1; background: var(--bone); }
+
+.home-foot {
+  flex-shrink: 0;
+  padding: 4px 16px calc(var(--safe-bot) + 12px);
+  display: flex;
+  justify-content: center;
+}
+
+/* ─── WORKSPACE ─── */
+.flip-stage {
+  flex: 1;
+  perspective: 1800px;
+  margin: 2px 12px 6px;
+  position: relative;
+  min-height: 120px;
+}
+.flip-card {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  transition: transform 0.7s cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+.flip-card.flipped { transform: rotateY(180deg); }
+.face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  background: var(--paper-2);
+  border: 1px solid var(--bone-3);
+  border-radius: 10px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 3px 4px 0 var(--paper-3);
+}
+.face.back { transform: rotateY(180deg); }
+.face-tab {
+  position: absolute;
+  top: 8px; left: 10px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 8.5px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--bone-2);
+  background: var(--paper-3);
+  padding: 3px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--bone-4);
+  z-index: 2;
+}
+.face-acts {
+  position: absolute;
+  top: 6px; right: 8px;
+  display: flex;
+  gap: 5px;
+  z-index: 2;
+}
+.face-act {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  background: var(--terracotta);
+  color: var(--paper);
+  padding: 5px 9px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  display: none;
+}
+.face-act.small {
+  background: var(--paper-3);
+  color: var(--bone-2);
+  border: 1px solid var(--bone-4);
+  padding: 4px 8px;
+}
+.face-act:active { transform: scale(0.94); }
+.face-act.show { display: block; }
+.preview-frame {
+  flex: 1;
+  border: none;
+  background: #fff;
+  width: 100%;
+  display: none;
+}
+.preview-frame.show { display: block; }
+.face-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 20px;
+  text-align: center;
+}
+.face-empty .glyph {
+  font-size: 40px;
+  font-family: 'EB Garamond', serif;
+  color: var(--bone-3);
+  margin-bottom: 4px;
+}
+.face-empty p {
+  font-family: 'EB Garamond', serif;
+  font-style: italic;
+  color: var(--bone-2);
+  font-size: 15px;
+  max-width: 240px;
+}
+.quick-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+  padding: 12px 18px 4px;
+  max-width: 320px;
+  margin: 0 auto;
+}
+.chip {
+  font-family: 'EB Garamond', serif;
+  font-size: 13.5px;
+  font-style: italic;
+  background: var(--paper-3);
+  color: var(--bone-2);
+  border: 1px solid var(--bone-4);
+  padding: 5px 11px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.15s;
+}
+.chip:active { transform: scale(0.95); }
+
+.code-pane {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 28px 10px 10px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10.5px;
+  line-height: 1.5;
+}
+.code-section {
+  border-left: 2px solid var(--bone-4);
+  padding: 7px 0 7px 10px;
+  margin-bottom: 12px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.code-section:active { background: var(--paper-3); }
+.code-section.selected { border-color: var(--terracotta); background: rgba(200,123,90,0.06); }
+.code-section .label {
+  font-family: 'Caveat', cursive;
+  font-size: 17px;
+  color: var(--terracotta);
+  margin-bottom: 3px;
+  font-weight: 500;
+}
+.code-section pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--bone);
+}
+
+.flip-hint {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  font-family: 'Caveat', cursive;
+  font-size: 16px;
+  color: var(--bone-2);
+  background: var(--paper-3);
+  border: 1px solid var(--bone-4);
+  padding: 3px 11px 3px 9px;
+  border-radius: 999px;
+  cursor: pointer;
+  z-index: 5;
+}
+.flip-hint:active { transform: scale(0.94); }
+
+/* ─── CHAT DOCK ─── */
+.chat-dock {
+  flex-shrink: 0;
+  background: var(--paper);
+  border-top: 1px solid var(--bone-4);
+  padding: 6px 12px calc(var(--safe-bot) + 8px);
+  max-height: 38vh;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s;
+}
+.chat-stats {
+  display: flex;
+  justify-content: space-between;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 8.5px;
+  letter-spacing: 1px;
+  color: var(--bone-3);
+  margin-bottom: 3px;
+  padding: 0 4px;
+}
+.chat-log {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-right: 2px;
+  margin-bottom: 6px;
+  font-size: 15px;
+  max-height: 24vh;
+}
+.chat-msg {
+  margin-bottom: 8px;
+  padding: 2px 0;
+}
+.chat-msg .from {
+  font-family: 'Caveat', cursive;
+  font-size: 15px;
+  color: var(--bone-3);
+  margin-bottom: 1px;
+  font-weight: 500;
+}
+.chat-msg.assistant .from { color: var(--terracotta); }
+.chat-msg .body {
+  font-family: 'EB Garamond', serif;
+  color: var(--bone);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  font-size: 15px;
+}
+.chat-msg.note {
+  font-style: italic;
+  font-size: 13.5px;
+  border-left: 2px solid var(--bone-4);
+  padding-left: 8px;
+}
+.chat-msg.note .body { color: var(--bone-3); font-style: italic; font-size: 13.5px; }
+
+.chat-input-row {
+  display: flex;
+  gap: 6px;
+  align-items: flex-end;
+}
+.chat-input {
+  flex: 1;
+  background: var(--paper-2);
+  border: 1px solid var(--bone-4);
+  border-radius: 14px;
+  padding: 9px 13px;
+  font-family: 'EB Garamond', serif;
+  font-size: 16px;
+  color: var(--bone);
+  outline: none;
+  resize: none;
+  max-height: 100px;
+  min-height: 38px;
+}
+.chat-input:focus { border-color: var(--bone-3); }
+.chat-input::placeholder { color: var(--bone-4); font-style: italic; }
+.chat-mic, .chat-send {
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  border: 1px solid var(--bone-3);
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  font-family: 'EB Garamond', serif;
+  font-size: 15px;
+  color: var(--bone-2);
+}
+.chat-mic.recording {
+  background: var(--terracotta);
+  border-color: var(--terracotta);
+  color: var(--paper);
+  animation: micPulse 1.4s ease-in-out infinite;
+}
+@keyframes micPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(200,123,90,0.5); }
+  50% { box-shadow: 0 0 0 14px rgba(200,123,90,0); }
+}
+.chat-send { background: var(--bone); color: var(--paper); border-color: var(--bone); }
+.chat-send:disabled { opacity: 0.35; }
+
+/* ─── WHITEBOARD ─── */
+.whiteboard {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  min-height: 0;
+}
+.wb-svg {
+  width: 100%; height: 100%;
+  display: block;
+}
+
+/* ─── FULLSCREEN PREVIEW ─── */
+.fs {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: #fff;
+  display: none;
+  flex-direction: column;
+}
+.fs.show { display: flex; }
+.fs iframe {
+  flex: 1;
+  width: 100%;
+  border: none;
+  background: #fff;
+}
+.fs-bar {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: calc(44px + var(--safe-top));
+  padding-top: var(--safe-top);
+  padding-left: 12px;
+  padding-right: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(to bottom, rgba(13,11,9,0.6) 0%, transparent 100%);
+  pointer-events: none;
+  z-index: 2;
+}
+.fs-bar .label {
+  pointer-events: none;
+  font-family: 'Caveat', cursive;
+  font-size: 17px;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+}
+.fs-close {
+  pointer-events: auto;
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: rgba(13,11,9,0.85);
+  color: #fff;
+  border: 1px solid rgba(232,221,200,0.4);
+  font-family: 'EB Garamond', serif;
+  font-size: 19px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+.fs-close:active { transform: scale(0.92); }
+
+/* ─── SETTINGS SHEET ─── */
+.sheet-bg {
+  position: fixed;
+  inset: 0;
+  background: rgba(13,11,9,0.6);
+  z-index: 100;
+  display: none;
+}
+.sheet-bg.show { display: block; }
+.sheet {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: var(--paper-2);
+  border-top: 1px solid var(--bone-3);
+  border-radius: 18px 18px 0 0;
+  z-index: 101;
+  padding: 18px 22px calc(20px + var(--safe-bot));
+  transform: translateY(100%);
+  transition: transform 0.32s cubic-bezier(0.4, 0.0, 0.2, 1);
+  max-height: 86vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.sheet.show { transform: translateY(0); }
+.sheet h2 {
+  font-family: 'Caveat', cursive;
+  font-size: 26px;
+  font-weight: 500;
+  margin-bottom: 14px;
+  color: var(--bone);
+}
+.field { margin-bottom: 12px; }
+.field label {
+  display: block;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--bone-3);
+  margin-bottom: 5px;
+}
+.field input, .field select, .field textarea {
+  width: 100%;
+  background: var(--paper-3);
+  border: 1px solid var(--bone-4);
+  border-radius: 8px;
+  padding: 9px 11px;
+  color: var(--bone);
+  outline: none;
+  font-family: 'EB Garamond', serif;
+  font-size: 15px;
+}
+.field input:focus, .field select:focus, .field textarea:focus { border-color: var(--bone-3); }
+.sheet .row { display: flex; gap: 10px; }
+.sheet .row > * { flex: 1; }
+.sheet hr { border: none; border-top: 1px dashed var(--bone-4); margin: 14px 0; }
+
+/* ─── TOAST ─── */
+.toast {
+  position: fixed;
+  bottom: calc(100px + var(--safe-bot));
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bone);
+  color: var(--paper);
+  padding: 9px 17px;
+  border-radius: 999px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10.5px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  z-index: 5000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+  max-width: 82vw;
+  text-align: center;
+}
+.toast.show { opacity: 1; }
+
+/* ─── SPLASH ─── */
+.splash {
+  position: fixed;
+  inset: 0;
+  background: var(--paper);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 5000;
+  transition: opacity 0.5s, visibility 0.5s;
+}
+.splash.gone { opacity: 0; visibility: hidden; }
+.splash .mark { font-family: 'EB Garamond', serif; font-size: 72px; color: var(--bone); line-height: 1; }
+.splash .name { font-family: 'Caveat', cursive; font-size: 30px; margin-top: 6px; color: var(--bone); }
+.splash .sub { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 1.8px; text-transform: uppercase; color: var(--bone-3); margin-top: 12px; }
+
+@media (max-height: 700px) {
+  .cartridge { padding: 14px 16px 16px; }
+  .cartridge .cart-name { font-size: 26px; }
+  .gate h2 { font-size: 26px; }
+  .gate p { font-size: 15px; }
+  .deck-intro .greeting { font-size: 26px; }
+}
+
+/* ─── ADDITIONS: net dot · about · web button · notebook · cookbook badges ─── */
+.net-dot {
+  display: inline-block;
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--terracotta);
+  opacity: 0.6;
+  margin-left: 2px;
+  transition: background 0.2s, box-shadow 0.2s;
+}
+.net-dot.on { background: var(--lichen); box-shadow: 0 0 6px var(--lichen); opacity: 0.9; }
+
+.deck-about {
+  font-family: 'EB Garamond', serif;
+  font-style: italic;
+  font-size: 14px;
+  color: var(--bone-2);
+  margin-top: 8px;
+  line-height: 1.4;
+  max-width: 520px;
+}
+
+.chat-web {
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  border: 1px solid var(--bone-3);
+  background: transparent;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; flex-shrink: 0;
+  font-family: 'EB Garamond', serif; font-size: 17px;
+  color: var(--bone-2);
+}
+.chat-web:active { transform: scale(0.94); }
+.chat-web.armed { background: var(--slate); border-color: var(--slate); color: var(--paper); }
+.chat-web:disabled { opacity: 0.3; }
+
+/* cookbook fit badges in the model picker */
+.tag.fit { color: var(--lichen); border-color: var(--lichen); }
+.tag.tight { color: var(--ochre); border-color: var(--ochre); }
+.tag.heavy { color: var(--terracotta); border-color: var(--terracotta); }
+.tag.main { background: var(--terracotta); color: var(--paper); border-color: var(--terracotta); }
+
+/* notebook */
+.note-editor {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 10px 16px calc(var(--safe-bot) + 12px);
+  min-height: 0;
+}
+.note-title-input {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--bone-4);
+  color: var(--bone);
+  font-family: 'Caveat', cursive;
+  font-size: 26px;
+  padding: 4px 2px 8px;
+  outline: none;
+  margin-bottom: 10px;
+}
+.note-title-input::placeholder { color: var(--bone-4); }
+.note-body-input {
+  flex: 1;
+  background: var(--paper-2);
+  border: 1px solid var(--bone-4);
+  border-radius: 10px;
+  color: var(--bone);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 14px;
+  line-height: 1.55;
+  padding: 12px;
+  outline: none;
+  resize: none;
+  -webkit-overflow-scrolling: touch;
+}
+.note-body-input:focus { border-color: var(--bone-3); }
+.note-acts {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding-top: 10px;
+}
+</style>
+</head>
+<body>
+
+<div class="splash" id="splash">
+  <div class="mark">♇</div>
+  <div class="name">Aqau Pluto</div>
+  <div class="sub">a vibe-coding studio</div>
+</div>
+
+<div id="app">
+
+  <!-- INSTALL GATE -->
+  <section class="screen" id="view-install" data-active="false">
+    <div class="topbar"><h1><span class="sigil">♇</span> Aqau Pluto</h1></div>
+    <div class="gate">
+      <div class="mark">♇</div>
+      <h2>This wants to live on your home screen.</h2>
+      <p>The model is about a gigabyte. It only stays cached if you install.</p>
+      <div class="install-steps">
+        <ol>
+          <li>Tap the <strong>Share</strong> icon at the bottom of Safari.</li>
+          <li>Tap <strong>Add to Home Screen</strong>.</li>
+          <li>Open from there. Then we can start.</li>
+        </ol>
+      </div>
+      <p class="note">no account · no tracking · runs in your phone</p>
+      <div class="actions">
+        <button class="btn-text" id="install-skip">Continue anyway</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- GPU CHECK -->
+  <section class="screen" id="view-gpu" data-active="false">
+    <div class="topbar"><h1><span class="sigil">♇</span> Aqau Pluto</h1></div>
+    <div class="gate">
+      <div class="mark" id="gpu-mark">◯</div>
+      <h2 id="gpu-title">Looking for the GPU…</h2>
+      <p id="gpu-body">Checking what your phone can do.</p>
+      <div id="gpu-status" class="status thinking mono">checking</div>
+      <div class="actions">
+        <button class="btn" id="gpu-continue" disabled>Continue</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- MODEL PICKER -->
+  <section class="screen" id="view-models" data-active="false">
+    <div class="picker-head">
+      <h2>Choose a brain.</h2>
+      <p>It downloads once. Stays cached. Pick what fits.</p>
+    </div>
+    <div class="model-list" id="model-list"></div>
+    <div class="picker-foot">
+      <button class="btn-text" id="pick-back">Back</button>
+      <button class="btn warm" id="pick-load" disabled>Load Model</button>
+    </div>
+  </section>
+
+  <!-- LOADING -->
+  <section class="screen" id="view-loading" data-active="false">
+    <div class="topbar"><h1><span class="sigil">♇</span> Aqau Pluto</h1></div>
+    <div class="loading-pad">
+      <div class="load-phase" id="load-phase">pulling the weights</div>
+      <div class="load-bar"><div class="load-fill" id="load-fill"></div></div>
+      <div class="load-readout mono" id="load-readout">0%</div>
+      <div class="load-aside" id="load-aside">First time takes a few minutes. Next time is instant — it's cached.</div>
+    </div>
+  </section>
+
+  <!-- HOME -->
+  <section class="screen" id="view-home" data-active="false">
+    <div class="topbar">
+      <h1><span class="sigil">♇</span> Aqau Pluto <i class="net-dot" title="network"></i></h1>
+      <div class="right">
+        <button class="icon-btn" id="home-notes" title="Notebook">✑</button>
+        <button class="icon-btn" id="home-wb" title="Whiteboard">☉</button>
+        <button class="icon-btn" id="home-settings" title="Settings">⚙</button>
+      </div>
+    </div>
+    <div class="deck-intro">
+      <div class="greeting" id="home-greeting">Pull up a cartridge.</div>
+      <div class="sub" id="home-sub">your work, slot one in</div>
+      <div class="deck-about" id="home-about" style="display:none"></div>
+    </div>
+    <div class="deck-scroll" id="deck"></div>
+    <div class="deck-pager" id="deck-pager"></div>
+    <div class="home-foot"></div>
+  </section>
+
+  <!-- WORKSPACE -->
+  <section class="screen" id="view-work" data-active="false">
+    <div class="topbar">
+      <div class="left">
+        <button class="icon-btn" id="work-back" aria-label="Home">←</button>
+      </div>
+      <div class="title-mini" id="work-title">untitled</div>
+      <div class="right">
+        <button class="icon-btn" id="work-wb" title="Whiteboard">☉</button>
+        <button class="icon-btn" id="work-settings" title="Settings">⚙</button>
+      </div>
+    </div>
+    <div class="flip-stage">
+      <div class="flip-card" id="flip-card">
+        <div class="face front" id="face-front">
+          <span class="face-tab">Preview</span>
+          <div class="face-acts">
+            <button class="face-act small" id="dl-open" title="Download HTML">⤓</button>
+            <button class="face-act" id="fs-open" title="Run fullscreen">▶ Run</button>
+          </div>
+          <iframe class="preview-frame" id="preview-frame" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals" title="preview"></iframe>
+          <div class="face-empty" id="preview-empty">
+            <div class="glyph">◯</div>
+            <p>Tell Aqau Pluto what to make. Preview lives here.</p>
+            <div class="quick-chips" id="quick-chips"></div>
+          </div>
+        </div>
+        <div class="face back">
+          <span class="face-tab">Code · tap a section</span>
+          <div class="code-pane" id="code-pane">
+            <div class="face-empty" style="height:100%;">
+              <div class="glyph">▤</div>
+              <p>Sections appear here once the model has built.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <button class="flip-hint" id="flip-hint">code ⤻</button>
+    </div>
+    <div class="chat-dock">
+      <div class="chat-stats mono">
+        <span id="stat-model">— model</span>
+        <span id="stat-tps">— tok/s</span>
+      </div>
+      <div class="chat-log" id="chat-log"></div>
+      <div class="chat-input-row">
+        <textarea class="chat-input" id="chat-input" rows="1" placeholder="say something to aqau pluto…"></textarea>
+        <button class="chat-web" id="chat-web" aria-label="Web research" title="answer the next message with the web">⌕</button>
+        <button class="chat-mic" id="chat-mic" aria-label="Voice">●</button>
+        <button class="chat-send" id="chat-send" aria-label="Send" disabled>↑</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- WHITEBOARD -->
+  <section class="screen" id="view-whiteboard" data-active="false">
+    <div class="topbar">
+      <div class="left"><button class="icon-btn" id="wb-back" aria-label="Back">←</button></div>
+      <div class="title-mini">Astrology Whiteboard</div>
+      <div class="right"><button class="icon-btn" id="wb-today" title="Today's reading">⊕</button></div>
+    </div>
+    <div class="whiteboard">
+      <svg class="wb-svg" id="wb-svg" viewBox="0 0 400 600" preserveAspectRatio="xMidYMid meet"></svg>
+    </div>
+    <div class="chat-dock">
+      <div class="chat-log" id="wb-log"></div>
+      <div class="chat-input-row">
+        <textarea class="chat-input" id="wb-input" rows="1" placeholder="ask about your chart…"></textarea>
+        <button class="chat-mic" id="wb-mic" aria-label="Voice">●</button>
+        <button class="chat-send" id="wb-send" aria-label="Send" disabled>↑</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- NOTEBOOK -->
+  <section class="screen" id="view-notes" data-active="false">
+    <div class="topbar">
+      <div class="left"><button class="icon-btn" id="notes-back" aria-label="Back">←</button></div>
+      <div class="title-mini" id="notes-title-mini">Notebook</div>
+      <div class="right"><button class="icon-btn" id="notes-new" title="New note">＋</button></div>
+    </div>
+    <div id="note-list-wrap" class="model-list" style="flex:1;">
+      <div id="note-list"></div>
+    </div>
+    <div id="note-editor-wrap" class="note-editor" style="display:none;">
+      <input type="text" id="note-title" class="note-title-input" placeholder="title" />
+      <textarea id="note-body" class="note-body-input" placeholder="write here… markdown is fine. then ask Aqau Pluto to help."></textarea>
+      <div class="note-acts">
+        <button class="chip" id="note-improve">improve</button>
+        <button class="chip" id="note-continue">continue</button>
+        <button class="chip" id="note-summary">summarise</button>
+        <span style="flex:1"></span>
+        <button class="chip" id="note-done">save</button>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<!-- FULLSCREEN -->
+<div class="fs" id="fullscreen">
+  <div class="fs-bar">
+    <span class="label">running…</span>
+    <button class="fs-close" id="fs-close" aria-label="Close">✕</button>
+  </div>
+  <iframe id="fs-iframe" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals" title="fullscreen preview"></iframe>
+</div>
+
+<!-- SETTINGS -->
+<div class="sheet-bg" id="sheet-bg"></div>
+<aside class="sheet" id="sheet">
+  <h2>Settings</h2>
+  <div class="field">
+    <label>Active model</label>
+    <div id="set-active-model" class="mono" style="font-size:12px; color:var(--bone-2); padding:5px 0;">—</div>
+    <button class="btn ghost" id="set-switch-model" style="margin-top:5px;">Switch Model</button>
+  </div>
+  <hr/>
+  <div class="field">
+    <label>Your name (optional)</label>
+    <input type="text" id="set-name" placeholder="how aqau pluto addresses you" />
+  </div>
+  <div class="field">
+    <label>Birth data — for readings (all optional)</label>
+    <input type="text" id="set-birth-date" placeholder="YYYY-MM-DD" />
+    <div style="height:5px"></div>
+    <input type="text" id="set-birth-time" placeholder="HH:MM" />
+    <div style="height:5px"></div>
+    <input type="text" id="set-birth-place" placeholder="city, country" />
+  </div>
+  <div class="field">
+    <label>Persona</label>
+    <select id="set-persona">
+      <option value="default">Aqau Pluto · default</option>
+      <option value="terse">Terser · fewer words</option>
+      <option value="warm">Warmer · more on cycles</option>
+    </select>
+  </div>
+  <div class="field">
+    <label>Web research <span class="net-dot" style="vertical-align:middle"></span></label>
+    <select id="set-useweb">
+      <option value="on">On — Gemma may reach the web when online</option>
+      <option value="off">Off — fully on-device, always</option>
+    </select>
+    <div class="mono" style="font-size:9.5px;color:var(--bone-3);margin-top:5px;">Works offline either way. When on + connected, it reads links and pulls encyclopaedia context to ground answers.</div>
+  </div>
+  <div class="field">
+    <label>Storage</label>
+    <div id="set-storage" class="mono" style="font-size:10.5px; color:var(--bone-3); padding:5px 0;">—</div>
+  </div>
+  <hr/>
+  <div class="row">
+    <button class="btn-text" id="set-reset">Wipe data</button>
+    <button class="btn warm" id="set-close">Done</button>
+  </div>
+</aside>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import * as webllm from "https://esm.run/@mlc-ai/web-llm";
+
+// Transformers.js (Gemma 4 · WebGPU kernels) is loaded lazily the first time a
+// transformers-runtime model is picked, so web-llm-only users never pay for it.
+let TJS = null;
+
+/* ===================== STATE ===================== */
+const STORE_KEY = 'aqau.pluto.v3';
+const defaults = {
+  user: { name: '', birthDate: '', birthTime: '', birthPlace: '' },
+  modelId: '',
+  persona: 'default',
+  cartridges: [],
+  notes: [],
+  activeCart: null,
+  installAcked: false,
+  // Pre-built astrology + studio knowledge, generated by a burst of requests on
+  // first load (see runPrebuild). Cached so the burst only happens once.
+  knowledge: { about: '', signs: {}, today: { date: '', text: '' }, builtFor: '' },
+};
+let S = loadState();
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (!raw) return structuredClone(defaults);
+    return Object.assign(structuredClone(defaults), JSON.parse(raw));
+  } catch { return structuredClone(defaults); }
+}
+function saveState() { try { localStorage.setItem(STORE_KEY, JSON.stringify(S)); } catch {} }
+
+const RT = {
+  engine: null,
+  runtime: '',          // 'webllm' | 'transformers'
+  modelLoaded: false,
+  generating: false,
+  prebuilding: false,
+  flipped: false,
+  activeNote: null,
+};
+
+/* ===================== ROUTING ===================== */
+const VIEWS = ['view-install','view-gpu','view-models','view-loading','view-home','view-work','view-whiteboard','view-notes'];
+function show(id) {
+  VIEWS.forEach(v => {
+    const el = document.getElementById(v);
+    if (el) el.dataset.active = (v === id) ? 'true' : 'false';
+  });
+}
+
+/* ===================== UTILS ===================== */
+const $ = (id) => document.getElementById(id);
+function escapeHTML(s) {
+  return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function truncate(s, n) { s = String(s||''); return s.length > n ? s.slice(0, n-1) + '…' : s; }
+let toastT;
+function toast(msg) {
+  const el = $('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastT);
+  toastT = setTimeout(() => el.classList.remove('show'), 2400);
+}
+function isStandalone() {
+  return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+}
+
+/* ===================== MODEL PROFILES ===================== */
+// Gemma 4 (Google) is the main vibe-coding brain. It runs through transformers.js
+// with the WebGPU kernels build (onnx-community ONNX export, q4f16). The remaining
+// profiles run on web-llm (MLC) and stay as lighter / fallback options.
+const MODEL_PROFILES = [
+  { id: 'onnx-community/gemma-4-E2B-it-ONNX', pretty: 'Gemma 4 · E2B', note: 'google · the main brain · runs on the webgpu kernels build. best vibe-coding here.', tags: ['general','code','recommended'], runtime: 'transformers', dtype: 'q4f16', isQwen3: false, contextWindowSize: 4096, recommended: true, main: true, estVRAM: 2400, estDL: 1500 },
+  { id: 'onnx-community/gemma-4-E4B-it-ONNX', pretty: 'Gemma 4 · E4B', note: 'google · larger gemma 4 · sharper builds · wants a strong phone.', tags: ['general','code'], runtime: 'transformers', dtype: 'q4f16', isQwen3: false, contextWindowSize: 4096, estVRAM: 4200, estDL: 2800 },
+  { id: 'Qwen3-1.7B-q4f16_1-MLC', pretty: 'Qwen 3 · 1.7B', note: 'web-llm · strong all-rounder · the older default.', tags: ['general'], runtime: 'webllm', isQwen3: true, contextWindowSize: 2048, estVRAM: 2037, estDL: 1100 },
+  { id: 'Qwen2.5-Coder-1.5B-Instruct-q4f16_1-MLC', pretty: 'Qwen 2.5 Coder · 1.5B', note: 'web-llm · pure-coder · no thinking-mode quirks · safest iPhone fit.', tags: ['code'], runtime: 'webllm', isQwen3: false, contextWindowSize: 4096, estVRAM: 1630, estDL: 950 },
+  { id: 'Qwen3-0.6B-q4f16_1-MLC', pretty: 'Qwen 3 · 0.6B', note: 'web-llm · fits anywhere · lighter quality · fast.', tags: ['general','tiny'], runtime: 'webllm', isQwen3: true, contextWindowSize: 4096, estVRAM: 1403, estDL: 400 },
+  { id: 'gemma-2-2b-it-q4f16_1-MLC-1k', pretty: 'Gemma 2 · 2B', note: 'web-llm · the older gemma · 1k context.', tags: ['general'], runtime: 'webllm', isQwen3: false, contextWindowSize: 1024, estVRAM: 1583, estDL: 1500 },
+  { id: 'Qwen2.5-Coder-0.5B-Instruct-q4f16_1-MLC', pretty: 'Qwen 2.5 Coder · 0.5B', note: 'web-llm · baseline · runs on anything.', tags: ['code','tiny'], runtime: 'webllm', isQwen3: false, contextWindowSize: 4096, estVRAM: 945, estDL: 300 },
+];
+const profileFor = (id) => MODEL_PROFILES.find(m => m.id === id);
+const runtimeOf = (id) => profileFor(id)?.runtime || 'webllm';
+function getActualVRAM(modelId) {
+  try {
+    if (runtimeOf(modelId) === 'webllm') {
+      const list = webllm.prebuiltAppConfig?.model_list || [];
+      const m = list.find(x => x.model_id === modelId);
+      if (m?.vram_required_MB) return Math.round(m.vram_required_MB);
+    }
+  } catch {}
+  return profileFor(modelId)?.estVRAM || null;
+}
+async function isCached(modelId) {
+  try {
+    if (!('caches' in window)) return false;
+    const keys = await caches.keys();
+    return keys.some(k => /webllm|mlc|transformers|onnx|huggingface/i.test(k));
+  } catch { return false; }
+}
+
+// Cookbook (odysseus-inspired): rate how well a model fits the detected GPU.
+// Returns 'fits' | 'tight' | 'heavy' | 'unknown' from the last GPU probe.
+let LAST_GPU = null;
+function fitFor(modelId) {
+  const vram = getActualVRAM(modelId) || profileFor(modelId)?.estVRAM || 0;
+  const budget = LAST_GPU?.maxBufferSize ? LAST_GPU.maxBufferSize / 1024 / 1024 : null;
+  if (!budget || !vram) return 'unknown';
+  // maxBufferSize is a rough proxy for headroom; weights need ~vram working set.
+  if (vram <= budget * 0.55) return 'fits';
+  if (vram <= budget * 0.95) return 'tight';
+  return 'heavy';
+}
+const FIT_LABEL = { fits: 'fits your phone', tight: 'might be tight', heavy: 'heavy — may not load', unknown: '' };
+
+/* ===================== GPU ===================== */
+async function checkWebGPU() {
+  if (!('gpu' in navigator)) return { ok:false, reason:'no-webgpu' };
+  try {
+    const adapter = await navigator.gpu.requestAdapter();
+    if (!adapter) return { ok:false, reason:'no-adapter' };
+    return {
+      ok: true,
+      maxBufferSize: adapter.limits.maxBufferSize,
+      maxStorageBufferBindingSize: adapter.limits.maxStorageBufferBindingSize,
+      hasShaderF16: adapter.features.has('shader-f16'),
+    };
+  } catch (e) { return { ok:false, reason:'adapter-error', detail:String(e) }; }
+}
+
+/* ===================== STORAGE ===================== */
+async function ensurePersistent() {
+  if (!navigator.storage) return false;
+  try {
+    if (await navigator.storage.persisted()) return true;
+    return await navigator.storage.persist();
+  } catch { return false; }
+}
+async function storageReadout() {
+  if (!navigator.storage?.estimate) return '— mb';
+  try {
+    const est = await navigator.storage.estimate();
+    const used = (est.usage / 1024 / 1024).toFixed(0);
+    const quota = (est.quota / 1024 / 1024 / 1024).toFixed(1);
+    const persisted = await navigator.storage.persisted();
+    return `${used} MB used · ${quota} GB quota · ${persisted ? 'persistent (safe from eviction)' : 'evictable after 7 days idle — install to fix'}`;
+  } catch { return '— mb'; }
+}
+
+/* ===================== BOOT ===================== */
+async function boot() {
+  setTimeout(() => $('splash').classList.add('gone'), 700);
+
+  setOnline(navigator.onLine);
+  updateWebBtn();
+
+  // visualViewport offset for keyboard
+  if (window.visualViewport) {
+    const vv = window.visualViewport;
+    const updateVV = () => {
+      const offset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      document.documentElement.style.setProperty('--kb-offset', offset + 'px');
+    };
+    vv.addEventListener('resize', updateVV);
+    vv.addEventListener('scroll', updateVV);
+  }
+
+  const ua = navigator.userAgent;
+  const isIOS = /iPhone|iPad|iPod/.test(ua);
+  const isMobileSafari = isIOS && /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS/.test(ua);
+  const standalone = isStandalone();
+
+  if (isMobileSafari && !standalone && !S.installAcked) {
+    show('view-install');
+    return;
+  }
+  await ensurePersistent();
+  await runGPUCheck();
+}
+
+async function runGPUCheck() {
+  show('view-gpu');
+  const titleEl = $('gpu-title');
+  const bodyEl = $('gpu-body');
+  const statusEl = $('gpu-status');
+  const continueBtn = $('gpu-continue');
+  const markEl = $('gpu-mark');
+
+  statusEl.className = 'status thinking mono';
+  statusEl.textContent = 'asking the gpu';
+
+  const gpu = await checkWebGPU();
+  LAST_GPU = gpu.ok ? gpu : null;
+  if (!gpu.ok) {
+    markEl.textContent = '◌';
+    titleEl.textContent = 'No WebGPU here.';
+    bodyEl.textContent = gpu.reason === 'no-webgpu'
+      ? 'Your browser cannot see the GPU. iOS 18+ Safari is needed. If you opened this from inside another app, switch to Safari.'
+      : 'GPU adapter could not be obtained.';
+    statusEl.className = 'status bad mono';
+    statusEl.textContent = gpu.reason;
+    continueBtn.disabled = true;
+    return;
+  }
+
+  const maxBuf = (gpu.maxBufferSize / 1024 / 1024).toFixed(0);
+  markEl.textContent = '✦';
+  titleEl.textContent = 'Found it.';
+  bodyEl.textContent = `WebGPU is on. Your phone reports ${maxBuf} MB max buffer${gpu.hasShaderF16 ? ', with shader-f16' : ''}.`;
+  statusEl.className = 'status ok mono';
+  statusEl.textContent = `webgpu ok · ${maxBuf} mb`;
+  continueBtn.disabled = false;
+
+  // If a model is already selected, offer to load directly
+  const wrap = continueBtn.parentElement;
+  wrap.innerHTML = '';
+  if (S.modelId && profileFor(S.modelId)) {
+    const direct = document.createElement('button');
+    direct.className = 'btn';
+    direct.textContent = `Load ${profileFor(S.modelId).pretty}`;
+    direct.onclick = () => loadModel(S.modelId);
+    wrap.appendChild(direct);
+    const alt = document.createElement('button');
+    alt.className = 'btn ghost';
+    alt.textContent = 'Different model';
+    alt.onclick = openModelPicker;
+    wrap.appendChild(alt);
+  } else {
+    const cont = document.createElement('button');
+    cont.className = 'btn';
+    cont.textContent = 'Continue';
+    cont.onclick = openModelPicker;
+    wrap.appendChild(cont);
+  }
+}
+
+/* ===================== MODEL PICKER ===================== */
+function openModelPicker() { show('view-models'); renderModelList(); }
+
+async function renderModelList() {
+  const list = $('model-list');
+  list.innerHTML = '';
+  await isCached();
+  let preselect = null;
+  for (const m of MODEL_PROFILES) {
+    const card = document.createElement('div');
+    card.className = 'model-card';
+    if (m.recommended) card.classList.add('recommended');
+    card.dataset.modelId = m.id;
+    // base tags + cookbook hardware-fit badge
+    const baseTags = m.tags.map(t => `<span class="tag ${t}">${t}</span>`);
+    if (m.main) baseTags.unshift('<span class="tag main">gemma 4</span>');
+    const fit = fitFor(m.id);
+    if (fit !== 'unknown') baseTags.push(`<span class="tag ${fit}">${FIT_LABEL[fit]}</span>`);
+    const tagsHtml = baseTags.join(' ');
+    const vram = getActualVRAM(m.id) || m.estVRAM;
+    const dl = m.estDL;
+    card.innerHTML = `
+      <div class="name">${escapeHTML(m.pretty)}</div>
+      <div class="meta">${tagsHtml}<span style="margin-left:4px;">~${dl} MB download · ${vram} MB ram · ctx ${m.contextWindowSize}</span></div>
+      <div class="note">${escapeHTML(m.note)}</div>
+    `;
+    card.addEventListener('click', () => selectModelCard(m.id, card));
+    list.appendChild(card);
+    // Default the selection to the previously used model, else the main (Gemma 4).
+    if (S.modelId ? (m.id === S.modelId) : m.main) preselect = card;
+  }
+  if (preselect) selectModelCard(preselect.dataset.modelId, preselect);
+}
+
+function selectModelCard(id, cardEl) {
+  document.querySelectorAll('.model-card').forEach(c => c.classList.remove('selected'));
+  cardEl.classList.add('selected');
+  const btn = $('pick-load');
+  btn.disabled = false;
+  btn.dataset.modelId = id;
+}
+
+$('pick-back').onclick = () => { if (RT.modelLoaded) renderHome(); else runGPUCheck(); };
+$('pick-load').onclick = () => {
+  const id = $('pick-load').dataset.modelId;
+  if (id) loadModel(id);
+};
+
+/* ===================== TRANSFORMERS.JS ENGINE (Gemma 4 / WebGPU) ===================== */
+// Thin adapter so transformers.js looks like web-llm's engine to the rest of the
+// app: engine.chat.completions.create({messages, stream, temperature, max_tokens})
+// and engine.unload(). Streaming yields {choices:[{delta:{content}}]} chunks plus
+// a final {usage:{completion_tokens}} chunk, matching what streamReply expects.
+class TransformersEngine {
+  constructor(generator, modelId) {
+    this.generator = generator;
+    this.modelId = modelId;
+    this.chat = { completions: { create: (opts) => this._create(opts) } };
+  }
+  async unload() {
+    try { await this.generator?.dispose?.(); } catch {}
+    this.generator = null;
+  }
+  // Gemma's chat template rejects a standalone system role — fold any system
+  // messages into the first user turn so the existing prompts keep working.
+  _prep(messages) {
+    const sys = (messages || []).filter(m => m.role === 'system').map(m => m.content).join('\n\n');
+    const rest = (messages || []).filter(m => m.role !== 'system').map(m => ({ role: m.role, content: m.content }));
+    if (sys) {
+      const i = rest.findIndex(m => m.role === 'user');
+      if (i >= 0) rest[i] = { role: 'user', content: sys + '\n\n' + rest[i].content };
+      else rest.unshift({ role: 'user', content: sys });
+    }
+    return rest.length ? rest : [{ role: 'user', content: ' ' }];
+  }
+  _genText(out) {
+    const o = Array.isArray(out) ? out[0] : out;
+    let g = o?.generated_text;
+    if (Array.isArray(g)) { const last = g[g.length - 1]; return (last && last.content) || ''; }
+    return String(g || '');
+  }
+  async _create(opts) {
+    const msgs = this._prep(opts.messages || []);
+    const max_new_tokens = opts.max_tokens || 512;
+    const temperature = (opts.temperature == null) ? 0.7 : opts.temperature;
+    const do_sample = temperature > 0;
+    const genOpts = { max_new_tokens, do_sample };
+    if (do_sample) { genOpts.temperature = temperature; genOpts.top_p = 0.95; genOpts.top_k = 64; }
+
+    if (!opts.stream) {
+      const out = await this.generator(msgs, genOpts);
+      const text = this._genText(out);
+      return { choices: [{ message: { role: 'assistant', content: text }, delta: { content: text } }], usage: { completion_tokens: 0 } };
+    }
+
+    // Streaming: TextStreamer pushes tokens into a tiny async queue.
+    const queue = [];
+    let resolveNext = null, count = 0;
+    const push = (v) => { if (resolveNext) { const r = resolveNext; resolveNext = null; r(v); } else queue.push(v); };
+    const streamer = new TJS.TextStreamer(this.generator.tokenizer, {
+      skip_prompt: true,
+      skip_special_tokens: true,
+      callback_function: (t) => { if (t) { count++; push({ choices: [{ delta: { content: t } }] }); } },
+    });
+    this.generator(msgs, { ...genOpts, streamer })
+      .then(() => { push({ choices: [{ delta: {} }], usage: { completion_tokens: count } }); push(null); })
+      .catch((e) => { push({ __error: e }); push(null); });
+
+    return {
+      [Symbol.asyncIterator]() {
+        return {
+          async next() {
+            const v = queue.length ? queue.shift() : await new Promise(r => (resolveNext = r));
+            if (v === null) return { done: true, value: undefined };
+            if (v && v.__error) throw v.__error;
+            return { done: false, value: v };
+          },
+        };
+      },
+    };
+  }
+}
+
+async function loadTransformers(modelId, profile) {
+  show('view-loading');
+  const phaseEl = $('load-phase'), fillEl = $('load-fill'), readoutEl = $('load-readout');
+  phaseEl.textContent = 'pulling the weights';
+  fillEl.style.width = '0%';
+  readoutEl.textContent = '0%';
+
+  try {
+    if (RT.engine && RT.modelLoaded) {
+      try { await RT.engine.unload(); } catch {}
+      RT.modelLoaded = false;
+    }
+    if (!TJS) {
+      phaseEl.textContent = 'loading the runtime';
+      TJS = await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@4');
+      try { TJS.env.allowLocalModels = false; } catch {}
+    }
+
+    const fileProgress = {};
+    const generator = await TJS.pipeline('text-generation', modelId, {
+      dtype: profile.dtype || 'q4f16',
+      device: 'webgpu',
+      progress_callback: (r) => {
+        if (r && r.file && typeof r.progress === 'number') fileProgress[r.file] = r.progress;
+        const vals = Object.values(fileProgress);
+        const pct = vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : 0;
+        fillEl.style.width = pct + '%';
+        const st = String(r?.status || '').toLowerCase();
+        if (st.includes('download') || st.includes('progress')) phaseEl.textContent = 'pulling the weights';
+        else if (st.includes('done') || st.includes('ready')) phaseEl.textContent = 'compiling kernels';
+        else if (st.includes('init')) phaseEl.textContent = 'waking the engine';
+        readoutEl.textContent = `${pct}% · ${truncate(r?.file || r?.status || '', 120)}`;
+      },
+    });
+
+    RT.engine = new TransformersEngine(generator, modelId);
+    RT.runtime = 'transformers';
+    RT.modelLoaded = true;
+    S.modelId = modelId;
+    saveState();
+
+    fillEl.style.width = '100%';
+    phaseEl.textContent = 'warming up';
+    readoutEl.textContent = 'one quick test prompt…';
+    try {
+      await RT.engine.chat.completions.create({ messages: [{ role: 'user', content: 'reply with one word: ok' }], max_tokens: 4, temperature: 0 });
+    } catch (e) { console.warn('warmup failed', e); }
+
+    phaseEl.textContent = 'ready';
+    $('stat-model').textContent = profile.pretty || modelId;
+    $('chat-send').disabled = false;
+    $('wb-send').disabled = false;
+
+    setTimeout(() => renderHome(), 250);
+    setTimeout(() => runPrebuild(), 900);
+  } catch (e) {
+    console.error('load failed', e);
+    phaseEl.textContent = 'something broke';
+    readoutEl.textContent = truncate(String(e?.message || e), 200);
+    setTimeout(() => {
+      if (confirm('Gemma 4 failed to load.\n\n' + (e?.message || e) + '\n\nTry a lighter model?')) openModelPicker();
+      else runGPUCheck();
+    }, 600);
+  }
+}
+
+/* ===================== MODEL LOAD ===================== */
+async function loadModel(modelId) {
+  const prof0 = profileFor(modelId);
+  if (prof0 && prof0.runtime === 'transformers') return loadTransformers(modelId, prof0);
+
+  show('view-loading');
+  const phaseEl = $('load-phase');
+  const fillEl = $('load-fill');
+  const readoutEl = $('load-readout');
+  phaseEl.textContent = 'pulling the weights';
+  fillEl.style.width = '0%';
+  readoutEl.textContent = '0%';
+
+  const profile = profileFor(modelId) || { contextWindowSize: 2048 };
+
+  try {
+    if (RT.engine && RT.modelLoaded) {
+      try { await RT.engine.unload(); } catch {}
+      RT.modelLoaded = false;
+    }
+
+    const engine = await webllm.CreateMLCEngine(
+      modelId,
+      {
+        initProgressCallback: (report) => {
+          const pct = Math.round((report.progress || 0) * 100);
+          fillEl.style.width = pct + '%';
+          const txt = (report.text || '').toLowerCase();
+          if (txt.includes('fetching') || txt.includes('cache') || txt.includes('download')) phaseEl.textContent = 'pulling the weights';
+          else if (txt.includes('finish') || txt.includes('loaded')) phaseEl.textContent = 'loaded';
+          else if (txt.includes('shader') || txt.includes('compil')) phaseEl.textContent = 'compiling shaders';
+          else if (txt.includes('reload') || txt.includes('init')) phaseEl.textContent = 'waking the engine';
+          readoutEl.textContent = `${pct}% · ${truncate(report.text || '', 120)}`;
+        },
+      },
+      { context_window_size: profile.contextWindowSize }
+    );
+
+    RT.engine = engine;
+    RT.runtime = 'webllm';
+    RT.modelLoaded = true;
+    S.modelId = modelId;
+    saveState();
+
+    fillEl.style.width = '100%';
+    phaseEl.textContent = 'warming up';
+    readoutEl.textContent = 'one quick test prompt…';
+
+    // pre-warm: a tiny generation to compile shaders / warm GPU caches
+    try {
+      await engine.chat.completions.create({
+        messages: [{role:'user', content:'reply with one word: ok'}],
+        max_tokens: 4,
+        temperature: 0,
+      });
+    } catch (e) { console.warn('warmup failed', e); }
+
+    phaseEl.textContent = 'ready';
+    $('stat-model').textContent = profile.pretty || modelId;
+    $('chat-send').disabled = false;
+    $('wb-send').disabled = false;
+
+    setTimeout(() => renderHome(), 250);
+    setTimeout(() => runPrebuild(), 900);
+
+  } catch (e) {
+    console.error('load failed', e);
+    phaseEl.textContent = 'something broke';
+    readoutEl.textContent = truncate(String(e?.message || e), 200);
+    setTimeout(() => {
+      if (confirm('Model failed to load.\n\n' + (e?.message || e) + '\n\nTry a smaller one?')) {
+        openModelPicker();
+      } else {
+        runGPUCheck();
+      }
+    }, 600);
+  }
+}
+
+/* ===================== HOME ===================== */
+function renderHome() {
+  show('view-home');
+  const greet = $('home-greeting');
+  greet.textContent = S.user.name ? `Welcome back, ${S.user.name}.` : 'Pull up a cartridge.';
+
+  const deck = $('deck');
+  deck.innerHTML = '';
+
+  S.cartridges.forEach((c, i) => {
+    const el = document.createElement('div');
+    el.className = 'cartridge';
+    el.innerHTML = `
+      <div class="cart-top"><span>cart · ${String(i+1).padStart(2,'0')}</span><span>${c.versions?.length || 0} builds</span></div>
+      <div>
+        <div class="cart-name">${escapeHTML(c.name || 'untitled')}</div>
+        <div class="cart-tag">${escapeHTML(c.firstPrompt || '—')}</div>
+      </div>
+      <div class="cart-meta">
+        <span>slot to open</span>
+        <span>${new Date(c.created).toLocaleDateString('en-GB', {day:'numeric', month:'short'})}</span>
+      </div>
+    `;
+    el.addEventListener('click', () => openCartridge(c.id));
+    deck.appendChild(el);
+  });
+
+  const blank = document.createElement('div');
+  blank.className = 'cartridge new';
+  blank.innerHTML = `<div class="plus">＋</div><div class="plus-label">new cartridge</div>`;
+  blank.addEventListener('click', createBlankCartridge);
+  deck.appendChild(blank);
+
+  const pager = $('deck-pager');
+  pager.innerHTML = '';
+  const total = S.cartridges.length + 1;
+  for (let i = 0; i < total; i++) {
+    const dot = document.createElement('span');
+    if (i === 0) dot.classList.add('on');
+    pager.appendChild(dot);
+  }
+  deck.onscroll = () => {
+    const w = (deck.firstChild?.offsetWidth || 1) + 16;
+    const idx = Math.round(deck.scrollLeft / w);
+    [...pager.children].forEach((d, i) => d.classList.toggle('on', i === idx));
+  };
+
+  seedFromKnowledge();
+}
+
+$('home-wb').onclick = () => { renderWhiteboard(); show('view-whiteboard'); seedWhiteboardLog(); };
+$('home-notes').onclick = openNotes;
+$('home-settings').onclick = openSettings;
+
+function createBlankCartridge() {
+  const cart = {
+    id: 'c' + Date.now().toString(36),
+    name: 'untitled',
+    firstPrompt: '',
+    code: '',
+    versions: [],
+    sections: [],
+    log: [],
+    created: Date.now(),
+  };
+  S.cartridges.push(cart);
+  S.activeCart = cart.id;
+  saveState();
+  openCartridge(cart.id);
+}
+
+/* ===================== CARTRIDGE / WORKSPACE ===================== */
+const activeCart = () => S.cartridges.find(c => c.id === S.activeCart);
+
+function openCartridge(id) {
+  S.activeCart = id;
+  saveState();
+  const c = activeCart();
+  if (!c) return;
+  $('work-title').textContent = c.name;
+  paintCartridge();
+  show('view-work');
+  // focus chat after a beat
+  setTimeout(() => { try { $('chat-input').focus(); } catch {} }, 150);
+}
+
+function paintCartridge() {
+  const c = activeCart(); if (!c) return;
+  const log = $('chat-log');
+  log.innerHTML = '';
+  (c.log || []).forEach(m => appendMsg(m.role, m.content, m.note));
+  // Fresh cartridge + we already know who we are → introduce ourselves (transient).
+  if (!(c.log || []).length && S.knowledge?.about) appendMsg('assistant', S.knowledge.about);
+  log.scrollTop = log.scrollHeight;
+  paintPreview();
+  paintCode();
+  paintQuickChips();
+  setFlipped(false);
+  updateWebBtn();
+}
+
+function paintQuickChips() {
+  const c = activeCart(); if (!c) return;
+  const chips = $('quick-chips');
+  chips.innerHTML = '';
+  // Only show chips if no code yet
+  if (c.code) return;
+  const prompts = [
+    'a digital clock that looks like a window',
+    'a single-page todo list',
+    'a colour palette generator',
+    'a tiny game where you tap dots',
+    'a breathing exercise',
+    'a journal page',
+  ];
+  // pick 4 at random
+  const picked = prompts.sort(() => Math.random() - 0.5).slice(0, 4);
+  picked.forEach(p => {
+    const chip = document.createElement('button');
+    chip.className = 'chip';
+    chip.textContent = p;
+    chip.onclick = () => { $('chat-input').value = 'Make me ' + p + '.'; $('chat-input').focus(); };
+    chips.appendChild(chip);
+  });
+}
+
+function paintPreview() {
+  const c = activeCart(); if (!c) return;
+  const empty = $('preview-empty');
+  const frame = $('preview-frame');
+  const fsBtn = $('fs-open');
+  const dlBtn = $('dl-open');
+  if (c.code && c.code.trim()) {
+    empty.style.display = 'none';
+    frame.classList.add('show');
+    fsBtn.classList.add('show');
+    dlBtn.classList.add('show');
+    frame.srcdoc = ensureHTMLDoc(c.code);
+  } else {
+    empty.style.display = 'flex';
+    frame.classList.remove('show');
+    fsBtn.classList.remove('show');
+    dlBtn.classList.remove('show');
+    frame.srcdoc = '';
+  }
+}
+
+function ensureHTMLDoc(code) {
+  if (/<!doctype html|<html[\s>]/i.test(code)) return code;
+  return `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{font-family:system-ui,Georgia,serif;padding:16px;color:#1a1a1a;background:#fff;line-height:1.5;}*{box-sizing:border-box}</style></head><body>${code}</body></html>`;
+}
+
+function paintCode() {
+  const c = activeCart(); if (!c) return;
+  const pane = $('code-pane');
+  pane.innerHTML = '';
+  if (!c.sections || c.sections.length === 0) {
+    pane.innerHTML = `<div class="face-empty" style="height:100%;"><div class="glyph">▤</div><p>Sections appear once the model has built.</p></div>`;
+    return;
+  }
+  c.sections.forEach((s, i) => {
+    const el = document.createElement('div');
+    el.className = 'code-section';
+    el.innerHTML = `<div class="label">${escapeHTML(s.label)}</div><pre>${escapeHTML(s.body)}</pre>`;
+    el.onclick = () => explainSection(i);
+    pane.appendChild(el);
+  });
+}
+
+function setFlipped(v) {
+  RT.flipped = v;
+  $('flip-card').classList.toggle('flipped', v);
+  $('flip-hint').textContent = v ? 'preview ⤺' : 'code ⤻';
+}
+$('flip-hint').onclick = () => setFlipped(!RT.flipped);
+
+let touchStartX = null;
+document.querySelector('.flip-stage').addEventListener('touchstart', e => {
+  touchStartX = e.touches[0].clientX;
+});
+document.querySelector('.flip-stage').addEventListener('touchend', e => {
+  if (touchStartX == null) return;
+  const dx = e.changedTouches[0].clientX - touchStartX;
+  if (Math.abs(dx) > 70) setFlipped(!RT.flipped);
+  touchStartX = null;
+});
+
+$('work-back').onclick = () => renderHome();
+$('work-wb').onclick = () => { renderWhiteboard(); show('view-whiteboard'); seedWhiteboardLog(); };
+$('work-settings').onclick = openSettings;
+
+/* ===================== FULLSCREEN / DOWNLOAD ===================== */
+const fsEl = $('fullscreen');
+const fsIframe = $('fs-iframe');
+$('fs-open').onclick = () => {
+  const c = activeCart(); if (!c || !c.code) return;
+  fsIframe.srcdoc = ensureHTMLDoc(c.code);
+  fsEl.classList.add('show');
+};
+$('fs-close').onclick = () => {
+  fsEl.classList.remove('show');
+  setTimeout(() => { fsIframe.srcdoc = ''; }, 300);
+};
+
+$('dl-open').onclick = async () => {
+  const c = activeCart(); if (!c || !c.code) return;
+  const html = ensureHTMLDoc(c.code);
+  const filename = (c.name || 'aqau-pluto') + '.html';
+  // Try Web Share API first (iOS-friendly for saving to Files)
+  if (navigator.canShare) {
+    try {
+      const file = new File([html], filename, { type: 'text/html' });
+      if (navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: c.name });
+        return;
+      }
+    } catch (e) { /* fall through */ }
+  }
+  // Fallback: download link
+  const blob = new Blob([html], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+};
+
+/* ===================== CHAT ===================== */
+function appendMsg(role, content, note) {
+  const log = $('chat-log');
+  const el = document.createElement('div');
+  el.className = 'chat-msg ' + role + (note ? ' note' : '');
+  if (note) {
+    el.innerHTML = `<div class="body">${content}</div>`;
+  } else {
+    el.innerHTML = `<div class="from">${role === 'assistant' ? 'aqau pluto' : (S.user.name || 'you')}</div><div class="body"></div>`;
+    el.querySelector('.body').textContent = content;
+  }
+  log.appendChild(el);
+  log.scrollTop = log.scrollHeight;
+  return el;
+}
+function pushChatNote(c, html) {
+  appendMsg('assistant', html, true);
+  c.log.push({role:'assistant', content: html, note: true});
+  saveState();
+}
+
+$('chat-send').onclick = sendChat;
+$('chat-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); }
+});
+$('chat-input').addEventListener('input', e => {
+  const t = e.target;
+  t.style.height = 'auto';
+  t.style.height = Math.min(t.scrollHeight, 100) + 'px';
+});
+$('chat-input').addEventListener('focus', () => {
+  setTimeout(() => $('chat-input').scrollIntoView({block:'center', behavior:'smooth'}), 300);
+});
+
+async function sendChat() {
+  if (RT.generating) return;
+  const inp = $('chat-input');
+  const text = inp.value.trim();
+  if (!text) return;
+  if (!RT.modelLoaded) { toast('model not loaded'); return; }
+  const c = activeCart(); if (!c) return;
+
+  inp.value = '';
+  inp.style.height = 'auto';
+
+  // Set cartridge name from first prompt if untitled
+  if (!c.firstPrompt) {
+    c.firstPrompt = text;
+    c.name = truncate(text.split(/[.,;\n?!]/)[0], 28);
+    $('work-title').textContent = c.name;
+  }
+  c.log.push({role:'user', content: text});
+  appendMsg('user', text);
+
+  // Astrology intent → whiteboard
+  if (/\b(chart|transit|astrolog|aquarius|gemini|saturn|mars|venus|moon|sun|pluto|reading|horoscope)\b/i.test(text)) {
+    pushChatNote(c, '<em>drifting to the whiteboard…</em>');
+    setTimeout(() => { renderWhiteboard(); show('view-whiteboard'); askWhiteboard(text); }, 400);
+    return;
+  }
+
+  // Web grounding: when the globe is armed or a URL is pasted, and we're online,
+  // let Gemma reach the internet for context before it answers.
+  let ground = '';
+  const wantWeb = RT.webNext || URL_RE.test(text);
+  if (wantWeb && webEnabled()) {
+    pushChatNote(c, '<em>reaching for the web…</em>');
+    const ctx = await gatherContext(text);
+    if (ctx.length) ground = `Reference material pulled from the web just now — use what's relevant and cite the URLs you draw on:\n${ctx.map(s => '- ' + s.source + ': ' + truncate(s.text, 1400)).join('\n')}`;
+    else pushChatNote(c, '<em>nothing useful online — answering from what I know.</em>');
+  } else if (RT.webNext && !RT.online) {
+    pushChatNote(c, '<em>offline — answering on-device.</em>');
+  }
+  RT.webNext = false; updateWebBtn();
+
+  await streamReply(c, text, ground);
+}
+
+async function streamReply(c, userText, ground) {
+  RT.generating = true;
+  $('chat-send').disabled = true;
+
+  const placeholder = appendMsg('assistant', '');
+  const bodyEl = placeholder.querySelector('.body');
+  let acc = '';
+
+  try {
+    const messages = buildMessages(c, userText, ground);
+    const start = performance.now();
+    let tokens = 0;
+    const tpsEl = $('stat-tps');
+
+    const stream = await RT.engine.chat.completions.create({
+      messages,
+      stream: true,
+      stream_options: { include_usage: true },
+      temperature: 0.7,
+      max_tokens: 2500,
+    });
+
+    for await (const chunk of stream) {
+      const delta = chunk.choices?.[0]?.delta?.content || '';
+      if (delta) {
+        acc += delta;
+        bodyEl.textContent = stripThinkPartial(acc);
+        tokens++;
+        const elapsed = (performance.now() - start) / 1000;
+        if (elapsed > 0.3) tpsEl.textContent = `${(tokens/elapsed).toFixed(1)} tok/s`;
+        $('chat-log').scrollTop = 9e9;
+      }
+      if (chunk.usage) {
+        const tot = chunk.usage.completion_tokens || tokens;
+        const elapsed = (performance.now() - start) / 1000;
+        if (elapsed > 0) tpsEl.textContent = `${(tot/elapsed).toFixed(1)} tok/s`;
+      }
+    }
+  } catch (e) {
+    console.error(e);
+    bodyEl.textContent = `(generation failed: ${e?.message || e})`;
+    placeholder.classList.add('note');
+  } finally {
+    RT.generating = false;
+    $('chat-send').disabled = false;
+  }
+
+  const cleaned = stripThink(acc);
+  c.log.push({role:'assistant', content: cleaned});
+  bodyEl.textContent = cleaned;
+
+  // robust HTML extraction
+  const html = extractHTML(cleaned);
+  if (html) {
+    // version history: keep last 3
+    if (c.code) {
+      c.versions = (c.versions || []).slice(-2);
+      c.versions.push({ code: c.code, time: Date.now() });
+    }
+    c.code = html;
+    c.sections = sliceSections(html);
+    paintPreview();
+    paintCode();
+    paintQuickChips();
+    pushChatNote(c, `built · ${c.sections.length} part${c.sections.length>1?'s':''} · ▶ to run, ⤓ to save, flick for code`);
+  }
+  saveState();
+}
+
+function stripThink(text) {
+  return String(text||'').replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+}
+function stripThinkPartial(text) {
+  if (/<think>/i.test(text) && !/<\/think>/i.test(text)) {
+    return text.replace(/<think>[\s\S]*$/i, '…thinking quietly…');
+  }
+  return stripThink(text);
+}
+
+/* Robust HTML extraction — handles fenced blocks, raw HTML, partial responses */
+function extractHTML(text) {
+  if (!text) return null;
+  // Pass 1: fenced code blocks with explicit html lang
+  const htmlFence = text.match(/```(?:html|HTML)\s*\n?([\s\S]*?)```/);
+  if (htmlFence?.[1]) return htmlFence[1].trim();
+
+  // Pass 2: any fenced block whose contents look like HTML
+  const allFences = [...text.matchAll(/```\w*\s*\n?([\s\S]*?)```/g)];
+  for (const f of allFences) {
+    const body = (f[1] || '').trim();
+    if (/<!doctype html|<html[\s>]|<body[\s>]|<style|<script|<div|<button/i.test(body)) {
+      return body;
+    }
+  }
+
+  // Pass 3: response itself starts with HTML
+  const trimmed = text.trim();
+  if (/^<!doctype html|^<html[\s>]/i.test(trimmed)) return trimmed;
+
+  // Pass 4: embedded full document
+  const inline = text.match(/<!doctype html[\s\S]*?<\/html>|<html[\s\S]*?<\/html>/i);
+  if (inline) return inline[0];
+
+  // Pass 5: any first fence at all (last resort)
+  if (allFences[0]?.[1]) {
+    const body = allFences[0][1].trim();
+    if (body.includes('<') && body.includes('>')) return body;
+  }
+
+  return null;
+}
+
+function sliceSections(code) {
+  const splitter = /(<style[\s\S]*?<\/style>|<script[\s\S]*?<\/script>|<head[\s\S]*?<\/head>|<header[\s\S]*?<\/header>|<main[\s\S]*?<\/main>|<footer[\s\S]*?<\/footer>|<section[\s\S]*?<\/section>|<nav[\s\S]*?<\/nav>)/i;
+  const parts = code.split(splitter).filter(s => s && s.trim());
+  const labelFor = (t, i, n) => {
+    if (/^<style/i.test(t)) return 'the look of it';
+    if (/^<script/i.test(t)) return 'the brain of it';
+    if (/^<head/i.test(t)) return 'the head';
+    if (/^<header/i.test(t)) return 'the top bit';
+    if (/^<main/i.test(t)) return 'the main thing';
+    if (/^<footer/i.test(t)) return 'the bottom bit';
+    if (/^<section/i.test(t)) return 'a section';
+    if (/^<nav/i.test(t)) return 'the nav';
+    if (/<!doctype|<html/i.test(t)) return 'the shell';
+    if (i === 0) return 'the opening';
+    if (i === n - 1) return 'the closing';
+    return `part ${i+1}`;
+  };
+  const sections = parts.map((p, i) => ({ label: labelFor(p.trim(), i, parts.length), body: p.trim() }));
+  return sections.length ? sections : [{ label: 'the whole thing', body: code }];
+}
+
+function buildMessages(c, userText, ground) {
+  const msgs = [{ role:'system', content: personaSystemPrompt() }];
+  if (c.code) msgs.push({ role:'system', content: `Most recent build (truncated):\n\n${c.code.slice(0, 4500)}` });
+  if (ground) msgs.push({ role:'system', content: ground });
+  const recent = (c.log || []).filter(m => !m.note).slice(-6);
+  recent.forEach(m => msgs.push({ role: m.role, content: m.content }));
+  msgs.push({ role:'user', content: userText });
+  return msgs;
+}
+
+function personaSystemPrompt() {
+  const persona = S.persona || 'default';
+  const profile = profileFor(S.modelId);
+  const userBits = [];
+  if (S.user.name) userBits.push(`Name: ${S.user.name}.`);
+  if (S.user.birthDate) userBits.push(`Born ${S.user.birthDate}${S.user.birthTime ? ' '+S.user.birthTime : ''}${S.user.birthPlace ? ', '+S.user.birthPlace : ''}.`);
+
+  let voice = `You are AQAU PLUTO. A vibe-coder who is also a working astrologer. Short observed sentences. You notice patterns. Direct but warm. You build small honest things. You hate bloat. You never apologise. You never say "great question" or "certainly". You don't over-explain.`;
+  if (persona === 'terse') voice += ` Keep replies under 60 words unless emitting code.`;
+  if (persona === 'warm') voice += ` Lean into rhythm and timing — but never woo.`;
+
+  const codeRule = `When asked to BUILD or CHANGE: output ONE complete HTML document inside a single \`\`\`html ... \`\`\` block. Before the code: at most two short sentences naming what you're trying. After the code: at most one short sentence on what you'd try next. The HTML must be fully standalone — all CSS in <style>, all JS in <script>, no external dependencies except optional Google Fonts. Mobile-first. It must actually work when opened in a browser.`;
+  const astroRule = `When invoked on chart, planets, transits, timing, signs — DO NOT emit code. Speak briefly, concretely. No woo.`;
+  const noThink = profile?.isQwen3 ? `\n\n/no_think` : '';
+
+  return `${voice}\n\nUser: ${userBits.join(' ') || '(unknown)'}\n\nRules:\n- ${codeRule}\n- ${astroRule}${noThink}`;
+}
+
+async function explainSection(idx) {
+  if (RT.generating) { toast('finishing the last one'); return; }
+  const c = activeCart(); if (!c) return;
+  document.querySelectorAll('.code-section').forEach((el,i) => el.classList.toggle('selected', i===idx));
+  const s = c.sections[idx];
+  pushChatNote(c, `<em>aqau pluto is reading "${escapeHTML(s.label)}"…</em>`);
+  setFlipped(false);
+
+  RT.generating = true;
+  $('chat-send').disabled = true;
+
+  const placeholder = appendMsg('assistant', '');
+  const bodyEl = placeholder.querySelector('.body');
+  let acc = '';
+
+  try {
+    const profile = profileFor(S.modelId);
+    const noThink = profile?.isQwen3 ? `\n\n/no_think` : '';
+    const messages = [
+      { role:'system', content: personaSystemPrompt() },
+      { role:'system', content: `Explain this section only ("${s.label}"). Three short paragraphs maximum. No code in your reply. End with one small concrete improvement.${noThink}\n\nSection:\n${s.body.slice(0, 3000)}` },
+      { role:'user', content: `Read "${s.label}" to me.` }
+    ];
+    const stream = await RT.engine.chat.completions.create({ messages, stream: true, temperature: 0.6, max_tokens: 800 });
+    for await (const chunk of stream) {
+      const delta = chunk.choices?.[0]?.delta?.content || '';
+      if (delta) { acc += delta; bodyEl.textContent = stripThinkPartial(acc); $('chat-log').scrollTop = 9e9; }
+    }
+  } catch (e) {
+    bodyEl.textContent = `(read failed: ${e?.message || e})`;
+  } finally {
+    RT.generating = false;
+    $('chat-send').disabled = false;
+  }
+
+  const cleaned = stripThink(acc);
+  bodyEl.textContent = cleaned;
+  c.log.push({ role:'assistant', content: cleaned });
+  saveState();
+}
+
+/* ===================== WHITEBOARD ===================== */
+const SIGNS = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
+const GLYPHS = ['♈','♉','♊','♋','♌','♍','♎','♏','♐','♑','♒','♓'];
+
+function todaysTransits(date = new Date()) {
+  // anchored May 10, 2026 — mean motions
+  const anchor = new Date('2026-05-10T12:00:00Z').getTime();
+  const days = (date.getTime() - anchor) / 86400000;
+  const norm = d => ((d % 360) + 360) % 360;
+  return [
+    { p:'Sun',     g:'☉', deg: norm(50.0  + days * 0.985) },
+    { p:'Moon',    g:'☽', deg: norm(120.0 + days * 13.18) },
+    { p:'Mercury', g:'☿', deg: norm(60.0  + days * 1.20) },
+    { p:'Venus',   g:'♀', deg: norm(45.0  + days * 1.10) },
+    { p:'Mars',    g:'♂', deg: norm(105.0 + days * 0.52) },
+    { p:'Jupiter', g:'♃', deg: norm(115.0 + days * 0.083) },
+    { p:'Saturn',  g:'♄', deg: norm(15.0  + days * 0.034) },
+    { p:'Uranus',  g:'♅', deg: norm(65.0  + days * 0.012) },
+    { p:'Neptune', g:'♆', deg: norm(2.0   + days * 0.006) },
+    { p:'Pluto',   g:'♇', deg: norm(304.5 + days * 0.0027)},
+  ];
+}
+const signOf = (deg) => SIGNS[Math.floor(deg/30)];
+
+function renderWhiteboard() {
+  const svg = $('wb-svg');
+  svg.innerHTML = '';
+  const cx = 200, cy = 280, r = 140;
+
+  const defs = svgEl('defs');
+  defs.innerHTML = `<filter id="wob" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="2" seed="3"/><feDisplacementMap in="SourceGraphic" scale="2.4"/></filter>`;
+  svg.appendChild(defs);
+
+  svg.appendChild(svgEl('circle', { cx, cy, r, fill:'none', stroke:'#e8ddc8', 'stroke-width':1.2, filter:'url(#wob)' }));
+  svg.appendChild(svgEl('circle', { cx, cy, r: r-22, fill:'none', stroke:'#e8ddc855', 'stroke-width':0.8, 'stroke-dasharray':'2 4' }));
+
+  for (let i = 0; i < 12; i++) {
+    const a = (i * 30 - 90) * Math.PI/180;
+    const x1 = cx + Math.cos(a)*r, y1 = cy + Math.sin(a)*r;
+    svg.appendChild(svgEl('line', { x1:cx, y1:cy, x2:x1, y2:y1, stroke:'#e8ddc833', 'stroke-width':0.4 }));
+    const a2 = ((i+1) * 30 - 90) * Math.PI/180;
+    const mid = (a + a2) / 2;
+    const gx = cx + Math.cos(mid)*(r-12);
+    const gy = cy + Math.sin(mid)*(r-12) + 7;
+    const t = svgEl('text', { x:gx, y:gy, 'text-anchor':'middle', 'font-family':"'EB Garamond', serif", 'font-size':18, fill:'#e8ddc8' });
+    t.textContent = GLYPHS[i];
+    svg.appendChild(t);
+  }
+
+  const tr = todaysTransits();
+  tr.forEach((p, idx) => {
+    const a = (p.deg - 90) * Math.PI/180;
+    const ringR = r - 38 - (idx % 3) * 18;
+    const px = cx + Math.cos(a)*ringR;
+    const py = cy + Math.sin(a)*ringR;
+    svg.appendChild(svgEl('circle', { cx:px, cy:py, r:11, fill:'#0d0b09', stroke:'#e8ddc8', 'stroke-width':1.1 }));
+    const t = svgEl('text', { x:px, y:py+5, 'text-anchor':'middle', 'font-size':14, 'font-family':"'EB Garamond', serif", fill:'#c89a4a' });
+    t.textContent = p.g;
+    svg.appendChild(t);
+    const lbl = svgEl('text', { x:px, y:py+24, 'text-anchor':'middle', 'font-size':11, 'font-family':"'Caveat', cursive", fill:'#e8ddc888' });
+    lbl.textContent = `${Math.floor(p.deg%30)}° ${signOf(p.deg).slice(0,3)}`;
+    svg.appendChild(lbl);
+  });
+
+  const tt = svgEl('text', { x:cx, y:36, 'text-anchor':'middle', 'font-family':"'Caveat', cursive", 'font-size':22, fill:'#e8ddc8' });
+  tt.textContent = `transits · ${new Date().toLocaleDateString('en-GB', {day:'numeric', month:'short'})}`;
+  svg.appendChild(tt);
+
+  if (S.user.birthDate) {
+    const note = svgEl('text', { x:cx, y:560, 'text-anchor':'middle', 'font-family':"'EB Garamond', serif", 'font-style':'italic', 'font-size':13, fill:'#e8ddc888' });
+    note.textContent = `your sun: born ${S.user.birthDate}`;
+    svg.appendChild(note);
+  }
+}
+function svgEl(tag, attrs = {}) {
+  const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  for (const k in attrs) el.setAttribute(k, attrs[k]);
+  return el;
+}
+
+$('wb-back').onclick = () => {
+  if (S.activeCart && activeCart()) { paintCartridge(); show('view-work'); }
+  else renderHome();
+};
+$('wb-today').onclick = () => askWhiteboard("Give me a brief reading of today's transits. Plain language. No woo. Three short paragraphs.");
+$('wb-send').onclick = () => {
+  const v = $('wb-input').value.trim();
+  if (!v) return;
+  $('wb-input').value = '';
+  askWhiteboard(v);
+};
+$('wb-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); $('wb-send').click(); }
+});
+$('wb-input').addEventListener('input', e => {
+  const t = e.target;
+  t.style.height = 'auto';
+  t.style.height = Math.min(t.scrollHeight, 100) + 'px';
+});
+
+async function askWhiteboard(question) {
+  if (RT.generating) { toast('finishing the last one'); return; }
+  if (!RT.modelLoaded) { toast('model not loaded'); return; }
+  const log = $('wb-log');
+  const userMsg = document.createElement('div');
+  userMsg.className = 'chat-msg user';
+  userMsg.innerHTML = `<div class="from">${escapeHTML(S.user.name||'you')}</div><div class="body"></div>`;
+  userMsg.querySelector('.body').textContent = question;
+  log.appendChild(userMsg);
+  log.scrollTop = log.scrollHeight;
+
+  RT.generating = true;
+
+  const transitsStr = todaysTransits().map(p => `${p.p} ${Math.floor(p.deg%30)}°${signOf(p.deg)}`).join(', ');
+  const userInfo = [
+    S.user.birthDate && `Born ${S.user.birthDate}`,
+    S.user.birthTime && `at ${S.user.birthTime}`,
+    S.user.birthPlace && `in ${S.user.birthPlace}`,
+  ].filter(Boolean).join(' ');
+  const profile = profileFor(S.modelId);
+  const noThink = profile?.isQwen3 ? `\n\n/no_think` : '';
+
+  // Optional web grounding for chart questions (URLs, or armed globe) when online.
+  let ground = '';
+  if ((RT.webNext || URL_RE.test(question)) && webEnabled()) {
+    const ctx = await gatherContext(question);
+    if (ctx.length) ground = `Reference material from the web — cite URLs you use:\n${ctx.map(s => '- ' + s.source + ': ' + truncate(s.text, 1200)).join('\n')}`;
+    RT.webNext = false; updateWebBtn();
+  }
+
+  const messages = [
+    { role:'system', content: personaSystemPrompt() },
+    { role:'system', content: `Today's approximate transits: ${transitsStr}.\nUser: ${userInfo || '(no birth data)'}.\nNo code in this mode. Three short paragraphs maximum. No woo.${noThink}` },
+    ...(ground ? [{ role:'system', content: ground }] : []),
+    { role:'user', content: question },
+  ];
+
+  const aMsg = document.createElement('div');
+  aMsg.className = 'chat-msg assistant';
+  aMsg.innerHTML = `<div class="from">aqau pluto</div><div class="body"></div>`;
+  log.appendChild(aMsg);
+  const body = aMsg.querySelector('.body');
+  let acc = '';
+
+  try {
+    const stream = await RT.engine.chat.completions.create({ messages, stream: true, temperature: 0.7, max_tokens: 700 });
+    for await (const chunk of stream) {
+      const delta = chunk.choices?.[0]?.delta?.content || '';
+      if (delta) { acc += delta; body.textContent = stripThinkPartial(acc); log.scrollTop = log.scrollHeight; }
+    }
+    body.textContent = stripThink(acc);
+  } catch (e) {
+    body.textContent = `(reading failed: ${e?.message || e})`;
+    aMsg.classList.add('note');
+  } finally {
+    RT.generating = false;
+  }
+}
+
+/* ===================== SHARED GENERATION ===================== */
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+// One-shot, non-streaming generation that politely waits for the engine to be
+// free. Used by the startup prebuild and web-research grounding. Works for both
+// runtimes (both return choices[0].message.content for non-stream calls).
+async function genOnce(messages, { temperature = 0.6, max_tokens = 240 } = {}) {
+  if (!RT.modelLoaded) throw new Error('model not loaded');
+  let waited = 0;
+  while (RT.generating && waited < 30000) { await sleep(120); waited += 120; }
+  RT.generating = true;
+  try {
+    const r = await RT.engine.chat.completions.create({ messages, temperature, max_tokens, stream: false });
+    return stripThink(r?.choices?.[0]?.message?.content || '');
+  } finally {
+    RT.generating = false;
+  }
+}
+
+/* ===================== STARTUP PREBUILD ===================== */
+// On first load, fire a burst of requests so the studio already "knows" itself
+// and the sky: a self-introduction, the 12 sign essences, and today's reading.
+// Cached in S.knowledge so it only happens once per model/day.
+function todayKey() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+
+function setPrebuildProgress(done, total) {
+  const sub = $('home-sub');
+  if (!sub) return;
+  if (total <= 0 || done >= total) { sub.textContent = 'your work, slot one in'; return; }
+  sub.textContent = `aqau pluto is charting the sky… ${done}/${total}`;
+}
+
+async function runPrebuild() {
+  if (!RT.modelLoaded || RT.prebuilding) return;
+  const K = S.knowledge = S.knowledge || { about: '', signs: {}, today: { date: '', text: '' }, builtFor: '' };
+  const persona = profileFor(S.modelId)?.pretty || S.modelId || '';
+  // If we switched models, refresh the voice-dependent bits.
+  if (K.builtFor && K.builtFor !== persona) { K.about = ''; K.signs = {}; K.today = { date: '', text: '' }; }
+  K.builtFor = persona;
+
+  const tasks = [];
+  if (!K.about) tasks.push({
+    run: async () => { K.about = await genOnce([
+      { role: 'system', content: personaSystemPrompt() },
+      { role: 'user', content: 'In two or three short sentences, introduce yourself: what Aqau Pluto is and what you help with (vibe-coding small honest things, and reading the sky). Plain, warm, no woo, no lists.' },
+    ], { max_tokens: 160 }); },
+  });
+  for (const sign of SIGNS) {
+    if (!K.signs[sign]) tasks.push({
+      run: async () => { K.signs[sign] = await genOnce([
+        { role: 'system', content: personaSystemPrompt() },
+        { role: 'user', content: `Give the essence of ${sign} in one vivid sentence. Concrete, no woo, no preamble.` },
+      ], { max_tokens: 80 }); },
+    });
+  }
+  const tk = todayKey();
+  if (K.today.date !== tk) tasks.push({
+    run: async () => {
+      const transitsStr = todaysTransits().map(p => `${p.p} ${Math.floor(p.deg%30)}°${signOf(p.deg)}`).join(', ');
+      const text = await genOnce([
+        { role: 'system', content: personaSystemPrompt() },
+        { role: 'system', content: `Today's approximate transits: ${transitsStr}. No code in this mode. No woo.` },
+        { role: 'user', content: "Give a brief reading of today's sky. Three short paragraphs maximum." },
+      ], { max_tokens: 360 });
+      K.today = { date: tk, text };
+    },
+  });
+
+  if (!tasks.length) { saveState(); seedFromKnowledge(); return; }
+
+  RT.prebuilding = true;
+  for (let i = 0; i < tasks.length; i++) {
+    setPrebuildProgress(i, tasks.length);
+    try { await tasks[i].run(); } catch (e) { console.warn('prebuild step failed', e); }
+    saveState();
+    await sleep(140); // leave a gap so a user typing can slip in
+  }
+  RT.prebuilding = false;
+  setPrebuildProgress(tasks.length, tasks.length);
+  seedFromKnowledge();
+}
+
+// Surface the pre-built knowledge across the app.
+function seedFromKnowledge() {
+  const about = S.knowledge?.about;
+  const el = $('home-about');
+  if (el) { el.textContent = about || ''; el.style.display = about ? 'block' : 'none'; }
+}
+// When the whiteboard opens with an empty log, drop in today's pre-built reading.
+function seedWhiteboardLog() {
+  const log = $('wb-log');
+  if (!log || log.children.length) return;
+  const t = S.knowledge?.today;
+  if (t && t.date === todayKey() && t.text) {
+    const note = document.createElement('div');
+    note.className = 'chat-msg note';
+    note.innerHTML = `<div class="body"><em>today's sky · prepared earlier</em></div>`;
+    log.appendChild(note);
+    const a = document.createElement('div');
+    a.className = 'chat-msg assistant';
+    a.innerHTML = `<div class="from">aqau pluto</div><div class="body"></div>`;
+    a.querySelector('.body').textContent = t.text;
+    log.appendChild(a);
+    log.scrollTop = log.scrollHeight;
+  }
+}
+
+/* ===================== WEB (online research / grounding) ===================== */
+// Aqau Pluto runs fully offline, but when there's a connection it can reach the
+// web for grounding: read a pasted URL, or pull encyclopaedia context. All
+// endpoints are CORS-friendly and need no API key. Toggle in Settings.
+RT.online = navigator.onLine;
+function setOnline(v) {
+  RT.online = v;
+  document.querySelectorAll('.net-dot').forEach(d => {
+    d.classList.toggle('on', v);
+    d.title = v ? 'online — web research available' : 'offline — on-device only';
+  });
+}
+window.addEventListener('online', () => setOnline(true));
+window.addEventListener('offline', () => setOnline(false));
+function webEnabled() { return RT.online && (S.useWeb !== false); }
+const URL_RE = /\bhttps?:\/\/[^\s)]+/i;
+function updateWebBtn() {
+  const b = $('chat-web');
+  if (!b) return;
+  b.classList.toggle('armed', !!RT.webNext);
+  b.disabled = !RT.online;
+  b.title = !RT.online ? 'offline' : (RT.webNext ? 'web research armed — next message searches' : 'tap to answer the next message with the web');
+}
+
+async function fetchURLText(url) {
+  // r.jina.ai returns readable page text with permissive CORS.
+  const res = await fetch('https://r.jina.ai/' + url, { headers: { 'Accept': 'text/plain' } });
+  if (!res.ok) throw new Error('fetch ' + res.status);
+  const txt = await res.text();
+  return { source: url, text: txt.slice(0, 6000) };
+}
+async function wikiContext(query) {
+  const api = 'https://en.wikipedia.org/w/api.php?action=query&list=search&format=json&origin=*&srlimit=2&srsearch=' + encodeURIComponent(query);
+  const sr = await (await fetch(api)).json();
+  const hits = sr?.query?.search || [];
+  const out = [];
+  for (const h of hits.slice(0, 2)) {
+    try {
+      const sum = await (await fetch('https://en.wikipedia.org/api/rest_v1/page/summary/' + encodeURIComponent(h.title))).json();
+      if (sum?.extract) out.push({ source: sum?.content_urls?.desktop?.page || ('https://en.wikipedia.org/wiki/' + encodeURIComponent(h.title)), text: sum.extract });
+    } catch {}
+  }
+  return out;
+}
+async function gatherContext(query) {
+  const m = query.match(URL_RE);
+  if (m) { try { return [await fetchURLText(m[0])]; } catch (e) { return []; } }
+  try { return await wikiContext(query); } catch { return []; }
+}
+
+/* ===================== NOTEBOOK (odysseus-style doc + AI editing) ===================== */
+const activeNote = () => S.notes.find(n => n.id === RT.activeNote);
+function openNotes() { renderNotesList(); show('view-notes'); }
+function renderNotesList() {
+  RT.activeNote = null;
+  $('note-editor-wrap').style.display = 'none';
+  $('note-list-wrap').style.display = 'block';
+  $('notes-title-mini').textContent = 'Notebook';
+  const list = $('note-list');
+  list.innerHTML = '';
+  if (!S.notes.length) {
+    list.innerHTML = `<div class="face-empty" style="padding:40px 20px;"><div class="glyph">✑</div><p>A quiet place to write. Markdown. Aqau Pluto can edit it with you.</p></div>`;
+  }
+  S.notes.slice().reverse().forEach(n => {
+    const el = document.createElement('div');
+    el.className = 'model-card';
+    el.innerHTML = `<div class="name">${escapeHTML(n.title || 'untitled')}</div><div class="note">${escapeHTML(truncate((n.body||'').replace(/\s+/g,' '), 90) || '—')}</div>`;
+    el.onclick = () => openNote(n.id);
+    list.appendChild(el);
+  });
+}
+function newNote() {
+  const n = { id: 'n' + Date.now().toString(36), title: 'untitled', body: '', created: Date.now() };
+  S.notes.push(n); saveState(); openNote(n.id);
+}
+function openNote(id) {
+  RT.activeNote = id;
+  const n = activeNote(); if (!n) return;
+  $('note-list-wrap').style.display = 'none';
+  $('note-editor-wrap').style.display = 'flex';
+  $('notes-title-mini').textContent = n.title || 'untitled';
+  $('note-title').value = n.title === 'untitled' ? '' : (n.title || '');
+  $('note-body').value = n.body || '';
+}
+function saveActiveNote() {
+  const n = activeNote(); if (!n) return;
+  n.title = ($('note-title').value.trim()) || 'untitled';
+  n.body = $('note-body').value;
+  $('notes-title-mini').textContent = n.title;
+  saveState();
+}
+async function noteAssist(kind) {
+  const n = activeNote(); if (!n) return;
+  if (!RT.modelLoaded) { toast('model not loaded'); return; }
+  if (RT.generating) { toast('one sec…'); return; }
+  saveActiveNote();
+  const body = n.body || '';
+  const instr = kind === 'improve' ? 'Tighten and improve this note. Keep the meaning and the markdown. Return only the rewritten note.'
+    : kind === 'continue' ? 'Continue this note naturally from where it stops. Return only new text to append.'
+    : 'Summarise this note in three crisp bullet points of markdown. Return only the summary.';
+  let ctx = [];
+  if (webEnabled() && kind !== 'summary') { try { ctx = await gatherContext(n.title + ' ' + body.slice(0, 200)); } catch {} }
+  const srcBlock = ctx.length ? `\n\nReference material (optional, cite URLs if you use them):\n${ctx.map(c => '- ' + c.source + ': ' + truncate(c.text, 800)).join('\n')}` : '';
+  toast(ctx.length ? 'thinking with the web…' : 'thinking…');
+  try {
+    const out = await genOnce([
+      { role: 'system', content: personaSystemPrompt() },
+      { role: 'user', content: `${instr}${srcBlock}\n\nNOTE:\n${body || '(empty)'}` },
+    ], { max_tokens: 900, temperature: 0.6 });
+    if (kind === 'continue') n.body = body + (body.endsWith('\n') ? '' : '\n') + out;
+    else if (kind === 'summary') n.body = body + '\n\n---\n' + out;
+    else n.body = out;
+    $('note-body').value = n.body;
+    saveState();
+  } catch (e) { toast('assist failed'); }
+}
+
+/* ===================== VOICE ===================== */
+let recog = null;
+function getRecognizer() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return null;
+  const r = new SR();
+  r.lang = 'en-GB';
+  r.interimResults = true;
+  r.continuous = false;
+  return r;
+}
+function startVoice(targetEl, btnEl) {
+  if (recog) stopVoice();
+  recog = getRecognizer();
+  if (!recog) { toast('voice not supported here'); return; }
+  btnEl.classList.add('recording');
+  let final = targetEl.value || '';
+  recog.onresult = (e) => {
+    let interim = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const txt = e.results[i][0].transcript;
+      if (e.results[i].isFinal) final += (final && !final.endsWith(' ') ? ' ' : '') + txt.trim();
+      else interim += txt;
+    }
+    targetEl.value = (final + ' ' + interim).trim();
+    targetEl.dispatchEvent(new Event('input'));
+  };
+  recog.onerror = (e) => { toast('voice: ' + e.error); btnEl.classList.remove('recording'); };
+  recog.onend = () => { btnEl.classList.remove('recording'); recog = null; };
+  try { recog.start(); } catch { toast('voice failed'); btnEl.classList.remove('recording'); }
+}
+function stopVoice() { if (recog) { try { recog.stop(); } catch {} recog = null; } }
+
+$('chat-mic').onclick = function() {
+  if (this.classList.contains('recording')) stopVoice();
+  else startVoice($('chat-input'), this);
+};
+$('wb-mic').onclick = function() {
+  if (this.classList.contains('recording')) stopVoice();
+  else startVoice($('wb-input'), this);
+};
+
+/* ===================== WEB BUTTON + NOTEBOOK WIRING ===================== */
+$('chat-web').onclick = () => {
+  if (!RT.online) { toast('offline — on-device only'); return; }
+  RT.webNext = !RT.webNext;
+  updateWebBtn();
+  toast(RT.webNext ? 'next message will search the web' : 'web off');
+};
+
+$('notes-back').onclick = () => {
+  if (RT.activeNote) { saveActiveNote(); renderNotesList(); }
+  else renderHome();
+};
+$('notes-new').onclick = () => { if (RT.activeNote) saveActiveNote(); newNote(); };
+$('note-done').onclick = () => { saveActiveNote(); renderNotesList(); };
+$('note-improve').onclick = () => noteAssist('improve');
+$('note-continue').onclick = () => noteAssist('continue');
+$('note-summary').onclick = () => noteAssist('summary');
+$('note-title').addEventListener('input', () => { const n = activeNote(); if (n) $('notes-title-mini').textContent = $('note-title').value.trim() || 'untitled'; });
+$('note-body').addEventListener('change', saveActiveNote);
+
+/* ===================== SETTINGS ===================== */
+const sheetEl = $('sheet');
+const sheetBg = $('sheet-bg');
+async function openSettings() {
+  $('set-active-model').textContent = profileFor(S.modelId)?.pretty || S.modelId || '—';
+  $('set-name').value = S.user.name || '';
+  $('set-birth-date').value = S.user.birthDate || '';
+  $('set-birth-time').value = S.user.birthTime || '';
+  $('set-birth-place').value = S.user.birthPlace || '';
+  $('set-persona').value = S.persona || 'default';
+  $('set-useweb').value = (S.useWeb === false) ? 'off' : 'on';
+  $('set-storage').textContent = await storageReadout();
+  sheetBg.classList.add('show');
+  sheetEl.classList.add('show');
+}
+function closeSettings() {
+  sheetEl.classList.remove('show');
+  sheetBg.classList.remove('show');
+  S.user.name = $('set-name').value.trim();
+  S.user.birthDate = $('set-birth-date').value.trim();
+  S.user.birthTime = $('set-birth-time').value.trim();
+  S.user.birthPlace = $('set-birth-place').value.trim();
+  S.persona = $('set-persona').value;
+  S.useWeb = $('set-useweb').value !== 'off';
+  saveState();
+  updateWebBtn();
+}
+$('set-close').onclick = closeSettings;
+sheetBg.onclick = closeSettings;
+$('set-switch-model').onclick = () => { closeSettings(); setTimeout(openModelPicker, 200); };
+$('set-reset').onclick = () => {
+  if (!confirm('Wipe everything? Cartridges, settings, prompts — all of it. Model weights stay cached.')) return;
+  localStorage.removeItem(STORE_KEY);
+  S = structuredClone(defaults);
+  saveState();
+  closeSettings();
+  toast('wiped clean');
+  setTimeout(() => { if (RT.modelLoaded) renderHome(); else runGPUCheck(); }, 200);
+};
+
+/* ===================== INSTALL ACK ===================== */
+$('install-skip').onclick = async () => {
+  S.installAcked = true;
+  saveState();
+  await ensurePersistent();
+  runGPUCheck();
+};
+
+/* ===================== SW ===================== */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(err => console.warn('sw register failed', err));
+  });
+}
+
+/* ===================== GO ===================== */
+boot();
+</script>
+<!-- ===== LIVING LAYER (additive: APNG pond + listening swirl + hand-drawn icons) ===== -->
+<style id="living-css">
+.pond{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:0}
+.pond .living{position:absolute;pointer-events:none;-webkit-user-drag:none;user-select:none;object-fit:contain;will-change:transform}
+#view-home{position:relative}
+#view-home>.topbar,#view-home>.deck-intro,#view-home>.deck-scroll,#view-home>.deck-pager,#view-home>.home-foot{position:relative;z-index:1}
+#view-whiteboard .whiteboard{position:relative}
+#view-whiteboard .whiteboard .wb-svg{position:relative;z-index:1}
+@keyframes aq-d1{0%,100%{transform:translate(0,0) rotate(0deg)}50%{transform:translate(7px,-9px) rotate(3deg)}}
+@keyframes aq-d2{0%,100%{transform:translate(0,0) rotate(0deg)}50%{transform:translate(-8px,7px) rotate(-3.5deg)}}
+@keyframes aq-d3{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(5px,6px) scale(1.05)}}
+.living.d1{animation:aq-d1 12s ease-in-out infinite}
+.living.d2{animation:aq-d2 15s ease-in-out infinite}
+.living.d3{animation:aq-d3 10s ease-in-out infinite}
+.icon-btn .icon-img{width:26px;height:26px;object-fit:contain;display:block;margin:auto}
+.swirl-think{width:46px;height:46px;object-fit:contain;display:block;animation:aq-pulse 2.6s ease-in-out infinite}
+@keyframes aq-pulse{0%,100%{opacity:.55;transform:scale(.93)}50%{opacity:1;transform:scale(1.06)}}
+.chat-stats{opacity:.5}
+@media (prefers-reduced-motion:reduce){.living,.swirl-think{animation:none}}
+</style>
+<script>
+(function(){
+  var A='assets/';
+  function img(src,cls){var i=document.createElement('img');i.src=A+src;i.className=cls;i.draggable=false;i.alt='';return i;}
+  function pond(host,specs){
+    if(!host||host.querySelector(':scope > .pond'))return;
+    var p=document.createElement('div');p.className='pond';
+    specs.forEach(function(s){
+      var im=img(s.src,'living '+s.anim);
+      im.style.cssText='width:'+s.size+'px;height:'+s.size+'px;'+s.pos+';opacity:'+(s.op||0.5)+';animation-delay:'+(s.delay||0)+'s';
+      p.appendChild(im);
+    });
+    host.insertBefore(p,host.firstChild);
+  }
+  function swap(id,src){var b=document.getElementById(id);if(b){b.textContent='';b.appendChild(img(src,'icon-img'));}}
+  function decorate(){
+    pond(document.getElementById('view-home'),[
+      {src:'Lilypad_hoverglow.png',size:122,pos:'top:62px;left:-24px',anim:'d1',op:.42,delay:0},
+      {src:'Lilypad_questions.png',size:96,pos:'top:88px;right:-18px',anim:'d2',op:.36,delay:1.5},
+      {src:'Flower_open.png',size:82,pos:'bottom:26px;left:16px',anim:'d3',op:.5,delay:.7},
+      {src:'Ideablob_red.png',size:66,pos:'bottom:54px;right:22px',anim:'d1',op:.3,delay:2.2}
+    ]);
+    pond(document.querySelector('#view-whiteboard .whiteboard'),[
+      {src:'Lilypad_hoverglow.png',size:150,pos:'top:7%;left:-32px',anim:'d2',op:.4,delay:.3},
+      {src:'Lilypad_questions.png',size:120,pos:'bottom:13%;right:-28px',anim:'d1',op:.34,delay:1.2},
+      {src:'Ideablob_red.png',size:80,pos:'top:22%;right:5%',anim:'d3',op:.28,delay:2}
+    ]);
+    swap('home-wb','Tab_icon_wakingboard_Active.png');
+    swap('work-wb','Tab_icon_wakingboard_Active.png');
+    swap('wb-today','Tab_icon_journeyACTIVE.png');
+  }
+  function injectSwirl(node){
+    if(node.nodeType!==1||!node.classList.contains('chat-msg'))return;
+    if(!node.classList.contains('assistant')||node.classList.contains('note'))return;
+    var body=node.querySelector('.body');
+    if(!body||body.textContent.trim()!==''||body.querySelector('img'))return;
+    body.appendChild(img('POSE_listening_SWIRL.png','swirl-think'));
+  }
+  function watch(logId){
+    var log=document.getElementById(logId);if(!log)return;
+    new MutationObserver(function(muts){
+      muts.forEach(function(m){var n=m.addedNodes,i;for(i=0;i<n.length;i++)injectSwirl(n[i]);});
+    }).observe(log,{childList:true});
+  }
+  function start(){try{decorate();watch('chat-log');watch('wb-log');}catch(e){console.warn('living layer',e);}}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
+})();
+</script>
+</body>
+</html>
