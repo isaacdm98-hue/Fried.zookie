@@ -26,6 +26,18 @@ text-chat space does: load **`AutoModelForCausalLM` + `AutoTokenizer`** (text on
 retries **without the browser cache** (Safari chokes caching huge entries) and
 requests persistent storage — so the download no longer times out at ~1.4 GB.
 
+**Prepackage the weights (fixes flaky downloads).** If the HF download stalls
+(e.g. ~52%), you can bundle the model into the PWA: drop the files under
+`aqau-pluto/models/onnx-community/gemma-4-E2B-it-ONNX/…` and the app loads them
+locally instead of from Hugging Face (auto-fallback to HF if absent). See
+`models/README.md` for the exact layout and a one-line download command.
+
+**Vision + audio (multimodal).** Set **Settings → Gemma mode → Multimodal** and
+reload the model: it loads the vision + audio encoders and a `＋` button appears
+in chat to attach an image or a sound for Gemma to understand. Text-only is the
+default because it's much lighter (and fits iPhone); multimodal is for stronger
+devices.
+
 **The clever way (Web Worker).** Gemma loads and generates inside a dedicated
 **Web Worker** — the pattern the webml-community spaces use and the recommended
 way to run WebGPU inference. The main thread never freezes during the long
