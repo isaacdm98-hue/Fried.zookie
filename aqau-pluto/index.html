@@ -1822,7 +1822,8 @@ const MODEL_PROFILES = [
   { id: 'gemma-4-e2b-litert', pretty: 'Gemma 4 · E2B (on-device)', note: 'google · LiteRT via MediaPipe — the real Gemma 4. ~2B: shines on iPad/strong devices, borderline in an iPhone tab. pick/download the model once, then instant.', tags: ['general','code'], runtime: 'mediapipe', isQwen3: false, contextWindowSize: 2048, main: true, tier: 'big', estVRAM: 1100, estDL: 1000 },
   { id: 'onnx-community/gemma-4-E2B-it-ONNX', pretty: 'Gemma 4 · E2B (ONNX)', note: 'google · transformers.js/webgpu · multimodal but heavy — iPad/desktop.', tags: ['general','code'], runtime: 'transformers', dtype: 'q4f16', isQwen3: false, contextWindowSize: 4096, tier: 'big', estVRAM: 2600, estDL: 3000 },
   { id: 'gemma-2-2b-it-q4f16_1-MLC-1k', pretty: 'Gemma 2 · 2B', note: 'web-llm · the older gemma · 1k context · iPad/desktop.', tags: ['general'], runtime: 'webllm', isQwen3: false, contextWindowSize: 1024, tier: 'big', estVRAM: 1583, estDL: 1500 },
-  { id: 'onnx-community/gemma-4-E4B-it-ONNX', pretty: 'Gemma 4 · E4B (ONNX)', note: 'google · the biggest — sharpest answers · wants a strong device & a big download (desktop/iPad).', tags: ['general','code'], runtime: 'transformers', dtype: 'q4f16', isQwen3: false, contextWindowSize: 4096, tier: 'huge', estVRAM: 4400, estDL: 4800 },
+  { id: 'gemma-4-e4b-litert', pretty: 'Gemma 4 · E4B (on-device)', note: 'google · LiteRT via MediaPipe — the biggest Gemma 4, sharpest answers. great on M-series iPad (8GB) / desktop. download the model once, then instant.', tags: ['general','code'], runtime: 'mediapipe', isQwen3: false, contextWindowSize: 4096, main: true, tier: 'huge', estVRAM: 2600, estDL: 2600 },
+  { id: 'onnx-community/gemma-4-E4B-it-ONNX', pretty: 'Gemma 4 · E4B (ONNX)', note: 'google · the biggest via transformers.js · multimodal · big download · strong desktop/iPad.', tags: ['general','code'], runtime: 'transformers', dtype: 'q4f16', isQwen3: false, contextWindowSize: 4096, tier: 'huge', estVRAM: 4400, estDL: 4800 },
 ];
 const profileFor = (id) => MODEL_PROFILES.find(m => m.id === id);
 const runtimeOf = (id) => profileFor(id)?.runtime || 'webllm';
@@ -1838,12 +1839,22 @@ function deviceClass() {
 }
 // Biggest tier each device class can run comfortably.
 const TIER_RANK = { phone: 0, 'strong-phone': 1, big: 2, huge: 3 };
-const DEVICE_CAP = { phone: 0, tablet: 2, desktop: 3 };
+// iPads split by silicon: M-series report a big GPU buffer (>=1GB) and have 8GB+
+// unified memory, so they can take the largest Gemma 4 (E4B). Older A-series
+// iPads report small buffers → cap at the 2B tier.
+function strongTablet() { const mb = LAST_GPU?.maxBufferSize ? LAST_GPU.maxBufferSize / 1048576 : 0; return mb >= 1024; }
+function deviceCap() {
+  const dev = deviceClass();
+  if (dev === 'desktop') return 3;
+  if (dev === 'tablet') return strongTablet() ? 3 : 2;   // M-series iPad → up to E4B
+  return 0;                                              // phone → tiny only
+}
 function recommendedModelId() {
   const dev = deviceClass();
   if (dev === 'phone') return 'Qwen3-0.6B-q4f16_1-MLC';
-  if (dev === 'tablet') return 'gemma-4-e2b-litert';
-  return 'gemma-4-e2b-litert';
+  if (dev === 'desktop') return 'gemma-4-e4b-litert';
+  // iPad: M-series (8GB, e.g. iPad Air M1) → biggest Gemma 4; older iPad → E2B.
+  return strongTablet() ? 'gemma-4-e4b-litert' : 'gemma-4-e2b-litert';
 }
 function getActualVRAM(modelId) {
   try {
@@ -1868,7 +1879,7 @@ async function isCached(modelId) {
 let LAST_GPU = null;
 function fitFor(modelId) {
   const tier = profileFor(modelId)?.tier || 'big';
-  const cap = DEVICE_CAP[deviceClass()];
+  const cap = deviceCap();
   const r = TIER_RANK[tier];
   if (r == null || cap == null) return 'unknown';
   if (r <= cap) return 'fits';
@@ -2079,12 +2090,13 @@ const LITE_CATALOG = [
   { id:'e2b-int8', label:'Gemma 4 · E2B int8 — ~2.0 GB · iPad / desktop', url:'https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/main/gemma-4-E2B-it-int8-web.litertlm', gated:true },
   { id:'e4b-int4', label:'Gemma 4 · E4B int4 — ~2.6 GB · biggest, strong devices', url:'https://huggingface.co/litert-community/gemma-4-E4B-it-litert-lm/resolve/main/gemma-4-E4B-it-int4-web.litertlm', gated:true },
 ];
-function populateLiteCatalog(){
-  const sel = $('lite-model'); if(!sel || sel.children.length) return;
-  LITE_CATALOG.forEach(m => { const o = document.createElement('option'); o.value = m.id; o.textContent = m.label; sel.appendChild(o); });
-  // Default to the biggest that the GPU plausibly fits (fall back to E2B int4).
+function populateLiteCatalog(profile){
+  const sel = $('lite-model'); if(!sel) return;
+  if(!sel.children.length){ LITE_CATALOG.forEach(m => { const o = document.createElement('option'); o.value = m.id; o.textContent = m.label; sel.appendChild(o); }); }
+  // If a specific Gemma 4 size was chosen, match it; else the biggest the GPU fits.
+  const wantE4B = profile && /e4b/i.test(profile.id);
   const budgetMB = LAST_GPU?.maxBufferSize ? LAST_GPU.maxBufferSize/1048576 : 0;
-  sel.value = budgetMB >= 2200 ? 'e4b-int4' : budgetMB >= 1400 ? 'e2b-int8' : 'e2b-int4';
+  sel.value = wantE4B ? 'e4b-int4' : budgetMB >= 2200 ? 'e4b-int4' : budgetMB >= 1400 ? 'e2b-int8' : 'e2b-int4';
   const syncUrl = () => { const m = LITE_CATALOG.find(x => x.id === sel.value); if(m && $('lite-url')) $('lite-url').value = m.url; };
   syncUrl(); sel.onchange = syncUrl;
 }
@@ -2190,6 +2202,7 @@ async function mpStart(modelAssetPath, profile, label) {
     });
     RT.engine = new MediaPipeEngine(llm, profile.id);
     RT.runtime='mediapipe'; RT.modelLoaded=true; S.modelId=profile.id; saveState();
+    try{ localStorage.setItem('aqau.liteModelId', profile.id); }catch{}
     fillEl.style.width='100%'; phaseEl.textContent='ready';
     $('stat-model').textContent=profile.pretty||profile.id;
     $('chat-send').disabled=false; $('wb-send').disabled=false;
@@ -2211,15 +2224,18 @@ async function loadMediaPipe(modelId, profile) {
   $('load-readout').textContent='looking for your saved model…';
   $('lite-pick').style.display='none';
   RT._litePending = profile;
-  // Prefer a model already on this device: OPFS first (streamed downloads), then
-  // an IndexedDB blob (a picked file). Both load with no re-download.
-  let saved=null;
-  try{ saved=await opfsModelFile(); }catch{}
-  if(!saved){ try{ saved=await mpIdbGet('model'); }catch{} }
-  if(saved){ mpStart(URL.createObjectURL(saved), profile, 'saved · '+mbStr(saved.size)+' MB'); return; }
-  // Nothing on device → offer in-app download or a file pick.
-  populateLiteCatalog();
-  $('load-readout').textContent='pick a size to download, or choose a file';
+  // Prefer a model already on this device — but only if it's the SAME size that
+  // was saved (one on-device slot). Switching E2B↔E4B re-downloads.
+  let savedId=null; try{ savedId=localStorage.getItem('aqau.liteModelId'); }catch{}
+  if(savedId === profile.id){
+    let saved=null;
+    try{ saved=await opfsModelFile(); }catch{}
+    if(!saved){ try{ saved=await mpIdbGet('model'); }catch{} }
+    if(saved){ mpStart(URL.createObjectURL(saved), profile, 'saved · '+mbStr(saved.size)+' MB'); return; }
+  }
+  // Nothing usable on device → offer in-app download or a file pick.
+  populateLiteCatalog(profile);
+  $('load-readout').textContent = savedId && savedId !== profile.id ? 'new size — download it once below' : 'pick a size to download, or choose a file';
   $('lite-pick').style.display='block';
 }
 $('lite-download').addEventListener('click', () => downloadModelToStore());

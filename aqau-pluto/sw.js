@@ -4,7 +4,7 @@
 // Cross-origin requests (HF weights, esm.run, jsdelivr, fonts, web research)
 // are passed straight through — see the fetch handler.
 
-const VERSION = 'aqau-pluto-v29-device-aware'
+const VERSION = 'aqau-pluto-v30-ipad-e4b'
 const SHELL = [
   './',
   './index.html',
