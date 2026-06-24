@@ -56,6 +56,19 @@ Results are cached in `localStorage`, so the burst only runs once per model/day.
   [Kibo/AstrologyChart2](https://github.com/Kibo/AstrologyChart2), fed the same
   `{points, cusps}` data; it falls back to the hand-drawn wheel if it can't load.
 
+### Studio & production features
+- **Markdown chat**: replies and readings render bold/italic/code/headings/lists/
+  links, each with a copy button. **Stop** mid-generation and **Regenerate** the
+  last reply.
+- **Cartridge management** (`⋯`): rename, duplicate, export `.html`, delete.
+- **Charts**: cycle **today → natal → transits** with `◑`; transits draw today's
+  planets (gold) over your natal wheel.
+- **Your data is yours**: export/import a full JSON backup, and clear the model
+  cache, from Settings.
+- **Installable PWA**: enriched manifest with app **shortcuts** (New build /
+  Whiteboard / Atelier / Notebook), an **Install** button (Android/desktop) and
+  the iOS Add-to-Home gate, plus a service worker that auto-updates.
+
 ### Internet features (optional, online-only)
 Works fully offline. When you're connected and **Web research** is on (Settings),
 Gemma can reach the web to ground its answers:

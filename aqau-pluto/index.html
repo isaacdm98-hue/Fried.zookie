@@ -1256,7 +1256,7 @@ body.aq-anim .btn, body.aq-anim .chip, body.aq-anim .icon-btn, body.aq-anim .too
     </div>
     <div class="deck-scroll" id="deck"></div>
     <div class="deck-pager" id="deck-pager"></div>
-    <div class="home-foot"></div>
+    <div class="home-foot"><button class="btn ghost" id="home-install" style="display:none;">⤓ Install app</button></div>
   </section>
 
   <!-- WORKSPACE -->
@@ -1476,11 +1476,22 @@ body.aq-anim .btn, body.aq-anim .chip, body.aq-anim .icon-btn, body.aq-anim .too
     <label>Storage</label>
     <div id="set-storage" class="mono" style="font-size:10.5px; color:var(--bone-3); padding:5px 0;">—</div>
   </div>
+  <div class="field">
+    <label>Your data — cartridges, notes, drawings, settings</label>
+    <div class="row">
+      <button class="btn ghost" id="set-export">Export backup</button>
+      <button class="btn ghost" id="set-import">Import backup</button>
+    </div>
+    <input type="file" id="set-import-file" accept="application/json,.json" style="display:none" />
+    <div style="height:6px"></div>
+    <button class="btn ghost" id="set-clear-cache" style="width:100%;">Clear model cache (frees the ~1.5 GB weights)</button>
+  </div>
   <hr/>
   <div class="row">
     <button class="btn-text" id="set-reset">Wipe data</button>
     <button class="btn warm" id="set-close">Done</button>
   </div>
+  <div class="mono" id="set-version" style="text-align:center; font-size:8.5px; color:var(--bone-4); margin-top:10px;">Aqau Pluto</div>
 </aside>
 
 <!-- CARTRIDGE ACTIONS -->
@@ -1702,6 +1713,7 @@ async function boot() {
   setOnline(navigator.onLine);
   updateWebBtn();
   setAnimEnabled();
+  try { const go = new URLSearchParams(location.search).get('go'); if (go) RT.pendingGo = go; } catch {}
 
   // visualViewport offset for keyboard
   if (window.visualViewport) {
@@ -2108,7 +2120,32 @@ function renderHome() {
 
   aqReveal([...deck.children], { frame: true, step: 60 });
   seedFromKnowledge();
+
+  // Honour an app-shortcut deep link (?go=…), once, after home is up.
+  if (RT.pendingGo) {
+    const go = RT.pendingGo; RT.pendingGo = null;
+    setTimeout(() => {
+      if (go === 'new') createBlankCartridge();
+      else if (go === 'whiteboard') { renderWhiteboard(); show('view-whiteboard'); seedWhiteboardLog(); }
+      else if (go === 'atelier') openAtelier();
+      else if (go === 'notes') openNotes();
+    }, 300);
+  }
 }
+
+// Install prompt (Android / desktop). iOS uses the existing Add-to-Home gate.
+let deferredInstall = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault(); deferredInstall = e;
+  const b = $('home-install'); if (b) b.style.display = 'inline-block';
+});
+window.addEventListener('appinstalled', () => { deferredInstall = null; const b = $('home-install'); if (b) b.style.display = 'none'; toast('installed — open it from your home screen'); });
+$('home-install').onclick = async () => {
+  if (!deferredInstall) { toast('use your browser menu → Install / Add to Home Screen'); return; }
+  deferredInstall.prompt();
+  try { await deferredInstall.userChoice; } catch {}
+  deferredInstall = null; $('home-install').style.display = 'none';
+};
 
 $('home-wb').onclick = () => { renderWhiteboard(); show('view-whiteboard'); seedWhiteboardLog(); };
 $('home-notes').onclick = openNotes;
@@ -2865,11 +2902,15 @@ async function roughFrame(el, { stroke = '#e8ddc8', strokeWidth = 1.1, roughness
 }
 
 async function renderWhiteboard() {
-  const mode = (RT.chartMode === 'natal' && birthMoment()) ? 'natal' : 'today';
+  const hasBirth = !!birthMoment();
+  let mode = RT.chartMode || 'today';
+  if ((mode === 'natal' || mode === 'transits') && !hasBirth) mode = 'today';
   const svg = $('wb-svg');
   const host = $('wb-chart');
-  const ps = await chartPositions(mode);
-  const cusps = await chartCusps(mode); // null unless natal + geocoded birthplace
+  // For transits: natal positions form the inner wheel, today's the outer ring.
+  const ps = await chartPositions(mode === 'transits' ? 'natal' : mode);
+  const outer = (mode === 'transits') ? await positionsFor(new Date()) : null;
+  const cusps = await chartCusps((mode === 'natal' || mode === 'transits') ? 'natal' : 'today');
 
   // Progressive enhancement: Kibo AstrologyChart2 if the user chose it.
   if (S.chartEngine === 'astrochart2' && await tryAstrochart(ps, cusps)) {
@@ -2878,7 +2919,7 @@ async function renderWhiteboard() {
   }
   if (host) host.style.display = 'none';
   svg.style.display = 'block';
-  await drawWheel(svg, ps, mode, cusps);
+  await drawWheel(svg, ps, mode, cusps, outer);
 }
 
 async function tryAstrochart(ps, cusps) {
@@ -2895,9 +2936,9 @@ async function tryAstrochart(ps, cusps) {
   } catch (e) { console.warn('astrochart2 failed, using hand-drawn wheel', e); return false; }
 }
 
-async function drawWheel(svg, ps, mode, cusps) {
+async function drawWheel(svg, ps, mode, cusps, outer) {
   svg.innerHTML = '';
-  const cx = 200, cy = 300, R = 152, rZ = R - 26, rPl = rZ - 14, rAsp = rPl - 16;
+  const cx = 200, cy = 300, R = 152, rZ = R - 26, rPl = rZ - (outer ? 30 : 14), rAsp = rPl - 16;
   const xy = (deg, r) => { const a = (norm360(deg) - 90) * Math.PI / 180; return [cx + Math.cos(a) * r, cy + Math.sin(a) * r]; };
 
   let rc = null;
@@ -2960,10 +3001,22 @@ async function drawWheel(svg, ps, mode, cusps) {
     text(lx, ly, `${Math.floor(norm360(p.deg) % 30)}°${signOf(p.deg).slice(0, 3)}${p.retro ? ' ℞' : ''}`, { size: 9.5, font: "'Caveat', cursive", fill: '#e8ddc8aa' });
   });
 
+  // outer ring: transiting planets over the natal wheel
+  if (outer) {
+    circle(cx, cy, (rZ - 2) * 2, { strokeWidth: 0.5, stroke: '#c89a4a55' });
+    const ro = rZ - 12;
+    outer.forEach(p => {
+      const [px, py] = xy(p.deg, ro);
+      circle(px, py, 16, { fill: '#0d0b09', fillStyle: 'solid', stroke: '#c89a4a', strokeWidth: 0.9 });
+      text(px, py + 4, p.g, { size: 11, fill: '#c89a4a' });
+    });
+  }
+
   // title
-  const when = mode === 'natal' ? `your chart · ${S.user.birthDate}` : `the sky · ${new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}`;
+  const when = mode === 'transits' ? 'transits over natal' : mode === 'natal' ? `your chart · ${S.user.birthDate}` : `the sky · ${new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}`;
   text(cx, 34, when, { font: "'Caveat', cursive", size: 21 });
-  text(cx, 52, mode === 'natal' ? (cusps ? 'natal · equal houses' : 'natal positions') : 'live transits', { font: "'IBM Plex Mono', monospace", size: 8.5, fill: '#e8ddc877' });
+  const sub = mode === 'transits' ? 'natal (inner) · today (gold, outer)' : mode === 'natal' ? (cusps ? 'natal · equal houses' : 'natal positions') : 'live transits';
+  text(cx, 52, sub, { font: "'IBM Plex Mono', monospace", size: 8.5, fill: '#e8ddc877' });
 
   animateDrawIn(g);
 }
@@ -2974,9 +3027,9 @@ $('wb-back').onclick = () => {
 };
 $('wb-today').onclick = () => askWhiteboard("Give me a brief reading of today's transits. Plain language. No woo. Three short paragraphs.");
 $('wb-mode').onclick = () => {
-  if (!birthMoment()) { toast('add birth data in settings for your natal chart'); return; }
-  RT.chartMode = (RT.chartMode === 'natal') ? 'today' : 'natal';
-  toast(RT.chartMode === 'natal' ? 'your natal chart' : 'today’s sky');
+  if (!birthMoment()) { toast('add birth data in settings for natal/transits'); return; }
+  RT.chartMode = RT.chartMode === 'today' ? 'natal' : RT.chartMode === 'natal' ? 'transits' : 'today';
+  toast(RT.chartMode === 'natal' ? 'your natal chart' : RT.chartMode === 'transits' ? 'transits over natal' : 'today’s sky');
   renderWhiteboard();
 };
 $('wb-send').onclick = () => {
@@ -3673,6 +3726,7 @@ async function openSettings() {
   $('set-handdrawn').value = (S.handDrawn === false) ? 'off' : 'on';
   $('set-useweb').value = (S.useWeb === false) ? 'off' : 'on';
   $('set-storage').textContent = await storageReadout();
+  const v = $('set-version'); if (v) v.textContent = `Aqau Pluto · v8 · ${RT.runtime || 'no engine'} · ${navigator.onLine ? 'online' : 'offline'}`;
   sheetBg.classList.add('show');
   sheetEl.classList.add('show');
 }
@@ -3703,6 +3757,42 @@ $('set-reset').onclick = () => {
   closeSettings();
   toast('wiped clean');
   setTimeout(() => { if (RT.modelLoaded) renderHome(); else runGPUCheck(); }, 200);
+};
+
+/* ── DATA EXPORT / IMPORT / CACHE ── */
+$('set-export').onclick = () => {
+  const payload = JSON.stringify({ app: 'aqau-pluto', version: 8, exportedAt: new Date().toISOString(), state: S }, null, 2);
+  const blob = new Blob([payload], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'aqau-pluto-backup.json';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  toast('backup exported');
+};
+$('set-import').onclick = () => $('set-import-file').click();
+$('set-import-file').onchange = async (e) => {
+  const file = e.target.files && e.target.files[0]; if (!file) return;
+  try {
+    const data = JSON.parse(await file.text());
+    const incoming = data.state || data;
+    if (!incoming || typeof incoming !== 'object') throw new Error('not a backup');
+    if (!confirm('Import this backup? It replaces your current cartridges, notes, drawings and settings.')) return;
+    S = Object.assign(structuredClone(defaults), incoming);
+    saveState();
+    closeSettings();
+    toast('backup imported');
+    setTimeout(() => { if (RT.modelLoaded) renderHome(); else runGPUCheck(); }, 200);
+  } catch (err) { toast('import failed: ' + (err?.message || err)); }
+  finally { e.target.value = ''; }
+};
+$('set-clear-cache').onclick = async () => {
+  if (!confirm('Clear the cached model weights? The model re-downloads next time you load it.')) return;
+  try {
+    if ('caches' in window) { const keys = await caches.keys(); await Promise.all(keys.filter(k => /webllm|mlc|transformers|onnx|huggingface/i.test(k)).map(k => caches.delete(k))); }
+    toast('model cache cleared');
+    $('set-storage').textContent = await storageReadout();
+  } catch (e) { toast('clear failed'); }
 };
 
 /* ===================== INSTALL ACK ===================== */
