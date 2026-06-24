@@ -1294,7 +1294,7 @@ body.aq-live::before { animation: aqGrain 1.1s steps(5) infinite; }
       <div class="load-phase" id="load-phase">pulling the weights</div>
       <div class="load-bar"><div class="load-fill" id="load-fill"></div></div>
       <div class="load-readout mono" id="load-readout">0%</div>
-      <div class="load-aside" id="load-aside">First time pulls ~1.4&nbsp;GB, then it's cached. If it keeps stalling, prepackage the weights into the app (see models/README) so it loads locally instead.</div>
+      <div class="load-aside" id="load-aside">First run downloads the weights once, then they're cached on-device. On iPhone the small 4-bit model (~400&nbsp;MB) is the reliable pick; bigger Gemma 4 builds are best on iPad/desktop.</div>
       <div id="lite-pick" style="display:none; margin-top:18px;">
         <div class="lite-size" id="lite-size">
           <label style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--bone-2);display:block;margin-bottom:6px;">Model size — bigger is smarter, heavier</label>
@@ -1815,17 +1815,36 @@ function haptic(ms = 8) { if (S.haptics !== false && navigator.vibrate) { try { 
 // with the WebGPU kernels build (onnx-community ONNX export, q4f16). The remaining
 // profiles run on web-llm (MLC) and stay as lighter / fallback options.
 const MODEL_PROFILES = [
-  { id: 'gemma-4-e2b-litert', pretty: 'Gemma 4 · E2B (on-device)', note: 'google · LiteRT mobile via MediaPipe · the build that actually runs on phones. pick the .task file once, then instant.', tags: ['general','code','recommended'], runtime: 'mediapipe', isQwen3: false, contextWindowSize: 2048, recommended: true, main: true, estVRAM: 1100, estDL: 1000 },
-  { id: 'onnx-community/gemma-4-E2B-it-ONNX', pretty: 'Gemma 4 · E2B (ONNX)', note: 'google · transformers.js/webgpu · multimodal but heavy — best on iPad/desktop.', tags: ['general','code'], runtime: 'transformers', dtype: 'q4f16', isQwen3: false, contextWindowSize: 4096, estVRAM: 2600, estDL: 3000 },
-  { id: 'onnx-community/gemma-4-E4B-it-ONNX', pretty: 'Gemma 4 · E4B (ONNX)', note: 'google · larger gemma 4 · sharper · wants a strong device & a big download.', tags: ['general','code'], runtime: 'transformers', dtype: 'q4f16', isQwen3: false, contextWindowSize: 4096, estVRAM: 4400, estDL: 4800 },
-  { id: 'Qwen3-1.7B-q4f16_1-MLC', pretty: 'Qwen 3 · 1.7B', note: 'web-llm · strong all-rounder · the older default.', tags: ['general'], runtime: 'webllm', isQwen3: true, contextWindowSize: 2048, estVRAM: 2037, estDL: 1100 },
-  { id: 'Qwen2.5-Coder-1.5B-Instruct-q4f16_1-MLC', pretty: 'Qwen 2.5 Coder · 1.5B', note: 'web-llm · pure-coder · no thinking-mode quirks · safest iPhone fit.', tags: ['code'], runtime: 'webllm', isQwen3: false, contextWindowSize: 4096, estVRAM: 1630, estDL: 950 },
-  { id: 'Qwen3-0.6B-q4f16_1-MLC', pretty: 'Qwen 3 · 0.6B', note: 'web-llm · fits anywhere · lighter quality · fast.', tags: ['general','tiny'], runtime: 'webllm', isQwen3: true, contextWindowSize: 4096, estVRAM: 1403, estDL: 400 },
-  { id: 'gemma-2-2b-it-q4f16_1-MLC-1k', pretty: 'Gemma 2 · 2B', note: 'web-llm · the older gemma · 1k context.', tags: ['general'], runtime: 'webllm', isQwen3: false, contextWindowSize: 1024, estVRAM: 1583, estDL: 1500 },
-  { id: 'Qwen2.5-Coder-0.5B-Instruct-q4f16_1-MLC', pretty: 'Qwen 2.5 Coder · 0.5B', note: 'web-llm · baseline · runs on anything.', tags: ['code','tiny'], runtime: 'webllm', isQwen3: false, contextWindowSize: 4096, estVRAM: 945, estDL: 300 },
+  { id: 'Qwen3-0.6B-q4f16_1-MLC', pretty: 'Qwen 3 · 0.6B', note: 'web-llm · the reliable iPhone pick — sub-1GB, 4-bit, runs in a Safari tab without the crash loop. fast.', tags: ['general','tiny'], runtime: 'webllm', isQwen3: true, contextWindowSize: 4096, tier: 'phone', estVRAM: 1403, estDL: 400 },
+  { id: 'Qwen2.5-Coder-0.5B-Instruct-q4f16_1-MLC', pretty: 'Qwen 2.5 Coder · 0.5B', note: 'web-llm · tiniest coder · runs on anything · baseline quality.', tags: ['code','tiny'], runtime: 'webllm', isQwen3: false, contextWindowSize: 4096, tier: 'phone', estVRAM: 945, estDL: 300 },
+  { id: 'Qwen2.5-Coder-1.5B-Instruct-q4f16_1-MLC', pretty: 'Qwen 2.5 Coder · 1.5B', note: 'web-llm · stronger coder · ok on a recent iPhone, comfy on iPad/desktop.', tags: ['code'], runtime: 'webllm', isQwen3: false, contextWindowSize: 4096, tier: 'strong-phone', estVRAM: 1630, estDL: 950 },
+  { id: 'Qwen3-1.7B-q4f16_1-MLC', pretty: 'Qwen 3 · 1.7B', note: 'web-llm · strong all-rounder · iPad/desktop — heavy for an iPhone tab.', tags: ['general'], runtime: 'webllm', isQwen3: true, contextWindowSize: 2048, tier: 'big', estVRAM: 2037, estDL: 1100 },
+  { id: 'gemma-4-e2b-litert', pretty: 'Gemma 4 · E2B (on-device)', note: 'google · LiteRT via MediaPipe — the real Gemma 4. ~2B: shines on iPad/strong devices, borderline in an iPhone tab. pick/download the model once, then instant.', tags: ['general','code'], runtime: 'mediapipe', isQwen3: false, contextWindowSize: 2048, main: true, tier: 'big', estVRAM: 1100, estDL: 1000 },
+  { id: 'onnx-community/gemma-4-E2B-it-ONNX', pretty: 'Gemma 4 · E2B (ONNX)', note: 'google · transformers.js/webgpu · multimodal but heavy — iPad/desktop.', tags: ['general','code'], runtime: 'transformers', dtype: 'q4f16', isQwen3: false, contextWindowSize: 4096, tier: 'big', estVRAM: 2600, estDL: 3000 },
+  { id: 'gemma-2-2b-it-q4f16_1-MLC-1k', pretty: 'Gemma 2 · 2B', note: 'web-llm · the older gemma · 1k context · iPad/desktop.', tags: ['general'], runtime: 'webllm', isQwen3: false, contextWindowSize: 1024, tier: 'big', estVRAM: 1583, estDL: 1500 },
+  { id: 'onnx-community/gemma-4-E4B-it-ONNX', pretty: 'Gemma 4 · E4B (ONNX)', note: 'google · the biggest — sharpest answers · wants a strong device & a big download (desktop/iPad).', tags: ['general','code'], runtime: 'transformers', dtype: 'q4f16', isQwen3: false, contextWindowSize: 4096, tier: 'huge', estVRAM: 4400, estDL: 4800 },
 ];
 const profileFor = (id) => MODEL_PROFILES.find(m => m.id === id);
 const runtimeOf = (id) => profileFor(id)?.runtime || 'webllm';
+// Device class drives honest fit + the default pick. The hard iOS-Safari limit
+// is the WebContent process budget (~300–500MB practical), NOT maxBufferSize —
+// so a 2B model that "fits" the GPU buffer can still get Jetsam-killed on iPhone.
+function deviceClass() {
+  const ua = navigator.userAgent || '';
+  if (/iPhone|iPod/.test(ua)) return 'phone';
+  if (/iPad/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)) return 'tablet';
+  if (/Android/.test(ua) && /Mobile/.test(ua)) return 'phone';
+  return 'desktop';
+}
+// Biggest tier each device class can run comfortably.
+const TIER_RANK = { phone: 0, 'strong-phone': 1, big: 2, huge: 3 };
+const DEVICE_CAP = { phone: 0, tablet: 2, desktop: 3 };
+function recommendedModelId() {
+  const dev = deviceClass();
+  if (dev === 'phone') return 'Qwen3-0.6B-q4f16_1-MLC';
+  if (dev === 'tablet') return 'gemma-4-e2b-litert';
+  return 'gemma-4-e2b-litert';
+}
 function getActualVRAM(modelId) {
   try {
     if (runtimeOf(modelId) === 'webllm') {
@@ -1844,19 +1863,19 @@ async function isCached(modelId) {
   } catch { return false; }
 }
 
-// Cookbook (odysseus-inspired): rate how well a model fits the detected GPU.
-// Returns 'fits' | 'tight' | 'heavy' | 'unknown' from the last GPU probe.
+// Cookbook: rate how well a model fits THIS device. Tier-vs-device is the honest
+// signal on iOS (the GPU buffer size lies about real headroom — see deviceClass).
 let LAST_GPU = null;
 function fitFor(modelId) {
-  const vram = getActualVRAM(modelId) || profileFor(modelId)?.estVRAM || 0;
-  const budget = LAST_GPU?.maxBufferSize ? LAST_GPU.maxBufferSize / 1024 / 1024 : null;
-  if (!budget || !vram) return 'unknown';
-  // maxBufferSize is a rough proxy for headroom; weights need ~vram working set.
-  if (vram <= budget * 0.55) return 'fits';
-  if (vram <= budget * 0.95) return 'tight';
+  const tier = profileFor(modelId)?.tier || 'big';
+  const cap = DEVICE_CAP[deviceClass()];
+  const r = TIER_RANK[tier];
+  if (r == null || cap == null) return 'unknown';
+  if (r <= cap) return 'fits';
+  if (r === cap + 1) return 'tight';
   return 'heavy';
 }
-const FIT_LABEL = { fits: 'fits your phone', tight: 'might be tight', heavy: 'heavy — may not load', unknown: '' };
+const FIT_LABEL = { fits: 'fits this device', tight: 'might be tight', heavy: 'heavy — may crash', unknown: '' };
 
 /* ===================== GPU ===================== */
 async function checkWebGPU() {
@@ -1973,11 +1992,18 @@ async function runGPUCheck() {
     alt.onclick = openModelPicker;
     wrap.appendChild(alt);
   } else {
-    const cont = document.createElement('button');
-    cont.className = 'btn';
-    cont.textContent = 'Continue';
-    cont.onclick = openModelPicker;
-    wrap.appendChild(cont);
+    // No prior choice → offer the device-appropriate model in one tap.
+    const rec = profileFor(recommendedModelId());
+    const go = document.createElement('button');
+    go.className = 'btn';
+    go.textContent = rec ? `Load ${rec.pretty}` : 'Continue';
+    go.onclick = () => rec ? loadModel(rec.id) : openModelPicker();
+    wrap.appendChild(go);
+    const alt = document.createElement('button');
+    alt.className = 'btn ghost';
+    alt.textContent = 'Choose a model';
+    alt.onclick = openModelPicker;
+    wrap.appendChild(alt);
   }
 }
 
@@ -1989,14 +2015,16 @@ async function renderModelList() {
   list.innerHTML = '';
   await isCached();
   let preselect = null;
+  const recId = recommendedModelId();
   for (const m of MODEL_PROFILES) {
     const card = document.createElement('div');
     card.className = 'model-card';
-    if (m.recommended) card.classList.add('recommended');
+    if (m.id === recId) card.classList.add('recommended');
     card.dataset.modelId = m.id;
-    // base tags + cookbook hardware-fit badge
+    // base tags + device-fit badge
     const baseTags = m.tags.map(t => `<span class="tag ${t}">${t}</span>`);
     if (m.main) baseTags.unshift('<span class="tag main">gemma 4</span>');
+    if (m.id === recId) baseTags.unshift('<span class="tag recommended">best for you</span>');
     const fit = fitFor(m.id);
     if (fit !== 'unknown') baseTags.push(`<span class="tag ${fit}">${FIT_LABEL[fit]}</span>`);
     const tagsHtml = baseTags.join(' ');
@@ -2009,8 +2037,8 @@ async function renderModelList() {
     `;
     card.addEventListener('click', () => selectModelCard(m.id, card));
     list.appendChild(card);
-    // Default the selection to the previously used model, else the main (Gemma 4).
-    if (S.modelId ? (m.id === S.modelId) : m.main) preselect = card;
+    // Default to the previously used model, else the device-appropriate pick.
+    if (S.modelId ? (m.id === S.modelId) : (m.id === recId)) preselect = card;
   }
   if (preselect) selectModelCard(preselect.dataset.modelId, preselect);
   aqReveal([...list.children]);
@@ -3234,6 +3262,7 @@ async function runDoctor(c) {
   else lines.push(`✗ WebGPU unavailable (${gpu?.reason || '—'})`);
   if (RT.modelLoaded) { const p = profileFor(RT.modelId); lines.push(`✓ model · ${p?.pretty || RT.modelId} (${p?.runtime || '—'})`); }
   else lines.push('✗ no model loaded');
+  lines.push('· device · ' + deviceClass() + ' · best fit: ' + (profileFor(recommendedModelId())?.pretty || '—'));
   lines.push((RT.online ? '✓' : '·') + ' network · ' + (RT.online ? 'online' : 'offline'));
   lines.push('· web research · ' + (S.useWeb === false ? 'off' : 'on'));
   lines.push('· memory · ' + ((S.memory?.facts || []).length) + ' facts' + (S.memory?.natal ? ' + natal' : ''));
