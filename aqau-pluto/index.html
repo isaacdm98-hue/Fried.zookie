@@ -3059,6 +3059,7 @@ async function streamReply(c, userText, ground, media) {
 
   const placeholder = appendMsg('assistant', '');
   const bodyEl = placeholder.querySelector('.body');
+  placeholder.classList.add('talking');
   let acc = '';
 
   try {
@@ -3100,6 +3101,7 @@ async function streamReply(c, userText, ground, media) {
   } finally {
     RT.generating = false;
     setSendStop(false);
+    placeholder.classList.remove('talking');
   }
 
   const cleaned = stripThink(acc) + (RT.abort ? ' …(stopped)' : '');
@@ -3766,6 +3768,7 @@ async function askWhiteboard(question) {
   const aMsg = document.createElement('div');
   aMsg.className = 'chat-msg assistant';
   aMsg.innerHTML = `<div class="from">aqau pluto</div><div class="body"></div>`;
+  aMsg.classList.add('talking');
   log.appendChild(aMsg);
   const body = aMsg.querySelector('.body');
   let acc = '';
@@ -3782,6 +3785,7 @@ async function askWhiteboard(question) {
     aMsg.classList.add('note');
   } finally {
     RT.generating = false;
+    aMsg.classList.remove('talking');
   }
   // Astrology conversations feed memory too.
   RT.wbTurns = (RT.wbTurns || 0) + 1;
@@ -4706,6 +4710,8 @@ boot().catch((e) => {
 #view-home>.topbar,#view-home>.deck-intro,#view-home>.deck-scroll,#view-home>.deck-pager,#view-home>.home-foot{position:relative;z-index:1}
 #view-whiteboard .whiteboard{position:relative}
 #view-whiteboard .whiteboard .wb-svg{position:relative;z-index:1}
+#view-loading,#view-notes,#view-atelier,#view-work{position:relative}
+#view-loading>.topbar,#view-loading>.loading-pad,#view-notes>.topbar,#view-notes>#note-list-wrap,#view-notes>.note-editor,#view-atelier>.topbar,#view-atelier>#design-list-wrap,#view-atelier>.atelier-stage,#view-work>.topbar,#view-work>.flip-stage,#view-work>.chat-dock{position:relative;z-index:1}
 @keyframes aq-d1{0%,100%{transform:translate(0,0) rotate(0deg)}50%{transform:translate(7px,-9px) rotate(3deg)}}
 @keyframes aq-d2{0%,100%{transform:translate(0,0) rotate(0deg)}50%{transform:translate(-8px,7px) rotate(-3.5deg)}}
 @keyframes aq-d3{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(5px,6px) scale(1.05)}}
@@ -4715,6 +4721,11 @@ boot().catch((e) => {
 .icon-btn .icon-img{width:26px;height:26px;object-fit:contain;display:block;margin:auto}
 .swirl-think{width:46px;height:46px;object-fit:contain;display:block;animation:aq-pulse 2.6s ease-in-out infinite}
 @keyframes aq-pulse{0%,100%{opacity:.55;transform:scale(.93)}50%{opacity:1;transform:scale(1.06)}}
+/* talking pose — wobbly mouth beside "aqau pluto" while a reply streams in */
+.chat-msg.assistant.talking .from{display:inline-flex;align-items:center;gap:6px}
+.chat-msg.assistant.talking .from::after{content:'';width:20px;height:14px;background:url(assets/Mouth_wobbly_talk_small.png) center/contain no-repeat;animation:aq-talk .42s steps(1) infinite;will-change:transform,opacity}
+@keyframes aq-talk{0%{transform:scaleY(1);opacity:.9}50%{transform:scaleY(.55);opacity:1}100%{transform:scaleY(1);opacity:.9}}
+@media (prefers-reduced-motion:reduce){.chat-msg.assistant.talking .from::after{animation:none}}
 .chat-stats{opacity:.5}
 @media (prefers-reduced-motion:reduce){.living,.swirl-think{animation:none}}
 </style>
@@ -4743,7 +4754,28 @@ boot().catch((e) => {
     pond(document.querySelector('#view-whiteboard .whiteboard'),[
       {src:'Lilypad_hoverglow.png',size:150,pos:'top:7%;left:-32px',anim:'d2',op:.4,delay:.3},
       {src:'Lilypad_questions.png',size:120,pos:'bottom:13%;right:-28px',anim:'d1',op:.34,delay:1.2},
-      {src:'Ideablob_red.png',size:80,pos:'top:22%;right:5%',anim:'d3',op:.28,delay:2}
+      {src:'Ideablob_red.png',size:80,pos:'top:22%;right:5%',anim:'d3',op:.28,delay:2},
+      {src:'Journeycard_fback_front_reveal.png',size:260,pos:'bottom:-6%;left:-8%',anim:'d3',op:.12,delay:.9}
+    ]);
+    // Loading: the astrology "reveal" while the model warms up
+    pond(document.getElementById('view-loading'),[
+      {src:'Hidden_Meaning.png',size:200,pos:'bottom:8%;right:-6%',anim:'d3',op:.16,delay:.4},
+      {src:'Ideablob_red.png',size:70,pos:'top:18%;left:-14px',anim:'d1',op:.24,delay:1.6}
+    ]);
+    // Notebook: keyword bubbles + a faint thinking brain
+    pond(document.getElementById('view-notes'),[
+      {src:'Bubble_keyword_small.png',size:104,pos:'top:70px;right:-20px',anim:'d2',op:.34,delay:.5},
+      {src:'Flower_open.png',size:72,pos:'bottom:30px;left:14px',anim:'d3',op:.4,delay:1.3},
+      {src:'BrainLEFTHEMI.png',size:150,pos:'bottom:-4%;right:-7%',anim:'d1',op:.12,delay:2.1}
+    ]);
+    // Atelier: idea blobs above the canvas list
+    pond(document.getElementById('view-atelier'),[
+      {src:'Ideablob_red.png',size:78,pos:'top:74px;left:-18px',anim:'d1',op:.32,delay:.6},
+      {src:'Flower_open.png',size:64,pos:'bottom:40px;right:18px',anim:'d3',op:.38,delay:1.8}
+    ]);
+    // Workspace: a single calm lilypad so chat stays readable
+    pond(document.getElementById('view-work'),[
+      {src:'Lilypad_hoverglow.png',size:120,pos:'bottom:90px;right:-30px',anim:'d2',op:.18,delay:.8}
     ]);
     swap('home-wb','Tab_icon_wakingboard_Active.png');
     swap('work-wb','Tab_icon_wakingboard_Active.png');

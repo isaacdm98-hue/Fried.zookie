@@ -4,7 +4,7 @@
 // Cross-origin requests (HF weights, esm.run, jsdelivr, fonts, web research)
 // are passed straight through — see the fetch handler.
 
-const VERSION = 'aqau-pluto-v24-litert-3d'
+const VERSION = 'aqau-pluto-v25-assets'
 const SHELL = [
   './',
   './index.html',
@@ -18,7 +18,12 @@ const SHELL = [
   './assets/Ideablob_red.png',
   './assets/POSE_listening_SWIRL.png',
   './assets/Tab_icon_wakingboard_Active.png',
-  './assets/Tab_icon_journeyACTIVE.png'
+  './assets/Tab_icon_journeyACTIVE.png',
+  './assets/Hidden_Meaning.png',
+  './assets/Bubble_keyword_small.png',
+  './assets/BrainLEFTHEMI.png',
+  './assets/Journeycard_fback_front_reveal.png',
+  './assets/Mouth_wobbly_talk_small.png'
 ];
 
 self.addEventListener('install', (event) => {
