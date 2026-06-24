@@ -1175,9 +1175,23 @@ body.aq-anim .btn, body.aq-anim .chip, body.aq-anim .icon-btn, body.aq-anim .too
 @media (prefers-reduced-motion: reduce) {
   body.aq-anim .screen[data-active="true"], body.aq-anim .aq-in, body.aq-anim .aq-pop { animation: none; }
 }
+/* Live drawing: the boiling-line filter wobbles every hand-drawn stroke. */
+body.aq-live .aq-frame-svg, body.aq-live .aq-uline-svg, body.aq-live #wb-svg g { filter: url(#aq-boil); }
+.aq-uline-svg { position: absolute; }
 </style>
 </head>
 <body>
+
+<!-- Live "boiling line" filter: animated turbulence displaces every hand-drawn
+     stroke so the whole UI looks like it's being re-sketched by hand. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <filter id="aq-boil" x="-25%" y="-25%" width="150%" height="150%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.018" numOctaves="2" seed="1" result="n">
+      <animate attributeName="seed" values="1;3;6;2;5;1" dur="0.75s" repeatCount="indefinite" calcMode="discrete" />
+    </feTurbulence>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="2.2" xChannelSelector="R" yChannelSelector="G" />
+  </filter>
+</svg>
 
 <div class="splash" id="splash">
   <div class="mark">♇</div>
@@ -1603,6 +1617,18 @@ function show(id) {
     const el = document.getElementById(v);
     if (el) el.dataset.active = (v === id) ? 'true' : 'false';
   });
+  // hand-drawn flare: sketch an underline beneath this screen's headings
+  try { requestAnimationFrame(() => decorateActive(id)); } catch {}
+}
+function decorateActive(id) {
+  if (typeof handMotion !== 'function' || !handMotion()) return;
+  const el = document.getElementById(id); if (!el) return;
+  // sketch underlines under headings
+  el.querySelectorAll('.topbar h1, .picker-head h2, .gate h2, .deck-intro .greeting').forEach(h => roughUnderline(h));
+  // hand-drawn circles around every round button
+  el.querySelectorAll('.icon-btn, .chat-mic, .chat-send, .chat-web').forEach(b => roughCircleFrame(b));
+  // hand-drawn frames around the bigger panels
+  el.querySelectorAll('.install-steps, .gate .status, .face-empty, .quick-chips, .load-bar, .chat-stats').forEach(p => roughFrame(p));
 }
 
 /* ===================== UTILS ===================== */
@@ -1994,6 +2020,25 @@ async function loadTransformers(modelId, profile) {
       try { TJS.env.allowLocalModels = false; } catch {}
     }
     await ensurePersistent();
+
+    // iPhone fix: ONNX Runtime otherwise creates a WebGPU device with small
+    // DEFAULT limits (maxStorageBufferBindingSize ~128MB, maxBufferSize ~256MB),
+    // which is the real wall big models hit on Safari. Pre-create the device
+    // with the adapter's MAXIMUM limits and hand it to ORT so Gemma's large
+    // weight buffers fit. (This is the lever that gets past the browser limits.)
+    try {
+      const adapter = await navigator.gpu.requestAdapter({ powerPreference: 'high-performance' });
+      if (adapter) {
+        const want = ['maxBufferSize', 'maxStorageBufferBindingSize', 'maxComputeWorkgroupStorageSize', 'maxComputeInvocationsPerWorkgroup', 'maxComputeWorkgroupSizeX'];
+        const requiredLimits = {};
+        for (const k of want) { const v = adapter.limits?.[k]; if (typeof v === 'number') requiredLimits[k] = v; }
+        const dev = await adapter.requestDevice({ requiredLimits });
+        const onnx = (TJS.env.backends = TJS.env.backends || {}).onnx = TJS.env.backends.onnx || {};
+        const wg = onnx.webgpu = onnx.webgpu || {};
+        wg.device = dev; wg.powerPreference = 'high-performance';
+        readoutEl.textContent = `gpu ready · ${(requiredLimits.maxStorageBufferBindingSize / 1048576 | 0)} MB buffers`;
+      }
+    } catch (e) { console.warn('webgpu max-limits hint failed (using defaults)', e); }
 
     let dtype = profile.dtype || 'q4f16';
     if (dtype === 'q4f16' && LAST_GPU && LAST_GPU.hasShaderF16 === false) { dtype = 'q4'; }
@@ -2925,6 +2970,7 @@ function animateDrawIn(container) {
 /* ── GLOBAL UI MOTION ── reveal lists, sketch-frame cards, master switch ── */
 function setAnimEnabled() {
   document.body.classList.toggle('aq-anim', S.handDrawn !== false);
+  document.body.classList.toggle('aq-live', handMotion()); // boiling-line only when motion is on
 }
 // Stagger a set of freshly-rendered elements into view (and optionally draw a
 // hand-drawn rough frame behind each). Runs after a frame so sizes are settled.
@@ -2953,6 +2999,39 @@ async function roughFrame(el, { stroke = '#e8ddc8', strokeWidth = 1.1, roughness
     el.insertBefore(svg, el.firstChild);
     animateDrawIn(svg);
   } catch (e) { /* never let decoration break a render */ }
+}
+// Hand-drawn circle around a round button.
+async function roughCircleFrame(el, { stroke = '#e8ddc8' } = {}) {
+  if (!handMotion() || !el || el.querySelector(':scope > .aq-frame-svg')) return;
+  let r; try { r = await ensureRough(); } catch { return; }
+  const w = Math.round(el.clientWidth), h = Math.round(el.clientHeight);
+  if (!w || !h) return;
+  try {
+    const svg = svgEl('svg', { class: 'aq-frame-svg', viewBox: `0 0 ${w} ${h}`, preserveAspectRatio: 'none' });
+    const rc = r.svg(svg);
+    svg.appendChild(rc.circle(w / 2, h / 2, Math.min(w, h) - 3, { stroke, strokeWidth: 1.1, roughness: 1.5, bowing: 1 }));
+    el.classList.add('aq-framed');
+    el.insertBefore(svg, el.firstChild);
+    animateDrawIn(svg);
+  } catch (e) { /* decoration must never break the UI */ }
+}
+// A hand-drawn underline that sketches itself in beneath a heading.
+async function roughUnderline(el, { stroke = '#c87b5a' } = {}) {
+  if (!handMotion() || !el || el.dataset.aqUlined) return;
+  el.dataset.aqUlined = '1';
+  let r; try { r = await ensureRough(); } catch { return; }
+  const w = Math.round(el.clientWidth), h = Math.round(el.clientHeight);
+  if (w < 8 || !h) { delete el.dataset.aqUlined; return; }
+  try {
+    if (getComputedStyle(el).position === 'static') el.style.position = 'relative';
+    const uw = Math.min(w, 240);
+    const svg = svgEl('svg', { class: 'aq-uline-svg', width: uw, height: 10, viewBox: `0 0 ${uw} 10` });
+    svg.style.cssText = 'position:absolute;left:0;bottom:-3px;pointer-events:none;overflow:visible;z-index:0;';
+    const rc = r.svg(svg);
+    svg.appendChild(rc.line(2, 6, uw - 2, 5, { stroke, strokeWidth: 1.6, roughness: 1.8, bowing: 2.4 }));
+    el.appendChild(svg);
+    animateDrawIn(svg);
+  } catch (e) { /* decoration must never break the UI */ }
 }
 
 async function renderWhiteboard() {

@@ -116,7 +116,21 @@ native C++ app and Penzil is a Vue + three.js *3D* tool — neither ports verbat
 to a single-file PWA, so a true 3D grease-pencil mode is a clear next step rather
 than a half-working stub.)
 
-### A hand-drawn, animated UI everywhere
+### Runs Gemma 4 on iPhone (past the WebGPU limits)
+Safari/ONNX Runtime otherwise spins up a WebGPU device with small *default* limits
+(`maxStorageBufferBindingSize` ~128 MB) — the real wall big models hit on iPhone.
+Before loading, the app requests the GPU device with the **adapter's maximum
+limits** and hands it to the runtime, so Gemma's large weight buffers actually
+fit. Combined with `q4f16`→`q4` fallback and persistent storage, Gemma 4 loads on
+a capable iPhone (iOS 18+).
+
+### A hand-drawn, animated UI everywhere — drawn live
+Every part of the UI is sketched by hand: heading underlines, round buttons,
+panels and cards all get a rough.js outline, and a **boiling-line filter**
+continuously wobbles every stroke so the whole interface looks like it's being
+re-drawn live. Honours the Hand-drawn motion switch and `prefers-reduced-motion`.
+
+### A hand-drawn, animated UI everywhere (legacy note)
 The whole interface has the sketched-live feel, not just the chart: screens fade
 in, cards and chat messages settle into place with a staggered "drawn-in" motion,
 home/notes/drawing cards get a [rough.js](https://github.com/rough-stuff/rough)
