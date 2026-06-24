@@ -4,7 +4,7 @@
 // Cross-origin requests (HF weights, esm.run, jsdelivr, fonts, web research)
 // are passed straight through — see the fetch handler.
 
-const VERSION = 'aqau-pluto-v16-multimodal-local';
+const VERSION = 'aqau-pluto-v17-prepackage';
 const SHELL = [
   './',
   './index.html',
