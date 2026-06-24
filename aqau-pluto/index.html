@@ -1925,7 +1925,9 @@ async function raiseLimits(){
   try{
     const a=await navigator.gpu.requestAdapter({powerPreference:'high-performance'});
     if(!a) return;
-    const want=['maxBufferSize','maxStorageBufferBindingSize','maxComputeWorkgroupStorageSize','maxComputeInvocationsPerWorkgroup','maxComputeWorkgroupSizeX'];
+    // Only the two buffer limits that matter for big weight tensors; requesting
+    // every maximum can make requestDevice reject on some GPUs.
+    const want=['maxBufferSize','maxStorageBufferBindingSize'];
     const rl={}; for(const k of want){ const v=a.limits&&a.limits[k]; if(typeof v==='number') rl[k]=v; }
     const dev=await a.requestDevice({requiredLimits:rl});
     const onnx=(TJS.env.backends=TJS.env.backends||{}).onnx=TJS.env.backends.onnx||{};
@@ -1990,20 +1992,30 @@ async function tryPipeline(id,dtype,pc){
 }
 async function loadModel(id,dtype,mode){
   const pc=(r)=>post({type:'progress',data:r});
-  // Multimodal mode loads the dedicated class FIRST (vision+audio); text mode
-  // loads text-only FIRST (smaller download + lower peak memory — fits iPhone).
+  // Mirror the official transformers.js example exactly. TEXT mode = ONLY the
+  // text-only causal path (AutoModelForCausalLM + AutoTokenizer) — never fall
+  // through to the multimodal class, which would pull the vision/audio weights
+  // on top and blow memory (the ~52% wall). MULTIMODAL mode = dedicated class.
   const attempts = (mode==='multimodal')
-    ? [['dedicated',tryDedicated],['causal',tryCausal],['pipeline',tryPipeline]]
-    : [['causal',tryCausal],['dedicated',tryDedicated],['pipeline',tryPipeline]];
+    ? [['dedicated',tryDedicated]]
+    : [['causal',tryCausal]];
   let lastErr;
-  for(let pass=0; pass<2; pass++){
-    if(pass===1){ try{ TJS.env.useBrowserCache=false; }catch(e){} post({type:'log',msg:'retry without browser cache'}); }
-    for(const [name,fn] of attempts){
-      model=processor=generator=null;
-      try{ post({type:'log',msg:'try '+name+(pass?' (no cache)':'')}); await fn(id,dtype,pc); return name; }
-      catch(err){ lastErr=err; post({type:'log',msg:name+' failed: '+(err&&err.message||err)}); }
+  for(const [name,fn] of attempts){
+    model=processor=generator=null;
+    try{ post({type:'log',msg:'load '+name}); await fn(id,dtype,pc); return name; }
+    catch(err){
+      lastErr=err; post({type:'log',msg:name+' failed: '+(err&&err.message||err)});
+      // Only a cache/quota failure warrants a no-cache retry (Safari big-entry bug).
+      if(/quota|cache|store|exceed/i.test(String(err&&err.message||err))){
+        try{ TJS.env.useBrowserCache=false; }catch(e){}
+        post({type:'log',msg:'retry '+name+' without browser cache'});
+        model=processor=generator=null;
+        try{ await fn(id,dtype,pc); return name; }catch(e2){ lastErr=e2; }
+      }
     }
   }
+  // Last resort only: the text-generation pipeline (still text-only).
+  try{ model=processor=generator=null; await tryPipeline(id,dtype,pc); return 'pipeline'; }catch(e3){ lastErr=e3; }
   throw lastErr||new Error('all load attempts failed');
 }
 self.onmessage=async (e)=>{
@@ -2257,7 +2269,7 @@ async function loadTransformers(modelId, profile) {
       try {
         const adapter = await navigator.gpu.requestAdapter({ powerPreference: 'high-performance' });
         if (adapter) {
-          const want = ['maxBufferSize', 'maxStorageBufferBindingSize', 'maxComputeWorkgroupStorageSize', 'maxComputeInvocationsPerWorkgroup', 'maxComputeWorkgroupSizeX'];
+          const want = ['maxBufferSize', 'maxStorageBufferBindingSize'];
           const requiredLimits = {};
           for (const k of want) { const v = adapter.limits?.[k]; if (typeof v === 'number') requiredLimits[k] = v; }
           const dev = await adapter.requestDevice({ requiredLimits });
@@ -2284,9 +2296,9 @@ async function loadTransformers(modelId, profile) {
           engine = new TransformersEngine({ model, processor }, modelId);
         } catch (e) { console.warn('dedicated Gemma load failed', e); }
       };
-      // multimodal → load the full model first; text → text-only first.
-      if (mode === 'multimodal') { await tryDedicatedMain(); await tryCausalMain(); }
-      else { await tryCausalMain(); await tryDedicatedMain(); }
+      // text → causal ONLY (never pull multimodal weights); multimodal → dedicated.
+      if (mode === 'multimodal') { await tryDedicatedMain(); }
+      else { await tryCausalMain(); }
       if (!engine) {
         const generator = await TJS.pipeline('text-generation', modelId, { dtype, device: 'webgpu', progress_callback: prog });
         engine = new TransformersEngine({ generator }, modelId);
