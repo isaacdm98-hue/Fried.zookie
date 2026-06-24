@@ -2017,13 +2017,15 @@ async function loadModel(id,dtype,mode){
     try{ post({type:'log',msg:'load '+name}); await fn(id,dtype,pc); return name; }
     catch(err){
       lastErr=err; post({type:'log',msg:name+' failed: '+(err&&err.message||err)});
-      // Only a cache/quota failure warrants a no-cache retry (Safari big-entry bug).
-      if(/quota|cache|store|exceed/i.test(String(err&&err.message||err))){
-        try{ TJS.env.useBrowserCache=false; }catch(e){}
-        post({type:'log',msg:'retry '+name+' without browser cache'});
-        model=processor=generator=null;
-        try{ await fn(id,dtype,pc); return name; }catch(e2){ lastErr=e2; }
-      }
+      // Retry once WITHOUT the browser cache. Safari caps per-origin storage at
+      // ~1GB and throws when caching the big weights (the ~52% / ~1.4GB wall);
+      // skipping the cache streams weights straight to the GPU instead.
+      try{ TJS.env.useBrowserCache=false; }catch(e){}
+      post({type:'progress',data:{status:'progress',name:'no-cache'}});
+      post({type:'log',msg:'retry '+name+' without browser cache (Safari ~1GB storage cap)'});
+      model=processor=generator=null;
+      try{ await fn(id,dtype,pc); return name; }catch(e2){ lastErr=e2; post({type:'log',msg:name+' no-cache failed: '+(e2&&e2.message||e2)}); }
+      try{ TJS.env.useBrowserCache=true; }catch(e){}
     }
   }
   // Last resort only: the text-generation pipeline (still text-only).
@@ -2311,6 +2313,11 @@ async function loadTransformers(modelId, profile) {
       // text → causal ONLY (never pull multimodal weights); multimodal → dedicated.
       if (mode === 'multimodal') { await tryDedicatedMain(); }
       else { await tryCausalMain(); }
+      // If it failed (often Safari's ~1GB cache quota), retry without the cache.
+      if (!engine) {
+        try { TJS.env.useBrowserCache = false; } catch {}
+        if (mode === 'multimodal') { await tryDedicatedMain(); } else { await tryCausalMain(); }
+      }
       if (!engine) {
         const generator = await TJS.pipeline('text-generation', modelId, { dtype, device: 'webgpu', use_external_data_format: true, progress_callback: prog });
         engine = new TransformersEngine({ generator }, modelId);
