@@ -17,12 +17,18 @@ available on `web-llm` as lighter fallbacks.
 Both runtimes sit behind one interface (`engine.chat.completions.create`), so the
 rest of the app doesn't care which is loaded.
 
-To make it run reliably as an installed PWA: the runtime is pinned to `@4.2.0`;
-WebGPU is required and checked up front with a clear message if missing; the
-`q4f16` weights need the GPU `shader-f16` feature, so on GPUs without it (some
-iOS) it **falls back to `q4`** instead of failing; and the service worker passes
-model/CDN traffic straight through so transformers.js manages its own weight
-cache. Install to the home screen so the ~1.5 GB download stays cached.
+Gemma 4 is **multimodal**, so it's loaded the same way the model card and the
+webml-community space load it — the dedicated `Gemma4ForConditionalGeneration` +
+`AutoProcessor` (not the generic text-generation pipeline, which is what made the
+download stall) — with a pipeline fallback if those exports aren't present.
+Loading is hardened for an installed PWA: runtime pinned to `@4.2.0`; WebGPU
+required with a clear message if missing; `q4f16` falls back to `q4` on GPUs
+without `shader-f16` (some iOS); **byte-accurate download progress** (MB / MB)
+plus a stall watchdog so the first big multimodal download never *looks* frozen;
+persistent storage requested; and the service worker passes model/CDN traffic
+straight through so transformers.js keeps its own weight cache. It's a large
+first download (multimodal weights), then instant from cache — install to the
+home screen so it stays cached.
 
 ### Startup prebuild (many requests up front)
 On first load, once the model is ready, Aqau Pluto fires a burst of requests to

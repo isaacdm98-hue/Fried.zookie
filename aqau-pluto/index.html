@@ -1644,8 +1644,8 @@ function haptic(ms = 8) { if (S.haptics !== false && navigator.vibrate) { try { 
 // with the WebGPU kernels build (onnx-community ONNX export, q4f16). The remaining
 // profiles run on web-llm (MLC) and stay as lighter / fallback options.
 const MODEL_PROFILES = [
-  { id: 'onnx-community/gemma-4-E2B-it-ONNX', pretty: 'Gemma 4 · E2B', note: 'google · the main brain · runs on the webgpu kernels build. best vibe-coding here.', tags: ['general','code','recommended'], runtime: 'transformers', dtype: 'q4f16', isQwen3: false, contextWindowSize: 4096, recommended: true, main: true, estVRAM: 2400, estDL: 1500 },
-  { id: 'onnx-community/gemma-4-E4B-it-ONNX', pretty: 'Gemma 4 · E4B', note: 'google · larger gemma 4 · sharper builds · wants a strong phone.', tags: ['general','code'], runtime: 'transformers', dtype: 'q4f16', isQwen3: false, contextWindowSize: 4096, estVRAM: 4200, estDL: 2800 },
+  { id: 'onnx-community/gemma-4-E2B-it-ONNX', pretty: 'Gemma 4 · E2B', note: 'google · the main brain · multimodal, runs on the webgpu kernels build. big first download, then cached.', tags: ['general','code','recommended'], runtime: 'transformers', dtype: 'q4f16', isQwen3: false, contextWindowSize: 4096, recommended: true, main: true, estVRAM: 2600, estDL: 3000 },
+  { id: 'onnx-community/gemma-4-E4B-it-ONNX', pretty: 'Gemma 4 · E4B', note: 'google · larger gemma 4 · sharper · wants a strong phone & a big download.', tags: ['general','code'], runtime: 'transformers', dtype: 'q4f16', isQwen3: false, contextWindowSize: 4096, estVRAM: 4400, estDL: 4800 },
   { id: 'Qwen3-1.7B-q4f16_1-MLC', pretty: 'Qwen 3 · 1.7B', note: 'web-llm · strong all-rounder · the older default.', tags: ['general'], runtime: 'webllm', isQwen3: true, contextWindowSize: 2048, estVRAM: 2037, estDL: 1100 },
   { id: 'Qwen2.5-Coder-1.5B-Instruct-q4f16_1-MLC', pretty: 'Qwen 2.5 Coder · 1.5B', note: 'web-llm · pure-coder · no thinking-mode quirks · safest iPhone fit.', tags: ['code'], runtime: 'webllm', isQwen3: false, contextWindowSize: 4096, estVRAM: 1630, estDL: 950 },
   { id: 'Qwen3-0.6B-q4f16_1-MLC', pretty: 'Qwen 3 · 0.6B', note: 'web-llm · fits anywhere · lighter quality · fast.', tags: ['general','tiny'], runtime: 'webllm', isQwen3: true, contextWindowSize: 4096, estVRAM: 1403, estDL: 400 },
@@ -1859,62 +1859,76 @@ $('pick-load').onclick = () => {
 };
 
 /* ===================== TRANSFORMERS.JS ENGINE (Gemma 4 / WebGPU) ===================== */
-// Thin adapter so transformers.js looks like web-llm's engine to the rest of the
-// app: engine.chat.completions.create({messages, stream, temperature, max_tokens})
-// and engine.unload(). Streaming yields {choices:[{delta:{content}}]} chunks plus
-// a final {usage:{completion_tokens}} chunk, matching what streamReply expects.
+// Adapter that makes transformers.js look like web-llm's engine to the app:
+// engine.chat.completions.create({messages, stream, temperature, max_tokens}).
+// Supports BOTH ways of loading Gemma 4:
+//   • dedicated multimodal class (Gemma4ForConditionalGeneration + AutoProcessor),
+//     which is how the webml-community space and the model card load it, and
+//   • the generic text-generation pipeline (fallback).
 class TransformersEngine {
-  constructor(generator, modelId) {
-    this.generator = generator;
+  constructor(parts, modelId) {
+    this.generator = parts.generator || null;          // pipeline mode
+    this.model = parts.model || null;                  // dedicated mode
+    this.processor = parts.processor || null;
+    this.tokenizer = (this.processor && this.processor.tokenizer) || (this.generator && this.generator.tokenizer) || this.processor;
     this.modelId = modelId;
+    this.stopper = null;
     this.chat = { completions: { create: (opts) => this._create(opts) } };
   }
   async unload() {
-    try { await this.generator?.dispose?.(); } catch {}
-    this.generator = null;
+    try { await (this.model?.dispose?.() || this.generator?.dispose?.()); } catch {}
+    this.model = this.generator = null;
   }
-  // Gemma's chat template rejects a standalone system role — fold any system
-  // messages into the first user turn so the existing prompts keep working.
-  _prep(messages) {
+  interruptGenerate() { try { this.stopper?.interrupt?.(); } catch {} }
+  // Plain {role,content} list → Gemma's multimodal message shape; system folded
+  // into the first user turn (Gemma's template has no standalone system role).
+  _msgs(messages, multimodal) {
     const sys = (messages || []).filter(m => m.role === 'system').map(m => m.content).join('\n\n');
-    const rest = (messages || []).filter(m => m.role !== 'system').map(m => ({ role: m.role, content: m.content }));
+    const rest = (messages || []).filter(m => m.role !== 'system')
+      .map(m => multimodal ? { role: m.role, content: [{ type: 'text', text: m.content }] } : { role: m.role, content: m.content });
     if (sys) {
       const i = rest.findIndex(m => m.role === 'user');
-      if (i >= 0) rest[i] = { role: 'user', content: sys + '\n\n' + rest[i].content };
-      else rest.unshift({ role: 'user', content: sys });
+      const pre = (t) => sys + '\n\n' + t;
+      if (i >= 0) { if (multimodal) rest[i].content[0].text = pre(rest[i].content[0].text); else rest[i].content = pre(rest[i].content); }
+      else rest.unshift(multimodal ? { role: 'user', content: [{ type: 'text', text: sys }] } : { role: 'user', content: sys });
     }
-    return rest.length ? rest : [{ role: 'user', content: ' ' }];
-  }
-  _genText(out) {
-    const o = Array.isArray(out) ? out[0] : out;
-    let g = o?.generated_text;
-    if (Array.isArray(g)) { const last = g[g.length - 1]; return (last && last.content) || ''; }
-    return String(g || '');
+    return rest.length ? rest : [multimodal ? { role: 'user', content: [{ type: 'text', text: ' ' }] } : { role: 'user', content: ' ' }];
   }
   async _create(opts) {
-    const msgs = this._prep(opts.messages || []);
     const max_new_tokens = opts.max_tokens || 512;
     const temperature = (opts.temperature == null) ? 0.7 : opts.temperature;
     const do_sample = temperature > 0;
     const genOpts = { max_new_tokens, do_sample };
     if (do_sample) { genOpts.temperature = temperature; genOpts.top_p = 0.95; genOpts.top_k = 64; }
+    this.stopper = TJS.InterruptableStoppingCriteria ? new TJS.InterruptableStoppingCriteria() : null;
+    if (this.stopper) genOpts.stopping_criteria = this.stopper;
 
-    if (!opts.stream) {
-      const out = await this.generator(msgs, genOpts);
-      const text = this._genText(out);
-      return { choices: [{ message: { role: 'assistant', content: text }, delta: { content: text } }], usage: { completion_tokens: 0 } };
+    // Build the actual generation runner for each mode.
+    let run;
+    if (this.model) {
+      const inputs = await this.processor.apply_chat_template(this._msgs(opts.messages, true), { add_generation_prompt: true, tokenize: true, return_dict: true });
+      run = (streamer) => this.model.generate({ ...inputs, ...genOpts, streamer });
+    } else {
+      const msgs = this._msgs(opts.messages, false);
+      run = (streamer) => this.generator(msgs, { ...genOpts, streamer });
     }
 
-    // Streaming: TextStreamer pushes tokens into a tiny async queue.
+    if (!opts.stream) {
+      let acc = '';
+      const streamer = new TJS.TextStreamer(this.tokenizer, { skip_prompt: true, skip_special_tokens: true, callback_function: (t) => { if (t) acc += t; } });
+      const out = await run(streamer);
+      if (!acc && out) { // pipeline returns generated_text; recover if streamer gave nothing
+        const o = Array.isArray(out) ? out[0] : out; const g = o?.generated_text;
+        acc = Array.isArray(g) ? (g[g.length - 1]?.content || '') : String(g || '');
+      }
+      return { choices: [{ message: { role: 'assistant', content: acc }, delta: { content: acc } }], usage: { completion_tokens: 0 } };
+    }
+
     const queue = [];
     let resolveNext = null, count = 0;
     const push = (v) => { if (resolveNext) { const r = resolveNext; resolveNext = null; r(v); } else queue.push(v); };
-    const streamer = new TJS.TextStreamer(this.generator.tokenizer, {
-      skip_prompt: true,
-      skip_special_tokens: true,
-      callback_function: (t) => { if (t) { count++; push({ choices: [{ delta: { content: t } }] }); } },
-    });
-    this.generator(msgs, { ...genOpts, streamer })
+    const streamer = new TJS.TextStreamer(this.tokenizer, { skip_prompt: true, skip_special_tokens: true, callback_function: (t) => { if (t) { count++; push({ choices: [{ delta: { content: t } }] }); } } });
+    run(streamer)
       .then(() => { push({ choices: [{ delta: {} }], usage: { completion_tokens: count } }); push(null); })
       .catch((e) => { push({ __error: e }); push(null); });
 
@@ -1938,44 +1952,68 @@ async function loadTransformers(modelId, profile) {
   const phaseEl = $('load-phase'), fillEl = $('load-fill'), readoutEl = $('load-readout');
   phaseEl.textContent = 'pulling the weights';
   fillEl.style.width = '0%';
-  readoutEl.textContent = '0%';
+  readoutEl.textContent = 'starting…';
+
+  // Byte-accurate progress across every file (the per-file %-average looked
+  // stuck); plus a watchdog so a quiet patch reads as "still working", not hung.
+  const files = {};
+  let aggregate = null;
+  let lastTick = Date.now();
+  const fmtMB = (b) => (b / 1048576).toFixed(0);
+  const paint = () => {
+    let total, loaded;
+    if (aggregate) { total = aggregate.total; loaded = aggregate.loaded; }
+    else { const arr = Object.values(files); total = arr.reduce((a, f) => a + (f.total || 0), 0); loaded = arr.reduce((a, f) => a + (f.loaded || 0), 0); }
+    const pct = total ? Math.round(loaded / total * 100) : 0;
+    fillEl.style.width = pct + '%';
+    if (total) readoutEl.textContent = `${pct}% · ${fmtMB(loaded)} / ${fmtMB(total)} MB`;
+  };
+  const prog = (r) => {
+    if (!r) return;
+    const st = String(r.status || '').toLowerCase();
+    if (st === 'progress_total' || (st.includes('total') && typeof r.total === 'number')) {
+      if (typeof r.loaded === 'number' && typeof r.total === 'number') { aggregate = { loaded: r.loaded, total: r.total }; lastTick = Date.now(); paint(); }
+    } else if (typeof r.loaded === 'number' && typeof r.total === 'number' && r.total > 0) {
+      files[r.file || r.name || st] = { loaded: r.loaded, total: r.total }; lastTick = Date.now(); paint();
+    } else if (typeof r.progress === 'number') { lastTick = Date.now(); }
+    if (st.includes('ready') || st.includes('done')) phaseEl.textContent = 'compiling kernels';
+    else if (st.includes('initiate') || st.includes('download') || st.includes('progress')) phaseEl.textContent = 'pulling the weights';
+  };
+  const watchdog = setInterval(() => {
+    const quiet = (Date.now() - lastTick) / 1000;
+    if (quiet > 12 && phaseEl.textContent === 'compiling kernels') readoutEl.textContent = 'compiling shaders on the GPU — this can take a minute the first time…';
+    else if (quiet > 20) readoutEl.textContent = 'still working — large model, hang tight (downloads resume if interrupted)…';
+  }, 4000);
 
   try {
-    if (RT.engine && RT.modelLoaded) {
-      try { await RT.engine.unload(); } catch {}
-      RT.modelLoaded = false;
-    }
+    if (RT.engine && RT.modelLoaded) { try { await RT.engine.unload(); } catch {} RT.modelLoaded = false; }
     if (!('gpu' in navigator)) throw new Error('WebGPU not available — Gemma needs it. Use iOS 18+ Safari or a WebGPU browser.');
     if (!TJS) {
       phaseEl.textContent = 'loading the runtime';
-      // Pinned to match the webml-community Gemma 4 WebGPU setup.
       TJS = await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.2.0');
       try { TJS.env.allowLocalModels = false; } catch {}
     }
+    await ensurePersistent();
 
-    // q4f16 needs the shader-f16 GPU feature; fall back to q4 where it's absent
-    // (e.g. some iOS GPUs) so Gemma still loads instead of erroring out.
     let dtype = profile.dtype || 'q4f16';
-    if (dtype === 'q4f16' && LAST_GPU && LAST_GPU.hasShaderF16 === false) { dtype = 'q4'; readoutEl.textContent = 'no f16 — using q4'; }
+    if (dtype === 'q4f16' && LAST_GPU && LAST_GPU.hasShaderF16 === false) { dtype = 'q4'; }
 
-    const fileProgress = {};
-    const generator = await TJS.pipeline('text-generation', modelId, {
-      dtype,
-      device: 'webgpu',
-      progress_callback: (r) => {
-        if (r && r.file && typeof r.progress === 'number') fileProgress[r.file] = r.progress;
-        const vals = Object.values(fileProgress);
-        const pct = vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : 0;
-        fillEl.style.width = pct + '%';
-        const st = String(r?.status || '').toLowerCase();
-        if (st.includes('download') || st.includes('progress')) phaseEl.textContent = 'pulling the weights';
-        else if (st.includes('done') || st.includes('ready')) phaseEl.textContent = 'compiling kernels';
-        else if (st.includes('init')) phaseEl.textContent = 'waking the engine';
-        readoutEl.textContent = `${pct}% · ${truncate(r?.file || r?.status || '', 120)}`;
-      },
-    });
+    let engine = null;
+    // Preferred: the dedicated multimodal class (matches the HF space + model card).
+    if (TJS.Gemma4ForConditionalGeneration && TJS.AutoProcessor) {
+      try {
+        phaseEl.textContent = 'pulling the weights';
+        const processor = await TJS.AutoProcessor.from_pretrained(modelId, { progress_callback: prog });
+        const model = await TJS.Gemma4ForConditionalGeneration.from_pretrained(modelId, { dtype, device: 'webgpu', progress_callback: prog });
+        engine = new TransformersEngine({ model, processor }, modelId);
+      } catch (e) { console.warn('dedicated Gemma load failed, falling back to pipeline', e); }
+    }
+    if (!engine) {
+      const generator = await TJS.pipeline('text-generation', modelId, { dtype, device: 'webgpu', progress_callback: prog });
+      engine = new TransformersEngine({ generator }, modelId);
+    }
 
-    RT.engine = new TransformersEngine(generator, modelId);
+    RT.engine = engine;
     RT.runtime = 'transformers';
     RT.modelLoaded = true;
     S.modelId = modelId;
@@ -1988,6 +2026,7 @@ async function loadTransformers(modelId, profile) {
       await RT.engine.chat.completions.create({ messages: [{ role: 'user', content: 'reply with one word: ok' }], max_tokens: 4, temperature: 0 });
     } catch (e) { console.warn('warmup failed', e); }
 
+    clearInterval(watchdog);
     phaseEl.textContent = 'ready';
     $('stat-model').textContent = profile.pretty || modelId;
     $('chat-send').disabled = false;
@@ -1996,11 +2035,12 @@ async function loadTransformers(modelId, profile) {
     setTimeout(() => renderHome(), 250);
     setTimeout(() => runPrebuild(), 900);
   } catch (e) {
+    clearInterval(watchdog);
     console.error('load failed', e);
     phaseEl.textContent = 'something broke';
     readoutEl.textContent = truncate(String(e?.message || e), 200);
     setTimeout(() => {
-      if (confirm('Gemma 4 failed to load.\n\n' + (e?.message || e) + '\n\nTry a lighter model?')) openModelPicker();
+      if (confirm('Gemma 4 failed to load.\n\n' + (e?.message || e) + '\n\nTry a lighter model that runs on web-llm?')) openModelPicker();
       else runGPUCheck();
     }, 600);
   }
