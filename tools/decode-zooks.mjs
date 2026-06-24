@@ -87,6 +87,11 @@ function toBlueprint(name, solids) {
   // genome scalex = X (width), scaley = Y (height), scalez = Z (length)
   const bp = { width: r3(f(ra.scalex) || 1), height: r3(f(ra.scaley) || 1), len: r3(f(ra.scalez) || 1.6),
     hue: r3(rgb2hue(ra)), bodyRgb: hex(ra), bodyMesh: (ra.mesh || 'Blob').toLowerCase(), bodyShape: shapeOf(ra), blobs: [] };
+  // RAW genome transform of the root, for the faithful Evo.lua placement (angles in DEGREES,
+  // +Z = bone length). The engine recomputes worldTrans from these — no re-seating.
+  bp.gRoot = { roll: r3(f(ra.roll)), pitch: r3(f(ra.pitch)), yaw: r3(f(ra.yaw)),
+    px: r3(f(ra.posx)), py: r3(f(ra.posy)), pz: r3(f(ra.posz)),
+    sx: r3(f(ra.scalex) || 1), sy: r3(f(ra.scaley) || 1), sz: r3(f(ra.scalez) || 1.6) };
   const blobOf = {};
   for (const s of solids) {
     if (s === root) continue;
@@ -98,6 +103,12 @@ function toBlueprint(name, solids) {
       shape: shapeOf(a),
       // Connection on the parent surface (authentic theta/phi), kept in degrees.
       theta: r3(f(a.theta)), phi: r3(f(a.phi)), mirror: +f(a.mirror_group) || 0 };
+    // RAW genome transform for the faithful Evo.lua placement (angles in DEGREES, raw posx/y/z,
+    // +Z = bone length; joint at −Z end). Captured BEFORE the legacy re-seating below.
+    b.g = { theta: r3(f(a.theta)), phi: r3(f(a.phi)),
+      roll: r3(f(a.roll)), pitch: r3(f(a.pitch)), yaw: r3(f(a.yaw)),
+      px: r3(f(a.posx)), py: r3(f(a.posy)), pz: r3(f(a.posz)),
+      sx: r3(f(a.scalex) || 0.4), sy: r3(f(a.scaley) || 0.4), sz: r3(f(a.scalez) || 0.4) };
     const p = r3(f(a.pitch) * D2R), y = r3(f(a.yaw) * D2R), t = r3(f(a.roll) * D2R);
     if (Math.abs(p) > 0.001) b.pitch = p; if (Math.abs(y) > 0.001) b.yaw = y; if (Math.abs(t) > 0.001) b.twist = t;
     if (moving) {

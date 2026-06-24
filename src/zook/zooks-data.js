@@ -40,6 +40,19 @@ export const REAL_ZOOKS = [
      "theta": -0.503,
      "phi": -0.727,
      "mirror": 2,
+     "g": {
+      "theta": -0.503,
+      "phi": -0.727,
+      "roll": 0,
+      "pitch": 33.913,
+      "yaw": -1.283,
+      "px": -0.008,
+      "py": -0.077,
+      "pz": 0.377,
+      "sx": 0.294,
+      "sy": 0.16,
+      "sz": 0.286
+     },
      "pitch": 0.592,
      "yaw": -0.022
     },
@@ -62,6 +75,19 @@ export const REAL_ZOOKS = [
      "theta": -40.916,
      "phi": -1.545,
      "mirror": 3,
+     "g": {
+      "theta": -40.916,
+      "phi": -1.545,
+      "roll": 0,
+      "pitch": 14.137,
+      "yaw": 2.756,
+      "px": 0.01,
+      "py": 0.295,
+      "pz": 0.59,
+      "sx": 0.82,
+      "sy": 0.75,
+      "sz": 1.097
+     },
      "pitch": 0.247,
      "yaw": 0.048
     },
@@ -84,6 +110,19 @@ export const REAL_ZOOKS = [
      "theta": 53.709,
      "phi": 44.184,
      "mirror": 4,
+     "g": {
+      "theta": 53.709,
+      "phi": 44.184,
+      "roll": 0,
+      "pitch": -55.57,
+      "yaw": 12.977,
+      "px": 0.184,
+      "py": -0.109,
+      "pz": 0.167,
+      "sx": 0.1,
+      "sy": 0.1,
+      "sz": 0.216
+     },
      "pitch": -0.97,
      "yaw": 0.226
     },
@@ -106,6 +145,19 @@ export const REAL_ZOOKS = [
      "theta": -8.509,
      "phi": 3.14,
      "mirror": 7,
+     "g": {
+      "theta": -8.509,
+      "phi": 3.14,
+      "roll": 0,
+      "pitch": -17.849,
+      "yaw": -7.895,
+      "px": -0.037,
+      "py": 0.223,
+      "pz": 0.537,
+      "sx": 0.1,
+      "sy": 0.1,
+      "sz": 0.975
+     },
      "pitch": -0.312,
      "yaw": -0.138
     },
@@ -128,6 +180,19 @@ export const REAL_ZOOKS = [
      "theta": 5.252,
      "phi": -5.93,
      "mirror": 11,
+     "g": {
+      "theta": 5.252,
+      "phi": -5.93,
+      "roll": 0,
+      "pitch": 67.347,
+      "yaw": -38.461,
+      "px": -0.169,
+      "py": -0.602,
+      "pz": 0.59,
+      "sx": 0.1,
+      "sy": 0.1,
+      "sz": 1.262
+     },
      "pitch": 1.175,
      "yaw": -0.671,
      "move": "single",
@@ -264,6 +329,19 @@ export const REAL_ZOOKS = [
      "theta": 56.058,
      "phi": 84.254,
      "mirror": 5,
+     "g": {
+      "theta": 56.058,
+      "phi": 84.254,
+      "roll": 0,
+      "pitch": -50.006,
+      "yaw": 6.258,
+      "px": 0.228,
+      "py": -0.117,
+      "pz": 0.015,
+      "sx": 0.1,
+      "sy": 0.1,
+      "sz": 0.216
+     },
      "pitch": -0.873,
      "yaw": 0.109
     },
@@ -286,6 +364,19 @@ export const REAL_ZOOKS = [
      "theta": -15.728,
      "phi": -5.34,
      "mirror": 9,
+     "g": {
+      "theta": -15.728,
+      "phi": -5.34,
+      "roll": 0,
+      "pitch": -20.436,
+      "yaw": 0.343,
+      "px": -0.021,
+      "py": 0.155,
+      "pz": 0.293,
+      "sx": 0.1,
+      "sy": 0.1,
+      "sz": 0.482
+     },
      "pitch": -0.357,
      "yaw": 0.006
     },
@@ -308,6 +399,19 @@ export const REAL_ZOOKS = [
      "theta": 8.169,
      "phi": -2.253,
      "mirror": 12,
+     "g": {
+      "theta": 8.169,
+      "phi": -2.253,
+      "roll": 0,
+      "pitch": 70.992,
+      "yaw": -51.181,
+      "px": -0.131,
+      "py": -0.495,
+      "pz": 0.261,
+      "sx": 0.1,
+      "sy": 0.1,
+      "sz": 1.011
+     },
      "pitch": 1.239,
      "yaw": -0.893,
      "move": "single",
@@ -419,6 +523,19 @@ export const REAL_ZOOKS = [
      "theta": 58.651,
      "phi": 126.955,
      "mirror": 6,
+     "g": {
+      "theta": 58.651,
+      "phi": 126.955,
+      "roll": 0,
+      "pitch": -58.384,
+      "yaw": -7.271,
+      "px": 0.176,
+      "py": -0.103,
+      "pz": -0.122,
+      "sx": 0.1,
+      "sy": 0.1,
+      "sz": 0.216
+     },
      "pitch": -1.019,
      "yaw": -0.127
     },
@@ -441,6 +558,19 @@ export const REAL_ZOOKS = [
      "theta": -6.865,
      "phi": -1.613,
      "mirror": 10,
+     "g": {
+      "theta": -6.865,
+      "phi": -1.613,
+      "roll": 0,
+      "pitch": -8.886,
+      "yaw": 1.813,
+      "px": 0,
+      "py": 0.073,
+      "pz": 0.342,
+      "sx": 0.1,
+      "sy": 0.1,
+      "sz": 0.494
+     },
      "pitch": -0.155,
      "yaw": 0.032
     },
@@ -463,6 +593,19 @@ export const REAL_ZOOKS = [
      "theta": 5.749,
      "phi": -6.691,
      "mirror": 13,
+     "g": {
+      "theta": 5.749,
+      "phi": -6.691,
+      "roll": 0,
+      "pitch": 67.165,
+      "yaw": 16.369,
+      "px": 0.026,
+      "py": -0.4,
+      "pz": 0.356,
+      "sx": 0.1,
+      "sy": 0.1,
+      "sz": 0.827
+     },
      "pitch": 1.172,
      "yaw": 0.286,
      "move": "single",
@@ -679,6 +822,19 @@ export const REAL_ZOOKS = [
      "theta": 53.709,
      "phi": -44.184,
      "mirror": 4,
+     "g": {
+      "theta": 53.709,
+      "phi": -44.184,
+      "roll": 0,
+      "pitch": -55.57,
+      "yaw": -12.977,
+      "px": -0.184,
+      "py": -0.109,
+      "pz": 0.167,
+      "sx": 0.1,
+      "sy": 0.1,
+      "sz": 0.216
+     },
      "pitch": -0.97,
      "yaw": -0.226
     },
@@ -701,6 +857,19 @@ export const REAL_ZOOKS = [
      "theta": -8.509,
      "phi": -3.14,
      "mirror": 7,
+     "g": {
+      "theta": -8.509,
+      "phi": -3.14,
+      "roll": 0,
+      "pitch": -17.849,
+      "yaw": 7.895,
+      "px": 0.037,
+      "py": 0.223,
+      "pz": 0.537,
+      "sx": 0.1,
+      "sy": 0.1,
+      "sz": 0.975
+     },
      "pitch": -0.312,
      "yaw": 0.138
     },
@@ -723,6 +892,19 @@ export const REAL_ZOOKS = [
      "theta": 5.252,
      "phi": 5.93,
      "mirror": 11,
+     "g": {
+      "theta": 5.252,
+      "phi": 5.93,
+      "roll": 0,
+      "pitch": 67.347,
+      "yaw": 38.461,
+      "px": 0.169,
+      "py": -0.602,
+      "pz": 0.59,
+      "sx": 0.1,
+      "sy": 0.1,
+      "sz": 1.262
+     },
      "pitch": 1.175,
      "yaw": 0.671,
      "move": "single",
@@ -859,6 +1041,19 @@ export const REAL_ZOOKS = [
      "theta": 56.058,
      "phi": -84.254,
      "mirror": 5,
+     "g": {
+      "theta": 56.058,
+      "phi": -84.254,
+      "roll": 0,
+      "pitch": -50.006,
+      "yaw": -6.258,
+      "px": -0.228,
+      "py": -0.117,
+      "pz": 0.015,
+      "sx": 0.1,
+      "sy": 0.1,
+      "sz": 0.216
+     },
      "pitch": -0.873,
      "yaw": -0.109
     },
@@ -881,6 +1076,19 @@ export const REAL_ZOOKS = [
      "theta": -15.728,
      "phi": 5.34,
      "mirror": 9,
+     "g": {
+      "theta": -15.728,
+      "phi": 5.34,
+      "roll": 0,
+      "pitch": -20.436,
+      "yaw": -0.343,
+      "px": 0.021,
+      "py": 0.155,
+      "pz": 0.293,
+      "sx": 0.1,
+      "sy": 0.1,
+      "sz": 0.482
+     },
      "pitch": -0.357,
      "yaw": -0.006
     },
@@ -903,6 +1111,19 @@ export const REAL_ZOOKS = [
      "theta": 8.169,
      "phi": 2.253,
      "mirror": 12,
+     "g": {
+      "theta": 8.169,
+      "phi": 2.253,
+      "roll": 0,
+      "pitch": 70.992,
+      "yaw": 51.181,
+      "px": 0.131,
+      "py": -0.495,
+      "pz": 0.261,
+      "sx": 0.1,
+      "sy": 0.1,
+      "sz": 1.011
+     },
      "pitch": 1.239,
      "yaw": 0.893,
      "move": "single",
@@ -1014,6 +1235,19 @@ export const REAL_ZOOKS = [
      "theta": 58.651,
      "phi": -126.955,
      "mirror": 6,
+     "g": {
+      "theta": 58.651,
+      "phi": -126.955,
+      "roll": 0,
+      "pitch": -58.384,
+      "yaw": 7.271,
+      "px": -0.176,
+      "py": -0.103,
+      "pz": -0.122,
+      "sx": 0.1,
+      "sy": 0.1,
+      "sz": 0.216
+     },
      "pitch": -1.019,
      "yaw": 0.127
     },
@@ -1036,6 +1270,19 @@ export const REAL_ZOOKS = [
      "theta": -6.865,
      "phi": 1.613,
      "mirror": 10,
+     "g": {
+      "theta": -6.865,
+      "phi": 1.613,
+      "roll": 0,
+      "pitch": -8.886,
+      "yaw": -1.813,
+      "px": 0,
+      "py": 0.073,
+      "pz": 0.342,
+      "sx": 0.1,
+      "sy": 0.1,
+      "sz": 0.494
+     },
      "pitch": -0.155,
      "yaw": -0.032
     },
@@ -1058,6 +1305,19 @@ export const REAL_ZOOKS = [
      "theta": 5.749,
      "phi": 6.691,
      "mirror": 13,
+     "g": {
+      "theta": 5.749,
+      "phi": 6.691,
+      "roll": 0,
+      "pitch": 67.165,
+      "yaw": -16.369,
+      "px": -0.026,
+      "py": -0.4,
+      "pz": 0.356,
+      "sx": 0.1,
+      "sy": 0.1,
+      "sz": 0.827
+     },
      "pitch": 1.172,
      "yaw": -0.286,
      "move": "single",
@@ -1274,6 +1534,19 @@ export const REAL_ZOOKS = [
      "theta": -19.802,
      "phi": 179.235,
      "mirror": 14,
+     "g": {
+      "theta": -19.802,
+      "phi": 179.235,
+      "roll": 0,
+      "pitch": 33.33,
+      "yaw": 0.128,
+      "px": 0.006,
+      "py": -0.007,
+      "pz": -0.47,
+      "sx": 0.596,
+      "sy": 0.39,
+      "sz": 0.489
+     },
      "pitch": 0.582,
      "yaw": 0.002
     },
@@ -1296,6 +1569,19 @@ export const REAL_ZOOKS = [
      "theta": 0.506,
      "phi": -0.897,
      "mirror": 15,
+     "g": {
+      "theta": 0.506,
+      "phi": -0.897,
+      "roll": 90,
+      "pitch": 10.12,
+      "yaw": -15.686,
+      "px": -0.028,
+      "py": -0.017,
+      "pz": 0.323,
+      "sx": 0.1,
+      "sy": 0.223,
+      "sz": 0.167
+     },
      "pitch": 0.177,
      "yaw": -0.274,
      "twist": 1.571
@@ -1319,11 +1605,35 @@ export const REAL_ZOOKS = [
      "theta": 0.506,
      "phi": 0.897,
      "mirror": 15,
+     "g": {
+      "theta": 0.506,
+      "phi": 0.897,
+      "roll": -90,
+      "pitch": 10.12,
+      "yaw": 15.686,
+      "px": 0.028,
+      "py": -0.017,
+      "pz": 0.323,
+      "sx": 0.1,
+      "sy": 0.223,
+      "sz": 0.167
+     },
      "pitch": 0.177,
      "yaw": 0.274,
      "twist": -1.571
     }
-   ]
+   ],
+   "gRoot": {
+    "roll": 0,
+    "pitch": 0,
+    "yaw": 0,
+    "px": 0,
+    "py": 0,
+    "pz": 0,
+    "sx": 0.526,
+    "sy": 0.309,
+    "sz": 0.515
+   }
   }
  },
  {
@@ -1361,6 +1671,19 @@ export const REAL_ZOOKS = [
      "theta": -0.026,
      "phi": 123.249,
      "mirror": 2,
+     "g": {
+      "theta": -0.026,
+      "phi": 123.249,
+      "roll": 106.363,
+      "pitch": 0,
+      "yaw": 0,
+      "px": 1.054,
+      "py": 0,
+      "pz": -1.077,
+      "sx": 0.389,
+      "sy": 0.384,
+      "sz": 0.861
+     },
      "twist": 1.856,
      "move": "single",
      "legType": 1,
@@ -1441,6 +1764,19 @@ export const REAL_ZOOKS = [
      "theta": -0.068,
      "phi": 1.487,
      "mirror": 3,
+     "g": {
+      "theta": -0.068,
+      "phi": 1.487,
+      "roll": 0,
+      "pitch": 0,
+      "yaw": 0,
+      "px": 0.016,
+      "py": 0.001,
+      "pz": 0.858,
+      "sx": 0.367,
+      "sy": 0.372,
+      "sz": 0.855
+     },
      "move": "single",
      "legType": 1,
      "cycle": 0,
@@ -1515,6 +1851,19 @@ export const REAL_ZOOKS = [
      "theta": -8.334,
      "phi": 0.706,
      "mirror": 15,
+     "g": {
+      "theta": -8.334,
+      "phi": 0.706,
+      "roll": 0,
+      "pitch": 0,
+      "yaw": 0,
+      "px": 0.008,
+      "py": 0.092,
+      "pz": 0.868,
+      "sx": 0.363,
+      "sy": 0.382,
+      "sz": 0.89
+     },
      "move": "single",
      "legType": 1,
      "cycle": 0,
@@ -1599,6 +1948,19 @@ export const REAL_ZOOKS = [
      "theta": -0.068,
      "phi": 1.487,
      "mirror": 16,
+     "g": {
+      "theta": -0.068,
+      "phi": 1.487,
+      "roll": 0,
+      "pitch": 0,
+      "yaw": 0,
+      "px": 0.016,
+      "py": 0.001,
+      "pz": 0.874,
+      "sx": 0.5,
+      "sy": 0.5,
+      "sz": 0.857
+     },
      "move": "single",
      "legType": 1,
      "cycle": 0,
@@ -1673,6 +2035,19 @@ export const REAL_ZOOKS = [
      "theta": -0.026,
      "phi": -123.249,
      "mirror": 2,
+     "g": {
+      "theta": -0.026,
+      "phi": -123.249,
+      "roll": -106.363,
+      "pitch": 0,
+      "yaw": 0,
+      "px": -1.054,
+      "py": 0,
+      "pz": -1.077,
+      "sx": 0.389,
+      "sy": 0.384,
+      "sz": 0.861
+     },
      "twist": -1.856,
      "move": "single",
      "legType": 1,
@@ -1753,6 +2128,19 @@ export const REAL_ZOOKS = [
      "theta": -0.068,
      "phi": -1.487,
      "mirror": 3,
+     "g": {
+      "theta": -0.068,
+      "phi": -1.487,
+      "roll": 0,
+      "pitch": 0,
+      "yaw": 0,
+      "px": -0.016,
+      "py": 0.001,
+      "pz": 0.858,
+      "sx": 0.367,
+      "sy": 0.372,
+      "sz": 0.855
+     },
      "move": "single",
      "legType": 1,
      "cycle": 0,
@@ -1827,6 +2215,19 @@ export const REAL_ZOOKS = [
      "theta": -8.334,
      "phi": -0.706,
      "mirror": 15,
+     "g": {
+      "theta": -8.334,
+      "phi": -0.706,
+      "roll": 0,
+      "pitch": 0,
+      "yaw": 0,
+      "px": -0.008,
+      "py": 0.092,
+      "pz": 0.868,
+      "sx": 0.363,
+      "sy": 0.382,
+      "sz": 0.89
+     },
      "move": "single",
      "legType": 1,
      "cycle": 0,
@@ -1911,6 +2312,19 @@ export const REAL_ZOOKS = [
      "theta": -0.068,
      "phi": -1.487,
      "mirror": 16,
+     "g": {
+      "theta": -0.068,
+      "phi": -1.487,
+      "roll": 0,
+      "pitch": 0,
+      "yaw": 0,
+      "px": -0.016,
+      "py": 0.001,
+      "pz": 0.874,
+      "sx": 0.5,
+      "sy": 0.5,
+      "sz": 0.857
+     },
      "move": "single",
      "legType": 1,
      "cycle": 0,
@@ -1985,6 +2399,19 @@ export const REAL_ZOOKS = [
      "theta": -34.363,
      "phi": -0.509,
      "mirror": 21,
+     "g": {
+      "theta": -34.363,
+      "phi": -0.509,
+      "roll": 0,
+      "pitch": -3.466,
+      "yaw": -0.69,
+      "px": -0.022,
+      "py": 0.733,
+      "pz": 1.934,
+      "sx": 0.933,
+      "sy": 0.41,
+      "sz": 1.679
+     },
      "pitch": -0.06,
      "yaw": -0.012
     },
@@ -2007,6 +2434,19 @@ export const REAL_ZOOKS = [
      "theta": 5.932,
      "phi": -50.193,
      "mirror": 22,
+     "g": {
+      "theta": 5.932,
+      "phi": -50.193,
+      "roll": -106.363,
+      "pitch": 3.534,
+      "yaw": -44.492,
+      "px": -0.863,
+      "py": -0.086,
+      "pz": 0.583,
+      "sx": 0.5,
+      "sy": 0.5,
+      "sz": 0.908
+     },
      "pitch": 0.062,
      "yaw": -0.777,
      "twist": -1.856,
@@ -2084,6 +2524,19 @@ export const REAL_ZOOKS = [
      "theta": 12.68,
      "phi": 0.548,
      "mirror": 23,
+     "g": {
+      "theta": 12.68,
+      "phi": 0.548,
+      "roll": 0,
+      "pitch": 7.591,
+      "yaw": 3.005,
+      "px": 0.027,
+      "py": -0.197,
+      "pz": 0.835,
+      "sx": 0.5,
+      "sy": 0.5,
+      "sz": 0.813
+     },
      "pitch": 0.132,
      "yaw": 0.052,
      "move": "single",
@@ -2155,6 +2608,19 @@ export const REAL_ZOOKS = [
      "theta": -8.334,
      "phi": -0.706,
      "mirror": 24,
+     "g": {
+      "theta": -8.334,
+      "phi": -0.706,
+      "roll": 0,
+      "pitch": 19.907,
+      "yaw": 2.325,
+      "px": 0.008,
+      "py": -0.052,
+      "pz": 0.818,
+      "sx": 0.368,
+      "sy": 0.368,
+      "sz": 0.87
+     },
      "pitch": 0.347,
      "yaw": 0.041,
      "move": "single",
@@ -2241,6 +2707,19 @@ export const REAL_ZOOKS = [
      "theta": -0.068,
      "phi": -1.487,
      "mirror": 25,
+     "g": {
+      "theta": -0.068,
+      "phi": -1.487,
+      "roll": 0,
+      "pitch": 13.252,
+      "yaw": 3.045,
+      "px": 0.006,
+      "py": -0.092,
+      "pz": 0.827,
+      "sx": 0.335,
+      "sy": 0.302,
+      "sz": 0.806
+     },
      "pitch": 0.231,
      "yaw": 0.053,
      "move": "single",
@@ -2317,6 +2796,19 @@ export const REAL_ZOOKS = [
      "theta": 5.932,
      "phi": 50.193,
      "mirror": 22,
+     "g": {
+      "theta": 5.932,
+      "phi": 50.193,
+      "roll": 106.363,
+      "pitch": 3.534,
+      "yaw": 44.492,
+      "px": 0.863,
+      "py": -0.086,
+      "pz": 0.583,
+      "sx": 0.5,
+      "sy": 0.5,
+      "sz": 0.908
+     },
      "pitch": 0.062,
      "yaw": 0.777,
      "twist": 1.856,
@@ -2394,6 +2886,19 @@ export const REAL_ZOOKS = [
      "theta": 12.68,
      "phi": -0.548,
      "mirror": 23,
+     "g": {
+      "theta": 12.68,
+      "phi": -0.548,
+      "roll": 0,
+      "pitch": 7.591,
+      "yaw": -3.005,
+      "px": -0.027,
+      "py": -0.197,
+      "pz": 0.835,
+      "sx": 0.5,
+      "sy": 0.5,
+      "sz": 0.813
+     },
      "pitch": 0.132,
      "yaw": -0.052,
      "move": "single",
@@ -2465,6 +2970,19 @@ export const REAL_ZOOKS = [
      "theta": -8.334,
      "phi": 0.706,
      "mirror": 24,
+     "g": {
+      "theta": -8.334,
+      "phi": 0.706,
+      "roll": 0,
+      "pitch": 19.907,
+      "yaw": -2.325,
+      "px": -0.008,
+      "py": -0.052,
+      "pz": 0.818,
+      "sx": 0.368,
+      "sy": 0.368,
+      "sz": 0.87
+     },
      "pitch": 0.347,
      "yaw": -0.041,
      "move": "single",
@@ -2551,6 +3069,19 @@ export const REAL_ZOOKS = [
      "theta": -0.068,
      "phi": 1.487,
      "mirror": 25,
+     "g": {
+      "theta": -0.068,
+      "phi": 1.487,
+      "roll": 0,
+      "pitch": 13.252,
+      "yaw": -3.045,
+      "px": -0.006,
+      "py": -0.092,
+      "pz": 0.827,
+      "sx": 0.335,
+      "sy": 0.302,
+      "sz": 0.806
+     },
      "pitch": 0.231,
      "yaw": -0.053,
      "move": "single",
@@ -2608,7 +3139,18 @@ export const REAL_ZOOKS = [
       }
      ]
     }
-   ]
+   ],
+   "gRoot": {
+    "roll": 0,
+    "pitch": 0,
+    "yaw": 0,
+    "px": 0,
+    "py": 0,
+    "pz": 0,
+    "sx": 1.622,
+    "sy": 0.752,
+    "sz": 3
+   }
   }
  },
  {
@@ -2646,6 +3188,19 @@ export const REAL_ZOOKS = [
      "theta": -78.072,
      "phi": -179.773,
      "mirror": 2,
+     "g": {
+      "theta": -78.072,
+      "phi": -179.773,
+      "roll": 0,
+      "pitch": -3.104,
+      "yaw": 1.297,
+      "px": -0.036,
+      "py": 1.781,
+      "pz": -0.523,
+      "sx": 3,
+      "sy": 3,
+      "sz": 3
+     },
      "pitch": -0.054,
      "yaw": 0.023
     },
@@ -2668,6 +3223,19 @@ export const REAL_ZOOKS = [
      "theta": -12.137,
      "phi": -136.114,
      "mirror": 3,
+     "g": {
+      "theta": -12.137,
+      "phi": -136.114,
+      "roll": 57.273,
+      "pitch": 77.121,
+      "yaw": -160.551,
+      "px": -1.111,
+      "py": -0.146,
+      "pz": -1.209,
+      "sx": 0.312,
+      "sy": 0.302,
+      "sz": 1
+     },
      "pitch": 1.346,
      "yaw": -2.802,
      "twist": 1,
@@ -2715,6 +3283,19 @@ export const REAL_ZOOKS = [
      "theta": -2.717,
      "phi": -6.617,
      "mirror": 4,
+     "g": {
+      "theta": -2.717,
+      "phi": -6.617,
+      "roll": 0,
+      "pitch": 32.702,
+      "yaw": -1.127,
+      "px": -0.076,
+      "py": -0.243,
+      "pz": 0.929,
+      "sx": 0.311,
+      "sy": 0.291,
+      "sz": 1
+     },
      "pitch": 0.571,
      "yaw": -0.02,
      "move": "single",
@@ -2771,6 +3352,19 @@ export const REAL_ZOOKS = [
      "theta": -0.26,
      "phi": 0.711,
      "mirror": 5,
+     "g": {
+      "theta": -0.26,
+      "phi": 0.711,
+      "roll": 0,
+      "pitch": 32.702,
+      "yaw": -1.127,
+      "px": -0.001,
+      "py": -0.237,
+      "pz": 0.875,
+      "sx": 0.35,
+      "sy": 0.344,
+      "sz": 0.888
+     },
      "pitch": 0.571,
      "yaw": -0.02,
      "move": "single",
@@ -2827,6 +3421,19 @@ export const REAL_ZOOKS = [
      "theta": -12.137,
      "phi": 136.114,
      "mirror": 3,
+     "g": {
+      "theta": -12.137,
+      "phi": 136.114,
+      "roll": -57.273,
+      "pitch": 77.121,
+      "yaw": 160.551,
+      "px": 1.111,
+      "py": -0.146,
+      "pz": -1.209,
+      "sx": 0.312,
+      "sy": 0.302,
+      "sz": 1
+     },
      "pitch": 1.346,
      "yaw": 2.802,
      "twist": -1,
@@ -2874,6 +3481,19 @@ export const REAL_ZOOKS = [
      "theta": -2.717,
      "phi": 6.617,
      "mirror": 4,
+     "g": {
+      "theta": -2.717,
+      "phi": 6.617,
+      "roll": 0,
+      "pitch": 32.702,
+      "yaw": 1.127,
+      "px": 0.076,
+      "py": -0.243,
+      "pz": 0.929,
+      "sx": 0.311,
+      "sy": 0.291,
+      "sz": 1
+     },
      "pitch": 0.571,
      "yaw": 0.02,
      "move": "single",
@@ -2930,6 +3550,19 @@ export const REAL_ZOOKS = [
      "theta": -0.26,
      "phi": -0.711,
      "mirror": 5,
+     "g": {
+      "theta": -0.26,
+      "phi": -0.711,
+      "roll": 0,
+      "pitch": 32.702,
+      "yaw": 1.127,
+      "px": 0.001,
+      "py": -0.237,
+      "pz": 0.875,
+      "sx": 0.35,
+      "sy": 0.344,
+      "sz": 0.888
+     },
      "pitch": 0.571,
      "yaw": 0.02,
      "move": "single",
@@ -2986,6 +3619,19 @@ export const REAL_ZOOKS = [
      "theta": 59.714,
      "phi": -136.607,
      "mirror": 6,
+     "g": {
+      "theta": 59.714,
+      "phi": -136.607,
+      "roll": 0,
+      "pitch": -15.001,
+      "yaw": 25.931,
+      "px": -0.933,
+      "py": -1.687,
+      "pz": -0.68,
+      "sx": 0.215,
+      "sy": 0.5,
+      "sz": 1
+     },
      "pitch": -0.262,
      "yaw": 0.453,
      "move": "single",
@@ -3037,6 +3683,19 @@ export const REAL_ZOOKS = [
      "theta": 8.954,
      "phi": 2.071,
      "mirror": 7,
+     "g": {
+      "theta": 8.954,
+      "phi": 2.071,
+      "roll": 0,
+      "pitch": 33.127,
+      "yaw": -20.458,
+      "px": -0.127,
+      "py": -0.36,
+      "pz": 0.8,
+      "sx": 0.243,
+      "sy": 0.5,
+      "sz": 0.978
+     },
      "pitch": 0.578,
      "yaw": -0.357
     },
@@ -3059,6 +3718,19 @@ export const REAL_ZOOKS = [
      "theta": 43.878,
      "phi": 1.686,
      "mirror": 8,
+     "g": {
+      "theta": 43.878,
+      "phi": 1.686,
+      "roll": 0,
+      "pitch": 0,
+      "yaw": 0,
+      "px": 0.011,
+      "py": -0.469,
+      "pz": 0.699,
+      "sx": 0.173,
+      "sy": 0.25,
+      "sz": 0.741
+     },
      "move": "single",
      "legType": 1,
      "cycle": 0,
@@ -3108,6 +3780,19 @@ export const REAL_ZOOKS = [
      "theta": 2.526,
      "phi": -5.323,
      "mirror": 9,
+     "g": {
+      "theta": 2.526,
+      "phi": -5.323,
+      "roll": 0,
+      "pitch": 0,
+      "yaw": 0,
+      "px": -0.058,
+      "py": -0.033,
+      "pz": 0.986,
+      "sx": 0.186,
+      "sy": 0.5,
+      "sz": 1
+     },
      "move": "single",
      "legType": 1,
      "cycle": 0,
@@ -3157,6 +3842,19 @@ export const REAL_ZOOKS = [
      "theta": 63.4,
      "phi": 5.731,
      "mirror": 10,
+     "g": {
+      "theta": 63.4,
+      "phi": 5.731,
+      "roll": 0,
+      "pitch": 37.905,
+      "yaw": 11.404,
+      "px": 0.028,
+      "py": -0.406,
+      "pz": 0.195,
+      "sx": 0.214,
+      "sy": 0.5,
+      "sz": 0.355
+     },
      "pitch": 0.662,
      "yaw": 0.199
     },
@@ -3179,6 +3877,19 @@ export const REAL_ZOOKS = [
      "theta": 59.714,
      "phi": 136.607,
      "mirror": 6,
+     "g": {
+      "theta": 59.714,
+      "phi": 136.607,
+      "roll": 0,
+      "pitch": -15.001,
+      "yaw": -25.931,
+      "px": 0.933,
+      "py": -1.687,
+      "pz": -0.68,
+      "sx": 0.215,
+      "sy": 0.5,
+      "sz": 1
+     },
      "pitch": -0.262,
      "yaw": -0.453,
      "move": "single",
@@ -3230,6 +3941,19 @@ export const REAL_ZOOKS = [
      "theta": 8.954,
      "phi": -2.071,
      "mirror": 7,
+     "g": {
+      "theta": 8.954,
+      "phi": -2.071,
+      "roll": 0,
+      "pitch": 33.127,
+      "yaw": 20.458,
+      "px": 0.127,
+      "py": -0.36,
+      "pz": 0.8,
+      "sx": 0.243,
+      "sy": 0.5,
+      "sz": 0.978
+     },
      "pitch": 0.578,
      "yaw": 0.357
     },
@@ -3252,6 +3976,19 @@ export const REAL_ZOOKS = [
      "theta": 43.878,
      "phi": -1.686,
      "mirror": 8,
+     "g": {
+      "theta": 43.878,
+      "phi": -1.686,
+      "roll": 0,
+      "pitch": 0,
+      "yaw": 0,
+      "px": -0.011,
+      "py": -0.469,
+      "pz": 0.699,
+      "sx": 0.173,
+      "sy": 0.25,
+      "sz": 0.741
+     },
      "move": "single",
      "legType": 1,
      "cycle": 0,
@@ -3301,6 +4038,19 @@ export const REAL_ZOOKS = [
      "theta": 2.526,
      "phi": 5.323,
      "mirror": 9,
+     "g": {
+      "theta": 2.526,
+      "phi": 5.323,
+      "roll": 0,
+      "pitch": 0,
+      "yaw": 0,
+      "px": 0.058,
+      "py": -0.033,
+      "pz": 0.986,
+      "sx": 0.186,
+      "sy": 0.5,
+      "sz": 1
+     },
      "move": "single",
      "legType": 1,
      "cycle": 0,
@@ -3350,6 +4100,19 @@ export const REAL_ZOOKS = [
      "theta": 63.4,
      "phi": -5.731,
      "mirror": 10,
+     "g": {
+      "theta": 63.4,
+      "phi": -5.731,
+      "roll": 0,
+      "pitch": 37.905,
+      "yaw": -11.404,
+      "px": -0.028,
+      "py": -0.406,
+      "pz": 0.195,
+      "sx": 0.214,
+      "sy": 0.5,
+      "sz": 0.355
+     },
      "pitch": 0.662,
      "yaw": -0.199
     },
@@ -3372,6 +4135,19 @@ export const REAL_ZOOKS = [
      "theta": 62.181,
      "phi": -48.256,
      "mirror": 14,
+     "g": {
+      "theta": 62.181,
+      "phi": -48.256,
+      "roll": -102.273,
+      "pitch": 47.213,
+      "yaw": -89.096,
+      "px": -0.45,
+      "py": -1.216,
+      "pz": 0.245,
+      "sx": 0.331,
+      "sy": 0.364,
+      "sz": 0.344
+     },
      "pitch": 0.824,
      "yaw": -1.555,
      "twist": -1.785
@@ -3395,6 +4171,19 @@ export const REAL_ZOOKS = [
      "theta": 62.181,
      "phi": 48.256,
      "mirror": 14,
+     "g": {
+      "theta": 62.181,
+      "phi": 48.256,
+      "roll": 102.273,
+      "pitch": 47.213,
+      "yaw": 89.096,
+      "px": 0.45,
+      "py": -1.216,
+      "pz": 0.245,
+      "sx": 0.331,
+      "sy": 0.364,
+      "sz": 0.344
+     },
      "pitch": 0.824,
      "yaw": 1.555,
      "twist": 1.785
@@ -3417,7 +4206,20 @@ export const REAL_ZOOKS = [
      },
      "theta": 33.126,
      "phi": 47.493,
-     "mirror": 12
+     "mirror": 12,
+     "g": {
+      "theta": 33.126,
+      "phi": 47.493,
+      "roll": 0,
+      "pitch": 0,
+      "yaw": 0,
+      "px": 1.111,
+      "py": -0.426,
+      "pz": 1.018,
+      "sx": 0.5,
+      "sy": 0.523,
+      "sz": 1
+     }
     },
     {
      "x": 0.767,
@@ -3438,6 +4240,19 @@ export const REAL_ZOOKS = [
      "theta": 26.496,
      "phi": 140.986,
      "mirror": 13,
+     "g": {
+      "theta": 26.496,
+      "phi": 140.986,
+      "roll": 0,
+      "pitch": 1.185,
+      "yaw": 19.515,
+      "px": 0.768,
+      "py": -0.279,
+      "pz": -1.147,
+      "sx": 0.5,
+      "sy": 0.5,
+      "sz": 0.749
+     },
      "pitch": 0.021,
      "yaw": 0.341
     },
@@ -3460,6 +4275,19 @@ export const REAL_ZOOKS = [
      "theta": 26.496,
      "phi": -140.986,
      "mirror": 13,
+     "g": {
+      "theta": 26.496,
+      "phi": -140.986,
+      "roll": 0,
+      "pitch": 1.185,
+      "yaw": -19.515,
+      "px": -0.768,
+      "py": -0.279,
+      "pz": -1.147,
+      "sx": 0.5,
+      "sy": 0.5,
+      "sz": 0.749
+     },
      "pitch": 0.021,
      "yaw": -0.341
     },
@@ -3481,9 +4309,33 @@ export const REAL_ZOOKS = [
      },
      "theta": 33.126,
      "phi": -47.493,
-     "mirror": 12
+     "mirror": 12,
+     "g": {
+      "theta": 33.126,
+      "phi": -47.493,
+      "roll": 0,
+      "pitch": 0,
+      "yaw": 0,
+      "px": -1.111,
+      "py": -0.426,
+      "pz": 1.018,
+      "sx": 0.5,
+      "sy": 0.523,
+      "sz": 1
+     }
     }
-   ]
+   ],
+   "gRoot": {
+    "roll": 0,
+    "pitch": 0,
+    "yaw": 0,
+    "px": 0,
+    "py": 0,
+    "pz": 0,
+    "sx": 3,
+    "sy": 0.647,
+    "sz": 3
+   }
   }
  },
  {
@@ -3521,6 +4373,19 @@ export const REAL_ZOOKS = [
      "theta": -10.345,
      "phi": 105.691,
      "mirror": 2,
+     "g": {
+      "theta": -10.345,
+      "phi": 105.691,
+      "roll": 0,
+      "pitch": 7.171,
+      "yaw": -4.391,
+      "px": 1.654,
+      "py": 0.128,
+      "pz": -0.535,
+      "sx": 0.373,
+      "sy": 0.284,
+      "sz": 1.414
+     },
      "pitch": 0.125,
      "yaw": -0.077
     },
@@ -3543,6 +4408,19 @@ export const REAL_ZOOKS = [
      "theta": -2.985,
      "phi": 12.278,
      "mirror": 3,
+     "g": {
+      "theta": -2.985,
+      "phi": 12.278,
+      "roll": 0,
+      "pitch": 77.804,
+      "yaw": 7.626,
+      "px": 0.072,
+      "py": -0.363,
+      "pz": 0.793,
+      "sx": 0.239,
+      "sy": 0.284,
+      "sz": 0.768
+     },
      "pitch": 1.358,
      "yaw": 0.133,
      "move": "single",
@@ -3594,6 +4472,19 @@ export const REAL_ZOOKS = [
      "theta": -10.345,
      "phi": -105.691,
      "mirror": 2,
+     "g": {
+      "theta": -10.345,
+      "phi": -105.691,
+      "roll": 0,
+      "pitch": 7.171,
+      "yaw": 4.391,
+      "px": -1.654,
+      "py": 0.128,
+      "pz": -0.535,
+      "sx": 0.373,
+      "sy": 0.284,
+      "sz": 1.414
+     },
      "pitch": 0.125,
      "yaw": 0.077
     },
@@ -3616,6 +4507,19 @@ export const REAL_ZOOKS = [
      "theta": -2.985,
      "phi": -12.278,
      "mirror": 3,
+     "g": {
+      "theta": -2.985,
+      "phi": -12.278,
+      "roll": 0,
+      "pitch": 77.804,
+      "yaw": -7.626,
+      "px": -0.072,
+      "py": -0.363,
+      "pz": 0.794,
+      "sx": 0.239,
+      "sy": 0.284,
+      "sz": 0.768
+     },
      "pitch": 1.358,
      "yaw": -0.133,
      "move": "single",
@@ -3667,6 +4571,19 @@ export const REAL_ZOOKS = [
      "theta": 2.774,
      "phi": 44.256,
      "mirror": 4,
+     "g": {
+      "theta": 2.774,
+      "phi": 44.256,
+      "roll": 0,
+      "pitch": -7.174,
+      "yaw": 13.203,
+      "px": 1.315,
+      "py": 0.031,
+      "pz": 1.467,
+      "sx": 0.373,
+      "sy": 0.284,
+      "sz": 1.414
+     },
      "pitch": -0.125,
      "yaw": 0.23
     },
@@ -3689,6 +4606,19 @@ export const REAL_ZOOKS = [
      "theta": -2.985,
      "phi": 12.278,
      "mirror": 5,
+     "g": {
+      "theta": -2.985,
+      "phi": 12.278,
+      "roll": 0,
+      "pitch": 77.804,
+      "yaw": 7.626,
+      "px": 0.068,
+      "py": -0.314,
+      "pz": 0.781,
+      "sx": 0.222,
+      "sy": 0.267,
+      "sz": 0.667
+     },
      "pitch": 1.358,
      "yaw": 0.133,
      "move": "single",
@@ -3740,6 +4670,19 @@ export const REAL_ZOOKS = [
      "theta": 2.774,
      "phi": -44.256,
      "mirror": 4,
+     "g": {
+      "theta": 2.774,
+      "phi": -44.256,
+      "roll": 0,
+      "pitch": -7.174,
+      "yaw": -13.203,
+      "px": -1.315,
+      "py": 0.031,
+      "pz": 1.467,
+      "sx": 0.373,
+      "sy": 0.284,
+      "sz": 1.414
+     },
      "pitch": -0.125,
      "yaw": -0.23
     },
@@ -3762,6 +4705,19 @@ export const REAL_ZOOKS = [
      "theta": -2.985,
      "phi": -12.278,
      "mirror": 5,
+     "g": {
+      "theta": -2.985,
+      "phi": -12.278,
+      "roll": 0,
+      "pitch": 77.804,
+      "yaw": -7.626,
+      "px": -0.068,
+      "py": -0.314,
+      "pz": 0.781,
+      "sx": 0.222,
+      "sy": 0.267,
+      "sz": 0.667
+     },
      "pitch": 1.358,
      "yaw": -0.133,
      "move": "single",
@@ -3813,6 +4769,19 @@ export const REAL_ZOOKS = [
      "theta": -2.833,
      "phi": 77.786,
      "mirror": 8,
+     "g": {
+      "theta": -2.833,
+      "phi": 77.786,
+      "roll": 0,
+      "pitch": -0.025,
+      "yaw": 1.28,
+      "px": 1.691,
+      "py": 0.06,
+      "pz": 0.451,
+      "sx": 0.373,
+      "sy": 0.284,
+      "sz": 1.414
+     },
      "yaw": 0.022
     },
     {
@@ -3834,6 +4803,19 @@ export const REAL_ZOOKS = [
      "theta": -2.985,
      "phi": -12.278,
      "mirror": 9,
+     "g": {
+      "theta": -2.985,
+      "phi": -12.278,
+      "roll": 0,
+      "pitch": 77.804,
+      "yaw": -7.626,
+      "px": -0.068,
+      "py": -0.322,
+      "pz": 0.783,
+      "sx": 0.222,
+      "sy": 0.267,
+      "sz": 0.683
+     },
      "pitch": 1.358,
      "yaw": -0.133,
      "move": "single",
@@ -3884,7 +4866,20 @@ export const REAL_ZOOKS = [
      },
      "theta": -3.1,
      "phi": 132.475,
-     "mirror": 10
+     "mirror": 10,
+     "g": {
+      "theta": -3.1,
+      "phi": 132.475,
+      "roll": 0,
+      "pitch": 0,
+      "yaw": 0,
+      "px": 1.283,
+      "py": 0.066,
+      "pz": -1.501,
+      "sx": 0.373,
+      "sy": 0.284,
+      "sz": 1.414
+     }
     },
     {
      "x": -0.055,
@@ -3905,6 +4900,19 @@ export const REAL_ZOOKS = [
      "theta": -2.985,
      "phi": -12.278,
      "mirror": 11,
+     "g": {
+      "theta": -2.985,
+      "phi": -12.278,
+      "roll": 0,
+      "pitch": 77.804,
+      "yaw": -7.626,
+      "px": -0.072,
+      "py": -0.363,
+      "pz": 0.793,
+      "sx": 0.205,
+      "sy": 0.284,
+      "sz": 0.768
+     },
      "pitch": 1.358,
      "yaw": -0.133,
      "move": "single",
@@ -3955,7 +4963,20 @@ export const REAL_ZOOKS = [
      },
      "theta": -3.1,
      "phi": -132.475,
-     "mirror": 10
+     "mirror": 10,
+     "g": {
+      "theta": -3.1,
+      "phi": -132.475,
+      "roll": 0,
+      "pitch": 0,
+      "yaw": 0,
+      "px": -1.283,
+      "py": 0.066,
+      "pz": -1.501,
+      "sx": 0.373,
+      "sy": 0.284,
+      "sz": 1.414
+     }
     },
     {
      "x": 0.055,
@@ -3976,6 +4997,19 @@ export const REAL_ZOOKS = [
      "theta": -2.985,
      "phi": 12.278,
      "mirror": 11,
+     "g": {
+      "theta": -2.985,
+      "phi": 12.278,
+      "roll": 0,
+      "pitch": 77.804,
+      "yaw": 7.626,
+      "px": 0.072,
+      "py": -0.363,
+      "pz": 0.793,
+      "sx": 0.205,
+      "sy": 0.284,
+      "sz": 0.768
+     },
      "pitch": 1.358,
      "yaw": 0.133,
      "move": "single",
@@ -4027,6 +5061,19 @@ export const REAL_ZOOKS = [
      "theta": -2.833,
      "phi": -77.786,
      "mirror": 8,
+     "g": {
+      "theta": -2.833,
+      "phi": -77.786,
+      "roll": 0,
+      "pitch": -0.025,
+      "yaw": -1.28,
+      "px": -1.691,
+      "py": 0.06,
+      "pz": 0.451,
+      "sx": 0.373,
+      "sy": 0.284,
+      "sz": 1.414
+     },
      "yaw": -0.022
     },
     {
@@ -4048,6 +5095,19 @@ export const REAL_ZOOKS = [
      "theta": -2.985,
      "phi": 12.278,
      "mirror": 9,
+     "g": {
+      "theta": -2.985,
+      "phi": 12.278,
+      "roll": 0,
+      "pitch": 77.804,
+      "yaw": 7.626,
+      "px": 0.068,
+      "py": -0.322,
+      "pz": 0.783,
+      "sx": 0.222,
+      "sy": 0.267,
+      "sz": 0.683
+     },
      "pitch": 1.358,
      "yaw": 0.133,
      "move": "single",
@@ -4098,7 +5158,20 @@ export const REAL_ZOOKS = [
      },
      "theta": -22.897,
      "phi": 166.001,
-     "mirror": 13
+     "mirror": 13,
+     "g": {
+      "theta": -22.897,
+      "phi": 166.001,
+      "roll": 0,
+      "pitch": 0,
+      "yaw": 0,
+      "px": 0.25,
+      "py": 0.232,
+      "pz": -1.437,
+      "sx": 0.261,
+      "sy": 0.23,
+      "sz": 0.179
+     }
     },
     {
      "x": -0.209,
@@ -4118,9 +5191,33 @@ export const REAL_ZOOKS = [
      },
      "theta": -22.897,
      "phi": -166.001,
-     "mirror": 13
+     "mirror": 13,
+     "g": {
+      "theta": -22.897,
+      "phi": -166.001,
+      "roll": 0,
+      "pitch": 0,
+      "yaw": 0,
+      "px": -0.25,
+      "py": 0.232,
+      "pz": -1.437,
+      "sx": 0.261,
+      "sy": 0.23,
+      "sz": 0.179
+     }
     }
-   ]
+   ],
+   "gRoot": {
+    "roll": 0,
+    "pitch": 0,
+    "yaw": 0,
+    "px": 0,
+    "py": 0,
+    "pz": 0,
+    "sx": 2.043,
+    "sy": 1,
+    "sz": 3
+   }
   }
  },
  {
@@ -4157,7 +5254,20 @@ export const REAL_ZOOKS = [
      },
      "theta": 1.352,
      "phi": 1.036,
-     "mirror": 2
+     "mirror": 2,
+     "g": {
+      "theta": 1.352,
+      "phi": 1.036,
+      "roll": 0,
+      "pitch": 0,
+      "yaw": 0,
+      "px": 0.006,
+      "py": -0.007,
+      "pz": 0.35,
+      "sx": 0.373,
+      "sy": 0.284,
+      "sz": 0.369
+     }
     },
     {
      "x": -0.227,
@@ -4177,7 +5287,20 @@ export const REAL_ZOOKS = [
      },
      "theta": -12.883,
      "phi": -91.675,
-     "mirror": 3
+     "mirror": 3,
+     "g": {
+      "theta": -12.883,
+      "phi": -91.675,
+      "roll": 0,
+      "pitch": 0,
+      "yaw": 0,
+      "px": -0.952,
+      "py": 0.208,
+      "pz": -0.028,
+      "sx": 0.1,
+      "sy": 0.1,
+      "sz": 1.588
+     }
     },
     {
      "x": -0.003,
@@ -4198,6 +5321,19 @@ export const REAL_ZOOKS = [
      "theta": 6.685,
      "phi": -1.546,
      "mirror": 4,
+     "g": {
+      "theta": 6.685,
+      "phi": -1.546,
+      "roll": 0,
+      "pitch": 73.636,
+      "yaw": 0,
+      "px": -0.005,
+      "py": -0.788,
+      "pz": 0.927,
+      "sx": 0.1,
+      "sy": 0.1,
+      "sz": 1.588
+     },
      "pitch": 1.285,
      "move": "single",
      "legType": 2,
@@ -4288,6 +5424,19 @@ export const REAL_ZOOKS = [
      "theta": -1.806,
      "phi": -0.933,
      "mirror": 5,
+     "g": {
+      "theta": -1.806,
+      "phi": -0.933,
+      "roll": 0,
+      "pitch": 24.545,
+      "yaw": 0,
+      "px": -0.004,
+      "py": -0.076,
+      "pz": 0.979,
+      "sx": 0.571,
+      "sy": 0.581,
+      "sz": 0.401
+     },
      "pitch": 0.428
     },
     {
@@ -4308,7 +5457,20 @@ export const REAL_ZOOKS = [
      },
      "theta": -12.883,
      "phi": 91.675,
-     "mirror": 3
+     "mirror": 3,
+     "g": {
+      "theta": -12.883,
+      "phi": 91.675,
+      "roll": 0,
+      "pitch": 0,
+      "yaw": 0,
+      "px": 0.952,
+      "py": 0.208,
+      "pz": -0.028,
+      "sx": 0.1,
+      "sy": 0.1,
+      "sz": 1.588
+     }
     },
     {
      "x": 0.003,
@@ -4329,6 +5491,19 @@ export const REAL_ZOOKS = [
      "theta": 6.685,
      "phi": 1.546,
      "mirror": 4,
+     "g": {
+      "theta": 6.685,
+      "phi": 1.546,
+      "roll": 0,
+      "pitch": 73.636,
+      "yaw": 0,
+      "px": 0.005,
+      "py": -0.788,
+      "pz": 0.927,
+      "sx": 0.1,
+      "sy": 0.1,
+      "sz": 1.588
+     },
      "pitch": 1.285,
      "move": "single",
      "legType": 2,
@@ -4419,6 +5594,19 @@ export const REAL_ZOOKS = [
      "theta": -1.806,
      "phi": 0.933,
      "mirror": 5,
+     "g": {
+      "theta": -1.806,
+      "phi": 0.933,
+      "roll": 0,
+      "pitch": 24.545,
+      "yaw": 0,
+      "px": 0.004,
+      "py": -0.076,
+      "pz": 0.979,
+      "sx": 0.571,
+      "sy": 0.581,
+      "sz": 0.401
+     },
      "pitch": 0.428
     },
     {
@@ -4439,7 +5627,20 @@ export const REAL_ZOOKS = [
      },
      "theta": -0.364,
      "phi": -1.004,
-     "mirror": 6
+     "mirror": 6,
+     "g": {
+      "theta": -0.364,
+      "phi": -1.004,
+      "roll": 0,
+      "pitch": 0,
+      "yaw": 0,
+      "px": -0.013,
+      "py": 0.004,
+      "pz": 0.714,
+      "sx": 0.1,
+      "sy": 0.1,
+      "sz": 1.061
+     }
     },
     {
      "x": 0.012,
@@ -4459,7 +5660,20 @@ export const REAL_ZOOKS = [
      },
      "theta": -0.79,
      "phi": 3.409,
-     "mirror": 37
+     "mirror": 37,
+     "g": {
+      "theta": -0.79,
+      "phi": 3.409,
+      "roll": 0,
+      "pitch": 0,
+      "yaw": 0,
+      "px": 0.014,
+      "py": 0.003,
+      "pz": 0.714,
+      "sx": 0.373,
+      "sy": 0.284,
+      "sz": 0.369
+     }
     },
     {
      "x": -0.227,
@@ -4479,7 +5693,20 @@ export const REAL_ZOOKS = [
      },
      "theta": -12.883,
      "phi": -91.675,
-     "mirror": 38
+     "mirror": 38,
+     "g": {
+      "theta": -12.883,
+      "phi": -91.675,
+      "roll": 0,
+      "pitch": 0,
+      "yaw": 0,
+      "px": -0.952,
+      "py": 0.208,
+      "pz": -0.028,
+      "sx": 0.1,
+      "sy": 0.1,
+      "sz": 1.588
+     }
     },
     {
      "x": -0.003,
@@ -4500,6 +5727,19 @@ export const REAL_ZOOKS = [
      "theta": 6.685,
      "phi": -1.546,
      "mirror": 39,
+     "g": {
+      "theta": 6.685,
+      "phi": -1.546,
+      "roll": 0,
+      "pitch": 73.636,
+      "yaw": 0,
+      "px": -0.005,
+      "py": -0.788,
+      "pz": 0.927,
+      "sx": 0.1,
+      "sy": 0.1,
+      "sz": 1.588
+     },
      "pitch": 1.285,
      "move": "single",
      "legType": 2,
@@ -4590,6 +5830,19 @@ export const REAL_ZOOKS = [
      "theta": -1.806,
      "phi": -0.933,
      "mirror": 40,
+     "g": {
+      "theta": -1.806,
+      "phi": -0.933,
+      "roll": 0,
+      "pitch": 24.545,
+      "yaw": 0,
+      "px": -0.004,
+      "py": -0.076,
+      "pz": 0.979,
+      "sx": 0.571,
+      "sy": 0.581,
+      "sz": 0.401
+     },
      "pitch": 0.428
     },
     {
@@ -4610,7 +5863,20 @@ export const REAL_ZOOKS = [
      },
      "theta": -12.883,
      "phi": 91.675,
-     "mirror": 38
+     "mirror": 38,
+     "g": {
+      "theta": -12.883,
+      "phi": 91.675,
+      "roll": 0,
+      "pitch": 0,
+      "yaw": 0,
+      "px": 0.952,
+      "py": 0.208,
+      "pz": -0.028,
+      "sx": 0.1,
+      "sy": 0.1,
+      "sz": 1.588
+     }
     },
     {
      "x": 0.003,
@@ -4631,6 +5897,19 @@ export const REAL_ZOOKS = [
      "theta": 6.685,
      "phi": 1.546,
      "mirror": 39,
+     "g": {
+      "theta": 6.685,
+      "phi": 1.546,
+      "roll": 0,
+      "pitch": 73.636,
+      "yaw": 0,
+      "px": 0.005,
+      "py": -0.788,
+      "pz": 0.927,
+      "sx": 0.1,
+      "sy": 0.1,
+      "sz": 1.588
+     },
      "pitch": 1.285,
      "move": "single",
      "legType": 2,
@@ -4721,6 +6000,19 @@ export const REAL_ZOOKS = [
      "theta": -1.806,
      "phi": 0.933,
      "mirror": 40,
+     "g": {
+      "theta": -1.806,
+      "phi": 0.933,
+      "roll": 0,
+      "pitch": 24.545,
+      "yaw": 0,
+      "px": 0.004,
+      "py": -0.076,
+      "pz": 0.979,
+      "sx": 0.571,
+      "sy": 0.581,
+      "sz": 0.401
+     },
      "pitch": 0.428
     },
     {
@@ -4741,7 +6033,20 @@ export const REAL_ZOOKS = [
      },
      "theta": -0.364,
      "phi": -1.004,
-     "mirror": 41
+     "mirror": 41,
+     "g": {
+      "theta": -0.364,
+      "phi": -1.004,
+      "roll": 0,
+      "pitch": 0,
+      "yaw": 0,
+      "px": -0.013,
+      "py": 0.005,
+      "pz": 0.764,
+      "sx": 0.1,
+      "sy": 0.1,
+      "sz": 1.159
+     }
     },
     {
      "x": 0,
@@ -4761,7 +6066,20 @@ export const REAL_ZOOKS = [
      },
      "theta": -0.459,
      "phi": 0.006,
-     "mirror": 42
+     "mirror": 42,
+     "g": {
+      "theta": -0.459,
+      "phi": 0.006,
+      "roll": 0,
+      "pitch": 0,
+      "yaw": 0,
+      "px": 0,
+      "py": 0.002,
+      "pz": 0.764,
+      "sx": 0.373,
+      "sy": 0.284,
+      "sz": 0.369
+     }
     },
     {
      "x": -0.227,
@@ -4781,7 +6099,20 @@ export const REAL_ZOOKS = [
      },
      "theta": -12.883,
      "phi": -91.675,
-     "mirror": 43
+     "mirror": 43,
+     "g": {
+      "theta": -12.883,
+      "phi": -91.675,
+      "roll": 0,
+      "pitch": 0,
+      "yaw": 0,
+      "px": -0.952,
+      "py": 0.208,
+      "pz": -0.028,
+      "sx": 0.1,
+      "sy": 0.1,
+      "sz": 1.588
+     }
     },
     {
      "x": -0.003,
@@ -4802,6 +6133,19 @@ export const REAL_ZOOKS = [
      "theta": 6.685,
      "phi": -1.546,
      "mirror": 44,
+     "g": {
+      "theta": 6.685,
+      "phi": -1.546,
+      "roll": 0,
+      "pitch": 73.636,
+      "yaw": 0,
+      "px": -0.005,
+      "py": -0.788,
+      "pz": 0.927,
+      "sx": 0.1,
+      "sy": 0.1,
+      "sz": 1.588
+     },
      "pitch": 1.285,
      "move": "single",
      "legType": 2,
@@ -4892,6 +6236,19 @@ export const REAL_ZOOKS = [
      "theta": -1.806,
      "phi": -0.933,
      "mirror": 45,
+     "g": {
+      "theta": -1.806,
+      "phi": -0.933,
+      "roll": 0,
+      "pitch": 24.545,
+      "yaw": 0,
+      "px": -0.004,
+      "py": -0.076,
+      "pz": 0.979,
+      "sx": 0.571,
+      "sy": 0.581,
+      "sz": 0.401
+     },
      "pitch": 0.428
     },
     {
@@ -4912,7 +6269,20 @@ export const REAL_ZOOKS = [
      },
      "theta": -12.883,
      "phi": 91.675,
-     "mirror": 43
+     "mirror": 43,
+     "g": {
+      "theta": -12.883,
+      "phi": 91.675,
+      "roll": 0,
+      "pitch": 0,
+      "yaw": 0,
+      "px": 0.952,
+      "py": 0.208,
+      "pz": -0.028,
+      "sx": 0.1,
+      "sy": 0.1,
+      "sz": 1.588
+     }
     },
     {
      "x": 0.003,
@@ -4933,6 +6303,19 @@ export const REAL_ZOOKS = [
      "theta": 6.685,
      "phi": 1.546,
      "mirror": 44,
+     "g": {
+      "theta": 6.685,
+      "phi": 1.546,
+      "roll": 0,
+      "pitch": 73.636,
+      "yaw": 0,
+      "px": 0.005,
+      "py": -0.788,
+      "pz": 0.927,
+      "sx": 0.1,
+      "sy": 0.1,
+      "sz": 1.588
+     },
      "pitch": 1.285,
      "move": "single",
      "legType": 2,
@@ -5023,6 +6406,19 @@ export const REAL_ZOOKS = [
      "theta": -1.806,
      "phi": 0.933,
      "mirror": 45,
+     "g": {
+      "theta": -1.806,
+      "phi": 0.933,
+      "roll": 0,
+      "pitch": 24.545,
+      "yaw": 0,
+      "px": 0.004,
+      "py": -0.076,
+      "pz": 0.979,
+      "sx": 0.571,
+      "sy": 0.581,
+      "sz": 0.401
+     },
      "pitch": 0.428
     },
     {
@@ -5043,9 +6439,33 @@ export const REAL_ZOOKS = [
      },
      "theta": -0.364,
      "phi": -1.004,
-     "mirror": 46
+     "mirror": 46,
+     "g": {
+      "theta": -0.364,
+      "phi": -1.004,
+      "roll": 0,
+      "pitch": 0,
+      "yaw": 0,
+      "px": -0.011,
+      "py": 0.004,
+      "pz": 0.632,
+      "sx": 0.1,
+      "sy": 0.1,
+      "sz": 0.896
+     }
     }
-   ]
+   ],
+   "gRoot": {
+    "roll": 0,
+    "pitch": 0,
+    "yaw": 0,
+    "px": 0,
+    "py": 0,
+    "pz": 0,
+    "sx": 0.265,
+    "sy": 0.265,
+    "sz": 0.331
+   }
   }
  },
  {
@@ -5083,6 +6503,19 @@ export const REAL_ZOOKS = [
      "theta": -3.566,
      "phi": -0.054,
      "mirror": 55,
+     "g": {
+      "theta": -3.566,
+      "phi": -0.054,
+      "roll": 0,
+      "pitch": 3.238,
+      "yaw": -2.723,
+      "px": -0.016,
+      "py": 0.015,
+      "pz": 0.602,
+      "sx": 1,
+      "sy": 0.449,
+      "sz": 0.632
+     },
      "pitch": 0.057,
      "yaw": -0.048,
      "move": "single",
@@ -5124,6 +6557,19 @@ export const REAL_ZOOKS = [
      "theta": 23.149,
      "phi": 88.362,
      "mirror": 56,
+     "g": {
+      "theta": 23.149,
+      "phi": 88.362,
+      "roll": 0,
+      "pitch": -16.848,
+      "yaw": 0.29,
+      "px": 0.675,
+      "py": -0.115,
+      "pz": 0.013,
+      "sx": 0.373,
+      "sy": 0.284,
+      "sz": 0.369
+     },
      "pitch": -0.294,
      "yaw": 0.005
     },
@@ -5146,6 +6592,19 @@ export const REAL_ZOOKS = [
      "theta": 23.149,
      "phi": -88.362,
      "mirror": 56,
+     "g": {
+      "theta": 23.149,
+      "phi": -88.362,
+      "roll": 0,
+      "pitch": -16.848,
+      "yaw": -0.29,
+      "px": -0.675,
+      "py": -0.115,
+      "pz": 0.013,
+      "sx": 0.373,
+      "sy": 0.284,
+      "sz": 0.369
+     },
      "pitch": -0.294,
      "yaw": -0.005
     },
@@ -5168,6 +6627,19 @@ export const REAL_ZOOKS = [
      "theta": -9.137,
      "phi": -0.953,
      "mirror": 57,
+     "g": {
+      "theta": -9.137,
+      "phi": -0.953,
+      "roll": 0,
+      "pitch": 8.442,
+      "yaw": 2.358,
+      "px": -0.001,
+      "py": 0.04,
+      "pz": 0.632,
+      "sx": 1,
+      "sy": 0.438,
+      "sz": 0.632
+     },
      "pitch": 0.147,
      "yaw": 0.041,
      "move": "single",
@@ -5209,6 +6681,19 @@ export const REAL_ZOOKS = [
      "theta": 23.149,
      "phi": 88.362,
      "mirror": 58,
+     "g": {
+      "theta": 23.149,
+      "phi": 88.362,
+      "roll": 0,
+      "pitch": -16.848,
+      "yaw": 0.29,
+      "px": 0.936,
+      "py": -0.141,
+      "pz": 0.019,
+      "sx": 0.373,
+      "sy": 0.284,
+      "sz": 0.896
+     },
      "pitch": -0.294,
      "yaw": 0.005
     },
@@ -5231,6 +6716,19 @@ export const REAL_ZOOKS = [
      "theta": 23.149,
      "phi": -88.362,
      "mirror": 58,
+     "g": {
+      "theta": 23.149,
+      "phi": -88.362,
+      "roll": 0,
+      "pitch": -16.848,
+      "yaw": -0.29,
+      "px": -0.936,
+      "py": -0.141,
+      "pz": 0.019,
+      "sx": 0.373,
+      "sy": 0.284,
+      "sz": 0.896
+     },
      "pitch": -0.294,
      "yaw": -0.005
     },
@@ -5253,6 +6751,19 @@ export const REAL_ZOOKS = [
      "theta": -0.671,
      "phi": 1.52,
      "mirror": 59,
+     "g": {
+      "theta": -0.671,
+      "phi": 1.52,
+      "roll": 0,
+      "pitch": -0.991,
+      "yaw": -0.606,
+      "px": 0.018,
+      "py": 0.012,
+      "pz": 0.632,
+      "sx": 1,
+      "sy": 0.449,
+      "sz": 0.632
+     },
      "pitch": -0.017,
      "yaw": -0.011,
      "move": "single",
@@ -5294,6 +6805,19 @@ export const REAL_ZOOKS = [
      "theta": 23.149,
      "phi": 88.362,
      "mirror": 60,
+     "g": {
+      "theta": 23.149,
+      "phi": 88.362,
+      "roll": 0,
+      "pitch": -16.848,
+      "yaw": 0.29,
+      "px": 0.675,
+      "py": -0.115,
+      "pz": 0.013,
+      "sx": 0.373,
+      "sy": 0.284,
+      "sz": 0.369
+     },
      "pitch": -0.294,
      "yaw": 0.005
     },
@@ -5316,6 +6840,19 @@ export const REAL_ZOOKS = [
      "theta": 23.149,
      "phi": -88.362,
      "mirror": 60,
+     "g": {
+      "theta": 23.149,
+      "phi": -88.362,
+      "roll": 0,
+      "pitch": -16.848,
+      "yaw": -0.29,
+      "px": -0.675,
+      "py": -0.115,
+      "pz": 0.013,
+      "sx": 0.373,
+      "sy": 0.284,
+      "sz": 0.369
+     },
      "pitch": -0.294,
      "yaw": -0.005
     },
@@ -5338,6 +6875,19 @@ export const REAL_ZOOKS = [
      "theta": 8.581,
      "phi": -1.025,
      "mirror": 61,
+     "g": {
+      "theta": 8.581,
+      "phi": -1.025,
+      "roll": 0,
+      "pitch": -7.825,
+      "yaw": 0.136,
+      "px": -0.014,
+      "py": -0.038,
+      "pz": 0.632,
+      "sx": 1,
+      "sy": 0.449,
+      "sz": 0.632
+     },
      "pitch": -0.137,
      "yaw": 0.002,
      "move": "single",
@@ -5379,6 +6929,19 @@ export const REAL_ZOOKS = [
      "theta": 23.149,
      "phi": 88.362,
      "mirror": 62,
+     "g": {
+      "theta": 23.149,
+      "phi": 88.362,
+      "roll": 0,
+      "pitch": -16.848,
+      "yaw": 0.29,
+      "px": 0.937,
+      "py": -0.144,
+      "pz": 0.019,
+      "sx": 0.373,
+      "sy": 0.284,
+      "sz": 0.896
+     },
      "pitch": -0.294,
      "yaw": 0.005
     },
@@ -5401,6 +6964,19 @@ export const REAL_ZOOKS = [
      "theta": 23.149,
      "phi": -88.362,
      "mirror": 62,
+     "g": {
+      "theta": 23.149,
+      "phi": -88.362,
+      "roll": 0,
+      "pitch": -16.848,
+      "yaw": -0.29,
+      "px": -0.937,
+      "py": -0.144,
+      "pz": 0.019,
+      "sx": 0.373,
+      "sy": 0.284,
+      "sz": 0.896
+     },
      "pitch": -0.294,
      "yaw": -0.005
     },
@@ -5423,6 +6999,19 @@ export const REAL_ZOOKS = [
      "theta": -18.257,
      "phi": 0.848,
      "mirror": 63,
+     "g": {
+      "theta": -18.257,
+      "phi": 0.848,
+      "roll": 0,
+      "pitch": 22.361,
+      "yaw": -0.245,
+      "px": 0.011,
+      "py": 0.051,
+      "pz": 0.629,
+      "sx": 1,
+      "sy": 0.449,
+      "sz": 0.632
+     },
      "pitch": 0.39,
      "yaw": -0.004,
      "move": "single",
@@ -5464,6 +7053,19 @@ export const REAL_ZOOKS = [
      "theta": 23.149,
      "phi": 88.362,
      "mirror": 64,
+     "g": {
+      "theta": 23.149,
+      "phi": 88.362,
+      "roll": 0,
+      "pitch": -16.848,
+      "yaw": 0.29,
+      "px": 0.675,
+      "py": -0.115,
+      "pz": 0.013,
+      "sx": 0.373,
+      "sy": 0.284,
+      "sz": 0.369
+     },
      "pitch": -0.294,
      "yaw": 0.005
     },
@@ -5486,6 +7088,19 @@ export const REAL_ZOOKS = [
      "theta": 23.149,
      "phi": -88.362,
      "mirror": 64,
+     "g": {
+      "theta": 23.149,
+      "phi": -88.362,
+      "roll": 0,
+      "pitch": -16.848,
+      "yaw": -0.29,
+      "px": -0.675,
+      "py": -0.115,
+      "pz": 0.013,
+      "sx": 0.373,
+      "sy": 0.284,
+      "sz": 0.369
+     },
      "pitch": -0.294,
      "yaw": -0.005
     },
@@ -5508,6 +7123,19 @@ export const REAL_ZOOKS = [
      "theta": -24.895,
      "phi": 0.291,
      "mirror": 65,
+     "g": {
+      "theta": -24.895,
+      "phi": 0.291,
+      "roll": 0,
+      "pitch": 23.708,
+      "yaw": -0.489,
+      "px": 0.002,
+      "py": 0.109,
+      "pz": 0.627,
+      "sx": 1,
+      "sy": 0.449,
+      "sz": 0.632
+     },
      "pitch": 0.414,
      "yaw": -0.009,
      "move": "single",
@@ -5549,6 +7177,19 @@ export const REAL_ZOOKS = [
      "theta": 23.149,
      "phi": 88.362,
      "mirror": 66,
+     "g": {
+      "theta": 23.149,
+      "phi": 88.362,
+      "roll": 0,
+      "pitch": -16.848,
+      "yaw": 0.29,
+      "px": 0.937,
+      "py": -0.144,
+      "pz": 0.019,
+      "sx": 0.373,
+      "sy": 0.284,
+      "sz": 0.896
+     },
      "pitch": -0.294,
      "yaw": 0.005
     },
@@ -5571,6 +7212,19 @@ export const REAL_ZOOKS = [
      "theta": 23.149,
      "phi": -88.362,
      "mirror": 66,
+     "g": {
+      "theta": 23.149,
+      "phi": -88.362,
+      "roll": 0,
+      "pitch": -16.848,
+      "yaw": -0.29,
+      "px": -0.937,
+      "py": -0.144,
+      "pz": 0.019,
+      "sx": 0.373,
+      "sy": 0.284,
+      "sz": 0.896
+     },
      "pitch": -0.294,
      "yaw": -0.005
     },
@@ -5593,6 +7247,19 @@ export const REAL_ZOOKS = [
      "theta": -17,
      "phi": 2.557,
      "mirror": 67,
+     "g": {
+      "theta": -17,
+      "phi": 2.557,
+      "roll": 0,
+      "pitch": 16.122,
+      "yaw": -2.101,
+      "px": 0.025,
+      "py": 0.073,
+      "pz": 0.63,
+      "sx": 1,
+      "sy": 0.449,
+      "sz": 0.632
+     },
      "pitch": 0.281,
      "yaw": -0.037,
      "move": "single",
@@ -5634,6 +7301,19 @@ export const REAL_ZOOKS = [
      "theta": 23.149,
      "phi": 88.362,
      "mirror": 68,
+     "g": {
+      "theta": 23.149,
+      "phi": 88.362,
+      "roll": 0,
+      "pitch": -16.848,
+      "yaw": 0.29,
+      "px": 0.675,
+      "py": -0.115,
+      "pz": 0.013,
+      "sx": 0.373,
+      "sy": 0.284,
+      "sz": 0.369
+     },
      "pitch": -0.294,
      "yaw": 0.005
     },
@@ -5656,6 +7336,19 @@ export const REAL_ZOOKS = [
      "theta": 23.149,
      "phi": -88.362,
      "mirror": 68,
+     "g": {
+      "theta": 23.149,
+      "phi": -88.362,
+      "roll": 0,
+      "pitch": -16.848,
+      "yaw": -0.29,
+      "px": -0.675,
+      "py": -0.115,
+      "pz": 0.013,
+      "sx": 0.373,
+      "sy": 0.284,
+      "sz": 0.369
+     },
      "pitch": -0.294,
      "yaw": -0.005
     },
@@ -5678,6 +7371,19 @@ export const REAL_ZOOKS = [
      "theta": -30.291,
      "phi": -0.185,
      "mirror": 69,
+     "g": {
+      "theta": -30.291,
+      "phi": -0.185,
+      "roll": 0,
+      "pitch": 24.838,
+      "yaw": -0.943,
+      "px": -0.007,
+      "py": 0.158,
+      "pz": 0.623,
+      "sx": 1,
+      "sy": 0.449,
+      "sz": 0.632
+     },
      "pitch": 0.434,
      "yaw": -0.016,
      "move": "single",
@@ -5719,6 +7425,19 @@ export const REAL_ZOOKS = [
      "theta": 23.149,
      "phi": 88.362,
      "mirror": 70,
+     "g": {
+      "theta": 23.149,
+      "phi": 88.362,
+      "roll": 0,
+      "pitch": -16.848,
+      "yaw": 0.29,
+      "px": 0.936,
+      "py": -0.143,
+      "pz": 0.019,
+      "sx": 0.373,
+      "sy": 0.284,
+      "sz": 0.896
+     },
      "pitch": -0.294,
      "yaw": 0.005
     },
@@ -5741,6 +7460,19 @@ export const REAL_ZOOKS = [
      "theta": 23.149,
      "phi": -88.362,
      "mirror": 70,
+     "g": {
+      "theta": 23.149,
+      "phi": -88.362,
+      "roll": 0,
+      "pitch": -16.848,
+      "yaw": -0.29,
+      "px": -0.936,
+      "py": -0.143,
+      "pz": 0.019,
+      "sx": 0.373,
+      "sy": 0.284,
+      "sz": 0.896
+     },
      "pitch": -0.294,
      "yaw": -0.005
     },
@@ -5763,6 +7495,19 @@ export const REAL_ZOOKS = [
      "theta": -0.059,
      "phi": 2.413,
      "mirror": 71,
+     "g": {
+      "theta": -0.059,
+      "phi": 2.413,
+      "roll": 0,
+      "pitch": 11.283,
+      "yaw": -1.787,
+      "px": 0.024,
+      "py": -0.061,
+      "pz": 0.626,
+      "sx": 1,
+      "sy": 0.449,
+      "sz": 0.632
+     },
      "pitch": 0.197,
      "yaw": -0.031,
      "move": "single",
@@ -5804,6 +7549,19 @@ export const REAL_ZOOKS = [
      "theta": 23.149,
      "phi": 88.362,
      "mirror": 72,
+     "g": {
+      "theta": 23.149,
+      "phi": 88.362,
+      "roll": 0,
+      "pitch": -16.848,
+      "yaw": 0.29,
+      "px": 0.675,
+      "py": -0.115,
+      "pz": 0.013,
+      "sx": 0.373,
+      "sy": 0.284,
+      "sz": 0.369
+     },
      "pitch": -0.294,
      "yaw": 0.005
     },
@@ -5826,6 +7584,19 @@ export const REAL_ZOOKS = [
      "theta": 23.149,
      "phi": -88.362,
      "mirror": 72,
+     "g": {
+      "theta": 23.149,
+      "phi": -88.362,
+      "roll": 0,
+      "pitch": -16.848,
+      "yaw": -0.29,
+      "px": -0.675,
+      "py": -0.115,
+      "pz": 0.013,
+      "sx": 0.373,
+      "sy": 0.284,
+      "sz": 0.369
+     },
      "pitch": -0.294,
      "yaw": -0.005
     },
@@ -5848,6 +7619,19 @@ export const REAL_ZOOKS = [
      "theta": -30.291,
      "phi": -0.185,
      "mirror": 73,
+     "g": {
+      "theta": -30.291,
+      "phi": -0.185,
+      "roll": 0,
+      "pitch": 24.838,
+      "yaw": -0.943,
+      "px": -0.007,
+      "py": 0.158,
+      "pz": 0.623,
+      "sx": 1,
+      "sy": 0.449,
+      "sz": 0.632
+     },
      "pitch": 0.434,
      "yaw": -0.016,
      "move": "single",
@@ -5889,6 +7673,19 @@ export const REAL_ZOOKS = [
      "theta": 23.149,
      "phi": 88.362,
      "mirror": 74,
+     "g": {
+      "theta": 23.149,
+      "phi": 88.362,
+      "roll": 0,
+      "pitch": -16.848,
+      "yaw": 0.29,
+      "px": 0.937,
+      "py": -0.144,
+      "pz": 0.019,
+      "sx": 0.373,
+      "sy": 0.284,
+      "sz": 0.896
+     },
      "pitch": -0.294,
      "yaw": 0.005
     },
@@ -5911,6 +7708,19 @@ export const REAL_ZOOKS = [
      "theta": 23.149,
      "phi": -88.362,
      "mirror": 74,
+     "g": {
+      "theta": 23.149,
+      "phi": -88.362,
+      "roll": 0,
+      "pitch": -16.848,
+      "yaw": -0.29,
+      "px": -0.937,
+      "py": -0.144,
+      "pz": 0.019,
+      "sx": 0.373,
+      "sy": 0.284,
+      "sz": 0.896
+     },
      "pitch": -0.294,
      "yaw": -0.005
     },
@@ -5933,6 +7743,19 @@ export const REAL_ZOOKS = [
      "theta": -8.944,
      "phi": 5.597,
      "mirror": 75,
+     "g": {
+      "theta": -8.944,
+      "phi": 5.597,
+      "roll": 0,
+      "pitch": 16.122,
+      "yaw": -2.101,
+      "px": 0.068,
+      "py": -0.004,
+      "pz": 0.629,
+      "sx": 1,
+      "sy": 0.449,
+      "sz": 0.632
+     },
      "pitch": 0.281,
      "yaw": -0.037,
      "move": "single",
@@ -5974,6 +7797,19 @@ export const REAL_ZOOKS = [
      "theta": 23.149,
      "phi": 88.362,
      "mirror": 76,
+     "g": {
+      "theta": 23.149,
+      "phi": 88.362,
+      "roll": 0,
+      "pitch": -16.848,
+      "yaw": 0.29,
+      "px": 0.674,
+      "py": -0.114,
+      "pz": 0.013,
+      "sx": 0.373,
+      "sy": 0.284,
+      "sz": 0.369
+     },
      "pitch": -0.294,
      "yaw": 0.005
     },
@@ -5996,6 +7832,19 @@ export const REAL_ZOOKS = [
      "theta": 23.149,
      "phi": -88.362,
      "mirror": 76,
+     "g": {
+      "theta": 23.149,
+      "phi": -88.362,
+      "roll": 0,
+      "pitch": -16.848,
+      "yaw": -0.29,
+      "px": -0.674,
+      "py": -0.114,
+      "pz": 0.013,
+      "sx": 0.373,
+      "sy": 0.284,
+      "sz": 0.369
+     },
      "pitch": -0.294,
      "yaw": -0.005
     },
@@ -6018,6 +7867,19 @@ export const REAL_ZOOKS = [
      "theta": -21.459,
      "phi": 0.187,
      "mirror": 77,
+     "g": {
+      "theta": -21.459,
+      "phi": 0.187,
+      "roll": 0,
+      "pitch": 24.838,
+      "yaw": -0.943,
+      "px": -0.002,
+      "py": 0.069,
+      "pz": 0.628,
+      "sx": 1,
+      "sy": 0.449,
+      "sz": 0.632
+     },
      "pitch": 0.434,
      "yaw": -0.016
     },
@@ -6040,6 +7902,19 @@ export const REAL_ZOOKS = [
      "theta": 23.149,
      "phi": 88.362,
      "mirror": 78,
+     "g": {
+      "theta": 23.149,
+      "phi": 88.362,
+      "roll": 0,
+      "pitch": -15.307,
+      "yaw": -10.942,
+      "px": 0.767,
+      "py": -0.122,
+      "pz": 0.1,
+      "sx": 0.373,
+      "sy": 0.284,
+      "sz": 0.896
+     },
      "pitch": -0.267,
      "yaw": -0.191
     },
@@ -6062,6 +7937,19 @@ export const REAL_ZOOKS = [
      "theta": 23.149,
      "phi": -88.362,
      "mirror": 78,
+     "g": {
+      "theta": 23.149,
+      "phi": -88.362,
+      "roll": 0,
+      "pitch": -15.307,
+      "yaw": 10.942,
+      "px": -0.767,
+      "py": -0.122,
+      "pz": 0.1,
+      "sx": 0.373,
+      "sy": 0.284,
+      "sz": 0.896
+     },
      "pitch": -0.267,
      "yaw": 0.191
     },
@@ -6084,6 +7972,19 @@ export const REAL_ZOOKS = [
      "theta": -54.073,
      "phi": -48.925,
      "mirror": 82,
+     "g": {
+      "theta": -54.073,
+      "phi": -48.925,
+      "roll": 0,
+      "pitch": -48.016,
+      "yaw": -8.504,
+      "px": -0.21,
+      "py": 0.255,
+      "pz": 0.075,
+      "sx": 0.209,
+      "sy": 0.185,
+      "sz": 0.204
+     },
      "pitch": -0.838,
      "yaw": -0.148
     },
@@ -6106,6 +8007,19 @@ export const REAL_ZOOKS = [
      "theta": -25.795,
      "phi": -34.071,
      "mirror": 83,
+     "g": {
+      "theta": -25.795,
+      "phi": -34.071,
+      "roll": 0,
+      "pitch": 0,
+      "yaw": 0,
+      "px": -0.105,
+      "py": 0.085,
+      "pz": 0.153,
+      "sx": 0.176,
+      "sy": 0.185,
+      "sz": 0.204
+     },
      "move": "single",
      "legType": 1,
      "cycle": 0,
@@ -6155,6 +8069,19 @@ export const REAL_ZOOKS = [
      "theta": 30.131,
      "phi": -18.13,
      "mirror": 84,
+     "g": {
+      "theta": 30.131,
+      "phi": -18.13,
+      "roll": 0,
+      "pitch": 0,
+      "yaw": 0,
+      "px": -0.051,
+      "py": -0.098,
+      "pz": 0.169,
+      "sx": 0.176,
+      "sy": 0.185,
+      "sz": 0.202
+     },
      "move": "single",
      "legType": 1,
      "cycle": 0.5,
@@ -6199,6 +8126,19 @@ export const REAL_ZOOKS = [
      "theta": -54.073,
      "phi": 48.925,
      "mirror": 82,
+     "g": {
+      "theta": -54.073,
+      "phi": 48.925,
+      "roll": 0,
+      "pitch": -48.016,
+      "yaw": 8.504,
+      "px": 0.21,
+      "py": 0.256,
+      "pz": 0.075,
+      "sx": 0.209,
+      "sy": 0.185,
+      "sz": 0.204
+     },
      "pitch": -0.838,
      "yaw": 0.148
     },
@@ -6221,6 +8161,19 @@ export const REAL_ZOOKS = [
      "theta": -25.795,
      "phi": 34.071,
      "mirror": 83,
+     "g": {
+      "theta": -25.795,
+      "phi": 34.071,
+      "roll": 0,
+      "pitch": 0,
+      "yaw": 0,
+      "px": 0.105,
+      "py": 0.085,
+      "pz": 0.153,
+      "sx": 0.176,
+      "sy": 0.185,
+      "sz": 0.204
+     },
      "move": "single",
      "legType": 1,
      "cycle": 0,
@@ -6270,6 +8223,19 @@ export const REAL_ZOOKS = [
      "theta": 30.131,
      "phi": 18.13,
      "mirror": 84,
+     "g": {
+      "theta": 30.131,
+      "phi": 18.13,
+      "roll": 0,
+      "pitch": 0,
+      "yaw": 0,
+      "px": 0.051,
+      "py": -0.098,
+      "pz": 0.169,
+      "sx": 0.176,
+      "sy": 0.185,
+      "sz": 0.202
+     },
      "move": "single",
      "legType": 1,
      "cycle": 0,
@@ -6295,7 +8261,18 @@ export const REAL_ZOOKS = [
       }
      ]
     }
-   ]
+   ],
+   "gRoot": {
+    "roll": 0,
+    "pitch": 0,
+    "yaw": 0,
+    "px": 0,
+    "py": 0,
+    "pz": 0,
+    "sx": 1.132,
+    "sy": 0.44,
+    "sz": 0.572
+   }
   }
  }
 ];

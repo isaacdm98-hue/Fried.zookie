@@ -20,23 +20,38 @@ const E = new THREE.Euler(), Q = new THREE.Quaternion(), V = new THREE.Vector3()
 const compose = (x, y, z, rx, ry, rz) =>
   new THREE.Matrix4().compose(new THREE.Vector3(x, y, z), Q.setFromEuler(E.set(rx, ry, rz)), ONE);
 
-// Part placement is IDENTICAL to the builder's (model.js composeM): centre at the
-// part's (x,y,z) relative to its parent, oriented by Euler(pitch,yaw,twist). No
-// re-seating — so what you see in the builder is exactly what the engine simulates.
-// (Imported demo Zooks are pre-seated in tools/decode-zooks.mjs so their parts touch.)
+const D2R = Math.PI / 180;
+// Legacy placement (builder-made Zooks): centre at (x,y,z), Euler(pitch,yaw,twist).
 function localMat(b) {
   return new THREE.Matrix4().compose(
     new THREE.Vector3(b.x || 0, b.y || 0, b.z || 0),
     Q.setFromEuler(E.set(b.pitch || 0, b.yaw || 0, b.twist || 0)), ONE);
+}
+// FAITHFUL Evo.lua placement (decoded demo Zooks, raw genome `g`). Row-vector spec
+//   worldTrans = RotZ(roll)·RotX(pitch)·RotY(yaw) · [RotX(theta)·RotY(phi),pos] · parent
+// rewritten in three.js column form: parent · Translation(pos)·RotY(phi)·RotX(theta) ·
+// RotY(yaw)·RotX(pitch)·RotZ(roll). +Z is the bone length; joint at −Z end, foot at +Z.
+const _rx = (a) => new THREE.Matrix4().makeRotationX(a), _ry = (a) => new THREE.Matrix4().makeRotationY(a), _rz = (a) => new THREE.Matrix4().makeRotationZ(a);
+function faithfulMat(g) {
+  return new THREE.Matrix4().makeTranslation(g.px || 0, g.py || 0, g.pz || 0)
+    .multiply(_ry((g.phi || 0) * D2R)).multiply(_rx((g.theta || 0) * D2R))
+    .multiply(_ry((g.yaw || 0) * D2R)).multiply(_rx((g.pitch || 0) * D2R)).multiply(_rz((g.roll || 0) * D2R));
+}
+function faithfulRoot(g) {
+  return new THREE.Matrix4().makeTranslation(g.px || 0, g.py || 0, g.pz || 0)
+    .multiply(_ry((g.yaw || 0) * D2R)).multiply(_rx((g.pitch || 0) * D2R)).multiply(_rz((g.roll || 0) * D2R));
 }
 
 /** Flatten the blueprint into a part list (root body + clay tree) with each part's
  *  body-LOCAL matrix, resolving the parent tree and connection angles. */
 export function layout(bp) {
   const parts = [];
-  // Root = the body itself, at the origin of the creature frame.
-  parts.push({ idx: -1, parent: null, mat: new THREE.Matrix4(),
-    half: { x: (bp.width || 1) / 2, y: (bp.height || 1) / 2, z: (bp.len || 1.6) / 2 },
+  // Root = the body itself. Faithful Zooks place it by gRoot; builder Zooks at the origin.
+  const rootMat = bp.gRoot ? faithfulRoot(bp.gRoot) : new THREE.Matrix4();
+  const rootHalf = bp.gRoot
+    ? { x: (bp.gRoot.sx || 1) / 2, y: (bp.gRoot.sy || 1) / 2, z: (bp.gRoot.sz || 1.6) / 2 }
+    : { x: (bp.width || 1) / 2, y: (bp.height || 1) / 2, z: (bp.len || 1.6) / 2 };
+  parts.push({ idx: -1, parent: null, mat: rootMat, half: rootHalf,
     mesh: bp.bodyMesh || 'blob', root: true });
   const blobs = bp.blobs || [];
   const matOf = []; // blob index -> world(creature)-local matrix
@@ -53,11 +68,13 @@ export function layout(bp) {
   for (const i of order) {
     const b = blobs[i];
     const parentMat = (b.parent != null && matOf[b.parent]) ? matOf[b.parent] : parts[0].mat;
-    const local = localMat(b);
+    const local = b.g ? faithfulMat(b.g) : localMat(b);
     const mat = parentMat.clone().multiply(local);
     matOf[i] = mat;
-    parts.push({ idx: i, parent: b.parent == null ? 0 : null, parentBlob: b.parent, mat,
-      half: { x: (b.sx || 0.4) / 2, y: (b.sy || 0.4) / 2, z: (b.sz || 0.4) / 2 },
+    const half = b.g
+      ? { x: (b.g.sx || 0.4) / 2, y: (b.g.sy || 0.4) / 2, z: (b.g.sz || 0.4) / 2 }
+      : { x: (b.sx || 0.4) / 2, y: (b.sy || 0.4) / 2, z: (b.sz || 0.4) / 2 };
+    parts.push({ idx: i, parent: b.parent == null ? 0 : null, parentBlob: b.parent, mat, half,
       mesh: b.mesh || 'blob', move: b.move, blob: b });
   }
   // Resolve parent part-array indices (root is parts[0]).
