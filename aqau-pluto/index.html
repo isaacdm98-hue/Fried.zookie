@@ -3448,6 +3448,8 @@ function sliceSections(code) {
 
 function buildMessages(c, userText, ground) {
   const msgs = [{ role:'system', content: personaSystemPrompt() }];
+  // Project memory: durable decisions/goals for THIS build, carried across sessions.
+  if (c.memo) msgs.push({ role:'system', content: `What you remember about this project (decisions and goals so far — keep them unless told otherwise):\n${c.memo}` });
   if (c.code) msgs.push({ role:'system', content: `Most recent build (truncated):\n\n${c.code.slice(0, 4500)}` });
   if (ground) msgs.push({ role:'system', content: ground });
   // Drawings the user made in the Atelier for this cartridge. Reuse the exact
@@ -3494,7 +3496,15 @@ function personaSystemPrompt() {
 function addMemory(fact) {
   if (!fact) return;
   S.memory = S.memory || { facts: [], natal: '', natalFor: '' };
-  if (S.memory.facts.some(f => f.toLowerCase() === fact.toLowerCase())) return;
+  const norm = (s) => s.toLowerCase().replace(/[^a-z0-9 ]/g, '').split(/\s+/).filter(w => w.length > 3);
+  const fw = new Set(norm(fact));
+  // Skip exact and near-duplicates (>60% significant-word overlap).
+  if (S.memory.facts.some(f => {
+    if (f.toLowerCase() === fact.toLowerCase()) return true;
+    const ow = norm(f); if (!ow.length || !fw.size) return false;
+    const shared = ow.filter(w => fw.has(w)).length;
+    return shared / Math.min(ow.length, fw.size) > 0.6;
+  })) return;
   S.memory.facts.push(fact);
   if (S.memory.facts.length > 40) S.memory.facts = S.memory.facts.slice(-40);
   saveState();
@@ -3512,6 +3522,33 @@ async function learnFromChat(c) {
     const fact = stripThink(out).split('\n')[0].replace(/^["'`\-\s]+|["'`\s]+$/g, '').trim();
     if (fact && !/^none\b/i.test(fact) && fact.length > 3 && fact.length < 160) { addMemory(fact); toast('🧠 remembered'); }
   } catch {}
+  // Per-project memory: keep a tight running summary of this build's decisions.
+  if (c.id && c.code && !RT.generating) {
+    try {
+      const memo = await genOnce([
+        { role: 'system', content: 'Maintain a tight project memory. Given the previous notes and the latest exchange, output an updated bullet summary (max 5 short bullets) of this build\'s goals and key decisions. No preamble, no code. Bullets start with "- ".' },
+        { role: 'user', content: `Previous notes:\n${c.memo || '(none)'}\n\nLatest exchange:\n${recent}` },
+      ], { max_tokens: 160, temperature: 0.2 });
+      const clean = stripThink(memo).trim();
+      if (clean && /[-•]/.test(clean) && clean.length < 600) { c.memo = clean; saveState(); }
+    } catch {}
+  }
+}
+// Tidy memory: ask Gemma to merge duplicates/contradictions into a clean set.
+async function consolidateMemory(c) {
+  const f = (S.memory?.facts || []);
+  if (f.length < 2) { pushChatNote(c, '<em>not much to tidy.</em>'); return; }
+  if (!RT.modelLoaded || RT.generating) { toast('model busy'); return; }
+  pushChatNote(c, '<em>tidying memory…</em>');
+  try {
+    const out = await genOnce([
+      { role: 'system', content: 'Consolidate these notes about a person into a clean, de-duplicated list of durable facts. Merge overlaps, drop trivia and contradictions, keep the most specific wording. Output one fact per line, "- " prefix, max 15 lines. No preamble.' },
+      { role: 'user', content: f.map(x => '- ' + x).join('\n') },
+    ], { max_tokens: 320, temperature: 0.2 });
+    const lines = stripThink(out).split('\n').map(l => l.replace(/^[\s\-•]+/, '').trim()).filter(l => l.length > 3 && l.length < 160);
+    if (lines.length) { S.memory.facts = lines.slice(0, 30); saveState(); pushChatNote(c, '<em>memory tidied → ' + S.memory.facts.length + ' facts.</em>'); }
+    else pushChatNote(c, '<em>left memory as-is.</em>');
+  } catch { pushChatNote(c, '<em>tidy failed.</em>'); }
 }
 // Gemma writes (once) a private natal profile from accurate chart data → memory.
 async function ensureNatalProfile() {
@@ -3702,9 +3739,20 @@ function aspectsBetween(ps) {
   const res = [];
   for (let i = 0; i < ps.length; i++) for (let j = i + 1; j < ps.length; j++) {
     let diff = Math.abs(ps[i].deg - ps[j].deg); if (diff > 180) diff = 360 - diff;
-    for (const a of ASPECTS) { if (Math.abs(diff - a.angle) <= a.orb) { res.push({ a, i, j }); break; } }
+    for (const a of ASPECTS) { if (Math.abs(diff - a.angle) <= a.orb) { res.push({ a, i, j, orb: Math.abs(diff - a.angle) }); break; } }
   }
   return res;
+}
+const ASPECT_SYMBOL = { conjunction: '☌', opposition: '☍', trine: '△', square: '□', sextile: '✶' };
+const MOON_GLYPHS = ['🌑', '🌒', '🌓', '🌔', '🌕', '🌖', '🌗', '🌘'];
+const MOON_NAMES = ['new', 'waxing crescent', 'first quarter', 'waxing gibbous', 'full', 'waning gibbous', 'last quarter', 'waning crescent'];
+function moonPhase(ps) {
+  const sun = ps.find(p => p.p === 'Sun'), moon = ps.find(p => p.p === 'Moon');
+  if (!sun || !moon) return null;
+  const ang = norm360(moon.deg - sun.deg);
+  const illum = Math.round(((1 - Math.cos(ang * Math.PI / 180)) / 2) * 100);
+  const idx = Math.floor(((ang + 22.5) % 360) / 45) % 8;
+  return { ang, illum, name: MOON_NAMES[idx], glyph: MOON_GLYPHS[idx] };
 }
 
 /* ── HAND-DRAWN RENDERING (rough.js) + live draw-in animation ── */
@@ -3936,6 +3984,29 @@ async function drawWheel(svg, ps, mode, cusps, outer) {
   const sub = mode === 'transits' ? 'natal (inner) · today (gold, outer)' : mode === 'natal' ? (cusps ? 'natal · equal houses' : 'natal positions') : 'live transits';
   text(cx, 52, sub, { font: "'IBM Plex Mono', monospace", size: 8.5, fill: '#e8ddc877' });
 
+  // moon phase badge (top area, above the wheel)
+  const mp = moonPhase(ps);
+  if (mp) {
+    text(cx, 92, mp.glyph, { size: 26, font: 'system-ui' });
+    text(cx, 112, `moon · ${mp.name} · ${mp.illum}%`, { font: "'IBM Plex Mono', monospace", size: 8.5, fill: '#c89a4a' });
+  }
+
+  // aspect grid (below the wheel): glyph–symbol–glyph rows in two columns
+  const asp = aspectsBetween(ps).sort((a, b) => a.orb - b.orb).slice(0, 14);
+  if (asp.length) {
+    const gy0 = 478;
+    text(cx, gy0 - 10, 'aspects', { font: "'Caveat', cursive", size: 14, fill: '#e8ddc8aa' });
+    asp.forEach((row, k) => {
+      const col = k % 2, r = Math.floor(k / 2);
+      const bx = col === 0 ? 74 : 248;
+      const by = gy0 + 10 + r * 17;
+      text(bx, by, ps[row.i].g, { size: 12, fill: '#e8ddc8' });
+      text(bx + 22, by, ASPECT_SYMBOL[row.a.name] || '·', { size: 12, fill: row.a.color });
+      text(bx + 44, by, ps[row.j].g, { size: 12, fill: '#e8ddc8' });
+      text(bx + 70, by + 0.5, `${Math.round(row.orb)}°`, { font: "'IBM Plex Mono', monospace", size: 7.5, fill: '#e8ddc866' });
+    });
+  }
+
   animateDrawIn(g);
 }
 
@@ -3979,7 +4050,8 @@ async function askWhiteboard(question) {
   RT.generating = true;
 
   const natal = (RT.chartMode === 'natal' && birthMoment());
-  const transitsStr = await positionsString(natal ? 'natal' : 'today');
+  let transitsStr = await positionsString(natal ? 'natal' : 'today');
+  try { const mp = moonPhase(await chartPositions(natal ? 'natal' : 'today')); if (mp) transitsStr += `; Moon phase ${mp.name} (${mp.illum}% lit)`; } catch {}
   const userInfo = [
     S.user.birthDate && `Born ${S.user.birthDate}`,
     S.user.birthTime && `at ${S.user.birthTime}`,
@@ -4591,7 +4663,7 @@ const COMMAND_HELP = [
   '<b>versions</b>',
   '/versions — list saved builds · /revert [n] — roll back',
   '<b>memory</b>',
-  '/remember &lt;fact&gt; · /memory · /forget',
+  '/remember &lt;fact&gt; · /memory · /memory clean · /forget',
   '/help — this list',
 ].join('\n');
 // Refinements — need an existing build to act on.
@@ -4659,7 +4731,16 @@ function handleCommand(c, text) {
   pushChatNote(c, `<em>/${escapeHTML(cmd)}${arg ? ' ' + escapeHTML(arg) : ''}</em>`);
   if (cmd === 'help' || !cmd) { pushChatNote(c, COMMAND_HELP.replace(/\n/g, '<br>')); return; }
   if (cmd === 'remember') { if (arg) { addMemory(arg); pushChatNote(c, '🧠 <em>remembered: ' + escapeHTML(arg) + '</em>'); } else pushChatNote(c, '<em>tell me what to remember: /remember …</em>'); return; }
-  if (cmd === 'memory') { const f = (S.memory?.facts || []); pushChatNote(c, f.length || S.memory?.natal ? (S.memory.natal ? '<em>' + escapeHTML(truncate(S.memory.natal, 200)) + '</em><br>' : '') + f.map(x => '· ' + escapeHTML(x)).join('<br>') : '<em>nothing remembered yet.</em>'); return; }
+  if (cmd === 'memory') {
+    if (/^clean|consolidate|tidy/i.test(arg)) { consolidateMemory(c); return; }
+    const f = (S.memory?.facts || []);
+    let out = '';
+    if (S.memory?.natal) out += '<em>' + escapeHTML(truncate(S.memory.natal, 200)) + '</em><br>';
+    out += f.length ? f.map(x => '· ' + escapeHTML(x)).join('<br>') : (out ? '' : '<em>nothing remembered yet.</em>');
+    if (c.memo) out += '<br><em>this project:</em><br>' + escapeHTML(c.memo).replace(/\n/g, '<br>');
+    if (f.length > 1) out += '<br><button class="chip" data-action="mem-clean" style="margin-top:4px;">⊹ tidy memory</button>';
+    pushChatNote(c, out || '<em>nothing remembered yet.</em>'); return;
+  }
   if (cmd === 'forget') { S.memory = { facts: [], natal: '', natalFor: '' }; saveState(); pushChatNote(c, '<em>memory cleared.</em>'); return; }
   if (cmd === 'draw') { openAtelier(); newDesign(); if (arg) { $('atelier-prompt').value = arg; aiDraw(); } return; }
   if (cmd === 'versions' || cmd === 'history') { listVersions(c); return; }
@@ -4959,6 +5040,7 @@ $('chat-log').addEventListener('click', (e) => {
   if (b.dataset.action === 'draw-asset' && S.activeCart) openAtelierForBuild(S.activeCart);
   if (b.dataset.action === 'autofix') { const c = activeCart(); if (c && RT.pendingFix) { const sig = RT.pendingFix; RT.pendingFix = null; autoFixError(c, sig); } }
   if (b.dataset.action === 'apply-review') { const c = activeCart(); if (c && RT.pendingReview && c.code) { const cr = RT.pendingReview; RT.pendingReview = null; const p = 'Address these review points and output the full updated HTML:\n' + cr; c.log.push({ role: 'user', content: p }); streamReply(c, p); } }
+  if (b.dataset.action === 'mem-clean') { const c = activeCart(); if (c) consolidateMemory(c); }
 });
 $('atelier-prompt').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); aiDraw(); } });
 $('atelier-prompt').addEventListener('input', e => { const t = e.target; t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 100) + 'px'; });

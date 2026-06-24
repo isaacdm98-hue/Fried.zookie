@@ -185,11 +185,41 @@ with a toast and a fallback rather than breaking the app.
 
 ### Design briefs + slash commands
 - **Design briefs** (Settings) — pick a house style (editorial, brutalist, soft,
-  terminal, playful) and Gemma honours it on every build. This is open-design's
+  terminal, playful, glassmorphism, swiss, y2k, claymorphism, cyberpunk,
+  newspaper, dark-pro) and Gemma honours it on every build. This is open-design's
   "design system shapes the artifact" idea, fitted to Aqau Pluto's cartridges.
-- **Slash commands** in chat (claude-code style): `/improve`, `/smaller`,
-  `/prettier`, `/accessible`, `/faster`, `/deck <topic>`, `/draw <thing>`,
-  `/help`.
+- **Slash commands** in chat (claude-code style): build refinements
+  (`/improve`, `/smaller`, `/prettier`, `/accessible`, `/faster`, `/responsive`,
+  `/dark`, `/animate`, `/refactor`, `/comment`, `/seo`, `/debug`, `/explain`),
+  generators (`/deck`, `/game`, `/landing`, `/component`, `/palette`, `/clone <url>`,
+  `/plan`, `/draw`), version control (`/versions`, `/revert`), and memory
+  (`/remember`, `/memory`, `/memory clean`, `/forget`). `/help` lists them all.
+
+### Elite agentic coding (claude-code)
+- **Agent loop** — the `⚡` button (or `/agent <goal>`) runs *plan → build →
+  self-review → fix*, bounded so it always halts. Gemma drafts a plan, builds,
+  critiques its own output and patches the issues.
+- **Auto-fix** — every preview reports its runtime errors back to the studio. In
+  agent mode they're fixed automatically; otherwise a "fix it" chip appears.
+- **`/review`** self-critiques the current build (with an "apply fixes" chip);
+  **`/doctor`** prints diagnostics (WebGPU, model, storage, network, memory).
+
+### Interactive preview (controllable design)
+- A `🎚` panel overlaid on the preview drives live design tokens — accent,
+  background, text colour, text size, roundness, line-height, dark mode — pushed
+  into the running preview via `postMessage` (no rebuild). **Bake in** writes the
+  chosen look into the code so exports/runs keep it.
+
+### Persistent memory (Claude-style, deeper)
+- Durable facts about you (with near-duplicate guarding and a `/memory clean`
+  consolidation pass), a private natal read, **and per-project memory** — a tight
+  running summary of each build's goals and decisions, carried across sessions and
+  fed back into every build prompt.
+
+### Richer astrology graphics
+- The hand-drawn wheel now shows a **moon-phase badge** (glyph + illumination)
+  and an **aspect grid** (aspectarian) below the chart; the moon phase also feeds
+  the live reading.
 
 ## Why some odysseus features aren't here
 [odysseus](https://github.com/pewdiepie-archdaemon/odysseus) is a server-side
