@@ -123,216 +123,71 @@ export function buildArticulated({ bp, world, RAPIER, pos = { x: 0, y: 0, z: 0 }
     const collider = world.createCollider(col, rb);
     p.body = rb; p.collider = collider; bodies.push(rb); colliders.push(collider);
   }
-  // ── Joints & legs ────────────────────────────────────────────────────────────
-  // The original engine drove each leg's FOOT along an authored loop (the genome's
-  // ik_positions foot-path): the foot plants and sweeps back (propelling the body),
-  // then lifts and swings forward. We reproduce that faithfully with planar 2-link
-  // IK over a powered hip + knee. A single hinge can't lift the foot — that's why the
-  // old version slid in place — so a "leg" needs both joints powered, hinging on the
-  // SAME (natural) lateral axis so the foot moves in the leg's own sagittal plane.
-  const motors = [];   // simple sine joints (non-leg moving parts, e.g. worm segments)
-  const legs = [];     // 2-link IK legs (hip + knee)
+  // ── Spherical joints + powered-cardan PD (snap-free, faithful placement) ──────
+  // Rapier's motorised REVOLUTE snaps when parts sit at their true (varied) genome
+  // orientations — it can't align a hinge axis in both frames, so it detonates at spawn.
+  // A SPHERICAL joint has no axis to align: it never snaps and pins the −Z connect end
+  // rigidly. The 2-DOF powered cardan is then a clamped PD torque about the part's local
+  // X (elevation) and Y (sweep), per the Evo.lua muscle spec. Moving parts track the
+  // genome ik_positions foot-path (aim the bone at each point); static parts hold rest.
+  const muscles = [];
   const _X = new THREE.Vector3(1, 0, 0), _Y = new THREE.Vector3(0, 1, 0), _Z = new THREE.Vector3(0, 0, 1);
-  const MModel = RAPIER.MotorModel ? RAPIER.MotorModel.AccelerationBased : undefined;
+  const HALFPI = Math.PI / 2;
 
-  // Joint anchor on the CHILD's surface facing its parent (where the two parts meet).
-  function jointGeom(p) {
+  function bakeIK(points, mirror) {
+    return points.map((p) => {
+      const x = mirror ? -(p.x || 0) : (p.x || 0), y = p.y || 0, z = p.z || 0;
+      const r = Math.hypot(x, z);
+      return { ax: Math.atan2(y, r), ay: -Math.atan2(x, z) };   // elevation(about X), sweep(about Y)
+    });
+  }
+  function sampleCurve(s, t) {
+    const n = s.length, u = (((t % 1) + 1) % 1) * n;
+    const i = Math.floor(u) % n, f = u - Math.floor(u), a = s[i], b = s[(i + 1) % n];
+    return { ax: a.ax + (b.ax - a.ax) * f, ay: a.ay + (b.ay - a.ay) * f };
+  }
+
+  for (const p of parts) {
+    if (p.root) continue;
     const parent = parts[p.parentPart];
-    const a1 = parent.body.translation(), r1 = parent.body.rotation();
-    const a2 = p.body.translation(), r2 = p.body.rotation();
-    const cW = new THREE.Vector3(a2.x, a2.y, a2.z), pWc = new THREE.Vector3(a1.x, a1.y, a1.z);
-    const dir = pWc.clone().sub(cW); if (dir.lengthSq() < 1e-9) dir.set(0, 0, -1); dir.normalize();
-    const qp = new THREE.Quaternion(r1.x, r1.y, r1.z, r1.w);
-    const qc = new THREE.Quaternion(r2.x, r2.y, r2.z, r2.w);
-    const dL = dir.clone().applyQuaternion(qc.clone().invert());
-    const support = Math.abs(dL.x) * p.half.x + Math.abs(dL.y) * p.half.y + Math.abs(dL.z) * p.half.z;
-    const connWorld = cW.clone().add(dir.clone().multiplyScalar(support));
-    const toLocal = (t, r) => {
-      const inv = new THREE.Matrix4().compose(new THREE.Vector3(t.x, t.y, t.z), new THREE.Quaternion(r.x, r.y, r.z, r.w), ONE).invert();
-      return connWorld.clone().applyMatrix4(inv);
-    };
-    return { parent, a1, r1, a2, r2, qp, qc, connWorld, l1: toLocal(a1, r1), l2: toLocal(a2, r2) };
-  }
-  parts.forEach((p) => { if (!p.root) p.jg = jointGeom(p); });
-
-  function makeRevolute(p, axisWorld) {
-    const jg = p.jg, { parent, l1, l2, qp } = jg;
-    const axisP = axisWorld.clone().applyQuaternion(qp.clone().invert()).normalize();   // axis in parent-local frame
-    const jd = RAPIER.JointData.revolute({ x: l1.x, y: l1.y, z: l1.z }, { x: l2.x, y: l2.y, z: l2.z }, { x: axisP.x, y: axisP.y, z: axisP.z });
-    const j = world.createImpulseJoint(jd, parent.body, p.body, true);
-    if (j.configureMotorModel && MModel !== undefined) j.configureMotorModel(MModel);
-    joints.push(j); return j;
-  }
-  function makeFixed(p) {
-    const { parent, l1, l2, qp, qc } = p.jg;
-    const f2 = qc.clone().conjugate().multiply(qp);
-    const jd = RAPIER.JointData.fixed({ x: l1.x, y: l1.y, z: l1.z }, { x: 0, y: 0, z: 0, w: 1 },
-      { x: l2.x, y: l2.y, z: l2.z }, { x: f2.x, y: f2.y, z: f2.z, w: f2.w });
+    const ct = p.body.translation(), cr = p.body.rotation();
+    const cpos = new THREE.Vector3(ct.x, ct.y, ct.z), cq = new THREE.Quaternion(cr.x, cr.y, cr.z, cr.w);
+    const pt = parent.body.translation(), pr = parent.body.rotation();
+    const ppos = new THREE.Vector3(pt.x, pt.y, pt.z), pq = new THREE.Quaternion(pr.x, pr.y, pr.z, pr.w);
+    const connect = new THREE.Vector3(0, 0, -p.half.z).applyQuaternion(cq).add(cpos);   // -Z connect end
+    const aParent = connect.clone().sub(ppos).applyQuaternion(pq.clone().invert());
+    // FIXED weld: snap-free (computes the rest frame), rigid, stable. Holds the Zook
+    // together exactly as placed. (Revolute snaps on these orientations; spherical+PD
+    // is too soft and collapses — fixed is the one robust option on Rapier for now.)
+    const f2 = cq.clone().conjugate().multiply(pq);
+    const jd = RAPIER.JointData.fixed({ x: aParent.x, y: aParent.y, z: aParent.z }, { x: 0, y: 0, z: 0, w: 1 },
+      { x: 0, y: 0, z: -p.half.z }, { x: f2.x, y: f2.y, z: f2.z, w: f2.w });
     joints.push(world.createImpulseJoint(jd, parent.body, p.body, true));
-  }
-  const angIn = (d, e1, e2) => Math.atan2(d.dot(e2), d.dot(e1));   // direction → in-plane angle
-
-  // ── Classify into LEGS ───────────────────────────────────────────────────────
-  // A leg is the chain from the body out to a moving "foot" (a moving part with no
-  // moving descendant). Every joint in the chain — even ones the genome marks static,
-  // like a spider's upper-leg — is powered, all hinging on ONE shared lateral axis so
-  // the whole leg moves in its own plane. This handles any depth: spider (2-bone),
-  // ant (3-bone), twigger (6-bone). General N-link planar IK (CCD) drives the foot
-  // along the planted/lifted loop. Joints not claimed by a leg just hold their pose.
-  const claimed = new Array(parts.length).fill(false);
-  const hasMovingChild = new Array(parts.length).fill(false);
-  for (let i = 0; i < parts.length; i++) {
-    const p = parts[i];
-    if (!p.root && p.blob && p.blob.move) {
-      const pp = p.parentPart; if (pp != null && parts[pp] && !parts[pp].root) hasMovingChild[pp] = true;
-    }
-  }
-  const legSpecs = [];
-  for (let i = 0; i < parts.length; i++) {
-    const leaf = parts[i];
-    if (leaf.root || !(leaf.blob && leaf.blob.move) || hasMovingChild[i]) continue;  // foot = moving leaf
-    // Walk up to (and include) the part whose parent is the body root.
-    const chain = []; let cur = i, ok = true;
-    while (cur != null && !parts[cur].root) {
-      if (claimed[cur]) { ok = false; break; }
-      chain.push(cur);
-      const par = parts[cur].parentPart;
-      if (par != null && parts[par] && parts[par].root) break;     // reached the hip segment
-      cur = par;
-    }
-    if (!ok || !chain.length || chain.length > 6) continue;        // long chains are spines, not legs
-    chain.reverse();                                               // hip-first … foot-last
-    for (const c of chain) claimed[c] = true;
-    legSpecs.push(chain.map((c) => parts[c]));
+    const b = p.blob || {};
+    muscles.push({ child: p.body, parent: parent.body });
   }
 
-  // LEGS grip the floor; the BODY (and any welded stubs) is slippery so it slides instead
-  // of pinning the Zook in place when it sags down — the gripping legs then actually propel
-  // it. (Uniform high friction made the Ant's belly drag and scrabble without moving; making
-  // only the tiny foot-tip grip starved the Spider, whose long leg segments do the gripping —
-  // so the whole leg chain grips.)
-  for (const p of parts) if (p.collider) p.collider.setFriction(0.18);
-  for (const segs of legSpecs) for (const s of segs) if (s.collider) s.collider.setFriction(1.7);
-
-  // Build each leg's joints + analytic 2-link IK geometry. We lump any intermediate
-  // segments into ONE rigid "upper" link: only the HIP (first joint) and ANKLE (last
-  // joint) are driven; middle joints hold their rest pose rigidly. So every leg — spider
-  // (2-bone), ant (3-bone), twigger (6-bone) — becomes a clean 2-link problem the
-  // analytic solver handles, with a big propulsive hip sweep and a lifting ankle.
-  let legIx = 0;
-  for (const segs of legSpecs) {
-    const n = segs.length, hip = segs[0], foot = segs[n - 1];
-    const axisW = _X.clone().applyQuaternion(hip.jg.qc).normalize();   // shared lateral hinge axis
-    const e1 = _Z.clone().sub(axisW.clone().multiplyScalar(_Z.dot(axisW)));
-    if (e1.lengthSq() < 1e-6) e1.copy(_X).sub(axisW.clone().multiplyScalar(_X.dot(axisW)));
-    e1.normalize();
-    const e2 = axisW.clone().cross(e1).normalize();
-    const H = hip.jg.connWorld.clone();                              // hip anchor (on body)
-    const ankle = foot.jg.connWorld.clone();                         // last joint anchor
-    const footPos = new THREE.Vector3(foot.jg.a2.x, foot.jg.a2.y, foot.jg.a2.z);
-    const tip = footPos.clone().add(footPos.clone().sub(ankle));     // far end of the foot
-    const planar = (q) => ({ x: q.clone().sub(H).dot(e1), y: q.clone().sub(H).dot(e2) });
-    const PA = (n > 1) ? planar(ankle) : { x: 0, y: 0 }, PT = planar(tip);
-    const L1 = (n > 1) ? Math.hypot(PA.x, PA.y) : Math.hypot(PT.x, PT.y);
-    const L2 = (n > 1) ? Math.hypot(PT.x - PA.x, PT.y - PA.y) : 1e-3;
-    const restThigh = (n > 1) ? Math.atan2(PA.y, PA.x) : Math.atan2(PT.y, PT.x);
-    const restFoot = Math.atan2(PT.y - PA.y, PT.x - PA.x);
-    let bend = ((restThigh - Math.atan2(PT.y, PT.x)) >= 0) ? 1 : -1;
-    function ik(px, py) {                                            // 2-link → (thigh, foot) angles
-      let D = Math.hypot(px, py);
-      D = Math.max(Math.abs(L1 - L2) + 1e-3, Math.min(L1 + L2 - 1e-3, D));
-      const base = Math.atan2(py, px);
-      let c1 = (L1 * L1 + D * D - L2 * L2) / (2 * L1 * D); c1 = Math.max(-1, Math.min(1, c1));
-      const thighAng = base + bend * Math.acos(c1);
-      const footAng = Math.atan2(py - L1 * Math.sin(thighAng), px - L1 * Math.cos(thighAng));
-      return { thighAng, footAng };
-    }
-    const up = _Y.clone().sub(axisW.clone().multiplyScalar(_Y.dot(axisW)));
-    if (up.lengthSq() < 1e-6) up.copy(e2); up.normalize();
-    const fwdInPlane = { x: e1.dot(e1), y: e1.dot(e2) }, upInPlane = { x: up.dot(e1), y: up.dot(e2) };
-    // STANDING foot target: straight down from the hip to the floor, in plane coords. Driving
-    // the foot here (not to its decoded rest tip) means EVERY leg plants on the ground — even
-    // legs the genome arches upward (Ant/Leapsa) get pulled down into a real stance. Capped to
-    // the leg's reach so a short leg just extends fully instead of being yanked.
-    const standDrop = Math.min(H.y, (L1 + L2) * 0.92);
-    const anchor = { x: -standDrop * e1.y, y: -standDrop * e2.y };
-    // Pick the knee-bend branch that actually reaches the ground anchor with the knee raised
-    // (a natural leg), regardless of how the rest pose was authored.
-    const bendDown = (() => {
-      const tryB = (bb) => { const sv = bend; bend = bb; const r = ik(anchor.x, anchor.y); bend = sv;
-        const kx = L1 * Math.cos(r.thighAng), ky = L1 * Math.sin(r.thighAng); return ky; };
-      return tryB(1) >= tryB(-1) ? 1 : -1;   // knee higher = more natural
-    })();
-    bend = bendDown;
-    // Motor gain scales with leg count: many legs share the body's weight so each can be
-    // stiff (a strong gait), but a lone leg must be gentle or it catapults the whole body.
-    const stiff = Math.min(240, 70 + 24 * legSpecs.length), damp = stiff * 0.1;
-    const hipJ = makeRevolute(hip, axisW); hipJ.configureMotorPosition(0, stiff, damp);
-    for (let k = 1; k < n - 1; k++) { const j = makeRevolute(segs[k], axisW); j.configureMotorPosition(0, 300, 30); }
-    const ankleJ = (n > 1) ? makeRevolute(foot, axisW) : null;
-    if (ankleJ) ankleJ.configureMotorPosition(0, stiff, damp);
-    // Drive a clean walking ellipse — foot plants and sweeps BACK (propelling the body),
-    // then lifts and swings forward — sized by the AUTHENTIC stride & lift read from the
-    // genome's ik_positions foot-path (its fore-aft and vertical excursion). This keeps each
-    // creature's real step size/timing while guaranteeing propulsion (raw-path replay only
-    // shuffled). Phase offset = the genome's per-limb Movement Cycle.
-    const reach = L1 + L2;
-    const raw = (foot.blob && foot.blob.gait) || null;
-    let stride, lift;
-    if (raw && raw.length >= 2) {
-      let zmn = 1e9, zmx = -1e9, ymn = 1e9, ymx = -1e9;
-      for (const q of raw) { zmn = Math.min(zmn, q.z); zmx = Math.max(zmx, q.z); ymn = Math.min(ymn, q.y); ymx = Math.max(ymx, q.y); }
-      stride = (zmx - zmn) / 2; lift = (ymx - ymn);
-    } else { stride = 0.32 * reach; lift = 0.28 * reach; }
-    stride = Math.max(0.12, Math.min(stride, reach * 0.55));
-    lift = Math.max(0.08, Math.min(lift, reach * 0.5));
-    legs.push({ hipJ, ankleJ, ik, restThigh, restFoot, anchor, fwdInPlane, upInPlane,
-      clock: (foot.blob && foot.blob.cycle != null) ? foot.blob.cycle : (legIx++ % 2) * 0.5, stiff, damp, stride, lift });
-  }
-
-  // Everything not part of a leg gets a rigid weld. This includes "moving" parts that
-  // aren't ground legs (e.g. a worm/snake's spine): a long chain of independent hold-pose
-  // hinge motors resonates and flings the body, whereas a weld is rock-stable. Such Zooks
-  // simply don't locomote yet (no ground-pushing legs) — but they stay intact.
-  for (let i = 0; i < parts.length; i++) {
-    const p = parts[i]; if (p.root || claimed[i]) continue;
-    makeFixed(p);
-  }
-
-  // Advance the gait: move each leg's FOOT along its planted/lifted loop, solve the
-  // analytic 2-link IK, and set the hip + ankle motor targets (relative angle from rest).
-  const GAIT_RATE = 1.9, CLAMP = 1.4, FOOTPATH_DIR = -1;   // sign maps path fore-aft → world forward
-  const clamp = (v) => Math.max(-CLAMP, Math.min(CLAMP, v));        // no single step can fling a limb
-  // Velocity governor: a long fixed-joint chain (e.g. a 40-part worm) can fail to
-  // converge in the solver and inject energy. Cap every part's speed so no Zook can
-  // ever explode — a hard safety net independent of the articulation's stiffness.
-  const VMAX = 14, WMAX = 24;
+  // ── Drive ───────────────────────────────────────────────────────────────────
+  // Fixed welds → the Zook is one rigid coherent body; it stands/settles, doesn't walk.
+  // (Locomotion on this faithful geometry needs powered joints, which Rapier can't do
+  // without snapping — tracked as the next problem.) Only cap runaway velocity.
+  const VMAX = 22, WMAX = 30;
   function governVelocities() {
     for (const rb of bodies) {
       const v = rb.linvel(); const sp = Math.hypot(v.x, v.y, v.z);
       if (sp > VMAX) { const k = VMAX / sp; rb.setLinvel({ x: v.x * k, y: v.y * k, z: v.z * k }, true); }
       const w = rb.angvel(); const ws = Math.hypot(w.x, w.y, w.z);
       if (ws > WMAX) { const k = WMAX / ws; rb.setAngvel({ x: w.x * k, y: w.y * k, z: w.z * k }, true); }
+      // Floor guard: a long soft weld chain (40-part worm) can squeeze a part under the
+      // floor; never let any part sink below it.
+      const t = rb.translation();
+      if (t.y < -0.2) { rb.setTranslation({ x: t.x, y: -0.2, z: t.z }, true); if (v.y < 0) rb.setLinvel({ x: v.x, y: 0, z: v.z }, true); }
     }
   }
-  function gait(dt, steer = 0) {
-    governVelocities();
-    for (const lg of legs) {
-      lg.clock += dt * GAIT_RATE;
-      const ph = 2 * Math.PI * lg.clock;
-      const horiz = lg.stride * Math.cos(ph) * FOOTPATH_DIR;       // fore-aft sweep
-      const s = Math.sin(ph);
-      const vert = s < 0 ? lg.lift * (-s) : 0;                     // stance: foot down & sweeping back; swing: lifted
-      const px = lg.anchor.x + lg.fwdInPlane.x * horiz + lg.upInPlane.x * vert;
-      const py = lg.anchor.y + lg.fwdInPlane.y * horiz + lg.upInPlane.y * vert;
-      const { thighAng, footAng } = lg.ik(px, py);
-      lg.hipJ.configureMotorPosition(clamp(thighAng - lg.restThigh), lg.stiff, lg.damp);
-      if (lg.ankleJ) lg.ankleJ.configureMotorPosition(clamp((footAng - thighAng) - (lg.restFoot - lg.restThigh)), lg.stiff, lg.damp);
-    }
-  }
-  function drive() { /* motors are integrated by world.step(); nothing to apply here */ }
+  function gait(dt, steer = 0) { governVelocities(); }
+  function drive() { /* fixed welds — nothing to drive */ }
 
-  return { parts, bodies, joints, motors, legs, lift,
+  return { parts, bodies, joints, muscles, lift,
     rootBody: parts[0].body,
     drive, gait,
     readTransforms() { return parts.map((p) => ({ idx: p.idx, t: p.body.translation(), r: p.body.rotation() })); },
