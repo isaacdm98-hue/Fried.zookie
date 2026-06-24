@@ -24,6 +24,13 @@ first-time shader compile (the thing that made it look hung, and what trips up
 iPhone), and the worker raises the WebGPU device limits internally. If a worker
 can't be used, it falls back to the same load on the main thread.
 
+**Memory, like Claude.** Aqau Pluto keeps a persistent memory that's woven into
+every prompt, so it remembers you across sessions: it quietly learns durable
+facts as you chat (and from astrology conversations), and — once you add birth
+data — Gemma writes a private **natal profile** into memory so it always knows
+your chart. Manage it in Settings (view / clear) or with `/remember …`,
+`/memory`, `/forget`. It's included in your JSON backup.
+
 **Gemma is the brain everywhere.** Once loaded it powers every surface: building
 & editing apps in chat, the slash commands, code-section explanations,
 auto-naming cartridges, the astrology readings (today / natal / transits), the
