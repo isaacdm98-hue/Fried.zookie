@@ -1989,17 +1989,17 @@ async function buildMM(messages, media){
 async function tryDedicated(id,dtype,pc){
   if(!(TJS.Gemma4ForConditionalGeneration && TJS.AutoProcessor)) throw new Error('no dedicated class');
   processor=await TJS.AutoProcessor.from_pretrained(id,{progress_callback:pc});
-  model=await TJS.Gemma4ForConditionalGeneration.from_pretrained(id,{dtype,device:'webgpu',progress_callback:pc});
+  model=await TJS.Gemma4ForConditionalGeneration.from_pretrained(id,{dtype,device:'webgpu',use_external_data_format:true,progress_callback:pc});
   tokenizer=processor.tokenizer;
 }
 async function tryCausal(id,dtype,pc){ // TEXT-ONLY: skips vision/audio encoders → much smaller, fits iPhone memory
   if(!(TJS.AutoModelForCausalLM && TJS.AutoTokenizer)) throw new Error('no causal class');
   tokenizer=await TJS.AutoTokenizer.from_pretrained(id,{progress_callback:pc});
-  model=await TJS.AutoModelForCausalLM.from_pretrained(id,{dtype,device:'webgpu',progress_callback:pc});
+  model=await TJS.AutoModelForCausalLM.from_pretrained(id,{dtype,device:'webgpu',use_external_data_format:true,progress_callback:pc});
   processor=null;
 }
 async function tryPipeline(id,dtype,pc){
-  generator=await TJS.pipeline('text-generation',id,{dtype,device:'webgpu',progress_callback:pc});
+  generator=await TJS.pipeline('text-generation',id,{dtype,device:'webgpu',use_external_data_format:true,progress_callback:pc});
   tokenizer=generator.tokenizer;
 }
 async function loadModel(id,dtype,mode){
@@ -2296,7 +2296,7 @@ async function loadTransformers(modelId, profile) {
         if (engine || !(TJS.AutoModelForCausalLM && TJS.AutoTokenizer)) return;
         try {
           const tokenizer = await TJS.AutoTokenizer.from_pretrained(modelId, { progress_callback: prog });
-          const model = await TJS.AutoModelForCausalLM.from_pretrained(modelId, { dtype, device: 'webgpu', progress_callback: prog });
+          const model = await TJS.AutoModelForCausalLM.from_pretrained(modelId, { dtype, device: 'webgpu', use_external_data_format: true, progress_callback: prog });
           engine = new TransformersEngine({ model, tokenizer }, modelId);
         } catch (e) { console.warn('causal (text-only) load failed', e); }
       };
@@ -2304,7 +2304,7 @@ async function loadTransformers(modelId, profile) {
         if (engine || !(TJS.Gemma4ForConditionalGeneration && TJS.AutoProcessor)) return;
         try {
           const processor = await TJS.AutoProcessor.from_pretrained(modelId, { progress_callback: prog });
-          const model = await TJS.Gemma4ForConditionalGeneration.from_pretrained(modelId, { dtype, device: 'webgpu', progress_callback: prog });
+          const model = await TJS.Gemma4ForConditionalGeneration.from_pretrained(modelId, { dtype, device: 'webgpu', use_external_data_format: true, progress_callback: prog });
           engine = new TransformersEngine({ model, processor }, modelId);
         } catch (e) { console.warn('dedicated Gemma load failed', e); }
       };
@@ -2312,7 +2312,7 @@ async function loadTransformers(modelId, profile) {
       if (mode === 'multimodal') { await tryDedicatedMain(); }
       else { await tryCausalMain(); }
       if (!engine) {
-        const generator = await TJS.pipeline('text-generation', modelId, { dtype, device: 'webgpu', progress_callback: prog });
+        const generator = await TJS.pipeline('text-generation', modelId, { dtype, device: 'webgpu', use_external_data_format: true, progress_callback: prog });
         engine = new TransformersEngine({ generator }, modelId);
       }
     }
