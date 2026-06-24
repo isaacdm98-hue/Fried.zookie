@@ -1119,6 +1119,19 @@ body::before {
 .wb-chart { width: 100%; height: 100%; overflow: hidden; display: flex; align-items: center; justify-content: center; }
 .wb-chart svg { width: 100%; height: 100%; max-width: 100%; }
 
+/* chat controls + markdown */
+.stat-btn { background: none; border: none; color: var(--bone-3); font-size: 13px; cursor: pointer; padding: 0 2px; line-height: 1; }
+.stat-btn:active { transform: scale(0.9); }
+.chat-send.stopping { background: var(--terracotta); border-color: var(--terracotta); color: var(--paper); }
+.msg-copy { background: none; border: none; color: var(--bone-4); font-size: 11px; cursor: pointer; margin-top: 2px; padding: 1px 4px; font-family: 'IBM Plex Mono', monospace; }
+.msg-copy:active { transform: scale(0.9); }
+.chat-msg .body .md-pre { background: var(--paper-3); border: 1px solid var(--bone-4); border-radius: 6px; padding: 8px 10px; overflow-x: auto; margin: 6px 0; font-family: 'IBM Plex Mono', monospace; font-size: 12px; white-space: pre; }
+.chat-msg .body code.md-code { background: var(--paper-3); border-radius: 4px; padding: 1px 5px; font-family: 'IBM Plex Mono', monospace; font-size: 0.9em; }
+.chat-msg .body h3 { font-family: 'Caveat', cursive; font-size: 19px; margin: 6px 0 2px; }
+.chat-msg .body h4 { font-family: 'Caveat', cursive; font-size: 17px; margin: 5px 0 2px; }
+.chat-msg .body ul { margin: 4px 0 4px 18px; }
+.chat-msg .body a { color: var(--ochre); }
+
 /* ─── GLOBAL HAND-DRAWN MOTION ─── */
 /* Entrance: elements settle into place as if just sketched down. */
 @keyframes aqIn {
@@ -1254,6 +1267,7 @@ body.aq-anim .btn, body.aq-anim .chip, body.aq-anim .icon-btn, body.aq-anim .too
       </div>
       <div class="title-mini" id="work-title">untitled</div>
       <div class="right">
+        <button class="icon-btn" id="work-menu" title="Cartridge">⋯</button>
         <button class="icon-btn" id="work-atelier" title="Draw an asset for this build">✎</button>
         <button class="icon-btn" id="work-wb" title="Whiteboard">☉</button>
         <button class="icon-btn" id="work-settings" title="Settings">⚙</button>
@@ -1289,7 +1303,10 @@ body.aq-anim .btn, body.aq-anim .chip, body.aq-anim .icon-btn, body.aq-anim .too
     <div class="chat-dock">
       <div class="chat-stats mono">
         <span id="stat-model">— model</span>
-        <span id="stat-tps">— tok/s</span>
+        <span style="display:flex;gap:10px;align-items:center;">
+          <span id="stat-tps">— tok/s</span>
+          <button id="chat-regen" class="stat-btn" title="Regenerate last reply">↻</button>
+        </span>
       </div>
       <div class="chat-log" id="chat-log"></div>
       <div class="chat-input-row">
@@ -1466,6 +1483,19 @@ body.aq-anim .btn, body.aq-anim .chip, body.aq-anim .icon-btn, body.aq-anim .too
   </div>
 </aside>
 
+<!-- CARTRIDGE ACTIONS -->
+<div class="sheet-bg" id="cart-sheet-bg"></div>
+<aside class="sheet" id="cart-sheet">
+  <h2 id="cart-sheet-title">Cartridge</h2>
+  <div class="row" style="flex-direction:column; gap:8px;">
+    <button class="btn ghost" id="cart-rename">Rename</button>
+    <button class="btn ghost" id="cart-duplicate">Duplicate</button>
+    <button class="btn ghost" id="cart-export">Export .html</button>
+    <button class="btn ghost" id="cart-delete" style="border-color:var(--terracotta); color:var(--terracotta);">Delete cartridge</button>
+    <button class="btn-text" id="cart-cancel" style="margin-top:4px;">Cancel</button>
+  </div>
+</aside>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -1557,6 +1587,21 @@ function escapeHTML(s) {
   return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 function truncate(s, n) { s = String(s||''); return s.length > n ? s.slice(0, n-1) + '…' : s; }
+// Tiny, safe markdown → HTML (escapes first, then a handful of inline rules).
+function mdToHTML(src) {
+  let s = escapeHTML(src);
+  const blocks = [];
+  s = s.replace(/```(\w*)\n?([\s\S]*?)```/g, (m, lang, code) => { blocks.push(code.replace(/\n$/, '')); return `@@CB${blocks.length - 1}@@`; });
+  s = s.replace(/`([^`]+)`/g, '<code class="md-code">$1</code>');
+  s = s.replace(/^###\s+(.*)$/gm, '<h4>$1</h4>').replace(/^##\s+(.*)$/gm, '<h3>$1</h3>').replace(/^#\s+(.*)$/gm, '<h3>$1</h3>');
+  s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  s = s.replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<em>$2</em>');
+  s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+  s = s.replace(/^(?:[-*]\s+)(.*)$/gm, '<li>$1</li>').replace(/(<li>[\s\S]*?<\/li>)(?!\s*<li>)/g, '<ul>$1</ul>');
+  s = s.replace(/\n{2,}/g, '<br><br>').replace(/\n/g, '<br>');
+  s = s.replace(/@@CB(\d+)@@/g, (m, i) => `<pre class="md-pre"><code>${blocks[+i]}</code></pre>`);
+  return s;
+}
 let toastT;
 function toast(msg) {
   const el = $('toast');
@@ -2208,6 +2253,44 @@ $('work-back').onclick = () => renderHome();
 $('work-wb').onclick = () => { renderWhiteboard(); show('view-whiteboard'); seedWhiteboardLog(); };
 $('work-settings').onclick = openSettings;
 
+/* ── CARTRIDGE MANAGEMENT (rename / duplicate / export / delete) ── */
+function openCartMenu() {
+  const c = activeCart(); if (!c) return;
+  $('cart-sheet-title').textContent = c.name || 'untitled';
+  $('cart-sheet-bg').classList.add('show');
+  $('cart-sheet').classList.add('show');
+}
+function closeCartMenu() {
+  $('cart-sheet').classList.remove('show');
+  $('cart-sheet-bg').classList.remove('show');
+}
+$('work-menu').onclick = openCartMenu;
+$('cart-sheet-bg').onclick = closeCartMenu;
+$('cart-cancel').onclick = closeCartMenu;
+$('cart-rename').onclick = () => {
+  const c = activeCart(); if (!c) return;
+  const n = prompt('Rename cartridge', c.name || '');
+  if (n && n.trim()) { c.name = truncate(n.trim(), 40); $('work-title').textContent = c.name; saveState(); }
+  closeCartMenu();
+};
+$('cart-duplicate').onclick = () => {
+  const c = activeCart(); if (!c) return;
+  const copy = structuredClone(c);
+  copy.id = 'c' + Date.now().toString(36);
+  copy.name = truncate((c.name || 'untitled') + ' copy', 40);
+  copy.created = Date.now();
+  S.cartridges.push(copy); S.activeCart = copy.id; saveState();
+  closeCartMenu(); openCartridge(copy.id); toast('duplicated');
+};
+$('cart-export').onclick = () => { closeCartMenu(); const c = activeCart(); if (!c || !c.code) { toast('nothing built to export'); return; } $('dl-open').click(); };
+$('cart-delete').onclick = () => {
+  const c = activeCart(); if (!c) return;
+  if (!confirm('Delete “' + (c.name || 'untitled') + '”? This cannot be undone.')) return;
+  S.cartridges = S.cartridges.filter(x => x.id !== c.id);
+  S.activeCart = null; saveState();
+  closeCartMenu(); renderHome(); toast('deleted');
+};
+
 /* ===================== FULLSCREEN / DOWNLOAD ===================== */
 const fsEl = $('fullscreen');
 const fsIframe = $('fs-iframe');
@@ -2256,7 +2339,15 @@ function appendMsg(role, content, note) {
     el.innerHTML = `<div class="body">${content}</div>`;
   } else {
     el.innerHTML = `<div class="from">${role === 'assistant' ? 'aqau pluto' : (S.user.name || 'you')}</div><div class="body"></div>`;
-    el.querySelector('.body').textContent = content;
+    const body = el.querySelector('.body');
+    // Assistant history renders as markdown; live placeholder stays empty.
+    if (role === 'assistant' && content) body.innerHTML = mdToHTML(content);
+    else body.textContent = content;
+    if (role === 'assistant') {
+      const cp = document.createElement('button');
+      cp.className = 'msg-copy'; cp.dataset.copy = '1'; cp.textContent = '⧉ copy';
+      el.appendChild(cp);
+    }
   }
   if (handMotion()) el.classList.add('aq-in');
   log.appendChild(el);
@@ -2281,6 +2372,30 @@ $('chat-input').addEventListener('input', e => {
 $('chat-input').addEventListener('focus', () => {
   setTimeout(() => $('chat-input').scrollIntoView({block:'center', behavior:'smooth'}), 300);
 });
+
+// Send ↔ Stop toggle + stop + regenerate + copy.
+function setSendStop(stopping) {
+  const b = $('chat-send'); if (!b) return;
+  if (stopping) { b.classList.add('stopping'); b.textContent = '■'; b.disabled = false; b.onclick = stopGeneration; b.setAttribute('aria-label', 'Stop'); }
+  else { b.classList.remove('stopping'); b.textContent = '↑'; b.onclick = sendChat; b.disabled = !RT.modelLoaded; b.setAttribute('aria-label', 'Send'); }
+}
+function stopGeneration() {
+  RT.abort = true;
+  try { RT.engine?.interruptGenerate?.(); } catch {}
+  toast('stopping…');
+}
+function regenerate() {
+  const c = activeCart(); if (!c || RT.generating) { if (RT.generating) toast('still writing…'); return; }
+  let idx = -1;
+  for (let i = c.log.length - 1; i >= 0; i--) { if (c.log[i].role === 'user' && !c.log[i].note) { idx = i; break; } }
+  if (idx < 0) { toast('nothing to regenerate'); return; }
+  const lastUser = c.log[idx].content;
+  c.log = c.log.slice(0, idx + 1); // drop the previous reply + any build notes
+  saveState();
+  paintCartridge();
+  streamReply(c, lastUser);
+}
+$('chat-regen').onclick = regenerate;
 
 async function sendChat() {
   if (RT.generating) return;
@@ -2337,7 +2452,8 @@ async function sendChat() {
 
 async function streamReply(c, userText, ground) {
   RT.generating = true;
-  $('chat-send').disabled = true;
+  RT.abort = false;
+  setSendStop(true);
 
   const placeholder = appendMsg('assistant', '');
   const bodyEl = placeholder.querySelector('.body');
@@ -2358,6 +2474,7 @@ async function streamReply(c, userText, ground) {
     });
 
     for await (const chunk of stream) {
+      if (RT.abort) break;
       const delta = chunk.choices?.[0]?.delta?.content || '';
       if (delta) {
         acc += delta;
@@ -2379,12 +2496,12 @@ async function streamReply(c, userText, ground) {
     placeholder.classList.add('note');
   } finally {
     RT.generating = false;
-    $('chat-send').disabled = false;
+    setSendStop(false);
   }
 
-  const cleaned = stripThink(acc);
+  const cleaned = stripThink(acc) + (RT.abort ? ' …(stopped)' : '');
   c.log.push({role:'assistant', content: cleaned});
-  bodyEl.textContent = cleaned;
+  bodyEl.innerHTML = mdToHTML(cleaned);
 
   // robust HTML extraction
   const html = extractHTML(cleaned);
@@ -2928,7 +3045,7 @@ async function askWhiteboard(question) {
       const delta = chunk.choices?.[0]?.delta?.content || '';
       if (delta) { acc += delta; body.textContent = stripThinkPartial(acc); log.scrollTop = log.scrollHeight; }
     }
-    body.textContent = stripThink(acc);
+    body.innerHTML = mdToHTML(stripThink(acc));
   } catch (e) {
     body.textContent = `(reading failed: ${e?.message || e})`;
     aMsg.classList.add('note');
@@ -3526,6 +3643,13 @@ $('atelier-draw').onclick = aiDraw;
 $('work-atelier').onclick = () => { if (S.activeCart) openAtelierForBuild(S.activeCart); };
 // Tappable suggestions inside the chat log (e.g. "draw the main character").
 $('chat-log').addEventListener('click', (e) => {
+  const copyBtn = e.target.closest('[data-copy]');
+  if (copyBtn) {
+    const body = copyBtn.parentElement.querySelector('.body');
+    const txt = body ? body.innerText : '';
+    try { navigator.clipboard.writeText(txt); toast('copied'); } catch { toast('copy failed'); }
+    return;
+  }
   const b = e.target.closest('[data-action]');
   if (!b) return;
   if (b.dataset.action === 'draw-asset' && S.activeCart) openAtelierForBuild(S.activeCart);
