@@ -27,6 +27,24 @@ already "know" itself and the sky before you ask:
 
 Results are cached in `localStorage`, so the burst only runs once per model/day.
 
+### Real astrology, hand-drawn live
+- **Accurate ephemeris** via [astronomy-engine](https://github.com/cosinekitty/astronomy)
+  (VSOP87, <1′ error) — true geocentric tropical longitudes and retrograde for
+  Sun→Pluto, replacing the old mean-motion guess (kept only as an offline
+  fallback until the engine caches).
+- **A real chart** in the whiteboard: zodiac ring tinted by element, sign glyphs,
+  5° ticks, planets at true longitude with degree/sign labels, and **aspect
+  lines** (conjunction/sextile/square/trine/opposition with orbs). Toggle
+  **natal ↔ today** with `◑` (natal needs birth data).
+- **Hand-drawn, drawn live**: the chart is rendered with
+  [rough.js](https://github.com/rough-stuff/rough) (the engine behind Excalidraw)
+  and animates its strokes in as if sketched by hand. AI drawings in the Atelier
+  fade/grow in the same way. Turn it off in Settings (and it respects
+  `prefers-reduced-motion`).
+- **Chart engine choice** (Settings): the hand-drawn Aqau renderer (default) or
+  [Kibo/AstrologyChart2](https://github.com/Kibo/AstrologyChart2), fed the same
+  `{points, cusps}` data; it falls back to the hand-drawn wheel if it can't load.
+
 ### Internet features (optional, online-only)
 Works fully offline. When you're connected and **Web research** is on (Settings),
 Gemma can reach the web to ground its answers:

@@ -4,7 +4,7 @@
 // Cross-origin requests (HF weights, esm.run, jsdelivr, fonts, web research)
 // are passed straight through — see the fetch handler.
 
-const VERSION = 'aqau-pluto-v5-atelier';
+const VERSION = 'aqau-pluto-v6-charts';
 const SHELL = [
   './',
   './index.html',
