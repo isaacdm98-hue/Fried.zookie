@@ -1930,10 +1930,44 @@ async function gen(m){
   let count=0;
   const streamer=new TJS.TextStreamer(tokenizer,{skip_prompt:true,skip_special_tokens:true,callback_function:(t)=>{ if(t){ count++; if(m.id!=='__warm') post({type:'token',id:m.id,text:t}); } }});
   try{
-    if(model){ const inputs=await processor.apply_chat_template(msgs(m.messages,true),{add_generation_prompt:true,tokenize:true,return_dict:true}); await model.generate(Object.assign({},inputs,opts,{streamer})); }
-    else { await generator(msgs(m.messages,false), Object.assign({},opts,{streamer})); }
+    let runner;
+    if(model && processor){ const inputs=await processor.apply_chat_template(msgs(m.messages,true),{add_generation_prompt:true,tokenize:true,return_dict:true}); runner=(s)=>model.generate(Object.assign({},inputs,opts,{streamer:s})); }
+    else if(model){ const inputs=await tokenizer.apply_chat_template(msgs(m.messages,false),{add_generation_prompt:true,tokenize:true,return_dict:true}); runner=(s)=>model.generate(Object.assign({},inputs,opts,{streamer:s})); }
+    else { runner=(s)=>generator(msgs(m.messages,false), Object.assign({},opts,{streamer:s})); }
+    await runner(streamer);
     if(m.id!=='__warm') post({type:'done',id:m.id,count});
   }catch(err){ if(m.id!=='__warm') post({type:'generror',id:m.id,error:String(err&&err.message||err)}); }
+}
+async function tryDedicated(id,dtype,pc){
+  if(!(TJS.Gemma4ForConditionalGeneration && TJS.AutoProcessor)) throw new Error('no dedicated class');
+  processor=await TJS.AutoProcessor.from_pretrained(id,{progress_callback:pc});
+  model=await TJS.Gemma4ForConditionalGeneration.from_pretrained(id,{dtype,device:'webgpu',progress_callback:pc});
+  tokenizer=processor.tokenizer;
+}
+async function tryCausal(id,dtype,pc){ // TEXT-ONLY: skips vision/audio encoders → much smaller, fits iPhone memory
+  if(!(TJS.AutoModelForCausalLM && TJS.AutoTokenizer)) throw new Error('no causal class');
+  tokenizer=await TJS.AutoTokenizer.from_pretrained(id,{progress_callback:pc});
+  model=await TJS.AutoModelForCausalLM.from_pretrained(id,{dtype,device:'webgpu',progress_callback:pc});
+  processor=null;
+}
+async function tryPipeline(id,dtype,pc){
+  generator=await TJS.pipeline('text-generation',id,{dtype,device:'webgpu',progress_callback:pc});
+  tokenizer=generator.tokenizer;
+}
+async function loadModel(id,dtype){
+  const pc=(r)=>post({type:'progress',data:r});
+  // text-only FIRST: smaller download + lower peak memory (the ~1.4GB wall on iPhone)
+  const attempts=[['causal',tryCausal],['dedicated',tryDedicated],['pipeline',tryPipeline]];
+  let lastErr;
+  for(let pass=0; pass<2; pass++){
+    if(pass===1){ try{ TJS.env.useBrowserCache=false; }catch(e){} post({type:'log',msg:'retry without browser cache'}); }
+    for(const [name,fn] of attempts){
+      model=processor=generator=null;
+      try{ post({type:'log',msg:'try '+name+(pass?' (no cache)':'')}); await fn(id,dtype,pc); return name; }
+      catch(err){ lastErr=err; post({type:'log',msg:name+' failed: '+(err&&err.message||err)}); }
+    }
+  }
+  throw lastErr||new Error('all load attempts failed');
 }
 self.onmessage=async (e)=>{
   const m=e.data;
@@ -1941,22 +1975,12 @@ self.onmessage=async (e)=>{
     if(m.type==='load'){
       await ensure();
       if(!('gpu' in navigator)) throw new Error('No WebGPU in this worker');
+      try{ if(navigator.storage&&navigator.storage.persist) await navigator.storage.persist(); }catch(e0){}
       await raiseLimits();
-      const pc=(r)=>post({type:'progress',data:r});
-      const dtype=m.dtype||'q4f16';
-      try{
-        if(TJS.Gemma4ForConditionalGeneration && TJS.AutoProcessor){
-          processor=await TJS.AutoProcessor.from_pretrained(m.modelId,{progress_callback:pc});
-          model=await TJS.Gemma4ForConditionalGeneration.from_pretrained(m.modelId,{dtype,device:'webgpu',progress_callback:pc});
-          tokenizer=processor.tokenizer;
-        } else { throw new Error('no dedicated class'); }
-      }catch(err){
-        post({type:'log',msg:'dedicated failed, pipeline: '+(err&&err.message||err)});
-        generator=await TJS.pipeline('text-generation',m.modelId,{dtype,device:'webgpu',progress_callback:pc});
-        tokenizer=generator.tokenizer;
-      }
+      const path=await loadModel(m.modelId, m.dtype||'q4f16');
+      post({type:'log',msg:'loaded via '+path});
       try{ await gen({id:'__warm',messages:[{role:'user',content:'ok'}],max_tokens:2,temperature:0}); }catch(e2){}
-      post({type:'ready'});
+      post({type:'ready',path});
     } else if(m.type==='gen'){ gen(m); }
     else if(m.type==='interrupt'){ try{ stopper&&stopper.interrupt&&stopper.interrupt(); }catch(e3){} }
   }catch(err){ post({type:'error',error:String(err&&err.message||err)}); }
@@ -2029,7 +2053,7 @@ class TransformersEngine {
     this.generator = parts.generator || null;          // pipeline mode
     this.model = parts.model || null;                  // dedicated mode
     this.processor = parts.processor || null;
-    this.tokenizer = (this.processor && this.processor.tokenizer) || (this.generator && this.generator.tokenizer) || this.processor;
+    this.tokenizer = parts.tokenizer || (this.processor && this.processor.tokenizer) || (this.generator && this.generator.tokenizer) || this.processor;
     this.modelId = modelId;
     this.stopper = null;
     this.chat = { completions: { create: (opts) => this._create(opts) } };
@@ -2064,8 +2088,11 @@ class TransformersEngine {
 
     // Build the actual generation runner for each mode.
     let run;
-    if (this.model) {
+    if (this.model && this.processor) {
       const inputs = await this.processor.apply_chat_template(this._msgs(opts.messages, true), { add_generation_prompt: true, tokenize: true, return_dict: true });
+      run = (streamer) => this.model.generate({ ...inputs, ...genOpts, streamer });
+    } else if (this.model) { // text-only causal model
+      const inputs = await this.tokenizer.apply_chat_template(this._msgs(opts.messages, false), { add_generation_prompt: true, tokenize: true, return_dict: true });
       run = (streamer) => this.model.generate({ ...inputs, ...genOpts, streamer });
     } else {
       const msgs = this._msgs(opts.messages, false);
@@ -2186,9 +2213,17 @@ async function loadTransformers(modelId, profile) {
         }
       } catch (e) { console.warn('webgpu max-limits hint failed (using defaults)', e); }
 
-      if (TJS.Gemma4ForConditionalGeneration && TJS.AutoProcessor) {
+      phaseEl.textContent = 'pulling the weights';
+      // text-only FIRST (smaller, fits constrained devices), then multimodal, then pipeline
+      if (!engine && TJS.AutoModelForCausalLM && TJS.AutoTokenizer) {
         try {
-          phaseEl.textContent = 'pulling the weights';
+          const tokenizer = await TJS.AutoTokenizer.from_pretrained(modelId, { progress_callback: prog });
+          const model = await TJS.AutoModelForCausalLM.from_pretrained(modelId, { dtype, device: 'webgpu', progress_callback: prog });
+          engine = new TransformersEngine({ model, tokenizer }, modelId);
+        } catch (e) { console.warn('causal (text-only) load failed', e); }
+      }
+      if (!engine && TJS.Gemma4ForConditionalGeneration && TJS.AutoProcessor) {
+        try {
           const processor = await TJS.AutoProcessor.from_pretrained(modelId, { progress_callback: prog });
           const model = await TJS.Gemma4ForConditionalGeneration.from_pretrained(modelId, { dtype, device: 'webgpu', progress_callback: prog });
           engine = new TransformersEngine({ model, processor }, modelId);

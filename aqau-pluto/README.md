@@ -17,6 +17,15 @@ available on `web-llm` as lighter fallbacks.
 Both runtimes sit behind one interface (`engine.chat.completions.create`), so the
 rest of the app doesn't care which is loaded.
 
+**Text-only load (fixes the ~1.4 GB stall).** Gemma 4 is multimodal, and loading
+the full `Gemma4ForConditionalGeneration` also pulls the vision + audio encoders —
+which blows past iPhone's per-tab memory around the big decoder file. So the
+loader now does what the [`webml-community/Gemma-4-WebGPU`](https://huggingface.co/spaces/webml-community/Gemma-4-WebGPU)
+text-chat space does: load **`AutoModelForCausalLM` + `AutoTokenizer`** (text only)
+**first**, then fall back to the multimodal class, then the pipeline. It also
+retries **without the browser cache** (Safari chokes caching huge entries) and
+requests persistent storage — so the download no longer times out at ~1.4 GB.
+
 **The clever way (Web Worker).** Gemma loads and generates inside a dedicated
 **Web Worker** — the pattern the webml-community spaces use and the recommended
 way to run WebGPU inference. The main thread never freezes during the long
