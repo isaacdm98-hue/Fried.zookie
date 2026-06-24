@@ -1064,6 +1064,56 @@ body::before {
   align-items: center;
   padding-top: 10px;
 }
+
+/* atelier (draw & design) */
+.atelier-stage { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.atelier-tools {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--bone-4);
+}
+.atelier-tools::-webkit-scrollbar { display: none; }
+.atelier-tools .tool {
+  flex-shrink: 0;
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--bone-4);
+  background: var(--paper-2);
+  color: var(--bone-2);
+  font-family: 'EB Garamond', serif;
+  font-size: 15px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.atelier-tools .tool:active { transform: scale(0.92); }
+.atelier-tools .tool.on { border-color: var(--terracotta); color: var(--terracotta); }
+.tool-sep { width: 1px; height: 22px; background: var(--bone-4); flex-shrink: 0; }
+.swatches { display: flex; gap: 5px; flex-shrink: 0; }
+.swatch {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  border: 1px solid var(--bone-4);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.swatch.on { border-color: var(--bone); box-shadow: 0 0 0 2px var(--paper), 0 0 0 3px var(--bone-3); }
+.size-range { width: 88px; flex-shrink: 0; accent-color: var(--terracotta); }
+.atelier-canvas-wrap {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  background: var(--paper-2);
+  background-image:
+    linear-gradient(var(--bone-5) 1px, transparent 1px),
+    linear-gradient(90deg, var(--bone-5) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+#atelier-canvas { width: 100%; height: 100%; display: block; touch-action: none; }
 </style>
 </head>
 <body>
@@ -1140,6 +1190,7 @@ body::before {
     <div class="topbar">
       <h1><span class="sigil">♇</span> Aqau Pluto <i class="net-dot" title="network"></i></h1>
       <div class="right">
+        <button class="icon-btn" id="home-atelier" title="Atelier · draw &amp; design">✎</button>
         <button class="icon-btn" id="home-notes" title="Notebook">✑</button>
         <button class="icon-btn" id="home-wb" title="Whiteboard">☉</button>
         <button class="icon-btn" id="home-settings" title="Settings">⚙</button>
@@ -1163,6 +1214,7 @@ body::before {
       </div>
       <div class="title-mini" id="work-title">untitled</div>
       <div class="right">
+        <button class="icon-btn" id="work-atelier" title="Draw an asset for this build">✎</button>
         <button class="icon-btn" id="work-wb" title="Whiteboard">☉</button>
         <button class="icon-btn" id="work-settings" title="Settings">⚙</button>
       </div>
@@ -1252,6 +1304,41 @@ body::before {
     </div>
   </section>
 
+  <!-- ATELIER (draw & design) -->
+  <section class="screen" id="view-atelier" data-active="false">
+    <div class="topbar">
+      <div class="left"><button class="icon-btn" id="atelier-back" aria-label="Back">←</button></div>
+      <div class="title-mini" id="atelier-title">Atelier</div>
+      <div class="right"><button class="icon-btn" id="atelier-new" title="New drawing">＋</button></div>
+    </div>
+    <div id="design-list-wrap" class="model-list" style="flex:1;">
+      <div id="design-list"></div>
+    </div>
+    <div id="atelier-stage" class="atelier-stage" style="display:none;">
+      <div class="atelier-tools" id="atelier-tools">
+        <button class="tool on" data-tool="brush" title="Brush">✎</button>
+        <button class="tool" data-tool="line" title="Line">╱</button>
+        <button class="tool" data-tool="rect" title="Rectangle">▭</button>
+        <button class="tool" data-tool="ellipse" title="Ellipse">◯</button>
+        <button class="tool" data-tool="erase" title="Erase">⌫</button>
+        <span class="tool-sep"></span>
+        <span class="swatches" id="atelier-swatches"></span>
+        <input type="range" id="atelier-size" min="1" max="48" value="4" class="size-range" title="Size" />
+        <span class="tool-sep"></span>
+        <button class="tool" id="atelier-undo" title="Undo">↶</button>
+        <button class="tool" id="atelier-clear" title="Clear">␡</button>
+        <button class="tool" id="atelier-png" title="Export PNG">⤓</button>
+        <button class="tool" id="atelier-savebtn" title="Save to gallery">✓</button>
+        <button class="tool" id="atelier-use" title="Use in the build" style="display:none;width:auto;padding:0 10px;border-color:var(--terracotta);color:var(--terracotta);font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;">→ use</button>
+      </div>
+      <div class="atelier-canvas-wrap"><canvas id="atelier-canvas" resize="true"></canvas></div>
+      <div class="chat-input-row" style="padding:6px 10px calc(var(--safe-bot) + 8px);">
+        <textarea class="chat-input" id="atelier-prompt" rows="1" placeholder="ask Gemma to draw something…"></textarea>
+        <button class="chat-send" id="atelier-draw" aria-label="AI draw" title="Gemma draws it">✦</button>
+      </div>
+    </div>
+  </section>
+
 </div>
 
 <!-- FULLSCREEN -->
@@ -1294,6 +1381,17 @@ body::before {
     </select>
   </div>
   <div class="field">
+    <label>Design brief — shapes what Gemma builds</label>
+    <select id="set-brief">
+      <option value="none">None · let Aqau Pluto decide</option>
+      <option value="editorial">Warm editorial</option>
+      <option value="brutalist">Neo-brutalist</option>
+      <option value="soft">Soft &amp; calm</option>
+      <option value="terminal">Terminal green</option>
+      <option value="playful">Playful</option>
+    </select>
+  </div>
+  <div class="field">
     <label>Web research <span class="net-dot" style="vertical-align:middle"></span></label>
     <select id="set-useweb">
       <option value="on">On — Gemma may reach the web when online</option>
@@ -1329,6 +1427,8 @@ const defaults = {
   persona: 'default',
   cartridges: [],
   notes: [],
+  designs: [],
+  designBrief: 'none',
   activeCart: null,
   installAcked: false,
   // Pre-built astrology + studio knowledge, generated by a burst of requests on
@@ -1353,10 +1453,13 @@ const RT = {
   prebuilding: false,
   flipped: false,
   activeNote: null,
+  activeDesign: null,
+  paper: null,
+  atelier: { tool: 'brush', color: '#e8ddc8', size: 4, undo: [], start: null, preview: null },
 };
 
 /* ===================== ROUTING ===================== */
-const VIEWS = ['view-install','view-gpu','view-models','view-loading','view-home','view-work','view-whiteboard','view-notes'];
+const VIEWS = ['view-install','view-gpu','view-models','view-loading','view-home','view-work','view-whiteboard','view-notes','view-atelier'];
 function show(id) {
   VIEWS.forEach(v => {
     const el = document.getElementById(v);
@@ -1870,6 +1973,7 @@ function renderHome() {
 
 $('home-wb').onclick = () => { renderWhiteboard(); show('view-whiteboard'); seedWhiteboardLog(); };
 $('home-notes').onclick = openNotes;
+$('home-atelier').onclick = openAtelier;
 $('home-settings').onclick = openSettings;
 
 function createBlankCartridge() {
@@ -1880,6 +1984,7 @@ function createBlankCartridge() {
     code: '',
     versions: [],
     sections: [],
+    assets: [],
     log: [],
     created: Date.now(),
   };
@@ -2093,6 +2198,9 @@ async function sendChat() {
   inp.value = '';
   inp.style.height = 'auto';
 
+  // Slash commands (claude-code style) take priority.
+  if (text.startsWith('/')) { handleCommand(c, text); return; }
+
   // Set cartridge name from first prompt if untitled
   if (!c.firstPrompt) {
     c.firstPrompt = text;
@@ -2101,6 +2209,12 @@ async function sendChat() {
   }
   c.log.push({role:'user', content: text});
   appendMsg('user', text);
+
+  // Build mentions art/characters and nothing's drawn yet → offer the Atelier.
+  if (!c.code && !(c.assets && c.assets.length) &&
+      /\b(game|character|hero|player|mascot|avatar|enemy|sprite|logo|icon|illustration|artwork|drawing|comic|card)\b/i.test(text)) {
+    pushChatNote(c, 'want to draw it yourself first? <button class="chip" data-action="draw-asset" style="margin-top:4px;">✎ draw an asset</button><br><span style="opacity:.7">then tap “→ use” and I’ll build it in.</span>');
+  }
 
   // Astrology intent → whiteboard
   if (/\b(chart|transit|astrolog|aquarius|gemini|saturn|mars|venus|moon|sun|pluto|reading|horoscope)\b/i.test(text)) {
@@ -2263,6 +2377,15 @@ function buildMessages(c, userText, ground) {
   const msgs = [{ role:'system', content: personaSystemPrompt() }];
   if (c.code) msgs.push({ role:'system', content: `Most recent build (truncated):\n\n${c.code.slice(0, 4500)}` });
   if (ground) msgs.push({ role:'system', content: ground });
+  // Drawings the user made in the Atelier for this cartridge. Reuse the exact
+  // SVG when it's small enough to fit; otherwise tell the model it exists.
+  if (c.assets && c.assets.length) {
+    const recent = c.assets.slice(-2);
+    const blocks = recent.map(a => (a.svg && a.svg.length < 1700)
+      ? `Asset "${a.name}" — reuse this EXACT inline SVG (e.g. as a sprite/character/logo), don't redraw it:\n${a.svg}`
+      : `Asset "${a.name}" — the user drew this; recreate a faithful simple inline SVG version of it.`);
+    msgs.push({ role:'system', content: blocks.join('\n\n') });
+  }
   const recent = (c.log || []).filter(m => !m.note).slice(-6);
   recent.forEach(m => msgs.push({ role: m.role, content: m.content }));
   msgs.push({ role:'user', content: userText });
@@ -2282,9 +2405,11 @@ function personaSystemPrompt() {
 
   const codeRule = `When asked to BUILD or CHANGE: output ONE complete HTML document inside a single \`\`\`html ... \`\`\` block. Before the code: at most two short sentences naming what you're trying. After the code: at most one short sentence on what you'd try next. The HTML must be fully standalone — all CSS in <style>, all JS in <script>, no external dependencies except optional Google Fonts. Mobile-first. It must actually work when opened in a browser.`;
   const astroRule = `When invoked on chart, planets, transits, timing, signs — DO NOT emit code. Speak briefly, concretely. No woo.`;
+  const brief = activeBriefText();
+  const briefRule = brief ? `\n- When you BUILD, honour this design brief: ${brief}` : '';
   const noThink = profile?.isQwen3 ? `\n\n/no_think` : '';
 
-  return `${voice}\n\nUser: ${userBits.join(' ') || '(unknown)'}\n\nRules:\n- ${codeRule}\n- ${astroRule}${noThink}`;
+  return `${voice}\n\nUser: ${userBits.join(' ') || '(unknown)'}\n\nRules:\n- ${codeRule}\n- ${astroRule}${briefRule}${noThink}`;
 }
 
 async function explainSection(idx) {
@@ -2710,6 +2835,263 @@ async function noteAssist(kind) {
   } catch (e) { toast('assist failed'); }
 }
 
+/* ===================== ATELIER (draw & design · paper.js + AI SVG) ===================== */
+const ATELIER_PALETTE = ['#e8ddc8','#0d0b09','#c87b5a','#8a9b6e','#5e7589','#c89a4a','#ffffff','#b0473a'];
+const activeDesign = () => S.designs.find(d => d.id === RT.activeDesign);
+
+function openAtelier() { RT.atelierFor = null; updateAtelierUseBtn(); renderDesignList(); show('view-atelier'); }
+
+// Open the Atelier wired to a specific cartridge: draw an asset, then "→ use" it.
+function openAtelierForBuild(cartId) {
+  if (!cartId) return;
+  RT.atelierFor = cartId;
+  show('view-atelier');
+  newDesign();
+  updateAtelierUseBtn();
+  toast('draw it, then tap “→ use”');
+}
+function updateAtelierUseBtn() {
+  const b = $('atelier-use');
+  if (b) b.style.display = RT.atelierFor ? 'flex' : 'none';
+}
+async function useDrawingInBuild() {
+  const cartId = RT.atelierFor; if (!cartId) return;
+  const c = S.cartridges.find(x => x.id === cartId);
+  if (!c) { RT.atelierFor = null; updateAtelierUseBtn(); return; }
+  await ensurePaper();
+  let svg = '';
+  try { svg = RT.paper.project.exportSVG({ asString: true, bounds: 'content' }); } catch { try { svg = RT.paper.project.exportSVG({ asString: true }); } catch {} }
+  if (!svg || !/<path|<rect|<circle|<ellipse|<line|<polyline|<polygon|<g[\s>]/i.test(svg)) { toast('draw something first'); return; }
+  const d = activeDesign();
+  let name = (d && d.name && d.name !== 'untitled') ? d.name : (prompt('Name this asset (e.g. "main character")', 'main character') || 'drawing');
+  name = truncate(name.trim(), 40);
+  if (d) { d.name = name; d.svg = svg; }
+  c.assets = c.assets || [];
+  c.assets.push({ id: 'a' + Date.now().toString(36), name, svg });
+  saveState();
+  RT.atelierFor = null; updateAtelierUseBtn();
+  openCartridge(cartId);
+  const inp = $('chat-input');
+  const isChar = /character|hero|player|mascot|avatar|enemy|sprite/i.test(name);
+  inp.value = `Use my drawing “${name}” as ${isChar ? 'the main character' : 'an asset'} in this build.`;
+  inp.dispatchEvent(new Event('input'));
+  setTimeout(() => { try { inp.focus(); } catch {} }, 200);
+  toast('added “' + truncate(name, 22) + '” — send to wire it in');
+}
+
+function renderDesignList() {
+  RT.activeDesign = null;
+  $('atelier-stage').style.display = 'none';
+  $('design-list-wrap').style.display = 'block';
+  $('atelier-title').textContent = 'Atelier';
+  const list = $('design-list');
+  list.innerHTML = '';
+  if (!S.designs.length) {
+    list.innerHTML = `<div class="face-empty" style="padding:40px 20px;"><div class="glyph">✎</div><p>Draw by hand, or ask Gemma to draw it. Vector — export as SVG or PNG.</p></div>`;
+  }
+  S.designs.slice().reverse().forEach(d => {
+    const el = document.createElement('div');
+    el.className = 'model-card';
+    const thumb = d.svg ? `<div style="height:84px;overflow:hidden;border-radius:6px;background:#14100d;margin-top:6px;display:flex;align-items:center;justify-content:center;">${d.svg.replace('<svg', '<svg style="max-width:100%;max-height:84px;" ')}</div>` : '';
+    el.innerHTML = `<div class="name">${escapeHTML(d.name || 'untitled')}</div>${thumb}`;
+    el.onclick = () => openDesign(d.id);
+    list.appendChild(el);
+  });
+}
+
+function newDesign() {
+  const d = { id: 'd' + Date.now().toString(36), name: 'untitled', svg: '', created: Date.now() };
+  S.designs.push(d); saveState(); openDesign(d.id);
+}
+
+async function openDesign(id) {
+  RT.activeDesign = id;
+  const d = activeDesign(); if (!d) return;
+  $('design-list-wrap').style.display = 'none';
+  $('atelier-stage').style.display = 'flex';
+  $('atelier-title').textContent = d.name || 'untitled';
+  await ensurePaper();
+  const P = RT.paper;
+  try {
+    P.project.activeLayer.removeChildren();
+    if (d.svg) { P.project.importSVG(d.svg, { expandShapes: true }); fitAtelier(); }
+    P.view.update();
+  } catch (e) { console.warn('open design', e); }
+  RT.atelier.undo = [];
+}
+
+function fitAtelier() {
+  const P = RT.paper; if (!P) return;
+  const b = P.project.activeLayer.bounds;
+  if (!b || !b.width || !b.height) return;
+  P.project.activeLayer.fitBounds(P.view.bounds.scale(0.92));
+}
+
+let paperLoading = null;
+async function ensurePaper() {
+  if (RT.paper) return RT.paper;
+  if (paperLoading) return paperLoading;
+  paperLoading = (async () => {
+    const mod = await import('https://esm.run/paper');
+    const P = mod.default || mod;
+    const canvas = $('atelier-canvas');
+    P.setup(canvas);
+    const tool = new P.Tool();
+    const A = RT.atelier;
+    const stroke = () => new P.Color(A.color);
+    tool.onMouseDown = (ev) => {
+      pushAtelierUndo();
+      A.preview = null;
+      if (A.tool === 'brush') {
+        A.cur = new P.Path({ strokeColor: stroke(), strokeWidth: A.size, strokeCap: 'round', strokeJoin: 'round' });
+        A.cur.add(ev.point);
+      } else if (A.tool === 'erase') {
+        eraseAt(ev.point);
+      } else {
+        A.start = ev.point;
+      }
+    };
+    tool.onMouseDrag = (ev) => {
+      if (A.tool === 'brush' && A.cur) { A.cur.add(ev.point); }
+      else if (A.tool === 'erase') { eraseAt(ev.point); }
+      else if (A.start) {
+        if (A.preview) A.preview.remove();
+        A.preview = shapeFrom(P, A.tool, A.start, ev.point, stroke(), A.size);
+      }
+    };
+    tool.onMouseUp = (ev) => {
+      if (A.tool === 'brush' && A.cur) { A.cur.simplify(8); A.cur = null; }
+      else if (A.start && A.tool !== 'erase') {
+        if (A.preview) A.preview.remove();
+        shapeFrom(P, A.tool, A.start, ev.point, stroke(), A.size);
+        A.start = null; A.preview = null;
+      }
+      P.view.update();
+    };
+    RT.paper = P;
+    return P;
+  })();
+  return paperLoading;
+}
+
+function shapeFrom(P, tool, a, b, color, size) {
+  if (tool === 'line') return new P.Path.Line({ from: a, to: b, strokeColor: color, strokeWidth: size, strokeCap: 'round' });
+  const rect = new P.Rectangle(a, b);
+  if (tool === 'rect') return new P.Path.Rectangle({ rectangle: rect, strokeColor: color, strokeWidth: size });
+  if (tool === 'ellipse') return new P.Path.Ellipse({ rectangle: rect, strokeColor: color, strokeWidth: size });
+  return null;
+}
+function eraseAt(point) {
+  const P = RT.paper; if (!P) return;
+  const hit = P.project.hitTest(point, { stroke: true, fill: true, tolerance: Math.max(6, RT.atelier.size) });
+  if (hit && hit.item) hit.item.remove();
+}
+function pushAtelierUndo() {
+  const P = RT.paper; if (!P) return;
+  try { RT.atelier.undo.push(P.project.exportJSON()); if (RT.atelier.undo.length > 40) RT.atelier.undo.shift(); } catch {}
+}
+function atelierUndo() {
+  const P = RT.paper; if (!P || !RT.atelier.undo.length) return;
+  const snap = RT.atelier.undo.pop();
+  try { P.project.clear(); P.project.importJSON(snap); P.view.update(); } catch (e) { console.warn(e); }
+}
+function saveDesign() {
+  const d = activeDesign(); if (!d || !RT.paper) return;
+  try { d.svg = RT.paper.project.exportSVG({ asString: true, bounds: 'view' }); } catch (e) { d.svg = RT.paper.project.exportSVG({ asString: true }); }
+  if (!d.name || d.name === 'untitled') {
+    const n = prompt('Name this drawing', d.name === 'untitled' ? '' : d.name);
+    if (n) d.name = truncate(n.trim(), 40);
+  }
+  $('atelier-title').textContent = d.name || 'untitled';
+  saveState();
+  toast('saved to gallery');
+}
+async function exportDesignPNG() {
+  const canvas = $('atelier-canvas'); if (!canvas) return;
+  try { RT.paper?.view?.update(); } catch {}
+  const url = canvas.toDataURL('image/png');
+  const a = document.createElement('a');
+  a.href = url; a.download = ((activeDesign()?.name) || 'aqau-pluto') + '.png';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+async function aiDraw() {
+  if (!RT.modelLoaded) { toast('model not loaded'); return; }
+  if (RT.generating) { toast('one sec…'); return; }
+  const prompt = $('atelier-prompt').value.trim();
+  if (!prompt) { toast('say what to draw'); return; }
+  if (!RT.activeDesign) newDesign();
+  await ensurePaper();
+  $('atelier-prompt').value = '';
+  toast('Gemma is drawing…');
+  let ctx = [];
+  if (webEnabled()) { try { ctx = await gatherContext(prompt); } catch {} }
+  const srcBlock = ctx.length ? `\n\nReference (optional): ${ctx.map(c => truncate(c.text, 300)).join(' / ')}` : '';
+  try {
+    const out = await genOnce([
+      { role: 'system', content: 'You are an illustrator that outputs clean SVG. Reply with ONE <svg>…</svg> only — no markdown, no prose. Use viewBox="0 0 400 400". Use simple shapes, strokes and fills. Keep it under ~50 elements.' },
+      { role: 'user', content: `Draw: ${prompt}.${srcBlock}` },
+    ], { max_tokens: 1200, temperature: 0.7 });
+    const m = out.match(/<svg[\s\S]*?<\/svg>/i);
+    if (!m) { toast('no drawing came back'); return; }
+    pushAtelierUndo();
+    const P = RT.paper;
+    P.project.importSVG(m[0], { expandShapes: true, onError: () => {} });
+    fitAtelier();
+    P.view.update();
+  } catch (e) { console.warn('aiDraw', e); toast('draw failed'); }
+}
+
+/* ===================== DESIGN BRIEFS (open-design) ===================== */
+const DESIGN_BRIEFS = {
+  none: '',
+  editorial: 'Warm editorial: serif headings, generous whitespace, cream-and-ink palette, restrained, print-like.',
+  brutalist: 'Neo-brutalist: thick borders, hard offset shadows, very high contrast, monospace accents, raw and blocky.',
+  soft: 'Soft & calm: rounded corners, pastel tones, gentle shadows, airy spacing, friendly.',
+  terminal: 'Terminal: near-black background, green monospace text, minimal chrome, faint scanline feel.',
+  playful: 'Playful: bright primary colours, big rounded buttons, bouncy motion, cheerful.',
+};
+function activeBriefText() {
+  const b = DESIGN_BRIEFS[S.designBrief || 'none'];
+  return b ? `Design brief — ${b}` : '';
+}
+
+/* ===================== SLASH COMMANDS (claude-code) ===================== */
+const COMMAND_HELP = [
+  '/improve — refine the current build',
+  '/smaller — simplify it',
+  '/prettier — sharpen the visual design',
+  '/accessible — semantics, contrast, keyboard, aria',
+  '/faster — make it lighter',
+  '/deck <topic> — build a slide deck',
+  '/draw <thing> — open the Atelier and draw it',
+  '/help — this list',
+].join('\n');
+const BUILD_COMMANDS = {
+  improve: 'Improve the current build: tighten the code, fix bugs, keep the behaviour. Output the full updated HTML.',
+  smaller: 'Make the current build simpler and smaller without losing the point. Output the full HTML.',
+  prettier: 'Refine the visual design of the current build so it feels more considered and intentional. Output the full HTML.',
+  accessible: 'Improve accessibility of the current build: semantic HTML, colour contrast, keyboard support, aria labels. Output the full HTML.',
+  faster: 'Make the current build lighter and faster — less code, fewer reflows. Output the full HTML.',
+};
+function handleCommand(c, text) {
+  const parts = text.slice(1).split(/\s+/);
+  const cmd = (parts.shift() || '').toLowerCase();
+  const arg = parts.join(' ').trim();
+  pushChatNote(c, `<em>/${escapeHTML(cmd)}${arg ? ' ' + escapeHTML(arg) : ''}</em>`);
+  if (cmd === 'help' || !cmd) { pushChatNote(c, COMMAND_HELP.replace(/\n/g, '<br>')); return; }
+  if (cmd === 'draw') { openAtelier(); newDesign(); if (arg) { $('atelier-prompt').value = arg; aiDraw(); } return; }
+  if (cmd === 'deck') {
+    const brief = activeBriefText();
+    const p = `Build a single-file HTML slide deck about: ${arg || 'a topic of your choosing'}. Arrow-key and swipe navigation between slides, one idea per slide, big type. ${brief || 'Clean, minimal, confident style.'} Output the full HTML.`;
+    c.log.push({ role: 'user', content: p }); streamReply(c, p); return;
+  }
+  if (BUILD_COMMANDS[cmd]) {
+    if (!c.code) { pushChatNote(c, '<em>nothing built yet — describe what to make first.</em>'); return; }
+    c.log.push({ role: 'user', content: BUILD_COMMANDS[cmd] }); streamReply(c, BUILD_COMMANDS[cmd]); return;
+  }
+  pushChatNote(c, '<em>unknown command — try /help</em>');
+}
+
 /* ===================== VOICE ===================== */
 let recog = null;
 function getRecognizer() {
@@ -2772,6 +3154,52 @@ $('note-summary').onclick = () => noteAssist('summary');
 $('note-title').addEventListener('input', () => { const n = activeNote(); if (n) $('notes-title-mini').textContent = $('note-title').value.trim() || 'untitled'; });
 $('note-body').addEventListener('change', saveActiveNote);
 
+/* ===================== ATELIER WIRING ===================== */
+$('atelier-back').onclick = () => {
+  if (RT.activeDesign) { saveDesign(); renderDesignList(); }
+  else renderHome();
+};
+$('atelier-new').onclick = () => { if (RT.activeDesign) saveDesign(); newDesign(); };
+function renderSwatches() {
+  const wrap = $('atelier-swatches');
+  if (!wrap || wrap.children.length) return;
+  ATELIER_PALETTE.forEach((col, i) => {
+    const s = document.createElement('button');
+    s.className = 'swatch' + (col === RT.atelier.color ? ' on' : '');
+    s.style.background = col;
+    s.title = col;
+    s.onclick = () => {
+      RT.atelier.color = col;
+      [...wrap.children].forEach(c => c.classList.remove('on'));
+      s.classList.add('on');
+    };
+    wrap.appendChild(s);
+  });
+}
+document.querySelectorAll('#atelier-tools .tool[data-tool]').forEach(btn => {
+  btn.onclick = () => {
+    RT.atelier.tool = btn.dataset.tool;
+    document.querySelectorAll('#atelier-tools .tool[data-tool]').forEach(b => b.classList.toggle('on', b === btn));
+  };
+});
+$('atelier-size').addEventListener('input', e => { RT.atelier.size = +e.target.value || 4; });
+$('atelier-undo').onclick = atelierUndo;
+$('atelier-clear').onclick = () => { pushAtelierUndo(); try { RT.paper?.project.activeLayer.removeChildren(); RT.paper?.view.update(); } catch {} };
+$('atelier-png').onclick = exportDesignPNG;
+$('atelier-savebtn').onclick = saveDesign;
+$('atelier-use').onclick = useDrawingInBuild;
+$('atelier-draw').onclick = aiDraw;
+$('work-atelier').onclick = () => { if (S.activeCart) openAtelierForBuild(S.activeCart); };
+// Tappable suggestions inside the chat log (e.g. "draw the main character").
+$('chat-log').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-action]');
+  if (!b) return;
+  if (b.dataset.action === 'draw-asset' && S.activeCart) openAtelierForBuild(S.activeCart);
+});
+$('atelier-prompt').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); aiDraw(); } });
+$('atelier-prompt').addEventListener('input', e => { const t = e.target; t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 100) + 'px'; });
+renderSwatches();
+
 /* ===================== SETTINGS ===================== */
 const sheetEl = $('sheet');
 const sheetBg = $('sheet-bg');
@@ -2782,6 +3210,7 @@ async function openSettings() {
   $('set-birth-time').value = S.user.birthTime || '';
   $('set-birth-place').value = S.user.birthPlace || '';
   $('set-persona').value = S.persona || 'default';
+  $('set-brief').value = S.designBrief || 'none';
   $('set-useweb').value = (S.useWeb === false) ? 'off' : 'on';
   $('set-storage').textContent = await storageReadout();
   sheetBg.classList.add('show');
@@ -2795,6 +3224,7 @@ function closeSettings() {
   S.user.birthTime = $('set-birth-time').value.trim();
   S.user.birthPlace = $('set-birth-place').value.trim();
   S.persona = $('set-persona').value;
+  S.designBrief = $('set-brief').value;
   S.useWeb = $('set-useweb').value !== 'off';
   saveState();
   updateWebBtn();

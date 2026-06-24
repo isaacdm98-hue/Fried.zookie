@@ -41,6 +41,35 @@ A quiet markdown notebook (`✑` on the home bar) where Gemma can **improve**,
 **continue**, or **summarise** what you write — using the web for grounding when
 available.
 
+### Atelier — draw & design (`✎` on the home bar)
+A vector drawing studio built on **paper.js**:
+- brush, line, rectangle, ellipse and eraser tools, a colour palette and size,
+- undo / clear, export to **PNG** or **SVG**, a saved-drawing gallery,
+- **Gemma draws it** (`✦`): describe something and Gemma returns an SVG that's
+  imported straight onto the canvas — grounded with the web when online.
+
+**Draw assets into your builds.** In a cartridge, tap `✎` (or accept the
+"want to draw it yourself first?" prompt that appears when you mention a game,
+character, sprite, logo, etc.). You're dropped into the Atelier; draw it, tap
+**→ use**, and the drawing is handed back as an SVG asset. Gemma then reuses that
+exact artwork in the build — so the character you drew becomes the character in
+the game. Assets ride along in the cartridge for every later edit.
+
+This is the part that adapts the drawing repos. paper.js is the engine; the
+brush/shape/colour tooling takes after **Krita**'s painting workflow; the AI-SVG
+and gallery flow takes after **Penzil**'s local-first sketching. (Krita is a
+native C++ app and Penzil is a Vue + three.js *3D* tool — neither ports verbatim
+to a single-file PWA, so a true 3D grease-pencil mode is a clear next step rather
+than a half-working stub.)
+
+### Design briefs + slash commands
+- **Design briefs** (Settings) — pick a house style (editorial, brutalist, soft,
+  terminal, playful) and Gemma honours it on every build. This is open-design's
+  "design system shapes the artifact" idea, fitted to Aqau Pluto's cartridges.
+- **Slash commands** in chat (claude-code style): `/improve`, `/smaller`,
+  `/prettier`, `/accessible`, `/faster`, `/deck <topic>`, `/draw <thing>`,
+  `/help`.
+
 ## Why some odysseus features aren't here
 [odysseus](https://github.com/pewdiepie-archdaemon/odysseus) is a server-side
 (Python/Docker) workspace. Its server-only pieces — IMAP/SMTP email, CalDAV
