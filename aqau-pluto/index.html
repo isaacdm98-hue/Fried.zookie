@@ -1185,12 +1185,12 @@ body.aq-live .aq-frame-svg, body.aq-live .aq-uline-svg, body.aq-live #wb-svg g {
 body.aq-live .living { filter: url(#aq-boil); }
 body.aq-live .splash .mark { filter: url(#aq-boil); }
 @keyframes aqBreath { 0%,100% { transform: scale(1) rotate(-1deg); } 50% { transform: scale(1.05) rotate(1.5deg); } }
-body.aq-anim .splash .mark { animation: aqBreath 3.2s ease-in-out infinite; }
+body.aq-live .splash .mark { animation: aqBreath 3.2s ease-in-out infinite; }
 /* Paper grain shifts in steps so the whole surface feels drawn-by-hand, alive. */
 @keyframes aqGrain { to { background-position: 240px 140px; } }
-body.aq-anim::before { animation: aqGrain 1.1s steps(5) infinite; }
+body.aq-live::before { animation: aqGrain 1.1s steps(5) infinite; }
 @media (prefers-reduced-motion: reduce) {
-  body.aq-anim .splash .mark, body.aq-anim::before { animation: none; }
+  body.aq-live .splash .mark, body.aq-live::before { animation: none; }
   body.aq-live .living, body.aq-live .splash .mark { filter: none; }
 }
 </style>
@@ -1509,6 +1509,11 @@ body.aq-anim::before { animation: aqGrain 1.1s steps(5) infinite; }
       <option value="on">Hand-drawn motion · on (draws itself in)</option>
       <option value="off">Hand-drawn motion · off (still &amp; plain)</option>
     </select>
+    <div style="height:6px"></div>
+    <select id="set-livefilter">
+      <option value="off">Live boiling motion · off (recommended on iPhone)</option>
+      <option value="on">Live boiling motion · on (can be heavy / may crash iOS)</option>
+    </select>
   </div>
   <div class="field">
     <label>Design brief — shapes what Gemma builds</label>
@@ -1618,6 +1623,7 @@ const defaults = {
   designBrief: 'none',
   chartEngine: 'hand',
   handDrawn: true,
+  liveFilter: false, // boiling-line filter (heavy; can crash iOS) — opt-in
   haptics: true,
   useWeb: true,
   // Gemma load mode: 'text' (light, fits iPhone) or 'multimodal' (image + audio).
@@ -3376,7 +3382,10 @@ function animateDrawIn(container) {
 /* ── GLOBAL UI MOTION ── reveal lists, sketch-frame cards, master switch ── */
 function setAnimEnabled() {
   document.body.classList.toggle('aq-anim', S.handDrawn !== false);
-  document.body.classList.toggle('aq-live', handMotion()); // boiling-line only when motion is on
+  // The boiling-line filter is GPU-heavy and can crash iOS Safari, so it's
+  // opt-in (Settings → Live boiling motion). Cheap one-shot entrances + static
+  // hand-drawn frames stay on with handDrawn.
+  document.body.classList.toggle('aq-live', handMotion() && S.liveFilter === true);
 }
 // Stagger a set of freshly-rendered elements into view (and optionally draw a
 // hand-drawn rough frame behind each). Runs after a frame so sizes are settled.
@@ -4353,6 +4362,7 @@ async function openSettings() {
   $('set-brief').value = S.designBrief || 'none';
   $('set-chartengine').value = S.chartEngine === 'astrochart2' ? 'astrochart2' : 'hand';
   $('set-handdrawn').value = (S.handDrawn === false) ? 'off' : 'on';
+  $('set-livefilter').value = (S.liveFilter === true) ? 'on' : 'off';
   $('set-useweb').value = (S.useWeb === false) ? 'off' : 'on';
   $('set-storage').textContent = await storageReadout();
   renderMemoryPanel();
@@ -4382,6 +4392,7 @@ function closeSettings() {
   S.designBrief = $('set-brief').value;
   S.chartEngine = $('set-chartengine').value;
   S.handDrawn = $('set-handdrawn').value !== 'off';
+  S.liveFilter = $('set-livefilter').value === 'on';
   S.useWeb = $('set-useweb').value !== 'off';
   saveState();
   updateWebBtn();
