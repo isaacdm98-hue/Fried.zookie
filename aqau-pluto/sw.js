@@ -4,7 +4,7 @@
 // Cross-origin requests (HF weights, esm.run, jsdelivr, fonts, web research)
 // are passed straight through — see the fetch handler.
 
-const VERSION = 'aqau-pluto-v27-astro-memory'
+const VERSION = 'aqau-pluto-v28-download-smooth'
 const SHELL = [
   './',
   './index.html',
