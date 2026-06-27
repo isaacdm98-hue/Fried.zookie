@@ -1202,7 +1202,7 @@ var APP = (function () {
   // ---------- state ----------
   var STATE = {
     birth: null, // {name,y,mo,d,hour,min,tz,lat,lon,place,timeKnown}
-    settings: { zodiac: 'tropical', house: 'placidus', orbScale: 1, ai: false },
+    settings: { zodiac: 'tropical', house: 'placidus', orbScale: 1, ai: false, theme: 'light' },
     chart: null, screen: 'chart', chartView: 'dial',
     people: [] // [{id,name,rel,famrel,y,mo,d,hour,min,tz,iana,lat,lon,place,timeKnown}]
   };
@@ -2740,12 +2740,25 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
   }
   var DATA = APP._data();
 
+  // Palettes are mutated in place by applyTheme() so every existing INK/ACC/GROUNDS read
+  // (called at draw time) picks up the active theme without rewiring the whole UI.
   var INK = [26, 23, 20];
   var ACC = [210, 82, 28];
   var GROUNDS = {
     onboard: [230, 222, 204], chart: [230, 222, 204],
     read: [170, 181, 160], tarot: [206, 188, 168], settings: [200, 202, 199], learn: [158, 170, 184], people: [196, 178, 186]
   };
+  var THEMES = {
+    light: { ink: [26, 23, 20], acc: [210, 82, 28], g: { onboard: [230, 222, 204], chart: [230, 222, 204], read: [170, 181, 160], tarot: [206, 188, 168], settings: [200, 202, 199], learn: [158, 170, 184], people: [196, 178, 186] } },
+    dark: { ink: [232, 226, 213], acc: [235, 110, 58], g: { onboard: [20, 19, 25], chart: [20, 19, 25], read: [17, 24, 20], tarot: [27, 20, 17], settings: [22, 22, 27], learn: [15, 19, 29], people: [25, 18, 25] } }
+  };
+  function applyTheme() {
+    var t = THEMES[(APP.STATE.settings && APP.STATE.settings.theme === 'dark') ? 'dark' : 'light'], k;
+    INK[0] = t.ink[0]; INK[1] = t.ink[1]; INK[2] = t.ink[2];
+    ACC[0] = t.acc[0]; ACC[1] = t.acc[1]; ACC[2] = t.acc[2];
+    for (k in t.g) if (t.g.hasOwnProperty(k)) GROUNDS[k] = t.g[k].slice();
+  }
+  applyTheme();
   var ELHUE = { fire: [199, 78, 36], earth: [150, 120, 40], air: [40, 90, 120], water: [90, 70, 150] };
   var SANS = '"Helvetica Neue", Helvetica, Arial, sans-serif';
   var MONO = '"SF Mono", Menlo, Consolas, monospace';
@@ -2928,56 +2941,48 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var s = txt.toUpperCase(), cx = x; for (var i = 0; i < s.length; i++) { p.text(s[i], cx, sY(ly)); cx += p.textWidth(s[i]) + 2; }
     }
 
-    // ============ BACKGROUND = YOUR ELEMENTAL SIGNATURE ============
-    // particle counts match the chart's element percentages; each element moves in character.
+    // ============ BACKGROUND = A SLOW CONSTELLATION SKY (your elemental signature) ============
+    // Stylised constellations — stars joined into figures — tinted by your element balance and
+    // turning gently as one quiet celestial movement. The single beautiful centrepiece.
+    var CONSTS = [
+      { s: [[0.0, 0.0], [0.22, 0.06], [0.44, 0.03], [0.64, 0.12], [0.66, 0.36], [0.44, 0.34], [0.42, 0.6]], e: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 0], [5, 6]] }, // the plough
+      { s: [[0.12, 0.0], [0.0, 0.5], [0.5, 1.0], [0.64, 0.46], [0.52, 0.0], [0.32, 0.5], [0.44, 0.52], [0.38, 0.66]], e: [[0, 5], [5, 1], [1, 2], [4, 3], [3, 2], [0, 4], [5, 6], [6, 7]] }, // orion
+      { s: [[0.0, 0.34], [0.22, 0.0], [0.48, 0.26], [0.72, 0.02], [0.92, 0.3]], e: [[0, 1], [1, 2], [2, 3], [3, 4]] }, // cassiopeia
+      { s: [[0.5, 0.0], [0.5, 0.38], [0.5, 0.78], [0.5, 1.0], [0.16, 0.46], [0.84, 0.46]], e: [[0, 1], [1, 2], [2, 3], [4, 1], [1, 5]] }, // cygnus
+      { s: [[0.0, 0.05], [0.16, 0.12], [0.32, 0.22], [0.48, 0.38], [0.58, 0.6], [0.5, 0.82], [0.34, 0.92], [0.6, 0.0]], e: [[7, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6]] }, // scorpius
+      { s: [[0.0, 0.0], [0.34, 0.12], [0.16, 0.42], [0.5, 0.5], [0.22, 0.78]], e: [[0, 1], [1, 3], [3, 4], [4, 2], [2, 0]] }, // lyra
+      { s: [[0.0, 0.0], [0.52, 0.1], [0.26, 0.46]], e: [[0, 1], [1, 2], [2, 0]] } // triangulum
+    ];
     function buildField() {
-      var n = Math.max(120, Math.min(230, Math.floor(W * H / 4600)));
       var c = APP.STATE.chart, els = ['fire', 'earth', 'air', 'water'];
       var wts = c ? [c.elements.fire, c.elements.earth, c.elements.air, c.elements.water] : [25, 25, 25, 25];
-      var bag = [];
-      for (var e = 0; e < 4; e++) { var cnt = Math.max(1, Math.round(n * wts[e] / 100)); for (var k = 0; k < cnt; k++) bag.push(els[e]); }
+      var total = (wts[0] + wts[1] + wts[2] + wts[3]) || 100;
+      var count = Math.max(5, Math.min(9, Math.round(W * H / 95000)));
       UI.field = [];
-      for (var i = 0; i < bag.length; i++) UI.field.push({ x: Math.random() * W, y: Math.random() * H, el: bag[i], sz: [2, 3, 3, 4, 5][Math.floor(Math.random() * 5)], vx: 0, vy: 0, ph: Math.random() * 6.28, tw: Math.random() * 6.28 });
+      for (var i = 0; i < count; i++) {
+        var r = Math.random() * total, acc = 0, ei = 0; for (var e = 0; e < 4; e++) { acc += wts[e]; if (r <= acc) { ei = e; break; } }
+        UI.field.push({ el: els[ei], cst: CONSTS[i % CONSTS.length], cx: Math.random() * W, cy: Math.random() * H, scale: Math.min(W, H) * (0.13 + Math.random() * 0.13), rot: Math.random() * 6.28, tw: Math.random() * 6.28 });
+      }
     }
     function drawField() {
-      var still = reduced(), mx = UI.ptrX, my = UI.ptrY, down = UI.ptrDown, fc = p.frameCount;
-      var ptrActive = down || (nowT() - (UI.ptrMoveT || 0) < 140);
-      var F = UI.field, nF = F.length, i;
-      // 1) move + integrate (bolder drift, stronger pointer push)
-      for (i = 0; i < nF; i++) {
-        var q = F[i];
-        if (!still) {
-          var ang = p.noise(q.x * 0.0016, q.y * 0.0016, fc * 0.004) * Math.PI * 4;
-          var sp = q.el === 'fire' ? 1.05 : q.el === 'air' ? 0.62 : q.el === 'water' ? 0.45 : 0.14;
-          var dxm = Math.cos(ang) * sp, dym = Math.sin(ang) * sp;
-          if (q.el === 'fire') { dxm += (Math.random() - 0.5) * 1.0; dym += (Math.random() - 0.5) * 1.0; }
-          if (q.el === 'water') { dym += Math.sin(fc * 0.03 + q.ph) * 0.6; }
-          q.x += dxm; q.y += dym;
-        }
-        var dx = q.x - mx, dy = q.y - my, d2 = dx * dx + dy * dy, R = 140;
-        if (ptrActive && d2 < R * R && !still) { var d = Math.sqrt(d2) + 0.01, f = (R - d) / R * (down ? 3.4 : 1.8); q.vx += dx / d * f; q.vy += dy / d * f; }
-        q.vx *= 0.86; q.vy *= 0.86; q.x += q.vx; q.y += q.vy;
-        if (q.x < -10) q.x = W + 10; if (q.x > W + 10) q.x = -10; if (q.y < -10) q.y = H + 10; if (q.y > H + 10) q.y = -10;
-      }
-      // 2) constellation links — the "alive" layer (capped subset for performance)
-      if (!still) {
-        var L = Math.min(nF, 150), LD2 = 60 * 60;
-        for (var a2 = 0; a2 < L; a2++) {
-          var qa = F[a2], links = 0;
-          for (var b2 = a2 + 1; b2 < L && links < 3; b2++) {
-            var qb = F[b2], ex = qa.x - qb.x, ey = qa.y - qb.y, e2 = ex * ex + ey * ey;
-            if (e2 < LD2) { strokec(ELHUE[qa.el], (1 - e2 / LD2) * 48); p.strokeWeight(1); p.line(qa.x, qa.y, qb.x, qb.y); links++; }
-          }
-        }
-      }
-      // 3) marks — bolder, glowing, twinkling per element character
+      var still = reduced(), fc = p.frameCount, F = UI.field, cxC = W / 2, cyC = H / 2;
+      var rot = still ? 0.6 : fc * 0.00016, ca = Math.cos(rot), sa = Math.sin(rot); // the whole sky turns, very slowly
+      var mx = UI.ptrX, my = UI.ptrY, ptr = (UI.ptrDown || (nowT() - (UI.ptrMoveT || 0) < 160)) && !still;
       p.rectMode(p.CENTER);
-      for (i = 0; i < nF; i++) {
-        var m = F[i], col = ELHUE[m.el], tw = still ? 1 : (0.6 + 0.4 * Math.sin(fc * 0.05 + (m.tw || 0)));
-        if (m.el === 'fire') { p.noStroke(); fillc(col, 26 * tw); p.ellipse(m.x, m.y, m.sz * 4, m.sz * 4); strokec(col, 165 * tw); p.strokeWeight(1.4); p.line(m.x, m.y - m.sz - 1, m.x, m.y + m.sz + 1); p.line(m.x - m.sz - 1, m.y, m.x + m.sz + 1, m.y); }
-        else if (m.el === 'air') { p.noFill(); strokec(col, 125 * tw); p.strokeWeight(1.2); p.line(m.x - m.sz, m.y, m.x + m.sz, m.y); }
-        else if (m.el === 'earth') { p.noStroke(); fillc(col, 115 * tw); p.rect(m.x, m.y, m.sz + 0.5, m.sz + 0.5); }
-        else { p.noStroke(); fillc(col, 30 * tw); p.ellipse(m.x, m.y, m.sz * 3, m.sz * 3); fillc(col, 125 * tw); p.ellipse(m.x, m.y, m.sz, m.sz); }
+      for (var i = 0; i < F.length; i++) {
+        var inst = F[i], col = ELHUE[inst.el], st = inst.cst.s, ed = inst.cst.e;
+        var bx = inst.cx - cxC, by = inst.cy - cyC, gx = cxC + bx * ca - by * sa, gy = cyC + bx * sa + by * ca;
+        if (ptr) { var ddx = gx - mx, ddy = gy - my, dd = Math.sqrt(ddx * ddx + ddy * ddy) + 0.01; if (dd < 210) { var pf = (210 - dd) / 210 * 7; gx += ddx / dd * pf; gy += ddy / dd * pf; } }
+        var cr = Math.cos(inst.rot), sr = Math.sin(inst.rot), s = inst.scale, pts = [], k;
+        for (k = 0; k < st.length; k++) { var ox = (st[k][0] - 0.4) * s, oy = (st[k][1] - 0.4) * s; pts.push([gx + ox * cr - oy * sr, gy + ox * sr + oy * cr]); }
+        strokec(col, 30); p.strokeWeight(1);
+        for (k = 0; k < ed.length; k++) { var a = pts[ed[k][0]], b = pts[ed[k][1]]; if (a && b) p.line(a[0], a[1], b[0], b[1]); }
+        p.noStroke();
+        for (k = 0; k < pts.length; k++) {
+          var tw = still ? 0.8 : (0.55 + 0.45 * Math.sin(fc * 0.035 + inst.tw + k)), bright = (k % 3 === 0), pr = pts[k];
+          if (bright) { fillc(col, 24 * tw); p.ellipse(pr[0], pr[1], 9, 9); }
+          fillc(col, (bright ? 150 : 95) * tw); p.ellipse(pr[0], pr[1], bright ? 3.4 : 2.2, bright ? 3.4 : 2.2);
+        }
       }
       p.rectMode(p.CORNER);
     }
@@ -2999,9 +3004,9 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     function drawQuip() {
       if (UI.screen === 'onboard' || !APP.STATE.chart || reduced()) { UI.quip = null; return; }
       var t = nowT();
-      if (!UI.quip) { if (!UI.quipNext) UI.quipNext = t + 4500; if (t > UI.quipNext) launchQuip(); return; }
+      if (!UI.quip) { if (!UI.quipNext) UI.quipNext = t + 22000; if (t > UI.quipNext) launchQuip(); return; }
       var q = UI.quip, prog = (t - q.t0) / q.dur;
-      if (prog >= 1) { UI.quip = null; UI.quipNext = t + 7000 + Math.random() * 9000; return; }
+      if (prog >= 1) { UI.quip = null; UI.quipNext = t + 45000 + Math.random() * 45000; return; }
       p.textFont(SERIF); p.textSize(18); p.textStyle(p.ITALIC);
       var twq = p.textWidth(q.text), startX = q.dir > 0 ? -twq - 20 : W + 20, endX = q.dir > 0 ? W + 20 : -twq - 20;
       var a = prog < 0.16 ? prog / 0.16 : prog > 0.84 ? (1 - prog) / 0.16 : 1;
@@ -3781,6 +3786,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var x = sx(), w = cw(), ly = 18, st = APP.STATE.settings, gi = cl01(1 - (nowT() - UI.fxT) / 500);
       eyebrow('Tune the chart', x, ly); ly += 22;
       p.textStyle(p.BOLD); glitchText('Settings', x, sY(ly), 34, SANS, INK, p.LEFT, p.TOP, gi); normal(); ly += 50;
+      ly += toggleRow('Theme', [['light', 'Light'], ['dark', 'Dark']], st.theme || 'light', ly, function (v) { st.theme = v; APP.save(); applyTheme(); UI.fxT = nowT(); });
       ly += toggleRow('Zodiac', [['tropical', 'Tropical'], ['sidereal', 'Sidereal']], st.zodiac, ly, function (v) { st.zodiac = v; recompute(); });
       ly += toggleRow('House system', [['whole', 'Whole'], ['equal', 'Equal'], ['placidus', 'Placidus']], st.house, ly, function (v) { st.house = v; recompute(); });
       eyebrow('Aspect orb  \u00D7' + (st.orbScale || 1).toFixed(1), x, ly); ly += 20;
@@ -3890,16 +3896,12 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     }
     // glitch reveal overlay on screen change
     function drawTransition() {
-      var prog = cl01((nowT() - UI.fxT) / 420); if (prog >= 1) return;
-      // bold colour-block wipe with chromatic edges + glitch shards spitting off the leading edge
-      var band = -W + prog * 2 * W;
+      var prog = cl01((nowT() - UI.fxT) / 520); if (prog >= 1) return;
+      // a calm, clean colour-block wipe with a single accent edge
+      var band = -W + eCubic(prog) * 2 * W;
       p.noStroke();
       fillc(INK); p.rect(band, 0, W, H);
-      p.fill(214, 44, 44, 200); p.rect(band + W - 2, 0, 5, H);     // red fringe
-      p.fill(44, 110, 214, 200); p.rect(band + W + 3, 0, 4, H);    // blue fringe
-      fillc(ACC); p.rect(band + W - 9, 0, 7, H); fillc(ACC); p.rect(band, 0, 5, H);
-      if (prog < 0.8) { for (var i = 0; i < 9; i++) { var yy = Math.random() * H, sw = 16 + Math.random() * 46; fillc(GROUNDS[UI.screen]); p.rect(band + W - 9, yy, sw, 2 + Math.random() * 4); fillc(ACC, 180); p.rect(band + W - 9 + sw, yy, 6, 2); } }
-      if (prog > 0.44 && prog < 0.56) { fillc([245, 240, 230], (1 - Math.abs(prog - 0.5) / 0.06) * 42); p.rect(0, 0, W, H); } // mid-cover flash
+      fillc(ACC); p.rect(band + W - 5, 0, 5, H);
     }
 
     // ---------- lifecycle ----------
