@@ -1203,17 +1203,21 @@ var APP = (function () {
   var STATE = {
     birth: null, // {name,y,mo,d,hour,min,tz,lat,lon,place,timeKnown}
     settings: { zodiac: 'tropical', house: 'placidus', orbScale: 1, ai: false },
-    chart: null, screen: 'chart', chartView: 'dial'
+    chart: null, screen: 'chart', chartView: 'dial',
+    people: [] // [{id,name,rel,famrel,y,mo,d,hour,min,tz,iana,lat,lon,place,timeKnown}]
   };
   function save() {
     try {
       localStorage.setItem('aqau_birth', JSON.stringify(STATE.birth));
       localStorage.setItem('aqau_settings', JSON.stringify(STATE.settings));
+      // drop cached charts (underscore keys) before persisting people
+      localStorage.setItem('aqau_people', JSON.stringify(STATE.people, function (k, v) { return k.charAt(0) === '_' ? undefined : v; }));
     } catch (e) {}
   }
   function load() {
     try {
       var b = localStorage.getItem('aqau_birth'); if (b) STATE.birth = JSON.parse(b);
+      var pp = localStorage.getItem('aqau_people'); if (pp) STATE.people = JSON.parse(pp) || [];
       var s = localStorage.getItem('aqau_settings'); if (s) {
         var ss = JSON.parse(s); for (var k in ss) if (ss.hasOwnProperty(k)) STATE.settings[k] = ss[k];
       }
@@ -2100,6 +2104,70 @@ var APP = (function () {
     return out;
   }
 
+  // ================= relationships & synastry (on-device, no AI) =================
+  // Add friends / dates / family by birth date; compare charts and link the live sky to theirs.
+  function addPerson(person) {
+    person.id = 'p' + (new Date().getTime()).toString(36) + Math.floor(Math.random() * 1000);
+    STATE.people.push(person); save(); return person;
+  }
+  function removePerson(id) { for (var i = 0; i < STATE.people.length; i++) if (STATE.people[i].id === id) { STATE.people.splice(i, 1); break; } save(); }
+  function personChart(person) {
+    var tag = STATE.settings.zodiac + '|' + STATE.settings.house;
+    if (!person._chart || person._ctag !== tag) { person._chart = computeChart(person, STATE.settings); person._ctag = tag; }
+    return person._chart;
+  }
+  function clearPersonCharts() { for (var i = 0; i < STATE.people.length; i++) { STATE.people[i]._chart = null; } }
+
+  var SHORTFN = { sun: 'core self', moon: 'feelings', mercury: 'mind', venus: 'love and values', mars: 'drive', jupiter: 'growth and luck', saturn: 'commitment and limits', uranus: 'need for freedom', neptune: 'dreams and ideals', pluto: 'depth and power' };
+  function shortFn(k) { return SHORTFN[k] || nameFor(k); }
+  function relAspect(sep) {
+    for (var a = 0; a < DATA.ASPECTS.length; a++) {
+      var asp = DATA.ASPECTS[a];
+      var orb = (asp.key === 'conjunction' || asp.key === 'opposition') ? 6 : (asp.key === 'trine' || asp.key === 'square') ? 5 : 4;
+      if (Math.abs(sep - asp.angle) <= orb) return { asp: asp, orb: Math.abs(sep - asp.angle) };
+    }
+    return null;
+  }
+  // inter-aspects: their planets to yours
+  function synastry(cMe, cThem) {
+    var out = [], i, j;
+    for (i = 0; i < PATKEYS.length; i++) { var mk = PATKEYS[i]; if (!cMe.planets[mk]) continue;
+      for (j = 0; j < PATKEYS.length; j++) { var tk = PATKEYS[j]; if (!cThem.planets[tk]) continue;
+        var m = relAspect(angSep(cMe.planets[mk].lon, cThem.planets[tk].lon));
+        if (m) out.push({ mine: mk, theirs: tk, asp: m.asp, orb: m.orb });
+      }
+    }
+    out.sort(function (x, y) { return x.orb - y.orb; });
+    return out;
+  }
+  function synLine(s) {
+    return 'Their ' + nameFor(s.theirs) + ' ' + s.asp.key + ' your ' + nameFor(s.mine) + ' — their ' + shortFn(s.theirs) + ' ' + aspVerb(s.asp) + ' your ' + shortFn(s.mine) + ', ' + aspTone(s.asp) + '.';
+  }
+  function bondHeadline(cMe, cThem, syn) {
+    var flow = 0, fric = 0, i;
+    for (i = 0; i < syn.length; i++) { var q = syn[i].asp.quality; if (q === 'flow' || q === 'opportunity') flow++; else if (q === 'tension' || q === 'friction') fric++; }
+    var meSun = DATA.SIGNS[cMe.planets.sun.sign], themSun = DATA.SIGNS[cThem.planets.sun.sign];
+    var tone = flow > fric * 1.4 ? 'an easy, supportive current runs between you' : fric > flow * 1.4 ? 'there’s real friction here — the kind that grows you or grates, depending how you handle it' : 'a genuine mix of ease and friction — a bond with texture';
+    return 'Your ' + meSun.name + ' Sun meets their ' + themSun.name + ' Sun: ' + elementMix(meSun.element, themSun.element) + '. Across both charts, ' + tone + ' (' + flow + ' flowing, ' + fric + ' challenging contacts).';
+  }
+  // a transit in today's sky touching BOTH charts at once
+  function sharedTransits(cMe, cThem) {
+    var ctx = transitNow(), a = transitsToNatal(ctx.tp, ctx.ay, cMe), b = transitsToNatal(ctx.tp, ctx.ay, cThem);
+    var mineBy = {}, out = [], seen = {}, i;
+    for (i = 0; i < a.length; i++) if (!mineBy[a[i].tp]) mineBy[a[i].tp] = a[i];
+    for (i = 0; i < b.length; i++) { var t = b[i]; if (mineBy[t.tp] && !seen[t.tp]) { seen[t.tp] = 1; out.push('Transiting ' + nameFor(t.tp) + ' is touching both charts right now — your ' + nameFor(mineBy[t.tp].np) + ' and their ' + nameFor(t.np) + ' — a theme you’re both feeling at once.'); } }
+    return out;
+  }
+  function composeBond(person) {
+    var cMe = STATE.chart, cThem = personChart(person), syn = synastry(cMe, cThem), blocks = [];
+    blocks.push({ label: 'Between you', text: bondHeadline(cMe, cThem, syn) });
+    var top = syn.slice(0, 5).map(synLine); if (top.length) blocks.push({ label: 'Strongest contacts', lines: top });
+    var shared = sharedTransits(cMe, cThem); if (shared.length) blocks.push({ label: 'Live between you — today', text: shared.slice(0, 2).join(' ') });
+    var trT = composeTransits(cThem);
+    if (trT.daily.length) blocks.push({ label: 'Live for them — today', text: 'What the sky is doing to ' + (person.name || 'them') + ' now: ' + trT.daily.slice(0, 2).map(transitSentence).join(' ') });
+    return { blocks: blocks, syn: syn };
+  }
+
   function renderRead() {
     var c = STATE.chart, wrap = el('div', { class: 'screen pad' });
     wrap.appendChild(el('div', { class: 'eyebrow', text: 'READ' }));
@@ -2337,32 +2405,37 @@ var APP = (function () {
     host.appendChild(c);
     loadCardImages(card, imgEl, spin, count, btn);
   }
+  // SAFETY: discover broadly but accept a result ONLY if its filename belongs to a known
+  // public-domain tarot deck. Arbitrary/offensive uploads can never pass this allow-list.
+  var DOM_TAROT_DECK_RE = new RegExp('^File:\\s*(RWS[ _]Tarot|Rider[-_ ]Waite|(Cups|Wands|Swords|Pents)\\s*\\d|Tarot[ _](de[ _])?Marseille|Marseille|Jean[ _]Dodal|Dodal|Nicolas[ _]Conver|Conver|(Oswald[ _])?Wirth|Sola[-_ ]?Busca|Visconti|Minchiate|Tarot[ _]Nouveau|Grand[ _]Etteilla|Etteilla|Mantegna|Tarocc(o|hi)|Swiss[ _]1JJ|1JJ|Papus|Waite[ _]Smith|Pamela[ _]Colman)', 'i');
+  var DOM_TAROT_BAD_RE = /(swastika|hakenkreuz|nazi|hitler|reich|1488|white[ _-]?power|confeder)/i;
+  function safeTarotTitleDom(t) { t = t || ''; return DOM_TAROT_DECK_RE.test(t) && !DOM_TAROT_BAD_RE.test(t); }
+  function rwsFileName(card) {
+    if (card.arcana === 'major') return 'RWS_Tarot_' + pad(card.num) + '_' + card.name.replace(/^The /, '').replace(/ /g, '_') + '.jpg';
+    var sc = { Wands: 'Wands', Cups: 'Cups', Swords: 'Swords', Pentacles: 'Pents' }[card.arcana];
+    return sc ? (sc + pad(card.num) + '.jpg') : null;
+  }
   function loadCardImages(card, imgEl, spin, count, btn) {
-    TAROT_STATE.imgs = []; TAROT_STATE.idx = 0;
-    var urls = [];
-    // best-effort classic RWS via stable FilePath for majors
-    if (card.arcana === 'major') {
-      urls.push('https://commons.wikimedia.org/wiki/Special:FilePath/RWS_Tarot_' + pad(card.num) + '_' + card.name.replace(/^The /, '').replace(/ /g, '_') + '.jpg');
-    }
+    TAROT_STATE.imgs = []; TAROT_STATE.idx = 0; var seen = {};
     function tryAdd(url) {
+      if (!url || seen[url]) return; seen[url] = 1;
       var im = new Image();
       im.onload = function () { TAROT_STATE.imgs.push(url); if (TAROT_STATE.imgs.length === 1) { imgEl.src = url; spin.style.display = 'none'; startFlicker(imgEl, count); } updateCount(count); };
       im.onerror = function () {};
       im.src = url;
     }
-    urls.forEach(tryAdd);
-    // dynamic: Wikimedia Commons search for many versions "from all over"
+    var f = rwsFileName(card); if (f) tryAdd('https://commons.wikimedia.org/wiki/Special:FilePath/' + encodeURIComponent(f));
     if (typeof fetch !== 'function') { afterSearch(spin); return; }
-    var q = encodeURIComponent(card.name + ' tarot');
+    var q = encodeURIComponent(card.name + ' tarot card');
     var api = 'https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=' + q +
-      '&gsrnamespace=6&gsrlimit=24&prop=imageinfo&iiprop=url|mime&iiurlwidth=520&format=json&origin=*';
+      '&gsrnamespace=6&gsrlimit=50&prop=imageinfo&iiprop=url|mime&iiurlwidth=520&format=json&origin=*';
     fetch(api).then(function (r) { return r.json(); }).then(function (data) {
       if (!data || !data.query || !data.query.pages) { afterSearch(spin); return; }
       var pages = data.query.pages, k;
       for (k in pages) if (pages.hasOwnProperty(k)) {
-        var ii = pages[k].imageinfo; if (!ii || !ii[0]) continue;
-        var mime = ii[0].mime || ''; if (mime.indexOf('image') !== 0) continue;
-        if (mime.indexOf('svg') >= 0) continue;
+        var pg = pages[k]; if (!safeTarotTitleDom(pg.title || '')) continue; // allow-list: known decks only
+        var ii = pg.imageinfo; if (!ii || !ii[0]) continue;
+        var mime = ii[0].mime || ''; if (mime.indexOf('image') !== 0 || mime.indexOf('svg') >= 0) continue;
         var u = ii[0].thumburl || ii[0].url; if (u) tryAdd(u);
       }
       afterSearch(spin);
@@ -2643,6 +2716,7 @@ var APP = (function () {
     STATE: STATE, save: save, load: load, compute: computeChart,
     composeCore: composeCore, localAsk: localAsk, chartText: chartText, callModel: callModel,
     composeTransits: composeTransits, transitSentence: transitSentence, composeSignatures: composeSignatures,
+    addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry,
     nameFor: nameFor, glyphFor: glyphFor, sgAbbr: sgAbbr, pad: pad,
     domElement: domElement, lowElement: lowElement, domMod: domMod, tzOffsetHours: tzOffsetHours
   };
@@ -2670,7 +2744,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
   var ACC = [210, 82, 28];
   var GROUNDS = {
     onboard: [230, 222, 204], chart: [230, 222, 204],
-    read: [170, 181, 160], tarot: [206, 188, 168], settings: [200, 202, 199], learn: [158, 170, 184]
+    read: [170, 181, 160], tarot: [206, 188, 168], settings: [200, 202, 199], learn: [158, 170, 184], people: [196, 178, 186]
   };
   var ELHUE = { fire: [199, 78, 36], earth: [150, 120, 40], air: [40, 90, 120], water: [90, 70, 150] };
   var SANS = '"Helvetica Neue", Helvetica, Arial, sans-serif';
@@ -2711,6 +2785,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     scroll: {}, contentH: {}, selPlanet: 'sun', prevSel: 'sun',
     tarotTab: 'spreads', spread: 1, card: null, tarotDealtSpread: -1, tarotDealT: 0, learnCat: 'elements', learnItem: null,
     askTopic: null, askAns: '', readCache: null, draft: null,
+    viewPerson: null, padd: null, familyTree: false, bondCache: null, bondFor: null, bondT: 0,
     cityScroll: 0, bg: null,
     field: [], ripples: [], pdia: {}, popFrom: 22, popT: -9999, fxT: -9999,
     degShown: 0, quip: null, quipNext: 0,
@@ -2770,7 +2845,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     function positionSearchInput(px, py, pw, ph) {
       var el = ensureSearchInput(); if (!el) return;
       var visible = (py >= topY() - 4) && (py + ph <= H - (UI.safeBottom || 0));
-      if (UI.screen !== 'onboard' || !visible) { el.style.display = 'none'; return; }
+      if ((UI.screen !== 'onboard' && !(UI.screen === 'people' && UI.padd)) || !visible) { el.style.display = 'none'; return; }
       el.style.display = 'block'; el.style.left = px + 'px'; el.style.top = py + 'px'; el.style.width = pw + 'px'; el.style.height = ph + 'px'; el.style.lineHeight = ph + 'px';
     }
     function hideSearchInput() { try { if (UI.searchInput) { UI.searchInput.style.display = 'none'; if (document.activeElement === UI.searchInput && UI.searchInput.blur) UI.searchInput.blur(); } } catch (e) {} }
@@ -3143,25 +3218,38 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var s = Math.min(dw / iw, dh / ih), rw = iw * s, rh = ih * s, ox = dx + (dw - rw) / 2, oy = dy + (dh - rh) / 2;
       try { p.drawingContext.drawImage(im, ox, oy, rw, rh); } catch (e) {}
     }
+    // SAFETY MODEL: discover broadly (decks from around the world) but accept a result ONLY if its
+    // *filename* belongs to a known public-domain tarot deck. Arbitrary uploads (which is how an
+    // offensive image slipped in via open keyword search) can never pass this allow-list.
+    var TAROT_DECKS = '(RWS[ _]Tarot|Rider[-_ ]Waite|(Cups|Wands|Swords|Pents)\\s*\\d|Tarot[ _](de[ _])?Marseille|Marseille|Jean[ _]Dodal|Dodal|Nicolas[ _]Conver|Conver|(Oswald[ _])?Wirth|Sola[-_ ]?Busca|Visconti|Minchiate|Tarot[ _]Nouveau|Grand[ _]Etteilla|Etteilla|Mantegna|Tarocc(o|hi)|Swiss[ _]1JJ|1JJ|Papus|Waite[ _]Smith|Pamela[ _]Colman)';
+    var TAROT_DECK_RE = new RegExp('^File:\\s*' + TAROT_DECKS, 'i');
+    var TAROT_BAD_RE = /(swastika|hakenkreuz|nazi|hitler|reich|1488|white[ _-]?power|confeder)/i;
+    function safeTarotTitle(t) { t = t || ''; return TAROT_DECK_RE.test(t) && !TAROT_BAD_RE.test(t); }
+    function rwsFile(cd) {
+      if (cd.arcana === 'major') return 'RWS_Tarot_' + APP.pad(cd.num) + '_' + cd.name.replace(/^The /, '').replace(/ /g, '_') + '.jpg';
+      var sc = { Wands: 'Wands', Cups: 'Cups', Swords: 'Swords', Pentacles: 'Pents' }[cd.arcana];
+      return sc ? (sc + APP.pad(cd.num) + '.jpg') : null;
+    }
     function loadCardArt(cd) {
-      UI.cardImgs = []; UI.cardImgIdx = 0; UI.cardImgCard = UI.card; UI.cardFlickerOn = true; UI.cardFlickT = nowT(); UI.cardImgStatus = 'Gathering versions from open decks…';
-      var mine = UI.card;
-      function add(url) { var im = new Image(); im.onload = function () { if (UI.cardImgCard === mine) UI.cardImgs.push(im); }; im.onerror = function () {}; im.src = url; }
-      // a stable Rider-Waite-Smith scan for the majors, then a wide search for "versions from all over"
-      if (cd.arcana === 'major') add('https://commons.wikimedia.org/wiki/Special:FilePath/RWS_Tarot_' + APP.pad(cd.num) + '_' + cd.name.replace(/^The /, '').replace(/ /g, '_') + '.jpg');
-      if (typeof fetch !== 'function') { UI.cardImgStatus = 'Offline — connect to see the art flicker.'; return; }
-      var api = 'https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=' + encodeURIComponent(cd.name + ' tarot') +
-        '&gsrnamespace=6&gsrlimit=24&prop=imageinfo&iiprop=url|mime&iiurlwidth=520&format=json&origin=*';
+      UI.cardImgs = []; UI.cardImgIdx = 0; UI.cardImgCard = UI.card; UI.cardFlickerOn = true; UI.cardFlickT = nowT(); UI.cardImgStatus = 'Gathering decks from around the world…';
+      var mine = UI.card, base = 'https://commons.wikimedia.org/wiki/Special:FilePath/', seen = {};
+      function add(url) { if (!url || seen[url]) return; seen[url] = 1; var im = new Image(); im.onload = function () { if (UI.cardImgCard === mine && UI.cardImgs.length < 16) UI.cardImgs.push(im); }; im.onerror = function () {}; im.src = url; }
+      var f = rwsFile(cd); if (f) add(base + encodeURIComponent(f)); // guaranteed correct anchor image
+      if (typeof fetch !== 'function') { return; }
+      // broad discovery, then strict deck allow-list filter on every result
+      var api = 'https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=' + encodeURIComponent(cd.name + ' tarot card') +
+        '&gsrnamespace=6&gsrlimit=50&prop=imageinfo&iiprop=url|mime&iiurlwidth=520&format=json&origin=*';
       fetch(api).then(function (r) { return r.json(); }).then(function (data) {
         if (UI.cardImgCard !== mine || !data || !data.query || !data.query.pages) return;
         var pages = data.query.pages, k;
         for (k in pages) if (pages.hasOwnProperty(k)) {
-          var ii = pages[k].imageinfo; if (!ii || !ii[0]) continue;
+          var pg = pages[k]; if (!safeTarotTitle(pg.title || '')) continue; // allow-list: known decks only
+          var ii = pg.imageinfo; if (!ii || !ii[0]) continue;
           var mime = ii[0].mime || ''; if (mime.indexOf('image') !== 0 || mime.indexOf('svg') >= 0) continue;
           var u = ii[0].thumburl || ii[0].url; if (u) add(u);
         }
       }).catch(function () {});
-      setTimeout(function () { if (UI.cardImgCard === mine && !UI.cardImgs.length) UI.cardImgStatus = 'Couldn’t reach the deck archive. Connect to the internet to see the art flicker.'; }, 2800);
+      setTimeout(function () { if (UI.cardImgCard === mine && !UI.cardImgs.length) UI.cardImgStatus = 'Couldn’t reach the deck archive. Connect to the internet to see the art.'; }, 2800);
     }
     // one row of a transit (transiting body, aspect glyph, natal body, orb) for the Read screen
     function transitRow(t, asMoon, x, w, ly) {
@@ -3303,27 +3391,190 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
           // ---- the art: flicker through real deck versions of this card ----
           if (UI.cardImgCard !== UI.card) loadCardArt(cd2);
           hairline(x, ly, x + w, 60); ly += 16;
-          setFont(MONO, 9, ACC, p.LEFT, p.TOP); bold(); p.text('THE ART \u2014 FLICKER THROUGH REAL DECKS', x, sY(ly)); normal(); ly += 22;
+          setFont(MONO, 9, ACC, p.LEFT, p.TOP); bold(); p.text('THE ART \u2014 DECKS FROM AROUND THE WORLD', x, sY(ly)); normal(); ly += 22;
           var fw = 150, fh = 248, fx = x + (w - fw) / 2, fyS = sY(ly), imgs = UI.cardImgs || [];
           p.noStroke(); fillc(shade(GROUNDS[UI.screen], -10)); p.rect(fx, fyS, fw, fh, 8);
           if (imgs.length) {
-            if (UI.cardFlickerOn && !reduced() && nowT() - UI.cardFlickT > 280) { UI.cardImgIdx = (UI.cardImgIdx + 1) % imgs.length; UI.cardFlickT = nowT(); }
+            if (imgs.length > 1 && UI.cardFlickerOn && !reduced() && nowT() - UI.cardFlickT > 280) { UI.cardImgIdx = (UI.cardImgIdx + 1) % imgs.length; UI.cardFlickT = nowT(); }
             if (UI.cardImgIdx >= imgs.length) UI.cardImgIdx = 0;
             drawImageContain(imgs[UI.cardImgIdx], fx + 4, fyS + 4, fw - 8, fh - 8);
           } else {
-            var msg = UI.cardImgStatus || 'Gathering versions\u2026', ml = wrapLines(msg, fw - 28);
+            var msg = UI.cardImgStatus || 'Loading\u2026', ml = wrapLines(msg, fw - 28);
             setFont(MONO, 10, INK, p.CENTER, p.CENTER, 160);
             for (var mlI = 0; mlI < ml.length; mlI++) p.text(ml[mlI], fx + fw / 2, fyS + fh / 2 + (mlI - (ml.length - 1) / 2) * 16);
           }
           p.noFill(); strokec(INK, 90); p.strokeWeight(1.5); p.rect(fx, fyS, fw, fh, 8);
           ly += fh + 16;
-          flatBtn(imgs.length && UI.cardFlickerOn ? 'Stop' : 'Resume flicker', x, ly, 132, 36, function () { UI.cardFlickerOn = !UI.cardFlickerOn; UI.cardFlickT = nowT(); }, !!(imgs.length && !UI.cardFlickerOn), true);
-          setFont(MONO, 10, INK, p.RIGHT, p.CENTER, 160); p.text(imgs.length ? imgs.length + ' versions' : '', x + w, sY(ly + 18));
-          ly += 48;
-          ly += paragraph('Images: public-domain decks via Wikimedia Commons. Stop the flicker to study one.', x, ly, w, 11, INK, MONO, 16, 160) + 12;
+          if (imgs.length > 1) { // only a multi-scan card can flicker
+            flatBtn(UI.cardFlickerOn ? 'Stop' : 'Resume flicker', x, ly, 132, 36, function () { UI.cardFlickerOn = !UI.cardFlickerOn; UI.cardFlickT = nowT(); }, !UI.cardFlickerOn, true);
+            setFont(MONO, 10, INK, p.RIGHT, p.CENTER, 160); p.text(imgs.length + ' scans', x + w, sY(ly + 18)); ly += 48;
+          }
+          ly += paragraph('Public-domain tarot decks via Wikimedia Commons, filtered to known decks only. Stop the flicker to study one.', x, ly, w, 11, INK, MONO, 16, 160) + 12;
           UI.contentH.tarot = ly + 10;
         }
       }
+    }
+
+    // ---------- PEOPLE & BONDS (synastry + family tree, on-device) ----------
+    function newPDraft() { return { name: '', rel: 'partner', famrel: 'parent', d: 15, mo: 6, y: 1995, hour: 12, min: 0, timeKnown: false, cityIdx: -1 }; }
+    function relLabel(rel, fr) { if (rel === 'family') return fr ? ('Family · ' + fr.charAt(0).toUpperCase() + fr.slice(1)) : 'Family'; return rel.charAt(0).toUpperCase() + rel.slice(1); }
+    function findPerson(id) { var pp = APP.STATE.people; for (var i = 0; i < pp.length; i++) if (pp[i].id === id) return pp[i]; return null; }
+    function savePerson() {
+      var d = UI.padd, ci = d.cityIdx >= 0 ? DATA.CITIES[d.cityIdx] : null, me = APP.STATE.birth || {};
+      var person = { name: (d.name || '').trim() || 'Unnamed', rel: d.rel, famrel: d.rel === 'family' ? d.famrel : null,
+        y: d.y, mo: d.mo, d: d.d, hour: d.hour, min: d.min, tz: 0,
+        iana: ci ? ci[4] : (me.iana || 'UTC'), lat: ci ? ci[2] : (me.lat != null ? me.lat : 51.5), lon: ci ? ci[3] : (me.lon != null ? me.lon : 0),
+        place: ci ? (ci[0] + ', ' + ci[1]) : (me.place || 'your location'), timeKnown: d.timeKnown };
+      var pn = APP.addPerson(person); UI.padd = null; UI.viewPerson = pn.id; UI.scroll.people = 0; UI.popT = nowT(); hideSearchInput();
+    }
+    function composeBondCached(person) {
+      if (!UI.bondCache || UI.bondFor !== person.id || nowT() - UI.bondT > 60000) { UI.bondCache = APP.composeBond(person); UI.bondFor = person.id; UI.bondT = nowT(); }
+      return UI.bondCache;
+    }
+
+    function drawPeople() {
+      if (UI.padd) drawPeopleAdd();
+      else if (UI.viewPerson) drawBond();
+      else if (UI.familyTree) drawFamilyTree();
+      else drawPeopleList();
+    }
+
+    function drawPeopleList() {
+      var x = sx(), w = cw(), ly = 18, gi = cl01(1 - (nowT() - UI.fxT) / 500);
+      eyebrow('People & bonds', x, ly); ly += 22;
+      p.textStyle(p.BOLD); glitchText('People', x, sY(ly), 34, SANS, INK, p.LEFT, p.TOP, gi); normal(); ly += 46;
+      if (!APP.STATE.chart) { ly += paragraph('Set up your own birth chart first (the Chart tab), then add the people in your life here to compare charts.', x, ly, w, 16, INK, SERIF, 24) + 10; UI.contentH.people = ly; return; }
+      ly += paragraph('Add a friend, a date, or a family member by their birthday. Their chart is compared with yours, and today’s sky is linked to theirs too.', x, ly, w, 14.5, INK, SERIF, 22, 200) + 14;
+      flatBtn('+ Add a person', x, ly, w, 46, function () { UI.padd = newPDraft(); UI.citySearch = ''; UI.scroll.people = 0; }, true); ly += 58;
+      var ppl = APP.STATE.people, hasFam = false, i;
+      for (i = 0; i < ppl.length; i++) if (ppl[i].rel === 'family') hasFam = true;
+      if (hasFam) { flatBtn('View family tree', x, ly, w, 40, function () { UI.familyTree = true; UI.scroll.people = 0; }, false); ly += 54; }
+      if (!ppl.length) { ly += paragraph('No one added yet.', x, ly, w, 14, INK, SERIF, 22, 170) + 10; UI.contentH.people = ly; return; }
+      eyebrow('Your people', x, ly); ly += 22; var rh = 52;
+      for (i = 0; i < ppl.length; i++) {
+        var pr = ppl[i], ch = APP.personChart(pr), su = ch.planets.sun, mo = ch.planets.moon;
+        if (i) hairline(x, ly, x + w, 36);
+        setFont(SANS, 19, ACC, p.LEFT, p.CENTER); p.text(DATA.SIGNS[su.sign].glyph, x + 4, sY(ly + rh / 2));
+        setFont(SANS, 15, INK, p.LEFT, p.CENTER); bold(); p.text(pr.name || 'Unnamed', x + 34, sY(ly + rh / 2) - 8); normal();
+        setFont(MONO, 9.5, INK, p.LEFT, p.CENTER, 180); p.text((relLabel(pr.rel, pr.famrel) + ' · ' + su.signName + ' sun · ' + mo.signName + ' moon').toUpperCase(), x + 34, sY(ly + rh / 2) + 10);
+        setFont(SANS, 20, INK, p.RIGHT, p.CENTER, 120); p.text('›', x + w, sY(ly + rh / 2));
+        (function (id, ay) { pushHit(x, sY(ay), w, rh, function () { UI.viewPerson = id; UI.scroll.people = 0; UI.popT = nowT(); }); })(pr.id, ly);
+        ly += rh;
+      }
+      ly += 20; UI.contentH.people = ly;
+    }
+
+    function drawPeopleAdd() {
+      var d = UI.padd, x = sx(), w = cw(), ly = 18, gi = cl01(1 - (nowT() - UI.fxT) / 500), g = 10, w3 = (w - g * 2) / 3;
+      flatBtn('‹ People', x, ly, 110, 36, function () { UI.padd = null; hideSearchInput(); }, false, true); ly += 50;
+      p.textStyle(p.BOLD); glitchText('Add a person', x, sY(ly), 28, SANS, INK, p.LEFT, p.TOP, gi); normal(); ly += 44;
+      eyebrow('Name', x, ly); ly += 22;
+      var nbY = sY(ly), nbH = 40; p.noStroke(); fillc(GROUNDS[UI.screen]); p.rect(x, nbY, w, nbH, 9); p.noFill(); strokec(INK, 150); p.strokeWeight(1.4); p.rect(x, nbY, w, nbH, 9);
+      setFont(SANS, 15, INK, p.LEFT, p.CENTER, d.name ? 255 : 120); p.text(d.name || 'Tap to type a name', x + 14, nbY + nbH / 2);
+      pushHit(x, nbY, w, nbH, function () { try { var nm = window.prompt('Their name', d.name || ''); if (nm != null) d.name = nm.slice(0, 40); } catch (e) {} }); ly += nbH + 16;
+      eyebrow('Relationship', x, ly); ly += 24; var cxp = x;
+      cxp += chip('Partner', d.rel === 'partner', cxp, ly, function () { d.rel = 'partner'; }) + 8;
+      cxp += chip('Friend', d.rel === 'friend', cxp, ly, function () { d.rel = 'friend'; }) + 8;
+      chip('Family', d.rel === 'family', cxp, ly, function () { d.rel = 'family'; }); ly += 44;
+      if (d.rel === 'family') { cxp = x; var frs = ['parent', 'child', 'sibling', 'partner']; for (var fi = 0; fi < frs.length; fi++) cxp += chip(frs[fi].charAt(0).toUpperCase() + frs[fi].slice(1), d.famrel === frs[fi], cxp, ly, (function (v) { return function () { d.famrel = v; }; })(frs[fi])) + 8; ly += 44; }
+      eyebrow('Date of birth', x, ly); ly += 22;
+      stepper('Day', d.d, 1, 31, x, ly, w3, function (v) { d.d = v; }); stepper('Month', d.mo, 1, 12, x + w3 + g, ly, w3, function (v) { d.mo = v; }); stepper('Year', d.y, 1920, 2025, x + (w3 + g) * 2, ly, w3, function (v) { d.y = v; }); ly += 60;
+      flatBtn('Year −10', x + (w3 + g) * 2, ly, w3 / 2 - 3, 28, function () { d.y = Math.max(1920, d.y - 10); }, false, true);
+      flatBtn('+10', x + (w3 + g) * 2 + w3 / 2 + 3, ly, w3 / 2 - 3, 28, function () { d.y = Math.min(2025, d.y + 10); }, false, true); ly += 42;
+      if (!d.timeKnown) { p.noFill(); strokec(INK, 180); p.strokeWeight(1.4); p.rect(x, sY(ly), 22, 22, 5); }
+      else { p.noStroke(); fillc(ACC); p.rect(x, sY(ly), 22, 22, 5); setFont(SANS, 15, GROUNDS[UI.screen], p.CENTER, p.CENTER); p.text('✓', x + 11, sY(ly) + 11); }
+      setFont(SANS, 13, INK, p.LEFT, p.CENTER); p.text('I know their birth time', x + 32, sY(ly) + 11); pushHit(x, sY(ly), w, 26, function () { d.timeKnown = !d.timeKnown; }); ly += 36;
+      var w2 = (w - g) / 2; if (d.timeKnown) { stepper('Hour', d.hour, 0, 23, x, ly, w2, function (v) { d.hour = v; }); stepper('Minute', d.min, 0, 59, x + w2 + g, ly, w2, function (v) { d.min = v; }); ly += 60; }
+      eyebrow('Birth place (optional)', x, ly); ly += 22;
+      setFont(MONO, 10, d.cityIdx >= 0 ? ACC : INK, p.LEFT, p.TOP, d.cityIdx >= 0 ? 255 : 140); p.text((d.cityIdx >= 0 ? (DATA.CITIES[d.cityIdx][0] + ', ' + DATA.CITIES[d.cityIdx][1]) : 'Defaults to your location').toUpperCase(), x, sY(ly)); ly += 20;
+      var sbY = sY(ly), sbH = 40; p.noStroke(); fillc(GROUNDS[UI.screen]); p.rect(x, sbY, w, sbH, 9); p.noFill(); strokec(INK, 150); p.strokeWeight(1.4); p.rect(x, sbY, w, sbH, 9);
+      p.noFill(); strokec(INK, 200); p.strokeWeight(2); p.ellipse(x + 20, sbY + sbH / 2 - 1, 13, 13); p.line(x + 25, sbY + sbH / 2 + 4, x + 30, sbY + sbH / 2 + 9);
+      positionSearchInput(x + 40, sbY, w - 78, sbH);
+      if ((UI.citySearch || '').length) { setFont(SANS, 19, INK, p.CENTER, p.CENTER, 190); p.text('×', x + w - 19, sbY + sbH / 2); pushHit(x + w - 38, sbY, 38, sbH, function () { UI.citySearch = ''; if (UI.searchInput) UI.searchInput.value = ''; }); }
+      ly += sbH + 12;
+      var q = (UI.citySearch || '').toLowerCase().replace(/^\s+|\s+$/g, ''), filtered = [];
+      for (var ci2 = 0; ci2 < DATA.CITIES.length; ci2++) { var cc = DATA.CITIES[ci2]; if (!q || cc[0].toLowerCase().indexOf(q) >= 0 || cc[1].toLowerCase().indexOf(q) >= 0) filtered.push(ci2); }
+      if (q !== UI.lastCityQ) { UI.lastCityQ = q; UI.cityScroll = 0; }
+      var boxH = 150, boxY = sY(ly); p.noFill(); strokec(INK, 160); p.strokeWeight(1.4); p.rect(x, boxY, w, boxH, 10);
+      var rh = 30, off = UI.cityScroll || 0;
+      if (p.drawingContext) { p.drawingContext.save(); p.drawingContext.beginPath(); p.drawingContext.rect(x, boxY, w, boxH); p.drawingContext.clip(); }
+      for (var i2 = 0; i2 < filtered.length; i2++) {
+        var realI = filtered[i2], cy = boxY + 4 + i2 * rh - off; if (cy > boxY + boxH || cy + rh < boxY) continue; var sel = (d.cityIdx === realI);
+        if (sel) { p.noStroke(); fillc(INK); p.rect(x + 3, cy, w - 6, rh - 2, 6); }
+        setFont(SANS, 13, sel ? GROUNDS[UI.screen] : INK, p.LEFT, p.CENTER); if (sel) bold(); p.text(DATA.CITIES[realI][0], x + 14, cy + rh / 2); normal();
+        setFont(MONO, 9.5, sel ? GROUNDS[UI.screen] : INK, p.RIGHT, p.CENTER, sel ? 220 : 120); p.text(DATA.CITIES[realI][1], x + w - 14, cy + rh / 2);
+        (function (idx, ry) { pushHit(x, Math.max(boxY, ry), w, Math.min(rh, boxY + boxH - ry), function () { d.cityIdx = idx; }); })(realI, cy);
+      }
+      if (p.drawingContext) p.drawingContext.restore();
+      UI.cityBox = { x: x, y: boxY, w: w, h: boxH }; UI.cityBoxMax = Math.max(0, filtered.length * rh + 8 - boxH); ly += boxH + 18;
+      flatBtn('Save person', x, ly, w, 50, function () { savePerson(); }, true); ly += 64; UI.contentH.people = ly;
+    }
+
+    function drawBond() {
+      var person = findPerson(UI.viewPerson); if (!person || !APP.STATE.chart) { UI.viewPerson = null; return; }
+      var x = sx(), w = cw(), ly = 18, gi = cl01(1 - (nowT() - UI.fxT) / 500), i;
+      flatBtn('‹ People', x, ly, 110, 36, function () { UI.viewPerson = null; }, false, true); ly += 50;
+      var ch = APP.personChart(person), su = ch.planets.sun, mo = ch.planets.moon;
+      p.textStyle(p.BOLD); glitchText(person.name || 'Unnamed', x, sY(ly), 30, SANS, INK, p.LEFT, p.TOP, gi); normal(); ly += 38;
+      eyebrow(relLabel(person.rel, person.famrel) + ' · born ' + person.d + '.' + person.mo + '.' + person.y, x, ly, ACC); ly += 24;
+      setFont(MONO, 11, INK, p.LEFT, p.TOP, 200); p.text((su.signName + ' Sun · ' + mo.signName + ' Moon' + (person.timeKnown && ch.ascBody ? ' · ' + ch.ascBody.signName + ' Rising' : '')).toUpperCase(), x, sY(ly)); ly += 28;
+      var bond = composeBondCached(person);
+      for (i = 0; i < bond.blocks.length; i++) {
+        var blk = bond.blocks[i];
+        ly += 6; eyebrow(blk.label, x, ly, ACC); ly += 22;
+        if (blk.text) ly += paragraph(blk.text, x, ly, w, 15.5, INK, SERIF, 24) + 12;
+        if (blk.lines) { for (var L = 0; L < blk.lines.length; L++) ly += paragraph('• ' + blk.lines[L], x, ly, w, 14, INK, SERIF, 21) + 8; ly += 4; }
+      }
+      ly += 10; eyebrow('All contacts — tightest first', x, ly); ly += 22;
+      var syn = bond.syn;
+      for (i = 0; i < Math.min(syn.length, 14); i++) {
+        var s = syn[i]; if (i) hairline(x, ly, x + w, 32);
+        setFont(SANS, 14, INK, p.LEFT, p.CENTER); p.text(APP.glyphFor(s.theirs), x + 2, sY(ly + 15));
+        var qc = s.asp.quality; setFont(SANS, 12, (qc === 'flow' || qc === 'opportunity') ? ELHUE.air : (qc === 'fusion' ? INK : ACC), p.CENTER, p.CENTER); bold(); p.text(s.asp.glyph, x + 24, sY(ly + 15)); normal();
+        setFont(SANS, 14, INK, p.LEFT, p.CENTER); p.text(APP.glyphFor(s.mine), x + 40, sY(ly + 15));
+        setFont(MONO, 10, INK, p.LEFT, p.CENTER, 210); p.text('their ' + APP.nameFor(s.theirs) + ' ' + s.asp.key + ' your ' + APP.nameFor(s.mine), x + 58, sY(ly + 15));
+        setFont(MONO, 9, INK, p.RIGHT, p.CENTER, 150); p.text(s.orb.toFixed(1) + '°', x + w, sY(ly + 15));
+        ly += 30;
+      }
+      ly += 22;
+      flatBtn('Remove ' + (person.name || 'person'), x, ly, w, 40, function () { APP.removePerson(person.id); UI.viewPerson = null; UI.bondFor = null; }, false); ly += 56;
+      UI.contentH.people = ly;
+    }
+
+    function treeCard(title, sub, cx, cy, cwd, chh, accent, onTap) {
+      var yy = sY(cy); p.noStroke(); fillc(accent ? shade(INK, -30) : shade(GROUNDS[UI.screen], -12)); p.rect(cx, yy + 3, cwd, chh, 8); fillc(accent ? INK : GROUNDS[UI.screen]); p.rect(cx, yy, cwd, chh, 8);
+      if (!accent) { p.noFill(); strokec(INK, 160); p.strokeWeight(1.3); p.rect(cx, yy, cwd, chh, 8); }
+      setFont(SANS, 14, accent ? GROUNDS[UI.screen] : INK, p.CENTER, p.CENTER); bold(); p.text(title, cx + cwd / 2, yy + chh / 2 - 7); normal();
+      setFont(MONO, 8.5, accent ? GROUNDS[UI.screen] : INK, p.CENTER, p.CENTER, 210); p.text(sub, cx + cwd / 2, yy + chh / 2 + 10);
+      if (onTap) pushHit(cx, yy, cwd, chh, onTap);
+    }
+    function drawTreeRow(list, x, y, w, label, chh) {
+      if (!list.length) return;
+      setFont(MONO, 9, INK, p.CENTER, p.TOP, 150); p.text(label, x + w / 2, sY(y - 16));
+      var n = list.length, cwd = Math.min(140, (w - (n - 1) * 12) / n), totalW = n * cwd + (n - 1) * 12, startX = x + (w - totalW) / 2;
+      for (var i = 0; i < n; i++) { var pr = list[i], ch = APP.personChart(pr), cx = startX + i * (cwd + 12); treeCard(pr.name || 'Unnamed', DATA.SIGNS[ch.planets.sun.sign].name.toUpperCase(), cx, y, cwd, chh, false, (function (id) { return function () { UI.familyTree = false; UI.viewPerson = id; UI.scroll.people = 0; UI.popT = nowT(); }; })(pr.id)); }
+    }
+    function drawFamilyTree() {
+      var x = sx(), w = cw(), ly = 18, gi = cl01(1 - (nowT() - UI.fxT) / 500), midX = x + w / 2, chh = 56;
+      flatBtn('‹ People', x, ly, 110, 36, function () { UI.familyTree = false; }, false, true); ly += 50;
+      p.textStyle(p.BOLD); glitchText('Family tree', x, sY(ly), 30, SANS, INK, p.LEFT, p.TOP, gi); normal(); ly += 52;
+      var ppl = APP.STATE.people, fam = { parent: [], child: [], sibling: [], partner: [] }, i;
+      for (i = 0; i < ppl.length; i++) if (ppl[i].rel === 'family' && fam[ppl[i].famrel]) fam[ppl[i].famrel].push(ppl[i]);
+      var pY = ly + 14; drawTreeRow(fam.parent, x, pY, w, 'PARENTS', chh);
+      var youY = pY + chh + 56;
+      if (fam.parent.length) { strokec(INK, 120); p.strokeWeight(1.4); p.line(midX, sY(pY + chh), midX, sY(youY)); }
+      var mySun = DATA.SIGNS[APP.STATE.chart.planets.sun.sign].name.toUpperCase(), youCwd = 130;
+      if (fam.partner.length) {
+        var gap = 16, tot = youCwd * 2 + gap, sx0 = x + (w - tot) / 2, pc = APP.personChart(fam.partner[0]);
+        treeCard('You', mySun, sx0, youY, youCwd, chh, true, null);
+        treeCard(fam.partner[0].name || 'Partner', DATA.SIGNS[pc.planets.sun.sign].name.toUpperCase(), sx0 + youCwd + gap, youY, youCwd, chh, false, (function (id) { return function () { UI.familyTree = false; UI.viewPerson = id; UI.scroll.people = 0; }; })(fam.partner[0].id));
+        strokec(INK, 120); p.strokeWeight(1.4); p.line(sx0 + youCwd, sY(youY + chh / 2), sx0 + youCwd + gap, sY(youY + chh / 2));
+      } else { treeCard('You', mySun, midX - youCwd / 2, youY, youCwd, chh, true, null); }
+      var kidsY = youY + chh + 56;
+      if (fam.child.length) { strokec(INK, 120); p.strokeWeight(1.4); p.line(midX, sY(youY + chh), midX, sY(kidsY)); drawTreeRow(fam.child, x, kidsY, w, 'CHILDREN', chh); }
+      var sibY = kidsY + (fam.child.length ? chh + 50 : 6);
+      if (fam.sibling.length) drawTreeRow(fam.sibling, x, sibY, w, 'SIBLINGS', chh);
+      UI.contentH.people = sibY + chh + 40;
     }
 
     // ---------- LEARN (educational, element-first, personalised) ----------
@@ -3613,7 +3864,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       flatBtn(canBuild ? 'Build my chart' : 'Choose a birth place', x, ly, w, 50, function () { if (canBuild) buildChart(); }, canBuild); ly += 64; UI.contentH.onboard = ly;
     }
     function buildChart() { var d = UI.draft, ci = DATA.CITIES[d.cityIdx]; APP.STATE.birth = { name: '', y: d.y, mo: d.mo, d: d.d, hour: d.hour, min: d.min, tz: 0, iana: ci[4], lat: ci[2], lon: ci[3], place: ci[0] + ', ' + ci[1], timeKnown: d.timeKnown }; recompute(); UI.selPlanet = 'sun'; UI.popT = nowT(); UI.popFrom = 22; UI.scroll.chart = 0; UI.screen = 'chart'; hideSearchInput(); }
-    function recompute() { APP.STATE.chart = APP.compute(APP.STATE.birth, APP.STATE.settings); APP.save(); UI.readCache = null; UI.readSig = null; UI.readTransit = null; UI.askAns = ''; UI.quip = null; UI.quipNext = 0; buildField(); }
+    function recompute() { APP.STATE.chart = APP.compute(APP.STATE.birth, APP.STATE.settings); APP.save(); UI.readCache = null; UI.readSig = null; UI.readTransit = null; UI.bondCache = null; UI.bondFor = null; if (APP.clearPersonCharts) APP.clearPersonCharts(); UI.askAns = ''; UI.quip = null; UI.quipNext = 0; buildField(); }
 
     // ---------- chrome ----------
     function drawTopbar() {
@@ -3626,7 +3877,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       strokec(INK, 40); p.strokeWeight(1); p.line(0, th, W, th);
     }
     function drawNav() {
-      var tabs = [['Chart', 'chart'], ['Read', 'read'], ['Learn', 'learn'], ['Tarot', 'tarot'], ['Settings', 'settings']];
+      var tabs = [['Chart', 'chart'], ['Read', 'read'], ['Learn', 'learn'], ['Tarot', 'tarot'], ['People', 'people'], ['Settings', 'settings']];
       var sb = UI.safeBottom || 0, navY = H - NAVH - sb, tw = W / tabs.length;
       p.noStroke(); fillc(UI.bg); p.rect(0, navY, W, NAVH + sb);
       strokec(INK, 40); p.strokeWeight(1); p.line(0, navY, W, navY);
@@ -3672,7 +3923,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       drawField(); drawRipples();
       hits = []; p.rectMode(p.CORNER); p.textStyle(p.NORMAL);
       var s = UI.screen;
-      if (s === 'onboard') drawOnboard(); else { hideSearchInput(); if (s === 'chart') drawChart(); else if (s === 'read') drawRead(); else if (s === 'learn') drawLearn(); else if (s === 'tarot') drawTarot(); else if (s === 'settings') drawSettings(); }
+      if (s === 'onboard') drawOnboard(); else { if (!(s === 'people' && UI.padd)) hideSearchInput(); if (s === 'chart') drawChart(); else if (s === 'read') drawRead(); else if (s === 'learn') drawLearn(); else if (s === 'tarot') drawTarot(); else if (s === 'people') drawPeople(); else if (s === 'settings') drawSettings(); }
       drawQuip();
       drawTopbar(); if (s !== 'onboard') drawNav();
       drawTransition();
@@ -3684,7 +3935,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     function press(x, y) {
       UI.ptrX = x; UI.ptrY = y; UI.ptrDown = true; UI.ptrMoveT = nowT();
       UI.pressX = x; UI.pressY = y; UI.pressT = nowT(); UI.dragging = false; UI.scrollStart = scrollOf(); UI.cityScrollStart = UI.cityScroll || 0;
-      UI.inCity = (UI.screen === 'onboard' && UI.cityBox && inRect(x, y, UI.cityBox));
+      UI.inCity = ((UI.screen === 'onboard' || (UI.screen === 'people' && UI.padd)) && UI.cityBox && inRect(x, y, UI.cityBox));
       UI.inSlider = (UI.screen === 'settings' && UI.sliderRect && inRect(x, y, { x: UI.sliderRect.x - 16, y: UI.sliderRect.y - 18, w: UI.sliderRect.w + 32, h: 36 }));
     }
     function move(x, y) {
@@ -3731,7 +3982,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       }
     }
     p.mouseWheel = function (e) {
-      if (UI.screen === 'onboard' && UI.cityBox && inRect(UI.ptrX, UI.ptrY, UI.cityBox)) { UI.cityScroll = (UI.cityScroll || 0) + e.delta; if (UI.cityScroll < 0) UI.cityScroll = 0; if (UI.cityScroll > UI.cityBoxMax) UI.cityScroll = UI.cityBoxMax; }
+      if ((UI.screen === 'onboard' || (UI.screen === 'people' && UI.padd)) && UI.cityBox && inRect(UI.ptrX, UI.ptrY, UI.cityBox)) { UI.cityScroll = (UI.cityScroll || 0) + e.delta; if (UI.cityScroll < 0) UI.cityScroll = 0; if (UI.cityScroll > UI.cityBoxMax) UI.cityScroll = UI.cityBoxMax; }
       else { UI.scroll[UI.screen] = scrollOf() + e.delta; clampScroll(); }
       return false;
     };
