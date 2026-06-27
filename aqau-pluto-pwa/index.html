@@ -2743,19 +2743,21 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
   // Palettes are mutated in place by applyTheme() so every existing INK/ACC/GROUNDS read
   // (called at draw time) picks up the active theme without rewiring the whole UI.
   var INK = [26, 23, 20];
-  var ACC = [210, 82, 28];
+  var ACC = [210, 82, 28];     // vibrant accent for fills / decoration
+  var ACCTX = [150, 48, 14];   // darker accent reserved for small label TEXT (WCAG contrast)
   var GROUNDS = {
     onboard: [230, 222, 204], chart: [230, 222, 204],
     read: [170, 181, 160], tarot: [206, 188, 168], settings: [200, 202, 199], learn: [158, 170, 184], people: [196, 178, 186]
   };
   var THEMES = {
-    light: { ink: [26, 23, 20], acc: [210, 82, 28], g: { onboard: [230, 222, 204], chart: [230, 222, 204], read: [170, 181, 160], tarot: [206, 188, 168], settings: [200, 202, 199], learn: [158, 170, 184], people: [196, 178, 186] } },
-    dark: { ink: [232, 226, 213], acc: [235, 110, 58], g: { onboard: [20, 19, 25], chart: [20, 19, 25], read: [17, 24, 20], tarot: [27, 20, 17], settings: [22, 22, 27], learn: [15, 19, 29], people: [25, 18, 25] } }
+    light: { ink: [26, 23, 20], acc: [210, 82, 28], acctx: [150, 48, 14], g: { onboard: [230, 222, 204], chart: [230, 222, 204], read: [170, 181, 160], tarot: [206, 188, 168], settings: [200, 202, 199], learn: [158, 170, 184], people: [196, 178, 186] } },
+    dark: { ink: [232, 226, 213], acc: [235, 110, 58], acctx: [240, 138, 92], g: { onboard: [20, 19, 25], chart: [20, 19, 25], read: [17, 24, 20], tarot: [27, 20, 17], settings: [22, 22, 27], learn: [15, 19, 29], people: [25, 18, 25] } }
   };
   function applyTheme() {
     var t = THEMES[(APP.STATE.settings && APP.STATE.settings.theme === 'dark') ? 'dark' : 'light'], k;
     INK[0] = t.ink[0]; INK[1] = t.ink[1]; INK[2] = t.ink[2];
     ACC[0] = t.acc[0]; ACC[1] = t.acc[1]; ACC[2] = t.acc[2];
+    ACCTX[0] = t.acctx[0]; ACCTX[1] = t.acctx[1]; ACCTX[2] = t.acctx[2];
     for (k in t.g) if (t.g.hasOwnProperty(k)) GROUNDS[k] = t.g[k].slice();
   }
   applyTheme();
@@ -2937,36 +2939,51 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       pushHit(x, y, w, h + depth, fn); return w;
     }
     function eyebrow(txt, x, ly, c) {
-      setFont(MONO, 10.5, c || INK, p.LEFT, p.TOP, 150);
+      setFont(MONO, 10.5, (c === ACC ? ACCTX : (c || INK)), p.LEFT, p.TOP, 150);
       var s = txt.toUpperCase(), cx = x; for (var i = 0; i < s.length; i++) { p.text(s[i], cx, sY(ly)); cx += p.textWidth(s[i]) + 2; }
     }
 
-    // ============ BACKGROUND = A SLOW CONSTELLATION SKY (your elemental signature) ============
-    // Stylised constellations — stars joined into figures — tinted by your element balance and
-    // turning gently as one quiet celestial movement. The single beautiful centrepiece.
-    var CONSTS = [
-      { s: [[0.0, 0.0], [0.22, 0.06], [0.44, 0.03], [0.64, 0.12], [0.66, 0.36], [0.44, 0.34], [0.42, 0.6]], e: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 0], [5, 6]] }, // the plough
-      { s: [[0.12, 0.0], [0.0, 0.5], [0.5, 1.0], [0.64, 0.46], [0.52, 0.0], [0.32, 0.5], [0.44, 0.52], [0.38, 0.66]], e: [[0, 5], [5, 1], [1, 2], [4, 3], [3, 2], [0, 4], [5, 6], [6, 7]] }, // orion
-      { s: [[0.0, 0.34], [0.22, 0.0], [0.48, 0.26], [0.72, 0.02], [0.92, 0.3]], e: [[0, 1], [1, 2], [2, 3], [3, 4]] }, // cassiopeia
-      { s: [[0.5, 0.0], [0.5, 0.38], [0.5, 0.78], [0.5, 1.0], [0.16, 0.46], [0.84, 0.46]], e: [[0, 1], [1, 2], [2, 3], [4, 1], [1, 5]] }, // cygnus
-      { s: [[0.0, 0.05], [0.16, 0.12], [0.32, 0.22], [0.48, 0.38], [0.58, 0.6], [0.5, 0.82], [0.34, 0.92], [0.6, 0.0]], e: [[7, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6]] }, // scorpius
-      { s: [[0.0, 0.0], [0.34, 0.12], [0.16, 0.42], [0.5, 0.5], [0.22, 0.78]], e: [[0, 1], [1, 3], [3, 4], [4, 2], [2, 0]] }, // lyra
-      { s: [[0.0, 0.0], [0.52, 0.1], [0.26, 0.46]], e: [[0, 1], [1, 2], [2, 0]] } // triangulum
+    // ============ BACKGROUND = YOUR OWN ZODIAC SKY ============
+    // The constellations drawn are the ones that belong to YOU — your Sun, Moon and Rising signs
+    // (then your other placements) — turning gently as one quiet celestial movement.
+    // Index matches DATA.SIGNS order: Aries(0) … Pisces(11). Stylised but recognisable line figures.
+    var ZODIAC = [
+      { s: [[0.0, 0.35], [0.3, 0.2], [0.6, 0.24], [0.85, 0.4]], e: [[0, 1], [1, 2], [2, 3]] }, // Aries
+      { s: [[0.0, 0.05], [0.25, 0.45], [0.5, 0.6], [0.75, 0.45], [1.0, 0.05], [0.5, 0.85]], e: [[0, 1], [1, 2], [2, 3], [3, 4], [2, 5]] }, // Taurus
+      { s: [[0.2, 0.0], [0.22, 0.5], [0.18, 1.0], [0.6, 0.0], [0.6, 0.5], [0.64, 1.0]], e: [[0, 1], [1, 2], [3, 4], [4, 5], [1, 4]] }, // Gemini
+      { s: [[0.1, 0.0], [0.45, 0.35], [0.4, 0.75], [0.8, 0.4]], e: [[0, 1], [1, 2], [1, 3]] }, // Cancer
+      { s: [[0.0, 0.45], [0.12, 0.25], [0.28, 0.18], [0.34, 0.38], [0.22, 0.52], [0.62, 0.4], [0.85, 0.62], [0.55, 0.64]], e: [[1, 2], [2, 3], [3, 4], [4, 0], [3, 5], [5, 6], [6, 7], [7, 5]] }, // Leo
+      { s: [[0.0, 0.25], [0.22, 0.32], [0.45, 0.26], [0.62, 0.46], [0.82, 0.4], [0.5, 0.72]], e: [[0, 1], [1, 2], [2, 3], [3, 4], [2, 5]] }, // Virgo
+      { s: [[0.5, 0.05], [0.3, 0.3], [0.7, 0.32], [0.15, 0.6], [0.85, 0.62]], e: [[0, 1], [0, 2], [1, 3], [2, 4], [1, 2]] }, // Libra
+      { s: [[0.0, 0.05], [0.16, 0.12], [0.32, 0.22], [0.48, 0.38], [0.58, 0.6], [0.5, 0.82], [0.34, 0.92], [0.6, 0.0]], e: [[7, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6]] }, // Scorpio
+      { s: [[0.2, 0.25], [0.5, 0.12], [0.52, 0.42], [0.22, 0.52], [0.72, 0.5], [0.56, 0.72], [0.88, 0.34]], e: [[0, 1], [1, 2], [2, 0], [0, 3], [2, 4], [4, 5], [2, 6]] }, // Sagittarius
+      { s: [[0.0, 0.25], [0.5, 0.05], [0.92, 0.42], [0.5, 0.72]], e: [[0, 1], [1, 2], [2, 3], [3, 0]] }, // Capricorn
+      { s: [[0.0, 0.25], [0.2, 0.45], [0.4, 0.25], [0.6, 0.45], [0.8, 0.25], [1.0, 0.45]], e: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5]] }, // Aquarius
+      { s: [[0.0, 0.12], [0.26, 0.26], [0.5, 0.22], [0.52, 0.5], [0.52, 0.8], [0.32, 0.96], [0.76, 0.92]], e: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [4, 6]] } // Pisces
     ];
+    function elementOfSign(sgn) { return DATA.SIGNS[sgn] ? DATA.SIGNS[sgn].element : 'air'; }
     function buildField() {
-      var c = APP.STATE.chart, els = ['fire', 'earth', 'air', 'water'];
-      var wts = c ? [c.elements.fire, c.elements.earth, c.elements.air, c.elements.water] : [25, 25, 25, 25];
-      var total = (wts[0] + wts[1] + wts[2] + wts[3]) || 100;
-      var count = Math.max(5, Math.min(9, Math.round(W * H / 95000)));
+      var c = APP.STATE.chart, tk = APP.STATE.birth && APP.STATE.birth.timeKnown;
       UI.field = [];
+      var picks = [];
+      if (c) {
+        picks.push({ sign: c.planets.sun.sign, role: 'Sun' });
+        picks.push({ sign: c.planets.moon.sign, role: 'Moon' });
+        if (tk && c.ascBody) picks.push({ sign: c.ascBody.sign, role: 'Rising' });
+        var extra = ['venus', 'mars', 'mercury', 'jupiter', 'saturn'];
+        for (var x = 0; x < extra.length; x++) if (c.planets[extra[x]]) picks.push({ sign: c.planets[extra[x]].sign, role: '' });
+      } else { for (var z = 0; z < 5; z++) picks.push({ sign: Math.floor(Math.random() * 12), role: '' }); }
+      var count = Math.max(5, Math.min(8, picks.length));
       for (var i = 0; i < count; i++) {
-        var r = Math.random() * total, acc = 0, ei = 0; for (var e = 0; e < 4; e++) { acc += wts[e]; if (r <= acc) { ei = e; break; } }
-        UI.field.push({ el: els[ei], cst: CONSTS[i % CONSTS.length], cx: Math.random() * W, cy: Math.random() * H, scale: Math.min(W, H) * (0.13 + Math.random() * 0.13), rot: Math.random() * 6.28, tw: Math.random() * 6.28 });
+        var pk = picks[i % picks.length], big = i < 3;
+        UI.field.push({ sign: pk.sign, role: pk.role, el: elementOfSign(pk.sign), cst: ZODIAC[pk.sign],
+          cx: Math.random() * W, cy: Math.random() * H, scale: Math.min(W, H) * (big ? 0.20 + Math.random() * 0.06 : 0.12 + Math.random() * 0.07),
+          rot: (Math.random() - 0.5) * 0.7, tw: Math.random() * 6.28 });
       }
     }
     function drawField() {
       var still = reduced(), fc = p.frameCount, F = UI.field, cxC = W / 2, cyC = H / 2;
-      var rot = still ? 0.6 : fc * 0.00016, ca = Math.cos(rot), sa = Math.sin(rot); // the whole sky turns, very slowly
+      var rot = still ? 0.5 : fc * 0.00015, ca = Math.cos(rot), sa = Math.sin(rot); // the whole sky turns, very slowly
       var mx = UI.ptrX, my = UI.ptrY, ptr = (UI.ptrDown || (nowT() - (UI.ptrMoveT || 0) < 160)) && !still;
       p.rectMode(p.CENTER);
       for (var i = 0; i < F.length; i++) {
@@ -2975,14 +2992,16 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         if (ptr) { var ddx = gx - mx, ddy = gy - my, dd = Math.sqrt(ddx * ddx + ddy * ddy) + 0.01; if (dd < 210) { var pf = (210 - dd) / 210 * 7; gx += ddx / dd * pf; gy += ddy / dd * pf; } }
         var cr = Math.cos(inst.rot), sr = Math.sin(inst.rot), s = inst.scale, pts = [], k;
         for (k = 0; k < st.length; k++) { var ox = (st[k][0] - 0.4) * s, oy = (st[k][1] - 0.4) * s; pts.push([gx + ox * cr - oy * sr, gy + ox * sr + oy * cr]); }
-        strokec(col, 30); p.strokeWeight(1);
+        strokec(col, inst.role ? 40 : 26); p.strokeWeight(1);
         for (k = 0; k < ed.length; k++) { var a = pts[ed[k][0]], b = pts[ed[k][1]]; if (a && b) p.line(a[0], a[1], b[0], b[1]); }
         p.noStroke();
         for (k = 0; k < pts.length; k++) {
           var tw = still ? 0.8 : (0.55 + 0.45 * Math.sin(fc * 0.035 + inst.tw + k)), bright = (k % 3 === 0), pr = pts[k];
-          if (bright) { fillc(col, 24 * tw); p.ellipse(pr[0], pr[1], 9, 9); }
-          fillc(col, (bright ? 150 : 95) * tw); p.ellipse(pr[0], pr[1], bright ? 3.4 : 2.2, bright ? 3.4 : 2.2);
+          if (bright) { fillc(col, (inst.role ? 30 : 20) * tw); p.ellipse(pr[0], pr[1], 9, 9); }
+          fillc(col, (bright ? (inst.role ? 165 : 120) : 90) * tw); p.ellipse(pr[0], pr[1], bright ? 3.4 : 2.2, bright ? 3.4 : 2.2);
         }
+        // a faint label naming whose constellation this is — makes the relevance explicit
+        if (inst.role && !still) { setFont(MONO, 8.5, INK, p.CENTER, p.TOP, 70); p.text((inst.role + ' · ' + DATA.SIGNS[inst.sign].name).toUpperCase(), gx, gy + s * 0.5 + 6); }
       }
       p.rectMode(p.CORNER);
     }
@@ -3802,7 +3821,8 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       UI.sliderRect = { x: slx, y: sly, w: slw }; ly += 40;
       ly += toggleRow('Cloud reading boost', [['on', 'On'], ['off', 'Off']], st.ai ? 'on' : 'off', ly, function (v) { st.ai = (v === 'on'); APP.save(); });
       ly += paragraph('Off (default): the built-in engine writes every reading on-device \u2014 free, private, works offline with no account. On: an optional cloud pass, only if your deployment provides a connection.', x, ly, w, 13.5, INK, SERIF, 20, 180) + 20;
-      flatBtn('Edit birth data', x, ly, 170, 44, function () { UI.draft = newDraft(); UI.screen = 'onboard'; }, true); ly += 62;
+      flatBtn('Edit birth data', x, ly, 170, 44, function () { UI.draft = newDraft(); UI.screen = 'onboard'; }, true);
+      flatBtn('Replay tour', x + 182, ly, 150, 44, function () { startTour(); }, false); ly += 62;
       ly += paragraph('Aqau Pluto computes a genuine ephemeris on-device with astronomy-engine (MIT), accurate to about one arcsecond against NOVAS/JPL, and reads it in plain, behavioural language. The whole interface is drawn and animated live in p5.', x, ly, w, 14, INK, SERIF, 21, 170) + 24;
       UI.contentH.settings = ly;
     }
@@ -3904,6 +3924,41 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       fillc(ACC); p.rect(band + W - 5, 0, 5, H);
     }
 
+    // ---------- first-run tour (a gentle, game-style guide; drawn on the canvas) ----------
+    // The whole app is one canvas, so DOM tour libs (Shepherd/Intro/Driver) can't attach —
+    // this is a small native coachmark sequence that points at the nav and explains each area.
+    var TOUR = [
+      { t: 'Welcome. This is your chart, read straight — real astronomy, plain language, all on your device. Here’s a 20-second tour.' },
+      { tab: 0, t: 'CHART — your birth wheel. Tap any planet and it magnifies, with what it means for you.' },
+      { tab: 1, t: 'READ — your chart in plain words: what’s live today and this very hour, and the patterns that make you you.' },
+      { tab: 3, t: 'TAROT — spreads to lay yourself, every card’s meaning, and the card art from public-domain decks worldwide.' },
+      { tab: 4, t: 'PEOPLE — add a friend, a date, or family by their birthday to compare charts, and see a family tree.' },
+      { tab: 5, t: 'SETTINGS — switch Light / Dark and tune the zodiac and houses. That’s the tour — enjoy exploring.' }
+    ];
+    function startTour() { UI.tour = { step: 0 }; UI.screen = 'chart'; }
+    function endTour() { UI.tour = null; if (APP.STATE.settings) { APP.STATE.settings.toured = true; APP.save(); } }
+    function tourBtn(label, bx, by, bw, bh, fn, primary) {
+      var dn = pressing(bx, by, bw, bh);
+      p.noStroke(); fillc(primary ? INK : GROUNDS.chart); p.rect(bx, by + (dn ? 2 : 0), bw, bh, 7);
+      if (!primary) { p.noFill(); strokec(INK, 200); p.strokeWeight(1.4); p.rect(bx, by + (dn ? 2 : 0), bw, bh, 7); }
+      setFont(MONO, 11, primary ? GROUNDS.chart : INK, p.CENTER, p.CENTER); p.text(label.toUpperCase(), bx + bw / 2, by + (dn ? 2 : 0) + bh / 2 + 0.5);
+      pushHit(bx, by, bw, bh, fn);
+    }
+    function drawTour() {
+      if (!UI.tour) return;
+      var step = TOUR[UI.tour.step]; if (!step) { endTour(); return; }
+      p.noStroke(); fillc([0, 0, 0], 150); p.rect(0, 0, W, H); pushHit(0, 0, W, H, function () {}); // scrim swallows taps
+      if (step.tab != null) { var sb = UI.safeBottom || 0, navY = H - NAVH - sb, tw = W / 6, tx = step.tab * tw; p.noFill(); strokec(ACC, 255); p.strokeWeight(2.5); p.rect(tx + 4, navY + 4, tw - 8, NAVH - 8, 8); }
+      var x = sx(), w = cw(), cardH = 172, cy = H - NAVH - (UI.safeBottom || 0) - cardH - 22;
+      p.noStroke(); fillc(GROUNDS.chart); p.rect(x, cy, w, cardH, 12); p.noFill(); strokec(INK, 210); p.strokeWeight(1.5); p.rect(x, cy, w, cardH, 12);
+      setFont(MONO, 9, ACCTX, p.LEFT, p.TOP, 220); p.text('TOUR · ' + (UI.tour.step + 1) + ' / ' + TOUR.length, x + 16, cy + 14);
+      var lines = wrapLines(step.t, w - 32); setFont(SERIF, 16, INK, p.LEFT, p.TOP);
+      for (var i = 0; i < lines.length; i++) p.text(lines[i], x + 16, cy + 36 + i * 23);
+      var by = cy + cardH - 46, bh = 34, last = (UI.tour.step >= TOUR.length - 1);
+      tourBtn('Skip', x + 16, by, 84, bh, function () { endTour(); }, false);
+      tourBtn(last ? 'Done' : 'Next', x + w - 116, by, 100, bh, function () { if (last) endTour(); else UI.tour.step++; }, true);
+    }
+
     // ---------- lifecycle ----------
     p.__setScreen = function (s) { UI.screen = s; }; p.__ui = UI; // test seam (unused in normal play)
     p.setup = function () {
@@ -3928,6 +3983,9 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (s === 'onboard') drawOnboard(); else { if (!(s === 'people' && UI.padd)) hideSearchInput(); if (s === 'chart') drawChart(); else if (s === 'read') drawRead(); else if (s === 'learn') drawLearn(); else if (s === 'tarot') drawTarot(); else if (s === 'people') drawPeople(); else if (s === 'settings') drawSettings(); }
       drawQuip();
       drawTopbar(); if (s !== 'onboard') drawNav();
+      // first run: once a chart exists, gently guide the newcomer
+      if (!UI.tour && APP.STATE.chart && APP.STATE.settings && !APP.STATE.settings.toured && s !== 'onboard') startTour();
+      drawTour();
       drawTransition();
       clampScroll();
     };
