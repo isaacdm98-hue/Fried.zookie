@@ -5,6 +5,23 @@ A single-file, offline-first astrology + tarot PWA. Computed natal charts
 readings, an educational **Learn** screen, and a tarot reference — all
 on-device, no server, no API keys.
 
+### In the Read screen
+
+- **Daily & time aspects** — live transits to your natal chart, split into
+  what's running *today* (the slower planets) and *the passing hour* (the fast
+  Moon), each with a plain-language paragraph.
+- **On-device chart intelligence** (no AI) — a weighted *dominant planet*, your
+  *lunar phase at birth*, your Marc-Edmund-Jones *chart shape* (bowl, bucket,
+  locomotive, …) and detected *aspect patterns* (stellium, grand trine,
+  T-square, yod). Pure maths, computed locally; inspired by open-source readers
+  like chart2txt and immanuel-python.
+
+### In the Tarot screen
+
+- **Card-art flicker** — pick a card and it gathers every version of that card
+  from the open Wikimedia Commons archive and flickers through them as a
+  slideshow drawn on the canvas. Stop the flicker to study one.
+
 ## Engine
 
 Planet / Sun / Moon positions come from **astronomy-engine** (Don Cross,

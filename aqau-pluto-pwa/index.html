@@ -1937,7 +1937,9 @@ var APP = (function () {
     return DATA.PLANETS[key] ? DATA.PLANETS[key].fn : '';
   }
   function transitSentence(t) {
-    return 'Transiting ' + nameFor(t.tp) + ' is ' + aspVerb(t.asp) + ' your natal ' + nameFor(t.np) + ', ' + aspTone(t.asp) + ' — ' + DATA.PLANETS[t.tp].fn + ', meeting ' + natalFn(t.np) + '.';
+    var base = 'Transiting ' + nameFor(t.tp) + ' is ' + aspVerb(t.asp) + ' your natal ' + nameFor(t.np) + ', ' + aspTone(t.asp);
+    if (t.tp === t.np) return base + ' — the sky’s ' + nameFor(t.tp) + ' stirring your own.';
+    return base + ' — ' + DATA.PLANETS[t.tp].fn + ', meeting ' + natalFn(t.np) + '.';
   }
   function transitListCard(list, asMoon) {
     var tc = el('div', { class: 'card list' });
@@ -1989,6 +1991,113 @@ var APP = (function () {
       wrap.appendChild(tread);
     }
     wrap.appendChild(el('p', { class: 'source small', text: 'Transits computed live against your natal chart. Tight orbs only (Moon ≤3°, others ≤2–2.5°). Reload to refresh the hour.' }));
+  }
+
+  // ================= on-device chart intelligence (deterministic, no network, no AI) =================
+  // Inspired by open-source chart readers (chart2txt, immanuel-python): aspect patterns,
+  // lunar phase, Jones chart shape, and a weighted dominant-planet score. All pure maths.
+  var PATKEYS = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto'];
+  function angSep(a, b) { var d = Math.abs(a - b) % 360; return d > 180 ? 360 - d : d; }
+  function hasAsp(a, b, angle, orb) { return Math.abs(angSep(a, b) - angle) <= orb; }
+  function presentBodies(c) { var o = [], i; for (i = 0; i < PATKEYS.length; i++) { var k = PATKEYS[i]; if (c.planets[k]) o.push({ k: k, lon: c.planets[k].lon, sign: c.planets[k].sign }); } return o; }
+  function nameList(keys) { return keys.map(nameFor).join(' · '); }
+
+  var MOON_PHASES = [
+    { n: 'New Moon', t: 'instinctive and self-starting — you act before you can fully explain why. A beginner’s drive that never quite leaves you.' },
+    { n: 'Waxing Crescent', t: 'pushing away from the past to become your own person. You can feel the pull of the old behind you as you build the new.' },
+    { n: 'First Quarter', t: 'a builder under pressure. You grow through decisive action and crisis — things get made when you’re forced to choose.' },
+    { n: 'Waxing Gibbous', t: 'the perfecter — analytical, driven to refine, rarely satisfied that a thing is finished or quite good enough yet.' },
+    { n: 'Full Moon', t: 'relationship is your mirror. You meet yourself through other people, and clarity arrives in what reflects back at you.' },
+    { n: 'Disseminating Moon', t: 'a natural teacher and sharer — you take what you’ve learned and pass it on. Meaning matters more to you than novelty.' },
+    { n: 'Last Quarter', t: 'a turning-point soul, often a step out of time — you let go of structures others still cling to. A quiet revolutionary.' },
+    { n: 'Balsamic Moon', t: 'a bit of an old soul, here to complete and release rather than begin. The old waning moon — endings make sense to you.' }
+  ];
+  function lunarPhase(c) {
+    var elong = rev(c.planets.moon.lon - c.planets.sun.lon), idx = Math.floor(elong / 45) % 8;
+    return { name: MOON_PHASES[idx].n, text: MOON_PHASES[idx].t };
+  }
+
+  function dominantPlanet(c) {
+    var b = STATE.birth, score = {}, i, k, p;
+    for (i = 0; i < PATKEYS.length; i++) score[PATKEYS[i]] = 0;
+    for (i = 0; i < c.aspects.length; i++) { var as = c.aspects[i]; var add = 1 + Math.max(0, 1 - as.orb / 8); if (score[as.a] != null) score[as.a] += add; if (score[as.b] != null) score[as.b] += add; }
+    score.sun += 2; score.moon += 2; // luminaries always speak up
+    for (i = 0; i < PATKEYS.length; i++) { k = PATKEYS[i]; p = c.planets[k]; if (!p) continue; if (RULERKEY[DATA.SIGNS[p.sign].ruler] === k) score[k] += 3; } // domicile
+    if (b.timeKnown && c.ascBody) { var ar = RULERKEY[DATA.SIGNS[c.ascBody.sign].ruler]; if (score[ar] != null) score[ar] += 4; } // chart ruler
+    var sr = RULERKEY[DATA.SIGNS[c.planets.sun.sign].ruler]; if (score[sr] != null) score[sr] += 2;
+    if (b.timeKnown) for (i = 0; i < PATKEYS.length; i++) { k = PATKEYS[i]; var h = c.planets[k] && c.planets[k].house; if (h === 1 || h === 4 || h === 7 || h === 10) score[k] += 2; }
+    var best = PATKEYS[0]; for (i = 1; i < PATKEYS.length; i++) if (score[PATKEYS[i]] > score[best]) best = PATKEYS[i];
+    return { key: best };
+  }
+
+  function aspectPatterns(c) {
+    var bs = presentBodies(c), out = [], i, j, k, key;
+    var bySign = {}; for (i = 0; i < bs.length; i++) (bySign[bs[i].sign] = bySign[bs[i].sign] || []).push(bs[i].k);
+    for (key in bySign) if (bySign.hasOwnProperty(key) && bySign[key].length >= 3) out.push({ type: 'Stellium', bodies: bySign[key], where: DATA.SIGNS[+key].name });
+    for (i = 0; i < bs.length; i++) for (j = i + 1; j < bs.length; j++) for (k = j + 1; k < bs.length; k++)
+      if (hasAsp(bs[i].lon, bs[j].lon, 120, 6) && hasAsp(bs[j].lon, bs[k].lon, 120, 6) && hasAsp(bs[i].lon, bs[k].lon, 120, 6))
+        out.push({ type: 'Grand Trine', bodies: [bs[i].k, bs[j].k, bs[k].k], where: DATA.SIGNS[bs[i].sign].element });
+    for (i = 0; i < bs.length; i++) for (j = i + 1; j < bs.length; j++) if (hasAsp(bs[i].lon, bs[j].lon, 180, 7))
+      for (k = 0; k < bs.length; k++) if (k !== i && k !== j && hasAsp(bs[k].lon, bs[i].lon, 90, 6) && hasAsp(bs[k].lon, bs[j].lon, 90, 6))
+        out.push({ type: 'T-Square', bodies: [bs[i].k, bs[j].k, bs[k].k], apex: bs[k].k });
+    for (i = 0; i < bs.length; i++) for (j = i + 1; j < bs.length; j++) if (hasAsp(bs[i].lon, bs[j].lon, 60, 4))
+      for (k = 0; k < bs.length; k++) if (k !== i && k !== j && hasAsp(bs[k].lon, bs[i].lon, 150, 3) && hasAsp(bs[k].lon, bs[j].lon, 150, 3))
+        out.push({ type: 'Yod', bodies: [bs[i].k, bs[j].k, bs[k].k], apex: bs[k].k });
+    var seen = {}, uniq = []; for (i = 0; i < out.length; i++) { key = out[i].type + ':' + out[i].bodies.slice().sort().join(','); if (!seen[key]) { seen[key] = 1; uniq.push(out[i]); } }
+    return uniq;
+  }
+  function patternText(pt) {
+    if (pt.type === 'Stellium') return 'A stellium in ' + pt.where + ' — ' + nameList(pt.bodies) + ' pile into one sign, making ' + pt.where + ' themes a dominant chord in who you are.';
+    if (pt.type === 'Grand Trine') return 'A grand trine in ' + pt.where + ' — ' + nameList(pt.bodies) + ' close a circuit of easy, natural talent in ' + pt.where + ' matters. Gifts so fluent you can forget to use them.';
+    if (pt.type === 'T-Square') return 'A T-square onto ' + nameFor(pt.apex) + ' — ' + nameList(pt.bodies) + ' pull against each other and dump the pressure on ' + nameFor(pt.apex) + ', your hardest-working, most-tested point.';
+    if (pt.type === 'Yod') return 'A yod (‘finger of fate’) pointing at ' + nameFor(pt.apex) + ' — two sextiled planets both strain toward it, giving it an oddly fated, adjust-or-else quality.';
+    return '';
+  }
+
+  var SHAPE_MEAN = {
+    Bundle: 'A Bundle — every planet packed inside a third of the wheel. Focused, specialised and self-contained; you go deep on a narrow band of life rather than wide.',
+    Bowl: 'A Bowl — all your planets in one half of the sky. Self-contained and quietly on a mission, you can feel the pull of whatever sits in the empty half.',
+    Bucket: 'A Bucket — a bowl of planets with one lone “handle” opposite. That single planet becomes a funnel the whole chart pours through.',
+    Locomotive: 'A Locomotive — planets spread across two-thirds with one empty third out front. Self-propelled and driven, working to fill what’s missing.',
+    Seesaw: 'A Seesaw — planets gathered in two opposite camps. You live in negotiation between two worlds; a natural mediator, sometimes torn.',
+    Splash: 'A Splash — planets scattered widely around the wheel. Broad interests and many doorways; versatile and curious, with a risk of spreading thin.',
+    Splay: 'A Splay — a few strong, irregular clusters. Individual and unconventional; you build your own structure rather than taking the obvious one.'
+  };
+  function chartShape(c) {
+    var bs = presentBodies(c); if (bs.length < 6) return null;
+    bs.sort(function (a, b) { return a.lon - b.lon; });
+    var n = bs.length, gapAfter = [], i;
+    for (i = 0; i < n; i++) gapAfter[i] = (i === n - 1) ? (bs[0].lon + 360 - bs[i].lon) : (bs[i + 1].lon - bs[i].lon);
+    var g1 = 0, g2 = 0; for (i = 0; i < n; i++) { if (gapAfter[i] > g1) { g2 = g1; g1 = gapAfter[i]; } else if (gapAfter[i] > g2) g2 = gapAfter[i]; }
+    var span = 360 - g1;
+    var occ = {}; for (i = 0; i < bs.length; i++) occ[bs[i].sign] = 1; var distinct = 0; for (var s in occ) if (occ.hasOwnProperty(s)) distinct++;
+    // single isolated "handle" planet flanked by the two widest gaps?
+    var handle = null; for (i = 0; i < n; i++) { var gb = gapAfter[(i - 1 + n) % n], ga = gapAfter[i]; if (gb >= 55 && ga >= 55 && (360 - gb - ga) <= 190) { handle = bs[i].k; break; } }
+    var shape;
+    if (span <= 124) shape = 'Bundle';
+    else if (span <= 184) shape = 'Bowl';
+    else if (handle) shape = 'Bucket';
+    else if (g1 >= 108 && g1 <= 134) shape = 'Locomotive';
+    else if (g1 >= 60 && g2 >= 60) shape = 'Seesaw';
+    else if (g1 < 64 && distinct >= 8) shape = 'Splash';
+    else shape = 'Splay';
+    var txt = SHAPE_MEAN[shape];
+    if (shape === 'Bucket' && handle) txt += ' Here the handle is ' + nameFor(handle) + ' — a lot of you flows out through it.';
+    return { shape: shape, text: txt };
+  }
+
+  // top-level: returns labelled blocks for the Read screen
+  function composeSignatures(c) {
+    var out = [];
+    var dom = dominantPlanet(c);
+    out.push({ label: 'Loudest voice', text: 'The planet that carries the most weight in your chart is ' + nameFor(dom.key) + ' — ' + (DATA.PLANETS[dom.key] ? DATA.PLANETS[dom.key].fn : '') + '. More than any other, it colours how the whole chart behaves.' });
+    var lp = lunarPhase(c);
+    out.push({ label: 'Lunar phase at birth', text: 'You were born on the ' + lp.name + ': ' + lp.text });
+    var sh = chartShape(c); if (sh) out.push({ label: 'Chart shape', text: sh.text });
+    var pats = aspectPatterns(c);
+    if (pats.length) { for (var i = 0; i < Math.min(pats.length, 4); i++) out.push({ label: pats[i].type, text: patternText(pats[i]) }); }
+    else out.push({ label: 'Aspect patterns', text: 'No tight major aspect patterns — your planets tend to work as individuals rather than locking into one big geometric configuration.' });
+    return out;
   }
 
   function renderRead() {
@@ -2533,7 +2642,7 @@ var APP = (function () {
     boot: boot, _compute: computeChart, _state: STATE, _data: function () { return DATA; },
     STATE: STATE, save: save, load: load, compute: computeChart,
     composeCore: composeCore, localAsk: localAsk, chartText: chartText, callModel: callModel,
-    composeTransits: composeTransits, transitSentence: transitSentence,
+    composeTransits: composeTransits, transitSentence: transitSentence, composeSignatures: composeSignatures,
     nameFor: nameFor, glyphFor: glyphFor, sgAbbr: sgAbbr, pad: pad,
     domElement: domElement, lowElement: lowElement, domMod: domMod, tzOffsetHours: tzOffsetHours
   };
@@ -2696,8 +2805,10 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     }
     function paragraph(str, x, ly, boxW, sz, c, font, lead, a) {
       p.textFont(font || SERIF); p.textSize(sz); p.textStyle(p.NORMAL);
-      var lines = wrapLines(str, boxW), lh = lead || sz * 1.5; fillc(c, a); p.noStroke(); p.textAlign(p.LEFT, p.TOP);
+      var lines = wrapLines(str, boxW), lh = lead || sz * 1.5; fillc(c, a); p.textAlign(p.LEFT, p.TOP);
+      strokec(c, a); p.strokeWeight(0.45); // faux-bold: thicken glyphs slightly for a touch more presence
       for (var i = 0; i < lines.length; i++) p.text(lines[i], x, sY(ly + i * lh));
+      p.noStroke();
       return lines.length * lh;
     }
     // chromatic-aberration text (glitch). inten 0..1
@@ -2745,36 +2856,53 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     // ============ BACKGROUND = YOUR ELEMENTAL SIGNATURE ============
     // particle counts match the chart's element percentages; each element moves in character.
     function buildField() {
-      var n = Math.max(80, Math.min(150, Math.floor(W * H / 7200)));
+      var n = Math.max(120, Math.min(230, Math.floor(W * H / 4600)));
       var c = APP.STATE.chart, els = ['fire', 'earth', 'air', 'water'];
       var wts = c ? [c.elements.fire, c.elements.earth, c.elements.air, c.elements.water] : [25, 25, 25, 25];
       var bag = [];
       for (var e = 0; e < 4; e++) { var cnt = Math.max(1, Math.round(n * wts[e] / 100)); for (var k = 0; k < cnt; k++) bag.push(els[e]); }
       UI.field = [];
-      for (var i = 0; i < bag.length; i++) UI.field.push({ x: Math.random() * W, y: Math.random() * H, el: bag[i], sz: [2, 2, 3, 4][Math.floor(Math.random() * 4)], vx: 0, vy: 0, ph: Math.random() * 6.28 });
+      for (var i = 0; i < bag.length; i++) UI.field.push({ x: Math.random() * W, y: Math.random() * H, el: bag[i], sz: [2, 3, 3, 4, 5][Math.floor(Math.random() * 5)], vx: 0, vy: 0, ph: Math.random() * 6.28, tw: Math.random() * 6.28 });
     }
     function drawField() {
       var still = reduced(), mx = UI.ptrX, my = UI.ptrY, down = UI.ptrDown, fc = p.frameCount;
       var ptrActive = down || (nowT() - (UI.ptrMoveT || 0) < 140);
-      p.rectMode(p.CENTER);
-      for (var i = 0; i < UI.field.length; i++) {
-        var q = UI.field[i], col = ELHUE[q.el];
+      var F = UI.field, nF = F.length, i;
+      // 1) move + integrate (bolder drift, stronger pointer push)
+      for (i = 0; i < nF; i++) {
+        var q = F[i];
         if (!still) {
           var ang = p.noise(q.x * 0.0016, q.y * 0.0016, fc * 0.004) * Math.PI * 4;
-          var sp = q.el === 'fire' ? 0.9 : q.el === 'air' ? 0.55 : q.el === 'water' ? 0.4 : 0.12;
+          var sp = q.el === 'fire' ? 1.05 : q.el === 'air' ? 0.62 : q.el === 'water' ? 0.45 : 0.14;
           var dxm = Math.cos(ang) * sp, dym = Math.sin(ang) * sp;
-          if (q.el === 'fire') { dxm += (Math.random() - 0.5) * 0.8; dym += (Math.random() - 0.5) * 0.8; }
-          if (q.el === 'water') { dym += Math.sin(fc * 0.03 + q.ph) * 0.5; }
+          if (q.el === 'fire') { dxm += (Math.random() - 0.5) * 1.0; dym += (Math.random() - 0.5) * 1.0; }
+          if (q.el === 'water') { dym += Math.sin(fc * 0.03 + q.ph) * 0.6; }
           q.x += dxm; q.y += dym;
         }
-        var dx = q.x - mx, dy = q.y - my, d2 = dx * dx + dy * dy, R = 116;
-        if (ptrActive && d2 < R * R && !still) { var d = Math.sqrt(d2) + 0.01, f = (R - d) / R * (down ? 2.6 : 1.4); q.vx += dx / d * f; q.vy += dy / d * f; }
-        q.vx *= 0.85; q.vy *= 0.85; q.x += q.vx; q.y += q.vy;
+        var dx = q.x - mx, dy = q.y - my, d2 = dx * dx + dy * dy, R = 140;
+        if (ptrActive && d2 < R * R && !still) { var d = Math.sqrt(d2) + 0.01, f = (R - d) / R * (down ? 3.4 : 1.8); q.vx += dx / d * f; q.vy += dy / d * f; }
+        q.vx *= 0.86; q.vy *= 0.86; q.x += q.vx; q.y += q.vy;
         if (q.x < -10) q.x = W + 10; if (q.x > W + 10) q.x = -10; if (q.y < -10) q.y = H + 10; if (q.y > H + 10) q.y = -10;
-        if (q.el === 'air') { p.noFill(); strokec(col, 70); p.strokeWeight(1); p.line(q.x - q.sz, q.y, q.x + q.sz, q.y); }
-        else if (q.el === 'earth') { p.noStroke(); fillc(col, 65); p.rect(q.x, q.y, q.sz, q.sz); }
-        else if (q.el === 'water') { p.noStroke(); fillc(col, 70); p.ellipse(q.x, q.y, q.sz, q.sz); }
-        else { p.noFill(); strokec(col, 85); p.strokeWeight(1); p.line(q.x, q.y - q.sz - 1, q.x, q.y + q.sz + 1); }
+      }
+      // 2) constellation links — the "alive" layer (capped subset for performance)
+      if (!still) {
+        var L = Math.min(nF, 150), LD2 = 60 * 60;
+        for (var a2 = 0; a2 < L; a2++) {
+          var qa = F[a2], links = 0;
+          for (var b2 = a2 + 1; b2 < L && links < 3; b2++) {
+            var qb = F[b2], ex = qa.x - qb.x, ey = qa.y - qb.y, e2 = ex * ex + ey * ey;
+            if (e2 < LD2) { strokec(ELHUE[qa.el], (1 - e2 / LD2) * 48); p.strokeWeight(1); p.line(qa.x, qa.y, qb.x, qb.y); links++; }
+          }
+        }
+      }
+      // 3) marks — bolder, glowing, twinkling per element character
+      p.rectMode(p.CENTER);
+      for (i = 0; i < nF; i++) {
+        var m = F[i], col = ELHUE[m.el], tw = still ? 1 : (0.6 + 0.4 * Math.sin(fc * 0.05 + (m.tw || 0)));
+        if (m.el === 'fire') { p.noStroke(); fillc(col, 26 * tw); p.ellipse(m.x, m.y, m.sz * 4, m.sz * 4); strokec(col, 165 * tw); p.strokeWeight(1.4); p.line(m.x, m.y - m.sz - 1, m.x, m.y + m.sz + 1); p.line(m.x - m.sz - 1, m.y, m.x + m.sz + 1, m.y); }
+        else if (m.el === 'air') { p.noFill(); strokec(col, 125 * tw); p.strokeWeight(1.2); p.line(m.x - m.sz, m.y, m.x + m.sz, m.y); }
+        else if (m.el === 'earth') { p.noStroke(); fillc(col, 115 * tw); p.rect(m.x, m.y, m.sz + 0.5, m.sz + 0.5); }
+        else { p.noStroke(); fillc(col, 30 * tw); p.ellipse(m.x, m.y, m.sz * 3, m.sz * 3); fillc(col, 125 * tw); p.ellipse(m.x, m.y, m.sz, m.sz); }
       }
       p.rectMode(p.CORNER);
     }
@@ -3074,6 +3202,17 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
           for (var mti = 0; mti < Math.min(tr.timed.length, 4); mti++) { if (mti) hairline(x, ly - 4, x + w, 36); ly += transitRow(tr.timed[mti], true, x, w, ly) + 4; }
           ly += 10;
           ly += paragraph('The Moon is the fast hand of the clock — these shift within hours. As of ' + stamp + ': ' + tr.timed.slice(0, 2).map(APP.transitSentence).join(' '), x, ly, w, 15.5, INK, SERIF, 24) + 14;
+        }
+      }
+
+      // ---- on-device chart intelligence: patterns & signatures (no AI) ----
+      if (!UI.readSig) { try { UI.readSig = APP.composeSignatures(c); } catch (e) { UI.readSig = []; } }
+      if (UI.readSig && UI.readSig.length) {
+        ly += 8; eyebrow('Patterns in your chart', x, ly, ACC); ly += 26;
+        for (var sgi = 0; sgi < UI.readSig.length; sgi++) {
+          var blk = UI.readSig[sgi];
+          setFont(MONO, 9.5, INK, p.LEFT, p.TOP, 210); bold(); p.text(blk.label.toUpperCase(), x, sY(ly)); normal(); ly += 17;
+          ly += paragraph(blk.text, x, ly, w, 15, INK, SERIF, 23) + 14;
         }
       }
 
@@ -3474,7 +3613,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       flatBtn(canBuild ? 'Build my chart' : 'Choose a birth place', x, ly, w, 50, function () { if (canBuild) buildChart(); }, canBuild); ly += 64; UI.contentH.onboard = ly;
     }
     function buildChart() { var d = UI.draft, ci = DATA.CITIES[d.cityIdx]; APP.STATE.birth = { name: '', y: d.y, mo: d.mo, d: d.d, hour: d.hour, min: d.min, tz: 0, iana: ci[4], lat: ci[2], lon: ci[3], place: ci[0] + ', ' + ci[1], timeKnown: d.timeKnown }; recompute(); UI.selPlanet = 'sun'; UI.popT = nowT(); UI.popFrom = 22; UI.scroll.chart = 0; UI.screen = 'chart'; hideSearchInput(); }
-    function recompute() { APP.STATE.chart = APP.compute(APP.STATE.birth, APP.STATE.settings); APP.save(); UI.readCache = null; UI.askAns = ''; UI.quip = null; UI.quipNext = 0; buildField(); }
+    function recompute() { APP.STATE.chart = APP.compute(APP.STATE.birth, APP.STATE.settings); APP.save(); UI.readCache = null; UI.readSig = null; UI.readTransit = null; UI.askAns = ''; UI.quip = null; UI.quipNext = 0; buildField(); }
 
     // ---------- chrome ----------
     function drawTopbar() {
@@ -3500,14 +3639,16 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     }
     // glitch reveal overlay on screen change
     function drawTransition() {
-      var prog = cl01((nowT() - UI.fxT) / 360); if (prog >= 1) return;
-      // bold colour-block wipe: full-height band sweeps across, fully covering at midpoint
+      var prog = cl01((nowT() - UI.fxT) / 420); if (prog >= 1) return;
+      // bold colour-block wipe with chromatic edges + glitch shards spitting off the leading edge
       var band = -W + prog * 2 * W;
       p.noStroke();
       fillc(INK); p.rect(band, 0, W, H);
-      fillc(ACC); p.rect(band + W - 7, 0, 7, H);
-      fillc(ACC); p.rect(band, 0, 4, H);
-      if (prog < 0.7) { var i; for (i = 0; i < 4; i++) { var yy = Math.random() * H; fillc(GROUNDS[UI.screen]); p.rect(band + W - 7, yy, 12 + Math.random() * 30, 2 + Math.random() * 3); } }
+      p.fill(214, 44, 44, 200); p.rect(band + W - 2, 0, 5, H);     // red fringe
+      p.fill(44, 110, 214, 200); p.rect(band + W + 3, 0, 4, H);    // blue fringe
+      fillc(ACC); p.rect(band + W - 9, 0, 7, H); fillc(ACC); p.rect(band, 0, 5, H);
+      if (prog < 0.8) { for (var i = 0; i < 9; i++) { var yy = Math.random() * H, sw = 16 + Math.random() * 46; fillc(GROUNDS[UI.screen]); p.rect(band + W - 9, yy, sw, 2 + Math.random() * 4); fillc(ACC, 180); p.rect(band + W - 9 + sw, yy, 6, 2); } }
+      if (prog > 0.44 && prog < 0.56) { fillc([245, 240, 230], (1 - Math.abs(prog - 0.5) / 0.06) * 42); p.rect(0, 0, W, H); } // mid-cover flash
     }
 
     // ---------- lifecycle ----------
