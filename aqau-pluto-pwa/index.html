@@ -1916,6 +1916,11 @@ var APP = (function () {
     var ay = STATE.settings.zodiac === 'sidereal' ? ayanamsa(dNow) : 0;
     return { now: now, ut: ut, d: dNow, tp: tp, ay: ay };
   }
+  // live lunar phase right now (Sun->Moon elongation): 0 new, 180 full
+  function moonPhaseNow() {
+    var t = transitNow(), elong = rev(t.tp.moon.lon - t.tp.sun.lon);
+    return { elong: elong, illum: (1 - Math.cos(elong * Math.PI / 180)) / 2, waxing: elong < 180 };
+  }
   function composeTransits(c) {
     var ctx = transitNow();
     var all = transitsToNatal(ctx.tp, ctx.ay, c);
@@ -2716,7 +2721,7 @@ var APP = (function () {
     STATE: STATE, save: save, load: load, compute: computeChart,
     composeCore: composeCore, localAsk: localAsk, chartText: chartText, callModel: callModel,
     composeTransits: composeTransits, transitSentence: transitSentence, composeSignatures: composeSignatures,
-    addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry,
+    addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow,
     nameFor: nameFor, glyphFor: glyphFor, sgAbbr: sgAbbr, pad: pad,
     domElement: domElement, lowElement: lowElement, domMod: domMod, tzOffsetHours: tzOffsetHours
   };
@@ -3893,11 +3898,31 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     function recompute() { APP.STATE.chart = APP.compute(APP.STATE.birth, APP.STATE.settings); APP.save(); UI.readCache = null; UI.readSig = null; UI.readTransit = null; UI.bondCache = null; UI.bondFor = null; if (APP.clearPersonCharts) APP.clearPersonCharts(); UI.askAns = ''; UI.quip = null; UI.quipNext = 0; buildField(); }
 
     // ---------- chrome ----------
+    // ---------- live celestial emblem (real current moon phase) \u2014 the recurring centrepiece ----------
+    function curMoonElong() { if (UI.moonElong == null || nowT() - (UI.moonElongT || 0) > 60000) { try { UI.moonElong = APP.moonPhaseNow().elong; } catch (e) { UI.moonElong = 0; } UI.moonElongT = nowT(); } return UI.moonElong; }
+    function drawMoonDisc(cx, cy, r, elong, al) {
+      var waxing = elong < 180, illum = (1 - Math.cos(elong * Math.PI / 180)) / 2;
+      var lit = [238, 232, 216], dark = shade(GROUNDS[UI.screen], -22);
+      p.noStroke();
+      fillc(dark, 255 * al); p.ellipse(cx, cy, 2 * r, 2 * r);
+      fillc(lit, 255 * al);
+      if (waxing) p.arc(cx, cy, 2 * r, 2 * r, -Math.PI / 2, Math.PI / 2, p.PIE); else p.arc(cx, cy, 2 * r, 2 * r, Math.PI / 2, Math.PI * 1.5, p.PIE);
+      var k = Math.cos(elong * Math.PI / 180);
+      fillc(illum > 0.5 ? lit : dark, 255 * al); p.ellipse(cx, cy, 2 * r * Math.abs(k), 2 * r);
+      p.noFill(); strokec(INK, 120 * al); p.strokeWeight(1); p.ellipse(cx, cy, 2 * r, 2 * r);
+    }
+    function celestialEmblem(cx, cy, r, al) {
+      var t = nowT();
+      p.noFill(); strokec(ACC, 80 * al); p.strokeWeight(1);
+      p.push(); p.translate(cx, cy); p.rotate(t * 0.00012); p.ellipse(0, 0, r * 3.0, r * 2.1); p.pop(); // a slow tilted orbit
+      var a = t * 0.0007, ox = cx + Math.cos(a) * r * 1.5, oy = cy + Math.sin(a) * r * 1.05; p.noStroke(); fillc(ACC, 200 * al); p.ellipse(ox, oy, 3, 3);
+      drawMoonDisc(cx, cy, r, curMoonElong(), al);
+    }
     function drawTopbar() {
       var th = TOPH + (UI.safeTop || 0), cy = (UI.safeTop || 0) + TOPH / 2;
       p.noStroke(); fillc(UI.bg); p.rect(0, 0, W, th);
-      setFont(SANS, 14, INK, p.LEFT, p.CENTER); bold(); p.text('\u2647\uFE0E', sx(), cy); normal();
-      setFont(MONO, 11, INK, p.LEFT, p.CENTER, 200); p.text('AQAU PLUTO', sx() + 22, cy + 0.5);
+      celestialEmblem(sx() + 9, cy, 9, 1); // the live moon, present on every screen
+      setFont(MONO, 11, INK, p.LEFT, p.CENTER, 200); p.text('AQAU PLUTO', sx() + 32, cy + 0.5);
       var dt = new Date(), sep = (dt.getSeconds() % 2 === 0) ? ':' : ' ';
       setFont(MONO, 11, INK, p.RIGHT, p.CENTER, 150); p.text(pad2(dt.getHours()) + sep + pad2(dt.getMinutes()) + sep + pad2(dt.getSeconds()), sx() + cw(), cy + 0.5);
       strokec(INK, 40); p.strokeWeight(1); p.line(0, th, W, th);
@@ -3983,6 +4008,8 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (s === 'onboard') drawOnboard(); else { if (!(s === 'people' && UI.padd)) hideSearchInput(); if (s === 'chart') drawChart(); else if (s === 'read') drawRead(); else if (s === 'learn') drawLearn(); else if (s === 'tarot') drawTarot(); else if (s === 'people') drawPeople(); else if (s === 'settings') drawSettings(); }
       drawQuip();
       drawTopbar(); if (s !== 'onboard') drawNav();
+      // each screen entry blooms a large moon emblem centre-stage, then dissolves — the journey
+      if (!reduced() && s !== 'onboard') { var te = (nowT() - UI.fxT) / 750; if (te >= 0 && te < 1) { var al = (1 - te) * (1 - te); celestialEmblem(W / 2, topY() + viewH() * 0.30, Math.min(W, H) * 0.14 * (0.7 + 0.3 * eCubic(te)), al * 0.9); } }
       // first run: once a chart exists, gently guide the newcomer
       if (!UI.tour && APP.STATE.chart && APP.STATE.settings && !APP.STATE.settings.toured && s !== 'onboard') startTour();
       drawTour();
