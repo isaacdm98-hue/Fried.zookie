@@ -4186,12 +4186,39 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       return { kind: 'gentle', col: ELHUE.fire, tag: 'GENTLE', line: 'Friction around ' + dom + ' — go gentle, and don’t force it.' };
     }
     // ---- life-in-chapters timeline: the slow transits & returns across a lifetime ----
+    function lifeWalkNext(n) { if (!UI.lifeWalk) return; if (UI.lifeWalk.i >= n - 1) { UI.lifeWalk = null; return; } UI.lifeWalk.i++; UI.lifeWalk.t0 = nowT(); }
+    function lifeWalkPrev() { if (UI.lifeWalk && UI.lifeWalk.i > 0) { UI.lifeWalk.i--; UI.lifeWalk.t0 = nowT(); } }
+    function drawLifeWalk(c, b) {
+      var ev = UI.lifeList || []; if (!ev.length) { UI.lifeWalk = null; return; }
+      var x = sx(), w = cw(), top = topY(), vh = viewH(), cx = x + w / 2, i;
+      if (UI.lifeWalk.i >= ev.length) UI.lifeWalk.i = ev.length - 1;
+      var e0 = ev[UI.lifeWalk.i], last = (UI.lifeWalk.i >= ev.length - 1);
+      var te = cl01((nowT() - UI.lifeWalk.t0) / 560), ee = eCubic(te), still = reduced(), alpha = still ? 1 : cl01(te * 1.5);
+      var ctrlTop = top + vh - (last ? 110 : 64);
+      if (!last) { pushHit(x, top + 64, w, ctrlTop - (top + 64), function () { lifeWalkNext(ev.length); }); pushHit(x, top + 64, 72, ctrlTop - (top + 64), function () { lifeWalkPrev(); }); }
+      var cy = top + vh * 0.25, r = Math.min(w * 0.30, vh * 0.15), drift = (1 - ee) * 14;
+      var dc = p.drawingContext; if (dc) { dc.save(); dc.globalAlpha = alpha; }
+      celestialBody((e0.tp && BODYCOL[e0.tp]) ? e0.tp : 'saturn', cx, cy - drift, r, nowT());
+      if (dc) dc.restore();
+      setFont(MONO, 12, ACCTX, p.CENTER, p.TOP, 235); p.text('AGE ' + Math.round(e0.age) + '   ·   ' + e0.date.getFullYear(), cx, top + vh * 0.42);
+      var ty = top + vh * 0.47, slideIn = (1 - ee) * 12;
+      var tl = wrapLines2(e0.title || 'A chapter', w - 16, SANS, 25); setFont(SANS, 25, INK, p.CENTER, p.TOP, 255 * alpha); bold(); for (i = 0; i < tl.length; i++) p.text(tl[i], cx, ty + slideIn + i * 31); normal(); ty += tl.length * 31 + 10;
+      var bl = wrapLines2(e0.text || '', w - 24, SERIF, 18); setFont(SERIF, 18, INK, p.CENTER, p.TOP, 246 * alpha); strokec(INK, 246 * alpha); p.strokeWeight(0.5); for (i = 0; i < bl.length; i++) p.text(bl[i], cx, ty + slideIn + i * 26); p.noStroke();
+      setFont(MONO, 10, ACCTX, p.LEFT, p.TOP, 220); p.text('YOUR LIFE · ' + (UI.lifeWalk.i + 1) + ' / ' + ev.length, x, top + 12);
+      var pbw = w * 0.6, pbx = cx - pbw / 2, pby = top + vh - 16; p.noStroke(); fillc(INK, 45); p.rect(pbx, pby, pbw, 3, 2); fillc(ACC); p.rect(pbx, pby, pbw * ((UI.lifeWalk.i + 1) / ev.length), 3, 2);
+      if (last) { tourBtn('Back to timeline', cx - 150, top + vh - 96, 145, 42, function () { UI.lifeWalk = null; }, true); tourBtn('Done', cx + 10, top + vh - 96, 120, 42, function () { UI.lifeWalk = null; UI.lifeView = false; }, false); }
+      else { setFont(MONO, 10, INK, p.CENTER, p.TOP, 160 * alpha); p.text(UI.lifeWalk.i === 0 ? 'TAP TO BEGIN  ›' : 'TAP TO CONTINUE  ›', cx, top + vh - 42); }
+      tourBtn('Skip', x + w - 66, top + 6, 60, 26, function () { UI.lifeWalk = null; }, false);
+      UI.contentH.read = 0;
+    }
     function drawLifeTimeline(c, b) {
+      if (!UI.lifeList) { try { UI.lifeList = APP.lifeTransits(c, b); } catch (e2) { UI.lifeList = []; } }
+      if (UI.lifeWalk) { drawLifeWalk(c, b); return; }
       var x = sx(), w = cw(), ly = 18, gi = cl01(1 - (nowT() - UI.fxT) / 500);
       flatBtn('‹ Read', x, ly, 100, 36, function () { UI.lifeView = false; UI.scroll.read = 0; }, false, true); ly += 50;
       p.textStyle(p.BOLD); glitchText('Your life', x, sY(ly), 32, SANS, INK, p.LEFT, p.TOP, gi); normal(); ly += 42;
-      ly += paragraph('The rare, slow transits and planetary returns that mark the real chapters of a life — what was likely stirring then, and what’s ahead. Astrology as weather, not fate.', x, ly, w, 14.5, INK, SERIF, 22, 205) + 16;
-      if (!UI.lifeList) { try { UI.lifeList = APP.lifeTransits(c, b); } catch (e) { UI.lifeList = []; } }
+      ly += paragraph('The rare, slow transits and planetary returns that mark the real chapters of a life — what was likely stirring then, and what’s ahead. Astrology as weather, not fate.', x, ly, w, 14.5, INK, SERIF, 22, 205) + 14;
+      flatBtn('Play as a journey', x, ly, w, 46, function () { UI.lifeWalk = { i: 0, t0: nowT() }; }, true); ly += 60;
       var ev = UI.lifeList, nowMs = new Date().getTime(), lineX = x + 16, i, nowDrawn = false;
       strokec(INK, 45); p.strokeWeight(2); var topLine = sY(ly), botLine = sY(ly + ev.length * 96 + 40); p.line(lineX, topLine, lineX, botLine);
       // A14 — a travelling light runs the thread as you scroll, lighting each chapter it passes
@@ -6136,18 +6163,14 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     }
     // a slow, graceful cross-fade on screen change — the new screen rises from its own ground colour
     function drawTransition() {
-      var prog = cl01((nowT() - UI.fxT) / 950); if (prog >= 1 || reduced()) return;
-      var e = eCubic(prog), inv = 1 - e, cx = W / 2, cy = topY() + viewH() * 0.42, i;
-      // ground veil fades away; the new screen blooms through
-      p.noStroke(); fillc(UI.bg, 255 * inv); p.rect(0, 0, W, H);
-      // an expanding ring of light blooming from the centre
-      var rr = Math.max(W, H) * 0.72 * e;
-      p.noFill(); strokec(ACC, 130 * inv); p.strokeWeight(2.4); p.ellipse(cx, cy, rr * 2, rr * 2);
-      strokec(ACC, 55 * inv); p.strokeWeight(1); p.ellipse(cx, cy, rr * 1.4, rr * 1.4);
-      // a scatter of stars settling into place (deterministic golden-angle spread)
-      for (i = 0; i < 16; i++) { var a = i * 2.39996, dist = (0.18 + (i % 5) * 0.16) * Math.max(W, H) * 0.55, px = cx + Math.cos(a) * dist * e, py = cy + Math.sin(a) * dist * e, sa = inv * (0.4 + 0.6 * Math.sin(prog * Math.PI + i)); p.noStroke(); fillc(ACC, 170 * sa); p.ellipse(px, py, 2.6, 2.6); }
-      // a single soft accent sweep
-      var sxp = e * W; strokec(ACC, 55 * inv); p.strokeWeight(2); p.line(sxp, 0, sxp, H);
+      var prog = cl01((nowT() - UI.fxT) / 440); if (prog >= 1) return;
+      // bold colour-block wipe: full-height band sweeps across, fully covering at midpoint (the original, loved transition)
+      var band = -W + prog * 2 * W;
+      p.noStroke();
+      fillc(INK); p.rect(band, 0, W, H);
+      fillc(ACC); p.rect(band + W - 7, 0, 7, H);
+      fillc(ACC); p.rect(band, 0, 4, H);
+      if (prog < 0.7) { var i; for (i = 0; i < 4; i++) { var yy = Math.random() * H; fillc(GROUNDS[UI.screen]); p.rect(band + W - 7, yy, 12 + Math.random() * 30, 2 + Math.random() * 3); } }
     }
 
     // ---------- first-run tour (a gentle, game-style guide; drawn on the canvas) ----------
@@ -6227,7 +6250,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     p.draw = function () {
       // auto-dark-at-night: re-apply the theme when the effective key changes (time or accent)
       var ek = effectiveThemeKey() + '|' + ((APP.STATE.settings && APP.STATE.settings.accent) || 0); if (ek !== UI.appliedThemeKey) { applyTheme(); setBodyBg(GROUNDS[UI.screen] || GROUNDS.chart); }
-      if (UI.screen !== UI.prevScreen) { var wasFirst = !UI.prevScreen; UI.fxT = nowT(); UI.prevScreen = UI.screen; UI.story = null; if (UI.video) closeVideo(); if (UI.screen !== 'chart') UI.walk = null; if (UI.screen !== 'tarot') UI.tarotRit = null; setBodyBg(GROUNDS[UI.screen] || GROUNDS.chart); if (!wasFirst) chime(); }
+      if (UI.screen !== UI.prevScreen) { var wasFirst = !UI.prevScreen; UI.fxT = nowT(); UI.prevScreen = UI.screen; UI.story = null; if (UI.video) closeVideo(); if (UI.screen !== 'chart') UI.walk = null; if (UI.screen !== 'tarot') UI.tarotRit = null; if (UI.screen !== 'read') UI.lifeWalk = null; setBodyBg(GROUNDS[UI.screen] || GROUNDS.chart); if (!wasFirst) chime(); }
       UI.bg = (GROUNDS[UI.screen] || GROUNDS.chart); // HARD block-colour cut between sections
       p.background(UI.bg[0], UI.bg[1], UI.bg[2]);
       drawField(); drawRipples();
