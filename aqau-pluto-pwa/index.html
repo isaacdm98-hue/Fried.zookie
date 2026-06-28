@@ -4887,8 +4887,8 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       p.noStroke(); fillc(UI.bg); p.rect(0, navY, W, NAVH + sb);
       strokec(INK, 40); p.strokeWeight(1); p.line(0, navY, W, navY);
       for (var i = 0; i < tabs.length; i++) {
-        var on = UI.screen === tabs[i][1], tx = i * tw;
-        setFont(MONO, 10, INK, p.CENTER, p.CENTER, on ? 255 : 95); if (on) bold(); p.text(tabs[i][0].toUpperCase(), tx + tw / 2, navY + NAVH / 2 - 2); normal();
+        var on = UI.screen === tabs[i][1], tx = i * tw, dn = pressing(tx, navY, tw, NAVH + sb);
+        setFont(MONO, 10, INK, p.CENTER, p.CENTER, on ? 255 : (dn ? 170 : 95)); if (on) bold(); p.text(tabs[i][0].toUpperCase(), tx + tw / 2, navY + NAVH / 2 - 2 + (dn ? 1 : 0)); normal();
         if (on) { p.noStroke(); fillc(ACC); p.ellipse(tx + tw / 2, navY + NAVH - 12, 5, 5); }
         pushHit(tx, navY, tw, NAVH + sb, (function (sc) { return function () { UI.screen = sc; }; })(tabs[i][1]));
       }
@@ -4912,7 +4912,8 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       { tab: 1, t: 'READ — your chart in plain words: what’s live today and this very hour, and the patterns that make you you.' },
       { tab: 3, t: 'TAROT — spreads to lay yourself, every card’s meaning, and the card art from public-domain decks worldwide.' },
       { tab: 4, t: 'PEOPLE — add a friend, a date, or family by their birthday to compare charts, and see a family tree.' },
-      { tab: 5, t: 'SETTINGS — switch Light / Dark and tune the zodiac and houses. That’s the tour — enjoy exploring.' }
+      { t: 'TAP THE MOON top-left, on any screen, for Today — the live sky on your chart: moon phase, what’s retrograde, and what’s moving now.' },
+      { tab: 5, t: 'SETTINGS — themes, bigger text, save & switch charts, share your chart as an image, and tune the zodiac and houses. That’s the tour — enjoy exploring.' }
     ];
     function startTour() { UI.tour = { step: 0 }; UI.screen = 'chart'; }
     function endTour() { UI.tour = null; if (APP.STATE.settings) { APP.STATE.settings.toured = true; APP.save(); } }
