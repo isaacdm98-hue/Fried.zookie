@@ -5613,7 +5613,8 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (!UI.draft) UI.draft = newDraft();
       var d = UI.draft, x = sx(), w = cw(), ly = 20, gi = cl01(1 - (nowT() - UI.fxT) / 500);
       eyebrow('Aqau Pluto', x, ly); ly += 22;
-      p.textStyle(p.BOLD); glitchText('Your birth data', x, sY(ly), 30, SANS, INK, p.LEFT, p.TOP, gi); normal(); ly += 48;
+      p.textStyle(p.BOLD); glitchText('Your birth data', x, sY(ly), 30, SANS, INK, p.LEFT, p.TOP, gi); normal(); ly += 36;
+      setFont(SERIF, 14, INK, p.LEFT, p.TOP, 200); p.textStyle(p.ITALIC); p.text('Three things and you’re in: when, what time, and where.', x, sY(ly)); p.textStyle(p.NORMAL); ly += 26;
       var g = 10, w3 = (w - g * 2) / 3;
       stepper('Day', d.d, 1, 31, x, ly, w3, function (v) { d.d = v; }); stepper('Month', d.mo, 1, 12, x + w3 + g, ly, w3, function (v) { d.mo = v; }); stepper('Year', d.y, 1920, 2025, x + (w3 + g) * 2, ly, w3, function (v) { d.y = v; }); ly += 60;
       flatBtn('Year \u221210', x + (w3 + g) * 2, ly, w3 / 2 - 3, 28, function () { d.y = Math.max(1920, d.y - 10); }, false, true);
@@ -5637,7 +5638,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       positionSearchInput(x + 40, sbY, w - 78, sbH);
       if ((UI.citySearch || '').length) { setFont(SANS, 19, INK, p.CENTER, p.CENTER, 190); p.text('\u00D7', x + w - 19, sbY + sbH / 2); pushHit(x + w - 38, sbY, 38, sbH, function () { UI.citySearch = ''; if (UI.searchInput) UI.searchInput.value = ''; UI.geoResults = []; UI.geoQ = ''; }); }
       ly += sbH + 12;
-      var boxH = 196, boxY = sY(ly); p.noFill(); strokec(INK, 160); p.strokeWeight(1.4); p.rect(x, boxY, w, boxH, 10);
+      var boxH = 158, boxY = sY(ly); p.noFill(); strokec(INK, 160); p.strokeWeight(1.4); p.rect(x, boxY, w, boxH, 10);
       if (p.drawingContext) { p.drawingContext.save(); p.drawingContext.beginPath(); p.drawingContext.rect(x, boxY, w, boxH); p.drawingContext.clip(); }
       if (online) {
         // debounce: one call ~700ms after typing pauses, deduped, min 3 chars, single in-flight
