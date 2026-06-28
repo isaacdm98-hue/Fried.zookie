@@ -4140,7 +4140,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         if (isToday) { p.noFill(); strokec(ACC, 230); p.strokeWeight(1.8); p.ellipse(ccx, ccy, 30, 30); }
         setFont(SANS, 14, INK, p.CENTER, p.CENTER, evs ? 255 : 150); if (evs) bold(); p.text(String(dnum), ccx, ccy - (evs ? 3 : 0)); normal();
         if (evs) { p.noStroke(); var q = evs[0].quality; fillc((q === 'flow' || q === 'opportunity') ? ELHUE.air : (q === 'fusion' ? INK : ACC)); p.ellipse(ccx, ccy + 11, 5, 5);
-          (function (k) { pushHit(x + col * cellW, sY(ly + row * cellH), cellW, cellH, function () { UI.calDay = (UI.calDay === k) ? null : k; }); })(key); }
+          (function (k) { pushHit(x + col * cellW, sY(ly + row * cellH), cellW, cellH, function () { UI.calDay = (UI.calDay === k) ? null : k; if (UI.calDay) UI.scroll.read = 0; }); })(key); }
       }
       return 28 + 18 + rows * cellH + 8;
     }
@@ -4150,14 +4150,14 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       p.textStyle(p.BOLD); glitchText('Transit calendar', x, sY(ly), 28, SANS, INK, p.LEFT, p.TOP, gi); normal(); ly += 40;
       ly += paragraph('The days over the next few months when a slower planet makes an exact aspect to your chart. A dot marks a day — tap it to read what lands.', x, ly, w, 14.5, INK, SERIF, 22, 205) + 16;
       if (!UI.calEvents) { var evs = APP.upcomingTransits(c, 4, 80), map = {}, i; for (i = 0; i < evs.length; i++) { var k = ymd(evs[i].date); (map[k] = map[k] || []).push(evs[i]); } UI.calEvents = map; }
-      var now = new Date(), mi;
-      for (mi = 0; mi < 3; mi++) { var yr = now.getFullYear(), mo = now.getMonth() + mi; while (mo > 11) { mo -= 12; yr++; } ly += drawMonthGrid(yr, mo, x, w, ly) + 8; }
-      // selected day detail
+      // selected-day detail FIRST, so it's always visible near the top (was buried below all three months)
       if (UI.calDay && UI.calEvents[UI.calDay]) {
-        hairline(x, ly, x + w, 50); ly += 14;
         var parts = UI.calDay.split('-'), dd = new Date(parts[0], parts[1] - 1, parts[2]);
-        eyebrow(fmtShort(dd), x, ly, ACC); ly += 24;
-        var de = UI.calEvents[UI.calDay], j; for (j = 0; j < de.length; j++) {
+        var de = UI.calEvents[UI.calDay], j, panelH = 40 + de.length * 36 + 12, py0 = sY(ly);
+        p.noStroke(); fillc(shade(GROUNDS[UI.screen], -14)); p.rect(x - 6, py0, w + 12, panelH, 12);
+        p.noFill(); strokec(ACC, 150); p.strokeWeight(1.3); p.rect(x - 6, py0, w + 12, panelH, 12);
+        ly += 12; eyebrow(fmtShort(dd), x, ly, ACC); ly += 26;
+        for (j = 0; j < de.length; j++) {
           var ev = de[j], rh = 30, qc = ev.quality, qcol = (qc === 'flow' || qc === 'opportunity') ? ELHUE.air : (qc === 'fusion' ? INK : ACC);
           setFont(SANS, 14, INK, p.LEFT, p.CENTER); p.text(APP.glyphFor(ev.tp), x + 2, sY(ly + rh / 2));
           setFont(SANS, 12, qcol, p.CENTER, p.CENTER); bold(); p.text(ev.glyph, x + 24, sY(ly + rh / 2)); normal();
@@ -4165,8 +4165,11 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
           setFont(MONO, 10.5, INK, p.LEFT, p.CENTER, 220); p.text(APP.nameFor(ev.tp) + ' ' + ev.aspKey + ' ' + APP.nameFor(ev.np), x + 60, sY(ly + rh / 2));
           ly += rh + 6;
         }
-        ly += 6;
-      } else { setFont(MONO, 9, INK, p.LEFT, p.TOP, 140); ly += paragraph('Tap any dotted day to read its transit.', x, ly, w, 11, INK, MONO, 16, 140) + 8; }
+        ly += 14;
+        flatBtn('Clear day', x, ly, 110, 32, function () { UI.calDay = null; }, false); ly += 44;
+      } else { setFont(MONO, 9.5, ACCTX, p.LEFT, p.TOP, 200); ly += paragraph('Tap any dotted day below to read what lands that day.', x, ly, w, 12, INK, MONO, 17, 200) + 10; }
+      var now = new Date(), mi;
+      for (mi = 0; mi < 3; mi++) { var yr = now.getFullYear(), mo = now.getMonth() + mi; while (mo > 11) { mo -= 12; yr++; } ly += drawMonthGrid(yr, mo, x, w, ly) + 8; }
       UI.contentH.read = ly + 20;
     }
     function drawRead() {
