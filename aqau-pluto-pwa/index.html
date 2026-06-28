@@ -3202,7 +3202,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       UI.quip = { text: pool[Math.floor(Math.random() * pool.length)], t0: nowT(), y: topY() + 64 + Math.random() * (viewH() - 128), dir: Math.random() < 0.5 ? 1 : -1, dur: 13000 };
     }
     function drawQuip() {
-      if (UI.screen === 'onboard' || !APP.STATE.chart || reduced()) { UI.quip = null; return; }
+      if (UI.screen === 'onboard' || !APP.STATE.chart || reduced() || UI.lesson) { UI.quip = null; return; }
       var t = nowT();
       if (!UI.quip) { if (!UI.quipNext) UI.quipNext = t + 22000; if (t > UI.quipNext) launchQuip(); return; }
       var q = UI.quip, prog = (t - q.t0) / q.dur;
@@ -3877,11 +3877,118 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     function glyphsOf(keys) { var s = '', i; for (i = 0; i < keys.length; i++) { s += APP.glyphFor(keys[i]); if (i < keys.length - 1) s += '  '; } return s; }
     function domMinEl(c) { var v = [['fire', c.elements.fire], ['earth', c.elements.earth], ['air', c.elements.air], ['water', c.elements.water]]; var mx = v[0], mn = v[0], i; for (i = 1; i < 4; i++) { if (v[i][1] > mx[1]) mx = v[i]; if (v[i][1] < mn[1]) mn = v[i]; } return { max: mx[0], min: mn[0] }; }
 
+    // ============ GUIDED LESSON — a tap-through, video-like journey through the sky ============
+    var LESSON = [
+      { k: 'wheel', t: 'The sky is a wheel', b: 'Astrology begins with a circle — the zodiac. As the Earth turns, the heavens wheel slowly overhead. Your birth chart is simply a snapshot of that wheel at the moment you arrived.' },
+      { k: 'elements', t: 'Four elements', b: 'Everything sorts into fire, earth, air and water — drive, substance, thought and feeling. The balance of these across your chart is your basic temperament.' },
+      { k: 'planets', t: 'The planets are needs', b: 'Each planet is a different hunger: the Sun to shine, the Moon to feel safe, Mercury to think, Venus to love, Mars to act. They orbit — and so do their seasons in you.' },
+      { k: 'signs', t: 'Twelve signs', b: 'Every planet lands in a sign — a flavour, a style. Your Sun sign is only the beginning; the Moon and rising colour the whole picture.' },
+      { k: 'houses', t: 'Twelve houses', b: 'The wheel is sliced into twelve houses — arenas of life: self, money, love, work, home. A planet’s house tells you where its story plays out.' },
+      { k: 'aspects', t: 'Planets in conversation', b: 'When planets sit at special angles — a flowing trine, a tense square — they talk. Those conversations, easy or difficult, are the threads that weave a chart together.' },
+      { k: 'you', t: 'Now — your own sky', b: 'That’s the language. Your chart is your sentence in it. Open the wheel and tap any placement to hear what it says about you.' }
+    ];
+    function startLesson() { UI.lesson = { i: 0, t0: nowT() }; UI.scroll.learn = 0; }
+    function lessonNext() { if (!UI.lesson) return; if (UI.lesson.i >= LESSON.length - 1) { UI.lesson = null; return; } UI.lesson.i++; UI.lesson.t0 = nowT(); }
+    function lessonPrev() { if (UI.lesson && UI.lesson.i > 0) { UI.lesson.i--; UI.lesson.t0 = nowT(); } }
+    function drawScene(k, cx, cy, r, t) {
+      if (k === 'wheel') sceneWheel(cx, cy, r, t);
+      else if (k === 'elements') sceneElements(cx, cy, r, t);
+      else if (k === 'planets') scenePlanets(cx, cy, r, t);
+      else if (k === 'signs') sceneSigns(cx, cy, r, t);
+      else if (k === 'houses') sceneHouses(cx, cy, r, t);
+      else if (k === 'aspects') sceneAspects(cx, cy, r, t);
+      else sceneYou(cx, cy, r, t);
+    }
+    function sceneWheel(cx, cy, r, t) {
+      var RAD = Math.PI / 180, spin = t * 0.00016, k;
+      p.noFill(); strokec(INK, 38); p.strokeWeight(1); for (k = 1; k <= 3; k++) p.ellipse(cx, cy, r * 2 * k / 3.4, r * 2 * k / 3.4);
+      strokec(INK, 210); p.strokeWeight(1.6); p.ellipse(cx, cy, r * 2, r * 2);
+      for (k = 0; k < 12; k++) { var a = k * 30 * RAD + spin, card = (k % 3 === 0); strokec(INK, card ? 170 : 70); p.strokeWeight(card ? 1.4 : 1); p.line(cx + Math.cos(a) * r, cy + Math.sin(a) * r, cx + Math.cos(a) * (r - 10), cy + Math.sin(a) * (r - 10)); var ga = (k * 30 + 15) * RAD + spin; setFont(SANS, 13, INK, p.CENTER, p.CENTER, 175); p.text(DATA.SIGNS[k].glyph, cx + Math.cos(ga) * (r + 15), cy + Math.sin(ga) * (r + 15)); }
+      var oa = t * 0.0009; p.noStroke(); fillc(ACC, 90); p.ellipse(cx + Math.cos(oa) * r * 0.6, cy + Math.sin(oa) * r * 0.6, 16, 16); fillc(ACC); p.ellipse(cx + Math.cos(oa) * r * 0.6, cy + Math.sin(oa) * r * 0.6, 7, 7);
+      fillc(INK); p.ellipse(cx, cy, 5, 5);
+    }
+    function scenePlanets(cx, cy, r, t) {
+      var defs = [['mercury', 0.34, 0.0013, 0], ['venus', 0.5, 0.0009, 1.2], ['mars', 0.66, 0.0007, 2.4], ['jupiter', 0.84, 0.00045, 3.6], ['saturn', 1.02, 0.00033, 4.8]], k;
+      p.noFill(); for (k = 0; k < defs.length; k++) { var rr = r * defs[k][1]; strokec(INK, 36); p.strokeWeight(1); p.ellipse(cx, cy, rr * 2, rr * 2); }
+      p.noStroke(); fillc(ACC, 70); p.ellipse(cx, cy, 26 + Math.sin(t * 0.004) * 4, 26 + Math.sin(t * 0.004) * 4); fillc(ACC); p.ellipse(cx, cy, 15, 15); setFont(SANS, 11, GROUNDS[UI.screen], p.CENTER, p.CENTER); p.text(APP.glyphFor('sun'), cx, cy + 0.5);
+      for (k = 0; k < defs.length; k++) { var rr2 = r * defs[k][1], a = t * defs[k][2] + defs[k][3], px = cx + Math.cos(a) * rr2, py = cy + Math.sin(a) * rr2; p.noStroke(); fillc(INK); p.ellipse(px, py, 16, 16); setFont(SANS, 10.5, GROUNDS[UI.screen], p.CENTER, p.CENTER); p.text(APP.glyphFor(defs[k][0]), px, py + 0.5); }
+    }
+    function sceneElements(cx, cy, r, t) {
+      var els = ['fire', 'earth', 'air', 'water'], pos = [[-0.62, -0.48], [0.62, -0.48], [-0.62, 0.56], [0.62, 0.56]], k;
+      for (k = 0; k < 4; k++) {
+        var ex = cx + pos[k][0] * r, ey = cy + pos[k][1] * r, col = ELHUE[els[k]], s = r * 0.34, ph = t * 0.003 + k, f;
+        if (els[k] === 'fire') { p.noStroke(); fillc(col, 38); p.ellipse(ex, ey, s * 1.4, s * 1.4); strokec(col, 220); p.strokeWeight(2); for (f = 0; f < 3; f++) { var fa = (-90 + (f - 1) * 26) * Math.PI / 180 + Math.sin(ph + f) * 0.25; p.line(ex, ey + s * 0.4, ex + Math.cos(fa) * s * 0.7, ey + Math.sin(fa) * s * 0.7); } }
+        else if (els[k] === 'water') { p.noFill(); for (f = 0; f < 3; f++) { var rad = ((t * 0.045 + f * s * 0.5) % s); strokec(col, 180 * (1 - rad / s)); p.strokeWeight(1.6); p.ellipse(ex, ey, rad * 2, rad * 2); } p.noStroke(); fillc(col); p.ellipse(ex, ey, 5, 5); }
+        else if (els[k] === 'air') { strokec(col, 200); p.strokeWeight(1.6); for (f = 0; f < 3; f++) { var yy = ey + (f - 1) * 8, ofx = Math.sin(t * 0.003 + f) * s * 0.3; p.line(ex - s * 0.6 + ofx, yy, ex + s * 0.6 + ofx, yy); } }
+        else { p.noStroke(); fillc(col, 210); var bob = Math.sin(t * 0.002 + k) * 2; p.rectMode(p.CENTER); p.rect(ex, ey + bob, s * 0.8, s * 0.8, 4); p.rectMode(p.CORNER); }
+        setFont(MONO, 9, INK, p.CENTER, p.TOP, 180); p.text(els[k].toUpperCase(), ex, ey + s * 0.85 + 4);
+      }
+    }
+    function sceneSigns(cx, cy, r, t) {
+      var idx = Math.floor(t / 3600) % 12, ph = (t % 3600) / 3600, e = eCubic(cl01(ph * 1.3)), cst = ZODIAC[idx], hue = ELHUE[DATA.SIGNS[idx].element], s = r * 1.5, nS = cst.s.length, shown = e * nS, k, ei;
+      strokec(hue, 150); p.strokeWeight(1.4);
+      for (ei = 0; ei < cst.e.length; ei++) { var ed = cst.e[ei], ep = cl01((e * nS - Math.max(ed[0], ed[1])) * 1.4); if (ep <= 0) continue; var x0 = (cst.s[ed[0]][0] - 0.4) * s + cx, y0 = (cst.s[ed[0]][1] - 0.4) * s + cy, x1 = (cst.s[ed[1]][0] - 0.4) * s + cx, y1 = (cst.s[ed[1]][1] - 0.4) * s + cy; p.line(x0, y0, x0 + (x1 - x0) * ep, y0 + (y1 - y0) * ep); }
+      for (k = 0; k < nS; k++) { var sa = cl01(shown - k); if (sa <= 0) continue; var sx2 = (cst.s[k][0] - 0.4) * s + cx, sy2 = (cst.s[k][1] - 0.4) * s + cy, br = (k % 3 === 0); if (br) { p.noStroke(); fillc(hue, 55 * sa); p.ellipse(sx2, sy2, 11, 11); } p.noStroke(); fillc([245, 240, 226], 220 * sa); p.ellipse(sx2, sy2, br ? 3.6 : 2.4, br ? 3.6 : 2.4); }
+      setFont(SANS, 26, INK, p.CENTER, p.CENTER, 190 * cl01((e - 0.5) * 2)); p.text(DATA.SIGNS[idx].glyph, cx, cy - r * 0.92);
+      setFont(MONO, 10.5, ACCTX, p.CENTER, p.TOP, 230); p.text(DATA.SIGNS[idx].name.toUpperCase(), cx, cy + r * 0.95);
+    }
+    function sceneHouses(cx, cy, r, t) {
+      var RAD = Math.PI / 180, lit = Math.floor(t / 620) % 12, k; var la = (lit * 30 - 90) * RAD;
+      p.noStroke(); fillc(ACC, 120); p.arc(cx, cy, r * 2, r * 2, la, la + 30 * RAD, p.PIE);
+      for (k = 0; k < 12; k++) { var a0 = (k * 30 - 90) * RAD; strokec(INK, 55); p.strokeWeight(1); p.line(cx, cy, cx + Math.cos(a0) * r, cy + Math.sin(a0) * r); }
+      p.noFill(); strokec(INK, 185); p.strokeWeight(1.5); p.ellipse(cx, cy, r * 2, r * 2);
+      for (k = 0; k < 12; k++) { var ma = (k * 30 - 75) * RAD; setFont(MONO, 11, INK, p.CENTER, p.CENTER, k === lit ? 255 : 120); if (k === lit) bold(); p.text(String(k + 1), cx + Math.cos(ma) * r * 0.78, cy + Math.sin(ma) * r * 0.78); normal(); }
+      p.noStroke(); fillc(INK); p.ellipse(cx, cy, 5, 5);
+    }
+    function sceneAspects(cx, cy, r, t) {
+      var a1 = t * 0.0008, a2 = t * 0.00044 + 2, p1x = cx + Math.cos(a1) * r * 0.82, p1y = cy + Math.sin(a1) * r * 0.82, p2x = cx + Math.cos(a2) * r * 0.82, p2y = cy + Math.sin(a2) * r * 0.82;
+      p.noFill(); strokec(INK, 40); p.strokeWeight(1); p.ellipse(cx, cy, r * 1.64, r * 1.64);
+      var sep = Math.abs(((a2 - a1) * 180 / Math.PI) % 360); if (sep > 180) sep = 360 - sep;
+      var angles = [0, 60, 90, 120, 180], cols = [INK, ELHUE.air, ACC, ELHUE.air, ACC], gl = ['☌', '⚹', '□', '△', '☍'], asp = -1, i;
+      for (i = 0; i < angles.length; i++) if (Math.abs(sep - angles[i]) < 7) { asp = i; break; }
+      if (asp >= 0) { var al = 1 - Math.abs(sep - angles[asp]) / 7; strokec(cols[asp], 220 * al); p.strokeWeight(2); p.line(p1x, p1y, p2x, p2y); setFont(SANS, 16, cols[asp], p.CENTER, p.CENTER, 255 * al); p.text(gl[asp], (p1x + p2x) / 2, (p1y + p2y) / 2); }
+      p.noStroke(); fillc(INK); p.ellipse(p1x, p1y, 16, 16); setFont(SANS, 10, GROUNDS[UI.screen], p.CENTER, p.CENTER); p.text(APP.glyphFor('venus'), p1x, p1y + 0.5);
+      p.noStroke(); fillc(INK); p.ellipse(p2x, p2y, 16, 16); setFont(SANS, 10, GROUNDS[UI.screen], p.CENTER, p.CENTER); p.text(APP.glyphFor('mars'), p2x, p2y + 0.5);
+      p.noStroke(); fillc(ACC); p.ellipse(cx, cy, 5, 5);
+    }
+    function sceneYou(cx, cy, r, t) {
+      var RAD = Math.PI / 180, k; p.noFill(); strokec(INK, 200); p.strokeWeight(1.6); p.ellipse(cx, cy, r * 2, r * 2);
+      for (k = 0; k < 12; k++) { var a = (k * 30 - 90) * RAD; strokec(INK, k % 3 === 0 ? 150 : 60); p.strokeWeight(1); p.line(cx + Math.cos(a) * r, cy + Math.sin(a) * r, cx + Math.cos(a) * (r - 8), cy + Math.sin(a) * (r - 8)); }
+      var ps = ['sun', 'moon', 'mercury', 'venus', 'mars']; for (k = 0; k < ps.length; k++) { var a2 = t * 0.0004 + k * 1.3, rr = r * 0.66, px = cx + Math.cos(a2) * rr, py = cy + Math.sin(a2) * rr, pulse = 0.5 + 0.5 * Math.sin(t * 0.004 + k); p.noStroke(); fillc(ACC, 60 * pulse); p.ellipse(px, py, 18, 18); fillc(INK); p.ellipse(px, py, 13, 13); setFont(SANS, 9, GROUNDS[UI.screen], p.CENTER, p.CENTER); p.text(APP.glyphFor(ps[k]), px, py + 0.5); }
+      p.noStroke(); fillc(ACC); p.ellipse(cx, cy, 7, 7);
+    }
+    function drawLesson() {
+      var x = sx(), w = cw(), top = topY(), vh = viewH(), cx = x + w / 2, sc = LESSON[UI.lesson.i], last = (UI.lesson.i === LESSON.length - 1);
+      var te = cl01((nowT() - UI.lesson.t0) / 560), e = eCubic(te), still = reduced(), alpha = still ? 1 : cl01(te * 1.5), i;
+      if (!last) { pushHit(x, top + 46, w, vh - 96, function () { lessonNext(); }); pushHit(x, top + 46, 72, vh - 96, function () { lessonPrev(); }); }
+      var sceneCY = top + vh * 0.30, sceneR = Math.min(w * 0.40, vh * 0.22), drift = (1 - e) * 18;
+      var dc = p.drawingContext; if (dc) { dc.save(); dc.globalAlpha = alpha; }
+      drawScene(sc.k, cx, sceneCY - drift, sceneR, nowT());
+      if (dc) dc.restore();
+      var ty = top + vh * 0.55;
+      p.textFont(SANS); p.textSize(30); var tl = wrapLines(sc.t, w - 24); setFont(SANS, 30, INK, p.CENTER, p.TOP, 255 * alpha); bold(); for (i = 0; i < tl.length; i++) p.text(tl[i], cx, ty + i * 35); normal(); ty += tl.length * 35 + 12;
+      p.textFont(SERIF); p.textSize(18); var bl = wrapLines(sc.b, w - 30); setFont(SERIF, 18, INK, p.CENTER, p.TOP, 235 * alpha); for (i = 0; i < bl.length; i++) p.text(bl[i], cx, ty + i * 27); ty += bl.length * 27 + 22;
+      setFont(MONO, 9.5, ACCTX, p.LEFT, p.TOP, 220); p.text('GUIDED JOURNEY · ' + (UI.lesson.i + 1) + ' / ' + LESSON.length, x, top + 12);
+      var dxw = 13, dsx = cx - (LESSON.length * dxw) / 2; for (i = 0; i < LESSON.length; i++) { var on = (i === UI.lesson.i); p.noStroke(); fillc(on ? ACC : INK, on ? 255 : 80); p.ellipse(dsx + i * dxw + dxw / 2, top + vh - 16, on ? 7 : 5, on ? 7 : 5); }
+      if (last) { tourBtn('Read my chart ›', cx - 152, ty, 148, 42, function () { UI.lesson = null; UI.screen = 'chart'; }, true); tourBtn('Explore Learn', cx + 6, ty, 148, 42, function () { UI.lesson = null; }, false); }
+      else { setFont(MONO, 10, INK, p.CENTER, p.TOP, 150 * alpha); p.text('TAP TO CONTINUE  ›', cx, top + vh - 42); }
+      tourBtn('Skip', x + w - 66, top + 6, 60, 26, function () { UI.lesson = null; }, false);
+      UI.contentH.learn = 0;
+    }
+
     function drawLearn() {
       var c = APP.STATE.chart, b = APP.STATE.birth; if (!c) { UI.screen = 'onboard'; return; }
+      if (UI.lesson) { drawLesson(); return; }
       var x = sx(), w = cw(), ly = 18, gi = cl01(1 - (nowT() - UI.fxT) / 500);
       eyebrow('Learn', x, ly); ly += 22;
-      p.textStyle(p.BOLD); glitchText('The sky, explained', x, sY(ly), 29, SANS, INK, p.LEFT, p.TOP, gi); normal(); ly += 44;
+      p.textStyle(p.BOLD); glitchText('The sky, explained', x, sY(ly), 32, SANS, INK, p.LEFT, p.TOP, gi); normal(); ly += 46;
+      // guided-journey hero — the default, video-like lesson you tap through
+      var hh = 70, hy = sY(ly); p.noStroke(); fillc(INK); p.rect(x, hy + 3, w, hh, 13); fillc(shade(INK, 16)); p.rect(x, hy, w, hh, 13);
+      setFont(SANS, 17, GROUNDS[UI.screen], p.LEFT, p.CENTER); bold(); p.text('✦  A guided journey through the sky', x + 18, hy + hh / 2 - 9); normal();
+      setFont(MONO, 9.5, GROUNDS[UI.screen], p.LEFT, p.CENTER, 210); p.text('TAP TO BEGIN — A SHORT ANIMATED LESSON', x + 18, hy + hh / 2 + 11);
+      var pulse = reduced() ? 0 : Math.sin(nowT() * 0.004) * 2; setFont(SANS, 22, GROUNDS[UI.screen], p.RIGHT, p.CENTER); p.text('›', x + w - 18 + pulse, hy + hh / 2);
+      pushHit(x, hy, w, hh, function () { startLesson(); }); ly += hh + 20;
+      eyebrow('Or explore freely', x, ly, ACC); ly += 26;
       var cats = [['elements', 'Elements'], ['signs', 'Signs'], ['planets', 'Planets'], ['houses', 'Houses'], ['aspects', 'Aspects']];
       var cxp = x, cyp = ly, ci;
       for (ci = 0; ci < cats.length; ci++) { p.textFont(MONO); p.textSize(11); var ww = p.textWidth(cats[ci][1].toUpperCase()) + 28; if (cxp + ww > x + w) { cxp = x; cyp += 40; } chip(cats[ci][1], UI.learnCat === cats[ci][0], cxp, cyp, (function (cc) { return function () { UI.learnCat = cc; UI.learnItem = null; UI.scroll.learn = 0; UI.popT = nowT(); }; })(cats[ci][0])); cxp += ww + 8; }
@@ -3894,7 +4001,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       UI.contentH.learn = ly + 10;
     }
     function learnList(c, x, w, ly) {
-      var cat = UI.learnCat, rh = 46, i, b = APP.STATE.birth;
+      var cat = UI.learnCat, rh = 52, i, b = APP.STATE.birth;
       if (cat === 'elements') {
         var els = ['fire', 'earth', 'air', 'water'];
         for (i = 0; i < 4; i++) {
@@ -4330,8 +4437,8 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (s === 'onboard') drawOnboard(); else { if (!(s === 'people' && UI.padd)) hideSearchInput(); if (s === 'chart') drawChart(); else if (s === 'read') drawRead(); else if (s === 'learn') drawLearn(); else if (s === 'tarot') drawTarot(); else if (s === 'people') drawPeople(); else if (s === 'settings') drawSettings(); }
       drawQuip();
       drawTopbar(); if (s !== 'onboard') drawNav();
-      // each screen entry blooms a large moon emblem centre-stage, then dissolves — the journey
-      if (!reduced() && s !== 'onboard') { var te = (nowT() - UI.fxT) / 750; if (te >= 0 && te < 1) { var al = (1 - te) * (1 - te); celestialEmblem(W / 2, topY() + viewH() * 0.30, Math.min(W, H) * 0.14 * (0.7 + 0.3 * eCubic(te)), al * 0.9); } }
+      // a small, brief celestial wink on screen entry (kept subtle so it doesn't over-stimulate)
+      if (!reduced() && s !== 'onboard') { var te = (nowT() - UI.fxT) / 520; if (te >= 0 && te < 1) { var al = (1 - te) * (1 - te); celestialEmblem(W / 2, topY() + viewH() * 0.26, Math.min(W, H) * 0.07 * (0.8 + 0.2 * eCubic(te)), al * 0.4); } }
       // first run: once a chart exists, gently guide the newcomer
       if (!UI.tour && APP.STATE.chart && APP.STATE.settings && !APP.STATE.settings.toured && s !== 'onboard') startTour();
       drawTour();
