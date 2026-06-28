@@ -4602,6 +4602,21 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       pushHit(x + w - bw - 8, y, bw + 8, h, function () { var v = val + 1; if (v > hi) v = lo; set(v); });
       return 15 + h;
     }
+    // a brief animated welcome the very first time (skippable) — the app introducing itself
+    function drawIntro() {
+      if (!UI.introT) UI.introT = nowT();
+      var e = (nowT() - UI.introT) / 1000, cx = W / 2, cy = topY() + viewH() * 0.40;
+      var gr = Math.min(W, H) * 0.16 * eCubic(cl01(e / 1.1));
+      celestialEmblem(cx, cy, Math.max(2, gr), cl01(e / 0.8));
+      var a1 = cl01((e - 0.5) / 0.8);
+      setFont(SANS, 40, INK, p.CENTER, p.CENTER, 255 * a1); bold(); p.text('Aqau Pluto', cx, cy + gr + 64); normal();
+      var a2 = cl01((e - 1.1) / 0.9);
+      p.textStyle(p.ITALIC); setFont(SERIF, 17, INK, p.CENTER, p.CENTER, 220 * a2); p.textStyle(p.ITALIC); p.text('your sky, read straight', cx, cy + gr + 100); p.textStyle(p.NORMAL);
+      var a3 = cl01((e - 1.9) / 0.8);
+      if (a3 > 0) { setFont(MONO, 11, ACCTX, p.CENTER, p.CENTER, 255 * a3); p.text('TAP TO BEGIN', cx, H - (UI.safeBottom || 0) - 64); }
+      pushHit(0, 0, W, H, function () { UI.introDone = true; UI.fxT = nowT(); });
+      if (e > 5) { UI.introDone = true; UI.fxT = nowT(); }
+    }
     function drawOnboard() {
       if (!UI.draft) UI.draft = newDraft();
       var d = UI.draft, x = sx(), w = cw(), ly = 20, gi = cl01(1 - (nowT() - UI.fxT) / 500);
@@ -4943,6 +4958,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       p.background(UI.bg[0], UI.bg[1], UI.bg[2]);
       drawField(); drawRipples();
       hits = []; p.rectMode(p.CORNER); p.textStyle(p.NORMAL);
+      if (UI.screen === 'onboard' && !APP.STATE.birth && !UI.introDone) { drawIntro(); clampScroll(); return; }
       var s = UI.screen;
       if (s === 'onboard') drawOnboard(); else { if (!(s === 'people' && UI.padd)) hideSearchInput(); if (s === 'chart') drawChart(); else if (s === 'read') drawRead(); else if (s === 'learn') drawLearn(); else if (s === 'tarot') drawTarot(); else if (s === 'people') drawPeople(); else if (s === 'settings') drawSettings(); }
       drawQuip();
