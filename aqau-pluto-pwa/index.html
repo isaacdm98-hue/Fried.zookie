@@ -4125,10 +4125,17 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       { k: 'signs', t: 'Twelve signs', b: 'Every planet lands in a sign — a flavour, a style. Your Sun sign is only the beginning; the Moon and rising colour the whole picture.' },
       { k: 'houses', t: 'Twelve houses', b: 'The wheel is sliced into twelve houses — arenas of life: self, money, love, work, home. A planet’s house tells you where its story plays out.' },
       { k: 'aspects', t: 'Planets in conversation', b: 'When planets sit at special angles — a flowing trine, a tense square — they talk. Those conversations, easy or difficult, are the threads that weave a chart together.' },
+      { k: 'bigthree', t: 'Your big three', b: 'Three placements carry most of the weight: your Sun (what you’re becoming), your Moon (what you need to feel safe) and your rising sign (the face you meet the world with). Together they’re the headline of who you are.' },
+      { k: 'moving', t: 'The sky keeps turning', b: 'Your birth chart is fixed — but the real planets keep moving. When today’s sky touches your birth placements, that’s a transit: the weather of your life right now, written in the same language.' },
       { k: 'you', t: 'Now — your own sky', b: 'That’s the language. Your chart is your sentence in it. Open the wheel and tap any placement to hear what it says about you.' }
     ];
-    // history told through real artifacts — each maps to a famous public-domain star atlas
+    // History of astrology — a teaching timeline (animated eras) + the antique star-atlas plates (photos).
     var HISTORY = [
+      { era: true, anim: 'moving', t: 'Babylon — the first sky-watchers', y: 'c. 1800 BCE', b: 'Astrology was born between the Tigris and Euphrates. Babylonian priests kept centuries of records linking events on Earth to omens in the sky, and drew the first zodiac — twelve equal slices along the Sun’s yearly path. The planets were gods whose movements were messages.' },
+      { era: true, anim: 'aspects', t: 'Greece — the birth of the horoscope', y: 'c. 150 BCE – 150 CE', b: 'Hellenistic astrologers fused Babylonian omens with Greek geometry to cast the personal horoscope — a chart for the exact moment and place of a birth. Claudius Ptolemy’s Tetrabiblos systematised it all; much of what we still do (signs, houses, aspects) traces to here.' },
+      { era: true, anim: 'planets', t: 'The Islamic Golden Age', y: 'c. 800 – 1200', b: 'As Europe slept, scholars in Baghdad, Cairo and Córdoba preserved and advanced the art. Abu Maʿshar and Al-Bīrūnī refined technique and theory; this is why so many stars still carry Arabic names — Aldebaran, Altair, Vega, Betelgeuse.' },
+      { era: true, anim: 'wheel', t: 'Renaissance — art meets the heavens', y: 'c. 1450 – 1700', b: 'Astrology sat at the centre of courts, medicine and universities. Kepler and Galileo cast charts even as they remade astronomy; the two arts were still one. The age also produced the most beautiful star atlases ever printed — see them below.' },
+      { era: true, anim: 'you', t: 'Modern astrology', y: '1900 – now', b: 'Astronomy and astrology parted ways, but astrology was reborn through Alan Leo and, later, Carl Jung’s psychology — read as a mirror of the inner life rather than fate. The computer put an exact ephemeris (like this one) in everyone’s pocket.' },
       { t: 'Harmonia Macrocosmica', y: 'Andreas Cellarius · 1660', q: 'Cellarius Harmonia Macrocosmica', b: 'The most gorgeous star atlas ever printed — baroque Dutch copperplates showing the rival models of the heavens, the zodiac belt, and the constellations as gilded mythological figures. Astrology and astronomy were still one art.' },
       { t: 'Urania’s Mirror', y: 'London · 1824', q: "Urania's Mirror", b: 'A boxed set of 32 hand-coloured cards, each constellation pricked with holes so you could hold it to a candle and see the stars shine through. A Georgian way to learn the night sky by heart.' },
       { t: 'Uranographia', y: 'Johannes Hevelius · 1690', q: 'Hevelius Uranographia Firmamentum', b: 'Hevelius engraved the heavens as muscular figures seen from “outside” the celestial sphere, mirror-reversed. His widow Elisabeth published it after his death — among the first women in astronomy.' },
@@ -4167,7 +4174,47 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       else if (k === 'signs') sceneSigns(cx, cy, r, t);
       else if (k === 'houses') sceneHouses(cx, cy, r, t);
       else if (k === 'aspects') sceneAspects(cx, cy, r, t);
+      else if (k === 'bigthree') sceneBigThree(cx, cy, r, t);
+      else if (k === 'moving') sceneMoving(cx, cy, r, t);
       else sceneYou(cx, cy, r, t);
+    }
+    // the big three: a radiant Sun, a phased Moon, and a rising horizon — held together
+    function sceneBigThree(cx, cy, r, t) {
+      var pul = 0.5 + 0.5 * Math.sin(t * 0.003);
+      // horizon line (the ascendant) sweeping subtly
+      strokec(INK, 70); p.strokeWeight(1.3); p.line(cx - r, cy + r * 0.5, cx + r, cy + r * 0.5);
+      setFont(MONO, 8.5, INK, p.LEFT, p.TOP, 150); p.text('ASC', cx - r, cy + r * 0.5 + 5);
+      var ar = (-18) * Math.PI / 180; p.noStroke(); fillc(ACC); var axp = cx - r + (Math.sin(t * 0.0006) * 0.5 + 0.5) * r * 2, ayp = cy + r * 0.5;
+      p.ellipse(axp, ayp, 10, 10);
+      // Sun upper-left, radiant
+      var sxp = cx - r * 0.5, syp = cy - r * 0.42, k;
+      p.noStroke(); fillc(ACC, 55 + pul * 50); p.ellipse(sxp, syp, r * 0.5 + pul * 6, r * 0.5 + pul * 6);
+      strokec(ACC, 150); p.strokeWeight(1.2); for (k = 0; k < 12; k++) { var a = k * 30 * Math.PI / 180 + t * 0.0004, rr = r * 0.28 + pul * 4; p.line(sxp + Math.cos(a) * rr, syp + Math.sin(a) * rr, sxp + Math.cos(a) * (rr + 8), syp + Math.sin(a) * (rr + 8)); }
+      p.noStroke(); fillc(ACC); p.ellipse(sxp, syp, r * 0.36, r * 0.36); setFont(SANS, 15, GROUNDS[UI.screen], p.CENTER, p.CENTER); p.text(APP.glyphFor('sun'), sxp, syp + 0.5);
+      // Moon upper-right, with a moving terminator
+      var mxp = cx + r * 0.55, myp = cy - r * 0.34, mr = r * 0.3, ph = (t * 0.0004) % (Math.PI * 2), kk = Math.cos(ph);
+      p.noStroke(); fillc(shade(GROUNDS[UI.screen], -22)); p.ellipse(mxp, myp, mr * 2, mr * 2);
+      fillc([238, 232, 216]); if (ph < Math.PI) p.arc(mxp, myp, mr * 2, mr * 2, -Math.PI / 2, Math.PI / 2, p.PIE); else p.arc(mxp, myp, mr * 2, mr * 2, Math.PI / 2, Math.PI * 1.5, p.PIE);
+      fillc(((1 - Math.cos(ph)) / 2) > 0.5 ? [238, 232, 216] : shade(GROUNDS[UI.screen], -22)); p.ellipse(mxp, myp, mr * 2 * Math.abs(kk), mr * 2);
+      p.noFill(); strokec(INK, 120); p.strokeWeight(1); p.ellipse(mxp, myp, mr * 2, mr * 2); setFont(SANS, 12, INK, p.CENTER, p.CENTER, 220); p.text(APP.glyphFor('moon'), mxp, myp + 0.5);
+    }
+    // the moving sky: a fixed inner natal wheel, an outer ring of slow transit dots casting lines inward
+    function sceneMoving(cx, cy, r, t) {
+      var k; p.noFill(); strokec(INK, 60); p.strokeWeight(1); p.ellipse(cx, cy, r * 1.3, r * 1.3); strokec(INK, 150); p.strokeWeight(1.4); p.ellipse(cx, cy, r * 2, r * 2);
+      // fixed natal points (inner)
+      var natal = [20, 95, 160, 250, 310];
+      for (k = 0; k < natal.length; k++) { var a = (natal[k] - 90) * Math.PI / 180, px = cx + Math.cos(a) * r * 0.65, py = cy + Math.sin(a) * r * 0.65; p.noStroke(); fillc(INK); p.ellipse(px, py, 9, 9); }
+      // moving transit dots (outer), occasionally lining up with a natal point
+      var movers = [t * 0.0009, t * 0.0009 + 2.1, t * 0.0006 + 4.0];
+      for (k = 0; k < movers.length; k++) {
+        var ma = movers[k], ox = cx + Math.cos(ma) * r, oy = cy + Math.sin(ma) * r;
+        // find nearest natal, draw a contact line if close
+        var deg = ((ma * 180 / Math.PI) + 90) % 360, j, best = 999, bi = -1;
+        for (j = 0; j < natal.length; j++) { var d = Math.abs(((natal[j] - deg + 540) % 360) - 180); if (d < best) { best = d; bi = j; } }
+        if (best < 12) { var na = (natal[bi] - 90) * Math.PI / 180, nx = cx + Math.cos(na) * r * 0.65, ny = cy + Math.sin(na) * r * 0.65, al = 1 - best / 12; strokec(ACC, 220 * al); p.strokeWeight(1.6); p.line(ox, oy, nx, ny); }
+        p.noStroke(); fillc(ACC); p.ellipse(ox, oy, 11, 11);
+      }
+      p.noStroke(); fillc(INK); p.ellipse(cx, cy, 5, 5);
     }
     function sceneWheel(cx, cy, r, t) {
       var RAD = Math.PI / 180, spin = t * 0.00016, k;
@@ -4264,12 +4311,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var te = cl01((nowT() - UI.lesson.t0) / 560), e = eCubic(te), still = reduced(), alpha = still ? 1 : cl01(te * 1.5), i;
       if (!last) { pushHit(x, top + 46, w, vh - 96, function () { lessonNext(); }); pushHit(x, top + 46, 72, vh - 96, function () { lessonPrev(); }); }
       var sceneCY = top + vh * 0.30, sceneR = Math.min(w * 0.40, vh * 0.22), drift = (1 - e) * 18;
-      // a faint real antique star-atlas behind the living vector scene (best-effort, graceful)
-      var bgImg = null;
-      if (sc.k === 'wheel') { loadArtifacts('lwheel', 'Cellarius Harmonia Macrocosmica zodiac'); bgImg = artNow('lwheel'); }
-      else if (sc.k === 'planets') { loadArtifacts('lplanets', 'Cellarius planisphaerium'); bgImg = artNow('lplanets'); }
-      else if (sc.k === 'signs') { var sidx2 = Math.floor(nowT() / 3600) % 12; loadArtifacts('lsign' + sidx2, "Urania's Mirror " + DATA.SIGNS[sidx2].name); bgImg = artNow('lsign' + sidx2); }
-      if (bgImg && !reduced()) drawArtifactKB(bgImg, cx - sceneR * 1.5, sceneCY - sceneR * 1.5, sceneR * 3, sceneR * 3, nowT(), 0.16 * alpha);
+      // the guided journey is pure vector animation now — clean, uncluttered, the centrepiece
       var dc = p.drawingContext; if (dc) { dc.save(); dc.globalAlpha = alpha; }
       drawScene(sc.k, cx, sceneCY - drift, sceneR, nowT());
       if (dc) dc.restore();
@@ -4497,10 +4539,22 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         p.textFont(SANS); p.textSize(24); p.textStyle(p.BOLD); fillc(INK); p.noStroke(); var gl2 = wrapLines(G.t, w); var gi3; for (gi3 = 0; gi3 < gl2.length; gi3++) p.text(gl2[gi3], x, sY(ly + gi3 * 28)); normal(); ly += gl2.length * 28 + 8;
         eyebrow('Plain terms', x, ly, ACC); ly += 24;
         ly += paragraph(G.d, x, ly, w, 17, INK, SERIF, 26) + 14;
-      } else { // history \u2014 a real antique star-atlas, animated (Ken-Burns), with the story
+      } else { // history \u2014 an animated era lesson, or a real antique star-atlas (Ken-Burns), with the story
         var Hh = HISTORY[it];
-        p.textFont(SANS); p.textSize(24); p.textStyle(p.BOLD); fillc(INK); p.noStroke(); p.text(Hh.t, x, sY(ly)); normal(); ly += 32;
+        p.textFont(SANS); p.textSize(24); p.textStyle(p.BOLD); fillc(INK); p.noStroke(); var htl = wrapLines(Hh.t, w); var hti; for (hti = 0; hti < htl.length; hti++) p.text(htl[hti], x, sY(ly + hti * 28)); normal(); ly += htl.length * 28 + 6;
         eyebrow(Hh.y, x, ly, ACC); ly += 24;
+        if (Hh.era) { // teaching era \u2014 a clean vector animation, no photo
+          var eH = 188, eyy = sY(ly), ecx = x + w / 2, eR = Math.min(w * 0.34, 72);
+          p.noStroke(); fillc(shade(GROUNDS[UI.screen], -10)); p.rect(x, eyy, w, eH, 10);
+          var edc = p.drawingContext; if (edc) { edc.save(); edc.beginPath(); edc.rect(x, eyy, w, eH); edc.clip(); }
+          drawScene(Hh.anim || 'wheel', ecx, eyy + eH / 2, eR, nowT());
+          if (edc) edc.restore();
+          p.noFill(); strokec(INK, 70); p.strokeWeight(1.4); p.rect(x, eyy, w, eH, 10);
+          ly += eH + 14;
+          ly += paragraph(Hh.b, x, ly, w, 16.5, INK, SERIF, 25) + 14;
+          if (ddc && rev < 1) ddc.restore();
+          return ly;
+        }
         loadArtifacts('hist' + it, Hh.q);
         var gW = w, gH = 224, gy = sY(ly);
         p.noStroke(); fillc(shade(GROUNDS[UI.screen], -12)); p.rect(x, gy, gW, gH, 10);
