@@ -3202,7 +3202,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       UI.quip = { text: pool[Math.floor(Math.random() * pool.length)], t0: nowT(), y: topY() + 64 + Math.random() * (viewH() - 128), dir: Math.random() < 0.5 ? 1 : -1, dur: 13000 };
     }
     function drawQuip() {
-      if (UI.screen === 'onboard' || !APP.STATE.chart || reduced() || UI.lesson) { UI.quip = null; return; }
+      if (UI.screen === 'onboard' || !APP.STATE.chart || reduced() || UI.lesson || UI.walk) { UI.quip = null; return; }
       var t = nowT();
       if (!UI.quip) { if (!UI.quipNext) UI.quipNext = t + 22000; if (t > UI.quipNext) launchQuip(); return; }
       var q = UI.quip, prog = (t - q.t0) / q.dur;
@@ -3397,9 +3397,66 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       UI.contentH.chart = ly;
     }
 
+    // ---- personalised, animated walkthrough of YOUR chart (first reveal + daily/hour transits) ----
+    function walkTr(c) { if (!UI.walkTr) { try { UI.walkTr = APP.composeTransits(c); } catch (e) { UI.walkTr = { daily: [], timed: [], ctx: null }; } } return UI.walkTr; }
+    function walkTheme(c) { if (UI.walkTheme == null) { try { var s = APP.composeSignatures(c), f = '', i; for (i = 0; i < s.length; i++) if (s[i].label === 'The throughline') { f = s[i].text; break; } UI.walkTheme = f || (s[0] ? s[0].text : ''); } catch (e) { UI.walkTheme = ''; } } return UI.walkTheme; }
+    function walkScenesArr(b) { var s = [{ k: 'intro' }, { k: 'body', key: 'sun' }, { k: 'body', key: 'moon' }]; if (b.timeKnown) s.push({ k: 'rising' }); s.push({ k: 'theme' }); s.push({ k: 'today' }); s.push({ k: 'hour' }); s.push({ k: 'close' }); return s; }
+    function walkContent(c, b, sc) {
+      if (sc.k === 'intro') return { t: 'Here is your sky', x: 'A snapshot of the heavens the exact moment you arrived. Let me walk you through the parts that matter most.' };
+      if (sc.k === 'body') { var pl = c.planets[sc.key], role = (sc.key === 'sun') ? 'Your core' : 'Your heart'; return { t: role + ' — ' + APP.nameFor(sc.key) + ' in ' + pl.signName, x: planetBlurb(c, sc.key) }; }
+      if (sc.k === 'rising') return { t: 'Your surface — ' + c.ascBody.signName + ' rising', x: DATA.RISING_IN_SIGN[c.ascBody.sign] };
+      if (sc.k === 'theme') return { t: 'The throughline', x: walkTheme(c) };
+      if (sc.k === 'today') { var tr = walkTr(c); return { t: 'Live on your chart — today', x: tr.daily.length ? ('Right now the moving sky is touching you here: ' + tr.daily.slice(0, 2).map(APP.transitSentence).join(' ')) : 'A quiet sky today — your natal pattern is running undisturbed.' }; }
+      if (sc.k === 'hour') { var tr2 = walkTr(c); return { t: 'Right now — this passing hour', x: 'The Moon is the fast hand of the clock. ' + (tr2.timed.length ? tr2.timed.slice(0, 1).map(APP.transitSentence).join(' ') : 'It isn’t closely touching your chart this hour — it moves fast, so look again later.') }; }
+      return { t: 'Now it’s yours', x: 'Tap any placement on your wheel to open its story. Come back to Read any day to see what’s live for you.' };
+    }
+    function miniWheel(c, b, cx, cy, r, hl, t) {
+      var RAD = Math.PI / 180, asc = b.timeKnown ? c.asc : 0, z, k;
+      function ax(lon, rr) { return cx + rr * Math.cos((180 + (lon - asc)) * RAD); }
+      function ay(lon, rr) { return cy - rr * Math.sin((180 + (lon - asc)) * RAD); }
+      p.noFill(); strokec(INK, 38); p.strokeWeight(1); for (z = 1; z <= 2; z++) p.ellipse(cx, cy, r * 2 * z / 3, r * 2 * z / 3);
+      strokec(INK, 200); p.strokeWeight(1.5); p.ellipse(cx, cy, r * 2, r * 2);
+      for (z = 0; z < 12; z++) { var a = z * 30; strokec(INK, z % 3 === 0 ? 150 : 60); p.strokeWeight(1); p.line(ax(a, r), ay(a, r), ax(a, r - (z % 3 === 0 ? 9 : 5)), ay(a, r - (z % 3 === 0 ? 9 : 5))); setFont(SANS, 11, INK, p.CENTER, p.CENTER, 140); p.text(DATA.SIGNS[z].glyph, ax(a + 15, r + 13), ay(a + 15, r + 13)); }
+      if (b.timeKnown) { var on0 = (hl === 'asc'), pa = on0 ? (0.5 + 0.5 * Math.sin(t * 0.006)) : 0; strokec(ACC, on0 ? 255 : 180); p.strokeWeight(on0 ? 2.4 : 1.8); p.line(cx, cy, ax(asc, r - 3), ay(asc, r - 3)); if (on0) { p.noFill(); strokec(ACC, 180); p.ellipse(ax(asc, r - 3), ay(asc, r - 3), 14 + pa * 8, 14 + pa * 8); } }
+      var order = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto'];
+      for (k = 0; k < order.length; k++) { var pl = c.planets[order[k]]; if (!pl) continue; var px = ax(pl.lon, r * 0.66), py = ay(pl.lon, r * 0.66), on = (order[k] === hl); if (on) { var pulse = 0.5 + 0.5 * Math.sin(t * 0.006); p.noFill(); strokec(ACC, 210); p.strokeWeight(2); p.ellipse(px, py, 24 + pulse * 9, 24 + pulse * 9); } p.noStroke(); fillc(on ? ACC : INK, on ? 255 : 150); p.ellipse(px, py, on ? 21 : 13, on ? 21 : 13); setFont(SANS, on ? 11 : 9, GROUNDS[UI.screen], p.CENTER, p.CENTER, on ? 255 : 200); p.text(APP.glyphFor(order[k]), px, py + 0.5); }
+      p.noStroke(); fillc(INK); p.ellipse(cx, cy, 5, 5);
+    }
+    function drawTransitOverlay(c, b, cx, cy, r, tr) {
+      if (!tr.ctx || !tr.ctx.tp) return; var RAD = Math.PI / 180, asc = b.timeKnown ? c.asc : 0, ay0 = tr.ctx.ay || 0, i;
+      function ax(lon, rr) { return cx + rr * Math.cos((180 + (lon - asc)) * RAD); }
+      function ayf(lon, rr) { return cy - rr * Math.sin((180 + (lon - asc)) * RAD); }
+      for (i = 0; i < Math.min(tr.daily.length, 4); i++) { var t2 = tr.daily[i], src = tr.ctx.tp[t2.tp]; if (!src) continue; var tlon = ((src.lon - ay0) % 360 + 360) % 360, np = c.planets[t2.np]; if (!np) continue; var ox = ax(tlon, r * 1.14), oy = ayf(tlon, r * 1.14), nx = ax(np.lon, r * 0.66), ny = ayf(np.lon, r * 0.66); strokec(ACC, 110); p.strokeWeight(1); p.line(ox, oy, nx, ny); p.noStroke(); fillc(ACC); p.ellipse(ox, oy, 13, 13); setFont(SANS, 8, GROUNDS[UI.screen], p.CENTER, p.CENTER); p.text(APP.glyphFor(t2.tp), ox, oy + 0.5); }
+    }
+    function startWalk() { UI.walk = { i: 0, t0: nowT() }; UI.walkTr = null; UI.walkTheme = null; UI.screen = 'chart'; UI.scroll.chart = 0; }
+    function walkNext(n) { if (!UI.walk) return; if (UI.walk.i >= n - 1) { endWalk(); return; } UI.walk.i++; UI.walk.t0 = nowT(); }
+    function walkPrev() { if (UI.walk && UI.walk.i > 0) { UI.walk.i--; UI.walk.t0 = nowT(); } }
+    function endWalk() { UI.walk = null; if (APP.STATE.settings) { APP.STATE.settings.walked = true; APP.save(); } }
+    function drawWalkthrough(c, b) {
+      var x = sx(), w = cw(), top = topY(), vh = viewH(), cx = x + w / 2, scenes = walkScenesArr(b);
+      if (UI.walk.i >= scenes.length) UI.walk.i = scenes.length - 1; var sc = scenes[UI.walk.i], last = (UI.walk.i >= scenes.length - 1);
+      var te = cl01((nowT() - UI.walk.t0) / 560), e = eCubic(te), still = reduced(), alpha = still ? 1 : cl01(te * 1.5), i;
+      if (!last) { pushHit(x, top + 46, w, vh - 96, function () { walkNext(scenes.length); }); pushHit(x, top + 46, 72, vh - 96, function () { walkPrev(); }); }
+      var cy = top + vh * 0.30, r = Math.min(w * 0.34, vh * 0.20), drift = (1 - e) * 18;
+      var dc = p.drawingContext; if (dc) { dc.save(); dc.globalAlpha = alpha; }
+      if (sc.k === 'hour') { celestialEmblem(cx, cy - drift, Math.max(28, r * 0.7), 1); }
+      else { miniWheel(c, b, cx, cy - drift, r, (sc.k === 'body' ? sc.key : (sc.k === 'rising' ? 'asc' : null)), nowT()); if (sc.k === 'today') drawTransitOverlay(c, b, cx, cy - drift, r, walkTr(c)); }
+      if (dc) dc.restore();
+      var ct = walkContent(c, b, sc), ty = top + vh * 0.55;
+      p.textFont(SANS); p.textSize(26); var tl = wrapLines(ct.t, w - 24); setFont(SANS, 26, INK, p.CENTER, p.TOP, 255 * alpha); bold(); for (i = 0; i < tl.length; i++) p.text(tl[i], cx, ty + i * 31); normal(); ty += tl.length * 31 + 12;
+      p.textFont(SERIF); p.textSize(18); var bl = wrapLines(ct.x, w - 30); setFont(SERIF, 18, INK, p.CENTER, p.TOP, 235 * alpha); for (i = 0; i < bl.length; i++) p.text(bl[i], cx, ty + i * 27); ty += bl.length * 27 + 22;
+      setFont(MONO, 9.5, ACCTX, p.LEFT, p.TOP, 220); p.text('YOUR CHART · ' + (UI.walk.i + 1) + ' / ' + scenes.length, x, top + 12);
+      var dxw = 13, dsx = cx - (scenes.length * dxw) / 2; for (i = 0; i < scenes.length; i++) { var on = (i === UI.walk.i); p.noStroke(); fillc(on ? ACC : INK, on ? 255 : 80); p.ellipse(dsx + i * dxw + dxw / 2, top + vh - 16, on ? 7 : 5, on ? 7 : 5); }
+      if (last) { tourBtn('Explore my chart ›', cx - 152, ty, 148, 42, function () { endWalk(); }, true); tourBtn('Open Read', cx + 6, ty, 148, 42, function () { endWalk(); UI.screen = 'read'; }, false); }
+      else { setFont(MONO, 10, INK, p.CENTER, p.TOP, 150 * alpha); p.text('TAP TO CONTINUE  ›', cx, top + vh - 42); }
+      tourBtn('Skip', x + w - 66, top + 6, 60, 26, function () { endWalk(); }, false);
+      UI.contentH.chart = 0;
+    }
+
     // ============ SCREENS ============
     function drawChart() {
       var c = APP.STATE.chart, b = APP.STATE.birth; if (!c) { UI.screen = 'onboard'; return; }
+      if (UI.walk) { drawWalkthrough(c, b); return; }
       if (UI.story) { drawStory(c, b); return; }
       var x = sx(), w = cw(), ly = 18;
       eyebrow('Birth chart \u00B7 ' + b.d + '.' + b.mo + '.' + b.y, x, ly); ly += 22;
@@ -4280,7 +4337,8 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       ly += toggleRow('Cloud reading boost', [['on', 'On'], ['off', 'Off']], st.ai ? 'on' : 'off', ly, function (v) { st.ai = (v === 'on'); APP.save(); });
       ly += paragraph('Off (default): the built-in engine writes every reading on-device \u2014 free, private, works offline with no account. On: an optional cloud pass, only if your deployment provides a connection.', x, ly, w, 13.5, INK, SERIF, 20, 180) + 20;
       flatBtn('Edit birth data', x, ly, 170, 44, function () { UI.draft = newDraft(); UI.screen = 'onboard'; }, true);
-      flatBtn('Replay tour', x + 182, ly, 150, 44, function () { startTour(); }, false); ly += 62;
+      flatBtn('Replay tour', x + 182, ly, 150, 44, function () { startTour(); }, false); ly += 56;
+      flatBtn('Walk me through my chart', x, ly, w, 44, function () { startWalk(); }, false); ly += 56;
       ly += paragraph('Aqau Pluto computes a genuine ephemeris on-device with astronomy-engine (MIT), accurate to about one arcsecond against NOVAS/JPL, and reads it in plain, behavioural language. The whole interface is drawn and animated live in p5.', x, ly, w, 14, INK, SERIF, 21, 170) + 24;
       UI.contentH.settings = ly;
     }
@@ -4394,8 +4452,9 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       else { var ci = DATA.CITIES[d.cityIdx]; place = ci[0] + ', ' + ci[1]; iana = ci[4]; lat = ci[2]; lon = ci[3]; }
       APP.STATE.birth = { name: '', y: d.y, mo: d.mo, d: d.d, hour: d.hour, min: d.min, tz: d.tz || 0, manualTz: !!d.manualTz, iana: iana, lat: lat, lon: lon, place: place, timeKnown: d.timeKnown };
       recompute(); UI.selPlanet = 'sun'; UI.popT = nowT(); UI.popFrom = 22; UI.scroll.chart = 0; UI.screen = 'chart'; hideSearchInput();
+      if (!APP.STATE.settings.walked) { UI.walk = { i: 0, t0: nowT() }; UI.walkTr = null; UI.walkTheme = null; } // first reveal: walk them through it
     }
-    function recompute() { APP.STATE.chart = APP.compute(APP.STATE.birth, APP.STATE.settings); APP.save(); UI.readCache = null; UI.readSig = null; UI.readTransit = null; UI.forecast = null; UI.bondCache = null; UI.bondFor = null; if (APP.clearPersonCharts) APP.clearPersonCharts(); UI.askAns = ''; UI.quip = null; UI.quipNext = 0; buildField(); }
+    function recompute() { APP.STATE.chart = APP.compute(APP.STATE.birth, APP.STATE.settings); APP.save(); UI.readCache = null; UI.readSig = null; UI.readTransit = null; UI.forecast = null; UI.walkTr = null; UI.walkTheme = null; UI.bondCache = null; UI.bondFor = null; if (APP.clearPersonCharts) APP.clearPersonCharts(); UI.askAns = ''; UI.quip = null; UI.quipNext = 0; buildField(); }
 
     // ---------- chrome ----------
     // ---------- live celestial emblem (real current moon phase) \u2014 the recurring centrepiece ----------
@@ -4499,7 +4558,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     };
     p.windowResized = function () { measureInsets(); W = p.windowWidth; H = p.windowHeight; p.resizeCanvas(W, H); buildField(); };
     p.draw = function () {
-      if (UI.screen !== UI.prevScreen) { UI.fxT = nowT(); UI.prevScreen = UI.screen; UI.story = null; setBodyBg(GROUNDS[UI.screen] || GROUNDS.chart); }
+      if (UI.screen !== UI.prevScreen) { UI.fxT = nowT(); UI.prevScreen = UI.screen; UI.story = null; if (UI.screen !== 'chart') UI.walk = null; setBodyBg(GROUNDS[UI.screen] || GROUNDS.chart); }
       UI.bg = (GROUNDS[UI.screen] || GROUNDS.chart); // HARD block-colour cut between sections
       p.background(UI.bg[0], UI.bg[1], UI.bg[2]);
       drawField(); drawRipples();
