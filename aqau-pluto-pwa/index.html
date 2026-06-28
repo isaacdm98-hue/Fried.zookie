@@ -4539,6 +4539,10 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       { k: 'signs', t: 'Twelve signs', b: 'Every planet lands in a sign — a flavour, a style. Your Sun sign is only the beginning; the Moon and rising colour the whole picture.' },
       { k: 'houses', t: 'Twelve houses', b: 'The wheel is sliced into twelve houses — arenas of life: self, money, love, work, home. A planet’s house tells you where its story plays out.' },
       { k: 'aspects', t: 'Planets in conversation', b: 'When planets sit at special angles — a flowing trine, a tense square — they talk. Those conversations, easy or difficult, are the threads that weave a chart together.' },
+      { k: 'modalities', t: 'Three ways to move', b: 'Each element comes in three modes. Cardinal signs start things, fixed signs sustain them, mutable signs adapt and let go. It’s the difference between lighting the fire, tending it, and carrying its sparks on the wind.' },
+      { k: 'dignity', t: 'A planet at home', b: 'A planet in its own sign is at home — strong and easy. In the opposite sign it’s a guest far from its comfort, and has to work harder. This is called dignity, and it colours how smoothly each placement runs.' },
+      { k: 'retro', t: 'When planets turn back', b: 'Now and then a planet appears to loop backward across the sky — retrograde. Nothing really reverses; it’s a trick of perspective. But the energy turns inward: revisited, reworked, slowed down rather than rushed.' },
+      { k: 'nodes', t: 'The Moon’s crossings', b: 'Where the Moon’s tilted path crosses the Sun’s, you get the lunar nodes. The North Node is your growth edge — unfamiliar but right; the South Node is the comfort you already know and are here to move beyond.' },
       { k: 'bigthree', t: 'Your big three', b: 'Three placements carry most of the weight: your Sun (what you’re becoming), your Moon (what you need to feel safe) and your rising sign (the face you meet the world with). Together they’re the headline of who you are.' },
       { k: 'moving', t: 'The sky keeps turning', b: 'Your birth chart is fixed — but the real planets keep moving. When today’s sky touches your birth placements, that’s a transit: the weather of your life right now, written in the same language.' },
       { k: 'you', t: 'Now — your own sky', b: 'That’s the language. Your chart is your sentence in it. Open the wheel and tap any placement to hear what it says about you.' }
@@ -4546,6 +4550,10 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     // History of astrology — a teaching timeline (animated eras) + the antique star-atlas plates (photos).
     var HISTORY = [
       { era: true, anim: 'moving', t: 'Babylon — the first sky-watchers', y: 'c. 1800 BCE', b: 'Astrology was born between the Tigris and Euphrates. Babylonian priests kept centuries of records linking events on Earth to omens in the sky, and drew the first zodiac — twelve equal slices along the Sun’s yearly path. The planets were gods whose movements were messages.' },
+      { era: true, anim: 'signs', t: 'Egypt — the decans', y: 'c. 2000 BCE', b: 'Egyptian sky-watchers divided the heavens into 36 decans — ten-degree bands of stars that rose in turn through the night to tell the hours. Painted across temple ceilings (most famously the round zodiac of Dendera), the decans still survive as the 10° thirds that shade every sign today.' },
+      { era: true, anim: 'wheel', t: 'India — Jyotisha, the science of light', y: 'from c. 1500 BCE', b: 'India built its own living system, still consulted daily. It is sidereal — tied to the fixed stars rather than the seasons — and adds the 27 nakshatras (lunar mansions) and the dasha system of planetary periods, all woven through the ideas of karma and dharma. (You can switch this app to its sidereal zodiac in Settings.)' },
+      { era: true, anim: 'elements', t: 'China — a different sky', y: 'from c. 1000 BCE', b: 'Chinese astrology runs on a wholly different model: a twelve-year cycle of animals, five elements (wood, fire, earth, metal, water), the lunar calendar, and the balance of yin and yang — read from the year, month, day and hour of birth rather than a zodiac belt.' },
+      { era: true, anim: 'planets', t: 'The Maya — keepers of Venus', y: 'c. 250 – 900 CE', b: 'In the Americas the Maya tracked Venus and the Sun with breathtaking precision, interlocking a 260-day sacred count (the Tzolk’in) with the solar year and the Long Count. For them the planets were time itself, sacred and exact.' },
       { era: true, anim: 'aspects', t: 'Greece — the birth of the horoscope', y: 'c. 150 BCE – 150 CE', b: 'Hellenistic astrologers fused Babylonian omens with Greek geometry to cast the personal horoscope — a chart for the exact moment and place of a birth. Claudius Ptolemy’s Tetrabiblos systematised it all; much of what we still do (signs, houses, aspects) traces to here.' },
       { era: true, anim: 'planets', t: 'The Islamic Golden Age', y: 'c. 800 – 1200', b: 'As Europe slept, scholars in Baghdad, Cairo and Córdoba preserved and advanced the art. Abu Maʿshar and Al-Bīrūnī refined technique and theory; this is why so many stars still carry Arabic names — Aldebaran, Altair, Vega, Betelgeuse.' },
       { era: true, anim: 'wheel', t: 'Renaissance — art meets the heavens', y: 'c. 1450 – 1700', b: 'Astrology sat at the centre of courts, medicine and universities. Kepler and Galileo cast charts even as they remade astronomy; the two arts were still one. The age also produced the most beautiful star atlases ever printed — see them below.' },
@@ -4576,8 +4584,29 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       { t: 'Void of course', d: 'A spell when the Moon makes no more aspects before changing sign — a good time to rest, not launch.' },
       { t: 'Decan', d: 'A 10° third of a sign, each with a sub-ruling planet that shades its meaning.' },
       { t: 'Synastry', d: 'Comparing two charts to see how two people’s planets meet — the texture of a bond.' },
-      { t: 'Part of Fortune', d: 'A calculated point (Ascendant + Moon − Sun by day) marking where ease and luck gather.' }
+      { t: 'Part of Fortune', d: 'A calculated point (Ascendant + Moon − Sun by day) marking where ease and luck gather.' },
+      { t: 'Sect', d: 'Whether you were born by day (Sun above the horizon) or night — it changes which planets work for you more smoothly.' },
+      { t: 'Tropical vs Sidereal', d: 'Two zodiacs: tropical is tied to the seasons (Western default); sidereal to the fixed stars (Vedic). They differ by the ayanamsa, ~24° today.' },
+      { t: 'Ayanamsa', d: 'The slowly-growing gap between the tropical and sidereal zodiacs, caused by the precession of the equinoxes.' },
+      { t: 'Applying vs separating', d: 'An aspect is applying when the faster planet is still moving toward exact (strengthening) and separating once it has passed (fading).' },
+      { t: 'Cazimi / combust', d: 'A planet within ~0.3° of the Sun is cazimi (“in the heart” — empowered); a little further out it is combust (burned up, weakened).' },
+      { t: 'Mutual reception', d: 'Two planets each sitting in the sign the other rules — a helpful exchange, like guests in each other’s homes.' },
+      { t: 'Stellium', d: 'Three or more planets bunched in one sign or house — a powerful concentration that dominates the chart.' },
+      { t: 'Chart ruler', d: 'The planet that rules your rising sign — a kind of captain for the whole chart. Needs a birth time.' },
+      { t: 'Out of bounds', d: 'A planet (often the Moon) beyond the Sun’s declination range — it acts unusually, off the leash.' },
+      { t: 'Draconic chart', d: 'A chart re-cast from the North Node — read as the soul’s intentions beneath the everyday personality.' }
     ];
+    // hands-on guides — how to actually do these things yourself
+    var HOWTO = [
+      { t: 'Read your chart in 5 steps', anim: 'bigthree', steps: ['Start with the big three: your Sun (what you’re becoming), Moon (what you need) and rising (how you meet the world). That’s the headline.', 'Find your dominant element and mode (Read → Patterns) — your basic temperament.', 'Note the loudest planet (the one with the most aspects) and where it sits.', 'Read the tight aspects (small orbs) first — they’re the strongest conversations.', 'Only then zoom into individual placements. Detail last, story first.'] },
+      { t: 'Find your dominant element', anim: 'elements', steps: ['Open Chart — the little four-colour bar (F/E/A/W) is your elemental balance.', 'The biggest slice is your dominant element; the smallest is your growth edge.', 'Fire = drive, Earth = substance, Air = thought, Water = feeling.', 'Tap Learn → Elements to read what leaning into the light element looks like.'] },
+      { t: 'Read a transit', anim: 'moving', steps: ['A transit is where a planet is *now* versus your birth chart.', 'Open the Today sheet (tap the moon, top-left) or Read → Live on your chart.', 'Note the transiting planet, the aspect, and your natal planet it touches.', 'Slow planets (Saturn–Pluto) = long, defining chapters; the Moon = a passing mood.', 'Use Read → Transit calendar to see the exact dates ahead.'] },
+      { t: 'Compare two charts (synastry)', anim: 'synastry', steps: ['Add the other person in People (just their birthday; a birth time sharpens it).', 'Open their bond — the synastry bi-wheel shows both charts and the contact lines.', 'Flowing lines (trine/sextile, cool colour) = ease; hard lines (square/opposition) = friction with growth.', 'Switch to the Composite wheel to see the relationship as its own chart.', 'Check “Your year together” for the dates ahead.'] },
+      { t: 'Spot a stellium or pattern', anim: 'stellium', steps: ['A stellium is 3+ planets crowded in one sign or house — a loud, concentrated theme.', 'Open Read → Patterns; the engine names any stellium, grand trine, T-square or yod for you.', 'On the wheel, look for a cluster of dots close together — that’s a stellium by eye.', 'Whatever sign/house it falls in is where a huge amount of your energy goes.'] },
+      { t: 'Use the tarot as a companion', anim: 'tarot', steps: ['Pull your cards in real life — this app is a reference, not a random draw.', 'Open Tarot → Card meanings and look up each card you drew.', 'Read upright or reversed to match how the card landed, plus In Love / At Work.', 'Note the astrological correspondence — each card ties to a planet or sign.', 'Lay a spread (Tarot → Spreads) to see what each position is asking.'] }
+    ];
+    // glossary terms that have a matching explanatory animation
+    var GLOSS_ANIM = { 'Ascendant (Rising)': 'bigthree', 'Aspect': 'aspects', 'Conjunction': 'aspects', 'Trine': 'aspects', 'Square': 'aspects', 'Opposition': 'aspects', 'House': 'houses', 'Element': 'elements', 'Modality': 'modalities', 'Dignity': 'dignity', 'Retrograde': 'retro', 'Transit': 'moving', 'Lunar node': 'nodes', 'Void of course': 'moonphases', 'Decan': 'decan', 'Synastry': 'synastry', 'Sect': 'sect', 'Stellium': 'stellium', 'Solar return': 'wheel', 'Progression': 'moving', 'Profection': 'wheel', 'Draconic chart': 'nodes', 'Chart ruler': 'bigthree' };
     // the myths behind the twelve signs — told beside the antique constellation art (safe allow-list)
     var MYTHS = [
       { s: 0, t: 'The Golden Ram', story: 'Aries is Chrysomallos, the winged ram with the golden fleece who carried the children Phrixus and Helle away from sacrifice. That same fleece, hung in a sacred grove, became the prize Jason and the Argonauts would sail the world to win.' },
@@ -4605,7 +4634,106 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       else if (k === 'aspects') sceneAspects(cx, cy, r, t);
       else if (k === 'bigthree') sceneBigThree(cx, cy, r, t);
       else if (k === 'moving') sceneMoving(cx, cy, r, t);
+      else if (k === 'modalities') sceneModalities(cx, cy, r, t);
+      else if (k === 'retro') sceneRetro(cx, cy, r, t);
+      else if (k === 'nodes') sceneNodes(cx, cy, r, t);
+      else if (k === 'moonphases') sceneMoonPhases(cx, cy, r, t);
+      else if (k === 'synastry') sceneSynastry(cx, cy, r, t);
+      else if (k === 'stellium') sceneStellium(cx, cy, r, t);
+      else if (k === 'dignity') sceneDignity(cx, cy, r, t);
+      else if (k === 'sect') sceneSect(cx, cy, r, t);
+      else if (k === 'tarot') sceneTarot(cx, cy, r, t);
+      else if (k === 'decan') sceneDecan(cx, cy, r, t);
       else sceneYou(cx, cy, r, t);
+    }
+    // ===== explanatory animations (vector, calm, loopable) =====
+    function sceneModalities(cx, cy, r, t) {
+      var defs = [['CARDINAL', -0.66], ['FIXED', 0], ['MUTABLE', 0.66]], k, s = r * 0.5;
+      for (k = 0; k < 3; k++) {
+        var ex = cx + defs[k][1] * r * 1.15, ey = cy, ph = t * 0.003 + k;
+        p.noStroke();
+        if (k === 0) { var pr = (t * 0.05 % (s)); strokec(ACC, 220); p.strokeWeight(2.4); p.line(ex, ey + s * 0.4, ex, ey - s * 0.4); p.line(ex, ey - s * 0.4, ex - 6, ey - s * 0.4 + 9); p.line(ex, ey - s * 0.4, ex + 6, ey - s * 0.4 + 9); } // an arrow: initiates
+        else if (k === 1) { p.noFill(); strokec(ELHUE.earth, 230); p.strokeWeight(2.4); p.rectMode(p.CENTER); p.rect(ex, ey, s * 0.7, s * 0.7, 3); p.rectMode(p.CORNER); } // a fixed square
+        else { p.noFill(); strokec(ELHUE.air, 230); p.strokeWeight(2.4); p.beginShape(); for (var a = 0; a < 28; a++) { var an = a / 27 * Math.PI * 2, rad = s * 0.36 * (1 + 0.32 * Math.sin(an * 3 + ph)); p.vertex(ex + Math.cos(an) * rad, ey + Math.sin(an) * rad); } p.endShape(p.CLOSE); } // a morphing shape
+        setFont(MONO, 8.5, INK, p.CENTER, p.TOP, 180); p.text(defs[k][0], ex, ey + s * 0.7);
+      }
+    }
+    function sceneRetro(cx, cy, r, t) {
+      // a planet tracing the classic retrograde loop against the stars
+      p.noFill(); strokec(INK, 50); p.strokeWeight(1); var k, pts = [];
+      for (k = 0; k <= 120; k++) { var u = k / 120 * Math.PI * 2, px = cx + (u - Math.PI) * r * 0.34, py = cy + Math.sin(u) * r * 0.42 - Math.sin(u * 2) * r * 0.16; pts.push([px, py]); }
+      strokec(INK, 90); p.strokeWeight(1.4); p.beginShape(); for (k = 0; k < pts.length; k++) p.vertex(pts[k][0], pts[k][1]); p.endShape();
+      var idx = Math.floor((Math.sin(t * 0.0009) * 0.5 + 0.5) * (pts.length - 1)), pp = pts[idx];
+      p.noStroke(); fillc(ACC, 60); p.ellipse(pp[0], pp[1], 22, 22); fillc(ACC); p.ellipse(pp[0], pp[1], 13, 13); setFont(SANS, 10, GROUNDS[UI.screen], p.CENTER, p.CENTER); p.text(APP.glyphFor('mercury'), pp[0], pp[1] + 0.5);
+      setFont(MONO, 8.5, INK, p.CENTER, p.TOP, 170); p.text('THE BACKWARD LOOP', cx, cy + r * 0.7);
+    }
+    function sceneNodes(cx, cy, r, t) {
+      // the Moon's tilted path crossing the ecliptic at two nodes
+      strokec(INK, 110); p.strokeWeight(1.4); p.line(cx - r, cy, cx + r, cy); // ecliptic
+      p.noFill(); strokec(ACC, 200); p.strokeWeight(1.8); p.beginShape(); var k; for (k = -60; k <= 60; k++) { var x2 = cx + k / 60 * r, y2 = cy - Math.sin(k / 60 * Math.PI) * r * 0.34; p.vertex(x2, y2); } p.endShape();
+      p.noStroke(); fillc(INK); p.ellipse(cx - r * 0.5, cy, 8, 8); fillc(INK); p.ellipse(cx + r * 0.5, cy, 8, 8);
+      setFont(SANS, 12, ACCTX, p.CENTER, p.CENTER); p.text('☊', cx - r * 0.5, cy - 14); p.text('☋', cx + r * 0.5, cy + 14);
+      var mp = (t * 0.0008) % (Math.PI * 2), mx = cx + Math.cos(mp) * r * 0.5, my = cy - Math.sin(Math.atan2(Math.sin(mp), 1)) * 0; var mmx = cx + (mp / Math.PI - 1) * r, mmy = cy - Math.sin(mp) * r * 0.34;
+      p.noStroke(); fillc([238, 232, 216]); p.ellipse(mmx, mmy, 11, 11);
+      setFont(MONO, 8.5, INK, p.CENTER, p.TOP, 170); p.text('WHERE THE MOON CROSSES THE SUN’S PATH', cx, cy + r * 0.66);
+    }
+    function sceneMoonPhases(cx, cy, r, t) {
+      var e = (t * 0.0006) % (Math.PI * 2), deg = e * 180 / Math.PI, mr = r * 0.42, kk = Math.cos(e);
+      p.noStroke(); fillc(shade(GROUNDS[UI.screen], -22)); p.ellipse(cx, cy, mr * 2, mr * 2);
+      fillc([238, 232, 216]); if (e < Math.PI) p.arc(cx, cy, mr * 2, mr * 2, -Math.PI / 2, Math.PI / 2, p.PIE); else p.arc(cx, cy, mr * 2, mr * 2, Math.PI / 2, Math.PI * 1.5, p.PIE);
+      fillc(((1 - Math.cos(e)) / 2) > 0.5 ? [238, 232, 216] : shade(GROUNDS[UI.screen], -22)); p.ellipse(cx, cy, mr * 2 * Math.abs(kk), mr * 2);
+      p.noFill(); strokec(INK, 120); p.strokeWeight(1); p.ellipse(cx, cy, mr * 2, mr * 2);
+      var nm = (deg < 22.5 || deg >= 337.5) ? 'NEW' : deg < 157.5 ? 'WAXING' : deg < 202.5 ? 'FULL' : 'WANING';
+      setFont(MONO, 9, INK, p.CENTER, p.TOP, 180); p.text(nm + ' MOON', cx, cy + mr + 8);
+    }
+    function sceneSynastry(cx, cy, r, t) {
+      var off = r * 0.42, k, rr = r * 0.5;
+      var a = [cx - off, cy], b = [cx + off, cy];
+      p.noFill(); strokec(INK, 150); p.strokeWeight(1.4); p.ellipse(a[0], a[1], rr * 2, rr * 2); strokec(ACC, 180); p.ellipse(b[0], b[1], rr * 2, rr * 2);
+      // a few planets on each, with contact threads
+      for (k = 0; k < 4; k++) { var an = t * 0.0006 + k * 1.6, ax2 = a[0] + Math.cos(an) * rr * 0.7, ay2 = a[1] + Math.sin(an) * rr * 0.7, bn = -t * 0.0005 + k * 1.6, bx2 = b[0] + Math.cos(bn) * rr * 0.7, by2 = b[1] + Math.sin(bn) * rr * 0.7;
+        strokec((k % 2) ? ELHUE.air : ACC, 110); p.strokeWeight(1.1); p.line(ax2, ay2, bx2, by2);
+        p.noStroke(); fillc(INK); p.ellipse(ax2, ay2, 8, 8); fillc(ACC); p.ellipse(bx2, by2, 8, 8); }
+      setFont(MONO, 8.5, INK, p.CENTER, p.TOP, 170); p.text('TWO CHARTS, ONE CONVERSATION', cx, cy + rr + 10);
+    }
+    function sceneStellium(cx, cy, r, t) {
+      var k; p.noFill(); strokec(INK, 150); p.strokeWeight(1.4); p.ellipse(cx, cy, r * 1.7, r * 1.7);
+      for (k = 0; k < 12; k++) { var a = k * 30 * Math.PI / 180; strokec(INK, k % 3 === 0 ? 120 : 50); p.strokeWeight(1); p.line(cx + Math.cos(a) * r * 0.85, cy + Math.sin(a) * r * 0.85, cx + Math.cos(a) * r * 0.78, cy + Math.sin(a) * r * 0.78); }
+      // a cluster of planets bunched in one sign, gently breathing together
+      var base = -1.1, pul = 0.5 + 0.5 * Math.sin(t * 0.004);
+      var glyphs = ['sun', 'mercury', 'venus', 'mars']; for (k = 0; k < glyphs.length; k++) { var a2 = base + (k - 1.5) * 0.12, rr = r * 0.62, px = cx + Math.cos(a2) * rr, py = cy + Math.sin(a2) * rr; p.noStroke(); fillc(ACC, 40 * pul); p.ellipse(px, py, 22, 22); fillc(INK); p.ellipse(px, py, 14, 14); setFont(SANS, 9, GROUNDS[UI.screen], p.CENTER, p.CENTER); p.text(APP.glyphFor(glyphs[k]), px, py + 0.5); }
+      setFont(MONO, 8.5, INK, p.CENTER, p.TOP, 170); p.text('FOUR PLANETS, ONE SIGN — A STELLIUM', cx, cy + r * 0.92);
+    }
+    function sceneDignity(cx, cy, r, t) {
+      // a planet bright "at home", dim when displaced — alternating
+      var home = (Math.sin(t * 0.0011) > 0), pul = 0.5 + 0.5 * Math.sin(t * 0.005);
+      p.noFill(); strokec(INK, 70); p.strokeWeight(1.2); p.ellipse(cx, cy, r * 1.2, r * 1.2);
+      p.noStroke(); fillc(ACC, (home ? 70 : 12) * (0.6 + 0.4 * pul)); p.ellipse(cx, cy, r * (home ? 0.95 : 0.6), r * (home ? 0.95 : 0.6));
+      fillc(home ? ACC : shade(INK, 40)); p.ellipse(cx, cy, r * 0.4, r * 0.4); setFont(SANS, r * 0.2, GROUNDS[UI.screen], p.CENTER, p.CENTER); p.text(APP.glyphFor('mars'), cx, cy + 0.5);
+      setFont(MONO, 9, INK, p.CENTER, p.TOP, 190); p.text(home ? 'AT HOME — STRONG (DOMICILE)' : 'DISPLACED — STRAINED (FALL)', cx, cy + r * 0.72);
+    }
+    function sceneSect(cx, cy, r, t) {
+      var day = (Math.sin(t * 0.0009) > 0);
+      strokec(INK, 120); p.strokeWeight(1.4); p.line(cx - r, cy, cx + r, cy); // horizon
+      setFont(MONO, 8, INK, p.LEFT, p.TOP, 150); p.text('HORIZON', cx - r, cy + 4);
+      var sy = day ? cy - r * 0.5 : cy + r * 0.5;
+      p.noStroke(); fillc(ACC, 60); p.ellipse(cx, sy, r * 0.5, r * 0.5); fillc(ACC); p.ellipse(cx, sy, r * 0.32, r * 0.32);
+      if (day) { strokec(ACC, 180); p.strokeWeight(2); for (var k = 0; k < 8; k++) { var a = k * Math.PI / 4 + t * 0.001; p.line(cx + Math.cos(a) * r * 0.22, sy + Math.sin(a) * r * 0.22, cx + Math.cos(a) * r * 0.3, sy + Math.sin(a) * r * 0.3); } }
+      setFont(MONO, 9, INK, p.CENTER, p.TOP, 190); p.text(day ? 'DAY CHART — THE SUN LEADS' : 'NIGHT CHART — THE MOON LEADS', cx, cy + r * 0.78);
+    }
+    function sceneTarot(cx, cy, r, t) {
+      // three cards fanning and a gentle flip
+      var k; for (k = -1; k <= 1; k++) { p.push(); p.translate(cx + k * r * 0.42, cy + Math.abs(k) * 6); p.rotate(k * 0.12); var fp = (k === 0) ? (0.5 + 0.5 * Math.sin(t * 0.002)) : 1, w0 = r * 0.5 * (fp < 0.5 ? (1 - fp * 2) : (fp - 0.5) * 2) + 2, h0 = r * 0.78;
+        p.noStroke(); fillc(shade(GROUNDS[UI.screen], -20)); p.rectMode(p.CENTER); p.rect(0, 3, w0, h0, 6); fillc(k === 0 && fp >= 0.5 ? ACC : shade(INK, 30)); p.rect(0, 0, w0, h0, 6); p.rectMode(p.CORNER);
+        if (k === 0 && fp >= 0.5 && w0 > 10) { setFont(SANS, 14, GROUNDS[UI.screen], p.CENTER, p.CENTER); p.text('✦', 0, 0); } p.pop(); }
+      setFont(MONO, 8.5, INK, p.CENTER, p.TOP, 170); p.text('PULL · LOOK UP · REFLECT', cx, cy + r * 0.62);
+    }
+    function sceneDecan(cx, cy, r, t) {
+      // a sign's 30° arc split into three 10° decans lighting in turn
+      var lit = Math.floor(t / 1100) % 3, k; p.noFill();
+      for (k = 0; k < 3; k++) { var a0 = (-60 + k * 30) * Math.PI / 180, a1 = (-60 + (k + 1) * 30) * Math.PI / 180; strokec(ACC, k === lit ? 230 : 70); p.strokeWeight(k === lit ? 5 : 3); p.arc(cx, cy, r * 1.5, r * 1.5, a0, a1); }
+      setFont(SANS, r * 0.3, INK, p.CENTER, p.CENTER, 200); p.text(DATA.SIGNS[(Math.floor(t / 3300)) % 12].glyph, cx, cy);
+      setFont(MONO, 8.5, INK, p.CENTER, p.TOP, 180); p.text('EACH SIGN — THREE 10° DECANS', cx, cy + r * 0.8);
     }
     // the big three: a radiant Sun, a phased Moon, and a rising horizon — held together
     function sceneBigThree(cx, cy, r, t) {
@@ -4797,7 +4925,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var pulse = reduced() ? 0 : Math.sin(nowT() * 0.004) * 2; setFont(SANS, 22, GROUNDS[UI.screen], p.RIGHT, p.CENTER); p.text('›', x + w - 18 + pulse, hy + hh / 2);
       pushHit(x, hy, w, hh, function () { startLesson(); }); ly += hh + 20;
       eyebrow('Or explore freely', x, ly, ACC); ly += 26;
-      var cats = [['elements', 'Elements'], ['signs', 'Signs'], ['planets', 'Planets'], ['houses', 'Houses'], ['aspects', 'Aspects'], ['history', 'History'], ['myths', 'Myths'], ['famous', 'Like you'], ['glossary', 'Glossary']];
+      var cats = [['elements', 'Elements'], ['signs', 'Signs'], ['planets', 'Planets'], ['houses', 'Houses'], ['aspects', 'Aspects'], ['howto', 'How to'], ['history', 'History'], ['myths', 'Myths'], ['famous', 'Like you'], ['glossary', 'Glossary']];
       var cxp = x, cyp = ly, ci;
       for (ci = 0; ci < cats.length; ci++) { p.textFont(MONO); p.textSize(11); var ww = p.textWidth(cats[ci][1].toUpperCase()) + 28; if (cxp + ww > x + w) { cxp = x; cyp += 40; } chip(cats[ci][1], UI.learnCat === cats[ci][0], cxp, cyp, (function (cc) { return function () { UI.learnCat = cc; UI.learnItem = null; UI.scroll.learn = 0; UI.popT = nowT(); }; })(cats[ci][0])); cxp += ww + 8; }
       ly = cyp + 50;
@@ -4894,6 +5022,14 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
           (function (idx, ay) { pushHit(x, sY(ay), w, frh, function () { UI.learnItem = idx; UI.scroll.learn = 0; UI.popT = nowT(); }); })(i, ly); ly += frh;
         }
         if (!fm.length) ly += paragraph('No close matches in the set — a rare sky.', x, ly, w, 15, INK, SERIF, 23, 180) + 10;
+      } else if (cat === 'howto') { // hands-on guides
+        ly += paragraph('Short, practical walk-throughs — how to actually do these things yourself, each with a little animation.', x, ly, w, 14.5, INK, SERIF, 22, 200) + 12;
+        for (i = 0; i < HOWTO.length; i++) {
+          if (i) hairline(x, ly, x + w, 40);
+          setFont(SANS, 15, INK, p.LEFT, p.CENTER); bold(); p.text(HOWTO[i].t, x + 2, sY(ly + rh / 2)); normal();
+          setFont(SANS, 18, INK, p.RIGHT, p.CENTER, 120); p.text('›', x + w, sY(ly + rh / 2));
+          (function (idx, ay) { pushHit(x, sY(ay), w, rh, function () { UI.learnItem = idx; UI.scroll.learn = 0; UI.popT = nowT(); }); })(i, ly); ly += rh;
+        }
       } else { // glossary
         var grh2 = 42;
         for (i = 0; i < GLOSSARY.length; i++) {
@@ -4907,7 +5043,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     }
     // animated explanation diagram per category: builds on entry, idles with life, replays on tap
     function learnDiagram(cat, it, c, x, w, ly) {
-      if (cat === 'history' || cat === 'glossary' || cat === 'famous' || cat === 'myths') return 0; // these draw their own content
+      if (cat === 'history' || cat === 'glossary' || cat === 'famous' || cat === 'myths' || cat === 'howto') return 0; // these draw their own content
       var H0 = 152, cx = x + w / 2, top = sY(ly), cyc = top + H0 / 2;
       var ent = cl01((nowT() - UI.popT) / 1300), e = eExpo(ent), idle = nowT() * 0.001; // slower, more cinematic
       p.noStroke(); fillc(shade(GROUNDS[UI.screen], -10)); p.rect(x, top, w, H0, 10);
@@ -4966,6 +5102,16 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       return H0 + 18;
     }
 
+    // a bordered box that plays one explanatory animation, clipped; returns its height
+    function animBox(animKey, x, ly, w) {
+      var H0 = 188, ecx = x + w / 2, eyy = sY(ly), eR = Math.min(w * 0.34, 72);
+      p.noStroke(); fillc(shade(GROUNDS[UI.screen], -10)); p.rect(x, eyy, w, H0, 10);
+      var dc = p.drawingContext; if (dc) { dc.save(); dc.beginPath(); dc.rect(x, eyy, w, H0); dc.clip(); }
+      drawScene(animKey, ecx, eyy + H0 / 2, eR, nowT());
+      if (dc) dc.restore();
+      p.noFill(); strokec(INK, 70); p.strokeWeight(1.4); p.rect(x, eyy, w, H0, 10);
+      return H0 + 14;
+    }
     function learnDetail(c, b, x, w, ly) {
       var cat = UI.learnCat, it = UI.learnItem, gi = cl01(1 - (nowT() - UI.popT) / 360), dm = domMinEl(c);
       flatBtn('\u2039 Back', x, ly, 100, 36, function () { UI.learnItem = null; }, false, true); ly += 50;
@@ -5056,9 +5202,20 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         ly += paragraph(shareTxt, x, ly, w, 16.5, INK, SERIF, 25) + 12;
         ly += paragraph('A shared placement is a shared theme, never a shared fate — the rest of a chart, and a life, makes each person utterly their own.', x, ly, w, 14, INK, SERIF, 21, 195) + 10;
         setFont(MONO, 8.5, INK, p.LEFT, p.TOP, 140); ly += paragraph('Portrait via Wikipedia.', x, ly, w, 11, INK, MONO, 15, 140) + 8;
+      } else if (cat === 'howto') {
+        var HT = HOWTO[it];
+        p.textFont(SANS); p.textSize(24); p.textStyle(p.BOLD); fillc(INK); p.noStroke(); var hl = wrapLines(HT.t, w); var hli; for (hli = 0; hli < hl.length; hli++) p.text(hl[hli], x, sY(ly + hli * 28)); normal(); ly += hl.length * 28 + 8;
+        if (HT.anim) ly += animBox(HT.anim, x, ly, w) + 4;
+        eyebrow('Step by step', x, ly, ACC); ly += 26;
+        var st; for (st = 0; st < HT.steps.length; st++) {
+          setFont(SANS, 15, ACC, p.LEFT, p.TOP); bold(); p.text(String(st + 1), x, sY(ly)); normal();
+          ly += paragraph(HT.steps[st], x + 22, ly, w - 22, 15.5, INK, SERIF, 23) + 12;
+        }
+        ly += 4;
       } else if (cat === 'glossary') {
         var G = GLOSSARY[it];
         p.textFont(SANS); p.textSize(24); p.textStyle(p.BOLD); fillc(INK); p.noStroke(); var gl2 = wrapLines(G.t, w); var gi3; for (gi3 = 0; gi3 < gl2.length; gi3++) p.text(gl2[gi3], x, sY(ly + gi3 * 28)); normal(); ly += gl2.length * 28 + 8;
+        if (GLOSS_ANIM[G.t]) ly += animBox(GLOSS_ANIM[G.t], x, ly, w) + 4;
         eyebrow('Plain terms', x, ly, ACC); ly += 24;
         ly += paragraph(G.d, x, ly, w, 17, INK, SERIF, 26) + 14;
       } else { // history \u2014 an animated era lesson, or a real antique star-atlas (Ken-Burns), with the story
