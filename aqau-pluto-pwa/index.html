@@ -3887,6 +3887,14 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       { k: 'aspects', t: 'Planets in conversation', b: 'When planets sit at special angles — a flowing trine, a tense square — they talk. Those conversations, easy or difficult, are the threads that weave a chart together.' },
       { k: 'you', t: 'Now — your own sky', b: 'That’s the language. Your chart is your sentence in it. Open the wheel and tap any placement to hear what it says about you.' }
     ];
+    // history told through real artifacts — each maps to a famous public-domain star atlas
+    var HISTORY = [
+      { t: 'Harmonia Macrocosmica', y: 'Andreas Cellarius · 1660', q: 'Cellarius Harmonia Macrocosmica', b: 'The most gorgeous star atlas ever printed — baroque Dutch copperplates showing the rival models of the heavens, the zodiac belt, and the constellations as gilded mythological figures. Astrology and astronomy were still one art.' },
+      { t: 'Urania’s Mirror', y: 'London · 1824', q: "Urania's Mirror", b: 'A boxed set of 32 hand-coloured cards, each constellation pricked with holes so you could hold it to a candle and see the stars shine through. A Georgian way to learn the night sky by heart.' },
+      { t: 'Uranographia', y: 'Johannes Hevelius · 1690', q: 'Hevelius Uranographia Firmamentum', b: 'Hevelius engraved the heavens as muscular figures seen from “outside” the celestial sphere, mirror-reversed. His widow Elisabeth published it after his death — among the first women in astronomy.' },
+      { t: 'Uranometria', y: 'Johann Bayer · 1603', q: 'Uranometria Bayer', b: 'The first atlas to cover the whole sky and to label stars with Greek letters — a system still used today (α, β…). The constellations are drawn as luminous classical figures.' },
+      { t: 'Uranographia', y: 'Johann Bode · 1801', q: 'Bode Uranographia', b: 'The grandest of all — over 100 constellations and 17,000 stars, the high-water mark of the artistic star atlas before astronomy turned to pure catalogues and the pictures faded away.' }
+    ];
     function startLesson() { UI.lesson = { i: 0, t0: nowT() }; UI.scroll.learn = 0; }
     function lessonNext() { if (!UI.lesson) return; if (UI.lesson.i >= LESSON.length - 1) { UI.lesson = null; return; } UI.lesson.i++; UI.lesson.t0 = nowT(); }
     function lessonPrev() { if (UI.lesson && UI.lesson.i > 0) { UI.lesson.i--; UI.lesson.t0 = nowT(); } }
@@ -3957,11 +3965,49 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var ps = ['sun', 'moon', 'mercury', 'venus', 'mars']; for (k = 0; k < ps.length; k++) { var a2 = t * 0.0004 + k * 1.3, rr = r * 0.66, px = cx + Math.cos(a2) * rr, py = cy + Math.sin(a2) * rr, pulse = 0.5 + 0.5 * Math.sin(t * 0.004 + k); p.noStroke(); fillc(ACC, 60 * pulse); p.ellipse(px, py, 18, 18); fillc(INK); p.ellipse(px, py, 13, 13); setFont(SANS, 9, GROUNDS[UI.screen], p.CENTER, p.CENTER); p.text(APP.glyphFor(ps[k]), px, py + 0.5); }
       p.noStroke(); fillc(ACC); p.ellipse(cx, cy, 7, 7);
     }
+    // ---- historical artifacts: real public-domain antique star atlases & zodiac art ----
+    // Same safety model as the tarot deck: discover via Wikimedia, accept ONLY files whose name
+    // belongs to a famous public-domain celestial atlas / work. Arbitrary uploads can't pass.
+    var ART_RE = new RegExp('(Urania|Uranometria|Uranographia|Harmonia[ _]Macrocosmica|Cellarius|Heveli|Bayer|Flamsteed|Atlas[ _]Coelestis|Firmamentum|Sidney[ _]Hall|Mercator|Apian|Astronomicum|Doppelmayr|Planisphaeri|De[ _]Sphaera|Tetrabiblos|Almagest|Manilius|Ptolem|Bode|Coelum[ _]Stellatum)', 'i');
+    var ART_BAD = /(swastika|hakenkreuz|nazi|hitler|reich|1488)/i;
+    function safeArtTitle(t) { t = t || ''; return /^File:/i.test(t) && ART_RE.test(t) && !ART_BAD.test(t); }
+    function loadArtifacts(key, query) {
+      UI.artifacts = UI.artifacts || {}; UI.artStatus = UI.artStatus || {}; UI.artIdx = UI.artIdx || {};
+      if (UI.artifacts[key]) return; UI.artifacts[key] = []; UI.artStatus[key] = 'loading'; UI.artIdx[key] = 0;
+      if (typeof fetch !== 'function') { UI.artStatus[key] = 'offline'; return; }
+      var seen = {}, mine = key;
+      function add(url) { if (!url || seen[url]) return; seen[url] = 1; var im = new Image(); im.onload = function () { if (UI.artifacts[mine] && UI.artifacts[mine].length < 12) UI.artifacts[mine].push(im); }; im.onerror = function () {}; im.src = url; }
+      var api = 'https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=' + encodeURIComponent(query) + '&gsrnamespace=6&gsrlimit=30&prop=imageinfo&iiprop=url|mime&iiurlwidth=720&format=json&origin=*';
+      fetch(api).then(function (r) { return r.json(); }).then(function (data) {
+        if (!data || !data.query || !data.query.pages) { UI.artStatus[mine] = 'err'; return; }
+        var pages = data.query.pages, k; for (k in pages) if (pages.hasOwnProperty(k)) { var pg = pages[k]; if (!safeArtTitle(pg.title || '')) continue; var ii = pg.imageinfo; if (!ii || !ii[0]) continue; var mime = ii[0].mime || ''; if (mime.indexOf('image') !== 0 || mime.indexOf('svg') >= 0) continue; var u = ii[0].thumburl || ii[0].url; if (u) add(u); }
+        UI.artStatus[mine] = 'done';
+      }).catch(function () { UI.artStatus[mine] = 'err'; });
+    }
+    // slow Ken-Burns draw of an artifact, clipped to a box (cover-fit, gentle zoom + pan)
+    function drawArtifactKB(img, dx, dy, dw, dh, t, alpha) {
+      var iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height; if (!iw || !ih) return;
+      var dc = p.drawingContext; if (!dc) return;
+      var scale = Math.max(dw / iw, dh / ih) * (1.06 + 0.06 * Math.sin(t * 0.0002)), rw = iw * scale, rh = ih * scale;
+      var panx = Math.sin(t * 0.00012) * Math.max(0, rw - dw) * 0.4, pany = Math.cos(t * 0.0001) * Math.max(0, rh - dh) * 0.4;
+      dc.save(); dc.globalAlpha = alpha; dc.beginPath(); dc.rect(dx, dy, dw, dh); dc.clip();
+      try { dc.drawImage(img, dx + (dw - rw) / 2 + panx, dy + (dh - rh) / 2 + pany, rw, rh); } catch (e) {}
+      dc.restore();
+    }
+    // current artifact for a topic, advancing every ~4.5s
+    function artNow(key) { var a = UI.artifacts && UI.artifacts[key]; if (!a || !a.length) return null; var idx = Math.floor(nowT() / 4500) % a.length; return a[idx]; }
+
     function drawLesson() {
       var x = sx(), w = cw(), top = topY(), vh = viewH(), cx = x + w / 2, sc = LESSON[UI.lesson.i], last = (UI.lesson.i === LESSON.length - 1);
       var te = cl01((nowT() - UI.lesson.t0) / 560), e = eCubic(te), still = reduced(), alpha = still ? 1 : cl01(te * 1.5), i;
       if (!last) { pushHit(x, top + 46, w, vh - 96, function () { lessonNext(); }); pushHit(x, top + 46, 72, vh - 96, function () { lessonPrev(); }); }
       var sceneCY = top + vh * 0.30, sceneR = Math.min(w * 0.40, vh * 0.22), drift = (1 - e) * 18;
+      // a faint real antique star-atlas behind the living vector scene (best-effort, graceful)
+      var bgImg = null;
+      if (sc.k === 'wheel') { loadArtifacts('lwheel', 'Cellarius Harmonia Macrocosmica zodiac'); bgImg = artNow('lwheel'); }
+      else if (sc.k === 'planets') { loadArtifacts('lplanets', 'Cellarius planisphaerium'); bgImg = artNow('lplanets'); }
+      else if (sc.k === 'signs') { var sidx2 = Math.floor(nowT() / 3600) % 12; loadArtifacts('lsign' + sidx2, "Urania's Mirror " + DATA.SIGNS[sidx2].name); bgImg = artNow('lsign' + sidx2); }
+      if (bgImg && !reduced()) drawArtifactKB(bgImg, cx - sceneR * 1.5, sceneCY - sceneR * 1.5, sceneR * 3, sceneR * 3, nowT(), 0.16 * alpha);
       var dc = p.drawingContext; if (dc) { dc.save(); dc.globalAlpha = alpha; }
       drawScene(sc.k, cx, sceneCY - drift, sceneR, nowT());
       if (dc) dc.restore();
@@ -3989,7 +4035,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var pulse = reduced() ? 0 : Math.sin(nowT() * 0.004) * 2; setFont(SANS, 22, GROUNDS[UI.screen], p.RIGHT, p.CENTER); p.text('›', x + w - 18 + pulse, hy + hh / 2);
       pushHit(x, hy, w, hh, function () { startLesson(); }); ly += hh + 20;
       eyebrow('Or explore freely', x, ly, ACC); ly += 26;
-      var cats = [['elements', 'Elements'], ['signs', 'Signs'], ['planets', 'Planets'], ['houses', 'Houses'], ['aspects', 'Aspects']];
+      var cats = [['elements', 'Elements'], ['signs', 'Signs'], ['planets', 'Planets'], ['houses', 'Houses'], ['aspects', 'Aspects'], ['history', 'History']];
       var cxp = x, cyp = ly, ci;
       for (ci = 0; ci < cats.length; ci++) { p.textFont(MONO); p.textSize(11); var ww = p.textWidth(cats[ci][1].toUpperCase()) + 28; if (cxp + ww > x + w) { cxp = x; cyp += 40; } chip(cats[ci][1], UI.learnCat === cats[ci][0], cxp, cyp, (function (cc) { return function () { UI.learnCat = cc; UI.learnItem = null; UI.scroll.learn = 0; UI.popT = nowT(); }; })(cats[ci][0])); cxp += ww + 8; }
       ly = cyp + 50;
@@ -4039,7 +4085,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
           if (ph.length) { setFont(SANS, 13, ACC, p.RIGHT, p.CENTER); p.text(glyphsOf(ph), x + w, sY(ly + rh / 2)); }
           (function (idx, ay) { pushHit(x, sY(ay), w, rh, function () { UI.learnItem = idx; UI.scroll.learn = 0; UI.popT = nowT(); }); })(i, ly); ly += rh;
         }
-      } else {
+      } else if (cat === 'aspects') {
         for (i = 0; i < DATA.ASPECTS.length; i++) {
           var as = DATA.ASPECTS[i]; if (i) hairline(x, ly, x + w, 40);
           setFont(SANS, 16, INK, p.LEFT, p.CENTER); p.text(as.glyph, x + 2, sY(ly + rh / 2));
@@ -4049,11 +4095,20 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
           setFont(MONO, 10.5, ao.length ? ACC : INK, p.RIGHT, p.CENTER, ao.length ? 255 : 110); p.text(ao.length ? ('\u00D7' + ao.length + ' IN YOU') : 'NONE', x + w, sY(ly + rh / 2));
           (function (idx, ay) { pushHit(x, sY(ay), w, rh, function () { UI.learnItem = idx; UI.scroll.learn = 0; UI.popT = nowT(); }); })(i, ly); ly += rh;
         }
+      } else { // history \u2014 real antique star atlases
+        for (i = 0; i < HISTORY.length; i++) {
+          var Hh = HISTORY[i]; if (i) hairline(x, ly, x + w, 40);
+          setFont(SANS, 15, INK, p.LEFT, p.CENTER); bold(); p.text(Hh.t, x + 2, sY(ly + rh / 2) - 8); normal();
+          setFont(MONO, 9, INK, p.LEFT, p.CENTER, 175); p.text(Hh.y.toUpperCase(), x + 2, sY(ly + rh / 2) + 10);
+          setFont(SANS, 18, INK, p.RIGHT, p.CENTER, 120); p.text('\u203A', x + w, sY(ly + rh / 2));
+          (function (idx, ay) { pushHit(x, sY(ay), w, rh, function () { UI.learnItem = idx; UI.scroll.learn = 0; UI.popT = nowT(); }); })(i, ly); ly += rh;
+        }
       }
       return ly;
     }
     // animated explanation diagram per category: builds on entry, idles with life, replays on tap
     function learnDiagram(cat, it, c, x, w, ly) {
+      if (cat === 'history') return 0; // history shows its own artifact gallery instead
       var H0 = 152, cx = x + w / 2, top = sY(ly), cyc = top + H0 / 2;
       var ent = cl01((nowT() - UI.popT) / 1300), e = eExpo(ent), idle = nowT() * 0.001; // slower, more cinematic
       p.noStroke(); fillc(shade(GROUNDS[UI.screen], -10)); p.rect(x, top, w, H0, 10);
@@ -4157,7 +4212,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         var hm = ph.length ? ('You have ' + ph.map(function (k) { return APP.nameFor(k); }).join(', ') + ' here \u2014 a live, emphasised area of your life.') : 'No planets fall here \u2014 a quieter, more background area for you.';
         if (cuspSign) hm += ' ' + cuspSign + ' sits on the cusp, colouring how you approach it.';
         ly += paragraph(hm, x, ly, w, 16, INK, SERIF, 24) + 12;
-      } else {
+      } else if (cat === 'aspects') {
         var A = DATA.ASPECTS[it];
         p.textFont(SANS); p.textSize(28); fillc(ACC); p.textStyle(p.BOLD); p.noStroke(); p.text(A.glyph + '  ', x, sY(ly)); var aw = p.textWidth(A.glyph + '  '); fillc(INK); p.text(A.key.charAt(0).toUpperCase() + A.key.slice(1), x + aw, sY(ly)); normal(); ly += 40;
         eyebrow(A.angle + '\u00B0 apart \u00B7 ' + A.quality, x, ly, ACC); ly += 24;
@@ -4167,6 +4222,22 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         if (ao.length) { var li; for (li = 0; li < ao.length; li++) { var a0 = ao[li]; setFont(SANS, 15, INK, p.LEFT, p.TOP); p.text(APP.glyphFor(a0.a) + '  ' + A.glyph + '  ' + APP.glyphFor(a0.b), x, sY(ly)); setFont(MONO, 10.5, INK, p.LEFT, p.TOP, 150); p.text(APP.nameFor(a0.a) + ' ' + A.key + ' ' + APP.nameFor(a0.b) + '  \u00B7  orb ' + a0.orb.toFixed(1) + '\u00B0', x + 70, sY(ly) + 3); ly += 26; } }
         else ly += paragraph('You have no ' + A.key + ' aspects within orb.', x, ly, w, 16, INK, SERIF, 24);
         ly += 12;
+      } else { // history \u2014 a real antique star-atlas, animated (Ken-Burns), with the story
+        var Hh = HISTORY[it];
+        p.textFont(SANS); p.textSize(24); p.textStyle(p.BOLD); fillc(INK); p.noStroke(); p.text(Hh.t, x, sY(ly)); normal(); ly += 32;
+        eyebrow(Hh.y, x, ly, ACC); ly += 24;
+        loadArtifacts('hist' + it, Hh.q);
+        var gW = w, gH = 224, gy = sY(ly);
+        p.noStroke(); fillc(shade(GROUNDS[UI.screen], -12)); p.rect(x, gy, gW, gH, 10);
+        var aimg = artNow('hist' + it), stt = (UI.artStatus && UI.artStatus['hist' + it]) || 'loading';
+        if (aimg) drawArtifactKB(aimg, x + 3, gy + 3, gW - 6, gH - 6, nowT(), 1);
+        else { setFont(MONO, 10, INK, p.CENTER, p.CENTER, 160); p.text((stt === 'offline' || stt === 'err') ? 'CONNECT TO SEE THE ANTIQUE PLATES' : 'GATHERING ANTIQUE STAR ATLASES\u2026', x + gW / 2, gy + gH / 2); }
+        p.noFill(); strokec(INK, 90); p.strokeWeight(1.5); p.rect(x, gy, gW, gH, 10);
+        var arr = (UI.artifacts && UI.artifacts['hist' + it]) || [];
+        if (arr.length > 1) { var nD = Math.min(arr.length, 10), cur = Math.floor(nowT() / 4500) % arr.length, dd; for (dd = 0; dd < nD; dd++) { p.noStroke(); fillc(dd === cur ? ACC : [245, 240, 226], dd === cur ? 255 : 130); p.ellipse(x + gW / 2 - (nD * 9) / 2 + dd * 9 + 4, gy + gH - 12, dd === cur ? 6 : 4, dd === cur ? 6 : 4); } }
+        ly += gH + 8;
+        setFont(MONO, 8.5, INK, p.LEFT, p.TOP, 140); ly += paragraph('Public-domain plates via Wikimedia Commons.', x, ly, w, 11, INK, MONO, 15, 140) + 10;
+        ly += paragraph(Hh.b, x, ly, w, 16.5, INK, SERIF, 25) + 14;
       }
       if (ddc && rev < 1) ddc.restore();
       return ly;
