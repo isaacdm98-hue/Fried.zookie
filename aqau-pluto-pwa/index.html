@@ -4273,8 +4273,13 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (UI.lifeView) { drawLifeTimeline(c, b); return; }
       var x = sx(), w = cw(), ly = 18, gi = cl01(1 - (nowT() - UI.fxT) / 500);
       eyebrow('In plain terms', x, ly); ly += 22;
-      p.textStyle(p.BOLD); glitchText('Read', x, sY(ly), 34, SANS, INK, p.LEFT, p.TOP, gi); normal(); ly += 50;
-      // open the life-in-chapters timeline
+      p.textStyle(p.BOLD); glitchText('Read', x, sY(ly), 34, SANS, INK, p.LEFT, p.TOP, gi); normal(); ly += 48;
+      // lead with the general personal reading — who you are — before any journeys
+      if (!UI.readCache) UI.readCache = APP.composeCore(c);
+      eyebrow('Who you are', x, ly, ACC); ly += 24;
+      for (var i = 0; i < UI.readCache.length; i++) ly += expandPara(UI.readCache[i], x, ly, w, 'core' + i, 17, 27) + 10;
+      ly += 12;
+      // then the journeys: life-in-chapters timeline
       var lbY = sY(ly); p.noStroke(); fillc(INK); p.rect(x, lbY + 3, w, 52, 11); fillc(shade(INK, 16)); p.rect(x, lbY, w, 52, 11);
       setFont(SANS, 15, GROUNDS[UI.screen], p.LEFT, p.CENTER); bold(); p.text('✦  Your life in chapters', x + 16, lbY + 26 - 8); normal();
       setFont(MONO, 9, GROUNDS[UI.screen], p.LEFT, p.CENTER, 200); p.text('THE BIG TRANSITS THAT SHAPED — AND ARE SHAPING — YOU', x + 16, lbY + 26 + 9);
@@ -4286,8 +4291,6 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       setFont(SANS, 14, INK, p.LEFT, p.CENTER); bold(); p.text('Transit calendar', x + 38, cbY + 23); normal();
       setFont(SANS, 18, INK, p.RIGHT, p.CENTER, 150); p.text('›', x + w - 16, cbY + 23);
       pushHit(x, cbY, w, 46, function () { UI.calView = true; UI.calDay = null; UI.scroll.read = 0; UI.popT = nowT(); }); ly += 60;
-      if (!UI.readCache) UI.readCache = APP.composeCore(c);
-      for (var i = 0; i < UI.readCache.length; i++) ly += expandPara(UI.readCache[i], x, ly, w, 'core' + i, 17, 27) + 10;
 
       // ---- daily + time aspects: what the moving sky is doing to your chart now ----
       if (!UI.readTransit || nowT() - UI.readTransitT > 60000) { try { UI.readTransit = APP.composeTransits(c); } catch (e) { UI.readTransit = null; } UI.readTransitT = nowT(); }
@@ -4410,12 +4413,17 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     var TAROT_RIT = [
       { k: 'intro', t: 'Tarot reads you', x: 'This deck never draws a card for you — that’s the point. Aqau Pluto is a companion for the cards you pull with your own hands. Here’s the whole ritual.' },
       { k: 'deck', t: 'First, get your own deck', x: 'Any deck you feel drawn to. Hold it, take a breath, and shuffle while you turn a real question over in your mind. The cards don’t predict — they give your intuition something to push against.' },
-      { k: 'spread', t: 'Choose how to lay them', x: 'A spread is just positions, each with a meaning. Start simple: one card for a nudge, or three for past, present and future.' },
+      { k: 'spread', t: 'Choose how to lay them', x: 'A spread is just positions, each with a meaning. Tap a layout below — one card for a nudge, three for past · present · future, or the cross for a fuller picture.' },
       { k: 'lay', t: 'Lay your cards', x: 'Deal them face-down into your spread, then turn each one over slowly. Let the image land before you reach for any words.' },
       { k: 'sit', t: 'Sit with them first', x: 'Before any book meaning: what do you notice? A colour, a figure, a feeling in your body. That first, wordless read is the most honest one you’ll get.' },
       { k: 'look', t: 'Now look up the meanings', x: 'Only now open Card meanings — to deepen what you already felt, never to replace it. The card is a mirror; you are the reader.' }
     ];
-    function startTarotRitual() { UI.tarotRit = { i: 0, t0: nowT() }; UI.scroll.tarot = 0; }
+    var RIT_SPREADS = [
+      { name: 'One card', n: 1, pos: [[0, 0]] },
+      { name: 'Three card', n: 3, pos: [[-1, 0], [0, 0], [1, 0]] },
+      { name: 'Cross', n: 5, pos: [[0, 0], [-1, 0], [1, 0], [0, -1], [0, 1]] }
+    ];
+    function startTarotRitual() { UI.tarotRit = { i: 0, t0: nowT(), spread: 1 }; UI.scroll.tarot = 0; }
     function tarotRitNext(n) { if (!UI.tarotRit) return; if (UI.tarotRit.i >= n - 1) { UI.tarotRit = null; return; } UI.tarotRit.i++; UI.tarotRit.t0 = nowT(); }
     function tarotRitPrev() { if (UI.tarotRit && UI.tarotRit.i > 0) { UI.tarotRit.i--; UI.tarotRit.t0 = nowT(); } }
     // a single ritual card (face-down back, or a blank "your card" face) with flip + rotation
@@ -4430,19 +4438,21 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       p.rectMode(p.CORNER); p.pop();
     }
     function drawTarotRitStage(k, cx, cy, r, e) {
-      var t = nowT(), kc = GROUNDS[UI.screen], cwd = r * 0.8, gap = r * 1.28, i;
-      function slotX(i2) { return cx + (i2 - 1) * gap; }
-      if (k === 'intro') { ritCard(cx, cy, cwd * 1.15, reduced() ? 1 : (0.5 + 0.5 * Math.sin(t * 0.0011)), 0); return; }
-      if (k === 'deck') { for (i = 0; i < 5; i++) { var jt = reduced() ? 0 : Math.sin(t * 0.004 + i) * 6; ritCard(cx + (i - 2) * 7, cy + jt - i * 1.2, cwd, 0, (i - 2) * 0.04); } return; }
+      var t = nowT(), i, sp = RIT_SPREADS[(UI.tarotRit && UI.tarotRit.spread) || 0] || RIT_SPREADS[1];
+      var n = sp.n, cwd = (n > 3) ? r * 0.58 : (n === 1 ? r * 1.0 : r * 0.78), gx = r * 1.28, gy = r * 1.12;
+      function SX(idx) { return cx + sp.pos[idx][0] * gx; }
+      function SY2(idx) { return cy + sp.pos[idx][1] * gy; }
+      if (k === 'intro') { ritCard(cx, cy, r * 1.15, reduced() ? 1 : (0.5 + 0.5 * Math.sin(t * 0.0011)), 0); return; }
+      if (k === 'deck') { for (i = 0; i < 5; i++) { var jt = reduced() ? 0 : Math.sin(t * 0.004 + i) * 6; ritCard(cx + (i - 2) * 7, cy + jt - i * 1.2, r * 0.8, 0, (i - 2) * 0.04); } return; }
       if (k === 'spread') {
         var dc = p.drawingContext;
-        for (i = 0; i < 3; i++) { var pr = cl01(e * 1.3 - i * 0.18); if (pr <= 0) continue; p.push(); p.translate(slotX(i), cy); p.noFill(); strokec(ACC, 200 * pr); p.strokeWeight(1.6); if (dc) { dc.save(); dc.setLineDash([5, 5]); } p.rectMode(p.CENTER); p.rect(0, 0, cwd * pr, cwd * 1.5 * pr, 7); p.rectMode(p.CORNER); if (dc) { dc.restore(); } setFont(MONO, 11, ACCTX, p.CENTER, p.CENTER, 230 * pr); p.text(String(i + 1), 0, 0); p.pop(); } return;
+        for (i = 0; i < n; i++) { var pr = cl01(e * 1.3 - i * 0.12); if (pr <= 0) continue; p.push(); p.translate(SX(i), SY2(i)); p.noFill(); strokec(ACC, 200 * pr); p.strokeWeight(1.6); if (dc) { dc.save(); dc.setLineDash([5, 5]); } p.rectMode(p.CENTER); p.rect(0, 0, cwd * pr, cwd * 1.5 * pr, 7); p.rectMode(p.CORNER); if (dc) { dc.restore(); } setFont(MONO, 11, ACCTX, p.CENTER, p.CENTER, 230 * pr); p.text(String(i + 1), 0, 0); p.pop(); } return;
       }
-      if (k === 'lay') { for (i = 0; i < 3; i++) { var dpr = cl01(e * 1.4 - i * 0.22), ee = eCubic(dpr), fx = cx + (slotX(i) - cx) * ee, fy = cy - (1 - ee) * r * 0.6, flip = cl01((dpr - 0.6) / 0.4); ritCard(fx, fy, cwd, flip, (1 - dpr) * 0.3); } return; }
-      if (k === 'sit') { for (i = 0; i < 3; i++) { var gl = 0.5 + 0.5 * Math.sin(t * 0.003 + i * 1.2); p.noFill(); strokec(ACC, 70 * gl); p.strokeWeight(2); p.rectMode(p.CENTER); p.rect(slotX(i), cy, cwd + 10, cwd * 1.5 + 10, 9); p.rectMode(p.CORNER); ritCard(slotX(i), cy, cwd, 1, 0); } return; }
+      if (k === 'lay') { for (i = 0; i < n; i++) { var dpr = cl01(e * 1.4 - i * (0.7 / Math.max(1, n))), ee = eCubic(dpr), fx = cx + (SX(i) - cx) * ee, fy = (cy - (1 - ee) * r * 0.6) + (SY2(i) - cy) * ee, flip = cl01((dpr - 0.6) / 0.4); ritCard(fx, fy, cwd, flip, (1 - dpr) * 0.3); } return; }
+      if (k === 'sit') { for (i = 0; i < n; i++) { var gl = 0.5 + 0.5 * Math.sin(t * 0.003 + i * 1.2); p.noFill(); strokec(ACC, 70 * gl); p.strokeWeight(2); p.rectMode(p.CENTER); p.rect(SX(i), SY2(i), cwd + 10, cwd * 1.5 + 10, 9); p.rectMode(p.CORNER); ritCard(SX(i), SY2(i), cwd, 1, 0); } return; }
       if (k === 'look') {
-        for (i = 0; i < 3; i++) ritCard(slotX(i), cy, cwd, 1, 0);
-        var mx = slotX(1) + Math.sin(t * 0.0016) * cwd * 0.45, my = cy + Math.cos(t * 0.0016) * cwd * 0.5;
+        for (i = 0; i < n; i++) ritCard(SX(i), SY2(i), cwd, 1, 0);
+        var mx = SX(0) + Math.sin(t * 0.0016) * cwd * 0.45, my = SY2(0) + Math.cos(t * 0.0016) * cwd * 0.5;
         p.noFill(); strokec(INK, 210); p.strokeWeight(2.5); p.ellipse(mx, my, 26, 26); p.strokeWeight(3); p.line(mx + 9, my + 9, mx + 18, my + 18); return;
       }
     }
@@ -4453,13 +4463,20 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var te = cl01((nowT() - UI.tarotRit.t0) / 560), e = eCubic(te), still = reduced(), alpha = still ? 1 : cl01(te * 1.5), i;
       var ctrlTop = top + vh - (last ? 110 : 64);
       if (!last) { pushHit(x, top + 64, w, ctrlTop - (top + 64), function () { tarotRitNext(scenes.length); }); pushHit(x, top + 64, 72, ctrlTop - (top + 64), function () { tarotRitPrev(); }); }
-      var cy = top + vh * 0.26, stageR = Math.min(w * 0.30, vh * 0.155), drift = (1 - e) * 14;
+      var cy = top + vh * 0.25, stageR = Math.min(w * 0.30, vh * 0.15), drift = (1 - e) * 14;
       var dc = p.drawingContext; if (dc) { dc.save(); dc.globalAlpha = alpha; }
       drawTarotRitStage(sc.k, cx, cy - drift, stageR, e);
       if (dc) dc.restore();
+      // spread chooser (only on the 'spread' scene) — chips win taps over the advance zone
+      if (sc.k === 'spread') {
+        var chy = vh * 0.40, tw0 = 0, ci; p.textFont(MONO); p.textSize(11);
+        for (ci = 0; ci < RIT_SPREADS.length; ci++) tw0 += p.textWidth(RIT_SPREADS[ci].name.toUpperCase()) + 28 + 8;
+        var csx = cx - (tw0 - 8) / 2;
+        for (ci = 0; ci < RIT_SPREADS.length; ci++) { var cwi = chip(RIT_SPREADS[ci].name, UI.tarotRit.spread === ci, csx, chy, (function (idx) { return function () { UI.tarotRit.spread = idx; }; })(ci)); csx += cwi + 8; }
+      }
       var ty = top + vh * 0.47, slideIn = (1 - e) * 12;
-      var tl = wrapLines2(sc.t, w - 20, SANS, 23); setFont(SANS, 23, INK, p.CENTER, p.TOP, 255 * alpha); bold(); for (i = 0; i < tl.length; i++) p.text(tl[i], cx, ty + slideIn + i * 29); normal(); ty += tl.length * 29 + 12;
-      var bl = wrapLines2(sc.x, w - 26, SERIF, 16.5); setFont(SERIF, 16.5, INK, p.CENTER, p.TOP, 238 * alpha); for (i = 0; i < bl.length; i++) p.text(bl[i], cx, ty + slideIn + i * 25);
+      var tl = wrapLines2(sc.t, w - 16, SANS, 26); setFont(SANS, 26, INK, p.CENTER, p.TOP, 255 * alpha); bold(); for (i = 0; i < tl.length; i++) p.text(tl[i], cx, ty + slideIn + i * 32); normal(); ty += tl.length * 32 + 12;
+      var bl = wrapLines2(sc.x, w - 24, SERIF, 18); setFont(SERIF, 18, INK, p.CENTER, p.TOP, 246 * alpha); strokec(INK, 246 * alpha); p.strokeWeight(0.5); for (i = 0; i < bl.length; i++) p.text(bl[i], cx, ty + slideIn + i * 26); p.noStroke();
       setFont(MONO, 10, ACCTX, p.LEFT, p.TOP, 220); p.text('READ YOUR OWN CARDS · ' + (UI.tarotRit.i + 1) + ' / ' + scenes.length, x, top + 12);
       var dxw = 15, dsx = cx - (scenes.length * dxw) / 2; for (i = 0; i < scenes.length; i++) { var on = (i === UI.tarotRit.i); p.noStroke(); fillc(on ? ACC : INK, on ? 255 : 80); p.ellipse(dsx + i * dxw + dxw / 2, top + vh - 14, on ? 7 : 5, on ? 7 : 5); }
       if (last) { tourBtn('Open card meanings', cx - 154, top + vh - 96, 150, 42, function () { UI.tarotRit = null; UI.tarotTab = 'cards'; UI.card = null; UI.scroll.tarot = 0; }, true); tourBtn('Done', cx + 8, top + vh - 96, 120, 42, function () { UI.tarotRit = null; }, false); }
@@ -6119,10 +6136,18 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     }
     // a slow, graceful cross-fade on screen change — the new screen rises from its own ground colour
     function drawTransition() {
-      var prog = cl01((nowT() - UI.fxT) / 900); if (prog >= 1) return;
-      var e = eCubic(prog);
-      p.noStroke(); fillc(UI.bg, 255 * (1 - e)); p.rect(0, 0, W, H); // ground veil fades away, content blooms through
-      var sxp = e * W; strokec(ACC, 70 * (1 - prog)); p.strokeWeight(2); p.line(sxp, 0, sxp, H); // a single soft accent sweep
+      var prog = cl01((nowT() - UI.fxT) / 950); if (prog >= 1 || reduced()) return;
+      var e = eCubic(prog), inv = 1 - e, cx = W / 2, cy = topY() + viewH() * 0.42, i;
+      // ground veil fades away; the new screen blooms through
+      p.noStroke(); fillc(UI.bg, 255 * inv); p.rect(0, 0, W, H);
+      // an expanding ring of light blooming from the centre
+      var rr = Math.max(W, H) * 0.72 * e;
+      p.noFill(); strokec(ACC, 130 * inv); p.strokeWeight(2.4); p.ellipse(cx, cy, rr * 2, rr * 2);
+      strokec(ACC, 55 * inv); p.strokeWeight(1); p.ellipse(cx, cy, rr * 1.4, rr * 1.4);
+      // a scatter of stars settling into place (deterministic golden-angle spread)
+      for (i = 0; i < 16; i++) { var a = i * 2.39996, dist = (0.18 + (i % 5) * 0.16) * Math.max(W, H) * 0.55, px = cx + Math.cos(a) * dist * e, py = cy + Math.sin(a) * dist * e, sa = inv * (0.4 + 0.6 * Math.sin(prog * Math.PI + i)); p.noStroke(); fillc(ACC, 170 * sa); p.ellipse(px, py, 2.6, 2.6); }
+      // a single soft accent sweep
+      var sxp = e * W; strokec(ACC, 55 * inv); p.strokeWeight(2); p.line(sxp, 0, sxp, H);
     }
 
     // ---------- first-run tour (a gentle, game-style guide; drawn on the canvas) ----------
