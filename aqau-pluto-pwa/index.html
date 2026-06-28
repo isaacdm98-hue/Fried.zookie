@@ -1471,7 +1471,7 @@ var APP = (function () {
     var tight = [];
     for (var i = 0; i < c.aspects.length && tight.length < 2; i++) { var a = c.aspects[i]; if (a.a !== 'asc' && a.a !== 'mc' && a.b !== 'asc' && a.b !== 'mc') tight.push(a); }
     if (tight.length) {
-      var lines = tight.map(function (a) { return nameFor(a.a) + ' ' + a.asp.key + ' ' + nameFor(a.b) + ' \u2014 ' + aspectMeaning(c, a); });
+      var lines = tight.map(function (a) { return nameFor(a.a) + ' ' + a.asp.key + ' ' + nameFor(a.b) + ' \u2014 ' + aspectText(c, a); });
       parts.push('Two threads stand out in how this all wires together. ' + lines.join(' '));
     }
     return parts;
@@ -2137,8 +2137,53 @@ var APP = (function () {
   }
 
   // top-level: returns labelled blocks for the Read screen
+  // per-pair aspect meanings (a high-value subset; generic phrasing is the fallback).
+  // keyed by alphabetical pair -> { conj, soft (trine/sextile), hard (square/opp) }
+  var PAIRLIB = {
+    'moon|sun': { conj: 'your will and your needs fuse — whole-hearted, though you can lack distance on yourself', soft: 'heart and purpose pull the same way; you act in tune with how you feel', hard: 'what you want and what you need keep disagreeing — a lifelong inner negotiation' },
+    'sun|venus': { conj: 'warmth, charm and a love of beauty are woven into who you are', soft: 'you connect and create easily; people warm to you', hard: 'your wants and your values can tug against each other — vanity vs worth' },
+    'mars|sun': { conj: 'drive and identity fuse — forceful, courageous, sometimes too hot', soft: 'will and action align; you go after things cleanly', hard: 'a hot temper or a fight between ego and effort — channel it or it burns' },
+    'saturn|sun': { conj: 'a serious, self-disciplined core; authority is a lifelong theme', soft: 'you build steadily and earn what you get', hard: 'an early sense of not-enough that hardens into real competence over time' },
+    'pluto|sun': { conj: 'intensity and power radiate from your core — all-or-nothing', soft: 'you regenerate and deepen with each chapter', hard: 'power struggles and a drive to transform that can overwhelm — or remake — you' },
+    'sun|uranus': { conj: 'an original, electric identity — you need to be free to be yourself', soft: 'your individuality flows; you innovate without forcing it', hard: 'a restlessness with authority and a need to break out, sometimes abruptly' },
+    'neptune|sun': { conj: 'a dreamy, porous, artistic self — identity can blur', soft: 'imagination and compassion colour who you are', hard: 'confusion about who you really are; idealism that needs grounding' },
+    'jupiter|sun': { conj: 'big-hearted, optimistic, larger than life', soft: 'luck, faith and growth come naturally', hard: 'over-promising and overreach — your reach exceeds your grasp' },
+    'moon|venus': { conj: 'tender, affectionate, drawn to comfort and beauty', soft: 'you love and are loved with ease; warmth comes naturally', hard: 'a pull between what soothes you and what you value — over-giving' },
+    'mars|moon': { conj: 'feelings come out hot and fast — passionate, reactive', soft: 'you act on your feelings cleanly; instinct and drive cooperate', hard: 'moodiness and a short fuse; feelings and aggression get tangled' },
+    'moon|saturn': { conj: 'emotionally self-contained; you learned early to manage your own needs', soft: 'steady feelings; you give and receive care responsibly', hard: 'a hard-won emotional resilience built over an early sense of lack' },
+    'moon|pluto': { conj: 'feelings run deep and absolute — nothing by halves', soft: 'you bond profoundly and heal through emotional depth', hard: 'emotional intensity, jealousy and a fear of loss to work through' },
+    'moon|neptune': { conj: 'exquisitely sensitive and psychic; boundaries are thin', soft: 'compassion and imagination flow through your feeling life', hard: 'you absorb everyone’s moods; escapism is the trap' },
+    'mars|venus': { conj: 'magnetism and desire fuse — you love and pursue with heat', soft: 'attraction and action flow; you make things happen in love', hard: 'love and desire pull against each other — friction in relating' },
+    'saturn|venus': { conj: 'love is serious business; loyalty over sparkle', soft: 'committed, durable affection and good values', hard: 'a fear of rejection or scarcity around love and worth' },
+    'pluto|venus': { conj: 'love is transformative and all-consuming', soft: 'deep, regenerative bonds; you love profoundly', hard: 'obsessive or power-laden attractions to grow through' },
+    'mars|saturn': { conj: 'controlled, disciplined drive — or the brake and accelerator at once', soft: 'you work hard and persist; effort meets endurance', hard: 'frustration: drive meets blockage until you learn patient, deliberate force' },
+    'mars|pluto': { conj: 'formidable, relentless willpower', soft: 'deep stamina; you push through anything', hard: 'force and power struggles; rage to master rather than be mastered by' },
+    'mars|mercury': { conj: 'a sharp, fast, forceful mind; you argue to win', soft: 'quick thinking turns straight into action', hard: 'a hasty, cutting tongue; think before you fire' },
+    'mercury|saturn': { conj: 'a serious, structured, careful mind; slow but deep', soft: 'disciplined thinking; you build solid knowledge', hard: 'self-doubt about your intelligence that hides real rigour' },
+    'mercury|uranus': { conj: 'a fast, original, electric mind — insight in flashes', soft: 'inventive thinking comes easily', hard: 'a restless, scattered mind that jumps ahead of itself' },
+    'jupiter|saturn': { conj: 'ambition tempered by realism — you build big things slowly', soft: 'growth and structure cooperate; sustainable success', hard: 'a swing between optimism and doubt, expansion and limit' },
+    'pluto|saturn': { conj: 'iron endurance; you rebuild what breaks', soft: 'you transform through patient, structural work', hard: 'heavy, fated pressure that forges deep resilience' }
+  };
+  function aspClass(k) { return (k === 'conjunction') ? 'conj' : (k === 'trine' || k === 'sextile') ? 'soft' : 'hard'; }
+  function pairAspectText(a, b, aspKey) { var e = PAIRLIB[[a, b].sort().join('|')]; if (e) { var t = e[aspClass(aspKey)]; if (t) return t; } return null; }
+  function aspectText(c, as) { return pairAspectText(as.a, as.b, as.asp.key) || aspectMeaning(c, as); }
+
+  // integrative synthesis: the repeated themes a human astrologer would read across the whole chart
+  function composeThemes(c) {
+    var themes = [], i, k, cnt = {}, personal = { sun: 1, moon: 1, mercury: 1, venus: 1, mars: 1 };
+    for (i = 0; i < c.aspects.length; i++) { var as = c.aspects[i]; if (as.a !== 'asc' && as.a !== 'mc') cnt[as.a] = (cnt[as.a] || 0) + 1; if (as.b !== 'asc' && as.b !== 'mc') cnt[as.b] = (cnt[as.b] || 0) + 1; }
+    var focal = null, fmax = 0; for (k in cnt) if (cnt.hasOwnProperty(k) && cnt[k] > fmax) { fmax = cnt[k]; focal = k; }
+    if (focal && fmax >= 3) themes.push('Much of your chart routes through ' + nameFor(focal) + ' (' + fmax + ' aspects) — ' + (DATA.PLANETS[focal] ? DATA.PLANETS[focal].fn : '') + ' is a hub the rest of you keeps negotiating with.');
+    var outers = ['saturn', 'pluto', 'uranus', 'neptune', 'jupiter'], note = { saturn: 'a recurring theme of weight, testing and hard-won mastery', pluto: 'a recurring theme of intensity and transformation', uranus: 'a thread of disruption and the need for freedom', neptune: 'a haze of longing, imagination and idealism', jupiter: 'a note of expansion, faith and excess' };
+    for (var oi = 0; oi < outers.length; oi++) { var o = outers[oi], hits = []; for (i = 0; i < c.aspects.length; i++) { var a2 = c.aspects[i], other = (a2.a === o) ? a2.b : (a2.b === o ? a2.a : null); if (other && personal[other]) hits.push(other); } if (hits.length >= 2) { themes.push(nameFor(o) + ' leans on several of your personal planets (' + hits.map(nameFor).join(', ') + ') — ' + note[o] + ' running through your inner life.'); break; } }
+    var soft = 0, hard = 0; for (i = 0; i < c.aspects.length; i++) { var q = c.aspects[i].asp.quality; if (q === 'flow' || q === 'opportunity') soft++; else if (q === 'friction' || q === 'tension') hard++; }
+    if (soft + hard >= 4) themes.push(hard > soft * 1.5 ? 'Your aspects run hot — more friction than flow. You’re built by challenge; ease has to be chosen.' : soft > hard * 1.5 ? 'Your aspects run smooth — more flow than friction. Gifts come easily; the risk is coasting on them.' : 'Your aspects balance flow and friction — a chart with both real gifts and real grit.');
+    return themes.slice(0, 3);
+  }
+
   function composeSignatures(c) {
-    var out = [];
+    var out = [], th = composeThemes(c), ti;
+    for (ti = 0; ti < th.length; ti++) out.push({ label: ti === 0 ? 'The throughline' : 'Also running through you', text: th[ti] });
     var dom = dominantPlanet(c);
     out.push({ label: 'Loudest voice', text: 'The planet that carries the most weight in your chart is ' + nameFor(dom.key) + ' — ' + (DATA.PLANETS[dom.key] ? DATA.PLANETS[dom.key].fn : '') + '. More than any other, it colours how the whole chart behaves.' });
     var lp = lunarPhase(c);
@@ -2832,7 +2877,7 @@ var APP = (function () {
     STATE: STATE, save: save, load: load, compute: computeChart,
     composeCore: composeCore, localAsk: localAsk, chartText: chartText, callModel: callModel,
     composeTransits: composeTransits, transitSentence: transitSentence, composeSignatures: composeSignatures,
-    addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, dignityOf: dignityOf,
+    addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, dignityOf: dignityOf, pairAspectText: pairAspectText,
     nameFor: nameFor, glyphFor: glyphFor, sgAbbr: sgAbbr, pad: pad,
     domElement: domElement, lowElement: lowElement, domMod: domMod, tzOffsetHours: tzOffsetHours
   };
@@ -3325,7 +3370,9 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
           ly += 30;
         }
         ly += 8;
-        ly += paragraph(cap(APP.nameFor(key)) + ' and ' + APP.nameFor(asps[0].other) + ' are ' + asps[0].asp.phrase + '.', x, ly, w, 14.5, INK, SERIF, 22, 220 * ca) + 10;
+        var pa = APP.pairAspectText ? APP.pairAspectText(key, asps[0].other, asps[0].asp.key) : null;
+        var synth = pa ? (cap(APP.nameFor(key)) + ' ' + asps[0].asp.key + ' ' + APP.nameFor(asps[0].other) + ': ' + pa + '.') : (cap(APP.nameFor(key)) + ' and ' + APP.nameFor(asps[0].other) + ' are ' + asps[0].asp.phrase + '.');
+        ly += paragraph(synth, x, ly, w, 14.5, INK, SERIF, 22, 220 * ca) + 10;
       }
       setFont(MONO, 9, INK, p.CENTER, p.TOP, 120 * ca); p.text('TAP BACK TO RETURN TO YOUR WHEEL', cx, sY(ly)); ly += 26;
       UI.contentH.chart = ly;
