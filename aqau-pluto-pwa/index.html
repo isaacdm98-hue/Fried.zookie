@@ -2173,6 +2173,70 @@ var APP = (function () {
     return { blocks: blocks, syn: syn };
   }
 
+  // ================= timing & forecast (on-device: profections, progressions, solar return, transits) =================
+  function jsDayNum(dt) { return EPH.dayNumber(dt.getUTCFullYear(), dt.getUTCMonth() + 1, dt.getUTCDate(), dt.getUTCHours() + dt.getUTCMinutes() / 60 + dt.getUTCSeconds() / 3600); }
+  function natalInstant(b) { return new Date(Date.UTC(b.y, b.mo - 1, b.d, 12, 0, 0)); }
+  function ageYearsNow(b) { return (new Date().getTime() - natalInstant(b).getTime()) / (365.2422 * 86400000); }
+  function profection(b) {
+    var age = Math.max(0, Math.floor(ageYearsNow(b)));
+    var ascSign = (b.timeKnown && STATE.chart && STATE.chart.ascBody) ? STATE.chart.ascBody.sign : (STATE.chart ? STATE.chart.planets.sun.sign : 0);
+    var sign = (ascSign + age) % 12;
+    return { age: age, house: (age % 12) + 1, sign: sign, signName: DATA.SIGNS[sign].name, lord: RULERKEY[DATA.SIGNS[sign].ruler], fromAsc: !!b.timeKnown };
+  }
+  function progressed(c, b) {
+    var pos = EPH.positions(c.d + ageYearsNow(b)), ay = c.ayan || 0;
+    var sunLon = rev(pos.sun.lon - ay), moonLon = rev(pos.moon.lon - ay);
+    return { sunSign: Math.floor(sunLon / 30), moonSign: Math.floor(moonLon / 30) };
+  }
+  function solarReturnSummary(c, b) {
+    var targetRaw = rev(c.planets.sun.lon + (c.ayan || 0)), t0 = new Date(), prev = null, cross = null, k;
+    for (k = 0; k <= 380; k++) {
+      var dt = new Date(t0.getTime() + k * 86400000), sd = sdelta(EPH.positions(jsDayNum(dt)).sun.lon, targetRaw);
+      if (prev && prev.sd > 0 && sd <= 0) { cross = [prev.dt, dt]; break; } // Sun catching up to its natal longitude
+      prev = { dt: dt, sd: sd };
+    }
+    if (!cross) return null;
+    var lo = cross[0].getTime(), hi = cross[1].getTime(), it;
+    for (it = 0; it < 30; it++) { var mid = (lo + hi) / 2; if (sdelta(EPH.positions(jsDayNum(new Date(mid))).sun.lon, targetRaw) > 0) lo = mid; else hi = mid; }
+    var when = new Date((lo + hi) / 2), d = jsDayNum(when), pos = EPH.positions(d), ay = c.ayan || 0, ascSign = null;
+    if (b.timeKnown) { var hz = EPH.houses(STATE.settings.house, d, b.lat, b.lon); ascSign = Math.floor(rev(hz.asc - ay) / 30); }
+    return { date: when, moonSign: Math.floor(rev(pos.moon.lon - ay) / 30), ascSign: ascSign };
+  }
+  function upcomingTransits(c, months) {
+    var transiting = ['mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto'], natal = DATA.PLANET_ORDER;
+    var t0 = new Date(), days = Math.round((months || 8) * 30.4), step = 2, ay = c.ayan || 0, samples = [], k;
+    for (k = 0; k <= days; k += step) { var dt = new Date(t0.getTime() + k * 86400000); samples.push({ dt: dt, pos: EPH.positions(jsDayNum(dt)) }); }
+    var events = [], ti, ni, ai;
+    for (ti = 0; ti < transiting.length; ti++) {
+      var tk = transiting[ti];
+      for (ni = 0; ni < natal.length; ni++) {
+        var nk = natal[ni], np = c.planets[nk]; if (!np) continue;
+        for (ai = 0; ai < DATA.ASPECTS.length; ai++) {
+          var A = DATA.ASPECTS[ai].angle, targets = (A === 0) ? [0] : (A === 180 ? [180] : [A, -A]), tg;
+          for (tg = 0; tg < targets.length; tg++) {
+            var T = targets[tg], prev = null, s;
+            for (s = 0; s < samples.length; s++) {
+              var sd = sdelta(np.lon, rev(samples[s].pos[tk].lon - ay)), hh = sdelta(T, sd);
+              if (prev && ((prev.hh <= 0 && hh >= 0) || (prev.hh >= 0 && hh <= 0)) && Math.max(Math.abs(prev.hh), Math.abs(hh)) < 20) {
+                var lo = prev.dt.getTime(), hi = samples[s].dt.getTime(), loSign = prev.hh <= 0, it;
+                for (it = 0; it < 22; it++) { var mid = (lo + hi) / 2, sdm = sdelta(np.lon, rev(EPH.positions(jsDayNum(new Date(mid)))[tk].lon - ay)), hm = sdelta(T, sdm); if ((hm <= 0) === loSign) lo = mid; else hi = mid; }
+                events.push({ date: new Date((lo + hi) / 2), tp: tk, np: nk, aspKey: DATA.ASPECTS[ai].key, glyph: DATA.ASPECTS[ai].glyph, quality: DATA.ASPECTS[ai].quality });
+              }
+              prev = { dt: samples[s].dt, hh: hh };
+            }
+          }
+        }
+      }
+    }
+    events.sort(function (x, y) { return x.date - y.date; });
+    var out = [], e, o; for (e = 0; e < events.length; e++) { var ev = events[e], dup = false; for (o = 0; o < out.length; o++) if (out[o].tp === ev.tp && out[o].np === ev.np && out[o].aspKey === ev.aspKey && Math.abs(out[o].date - ev.date) < 20 * 86400000) { dup = true; break; } if (!dup) out.push(ev); }
+    return out.slice(0, 10);
+  }
+  function composeForecast(c) {
+    var b = STATE.birth;
+    return { profection: profection(b), progressed: progressed(c, b), solarReturn: solarReturnSummary(c, b), upcoming: upcomingTransits(c, 8) };
+  }
+
   function renderRead() {
     var c = STATE.chart, wrap = el('div', { class: 'screen pad' });
     wrap.appendChild(el('div', { class: 'eyebrow', text: 'READ' }));
@@ -2721,7 +2785,7 @@ var APP = (function () {
     STATE: STATE, save: save, load: load, compute: computeChart,
     composeCore: composeCore, localAsk: localAsk, chartText: chartText, callModel: callModel,
     composeTransits: composeTransits, transitSentence: transitSentence, composeSignatures: composeSignatures,
-    addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow,
+    addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast,
     nameFor: nameFor, glyphFor: glyphFor, sgAbbr: sgAbbr, pad: pad,
     domElement: domElement, lowElement: lowElement, domMod: domMod, tzOffsetHours: tzOffsetHours
   };
@@ -2829,6 +2893,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     function nowT() { return p.millis(); }
     function pad2(n) { return (n < 10 ? '0' : '') + n; }
     function ordinal(n) { var s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
+    function fmtShort(dt) { var mo = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']; return dt.getDate() + ' ' + mo[dt.getMonth()] + ' ' + dt.getFullYear(); }
 
     // ---- layout ----
     function maxW() { return Math.min(W - GUT * 2, 560); }
@@ -3391,6 +3456,29 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
           setFont(MONO, 9.5, INK, p.LEFT, p.TOP, 210); bold(); p.text(blk.label.toUpperCase(), x, sY(ly)); normal(); ly += 17;
           ly += paragraph(blk.text, x, ly, w, 15, INK, SERIF, 23) + 14;
         }
+      }
+
+      // ---- the year ahead + what's coming (timing & forecast) ----
+      if (!UI.forecast || nowT() - (UI.forecastT || 0) > 3600000) { try { UI.forecast = APP.composeForecast(c); } catch (e) { UI.forecast = null; } UI.forecastT = nowT(); }
+      var fc2 = UI.forecast;
+      if (fc2) {
+        ly += 10; eyebrow('The year ahead', x, ly, ACC); ly += 24;
+        var pf = fc2.profection;
+        ly += paragraph('You’re in a ' + DATA.SIGNS[pf.sign].name + ' profection year (age ' + pf.age + '): your ' + ordinal(pf.house) + ' house is lit up, and ' + APP.nameFor(pf.lord) + ' is your time‑lord — the planet steering this year.', x, ly, w, 15.5, INK, SERIF, 24) + 10;
+        var pg = fc2.progressed;
+        ly += paragraph('By secondary progression your inner Sun has moved into ' + DATA.SIGNS[pg.sunSign].name + ' and your progressed Moon is in ' + DATA.SIGNS[pg.moonSign].name + ' — the slow seasons of your becoming.', x, ly, w, 15, INK, SERIF, 23) + 10;
+        if (fc2.solarReturn) { var sr = fc2.solarReturn; ly += paragraph('Your next solar return — your astrological birthday chart — lands ' + fmtShort(sr.date) + (sr.ascSign != null ? (', rising ' + DATA.SIGNS[sr.ascSign].name) : '') + ', Moon in ' + DATA.SIGNS[sr.moonSign].name + '.', x, ly, w, 15, INK, SERIF, 23) + 12; }
+        ly += 4; eyebrow('Coming up', x, ly, ACC); ly += 24;
+        if (!fc2.upcoming.length) ly += paragraph('No exact major transits in the next eight months — a steadier stretch.', x, ly, w, 14.5, INK, SERIF, 22, 210) + 8;
+        else { for (var ui = 0; ui < fc2.upcoming.length; ui++) { var ev = fc2.upcoming[ui]; if (ui) hairline(x, ly, x + w, 30);
+          setFont(MONO, 9.5, INK, p.LEFT, p.CENTER, 200); p.text(fmtShort(ev.date).toUpperCase(), x, sY(ly + 15));
+          setFont(SANS, 13.5, INK, p.LEFT, p.CENTER); p.text(APP.glyphFor(ev.tp), x + 84, sY(ly + 15));
+          var qc = ev.quality; setFont(SANS, 12, (qc === 'flow' || qc === 'opportunity') ? ELHUE.air : (qc === 'fusion' ? INK : ACC), p.CENTER, p.CENTER); bold(); p.text(ev.glyph, x + 104, sY(ly + 15)); normal();
+          setFont(SANS, 13.5, INK, p.LEFT, p.CENTER); p.text(APP.glyphFor(ev.np), x + 120, sY(ly + 15));
+          setFont(MONO, 9.5, INK, p.LEFT, p.CENTER, 170); p.text(APP.nameFor(ev.tp) + ' ' + ev.aspKey + ' ' + APP.nameFor(ev.np), x + 140, sY(ly + 15));
+          ly += 28;
+        } }
+        ly += 6;
       }
 
       ly += 16; eyebrow('Ask your chart', x, ly); ly += 28;
@@ -3959,7 +4047,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       flatBtn(canBuild ? 'Build my chart' : 'Choose a birth place', x, ly, w, 50, function () { if (canBuild) buildChart(); }, canBuild); ly += 64; UI.contentH.onboard = ly;
     }
     function buildChart() { var d = UI.draft, ci = DATA.CITIES[d.cityIdx]; APP.STATE.birth = { name: '', y: d.y, mo: d.mo, d: d.d, hour: d.hour, min: d.min, tz: 0, iana: ci[4], lat: ci[2], lon: ci[3], place: ci[0] + ', ' + ci[1], timeKnown: d.timeKnown }; recompute(); UI.selPlanet = 'sun'; UI.popT = nowT(); UI.popFrom = 22; UI.scroll.chart = 0; UI.screen = 'chart'; hideSearchInput(); }
-    function recompute() { APP.STATE.chart = APP.compute(APP.STATE.birth, APP.STATE.settings); APP.save(); UI.readCache = null; UI.readSig = null; UI.readTransit = null; UI.bondCache = null; UI.bondFor = null; if (APP.clearPersonCharts) APP.clearPersonCharts(); UI.askAns = ''; UI.quip = null; UI.quipNext = 0; buildField(); }
+    function recompute() { APP.STATE.chart = APP.compute(APP.STATE.birth, APP.STATE.settings); APP.save(); UI.readCache = null; UI.readSig = null; UI.readTransit = null; UI.forecast = null; UI.bondCache = null; UI.bondFor = null; if (APP.clearPersonCharts) APP.clearPersonCharts(); UI.askAns = ''; UI.quip = null; UI.quipNext = 0; buildField(); }
 
     // ---------- chrome ----------
     // ---------- live celestial emblem (real current moon phase) \u2014 the recurring centrepiece ----------
