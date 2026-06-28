@@ -3486,10 +3486,10 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       return out;
     }
     function paragraph(str, x, ly, boxW, sz, c, font, lead, a) {
-      var fs = (APP.STATE.settings && APP.STATE.settings.textScale) || 1; sz = sz * fs * 1.2; // larger, bolder reading base + dyslexia-friendly scale
+      var fs = (APP.STATE.settings && APP.STATE.settings.textScale) || 1; sz = sz * fs * 1.3; // larger, bolder reading base + dyslexia-friendly scale
       p.textFont(font || SERIF); p.textSize(sz); p.textStyle(p.NORMAL);
-      var lines = wrapLines(str, boxW), lh = (lead ? lead * fs * 1.08 : sz * 1.52); fillc(c, a); p.textAlign(p.LEFT, p.TOP);
-      strokec(c, a); p.strokeWeight(0.6); // faux-bold: thicken glyphs for clearer, bolder reading
+      var lines = wrapLines(str, boxW), lh = (lead ? lead * fs * 1.16 : sz * 1.54); fillc(c, a); p.textAlign(p.LEFT, p.TOP);
+      strokec(c, a); p.strokeWeight(0.7); // faux-bold: thicken glyphs for clearer, bolder reading
       for (var i = 0; i < lines.length; i++) p.text(lines[i], x, sY(ly + i * lh));
       p.noStroke();
       return lines.length * lh;
@@ -5896,35 +5896,35 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var spd = (key === 'jupiter') ? 1.7 : (key === 'sun') ? 0.5 : (key === 'mars') ? 1.1 : 0.8;
       var spin = reduced() ? 0.6 : t * 0.00022 * spd, gi;
       if (key === 'asc') { return celestialBody('sun', cx, cy, r, t); } // rising = the sun cresting; handled by caller line
-      // outer glow
-      p.noStroke(); for (gi = 0; gi < 3; gi++) { fillc(col, 18 - gi * 5); p.ellipse(cx, cy, r * (2.1 + gi * 0.55), r * (2.1 + gi * 0.55)); }
-      // sun corona rays behind the disc
-      if (key === 'sun') { var k; for (k = 0; k < 44; k++) { var aa = k * Math.PI / 22 + t * 0.0003, rl = r * 1.12 + r * (0.22 + 0.18 * Math.sin(t * 0.004 + k)); strokec([255, 202, 96], 60); p.strokeWeight(2); p.line(cx + Math.cos(aa) * r * 1.04, cy + Math.sin(aa) * r * 1.04, cx + Math.cos(aa) * rl, cy + Math.sin(aa) * rl); } }
-      if (!dc) { p.noStroke(); fillc(col); p.ellipse(cx, cy, r * 2, r * 2); return; }
-      // shaded sphere
-      var g = dc.createRadialGradient(cx - r * 0.36, cy - r * 0.36, r * 0.08, cx, cy, r * 1.02);
-      g.addColorStop(0, rgbaStr([Math.min(255, col[0] + 62), Math.min(255, col[1] + 56), Math.min(255, col[2] + 52)], 1));
-      g.addColorStop(0.6, rgbaStr(col, 1));
-      g.addColorStop(1, rgbaStr([col[0] * 0.34, col[1] * 0.34, col[2] * 0.4], 1));
+      // STYLISED celestial-globe engraving — matte fill, wireframe meridians, fine line accents
+      var k;
+      // soft glow
+      p.noStroke(); for (gi = 0; gi < 3; gi++) { fillc(col, 13 - gi * 4); p.ellipse(cx, cy, r * (2.1 + gi * 0.55), r * (2.1 + gi * 0.55)); }
+      // sun: engraved radiating lines (alternating long/short, like an old star map)
+      if (key === 'sun') { for (k = 0; k < 48; k++) { var aa = k * Math.PI / 24 + t * 0.0002, rl = r * 1.1 + r * (0.14 + 0.1 * Math.sin(t * 0.003 + k * 1.3)); strokec(col, k % 2 ? 70 : 130); p.strokeWeight(k % 2 ? 1 : 1.6); p.line(cx + Math.cos(aa) * r * 1.03, cy + Math.sin(aa) * r * 1.03, cx + Math.cos(aa) * rl, cy + Math.sin(aa) * rl); } }
+      if (!dc) { p.noStroke(); fillc(col); p.ellipse(cx, cy, r * 2, r * 2); p.noFill(); strokec(INK, 150); p.strokeWeight(1.6); p.ellipse(cx, cy, r * 2, r * 2); return; }
+      // matte two-tone disc
+      var g = dc.createRadialGradient(cx - r * 0.4, cy - r * 0.4, r * 0.15, cx, cy, r * 1.05);
+      g.addColorStop(0, rgbaStr([Math.min(255, col[0] + 46), Math.min(255, col[1] + 42), Math.min(255, col[2] + 40)], 1));
+      g.addColorStop(1, rgbaStr([col[0] * 0.6, col[1] * 0.6, col[2] * 0.64], 1));
       dc.save(); dc.beginPath(); dc.arc(cx, cy, r, 0, Math.PI * 2); dc.closePath(); dc.fillStyle = g; dc.fill(); dc.clip();
-      // latitude bands for gas/ice giants & venus
-      if (key === 'jupiter' || key === 'saturn' || key === 'venus' || key === 'uranus' || key === 'neptune') {
-        var bands = (key === 'jupiter') ? 7 : (key === 'saturn') ? 6 : (key === 'venus') ? 5 : 4, bi;
-        for (bi = 0; bi < bands; bi++) { var yy = cy - r + (bi + 0.5) * (2 * r / bands); if (bi % 2) { p.noStroke(); fillc([0, 0, 0], 28); p.rect(cx - r, yy - (r / bands) * 0.5, r * 2, r / bands); } }
-      }
-      // rotating surface features (the spin) — longitude spots, hidden on the far side
-      var spots = (key === 'jupiter') ? [[0.18, 0.42, [180, 70, 50]]] : (key === 'mars') ? [[-0.1, 0.4, [120, 50, 30]], [0.3, 0.34, [120, 50, 30]], [-0.35, 0.3, [110, 46, 28]]] : (key === 'moon' || key === 'mercury' || key === 'pluto') ? [[-0.25, 0.34, [0, 0, 0]], [0.2, 0.26, [0, 0, 0]], [0.05, 0.24, [0, 0, 0]], [-0.1, 0.2, [0, 0, 0]]] : (key === 'venus') ? [[0.1, 0.3, [255, 245, 220]], [-0.2, 0.26, [255, 245, 220]]] : [];
-      var si; for (si = 0; si < spots.length; si++) { var sp = spots[si], ph = spin + si * 1.9, cosv = Math.cos(ph); if (cosv <= 0.05) continue; var sxp = cx + Math.sin(ph) * r * 0.62, syp = cy + sp[0] * r; p.noStroke(); fillc(sp[2], (key === 'moon' || key === 'mercury' || key === 'pluto' ? 45 : 150) * cosv); p.ellipse(sxp, syp, sp[1] * r * cosv, sp[1] * r * 0.8); }
-      // mars polar cap
-      if (key === 'mars') { p.noStroke(); fillc([235, 235, 242], 200); p.ellipse(cx, cy - r * 0.82, r * 0.66, r * 0.3); }
+      // engraved wireframe: static latitude rings + rotating meridians (this reads as axial spin)
+      p.noFill(); strokec([255, 255, 255], 24); p.strokeWeight(1);
+      for (k = 1; k <= 3; k++) { var lat = (k / 4) * r, lw = 2 * Math.sqrt(Math.max(0, r * r - lat * lat)); p.ellipse(cx, cy - lat, lw, r * 0.24); p.ellipse(cx, cy + lat, lw, r * 0.24); }
+      p.ellipse(cx, cy, 2 * r, r * 0.28);
+      strokec(INK, 30); for (k = 0; k < 5; k++) { var ph2 = spin + k * (Math.PI / 5), fw = Math.cos(ph2); if (fw <= 0.03) continue; p.ellipse(cx, cy, 2 * r * fw, 2 * r); }
+      // fine per-planet accents (line/flat, not photoreal)
+      if (key === 'jupiter') { var jp = spin, jc = Math.cos(jp); if (jc > 0.1) { p.noStroke(); fillc(shade(col, -60), 150 * jc); p.ellipse(cx + Math.sin(jp) * r * 0.5, cy + r * 0.22, r * 0.28 * jc, r * 0.18); } }
+      else if (key === 'mars') { p.noStroke(); fillc([240, 240, 245], 150); p.ellipse(cx, cy - r * 0.8, r * 0.5, r * 0.22); p.ellipse(cx, cy + r * 0.86, r * 0.36, r * 0.16); }
+      else if (key === 'moon' || key === 'mercury' || key === 'pluto') { var craters = [[-0.3, -0.15, 0.16], [0.25, 0.18, 0.13], [0.05, 0.34, 0.1]]; for (k = 0; k < craters.length; k++) { var cr = craters[k], cph = spin + cr[0] * 2; if (Math.cos(cph) > 0.12) { p.noFill(); strokec(INK, 40); p.strokeWeight(1); p.ellipse(cx + Math.sin(cph) * r * 0.6, cy + cr[1] * r, cr[2] * r * 1.6, cr[2] * r * 1.3); } } }
       dc.restore();
-      // night-side terminator for everything but the sun
-      if (key !== 'sun') { var tg = dc.createRadialGradient(cx - r * 0.4, cy - r * 0.4, r * 0.25, cx + r * 0.55, cy + r * 0.55, r * 1.5); tg.addColorStop(0, 'rgba(0,0,0,0)'); tg.addColorStop(1, 'rgba(0,0,0,0.5)'); dc.save(); dc.beginPath(); dc.arc(cx, cy, r, 0, Math.PI * 2); dc.clip(); dc.fillStyle = tg; dc.fillRect(cx - r, cy - r, r * 2, r * 2); dc.restore(); }
-      // rings
-      if (key === 'saturn') { p.push(); p.translate(cx, cy); p.rotate(-0.42); p.noFill(); strokec([228, 208, 162], 230); p.strokeWeight(r * 0.08); p.ellipse(0, 0, r * 2.95, r * 1.02); strokec([200, 180, 140], 150); p.strokeWeight(r * 0.045); p.ellipse(0, 0, r * 2.5, r * 0.86); p.pop(); }
-      if (key === 'uranus') { p.push(); p.translate(cx, cy); p.rotate(1.45); p.noFill(); strokec([175, 222, 226], 170); p.strokeWeight(r * 0.05); p.ellipse(0, 0, r * 2.6, r * 0.92); p.pop(); }
-      // crisp rim highlight
-      p.noFill(); strokec([255, 255, 255], 42); p.strokeWeight(1.5); p.ellipse(cx - r * 0.03, cy - r * 0.03, r * 1.96, r * 1.96);
+      // soft terminator
+      if (key !== 'sun') { var tg = dc.createRadialGradient(cx - r * 0.45, cy - r * 0.45, r * 0.3, cx + r * 0.6, cy + r * 0.6, r * 1.5); tg.addColorStop(0, 'rgba(0,0,0,0)'); tg.addColorStop(1, 'rgba(0,0,0,0.38)'); dc.save(); dc.beginPath(); dc.arc(cx, cy, r, 0, Math.PI * 2); dc.clip(); dc.fillStyle = tg; dc.fillRect(cx - r, cy - r, r * 2, r * 2); dc.restore(); }
+      // elegant thin rings, in the body's own hue
+      if (key === 'saturn') { p.push(); p.translate(cx, cy); p.rotate(-0.42); p.noFill(); strokec(col, 235); p.strokeWeight(Math.max(1.6, r * 0.05)); p.ellipse(0, 0, r * 2.95, r * 1.02); strokec(col, 110); p.strokeWeight(Math.max(1, r * 0.025)); p.ellipse(0, 0, r * 2.5, r * 0.86); p.pop(); }
+      if (key === 'uranus') { p.push(); p.translate(cx, cy); p.rotate(1.45); p.noFill(); strokec(col, 190); p.strokeWeight(Math.max(1.2, r * 0.04)); p.ellipse(0, 0, r * 2.6, r * 0.92); p.pop(); }
+      // crisp ink rim — the line-art signature that ties it to the rest of the app
+      p.noFill(); strokec(INK, 150); p.strokeWeight(1.6); p.ellipse(cx, cy, r * 2, r * 2);
     }
     // the rising sign: a sun cresting the horizon, tinted by the rising sign's element
     function drawRisingScene(cx, cy, r, t, c) {
