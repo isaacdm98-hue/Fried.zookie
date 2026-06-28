@@ -1213,7 +1213,7 @@ var APP = (function () {
   // ---------- state ----------
   var STATE = {
     birth: null, // {name,y,mo,d,hour,min,tz,lat,lon,place,timeKnown}
-    settings: { zodiac: 'tropical', house: 'placidus', orbScale: 1, ai: false, theme: 'light' },
+    settings: { zodiac: 'tropical', house: 'placidus', orbScale: 1, ai: false, theme: 'light', textScale: 1 },
     chart: null, screen: 'chart', chartView: 'dial',
     people: [] // [{id,name,rel,famrel,y,mo,d,hour,min,tz,iana,lat,lon,place,timeKnown}]
   };
@@ -3157,8 +3157,9 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       return out;
     }
     function paragraph(str, x, ly, boxW, sz, c, font, lead, a) {
+      var fs = (APP.STATE.settings && APP.STATE.settings.textScale) || 1; sz = sz * fs; // dyslexia-friendly reading scale
       p.textFont(font || SERIF); p.textSize(sz); p.textStyle(p.NORMAL);
-      var lines = wrapLines(str, boxW), lh = lead || sz * 1.5; fillc(c, a); p.textAlign(p.LEFT, p.TOP);
+      var lines = wrapLines(str, boxW), lh = (lead ? lead * fs : sz * 1.5); fillc(c, a); p.textAlign(p.LEFT, p.TOP);
       strokec(c, a); p.strokeWeight(0.45); // faux-bold: thicken glyphs slightly for a touch more presence
       for (var i = 0; i < lines.length; i++) p.text(lines[i], x, sY(ly + i * lh));
       p.noStroke();
@@ -4451,6 +4452,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       eyebrow('Tune the chart', x, ly); ly += 22;
       p.textStyle(p.BOLD); glitchText('Settings', x, sY(ly), 34, SANS, INK, p.LEFT, p.TOP, gi); normal(); ly += 50;
       ly += toggleRow('Theme', [['light', 'Light'], ['dark', 'Dark'], ['paper', 'Paper'], ['night', 'Night']], st.theme || 'light', ly, function (v) { st.theme = v; APP.save(); applyTheme(); UI.fxT = nowT(); });
+      ly += toggleRow('Reading text size', [['1', 'Standard'], ['1.15', 'Large'], ['1.3', 'Larger']], String(st.textScale || 1), ly, function (v) { st.textScale = parseFloat(v); APP.save(); UI.readCache = null; });
       ly += toggleRow('Zodiac', [['tropical', 'Tropical'], ['sidereal', 'Sidereal']], st.zodiac, ly, function (v) { st.zodiac = v; recompute(); });
       ly += toggleRow('House system', [['whole', 'Whole'], ['equal', 'Equal'], ['placidus', 'Placidus']], st.house, ly, function (v) { st.house = v; recompute(); });
       eyebrow('Aspect orb  \u00D7' + (st.orbScale || 1).toFixed(1), x, ly); ly += 20;
