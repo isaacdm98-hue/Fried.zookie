@@ -2480,14 +2480,36 @@ var APP = (function () {
   }
 
   // ---- life timeline: the slow, rare outer transits & returns that mark life chapters ----
-  var MOVER_THEME = {
-    jupiter: 'growth, opportunity and a wider horizon',
-    saturn: 'testing, maturing and building something solid',
-    uranus: 'awakening, disruption and a break for freedom',
-    neptune: 'dissolving certainties, dreaming, idealism (and some fog)',
-    pluto: 'deep transformation — power, loss and rebirth'
+  var MOVER_NOUN = {
+    jupiter: 'a season of opening and a wider horizon',
+    saturn: 'a season of weight, testing and proving yourself',
+    uranus: 'a jolt of awakening and a break for freedom',
+    neptune: 'a tide of dreaming, longing and dissolving edges',
+    pluto: 'a deep churning — power, loss and rebirth'
   };
-  var TARGET_LIFE = { sun: 'who you are', moon: 'your emotional foundations and home', asc: 'your direction and how you show up', mc: 'your career and public path', jupiter: 'your sense of growth', saturn: 'your structures and commitments', uranus: 'your need for freedom', neptune: 'your dreams', pluto: 'your power' };
+  var MOVER_ADVICE = {
+    jupiter: 'Say yes to what genuinely grows you — just don’t overreach.',
+    saturn: 'Do the unglamorous work; what you build now is what lasts.',
+    uranus: 'Loosen your grip and let the change move through you.',
+    neptune: 'Stay gentle with yourself, and don’t sign anything blind.',
+    pluto: 'Let what is ending actually end — you’re being remade.'
+  };
+  var TARGET_SHOWS = {
+    sun: 'your confidence, vitality and sense of who you are',
+    moon: 'your home, your moods and who you lean on',
+    asc: 'your body, your look and how you begin things',
+    mc: 'your work, your status and what you’re known for',
+    jupiter: 'your faith, your luck and your appetite for more',
+    saturn: 'your commitments, your limits and your long game',
+    uranus: 'your freedom and your urge to break the mould',
+    neptune: 'your imagination, your faith and your escape routes',
+    pluto: 'your power, your obsessions and what you try to control'
+  };
+  function targetArea(np, age) {
+    if (np === 'mc') return age < 16 ? 'the early shape of where you’re headed' : 'your career, calling and public standing';
+    if (np === 'asc') return age < 16 ? 'how you’re learning to meet the world' : 'your identity and how you come across';
+    return ({ sun: 'your core self', moon: 'your inner life and home', jupiter: 'your sense of growth', saturn: 'your structures and duties', uranus: 'your independence', neptune: 'your dreams', pluto: 'your depths' })[np] || 'your life';
+  }
   function natalLonOf(c, key) { if (key === 'asc') return c.ascBody ? c.ascBody.lon : null; if (key === 'mc') return c.mcBody ? c.mcBody.lon : null; return c.planets[key] ? c.planets[key].lon : null; }
   function lifeTransits(c, b) {
     var ay = c.ayan || 0, birthMs = Date.UTC(b.y, b.mo - 1, b.d, 12, 0, 0), yearMs = 365.2422 * 86400000;
@@ -2502,19 +2524,24 @@ var APP = (function () {
       for (ti = 0; ti < natalTargets.length; ti++) {
         var tk = natalTargets[ti], nlon = natalLonOf(c, tk); if (nlon == null) continue;
         var aspList;
-        if (mk === 'jupiter') { if (tk !== mk) continue; aspList = [ASP[0]]; } // Jupiter: returns only (its faster aspects recur yearly, not life-chapters)
-        else aspList = (tk === mk) ? (mk === 'uranus' ? [ASP[0], ASP[2]] : [ASP[0]]) : ASP;
+        if (mk === 'jupiter') { if (tk !== mk) continue; aspList = [ASP[0]]; } // Jupiter: returns only (faster aspects recur yearly, not life-chapters)
+        else if (mk === 'saturn') { aspList = [ASP[0]]; } // Saturn: returns + conjunctions only — its squares/oppositions recur every ~7 yrs and become repetitive
+        else aspList = (tk === mk) ? (mk === 'uranus' ? [ASP[0], ASP[2]] : [ASP[0]]) : ASP; // outer planets: the rare, momentous hits to personal points
         for (ai = 0; ai < aspList.length; ai++) {
           var A = aspList[ai], targs = (A.a === 0) ? [0] : (A.a === 180 ? [180] : [90, -90]), gi;
           for (gi = 0; gi < targs.length; gi++) {
             var T = targs[gi], prev = null, s;
+            // skip aspects already near-exact at birth — those are natal configurations, not later life chapters
+            // (this is what produced nonsense like a "career" transit completing at age 4)
+            var birthHH = sdelta(T, sdelta(nlon, rev(samples[0].pos[mk].lon - ay)));
+            if (tk !== mk && Math.abs(birthHH) < 12) continue; // exempt returns/self-aspects (a planet sits on its own natal spot at birth)
             for (s = 0; s < samples.length; s++) {
               var sd = sdelta(nlon, rev(samples[s].pos[mk].lon - ay)), hh = sdelta(T, sd);
               if (prev && ((prev.hh <= 0 && hh >= 0) || (prev.hh >= 0 && hh <= 0)) && Math.max(Math.abs(prev.hh), Math.abs(hh)) < 18) {
                 var lo = prev.ms, hi = samples[s].ms, loSign = prev.hh <= 0, it;
                 for (it = 0; it < 22; it++) { var mid = (lo + hi) / 2, sdm = sdelta(nlon, rev(EPH.positions(jsDayNum(new Date(mid)))[mk].lon - ay)), hm = sdelta(T, sdm); if ((hm <= 0) === loSign) lo = mid; else hi = mid; }
                 var when = new Date((lo + hi) / 2), age = (when.getTime() - birthMs) / yearMs;
-                if (age >= 1.5) events.push({ date: when, age: age, tp: mk, np: tk, aspKey: A.k, ang: A.a, isReturn: (tk === mk && A.a === 0) }); // skip the trivial birth-time conjunctions
+                if (age >= 5) events.push({ date: when, age: age, tp: mk, np: tk, aspKey: A.k, ang: A.a, isReturn: (tk === mk && A.a === 0) }); // childhood chapters begin around the first Saturn square
               }
               prev = { ms: samples[s].ms, hh: hh };
             }
@@ -2524,7 +2551,7 @@ var APP = (function () {
     }
     // dedup (same tp/np/aspect within ~120 days)
     events.sort(function (x, y) { return x.date - y.date; });
-    var out = [], e, o; for (e = 0; e < events.length; e++) { var ev = events[e], dup = false; for (o = 0; o < out.length; o++) if (out[o].tp === ev.tp && out[o].np === ev.np && out[o].aspKey === ev.aspKey && Math.abs(out[o].date - ev.date) < 800 * 86400000) { dup = true; break; } if (!dup) { ev.title = lifeTitle(ev); ev.text = lifeText(ev); out.push(ev); } }
+    var out = [], e, o; for (e = 0; e < events.length; e++) { var ev = events[e], dup = false; for (o = 0; o < out.length; o++) if (out[o].tp === ev.tp && out[o].np === ev.np && Math.abs(out[o].date - ev.date) < 1100 * 86400000) { dup = true; break; } if (!dup) { ev.title = lifeTitle(ev); ev.text = lifeText(ev); out.push(ev); } }
     return out;
   }
   function lifeTitle(ev) {
@@ -2534,11 +2561,13 @@ var APP = (function () {
     return nameFor(ev.tp) + ' ' + av + ' ' + (ev.np === 'asc' ? 'Asc' : ev.np === 'mc' ? 'MC' : nameFor(ev.np));
   }
   function lifeText(ev) {
-    if (ev.isReturn && ev.tp === 'saturn') return 'The classic coming-of-age: building a real adult life and taking on its weight. Often demanding, always maturing.';
-    if (ev.isReturn && ev.tp === 'jupiter') return 'A fresh ~12-year cycle of growth and opportunity opens — room to expand and believe in something.';
-    if (ev.tp === 'uranus' && ev.np === 'uranus' && ev.ang === 180) return 'The midlife awakening: a strong pull to live more truly, even if it shakes up what you’d settled into.';
-    var verb = (ev.ang === 0) ? 'meeting' : (ev.ang === 180) ? 'coming to a head against' : 'pressing on';
-    return 'A chapter of ' + (MOVER_THEME[ev.tp] || 'change') + ', ' + verb + ' ' + (TARGET_LIFE[ev.np] || 'your life') + '.';
+    if (ev.isReturn && ev.tp === 'saturn') return ev.age < 40 ? 'Your first Saturn return (~29): the real beginning of adulthood. You build the life that’s actually yours and shoulder its weight — demanding, and the making of you.' : 'Your second Saturn return (~58): a reckoning with the life you’ve built and what you want the rest of it to mean. Mastery, and letting the finished things go.';
+    if (ev.isReturn && ev.tp === 'jupiter') return 'A fresh ~12-year Jupiter cycle opens — room to grow, travel, study and believe in something larger. Plant now what you want to harvest over the next decade.';
+    if (ev.isReturn && ev.tp === 'uranus') return 'Your Uranus return (~84): a whole lifetime’s arc of freedom comes full circle — permission to be exactly, unapologetically yourself.';
+    if (ev.isReturn && (ev.tp === 'neptune' || ev.tp === 'pluto')) return 'A rare return of a slow planet — a deep, generational tide swinging back through where it stood when you were born.';
+    if (ev.tp === 'uranus' && ev.np === 'uranus' && ev.ang === 180) return 'The midlife awakening (~40): a strong, sometimes restless pull to live more truly, even if it shakes up what you’d carefully settled into. The real question becomes “is this actually mine?”';
+    var dyn = (ev.ang === 0) ? 'settles right onto' : (ev.ang === 180) ? 'pulls hard against' : 'grinds against';
+    return capit(targetArea(ev.np, ev.age)) + ' — ' + (MOVER_NOUN[ev.tp] || 'a turning point') + '. Transiting ' + nameFor(ev.tp) + ' ' + dyn + ' ' + (TARGET_SHOWS[ev.np] || 'your life') + '. ' + (MOVER_ADVICE[ev.tp] || '');
   }
 
   // ================= extra information layers =================
