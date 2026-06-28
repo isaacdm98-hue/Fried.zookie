@@ -4956,10 +4956,11 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var S = DATA.SIGNS, out = [], sun = S[c.planets.sun.sign].name, moon = S[c.planets.moon.sign].name;
       var dom = APP.domElement(c.elements), domName = DATA.ELEMENTS[dom].name;
       var rsign = (b.timeKnown && c.ascBody) ? c.ascBody.sign : c.planets.sun.sign, rk = S[rsign].ruler;
+      out.push({ t: 'The four elements in you', who: 'Debra Silverman', q: 'four elements quadrants astrology' });
+      out.push({ t: 'Your Moon in ' + moon, who: 'Debra Silverman', q: moon + ' moon sign emotional astrology' });
       out.push({ t: 'Your Sun in ' + sun, who: 'Chris Brennan', q: sun + ' sun sign meaning astrology' });
-      out.push({ t: 'Your Moon in ' + moon, who: 'Steven Forrest', q: moon + ' moon sign astrology' });
       if (b.timeKnown && c.ascBody) out.push({ t: 'Your ' + S[c.ascBody.sign].name + ' rising', who: 'The Astrology Podcast', q: S[c.ascBody.sign].name + ' rising ascendant astrology' });
-      out.push({ t: 'Your dominant element: ' + domName, who: 'Chani Nicholas', q: domName + ' element astrology dominant' });
+      out.push({ t: 'Your dominant element: ' + domName, who: 'Debra Silverman', q: domName + ' element astrology' });
       out.push({ t: 'Your chart ruler: ' + rk, who: 'The AstroTwins', q: rk + ' planet astrology meaning' });
       out.push({ t: 'How to read a birth chart', who: 'Chris Brennan', q: 'how to read your birth chart beginners astrology' });
       return out;
@@ -5061,7 +5062,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
           setFont(SANS, 15, INK, p.LEFT, p.CENTER); bold(); p.text(wcd.t, x + 38, wcy - 9); normal();
           setFont(MONO, 9.5, INK, p.LEFT, p.CENTER, 150); p.text((wcd.who + ' · YOUTUBE').toUpperCase(), x + 38, wcy + 10);
           setFont(SANS, 16, INK, p.RIGHT, p.CENTER, 120); p.text('↗', x + w, wcy);
-          (function (cd, ay) { pushHit(x, sY(ay), w, wrh, function () { openURL('https://www.youtube.com/results?search_query=' + encodeURIComponent(cd.who + ' ' + cd.q)); }); })(wcd, ly); ly += wrh;
+          (function (cd, ay) { pushHit(x, sY(ay), w, wrh, function () { openVideo(cd); }); })(wcd, ly); ly += wrh;
         }
         ly += 6; setFont(MONO, 8.5, INK, p.LEFT, p.TOP, 140); ly += paragraph('Searches are scoped to named, reputable educators — Aqau Pluto doesn’t host or pick the videos.', x, ly, w, 11, INK, MONO, 16, 140) + 8;
       } else if (cat === 'howto') { // hands-on guides
@@ -5703,6 +5704,66 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     }
     // wrap helper that respects an arbitrary font/size (textWidth depends on current font)
     function wrapLines2(str, boxW, font, sz) { p.textFont(font); p.textSize(sz); return wrapLines(str, boxW); }
+
+    // ---------- in-app embedded video (Internet Archive — keyless, CORS, reputable library) ----------
+    function ensureVideoFrame() {
+      if (UI.vframe || typeof document === 'undefined') return UI.vframe;
+      try {
+        var f = document.createElement('iframe');
+        f.setAttribute('allow', 'accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; fullscreen');
+        f.setAttribute('allowfullscreen', 'true'); f.setAttribute('aria-hidden', 'true');
+        var s = f.style; s.position = 'fixed'; s.zIndex = '8'; s.border = '0'; s.borderRadius = '8px'; s.background = '#000'; s.display = 'none';
+        document.body.appendChild(f); UI.vframe = f;
+      } catch (e) { UI.vframe = null; }
+      return UI.vframe;
+    }
+    function hideVideoFrame() { try { if (UI.vframe) { UI.vframe.style.display = 'none'; if (UI.vframe.src) UI.vframe.src = 'about:blank'; } } catch (e) {} UI.vframeId = null; }
+    function archiveSearch(query) {
+      UI.varc = { state: 'loading', q: query };
+      if (typeof fetch !== 'function') { UI.varc.state = 'none'; return; }
+      var mine = query;
+      var url = 'https://archive.org/advancedsearch.php?q=' + encodeURIComponent('(' + query + ') AND mediatype:(movies OR audio)') + '&fl[]=identifier&fl[]=title&rows=6&sort[]=downloads+desc&output=json';
+      fetch(url).then(function (r) { return r.json(); }).then(function (j) {
+        if (!UI.video || !UI.varc || UI.varc.q !== mine) return;
+        var docs = (j && j.response && j.response.docs) || [];
+        if (docs.length) UI.varc = { state: 'ready', q: mine, id: docs[0].identifier, label: docs[0].title || '' };
+        else UI.varc = { state: 'none', q: mine };
+      })['catch'](function () { if (UI.varc && UI.varc.q === mine) UI.varc.state = 'none'; });
+    }
+    function openVideo(card) { UI.video = card; UI.varc = null; hideVideoFrame(); archiveSearch((card.who && card.who !== 'Debra Silverman' ? '' : 'Debra Silverman ') + card.q); }
+    function closeVideo() { UI.video = null; hideVideoFrame(); }
+    function drawVideoModal() {
+      if (!UI.video) { hideVideoFrame(); return; }
+      var v = UI.video;
+      p.noStroke(); fillc(INK, 175); p.rect(0, 0, W, H); pushHit(0, 0, W, H, function () { closeVideo(); });
+      var x = sx(), w = cw(), pad = 16, top = topY() + 16;
+      var cardH = Math.min(viewH() - 24, 520), cardY = top;
+      p.noStroke(); fillc(shade(GROUNDS[UI.screen], 4)); p.rect(x, cardY, w, cardH, 16); p.noFill(); strokec(INK, 70); p.strokeWeight(1); p.rect(x, cardY, w, cardH, 16);
+      pushHit(x, cardY, w, cardH, function () {}); // taps on the card don't dismiss
+      // header
+      setFont(SANS, 18, INK, p.LEFT, p.TOP); bold(); var htl = wrapLines(v.t, w - pad * 2 - 30); var hi; for (hi = 0; hi < htl.length; hi++) p.text(htl[hi], x + pad, cardY + pad + hi * 22); normal();
+      setFont(MONO, 10, ACCTX, p.LEFT, p.TOP, 220); p.text(('Lesson · ' + v.who).toUpperCase(), x + pad, cardY + pad + htl.length * 22 + 2);
+      var xbx = x + w - pad - 22; setFont(SANS, 22, INK, p.CENTER, p.CENTER, 210); p.text('×', xbx + 11, cardY + pad + 9); pushHit(xbx - 6, cardY + pad - 8, 40, 38, function () { closeVideo(); });
+      // video box (16:9)
+      var vbX = x + pad, vbY = cardY + pad + htl.length * 22 + 26, vbW = w - pad * 2, vbH = Math.round(vbW * 9 / 16);
+      p.noStroke(); fillc([14, 13, 18]); p.rect(vbX, vbY, vbW, vbH, 8);
+      var st = UI.varc ? UI.varc.state : 'loading';
+      if (st === 'ready') {
+        var f = ensureVideoFrame();
+        if (f) { var src = 'https://archive.org/embed/' + UI.varc.id; if (UI.vframeId !== UI.varc.id) { f.src = src; UI.vframeId = UI.varc.id; } f.style.display = 'block'; f.style.left = vbX + 'px'; f.style.top = vbY + 'px'; f.style.width = vbW + 'px'; f.style.height = vbH + 'px'; }
+        setFont(MONO, 9, INK, p.LEFT, p.TOP, 150); var lbl = wrapLines2('▶ ' + (UI.varc.label || 'Internet Archive recording'), vbW, MONO, 9); p.text(lbl[0] || '', vbX, vbY + vbH + 8);
+      } else {
+        hideVideoFrame();
+        setFont(MONO, 11, INK, p.CENTER, p.CENTER, 170);
+        p.text(st === 'none' ? 'NO ARCHIVE RECORDING FOUND' : (typeof fetch !== 'function' ? 'CONNECT TO STREAM' : 'SEARCHING THE INTERNET ARCHIVE…'), vbX + vbW / 2, vbY + vbH / 2 - 8);
+        setFont(MONO, 9, INK, p.CENTER, p.CENTER, 130); p.text('OR OPEN ON YOUTUBE BELOW', vbX + vbW / 2, vbY + vbH / 2 + 12);
+      }
+      // buttons row
+      var byy = vbY + vbH + 26, bh = 44;
+      p.noStroke(); fillc(INK); p.rect(x + pad, byy, vbW, bh, 10); setFont(MONO, 12, GROUNDS[UI.screen], p.CENTER, p.CENTER); p.text(('▶  ' + v.who + ' on YouTube').toUpperCase(), x + pad + vbW / 2, byy + bh / 2 + 0.5);
+      pushHit(x + pad, byy, vbW, bh, function () { openURL('https://www.youtube.com/results?search_query=' + encodeURIComponent(v.who + ' ' + v.q)); });
+      setFont(MONO, 9, INK, p.LEFT, p.TOP, 150); var note = wrapLines2('Streamed from the Internet Archive (a free public library) when available; YouTube opens externally.', vbW, MONO, 9); var ni; for (ni = 0; ni < note.length; ni++) p.text(note[ni], x + pad, byy + bh + 10 + ni * 13);
+    }
     function drawTopbar() {
       var th = TOPH + (UI.safeTop || 0), cy = (UI.safeTop || 0) + TOPH / 2;
       p.noStroke(); fillc(UI.bg); p.rect(0, 0, W, th);
@@ -5794,7 +5855,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     p.draw = function () {
       // auto-dark-at-night: re-apply the theme when the effective key changes (time or accent)
       var ek = effectiveThemeKey() + '|' + ((APP.STATE.settings && APP.STATE.settings.accent) || 0); if (ek !== UI.appliedThemeKey) { applyTheme(); setBodyBg(GROUNDS[UI.screen] || GROUNDS.chart); }
-      if (UI.screen !== UI.prevScreen) { var wasFirst = !UI.prevScreen; UI.fxT = nowT(); UI.prevScreen = UI.screen; UI.story = null; if (UI.screen !== 'chart') UI.walk = null; setBodyBg(GROUNDS[UI.screen] || GROUNDS.chart); if (!wasFirst) chime(); }
+      if (UI.screen !== UI.prevScreen) { var wasFirst = !UI.prevScreen; UI.fxT = nowT(); UI.prevScreen = UI.screen; UI.story = null; if (UI.video) closeVideo(); if (UI.screen !== 'chart') UI.walk = null; setBodyBg(GROUNDS[UI.screen] || GROUNDS.chart); if (!wasFirst) chime(); }
       UI.bg = (GROUNDS[UI.screen] || GROUNDS.chart); // HARD block-colour cut between sections
       p.background(UI.bg[0], UI.bg[1], UI.bg[2]);
       drawField(); drawRipples();
@@ -5808,6 +5869,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       drawQuip();
       drawTopbar(); if (s !== 'onboard') drawNav();
       drawTodayPanel();
+      drawVideoModal();
       // a small, brief celestial wink on screen entry (kept subtle so it doesn't over-stimulate)
       if (!reduced() && s !== 'onboard') { var te = (nowT() - UI.fxT) / 520; if (te >= 0 && te < 1) { var al = (1 - te) * (1 - te); celestialEmblem(W / 2, topY() + viewH() * 0.26, Math.min(W, H) * 0.07 * (0.8 + 0.2 * eCubic(te)), al * 0.4); } }
       // first run: once a chart exists, gently guide the newcomer
@@ -5831,6 +5893,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       UI.ptrX = x; UI.ptrY = y; UI.ptrMoveT = nowT();
       if (!UI.ptrDown) return;
       var dy = y - UI.pressY, dx = x - UI.pressX; if (Math.abs(dy) > 6 || Math.abs(dx) > 6) UI.dragging = true;
+      if (UI.video) return; // the embedded player handles its own area
       if (UI.today) { UI.tScroll = (UI.tScrollStart || 0) - dy; if (UI.tScroll < 0) UI.tScroll = 0; return; }
       if (UI.inSlider) { var tt = (x - UI.sliderRect.x) / UI.sliderRect.w; tt = Math.max(0, Math.min(1, tt)); APP.STATE.settings.orbScale = Math.round((0.5 + tt * 1.5) * 10) / 10; recompute(); }
       else if (UI.inCity) { UI.cityScroll = UI.cityScrollStart - dy; if (UI.cityScroll < 0) UI.cityScroll = 0; if (UI.cityScroll > UI.cityBoxMax) UI.cityScroll = UI.cityBoxMax; }
