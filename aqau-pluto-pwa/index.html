@@ -5746,11 +5746,15 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       }
       return UI.todayCache;
     }
-    function openToday() { if (!APP.STATE.chart) { UI.screen = 'onboard'; return; } UI.today = true; UI.tScroll = 0; UI.todayCache = null; }
+    function openToday() { if (!APP.STATE.chart) { UI.screen = 'onboard'; return; } UI.today = true; UI.tScroll = 0; UI.todayCache = null; UI.todayT0 = nowT(); }
     function drawTodayPanel() {
       if (!UI.today) return;
-      p.noStroke(); fillc(INK, 155); p.rect(0, 0, W, H);
+      // AN4 — the sheet grows out of the live moon emblem in the top bar
+      var mp = reduced() ? 1 : cl01((nowT() - (UI.todayT0 || 0)) / 440), me = eCubic(mp);
+      p.noStroke(); fillc(INK, 155 * me); p.rect(0, 0, W, H);
       pushHit(0, 0, W, H, function () { UI.today = false; }); // tap the dimmed area to close
+      var emx = sx() + 9, emy = (UI.safeTop || 0) + TOPH / 2;
+      p.push(); if (me < 1) { p.translate(emx, emy); p.scale(0.18 + 0.82 * me); p.translate(-emx, -emy); }
       var x = sx(), w = cw(), pad = 18;
       var top = topY() + 8, bottom = H - (UI.safeBottom || 0) - 14, availH = bottom - top;
       p.noStroke(); fillc(shade(GROUNDS[UI.screen], 4)); p.rect(x, top, w, availH, 16);
@@ -5758,7 +5762,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       pushHit(x, top, w, availH, function () {}); // taps on the card itself don't dismiss
       var d = todayData();
       // clip content to the card
-      var dc = p.drawingContext; dc.save(); dc.beginPath(); dc.rect(x, top, w, availH); dc.clip();
+      var dc = p.drawingContext; dc.save(); dc.beginPath(); dc.rect(x, top, w, availH); dc.clip(); dc.globalAlpha = 0.25 + 0.75 * me;
       var cx = x + w / 2, yy = 0;
       function ty() { return top + pad + yy - (UI.tScroll || 0); }
       function head(s) { setFont(MONO, 10.5, ACC, p.LEFT, p.TOP, 230); p.text(s.toUpperCase(), x + pad, ty()); yy += 18; }
@@ -5772,7 +5776,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var xbx = x + w - pad - 22, xby = top + pad - 2; setFont(SANS, 22, INK, p.CENTER, p.CENTER, 200); p.text('×', xbx + 11, xby + 9);
       pushHit(xbx - 4, xby - 6, 36, 36, function () { UI.today = false; });
       yy += 36;
-      if (!d) { body('A quiet sky — couldn’t read the moment just now.'); dc.restore(); return; }
+      if (!d) { body('A quiet sky — couldn’t read the moment just now.'); dc.restore(); p.pop(); return; }
       // live moon
       var e = d.moon ? d.moon.elong : 0, ms = d.f && d.f.sky ? d.f.sky.moon : null;
       var discY = ty() + 24; drawMoonDisc(x + pad + 24, discY, 24, e, 1);
@@ -5807,7 +5811,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       pushHit(sbtX, sbtY, sbtW, sbtH, function () { exportTodayCard(); });
       yy += sbtH + 10;
       UI.contentH.today = yy + pad;
-      dc.restore();
+      dc.restore(); p.pop();
       // clamp panel scroll
       var maxS = Math.max(0, UI.contentH.today - availH);
       if ((UI.tScroll || 0) < 0) UI.tScroll = 0; if ((UI.tScroll || 0) > maxS) UI.tScroll = maxS;
