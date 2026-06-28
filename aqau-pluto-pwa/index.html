@@ -3493,6 +3493,23 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       p.noStroke();
       return lines.length * lh;
     }
+    // S6/S29 — show the first ~2 sentences, with a tap to expand the rest (keeps readings calm by default)
+    function sentences2(str, n) {
+      var parts = String(str).match(/[^.!?]+[.!?]+(\s+|$)/g);
+      if (!parts || parts.length <= n) return { head: String(str), more: false };
+      return { head: parts.slice(0, n).join('').trim(), more: true };
+    }
+    function expandPara(str, x, ly, w, key, sz, lead) {
+      if (!UI.readExp) UI.readExp = {};
+      var open = !!UI.readExp[key], s = sentences2(str, 2), shown = (open || !s.more) ? String(str) : s.head;
+      var h = paragraph(shown, x, ly, w, sz, INK, SERIF, lead);
+      if (s.more) {
+        setFont(MONO, 9.5, ACCTX, p.LEFT, p.TOP, 225); p.text(open ? 'SHOW LESS' : 'READ MORE ›', x, sY(ly + h + 1));
+        pushHit(x, sY(ly + h - 3), 150, 24, (function (k) { return function () { UI.readExp[k] = !UI.readExp[k]; }; })(key));
+        h += 22;
+      }
+      return h;
+    }
     // chromatic-aberration text (glitch). inten 0..1
     function glitchText(str, x, y, sz, font, col, ha, va, inten) {
       p.textFont(font); p.textSize(sz); p.textAlign(ha || p.LEFT, va || p.TOP); p.noStroke();
@@ -4269,7 +4286,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       setFont(SANS, 18, INK, p.RIGHT, p.CENTER, 150); p.text('›', x + w - 16, cbY + 23);
       pushHit(x, cbY, w, 46, function () { UI.calView = true; UI.calDay = null; UI.scroll.read = 0; UI.popT = nowT(); }); ly += 60;
       if (!UI.readCache) UI.readCache = APP.composeCore(c);
-      for (var i = 0; i < UI.readCache.length; i++) ly += paragraph(UI.readCache[i], x, ly, w, 17, INK, SERIF, 27) + 10;
+      for (var i = 0; i < UI.readCache.length; i++) ly += expandPara(UI.readCache[i], x, ly, w, 'core' + i, 17, 27) + 10;
 
       // ---- daily + time aspects: what the moving sky is doing to your chart now ----
       if (!UI.readTransit || nowT() - UI.readTransitT > 60000) { try { UI.readTransit = APP.composeTransits(c); } catch (e) { UI.readTransit = null; } UI.readTransitT = nowT(); }
@@ -4281,7 +4298,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         } else {
           for (var dti = 0; dti < Math.min(tr.daily.length, 5); dti++) { if (dti) hairline(x, ly - 4, x + w, 36); ly += transitRow(tr.daily[dti], false, x, w, ly) + 4; }
           ly += 10;
-          ly += paragraph('Today the moving sky touches your chart in a few places. ' + tr.daily.slice(0, 3).map(APP.transitSentence).join(' '), x, ly, w, 15.5, INK, SERIF, 24) + 14;
+          ly += expandPara('Today the moving sky touches your chart in a few places. ' + tr.daily.slice(0, 3).map(APP.transitSentence).join(' '), x, ly, w, 'tday', 15.5, 24) + 14;
         }
         ly += 6; eyebrow('Right now — the passing hour', x, ly, ACC); ly += 24;
         var stamp = APP.pad(tr.ctx.now.getHours()) + ':' + APP.pad(tr.ctx.now.getMinutes());
@@ -4290,7 +4307,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         } else {
           for (var mti = 0; mti < Math.min(tr.timed.length, 4); mti++) { if (mti) hairline(x, ly - 4, x + w, 36); ly += transitRow(tr.timed[mti], true, x, w, ly) + 4; }
           ly += 10;
-          ly += paragraph('The Moon is the fast hand of the clock — these shift within hours. As of ' + stamp + ': ' + tr.timed.slice(0, 2).map(APP.transitSentence).join(' '), x, ly, w, 15.5, INK, SERIF, 24) + 14;
+          ly += expandPara('The Moon is the fast hand of the clock — these shift within hours. As of ' + stamp + ': ' + tr.timed.slice(0, 2).map(APP.transitSentence).join(' '), x, ly, w, 'thour', 15.5, 24) + 14;
         }
       }
 
