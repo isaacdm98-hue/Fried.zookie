@@ -4536,7 +4536,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       recompute(); UI.selPlanet = 'sun'; UI.popT = nowT(); UI.popFrom = 22; UI.scroll.chart = 0; UI.screen = 'chart'; hideSearchInput();
       if (!APP.STATE.settings.walked) { UI.walk = { i: 0, t0: nowT() }; UI.walkTr = null; UI.walkTheme = null; } // first reveal: walk them through it
     }
-    function recompute() { APP.STATE.chart = APP.compute(APP.STATE.birth, APP.STATE.settings); APP.save(); UI.readCache = null; UI.readSig = null; UI.readTransit = null; UI.forecast = null; UI.walkTr = null; UI.walkTheme = null; UI.bondCache = null; UI.bondFor = null; if (APP.clearPersonCharts) APP.clearPersonCharts(); UI.askAns = ''; UI.quip = null; UI.quipNext = 0; buildField(); }
+    function recompute() { APP.STATE.chart = APP.compute(APP.STATE.birth, APP.STATE.settings); APP.save(); UI.readCache = null; UI.readSig = null; UI.readTransit = null; UI.forecast = null; UI.todayCache = null; UI.walkTr = null; UI.walkTheme = null; UI.bondCache = null; UI.bondFor = null; if (APP.clearPersonCharts) APP.clearPersonCharts(); UI.askAns = ''; UI.quip = null; UI.quipNext = 0; buildField(); }
 
     // ---------- chrome ----------
     // ---------- live celestial emblem (real current moon phase) \u2014 the recurring centrepiece ----------
@@ -4559,11 +4559,92 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var a = t * 0.0007, ox = cx + Math.cos(a) * r * 1.5, oy = cy + Math.sin(a) * r * 1.05; p.noStroke(); fillc(ACC, 200 * al); p.ellipse(ox, oy, 3, 3);
       drawMoonDisc(cx, cy, r, curMoonElong(), al);
     }
+    // ---------- TODAY: a live dashboard, opened by tapping the header moon emblem ----------
+    function phaseName(e) {
+      if (e < 22.5 || e >= 337.5) return 'New Moon'; if (e < 67.5) return 'Waxing crescent'; if (e < 112.5) return 'First quarter';
+      if (e < 157.5) return 'Waxing gibbous'; if (e < 202.5) return 'Full Moon'; if (e < 247.5) return 'Waning gibbous';
+      if (e < 292.5) return 'Last quarter'; return 'Waning crescent';
+    }
+    function todayData() {
+      if (!UI.todayCache || nowT() - (UI.todayCacheT || 0) > 600000) {
+        var c = APP.STATE.chart; if (!c) return null;
+        try { UI.todayCache = { f: APP.composeForecast(c), tr: APP.composeTransits(c), moon: APP.moonPhaseNow() }; }
+        catch (e) { UI.todayCache = null; UI.todayCacheT = nowT(); return null; }
+        UI.todayCacheT = nowT();
+      }
+      return UI.todayCache;
+    }
+    function openToday() { if (!APP.STATE.chart) { UI.screen = 'onboard'; return; } UI.today = true; UI.tScroll = 0; UI.todayCache = null; }
+    function drawTodayPanel() {
+      if (!UI.today) return;
+      p.noStroke(); fillc(INK, 155); p.rect(0, 0, W, H);
+      pushHit(0, 0, W, H, function () { UI.today = false; }); // tap the dimmed area to close
+      var x = sx(), w = cw(), pad = 18;
+      var top = topY() + 8, bottom = H - (UI.safeBottom || 0) - 14, availH = bottom - top;
+      p.noStroke(); fillc(shade(GROUNDS[UI.screen], 4)); p.rect(x, top, w, availH, 16);
+      p.noFill(); strokec(INK, 60); p.strokeWeight(1); p.rect(x, top, w, availH, 16);
+      pushHit(x, top, w, availH, function () {}); // taps on the card itself don't dismiss
+      var d = todayData();
+      // clip content to the card
+      var dc = p.drawingContext; dc.save(); dc.beginPath(); dc.rect(x, top, w, availH); dc.clip();
+      var cx = x + w / 2, yy = 0;
+      function ty() { return top + pad + yy - (UI.tScroll || 0); }
+      function head(s) { setFont(MONO, 10.5, ACC, p.LEFT, p.TOP, 230); p.text(s.toUpperCase(), x + pad, ty()); yy += 18; }
+      function body(s, sz) { var fz = sz || 15; var ls = wrapLines2(s, w - pad * 2, SERIF, fz); setFont(SERIF, fz, INK, p.LEFT, p.TOP, 240); var i; for (i = 0; i < ls.length; i++) p.text(ls[i], x + pad, ty() + i * (fz * 1.42)); yy += ls.length * (fz * 1.42) + 4; }
+      function rule() { strokec(INK, 28); p.strokeWeight(1); p.line(x + pad, ty() + 4, x + w - pad, ty() + 4); yy += 14; }
+      // title row + close
+      setFont(SANS, 22, INK, p.LEFT, p.TOP); bold(); p.text('Today', x + pad, ty()); normal();
+      var now = new Date();
+      setFont(MONO, 10.5, INK, p.RIGHT, p.TOP, 150); p.text(fmtShort(now).toUpperCase(), x + w - pad - 28, ty() + 6);
+      // close X
+      var xbx = x + w - pad - 22, xby = top + pad - 2; setFont(SANS, 22, INK, p.CENTER, p.CENTER, 200); p.text('×', xbx + 11, xby + 9);
+      pushHit(xbx - 4, xby - 6, 36, 36, function () { UI.today = false; });
+      yy += 36;
+      if (!d) { body('A quiet sky — couldn’t read the moment just now.'); dc.restore(); return; }
+      // live moon
+      var e = d.moon ? d.moon.elong : 0, ms = d.f && d.f.sky ? d.f.sky.moon : null;
+      var discY = ty() + 24; drawMoonDisc(x + pad + 24, discY, 24, e, 1);
+      setFont(SANS, 16, INK, p.LEFT, p.TOP); bold(); p.text(phaseName(e), x + pad + 60, ty() + 2); normal();
+      if (ms) { setFont(SERIF, 13.5, INK, p.LEFT, p.TOP, 220); p.text('Moon in ' + ms.signName, x + pad + 60, ty() + 24); }
+      yy += 56;
+      if (ms) { body(ms.voc ? 'Void of course — the Moon makes no more aspects before changing sign. A good window to rest, finish, reflect; a poor one to launch.' : 'About ' + ms.hours + 'h until the Moon leaves ' + ms.signName + '. Its mood still colours the next few hours.', 13.5); }
+      rule();
+      // your year (profection)
+      if (d.f && d.f.profection) { var pf = d.f.profection; head('Your year'); body(APP.nameFor(pf.lord) + ' rules your year — you’re profected to ' + pf.signName + ' (house ' + pf.house + '). Wherever ' + APP.nameFor(pf.lord) + ' sits and what it touches is unusually loud this year.', 14); }
+      // retrogrades now
+      var rr = d.f && d.f.sky ? d.f.sky.retros : [];
+      head('Retrogrades now');
+      if (rr && rr.length) { var rn = []; for (var ri = 0; ri < rr.length; ri++) rn.push(APP.nameFor(rr[ri])); body(rn.join(', ') + (rr.length === 1 ? ' is' : ' are') + ' retrograde — a time to revisit and review those themes, not force them forward.', 14); }
+      else { body('All planets direct. The current pulls forward.', 14); }
+      rule();
+      // live on your chart today
+      head('Live on your chart');
+      var dl = (d.tr && d.tr.daily) ? d.tr.daily : [];
+      if (dl.length) { var di; for (di = 0; di < Math.min(2, dl.length); di++) body('• ' + APP.transitSentence(dl[di]), 14); }
+      else body('No close transits to your planets today — a calm stretch.', 14);
+      // the passing hour
+      head('This passing hour');
+      var tm = (d.tr && d.tr.timed) ? d.tr.timed : [];
+      if (tm.length) body('• ' + APP.transitSentence(tm[0]), 14);
+      else body('The Moon makes no close aspect to your chart right now.', 14);
+      yy += 8;
+      UI.contentH.today = yy + pad;
+      dc.restore();
+      // clamp panel scroll
+      var maxS = Math.max(0, UI.contentH.today - availH);
+      if ((UI.tScroll || 0) < 0) UI.tScroll = 0; if ((UI.tScroll || 0) > maxS) UI.tScroll = maxS;
+      // a scroll hint when there's more below
+      if (maxS > 2 && (UI.tScroll || 0) < maxS - 2) { setFont(SANS, 18, INK, p.CENTER, p.BOTTOM, 120); p.text('↓', cx, bottom - 6); }
+    }
+    // wrap helper that respects an arbitrary font/size (textWidth depends on current font)
+    function wrapLines2(str, boxW, font, sz) { p.textFont(font); p.textSize(sz); return wrapLines(str, boxW); }
     function drawTopbar() {
       var th = TOPH + (UI.safeTop || 0), cy = (UI.safeTop || 0) + TOPH / 2;
       p.noStroke(); fillc(UI.bg); p.rect(0, 0, W, th);
-      celestialEmblem(sx() + 9, cy, 9, 1); // the live moon, present on every screen
+      celestialEmblem(sx() + 9, cy, 9, 1); // the live moon, present on every screen — tap it for Today
+      pushHit(0, 0, sx() + 120, th, function () { openToday(); });
       setFont(MONO, 11, INK, p.LEFT, p.CENTER, 200); p.text('AQAU PLUTO', sx() + 32, cy + 0.5);
+      setFont(MONO, 8, ACC, p.LEFT, p.CENTER, 150); p.text('TODAY ›', sx() + 32, cy + 12);
       var dt = new Date(), sep = (dt.getSeconds() % 2 === 0) ? ':' : ' ';
       setFont(MONO, 11, INK, p.RIGHT, p.CENTER, 150); p.text(pad2(dt.getHours()) + sep + pad2(dt.getMinutes()) + sep + pad2(dt.getSeconds()), sx() + cw(), cy + 0.5);
       strokec(INK, 40); p.strokeWeight(1); p.line(0, th, W, th);
@@ -4649,6 +4730,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (s === 'onboard') drawOnboard(); else { if (!(s === 'people' && UI.padd)) hideSearchInput(); if (s === 'chart') drawChart(); else if (s === 'read') drawRead(); else if (s === 'learn') drawLearn(); else if (s === 'tarot') drawTarot(); else if (s === 'people') drawPeople(); else if (s === 'settings') drawSettings(); }
       drawQuip();
       drawTopbar(); if (s !== 'onboard') drawNav();
+      drawTodayPanel();
       // a small, brief celestial wink on screen entry (kept subtle so it doesn't over-stimulate)
       if (!reduced() && s !== 'onboard') { var te = (nowT() - UI.fxT) / 520; if (te >= 0 && te < 1) { var al = (1 - te) * (1 - te); celestialEmblem(W / 2, topY() + viewH() * 0.26, Math.min(W, H) * 0.07 * (0.8 + 0.2 * eCubic(te)), al * 0.4); } }
       // first run: once a chart exists, gently guide the newcomer
@@ -4663,6 +4745,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     function press(x, y) {
       UI.ptrX = x; UI.ptrY = y; UI.ptrDown = true; UI.ptrMoveT = nowT();
       UI.pressX = x; UI.pressY = y; UI.pressT = nowT(); UI.dragging = false; UI.scrollStart = scrollOf(); UI.cityScrollStart = UI.cityScroll || 0;
+      UI.tScrollStart = UI.tScroll || 0;
       UI.inCity = ((UI.screen === 'onboard' || (UI.screen === 'people' && UI.padd)) && UI.cityBox && inRect(x, y, UI.cityBox));
       UI.inSlider = (UI.screen === 'settings' && UI.sliderRect && inRect(x, y, { x: UI.sliderRect.x - 16, y: UI.sliderRect.y - 18, w: UI.sliderRect.w + 32, h: 36 }));
     }
@@ -4670,6 +4753,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       UI.ptrX = x; UI.ptrY = y; UI.ptrMoveT = nowT();
       if (!UI.ptrDown) return;
       var dy = y - UI.pressY, dx = x - UI.pressX; if (Math.abs(dy) > 6 || Math.abs(dx) > 6) UI.dragging = true;
+      if (UI.today) { UI.tScroll = (UI.tScrollStart || 0) - dy; if (UI.tScroll < 0) UI.tScroll = 0; return; }
       if (UI.inSlider) { var tt = (x - UI.sliderRect.x) / UI.sliderRect.w; tt = Math.max(0, Math.min(1, tt)); APP.STATE.settings.orbScale = Math.round((0.5 + tt * 1.5) * 10) / 10; recompute(); }
       else if (UI.inCity) { UI.cityScroll = UI.cityScrollStart - dy; if (UI.cityScroll < 0) UI.cityScroll = 0; if (UI.cityScroll > UI.cityBoxMax) UI.cityScroll = UI.cityBoxMax; }
       else { UI.scroll[UI.screen] = UI.scrollStart - dy; clampScroll(); }
@@ -4710,6 +4794,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       }
     }
     p.mouseWheel = function (e) {
+      if (UI.today) { UI.tScroll = (UI.tScroll || 0) + e.delta; if (UI.tScroll < 0) UI.tScroll = 0; return false; }
       if ((UI.screen === 'onboard' || (UI.screen === 'people' && UI.padd)) && UI.cityBox && inRect(UI.ptrX, UI.ptrY, UI.cityBox)) { UI.cityScroll = (UI.cityScroll || 0) + e.delta; if (UI.cityScroll < 0) UI.cityScroll = 0; if (UI.cityScroll > UI.cityBoxMax) UI.cityScroll = UI.cityBoxMax; }
       else { UI.scroll[UI.screen] = scrollOf() + e.delta; clampScroll(); }
       return false;
