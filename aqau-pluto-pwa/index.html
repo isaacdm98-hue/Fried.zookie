@@ -4120,7 +4120,8 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       pushHit(x, lbY, w, 52, function () { UI.lifeView = true; UI.scroll.read = 0; UI.popT = nowT(); }); ly += 60;
       // open the transit calendar
       var cbY = sY(ly); p.noStroke(); fillc(shade(GROUNDS[UI.screen], -16)); p.rect(x, cbY + 3, w, 46, 11); fillc(GROUNDS[UI.screen]); p.rect(x, cbY, w, 46, 11); p.noFill(); strokec(INK, 170); p.strokeWeight(1.4); p.rect(x, cbY, w, 46, 11);
-      setFont(SANS, 14, INK, p.LEFT, p.CENTER); bold(); p.text('📅  Transit calendar', x + 16, cbY + 23); normal();
+      (function () { var ix = x + 16, iy = cbY + 23; p.noFill(); strokec(INK, 230); p.strokeWeight(1.3); p.rect(ix, iy - 7, 14, 13, 2); p.line(ix, iy - 3, ix + 14, iy - 3); p.line(ix + 4, iy - 9, ix + 4, iy - 6); p.line(ix + 10, iy - 9, ix + 10, iy - 6); })();
+      setFont(SANS, 14, INK, p.LEFT, p.CENTER); bold(); p.text('Transit calendar', x + 38, cbY + 23); normal();
       setFont(SANS, 18, INK, p.RIGHT, p.CENTER, 150); p.text('›', x + w - 16, cbY + 23);
       pushHit(x, cbY, w, 46, function () { UI.calView = true; UI.calDay = null; UI.scroll.read = 0; UI.popT = nowT(); }); ly += 60;
       if (!UI.readCache) UI.readCache = APP.composeCore(c);
@@ -4924,7 +4925,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (last) { tourBtn('Read my chart ›', cx - 152, ty, 148, 42, function () { UI.lesson = null; UI.screen = 'chart'; }, true); tourBtn('Explore Learn', cx + 6, ty, 148, 42, function () { UI.lesson = null; }, false); }
       else { setFont(MONO, 10, INK, p.CENTER, p.TOP, 150 * alpha); p.text(auto ? 'PLAYING · TAP TO SKIP AHEAD' : 'TAP TO CONTINUE  ›', cx, top + vh - 42); }
       // play / pause + skip controls (top-right), drawn above the tap zone
-      tourBtn(auto ? '❚❚' : '▶', x + w - 138, top + 42, 60, 26, function () { UI.lesson.auto = !(UI.lesson.auto !== false); if (UI.lesson.auto) UI.lesson.t0 = nowT(); }, false);
+      iconBtn(auto ? 'pause' : 'play', x + w - 138, top + 42, 60, 26, function () { UI.lesson.auto = !(UI.lesson.auto !== false); if (UI.lesson.auto) UI.lesson.t0 = nowT(); });
       tourBtn('Skip', x + w - 70, top + 42, 64, 26, function () { UI.lesson = null; }, false);
       UI.contentH.learn = 0;
     }
@@ -5755,7 +5756,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (st === 'ready') {
         var f = ensureVideoFrame();
         if (f) { var src = 'https://archive.org/embed/' + UI.varc.id; if (UI.vframeId !== UI.varc.id) { f.src = src; UI.vframeId = UI.varc.id; } f.style.display = 'block'; f.style.left = vbX + 'px'; f.style.top = vbY + 'px'; f.style.width = vbW + 'px'; f.style.height = vbH + 'px'; }
-        setFont(MONO, 9, INK, p.LEFT, p.TOP, 150); var lbl = wrapLines2('▶ ' + (UI.varc.label || 'Internet Archive recording'), vbW, MONO, 9); p.text(lbl[0] || '', vbX, vbY + vbH + 8);
+        setFont(MONO, 9, INK, p.LEFT, p.TOP, 150); var lbl = wrapLines2(UI.varc.label || 'Internet Archive recording', vbW, MONO, 9); p.text(lbl[0] || '', vbX, vbY + vbH + 8);
       } else {
         hideVideoFrame();
         setFont(MONO, 11, INK, p.CENTER, p.CENTER, 170);
@@ -5764,7 +5765,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       }
       // buttons row
       var byy = vbY + vbH + 26, bh = 44;
-      p.noStroke(); fillc(INK); p.rect(x + pad, byy, vbW, bh, 10); setFont(MONO, 12, GROUNDS[UI.screen], p.CENTER, p.CENTER); p.text(('▶  ' + v.who + ' on YouTube').toUpperCase(), x + pad + vbW / 2, byy + bh / 2 + 0.5);
+      p.noStroke(); fillc(INK); p.rect(x + pad, byy, vbW, bh, 10); setFont(MONO, 12, GROUNDS[UI.screen], p.CENTER, p.CENTER); p.text(('Watch ' + v.who + ' on YouTube').toUpperCase(), x + pad + vbW / 2, byy + bh / 2 + 0.5);
       pushHit(x + pad, byy, vbW, bh, function () { openURL('https://www.youtube.com/results?search_query=' + encodeURIComponent(v.who + ' ' + v.q)); });
       setFont(MONO, 9, INK, p.LEFT, p.TOP, 150); var note = wrapLines2('Streamed from the Internet Archive (a free public library) when available; YouTube opens externally.', vbW, MONO, 9); var ni; for (ni = 0; ni < note.length; ni++) p.text(note[ni], x + pad, byy + bh + 10 + ni * 13);
     }
@@ -5786,7 +5787,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       strokec(INK, 40); p.strokeWeight(1); p.line(0, navY, W, navY);
       for (var i = 0; i < tabs.length; i++) {
         var on = UI.screen === tabs[i][1], tx = i * tw, dn = pressing(tx, navY, tw, NAVH + sb), cy2 = navY + NAVH / 2 - 2 + (dn ? 1 : 0);
-        if (tabs[i][1] === 'settings') { setFont(SANS, 20, INK, p.CENTER, p.CENTER, on ? 255 : (dn ? 185 : 120)); p.text('⚙', tx + tw / 2, cy2); } // a cog, so the menu isn't squashed
+        if (tabs[i][1] === 'settings') { drawGear(tx + tw / 2, cy2, 9, on ? 255 : (dn ? 185 : 120)); } // a cog, so the menu isn't squashed
         else { setFont(MONO, 11, INK, p.CENTER, p.CENTER, on ? 255 : (dn ? 175 : 105)); if (on) bold(); p.text(tabs[i][0].toUpperCase(), tx + tw / 2, cy2); normal(); }
         if (on) { p.noStroke(); fillc(ACC); p.ellipse(tx + tw / 2, navY + NAVH - 12, 5, 5); }
         pushHit(tx, navY, tw, NAVH + sb, (function (sc) { return function () { UI.screen = sc; }; })(tabs[i][1]));
@@ -5819,6 +5820,24 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       p.noStroke(); fillc(primary ? INK : GROUNDS.chart); p.rect(bx, by + (dn ? 2 : 0), bw, bh, 7);
       if (!primary) { p.noFill(); strokec(INK, 200); p.strokeWeight(1.4); p.rect(bx, by + (dn ? 2 : 0), bw, bh, 7); }
       setFont(MONO, 11, primary ? GROUNDS.chart : INK, p.CENTER, p.CENTER); p.text(label.toUpperCase(), bx + bw / 2, by + (dn ? 2 : 0) + bh / 2 + 0.5);
+      pushHit(bx, by, bw, bh, fn);
+    }
+    // a settings gear drawn with shapes (no emoji glyph)
+    function drawGear(cx, cy, r, a) {
+      p.push(); p.translate(cx, cy); var t;
+      p.noStroke(); fillc(INK, a);
+      for (t = 0; t < 8; t++) { p.push(); p.rotate(t * Math.PI / 4); p.rect(-1.7, -r - 2.4, 3.4, 4.4, 1); p.pop(); }
+      p.ellipse(0, 0, r * 1.7, r * 1.7);
+      fillc(UI.bg, 255); p.ellipse(0, 0, r * 0.74, r * 0.74);
+      p.pop();
+    }
+    // a play / pause control drawn with shapes (no emoji glyphs)
+    function iconBtn(kind, bx, by, bw, bh, fn) {
+      var dn = pressing(bx, by, bw, bh), oy = by + (dn ? 2 : 0), cxx = bx + bw / 2, cyy = oy + bh / 2;
+      p.noFill(); strokec(INK, 200); p.strokeWeight(1.4); p.rect(bx, oy, bw, bh, 7);
+      p.noStroke(); fillc(INK, 230);
+      if (kind === 'pause') { p.rect(cxx - 5, cyy - 6, 3.3, 12, 1); p.rect(cxx + 1.7, cyy - 6, 3.3, 12, 1); }
+      else { p.triangle(cxx - 4.5, cyy - 6, cxx - 4.5, cyy + 6, cxx + 6.5, cyy); }
       pushHit(bx, by, bw, bh, fn);
     }
     function drawTour() {
