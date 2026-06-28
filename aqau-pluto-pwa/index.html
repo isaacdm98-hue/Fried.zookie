@@ -2383,6 +2383,68 @@ var APP = (function () {
     return { profection: profection(b), progressed: progressed(c, b), solarReturn: solarReturnSummary(c, b), upcoming: upcomingTransits(c, 8), sky: skyStatus() };
   }
 
+  // ---- life timeline: the slow, rare outer transits & returns that mark life chapters ----
+  var MOVER_THEME = {
+    jupiter: 'growth, opportunity and a wider horizon',
+    saturn: 'testing, maturing and building something solid',
+    uranus: 'awakening, disruption and a break for freedom',
+    neptune: 'dissolving certainties, dreaming, idealism (and some fog)',
+    pluto: 'deep transformation — power, loss and rebirth'
+  };
+  var TARGET_LIFE = { sun: 'who you are', moon: 'your emotional foundations and home', asc: 'your direction and how you show up', mc: 'your career and public path', jupiter: 'your sense of growth', saturn: 'your structures and commitments', uranus: 'your need for freedom', neptune: 'your dreams', pluto: 'your power' };
+  function natalLonOf(c, key) { if (key === 'asc') return c.ascBody ? c.ascBody.lon : null; if (key === 'mc') return c.mcBody ? c.mcBody.lon : null; return c.planets[key] ? c.planets[key].lon : null; }
+  function lifeTransits(c, b) {
+    var ay = c.ayan || 0, birthMs = Date.UTC(b.y, b.mo - 1, b.d, 12, 0, 0), yearMs = 365.2422 * 86400000;
+    var startMs = birthMs, endMs = new Date().getTime() + 2.5 * yearMs, step = 8 * 86400000;
+    var samples = [], ms; for (ms = startMs; ms <= endMs; ms += step) samples.push({ ms: ms, pos: EPH.positions(jsDayNum(new Date(ms))) });
+    var movers = ['jupiter', 'saturn', 'uranus', 'neptune', 'pluto'];
+    var tg = ['sun', 'moon']; if (b.timeKnown && c.ascBody) { tg.push('asc'); tg.push('mc'); }
+    var ASP = [{ k: 'conjunction', a: 0, v: 'meeting' }, { k: 'square', a: 90, v: 'challenging' }, { k: 'opposition', a: 180, v: 'opposing' }];
+    var events = [], mi, ti, ai;
+    for (mi = 0; mi < movers.length; mi++) {
+      var mk = movers[mi], natalTargets = tg.slice(); natalTargets.push(mk); // include its own return
+      for (ti = 0; ti < natalTargets.length; ti++) {
+        var tk = natalTargets[ti], nlon = natalLonOf(c, tk); if (nlon == null) continue;
+        var aspList;
+        if (mk === 'jupiter') { if (tk !== mk) continue; aspList = [ASP[0]]; } // Jupiter: returns only (its faster aspects recur yearly, not life-chapters)
+        else aspList = (tk === mk) ? (mk === 'uranus' ? [ASP[0], ASP[2]] : [ASP[0]]) : ASP;
+        for (ai = 0; ai < aspList.length; ai++) {
+          var A = aspList[ai], targs = (A.a === 0) ? [0] : (A.a === 180 ? [180] : [90, -90]), gi;
+          for (gi = 0; gi < targs.length; gi++) {
+            var T = targs[gi], prev = null, s;
+            for (s = 0; s < samples.length; s++) {
+              var sd = sdelta(nlon, rev(samples[s].pos[mk].lon - ay)), hh = sdelta(T, sd);
+              if (prev && ((prev.hh <= 0 && hh >= 0) || (prev.hh >= 0 && hh <= 0)) && Math.max(Math.abs(prev.hh), Math.abs(hh)) < 18) {
+                var lo = prev.ms, hi = samples[s].ms, loSign = prev.hh <= 0, it;
+                for (it = 0; it < 22; it++) { var mid = (lo + hi) / 2, sdm = sdelta(nlon, rev(EPH.positions(jsDayNum(new Date(mid)))[mk].lon - ay)), hm = sdelta(T, sdm); if ((hm <= 0) === loSign) lo = mid; else hi = mid; }
+                var when = new Date((lo + hi) / 2), age = (when.getTime() - birthMs) / yearMs;
+                if (age >= 1.5) events.push({ date: when, age: age, tp: mk, np: tk, aspKey: A.k, ang: A.a, isReturn: (tk === mk && A.a === 0) }); // skip the trivial birth-time conjunctions
+              }
+              prev = { ms: samples[s].ms, hh: hh };
+            }
+          }
+        }
+      }
+    }
+    // dedup (same tp/np/aspect within ~120 days)
+    events.sort(function (x, y) { return x.date - y.date; });
+    var out = [], e, o; for (e = 0; e < events.length; e++) { var ev = events[e], dup = false; for (o = 0; o < out.length; o++) if (out[o].tp === ev.tp && out[o].np === ev.np && out[o].aspKey === ev.aspKey && Math.abs(out[o].date - ev.date) < 800 * 86400000) { dup = true; break; } if (!dup) { ev.title = lifeTitle(ev); ev.text = lifeText(ev); out.push(ev); } }
+    return out;
+  }
+  function lifeTitle(ev) {
+    if (ev.isReturn) { if (ev.tp === 'saturn') return 'Saturn return'; if (ev.tp === 'jupiter') return 'Jupiter return'; if (ev.tp === 'uranus') return 'Uranus return'; return nameFor(ev.tp) + ' return'; }
+    if (ev.tp === 'uranus' && ev.np === 'uranus' && ev.ang === 180) return 'Uranus opposition (midlife)';
+    var av = (ev.ang === 0) ? '∘' : (ev.ang === 180) ? '☍' : '□';
+    return nameFor(ev.tp) + ' ' + av + ' ' + (ev.np === 'asc' ? 'Asc' : ev.np === 'mc' ? 'MC' : nameFor(ev.np));
+  }
+  function lifeText(ev) {
+    if (ev.isReturn && ev.tp === 'saturn') return 'The classic coming-of-age: building a real adult life and taking on its weight. Often demanding, always maturing.';
+    if (ev.isReturn && ev.tp === 'jupiter') return 'A fresh ~12-year cycle of growth and opportunity opens — room to expand and believe in something.';
+    if (ev.tp === 'uranus' && ev.np === 'uranus' && ev.ang === 180) return 'The midlife awakening: a strong pull to live more truly, even if it shakes up what you’d settled into.';
+    var verb = (ev.ang === 0) ? 'meeting' : (ev.ang === 180) ? 'coming to a head against' : 'pressing on';
+    return 'A chapter of ' + (MOVER_THEME[ev.tp] || 'change') + ', ' + verb + ' ' + (TARGET_LIFE[ev.np] || 'your life') + '.';
+  }
+
   // ================= extra information layers =================
   var RETROKEYS = ['mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto'];
   function natalRetros(c) { var o = [], i; for (i = 0; i < RETROKEYS.length; i++) if (c.planets[RETROKEYS[i]] && c.planets[RETROKEYS[i]].retro) o.push(RETROKEYS[i]); return o; }
@@ -3071,7 +3133,7 @@ var APP = (function () {
     composeCore: composeCore, localAsk: localAsk, chartText: chartText, callModel: callModel,
     composeTransits: composeTransits, transitSentence: transitSentence, composeSignatures: composeSignatures,
     addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, dignityOf: dignityOf, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide,
-    saveCurrentChart: saveCurrentChart, deleteSavedChart: deleteSavedChart, activateSavedChart: activateSavedChart, activeChartKey: activeChartKey, chartKey: chartKey, famousMatches: famousMatches,
+    saveCurrentChart: saveCurrentChart, deleteSavedChart: deleteSavedChart, activateSavedChart: activateSavedChart, activeChartKey: activeChartKey, chartKey: chartKey, famousMatches: famousMatches, lifeTransits: lifeTransits,
     nameFor: nameFor, glyphFor: glyphFor, sgAbbr: sgAbbr, pad: pad,
     domElement: domElement, lowElement: lowElement, domMod: domMod, tzOffsetHours: tzOffsetHours
   };
@@ -3812,11 +3874,46 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (q === 'fusion') return { kind: 'charged', col: ACC, tag: 'CHARGED', line: 'A charged spotlight on ' + dom + ' — big energy, so aim it on purpose.' };
       return { kind: 'gentle', col: ELHUE.fire, tag: 'GENTLE', line: 'Friction around ' + dom + ' — go gentle, and don’t force it.' };
     }
+    // ---- life-in-chapters timeline: the slow transits & returns across a lifetime ----
+    function drawLifeTimeline(c, b) {
+      var x = sx(), w = cw(), ly = 18, gi = cl01(1 - (nowT() - UI.fxT) / 500);
+      flatBtn('‹ Read', x, ly, 100, 36, function () { UI.lifeView = false; UI.scroll.read = 0; }, false, true); ly += 50;
+      p.textStyle(p.BOLD); glitchText('Your life', x, sY(ly), 32, SANS, INK, p.LEFT, p.TOP, gi); normal(); ly += 42;
+      ly += paragraph('The rare, slow transits and planetary returns that mark the real chapters of a life — what was likely stirring then, and what’s ahead. Astrology as weather, not fate.', x, ly, w, 14.5, INK, SERIF, 22, 205) + 16;
+      if (!UI.lifeList) { try { UI.lifeList = APP.lifeTransits(c, b); } catch (e) { UI.lifeList = []; } }
+      var ev = UI.lifeList, nowMs = new Date().getTime(), lineX = x + 16, i, nowDrawn = false;
+      strokec(INK, 45); p.strokeWeight(2); var topLine = sY(ly), botLine = sY(ly + ev.length * 96 + 40); p.line(lineX, topLine, lineX, botLine);
+      for (i = 0; i < ev.length; i++) {
+        var e = ev[i], past = e.date.getTime() < nowMs, ry = sY(ly);
+        if (!nowDrawn && !past) { // a NOW marker
+          strokec(ACC, 230); p.strokeWeight(2); p.line(x, ry + 6, x + w, ry + 6);
+          setFont(MONO, 9.5, ACCTX, p.RIGHT, p.CENTER, 230); bold(); p.text('NOW', x + w, ry + 6); normal();
+          p.noStroke(); fillc(ACC); p.ellipse(lineX, ry + 6, 7, 7); ly += 22; ry = sY(ly); nowDrawn = true;
+        }
+        // node dot
+        var col = e.isReturn ? ACC : (e.tp === 'pluto' || e.tp === 'saturn') ? INK : shade(INK, 40);
+        p.noStroke(); fillc(GROUNDS[UI.screen]); p.ellipse(lineX, ry + 8, 17, 17); fillc(col, past ? 150 : 255); p.ellipse(lineX, ry + 8, 11, 11);
+        var tx = x + 36;
+        setFont(MONO, 9.5, INK, p.LEFT, p.TOP, past ? 150 : 210); p.text('AGE ' + Math.round(e.age) + '  ·  ' + e.date.getFullYear(), tx, ry);
+        setFont(SANS, 15.5, INK, p.LEFT, p.TOP, past ? 200 : 255); bold(); p.text(e.title, tx, ry + 15); normal();
+        var bl = wrapLines(e.text, w - 36); setFont(SERIF, 13.5, INK, p.LEFT, p.TOP, past ? 175 : 225); var k; for (k = 0; k < bl.length; k++) p.text(bl[k], tx, ry + 38 + k * 19);
+        ly += 56 + bl.length * 19 + 18;
+      }
+      if (!ev.length) ly += paragraph('No major outer-planet transits found in range — unusual. (A birth time sharpens the angles that catch the most events.)', x, ly, w, 15, INK, SERIF, 23, 180) + 10;
+      UI.contentH.read = ly + 20;
+    }
     function drawRead() {
       var c = APP.STATE.chart, b = APP.STATE.birth; if (!c) { UI.screen = 'onboard'; return; }
+      if (UI.lifeView) { drawLifeTimeline(c, b); return; }
       var x = sx(), w = cw(), ly = 18, gi = cl01(1 - (nowT() - UI.fxT) / 500);
       eyebrow('In plain terms', x, ly); ly += 22;
       p.textStyle(p.BOLD); glitchText('Read', x, sY(ly), 34, SANS, INK, p.LEFT, p.TOP, gi); normal(); ly += 50;
+      // open the life-in-chapters timeline
+      var lbY = sY(ly); p.noStroke(); fillc(INK); p.rect(x, lbY + 3, w, 52, 11); fillc(shade(INK, 16)); p.rect(x, lbY, w, 52, 11);
+      setFont(SANS, 15, GROUNDS[UI.screen], p.LEFT, p.CENTER); bold(); p.text('✦  Your life in chapters', x + 16, lbY + 26 - 8); normal();
+      setFont(MONO, 9, GROUNDS[UI.screen], p.LEFT, p.CENTER, 200); p.text('THE BIG TRANSITS THAT SHAPED — AND ARE SHAPING — YOU', x + 16, lbY + 26 + 9);
+      setFont(SANS, 20, GROUNDS[UI.screen], p.RIGHT, p.CENTER); p.text('›', x + w - 16, lbY + 26);
+      pushHit(x, lbY, w, 52, function () { UI.lifeView = true; UI.scroll.read = 0; UI.popT = nowT(); }); ly += 66;
       if (!UI.readCache) UI.readCache = APP.composeCore(c);
       for (var i = 0; i < UI.readCache.length; i++) ly += paragraph(UI.readCache[i], x, ly, w, 17, INK, SERIF, 27) + 10;
 
@@ -4891,7 +4988,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       recompute(); UI.selPlanet = 'sun'; UI.popT = nowT(); UI.popFrom = 22; UI.scroll.chart = 0; UI.screen = 'chart'; hideSearchInput();
       if (!APP.STATE.settings.walked) { UI.walk = { i: 0, t0: nowT() }; UI.walkTr = null; UI.walkTheme = null; } // first reveal: walk them through it
     }
-    function recompute() { APP.STATE.chart = APP.compute(APP.STATE.birth, APP.STATE.settings); APP.save(); UI.readCache = null; UI.readSig = null; UI.readTransit = null; UI.forecast = null; UI.todayCache = null; UI.fmList = null; UI.walkTr = null; UI.walkTheme = null; UI.bondCache = null; UI.bondFor = null; if (APP.clearPersonCharts) APP.clearPersonCharts(); UI.askAns = ''; UI.quip = null; UI.quipNext = 0; buildField(); }
+    function recompute() { APP.STATE.chart = APP.compute(APP.STATE.birth, APP.STATE.settings); APP.save(); UI.readCache = null; UI.readSig = null; UI.readTransit = null; UI.forecast = null; UI.todayCache = null; UI.fmList = null; UI.lifeList = null; UI.walkTr = null; UI.walkTheme = null; UI.bondCache = null; UI.bondFor = null; if (APP.clearPersonCharts) APP.clearPersonCharts(); UI.askAns = ''; UI.quip = null; UI.quipNext = 0; buildField(); }
 
     // ---------- share / export a clean chart card (own untainted canvas; the live one holds remote images) ----------
     function exportChartCard() {
