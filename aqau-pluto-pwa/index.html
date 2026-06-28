@@ -2213,6 +2213,19 @@ var APP = (function () {
   function pointAspectLine(pa) {
     return pa.pointName + ' ' + pa.asp.key + ' your ' + nameFor(pa.np) + ' — ' + pa.pointFn + ' ' + aspVerb(pa.asp) + ' your ' + shortFn(pa.np) + ', ' + aspTone(pa.asp) + '.';
   }
+  // sect: is this a day chart (Sun above the horizon) or a night chart? It reweights the benefics/malefics.
+  function sect(c) {
+    if (!STATE.birth.timeKnown || !c.ascBody || !c.planets.sun) return null;
+    var sh = c.planets.sun.house, day = (sh >= 7 && sh <= 12); // Sun above the horizon = diurnal
+    return day
+      ? { day: true, light: 'sun', benefic: 'jupiter', malefic: 'saturn', oosBenefic: 'venus', oosMalefic: 'mars' }
+      : { day: false, light: 'moon', benefic: 'venus', malefic: 'mars', oosBenefic: 'jupiter', oosMalefic: 'saturn' };
+  }
+  function sectText(o) {
+    return 'Yours is a ' + (o.day ? 'day' : 'night') + ' chart — born with the Sun ' + (o.day ? 'above' : 'below') + ' the horizon, so your ' + nameFor(o.light) + ' leads the chart. ' +
+      nameFor(o.benefic) + ' is your benefic “of sect”: its gifts arrive more cleanly. ' + nameFor(o.malefic) + ' is the malefic of sect — strict, but ultimately constructive. ' +
+      'Out of sect, ' + nameFor(o.oosBenefic) + ' can over-promise, and ' + nameFor(o.oosMalefic) + ' is the one to handle with the most care.';
+  }
   function composeSignatures(c) {
     var out = [], th = composeThemes(c), ti;
     for (ti = 0; ti < th.length; ti++) out.push({ label: ti === 0 ? 'The throughline' : 'Also running through you', text: th[ti] });
@@ -2234,6 +2247,8 @@ var APP = (function () {
     if (rr.length) out.push({ label: 'Born retrograde', text: rr.map(nameFor).join(', ') + ' ' + (rr.length === 1 ? 'was' : 'were') + ' retrograde at your birth — that energy turns inward first: more reflective, reworked, personal before it’s expressed outwardly.' });
     var fs = starsOn(c);
     if (fs.length) out.push({ label: 'Fixed stars', text: fs.map(function (s) { return nameFor(s.planet) + ' on ' + s.star + ' (' + s.m + ')'; }).join('; ') + '.' });
+    var sct = sect(c);
+    if (sct) out.push({ label: 'Sect — day or night chart', text: sectText(sct) });
     var pa = pointAspects(c);
     if (pa.length) out.push({ label: 'Nodes, Lilith & Fortune', lines: pa.map(pointAspectLine) });
     var bc = balanceCoaching(c);
@@ -2348,7 +2363,7 @@ var APP = (function () {
     if (b.timeKnown) { var hz = EPH.houses(STATE.settings.house, d, b.lat, b.lon); ascSign = Math.floor(rev(hz.asc - ay) / 30); }
     return { date: when, moonSign: Math.floor(rev(pos.moon.lon - ay) / 30), ascSign: ascSign };
   }
-  function upcomingTransits(c, months) {
+  function upcomingTransits(c, months, cap) {
     var transiting = ['mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto'], natal = DATA.PLANET_ORDER;
     var t0 = new Date(), days = Math.round((months || 8) * 30.4), step = 2, ay = c.ayan || 0, samples = [], k;
     for (k = 0; k <= days; k += step) { var dt = new Date(t0.getTime() + k * 86400000); samples.push({ dt: dt, pos: EPH.positions(jsDayNum(dt)) }); }
@@ -2376,7 +2391,7 @@ var APP = (function () {
     }
     events.sort(function (x, y) { return x.date - y.date; });
     var out = [], e, o; for (e = 0; e < events.length; e++) { var ev = events[e], dup = false; for (o = 0; o < out.length; o++) if (out[o].tp === ev.tp && out[o].np === ev.np && out[o].aspKey === ev.aspKey && Math.abs(out[o].date - ev.date) < 20 * 86400000) { dup = true; break; } if (!dup) out.push(ev); }
-    return out.slice(0, 10);
+    return out.slice(0, cap || 10);
   }
   function composeForecast(c) {
     var b = STATE.birth;
@@ -3133,7 +3148,7 @@ var APP = (function () {
     composeCore: composeCore, localAsk: localAsk, chartText: chartText, callModel: callModel,
     composeTransits: composeTransits, transitSentence: transitSentence, composeSignatures: composeSignatures,
     addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, dignityOf: dignityOf, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide,
-    saveCurrentChart: saveCurrentChart, deleteSavedChart: deleteSavedChart, activateSavedChart: activateSavedChart, activeChartKey: activeChartKey, chartKey: chartKey, famousMatches: famousMatches, lifeTransits: lifeTransits,
+    saveCurrentChart: saveCurrentChart, deleteSavedChart: deleteSavedChart, activateSavedChart: activateSavedChart, activeChartKey: activeChartKey, chartKey: chartKey, famousMatches: famousMatches, lifeTransits: lifeTransits, upcomingTransits: upcomingTransits,
     nameFor: nameFor, glyphFor: glyphFor, sgAbbr: sgAbbr, pad: pad,
     domElement: domElement, lowElement: lowElement, domMod: domMod, tzOffsetHours: tzOffsetHours
   };
@@ -3902,8 +3917,55 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (!ev.length) ly += paragraph('No major outer-planet transits found in range — unusual. (A birth time sharpens the angles that catch the most events.)', x, ly, w, 15, INK, SERIF, 23, 180) + 10;
       UI.contentH.read = ly + 20;
     }
+    // ---- transit calendar: a scrollable month grid marking the days with notable transits ----
+    function ymd(dt) { return dt.getFullYear() + '-' + pad2(dt.getMonth() + 1) + '-' + pad2(dt.getDate()); }
+    function drawMonthGrid(yr, mo, x, w, ly) {
+      var d0 = new Date(yr, mo, 1), firstW = d0.getDay(), days = new Date(yr, mo + 1, 0).getDate();
+      var monName = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][mo];
+      setFont(SANS, 17, INK, p.LEFT, p.TOP); bold(); p.text(monName + ' ' + yr, x, sY(ly)); normal(); ly += 28;
+      var cellW = w / 7, dow = ['S', 'M', 'T', 'W', 'T', 'F', 'S'], i;
+      setFont(MONO, 9, INK, p.CENTER, p.CENTER, 150); for (i = 0; i < 7; i++) p.text(dow[i], x + i * cellW + cellW / 2, sY(ly) + 6); ly += 18;
+      var rows = Math.ceil((firstW + days) / 7), cellH = 40, todayKey = ymd(new Date());
+      for (var dnum = 1; dnum <= days; dnum++) {
+        var col = (firstW + dnum - 1) % 7, row = Math.floor((firstW + dnum - 1) / 7);
+        var ccx = x + col * cellW + cellW / 2, ccy = sY(ly + row * cellH) + cellH / 2;
+        var key = yr + '-' + pad2(mo + 1) + '-' + pad2(dnum), evs = UI.calEvents[key], isToday = (key === todayKey), isSel = (UI.calDay === key);
+        if (isSel) { p.noStroke(); fillc(ACC, 45); p.ellipse(ccx, ccy, 34, 34); }
+        if (isToday) { p.noFill(); strokec(ACC, 230); p.strokeWeight(1.8); p.ellipse(ccx, ccy, 30, 30); }
+        setFont(SANS, 14, INK, p.CENTER, p.CENTER, evs ? 255 : 150); if (evs) bold(); p.text(String(dnum), ccx, ccy - (evs ? 3 : 0)); normal();
+        if (evs) { p.noStroke(); var q = evs[0].quality; fillc((q === 'flow' || q === 'opportunity') ? ELHUE.air : (q === 'fusion' ? INK : ACC)); p.ellipse(ccx, ccy + 11, 5, 5);
+          (function (k) { pushHit(x + col * cellW, sY(ly + row * cellH), cellW, cellH, function () { UI.calDay = (UI.calDay === k) ? null : k; }); })(key); }
+      }
+      return 28 + 18 + rows * cellH + 8;
+    }
+    function drawTransitCalendar(c, b) {
+      var x = sx(), w = cw(), ly = 18, gi = cl01(1 - (nowT() - UI.fxT) / 500);
+      flatBtn('‹ Read', x, ly, 100, 36, function () { UI.lifeView = false; UI.calView = false; UI.calDay = null; UI.scroll.read = 0; }, false, true); ly += 50;
+      p.textStyle(p.BOLD); glitchText('Transit calendar', x, sY(ly), 28, SANS, INK, p.LEFT, p.TOP, gi); normal(); ly += 40;
+      ly += paragraph('The days over the next few months when a slower planet makes an exact aspect to your chart. A dot marks a day — tap it to read what lands.', x, ly, w, 14.5, INK, SERIF, 22, 205) + 16;
+      if (!UI.calEvents) { var evs = APP.upcomingTransits(c, 4, 80), map = {}, i; for (i = 0; i < evs.length; i++) { var k = ymd(evs[i].date); (map[k] = map[k] || []).push(evs[i]); } UI.calEvents = map; }
+      var now = new Date(), mi;
+      for (mi = 0; mi < 3; mi++) { var yr = now.getFullYear(), mo = now.getMonth() + mi; while (mo > 11) { mo -= 12; yr++; } ly += drawMonthGrid(yr, mo, x, w, ly) + 8; }
+      // selected day detail
+      if (UI.calDay && UI.calEvents[UI.calDay]) {
+        hairline(x, ly, x + w, 50); ly += 14;
+        var parts = UI.calDay.split('-'), dd = new Date(parts[0], parts[1] - 1, parts[2]);
+        eyebrow(fmtShort(dd), x, ly, ACC); ly += 24;
+        var de = UI.calEvents[UI.calDay], j; for (j = 0; j < de.length; j++) {
+          var ev = de[j], rh = 30, qc = ev.quality, qcol = (qc === 'flow' || qc === 'opportunity') ? ELHUE.air : (qc === 'fusion' ? INK : ACC);
+          setFont(SANS, 14, INK, p.LEFT, p.CENTER); p.text(APP.glyphFor(ev.tp), x + 2, sY(ly + rh / 2));
+          setFont(SANS, 12, qcol, p.CENTER, p.CENTER); bold(); p.text(ev.glyph, x + 24, sY(ly + rh / 2)); normal();
+          setFont(SANS, 14, INK, p.LEFT, p.CENTER); p.text(APP.glyphFor(ev.np), x + 40, sY(ly + rh / 2));
+          setFont(MONO, 10.5, INK, p.LEFT, p.CENTER, 220); p.text(APP.nameFor(ev.tp) + ' ' + ev.aspKey + ' ' + APP.nameFor(ev.np), x + 60, sY(ly + rh / 2));
+          ly += rh + 6;
+        }
+        ly += 6;
+      } else { setFont(MONO, 9, INK, p.LEFT, p.TOP, 140); ly += paragraph('Tap any dotted day to read its transit.', x, ly, w, 11, INK, MONO, 16, 140) + 8; }
+      UI.contentH.read = ly + 20;
+    }
     function drawRead() {
       var c = APP.STATE.chart, b = APP.STATE.birth; if (!c) { UI.screen = 'onboard'; return; }
+      if (UI.calView) { drawTransitCalendar(c, b); return; }
       if (UI.lifeView) { drawLifeTimeline(c, b); return; }
       var x = sx(), w = cw(), ly = 18, gi = cl01(1 - (nowT() - UI.fxT) / 500);
       eyebrow('In plain terms', x, ly); ly += 22;
@@ -3913,7 +3975,12 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       setFont(SANS, 15, GROUNDS[UI.screen], p.LEFT, p.CENTER); bold(); p.text('✦  Your life in chapters', x + 16, lbY + 26 - 8); normal();
       setFont(MONO, 9, GROUNDS[UI.screen], p.LEFT, p.CENTER, 200); p.text('THE BIG TRANSITS THAT SHAPED — AND ARE SHAPING — YOU', x + 16, lbY + 26 + 9);
       setFont(SANS, 20, GROUNDS[UI.screen], p.RIGHT, p.CENTER); p.text('›', x + w - 16, lbY + 26);
-      pushHit(x, lbY, w, 52, function () { UI.lifeView = true; UI.scroll.read = 0; UI.popT = nowT(); }); ly += 66;
+      pushHit(x, lbY, w, 52, function () { UI.lifeView = true; UI.scroll.read = 0; UI.popT = nowT(); }); ly += 60;
+      // open the transit calendar
+      var cbY = sY(ly); p.noStroke(); fillc(shade(GROUNDS[UI.screen], -16)); p.rect(x, cbY + 3, w, 46, 11); fillc(GROUNDS[UI.screen]); p.rect(x, cbY, w, 46, 11); p.noFill(); strokec(INK, 170); p.strokeWeight(1.4); p.rect(x, cbY, w, 46, 11);
+      setFont(SANS, 14, INK, p.LEFT, p.CENTER); bold(); p.text('📅  Transit calendar', x + 16, cbY + 23); normal();
+      setFont(SANS, 18, INK, p.RIGHT, p.CENTER, 150); p.text('›', x + w - 16, cbY + 23);
+      pushHit(x, cbY, w, 46, function () { UI.calView = true; UI.calDay = null; UI.scroll.read = 0; UI.popT = nowT(); }); ly += 60;
       if (!UI.readCache) UI.readCache = APP.composeCore(c);
       for (var i = 0; i < UI.readCache.length; i++) ly += paragraph(UI.readCache[i], x, ly, w, 17, INK, SERIF, 27) + 10;
 
@@ -4988,7 +5055,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       recompute(); UI.selPlanet = 'sun'; UI.popT = nowT(); UI.popFrom = 22; UI.scroll.chart = 0; UI.screen = 'chart'; hideSearchInput();
       if (!APP.STATE.settings.walked) { UI.walk = { i: 0, t0: nowT() }; UI.walkTr = null; UI.walkTheme = null; } // first reveal: walk them through it
     }
-    function recompute() { APP.STATE.chart = APP.compute(APP.STATE.birth, APP.STATE.settings); APP.save(); UI.readCache = null; UI.readSig = null; UI.readTransit = null; UI.forecast = null; UI.todayCache = null; UI.fmList = null; UI.lifeList = null; UI.walkTr = null; UI.walkTheme = null; UI.bondCache = null; UI.bondFor = null; if (APP.clearPersonCharts) APP.clearPersonCharts(); UI.askAns = ''; UI.quip = null; UI.quipNext = 0; buildField(); }
+    function recompute() { APP.STATE.chart = APP.compute(APP.STATE.birth, APP.STATE.settings); APP.save(); UI.readCache = null; UI.readSig = null; UI.readTransit = null; UI.forecast = null; UI.todayCache = null; UI.fmList = null; UI.lifeList = null; UI.calEvents = null; UI.calDay = null; UI.walkTr = null; UI.walkTheme = null; UI.bondCache = null; UI.bondFor = null; if (APP.clearPersonCharts) APP.clearPersonCharts(); UI.askAns = ''; UI.quip = null; UI.quipNext = 0; buildField(); }
 
     // ---------- share / export a clean chart card (own untainted canvas; the live one holds remote images) ----------
     function exportChartCard() {
