@@ -1215,20 +1215,34 @@ var APP = (function () {
     birth: null, // {name,y,mo,d,hour,min,tz,lat,lon,place,timeKnown}
     settings: { zodiac: 'tropical', house: 'placidus', orbScale: 1, ai: false, theme: 'light', textScale: 1 },
     chart: null, screen: 'chart', chartView: 'dial',
-    people: [] // [{id,name,rel,famrel,y,mo,d,hour,min,tz,iana,lat,lon,place,timeKnown}]
+    people: [], // [{id,name,rel,famrel,y,mo,d,hour,min,tz,iana,lat,lon,place,timeKnown}]
+    charts: [] // saved birth charts you can switch between (snapshots of `birth`)
   };
+  var MON3 = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  function chartKey(b) { return b ? (b.y + '-' + b.mo + '-' + b.d + '-' + b.hour + '-' + b.min + '-' + (b.place || '')) : ''; }
+  function chartLabel(b) { return b.d + ' ' + MON3[(b.mo || 1) - 1] + ' ' + b.y + (b.place ? ' · ' + String(b.place).split(',')[0] : ''); }
+  function saveCurrentChart() {
+    if (!STATE.birth) return false; var k = chartKey(STATE.birth), i;
+    for (i = 0; i < STATE.charts.length; i++) if (chartKey(STATE.charts[i]) === k) return false;
+    var copy = JSON.parse(JSON.stringify(STATE.birth)); copy.label = chartLabel(copy); STATE.charts.push(copy); save(); return true;
+  }
+  function deleteSavedChart(idx) { if (idx >= 0 && idx < STATE.charts.length) { STATE.charts.splice(idx, 1); save(); } }
+  function activateSavedChart(idx) { var b = STATE.charts[idx]; if (!b) return null; STATE.birth = JSON.parse(JSON.stringify(b)); delete STATE.birth.label; save(); return STATE.birth; }
+  function activeChartKey() { return chartKey(STATE.birth); }
   function save() {
     try {
       localStorage.setItem('aqau_birth', JSON.stringify(STATE.birth));
       localStorage.setItem('aqau_settings', JSON.stringify(STATE.settings));
       // drop cached charts (underscore keys) before persisting people
       localStorage.setItem('aqau_people', JSON.stringify(STATE.people, function (k, v) { return k.charAt(0) === '_' ? undefined : v; }));
+      localStorage.setItem('aqau_charts', JSON.stringify(STATE.charts || []));
     } catch (e) {}
   }
   function load() {
     try {
       var b = localStorage.getItem('aqau_birth'); if (b) STATE.birth = JSON.parse(b);
       var pp = localStorage.getItem('aqau_people'); if (pp) STATE.people = JSON.parse(pp) || [];
+      var ch = localStorage.getItem('aqau_charts'); if (ch) STATE.charts = JSON.parse(ch) || [];
       var s = localStorage.getItem('aqau_settings'); if (s) {
         var ss = JSON.parse(s); for (var k in ss) if (ss.hasOwnProperty(k)) STATE.settings[k] = ss[k];
       }
@@ -2958,6 +2972,7 @@ var APP = (function () {
     composeCore: composeCore, localAsk: localAsk, chartText: chartText, callModel: callModel,
     composeTransits: composeTransits, transitSentence: transitSentence, composeSignatures: composeSignatures,
     addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, dignityOf: dignityOf, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide,
+    saveCurrentChart: saveCurrentChart, deleteSavedChart: deleteSavedChart, activateSavedChart: activateSavedChart, activeChartKey: activeChartKey, chartKey: chartKey,
     nameFor: nameFor, glyphFor: glyphFor, sgAbbr: sgAbbr, pad: pad,
     domElement: domElement, lowElement: lowElement, domMod: domMod, tzOffsetHours: tzOffsetHours
   };
@@ -4470,6 +4485,27 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       ly += paragraph('On-device (default): pick from the built-in city list, fully offline. Online: search any place via free, keyless lookups (OpenStreetMap + open\u2011meteo) \u2014 one request after you pause typing; needs internet, no account, no AI.', x, ly, w, 13.5, INK, SERIF, 20, 180) + 16;
       ly += toggleRow('Cloud reading boost', [['on', 'On'], ['off', 'Off']], st.ai ? 'on' : 'off', ly, function (v) { st.ai = (v === 'on'); APP.save(); });
       ly += paragraph('Off (default): the built-in engine writes every reading on-device \u2014 free, private, works offline with no account. On: an optional cloud pass, only if your deployment provides a connection.', x, ly, w, 13.5, INK, SERIF, 20, 180) + 20;
+      // ---- saved charts (switch between your own / family / relocated charts) ----
+      eyebrow('Saved charts', x, ly); ly += 24;
+      var charts = APP.STATE.charts || [], actKey = APP.activeChartKey(), inList = false, ci2;
+      for (ci2 = 0; ci2 < charts.length; ci2++) if (APP.chartKey(charts[ci2]) === actKey) inList = true;
+      ly += paragraph('Save and switch between charts — your own, a relocation, or someone you read for often. The active chart drives the whole app.', x, ly, w, 13.5, INK, SERIF, 20, 180) + 12;
+      var rhc = 46;
+      for (ci2 = 0; ci2 < charts.length; ci2++) {
+        var ch2 = charts[ci2], active = APP.chartKey(ch2) === actKey, ry = sY(ly);
+        p.noStroke(); fillc(active ? shade(ACC, active ? 0 : -10) : shade(GROUNDS[UI.screen], -10)); p.rect(x, ry, w, rhc, 9);
+        if (!active) { p.noFill(); strokec(INK, 120); p.strokeWeight(1.2); p.rect(x, ry, w, rhc, 9); }
+        setFont(SANS, 14, active ? GROUNDS[UI.screen] : INK, p.LEFT, p.CENTER); bold(); p.text(ch2.label || (ch2.d + '/' + ch2.mo + '/' + ch2.y), x + 14, ry + rhc / 2 - 7); normal();
+        setFont(MONO, 9, active ? GROUNDS[UI.screen] : INK, p.LEFT, p.CENTER, active ? 220 : 130); p.text(active ? 'ACTIVE' : 'TAP TO SWITCH', x + 14, ry + rhc / 2 + 11);
+        // delete ✕
+        setFont(SANS, 18, active ? GROUNDS[UI.screen] : INK, p.CENTER, p.CENTER, 200); p.text('×', x + w - 22, ry + rhc / 2);
+        (function (idx) { pushHit(x + w - 44, ry, 44, rhc, function () { APP.deleteSavedChart(idx); }); })(ci2);
+        if (!active) (function (idx) { pushHit(x, ry, w - 44, rhc, function () { APP.activateSavedChart(idx); recompute(); UI.selPlanet = 'sun'; UI.scroll.chart = 0; UI.popT = nowT(); UI.screen = 'chart'; }); })(ci2);
+        ly += rhc + 8;
+      }
+      if (!inList) { flatBtn('+ Save this chart', x, ly, w, 42, function () { APP.saveCurrentChart(); }, false); ly += 54; }
+      else if (!charts.length) { ly += 4; }
+      ly += 8;
       flatBtn('Edit birth data', x, ly, 170, 44, function () { UI.draft = newDraft(); UI.screen = 'onboard'; }, true);
       flatBtn('Replay tour', x + 182, ly, 150, 44, function () { startTour(); }, false); ly += 56;
       flatBtn('Walk me through my chart', x, ly, w, 44, function () { startWalk(); }, false); ly += 56;
