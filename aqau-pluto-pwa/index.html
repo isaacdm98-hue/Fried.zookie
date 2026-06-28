@@ -3439,7 +3439,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       return out;
     }
     function paragraph(str, x, ly, boxW, sz, c, font, lead, a) {
-      var fs = (APP.STATE.settings && APP.STATE.settings.textScale) || 1; sz = sz * fs; // dyslexia-friendly reading scale
+      var fs = (APP.STATE.settings && APP.STATE.settings.textScale) || 1; sz = sz * fs * 1.09; // base readability bump + dyslexia-friendly scale
       p.textFont(font || SERIF); p.textSize(sz); p.textStyle(p.NORMAL);
       var lines = wrapLines(str, boxW), lh = (lead ? lead * fs : sz * 1.5); fillc(c, a); p.textAlign(p.LEFT, p.TOP);
       strokec(c, a); p.strokeWeight(0.45); // faux-bold: thicken glyphs slightly for a touch more presence
@@ -3485,7 +3485,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       pushHit(x, y, w, h + depth, fn); return w;
     }
     function eyebrow(txt, x, ly, c) {
-      setFont(MONO, 10.5, (c === ACC ? ACCTX : (c || INK)), p.LEFT, p.TOP, 150);
+      setFont(MONO, 11.5, (c === ACC ? ACCTX : (c || INK)), p.LEFT, p.TOP, 195);
       var s = txt.toUpperCase(), cx = x; for (var i = 0; i < s.length; i++) { p.text(s[i], cx, sY(ly)); cx += p.textWidth(s[i]) + 2; }
     }
 
@@ -5535,6 +5535,9 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       UI.bg = (GROUNDS[UI.screen] || GROUNDS.chart); // HARD block-colour cut between sections
       p.background(UI.bg[0], UI.bg[1], UI.bg[2]);
       drawField(); drawRipples();
+      // readability scrim: on text-heavy screens, settle the constellations behind a calm ground so the
+      // words always come first (the chart stays lively — it's the visual centrepiece).
+      if (({ read: 1, learn: 1, settings: 1, people: 1, tarot: 1 })[UI.screen]) { p.noStroke(); p.fill(UI.bg[0], UI.bg[1], UI.bg[2], 158); p.rect(0, topY() - 8, W, H - (topY() - 8)); }
       hits = []; p.rectMode(p.CORNER); p.textStyle(p.NORMAL);
       if (UI.screen === 'onboard' && !APP.STATE.birth && !UI.introDone) { drawIntro(); clampScroll(); return; }
       var s = UI.screen;
