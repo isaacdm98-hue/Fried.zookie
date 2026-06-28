@@ -4565,6 +4565,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       flatBtn('Edit birth data', x, ly, 170, 44, function () { UI.draft = newDraft(); UI.screen = 'onboard'; }, true);
       flatBtn('Replay tour', x + 182, ly, 150, 44, function () { startTour(); }, false); ly += 56;
       flatBtn('Walk me through my chart', x, ly, w, 44, function () { startWalk(); }, false); ly += 56;
+      flatBtn('Share my chart (image)', x, ly, w, 44, function () { exportChartCard(); }, false); ly += 56;
       ly += paragraph('Aqau Pluto computes a genuine ephemeris on-device with astronomy-engine (MIT), accurate to about one arcsecond against NOVAS/JPL, and reads it in plain, behavioural language. The whole interface is drawn and animated live in p5.', x, ly, w, 14, INK, SERIF, 21, 170) + 24;
       UI.contentH.settings = ly;
     }
@@ -4681,6 +4682,63 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (!APP.STATE.settings.walked) { UI.walk = { i: 0, t0: nowT() }; UI.walkTr = null; UI.walkTheme = null; } // first reveal: walk them through it
     }
     function recompute() { APP.STATE.chart = APP.compute(APP.STATE.birth, APP.STATE.settings); APP.save(); UI.readCache = null; UI.readSig = null; UI.readTransit = null; UI.forecast = null; UI.todayCache = null; UI.walkTr = null; UI.walkTheme = null; UI.bondCache = null; UI.bondFor = null; if (APP.clearPersonCharts) APP.clearPersonCharts(); UI.askAns = ''; UI.quip = null; UI.quipNext = 0; buildField(); }
+
+    // ---------- share / export a clean chart card (own untainted canvas; the live one holds remote images) ----------
+    function exportChartCard() {
+      var c = APP.STATE.chart, b = APP.STATE.birth; if (!c || !b || typeof document === 'undefined') return;
+      var W2 = 1080, H2 = 1350, cv = document.createElement('canvas'); cv.width = W2; cv.height = H2;
+      var g = cv.getContext('2d'); if (!g) return;
+      var ink = INK, acc = ACC, gr = GROUNDS.chart;
+      function rgb(a) { return 'rgb(' + a[0] + ',' + a[1] + ',' + a[2] + ')'; }
+      function rgba(a, al) { return 'rgba(' + a[0] + ',' + a[1] + ',' + a[2] + ',' + al + ')'; }
+      var SYM = 'Georgia, "Apple Symbols", "Segoe UI Symbol", serif';
+      g.fillStyle = rgb(gr); g.fillRect(0, 0, W2, H2);
+      g.textAlign = 'center'; g.textBaseline = 'alphabetic';
+      // header
+      g.fillStyle = rgba(ink, 0.55); g.font = '28px ' + MONO; g.fillText('A Q A U   P L U T O', W2 / 2, 86);
+      var titleSign = c.ascBody && b.timeKnown ? (c.ascBody.signName + ' rising') : (c.planets.sun.signName + ' Sun');
+      g.fillStyle = rgb(ink); g.font = 'bold 76px ' + SANS; g.fillText(titleSign, W2 / 2, 176);
+      // big three
+      var three = [['sun', c.planets.sun], ['moon', c.planets.moon]];
+      if (b.timeKnown && c.ascBody) three.push(['asc', c.ascBody]);
+      var tw = W2 / three.length, ti;
+      for (ti = 0; ti < three.length; ti++) {
+        var cx0 = tw * ti + tw / 2, body = three[ti][1];
+        g.fillStyle = rgb(acc); g.font = '72px ' + SYM; g.fillText(APP.glyphFor(three[ti][0]), cx0, 300);
+        g.fillStyle = rgba(ink, 0.5); g.font = '24px ' + MONO; g.fillText(({ sun: 'SUN', moon: 'MOON', asc: 'RISING' })[three[ti][0]], cx0, 340);
+        g.fillStyle = rgb(ink); g.font = 'bold 34px ' + SANS; g.fillText(body.signName, cx0, 384);
+      }
+      // wheel
+      var ccx = W2 / 2, ccy = 760, R = 300, ascLon = c.ascBody ? c.ascBody.lon : 0, i, k;
+      function ax(lon, r) { var a = (180 + (lon - ascLon)) * Math.PI / 180; return ccx + r * Math.cos(a); }
+      function ay(lon, r) { var a = (180 + (lon - ascLon)) * Math.PI / 180; return ccy - r * Math.sin(a); }
+      g.lineWidth = 2; g.strokeStyle = rgba(ink, 0.45);
+      g.beginPath(); g.arc(ccx, ccy, R, 0, Math.PI * 2); g.stroke();
+      g.beginPath(); g.arc(ccx, ccy, R * 0.74, 0, Math.PI * 2); g.stroke();
+      for (i = 0; i < 12; i++) { var bl = i * 30; g.strokeStyle = rgba(ink, 0.3); g.beginPath(); g.moveTo(ax(bl, R * 0.74), ay(bl, R * 0.74)); g.lineTo(ax(bl, R), ay(bl, R)); g.stroke();
+        g.fillStyle = rgba(ink, 0.6); g.font = '30px ' + SYM; g.textBaseline = 'middle'; g.fillText(DATA.SIGNS[i].glyph, ax(bl + 15, R * 0.87), ay(bl + 15, R * 0.87)); g.textBaseline = 'alphabetic'; }
+      var order = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto'];
+      for (k = 0; k < order.length; k++) { var pl = c.planets[order[k]]; if (!pl) continue; var px = ax(pl.lon, R * 0.56), py = ay(pl.lon, R * 0.56);
+        g.fillStyle = rgb(acc); g.beginPath(); g.arc(px, py, 26, 0, Math.PI * 2); g.fill();
+        g.fillStyle = rgb(gr); g.font = '30px ' + SYM; g.textBaseline = 'middle'; g.fillText(APP.glyphFor(order[k]), px, py + 1); g.textBaseline = 'alphabetic'; }
+      // footer
+      var mon = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      g.fillStyle = rgb(ink); g.font = '30px ' + SERIF; g.fillText(b.d + ' ' + mon[(b.mo || 1) - 1] + ' ' + b.y + (b.timeKnown ? ('  ·  ' + (b.hour < 10 ? '0' : '') + b.hour + ':' + (b.min < 10 ? '0' : '') + b.min) : ''), W2 / 2, 1170);
+      if (b.place) { g.fillStyle = rgba(ink, 0.7); g.font = '26px ' + SERIF; g.fillText(b.place, W2 / 2, 1212); }
+      g.fillStyle = rgba(ink, 0.4); g.font = '22px ' + MONO; g.fillText('computed on-device · astronomy-engine', W2 / 2, 1290);
+      // export: native share if available, else download
+      function dl() { try { var a = document.createElement('a'); a.href = cv.toDataURL('image/png'); a.download = 'aqau-chart.png'; document.body.appendChild(a); a.click(); document.body.removeChild(a); } catch (e) {} }
+      try {
+        if (cv.toBlob && navigator.share && navigator.canShare) {
+          cv.toBlob(function (blob) {
+            try { var file = new File([blob], 'aqau-chart.png', { type: 'image/png' });
+              if (navigator.canShare({ files: [file] })) navigator.share({ files: [file], title: 'My birth chart', text: titleSign + ' — Aqau Pluto' })['catch'](function () { dl(); });
+              else dl();
+            } catch (e) { dl(); }
+          }, 'image/png');
+        } else dl();
+      } catch (e) { dl(); }
+    }
 
     // ---------- chrome ----------
     // ---------- live celestial emblem (real current moon phase) \u2014 the recurring centrepiece ----------
