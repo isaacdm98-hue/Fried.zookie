@@ -2369,6 +2369,46 @@ var APP = (function () {
   }
   function skyStatus() { var r = currentRetros(), ms = moonStatus(); return { retros: r, moon: ms }; }
 
+  // ================= comprehensive tarot meanings (companion reference; no card-pulling) =================
+  function joinKw(a) { if (!a || !a.length) return ''; if (a.length === 1) return a[0]; return a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1]; }
+  // Golden Dawn astrological correspondences for the Major Arcana — ties the tarot to this app's astrology.
+  var MAJOR_ASTRO = { 0: 'Uranus / Air', 1: 'Mercury', 2: 'the Moon', 3: 'Venus', 4: 'Aries', 5: 'Taurus', 6: 'Gemini', 7: 'Cancer', 8: 'Leo', 9: 'Virgo', 10: 'Jupiter', 11: 'Libra', 12: 'Neptune / Water', 13: 'Scorpio', 14: 'Sagittarius', 15: 'Capricorn', 16: 'Mars', 17: 'Aquarius', 18: 'Pisces', 19: 'the Sun', 20: 'Pluto / Fire', 21: 'Saturn' };
+  var RANK_STAGE = { 1: 'the pure seed of the suit — raw potential, a gift offered', 2: 'a first choice or partnership, two forces meeting', 3: 'first growth and collaboration; the idea takes shape', 4: 'a stable plateau — foundations, for better or worse', 5: 'the suit under strain: loss, conflict or instability', 6: 'harmony restored — reciprocity and forward movement', 7: 'assessment and perseverance, the lonely middle of the work', 8: 'momentum and mastery in motion; things accelerate', 9: 'near the end — the full intensity, and its cost', 10: 'completion: the whole weight of the suit, fulfilled or overloaded' };
+  var COURT_STAGE = { 11: 'a student and messenger of the suit — curious, learning, bringing news', 12: 'the suit in motion — pursuit, drive, action taken', 13: 'inner mastery of the suit — holding its power within, nurturing it', 14: 'outer mastery of the suit — authority and command over its domain' };
+  function loveFlavor(suit, kw) {
+    if (suit === 'Wands') return 'passion and chemistry are lit — ' + kw + ' drives the romance, fast and warm.';
+    if (suit === 'Cups') return 'the heart’s own territory — ' + kw + ' flows through the feeling between you.';
+    if (suit === 'Swords') return 'it lives in words and truth — ' + kw + ' shapes what is said, and what must be.';
+    return 'love built on solid ground — ' + kw + ' shows in steadiness, commitment and the everyday.';
+  }
+  function workFlavor(suit, kw) {
+    if (suit === 'Wands') return 'creativity and drive — ' + kw + ' powers the project; momentum is your ally.';
+    if (suit === 'Cups') return 'morale and intuition matter most — ' + kw + ' colours the team and the mood.';
+    if (suit === 'Swords') return 'ideas, strategy and clear decisions — ' + kw + ' is where the work turns.';
+    return 'money, craft and tangible results — ' + kw + ' shows in what you actually build.';
+  }
+  function tarotGuide(card) {
+    var up = joinKw(card.up), rev = joinKw(card.rev), out = {};
+    if (card.arcana === 'major') {
+      out.corr = 'Major Arcana · ' + (MAJOR_ASTRO[card.num] || '');
+      out.upright = card.ess + ' Upright it carries ' + up + ' — a large, archetypal force, a chapter rather than a passing mood. As card ' + card.num + ' of the Fool’s journey, it marks a real turning point in the soul’s story.';
+      out.reversed = 'Reversed, the lesson is blocked, delayed or turned inward: ' + rev + '. The force hasn’t gone — it’s asking to be met more honestly.';
+      out.love = 'a defining theme rather than a detail — ' + card.up[0] + ' colours the whole connection.';
+      out.work = card.up[1 < card.up.length ? 1 : 0] + ' is the headline; treat it as structural, not a small task.';
+      out.advice = 'lean into ' + card.up[0] + ', and watch for ' + card.rev[0] + '.';
+    } else {
+      var sf = DATA.SUIT_KW[card.arcana], el = sf ? sf.el : '', stage = (card.num <= 10) ? RANK_STAGE[card.num] : COURT_STAGE[card.num];
+      var rank = String(card.name).split(' of ')[0];
+      out.corr = el + ' · ' + card.arcana + ' — ' + (sf ? sf.theme : '');
+      out.upright = card.ess + ' Upright it speaks of ' + up + '. As the ' + rank + ' of ' + card.arcana + ' it is ' + stage + ', played out in the realm of ' + (sf ? sf.theme : '') + '.';
+      out.reversed = 'Reversed: ' + rev + '. The same ' + (el ? el.toLowerCase() + ' ' : '') + 'energy, but stuck, overdone, or pointed the wrong way.';
+      out.love = loveFlavor(card.arcana, card.up[0]);
+      out.work = workFlavor(card.arcana, card.up[card.up.length > 1 ? 1 : 0]);
+      out.advice = 'lean into ' + card.up[0] + '; mind the pull toward ' + card.rev[0] + '.';
+    }
+    return out;
+  }
+
   function renderRead() {
     var c = STATE.chart, wrap = el('div', { class: 'screen pad' });
     wrap.appendChild(el('div', { class: 'eyebrow', text: 'READ' }));
@@ -2917,7 +2957,7 @@ var APP = (function () {
     STATE: STATE, save: save, load: load, compute: computeChart,
     composeCore: composeCore, localAsk: localAsk, chartText: chartText, callModel: callModel,
     composeTransits: composeTransits, transitSentence: transitSentence, composeSignatures: composeSignatures,
-    addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, dignityOf: dignityOf, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote,
+    addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, dignityOf: dignityOf, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide,
     nameFor: nameFor, glyphFor: glyphFor, sgAbbr: sgAbbr, pad: pad,
     domElement: domElement, lowElement: lowElement, domMod: domMod, tzOffsetHours: tzOffsetHours
   };
@@ -3780,10 +3820,20 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
           var cardW = 152, cardH = 230, cardX = x + (w - cardW) / 2;
           tarotCard(cardX, sY(ly), cardW, cardH, cd2, (nowT() - UI.popT) / 520, true); ly += cardH + 24;
           p.textStyle(p.BOLD); glitchText(cd2.name, x, sY(ly), 28, SANS, INK, p.LEFT, p.TOP, gi2); normal(); ly += 36;
-          eyebrow(cd2.arcana === 'major' ? 'Major arcana' : 'Minor arcana \u00B7 ' + cd2.arcana, x, ly, ACC); ly += 26;
+          var tg = APP.tarotGuide(cd2);
+          eyebrow(tg.corr, x, ly, ACC); ly += 26;
           ly += paragraph(cd2.ess, x, ly, w, 17, INK, SERIF, 26) + 16; hairline(x, ly, x + w, 60); ly += 14;
-          setFont(MONO, 9, ELHUE.air, p.LEFT, p.TOP); bold(); p.text('UPRIGHT', x, sY(ly)); normal(); ly += paragraph(cd2.up.join('  \u00B7  '), x + 76, ly, w - 76, 12.5, INK, MONO, 18, 200) + 8;
-          setFont(MONO, 9, ACC, p.LEFT, p.TOP); bold(); p.text('REVERSED', x, sY(ly)); normal(); ly += paragraph(cd2.rev.join('  \u00B7  '), x + 76, ly, w - 76, 12.5, INK, MONO, 18, 200) + 18;
+          // comprehensive meaning (a companion reference \u2014 pull your cards in real life)
+          setFont(MONO, 9, ELHUE.air, p.LEFT, p.TOP); bold(); p.text('UPRIGHT', x, sY(ly)); normal(); ly += 16;
+          ly += paragraph(tg.upright, x, ly, w, 14.5, INK, SERIF, 21, 235) + 6;
+          ly += paragraph('Keywords:  ' + cd2.up.join('  \u00B7  '), x, ly, w, 11.5, INK, MONO, 17, 175) + 16;
+          setFont(MONO, 9, ACC, p.LEFT, p.TOP); bold(); p.text('REVERSED', x, sY(ly)); normal(); ly += 16;
+          ly += paragraph(tg.reversed, x, ly, w, 14.5, INK, SERIF, 21, 235) + 6;
+          ly += paragraph('Keywords:  ' + cd2.rev.join('  \u00B7  '), x, ly, w, 11.5, INK, MONO, 17, 175) + 16;
+          hairline(x, ly, x + w, 50); ly += 14;
+          setFont(MONO, 9, ELHUE.water, p.LEFT, p.TOP); bold(); p.text('IN LOVE', x, sY(ly)); normal(); ly += 16; ly += paragraph(tg.love, x, ly, w, 14, INK, SERIF, 20, 225) + 12;
+          setFont(MONO, 9, ELHUE.earth, p.LEFT, p.TOP); bold(); p.text('AT WORK', x, sY(ly)); normal(); ly += 16; ly += paragraph(tg.work, x, ly, w, 14, INK, SERIF, 20, 225) + 12;
+          setFont(MONO, 9, ACC, p.LEFT, p.TOP); bold(); p.text('THE INVITATION', x, sY(ly)); normal(); ly += 16; ly += paragraph(tg.advice, x, ly, w, 14, INK, SERIF, 20, 225) + 18;
 
           // ---- the art: flicker through real deck versions of this card ----
           if (UI.cardImgCard !== UI.card) loadCardArt(cd2);
