@@ -2198,6 +2198,12 @@ var APP = (function () {
     var pats = aspectPatterns(c);
     if (pats.length) { for (var i = 0; i < Math.min(pats.length, 4); i++) out.push({ label: pats[i].type, text: patternText(pats[i]) }); }
     else out.push({ label: 'Aspect patterns', text: 'No tight major aspect patterns — your planets tend to work as individuals rather than locking into one big geometric configuration.' });
+    var rr = natalRetros(c);
+    if (rr.length) out.push({ label: 'Born retrograde', text: rr.map(nameFor).join(', ') + ' ' + (rr.length === 1 ? 'was' : 'were') + ' retrograde at your birth — that energy turns inward first: more reflective, reworked, personal before it’s expressed outwardly.' });
+    var fs = starsOn(c);
+    if (fs.length) out.push({ label: 'Fixed stars', text: fs.map(function (s) { return nameFor(s.planet) + ' on ' + s.star + ' (' + s.m + ')'; }).join('; ') + '.' });
+    var bc = balanceCoaching(c);
+    out.push({ label: 'Where you’re light', text: bc.join(' ') });
     return out;
   }
 
@@ -2326,8 +2332,42 @@ var APP = (function () {
   }
   function composeForecast(c) {
     var b = STATE.birth;
-    return { profection: profection(b), progressed: progressed(c, b), solarReturn: solarReturnSummary(c, b), upcoming: upcomingTransits(c, 8) };
+    return { profection: profection(b), progressed: progressed(c, b), solarReturn: solarReturnSummary(c, b), upcoming: upcomingTransits(c, 8), sky: skyStatus() };
   }
+
+  // ================= extra information layers =================
+  var RETROKEYS = ['mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto'];
+  function natalRetros(c) { var o = [], i; for (i = 0; i < RETROKEYS.length; i++) if (c.planets[RETROKEYS[i]] && c.planets[RETROKEYS[i]].retro) o.push(RETROKEYS[i]); return o; }
+  function currentRetros() { var t = transitNow(), p2 = EPH.positions(t.d + 1), o = [], i; for (i = 0; i < RETROKEYS.length; i++) { var k = RETROKEYS[i]; if (t.tp[k] && p2[k] && sdelta(t.tp[k].lon, p2[k].lon) < 0) o.push(k); } return o; }
+  function moonStatus() {
+    var t = transitNow(), ay = t.ay, moon = rev(t.tp.moon.lon - ay), sign = Math.floor(moon / 30), toB = 30 - (moon - sign * 30);
+    var pl = ['sun', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto'], ang = [0, 60, 90, 120, 180], voc = true, i, a, z;
+    for (i = 0; i < pl.length && voc; i++) { if (!t.tp[pl[i]]) continue; var plon = rev(t.tp[pl[i]].lon - ay); for (a = 0; a < ang.length; a++) { for (z = -1; z <= 1; z += 2) { var arc = rev((plon + z * ang[a]) - moon); if (arc > 0.01 && arc < toB) { voc = false; break; } } } }
+    return { sign: sign, signName: DATA.SIGNS[sign].name, voc: voc, hours: Math.round(toB / 0.5485) };
+  }
+  function decanOf(signIdx, deg) {
+    var d = Math.min(2, Math.floor(deg / 10)), el = DATA.SIGNS[signIdx].element, same = [], s; for (s = 0; s < 12; s++) if (DATA.SIGNS[s].element === el) same.push(s);
+    var st = same.indexOf(signIdx), ord = [same[st], same[(st + 1) % 3], same[(st + 2) % 3]], rn = DATA.SIGNS[ord[d]].ruler;
+    return { decan: d + 1, rulerName: rn, ruler: RULERKEY[rn] };
+  }
+  function degreeNote(deg) { var d = Math.floor(deg); if (d === 0) return 'at 0° — a raw, first-breath expression of the sign'; if (d === 29) return 'at the 29° anaretic degree — urgency, and a lesson nearly mastered'; return null; }
+  var FIXED_STARS = [
+    { n: 'Algol', lon: 56.2, m: 'intensity; the thing you must not look away from' }, { n: 'Aldebaran', lon: 69.8, m: 'integrity and courage, the warrior’s eye' },
+    { n: 'Rigel', lon: 76.8, m: 'teaching and bringing knowledge' }, { n: 'Betelgeuse', lon: 88.8, m: 'success won through sheer grit' },
+    { n: 'Sirius', lon: 104.1, m: 'brilliance, the sacred fire, renown' }, { n: 'Regulus', lon: 149.9, m: 'leadership and honour — lost only through revenge' },
+    { n: 'Spica', lon: 204.0, m: 'a gift, brilliance, protection' }, { n: 'Arcturus', lon: 204.3, m: 'a pioneering new path' },
+    { n: 'Antares', lon: 249.9, m: 'passion and war; all or nothing' }, { n: 'Vega', lon: 285.4, m: 'art, magic, charisma' }, { n: 'Fomalhaut', lon: 334.0, m: 'idealism and fated, mystical gifts' }
+  ];
+  function starsOn(c) {
+    var keys = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'asc', 'mc'], out = [], i, s;
+    for (i = 0; i < keys.length; i++) { var p = (keys[i] === 'asc') ? c.ascBody : (keys[i] === 'mc') ? c.mcBody : c.planets[keys[i]]; if (!p) continue; if ((keys[i] === 'asc' || keys[i] === 'mc') && !STATE.birth.timeKnown) continue; var raw = rev(p.lon + (c.ayan || 0)); for (s = 0; s < FIXED_STARS.length; s++) { var o = Math.abs(sdelta(raw, FIXED_STARS[s].lon)); if (o <= 1.4) out.push({ planet: keys[i], star: FIXED_STARS[s].n, m: FIXED_STARS[s].m, orb: o }); } }
+    out.sort(function (a, b) { return a.orb - b.orb; }); return out.slice(0, 4);
+  }
+  function balanceCoaching(c) {
+    var lowE = lowElement(c.elements), m = c.modalities, lm = 'cardinal'; if (m.fixed < m[lm]) lm = 'fixed'; if (m.mutable < m[lm]) lm = 'mutable';
+    return [DATA.ELEMENTS[lowE].name + ' is your lightest element (' + c.elements[lowE] + '%). ' + DATA.ELEMENTS[lowE].need, DATA.MODALITIES[lm].name + ' is your lightest mode (' + m[lm] + '%). ' + DATA.MODALITIES[lm].note + ' Leaning into it on purpose is where a lot of your growth lives.'];
+  }
+  function skyStatus() { var r = currentRetros(), ms = moonStatus(); return { retros: r, moon: ms }; }
 
   function renderRead() {
     var c = STATE.chart, wrap = el('div', { class: 'screen pad' });
@@ -2877,7 +2917,7 @@ var APP = (function () {
     STATE: STATE, save: save, load: load, compute: computeChart,
     composeCore: composeCore, localAsk: localAsk, chartText: chartText, callModel: callModel,
     composeTransits: composeTransits, transitSentence: transitSentence, composeSignatures: composeSignatures,
-    addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, dignityOf: dignityOf, pairAspectText: pairAspectText,
+    addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, dignityOf: dignityOf, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote,
     nameFor: nameFor, glyphFor: glyphFor, sgAbbr: sgAbbr, pad: pad,
     domElement: domElement, lowElement: lowElement, domMod: domMod, tzOffsetHours: tzOffsetHours
   };
@@ -2912,10 +2952,12 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
   };
   var THEMES = {
     light: { ink: [26, 23, 20], acc: [210, 82, 28], acctx: [150, 48, 14], g: { onboard: [230, 222, 204], chart: [230, 222, 204], read: [170, 181, 160], tarot: [206, 188, 168], settings: [200, 202, 199], learn: [158, 170, 184], people: [196, 178, 186] } },
-    dark: { ink: [232, 226, 213], acc: [235, 110, 58], acctx: [240, 138, 92], g: { onboard: [20, 19, 25], chart: [20, 19, 25], read: [17, 24, 20], tarot: [27, 20, 17], settings: [22, 22, 27], learn: [15, 19, 29], people: [25, 18, 25] } }
+    dark: { ink: [232, 226, 213], acc: [235, 110, 58], acctx: [240, 138, 92], g: { onboard: [20, 19, 25], chart: [20, 19, 25], read: [17, 24, 20], tarot: [27, 20, 17], settings: [22, 22, 27], learn: [15, 19, 29], people: [25, 18, 25] } },
+    paper: { ink: [58, 44, 28], acc: [150, 60, 20], acctx: [120, 48, 14], g: { onboard: [235, 225, 199], chart: [235, 225, 199], read: [226, 216, 188], tarot: [232, 219, 194], settings: [228, 221, 202], learn: [221, 213, 192], people: [231, 218, 198] } },
+    night: { ink: [214, 223, 240], acc: [126, 152, 232], acctx: [150, 174, 244], g: { onboard: [12, 15, 27], chart: [12, 15, 27], read: [11, 17, 26], tarot: [18, 15, 28], settings: [13, 15, 30], learn: [10, 15, 30], people: [17, 13, 28] } }
   };
   function applyTheme() {
-    var t = THEMES[(APP.STATE.settings && APP.STATE.settings.theme === 'dark') ? 'dark' : 'light'], k;
+    var t = THEMES[(APP.STATE.settings && APP.STATE.settings.theme)] || THEMES.light, k;
     INK[0] = t.ink[0]; INK[1] = t.ink[1]; INK[2] = t.ink[2];
     ACC[0] = t.acc[0]; ACC[1] = t.acc[1]; ACC[2] = t.acc[2];
     ACCTX[0] = t.acctx[0]; ACCTX[1] = t.acctx[1]; ACCTX[2] = t.acctx[2];
@@ -3376,6 +3418,10 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       setFont(MONO, 10.5, INK, p.CENTER, p.TOP, 200 * ca); p.text(sub.toUpperCase(), cx, sY(ly)); ly += 24;
       var dg = dignityBadge(key, pl.signName);
       if (dg) { p.textFont(MONO); p.textSize(10); var bw = p.textWidth(dg.toUpperCase()) + 24, bx = cx - bw / 2, byy = sY(ly), strong = (dg === 'Domicile' || dg === 'Exaltation'); p.noStroke(); fillc(strong ? ACC : shade(GROUNDS[UI.screen], -16), 255 * ca); p.rect(bx, byy, bw, 20, 10); setFont(MONO, 10, strong ? GROUNDS[UI.screen] : INK, p.CENTER, p.CENTER, 255 * ca); p.text(dg.toUpperCase(), cx, byy + 10); ly += 30; }
+      // decan + notable degree (#4)
+      var dcn = APP.decanOf(pl.sign, pl.deg), dnote = APP.degreeNote(pl.deg);
+      setFont(MONO, 9.5, INK, p.CENTER, p.TOP, 185 * ca); p.text((ordinal(dcn.decan) + ' DECAN · SUB-RULER ' + APP.nameFor(dcn.ruler)).toUpperCase(), cx, sY(ly)); ly += 18;
+      if (dnote) ly += paragraph(dnote, x, ly, w, 13.5, INK, SERIF, 20, 210 * ca) + 4;
       ly += 8;
       ly += paragraph(planetBlurb(c, key), x, ly, w, 16.5, INK, SERIF, 26, 255 * ca) + 16;
       var asps = storyAspects(c, key);
@@ -3641,6 +3687,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         var pg = fc2.progressed;
         ly += paragraph('By secondary progression your inner Sun has moved into ' + DATA.SIGNS[pg.sunSign].name + ' and your progressed Moon is in ' + DATA.SIGNS[pg.moonSign].name + ' — the slow seasons of your becoming.', x, ly, w, 15, INK, SERIF, 23) + 10;
         if (fc2.solarReturn) { var sr = fc2.solarReturn; ly += paragraph('Your next solar return — your astrological birthday chart — lands ' + fmtShort(sr.date) + (sr.ascSign != null ? (', rising ' + DATA.SIGNS[sr.ascSign].name) : '') + ', Moon in ' + DATA.SIGNS[sr.moonSign].name + '.', x, ly, w, 15, INK, SERIF, 23) + 12; }
+        if (fc2.sky) { var sky = fc2.sky, sl = 'The Moon is in ' + sky.moon.signName + (sky.moon.voc ? ' (void of course — let plans rest a few hours)' : '') + '. ' + (sky.retros.length ? (sky.retros.map(APP.nameFor).join(', ') + ' ' + (sky.retros.length === 1 ? 'is' : 'are') + ' retrograde right now — a time to revisit, not rush.') : 'No planets retrograde right now — a clear runway.'); ly += paragraph(sl, x, ly, w, 15, INK, SERIF, 23) + 12; }
         ly += 4; eyebrow('Coming up', x, ly, ACC); ly += 24;
         if (!fc2.upcoming.length) ly += paragraph('No exact major transits in the next eight months — a steadier stretch.', x, ly, w, 14.5, INK, SERIF, 22, 210) + 8;
         else { for (var ui = 0; ui < fc2.upcoming.length; ui++) { var ev = fc2.upcoming[ui]; if (ui) hairline(x, ly, x + w, 30);
@@ -3952,6 +3999,28 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       { t: 'Uranometria', y: 'Johann Bayer · 1603', q: 'Uranometria Bayer', b: 'The first atlas to cover the whole sky and to label stars with Greek letters — a system still used today (α, β…). The constellations are drawn as luminous classical figures.' },
       { t: 'Uranographia', y: 'Johann Bode · 1801', q: 'Bode Uranographia', b: 'The grandest of all — over 100 constellations and 17,000 stars, the high-water mark of the artistic star atlas before astronomy turned to pure catalogues and the pictures faded away.' }
     ];
+    var GLOSSARY = [
+      { t: 'Ascendant (Rising)', d: 'The zodiac sign rising on the eastern horizon at your birth — your outward style, the “front door” of the chart. Needs a birth time.' },
+      { t: 'Aspect', d: 'An angle between two planets (0°, 60°, 90°, 120°, 180°) that links them into a conversation — flowing or tense.' },
+      { t: 'Conjunction', d: 'Two planets at ~0° apart: fused, amplifying and complicating each other.' },
+      { t: 'Trine', d: 'Two planets ~120° apart: easy, natural flow — a gift you can take for granted.' },
+      { t: 'Square', d: 'Two planets ~90° apart: friction that drives growth and action.' },
+      { t: 'Opposition', d: 'Two planets ~180° apart: a tug-of-war asking to be balanced.' },
+      { t: 'House', d: 'One of twelve slices of the wheel — arenas of life (self, money, love, work, home…). Needs a birth time.' },
+      { t: 'Element', d: 'Fire, Earth, Air, Water — drive, substance, thought, feeling. Their balance is your temperament.' },
+      { t: 'Modality', d: 'Cardinal (starts), Fixed (sustains), Mutable (adapts) — how you tend to move.' },
+      { t: 'Dignity', d: 'A planet’s comfort by sign: domicile/exaltation (strong) vs detriment/fall (challenged).' },
+      { t: 'Retrograde', d: 'A planet appearing to move backward — its energy turns inward, revisited rather than rushed.' },
+      { t: 'Transit', d: 'Where a planet is *now* versus your birth chart — what the moving sky is doing to you today.' },
+      { t: 'Progression', d: 'A symbolic clock (a day after birth = a year of life) showing your slow inner seasons.' },
+      { t: 'Profection', d: 'An annual time-lord system: each year activates a new house and its ruling planet.' },
+      { t: 'Solar return', d: 'The chart for the moment the Sun returns to its birth position — your astrological birthday.' },
+      { t: 'Lunar node', d: 'Where the Moon’s path crosses the Sun’s — the North Node is your growth edge, the South your comfort.' },
+      { t: 'Void of course', d: 'A spell when the Moon makes no more aspects before changing sign — a good time to rest, not launch.' },
+      { t: 'Decan', d: 'A 10° third of a sign, each with a sub-ruling planet that shades its meaning.' },
+      { t: 'Synastry', d: 'Comparing two charts to see how two people’s planets meet — the texture of a bond.' },
+      { t: 'Part of Fortune', d: 'A calculated point (Ascendant + Moon − Sun by day) marking where ease and luck gather.' }
+    ];
     function startLesson() { UI.lesson = { i: 0, t0: nowT() }; UI.scroll.learn = 0; }
     function lessonNext() { if (!UI.lesson) return; if (UI.lesson.i >= LESSON.length - 1) { UI.lesson = null; return; } UI.lesson.i++; UI.lesson.t0 = nowT(); }
     function lessonPrev() { if (UI.lesson && UI.lesson.i > 0) { UI.lesson.i--; UI.lesson.t0 = nowT(); } }
@@ -4092,7 +4161,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var pulse = reduced() ? 0 : Math.sin(nowT() * 0.004) * 2; setFont(SANS, 22, GROUNDS[UI.screen], p.RIGHT, p.CENTER); p.text('›', x + w - 18 + pulse, hy + hh / 2);
       pushHit(x, hy, w, hh, function () { startLesson(); }); ly += hh + 20;
       eyebrow('Or explore freely', x, ly, ACC); ly += 26;
-      var cats = [['elements', 'Elements'], ['signs', 'Signs'], ['planets', 'Planets'], ['houses', 'Houses'], ['aspects', 'Aspects'], ['history', 'History']];
+      var cats = [['elements', 'Elements'], ['signs', 'Signs'], ['planets', 'Planets'], ['houses', 'Houses'], ['aspects', 'Aspects'], ['history', 'History'], ['glossary', 'Glossary']];
       var cxp = x, cyp = ly, ci;
       for (ci = 0; ci < cats.length; ci++) { p.textFont(MONO); p.textSize(11); var ww = p.textWidth(cats[ci][1].toUpperCase()) + 28; if (cxp + ww > x + w) { cxp = x; cyp += 40; } chip(cats[ci][1], UI.learnCat === cats[ci][0], cxp, cyp, (function (cc) { return function () { UI.learnCat = cc; UI.learnItem = null; UI.scroll.learn = 0; UI.popT = nowT(); }; })(cats[ci][0])); cxp += ww + 8; }
       ly = cyp + 50;
@@ -4152,7 +4221,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
           setFont(MONO, 10.5, ao.length ? ACC : INK, p.RIGHT, p.CENTER, ao.length ? 255 : 110); p.text(ao.length ? ('\u00D7' + ao.length + ' IN YOU') : 'NONE', x + w, sY(ly + rh / 2));
           (function (idx, ay) { pushHit(x, sY(ay), w, rh, function () { UI.learnItem = idx; UI.scroll.learn = 0; UI.popT = nowT(); }); })(i, ly); ly += rh;
         }
-      } else { // history \u2014 real antique star atlases
+      } else if (cat === 'history') { // real antique star atlases
         for (i = 0; i < HISTORY.length; i++) {
           var Hh = HISTORY[i]; if (i) hairline(x, ly, x + w, 40);
           setFont(SANS, 15, INK, p.LEFT, p.CENTER); bold(); p.text(Hh.t, x + 2, sY(ly + rh / 2) - 8); normal();
@@ -4160,12 +4229,20 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
           setFont(SANS, 18, INK, p.RIGHT, p.CENTER, 120); p.text('\u203A', x + w, sY(ly + rh / 2));
           (function (idx, ay) { pushHit(x, sY(ay), w, rh, function () { UI.learnItem = idx; UI.scroll.learn = 0; UI.popT = nowT(); }); })(i, ly); ly += rh;
         }
+      } else { // glossary
+        var grh2 = 42;
+        for (i = 0; i < GLOSSARY.length; i++) {
+          if (i) hairline(x, ly, x + w, 40);
+          setFont(SANS, 14.5, INK, p.LEFT, p.CENTER); bold(); p.text(GLOSSARY[i].t, x + 2, sY(ly + grh2 / 2)); normal();
+          setFont(SANS, 18, INK, p.RIGHT, p.CENTER, 120); p.text('\u203A', x + w, sY(ly + grh2 / 2));
+          (function (idx, ay) { pushHit(x, sY(ay), w, grh2, function () { UI.learnItem = idx; UI.scroll.learn = 0; UI.popT = nowT(); }); })(i, ly); ly += grh2;
+        }
       }
       return ly;
     }
     // animated explanation diagram per category: builds on entry, idles with life, replays on tap
     function learnDiagram(cat, it, c, x, w, ly) {
-      if (cat === 'history') return 0; // history shows its own artifact gallery instead
+      if (cat === 'history' || cat === 'glossary') return 0; // these draw their own content
       var H0 = 152, cx = x + w / 2, top = sY(ly), cyc = top + H0 / 2;
       var ent = cl01((nowT() - UI.popT) / 1300), e = eExpo(ent), idle = nowT() * 0.001; // slower, more cinematic
       p.noStroke(); fillc(shade(GROUNDS[UI.screen], -10)); p.rect(x, top, w, H0, 10);
@@ -4279,6 +4356,11 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         if (ao.length) { var li; for (li = 0; li < ao.length; li++) { var a0 = ao[li]; setFont(SANS, 15, INK, p.LEFT, p.TOP); p.text(APP.glyphFor(a0.a) + '  ' + A.glyph + '  ' + APP.glyphFor(a0.b), x, sY(ly)); setFont(MONO, 10.5, INK, p.LEFT, p.TOP, 150); p.text(APP.nameFor(a0.a) + ' ' + A.key + ' ' + APP.nameFor(a0.b) + '  \u00B7  orb ' + a0.orb.toFixed(1) + '\u00B0', x + 70, sY(ly) + 3); ly += 26; } }
         else ly += paragraph('You have no ' + A.key + ' aspects within orb.', x, ly, w, 16, INK, SERIF, 24);
         ly += 12;
+      } else if (cat === 'glossary') {
+        var G = GLOSSARY[it];
+        p.textFont(SANS); p.textSize(24); p.textStyle(p.BOLD); fillc(INK); p.noStroke(); var gl2 = wrapLines(G.t, w); var gi3; for (gi3 = 0; gi3 < gl2.length; gi3++) p.text(gl2[gi3], x, sY(ly + gi3 * 28)); normal(); ly += gl2.length * 28 + 8;
+        eyebrow('Plain terms', x, ly, ACC); ly += 24;
+        ly += paragraph(G.d, x, ly, w, 17, INK, SERIF, 26) + 14;
       } else { // history \u2014 a real antique star-atlas, animated (Ken-Burns), with the story
         var Hh = HISTORY[it];
         p.textFont(SANS); p.textSize(24); p.textStyle(p.BOLD); fillc(INK); p.noStroke(); p.text(Hh.t, x, sY(ly)); normal(); ly += 32;
@@ -4318,7 +4400,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var x = sx(), w = cw(), ly = 18, st = APP.STATE.settings, gi = cl01(1 - (nowT() - UI.fxT) / 500);
       eyebrow('Tune the chart', x, ly); ly += 22;
       p.textStyle(p.BOLD); glitchText('Settings', x, sY(ly), 34, SANS, INK, p.LEFT, p.TOP, gi); normal(); ly += 50;
-      ly += toggleRow('Theme', [['light', 'Light'], ['dark', 'Dark']], st.theme || 'light', ly, function (v) { st.theme = v; APP.save(); applyTheme(); UI.fxT = nowT(); });
+      ly += toggleRow('Theme', [['light', 'Light'], ['dark', 'Dark'], ['paper', 'Paper'], ['night', 'Night']], st.theme || 'light', ly, function (v) { st.theme = v; APP.save(); applyTheme(); UI.fxT = nowT(); });
       ly += toggleRow('Zodiac', [['tropical', 'Tropical'], ['sidereal', 'Sidereal']], st.zodiac, ly, function (v) { st.zodiac = v; recompute(); });
       ly += toggleRow('House system', [['whole', 'Whole'], ['equal', 'Equal'], ['placidus', 'Placidus']], st.house, ly, function (v) { st.house = v; recompute(); });
       eyebrow('Aspect orb  \u00D7' + (st.orbScale || 1).toFixed(1), x, ly); ly += 20;
