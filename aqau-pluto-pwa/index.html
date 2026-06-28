@@ -4893,22 +4893,33 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     }
 
     function drawLesson() {
-      var x = sx(), w = cw(), top = topY(), vh = viewH(), cx = x + w / 2, sc = LESSON[UI.lesson.i], last = (UI.lesson.i === LESSON.length - 1);
-      var te = cl01((nowT() - UI.lesson.t0) / 560), e = eCubic(te), still = reduced(), alpha = still ? 1 : cl01(te * 1.5), i;
-      if (!last) { pushHit(x, top + 46, w, vh - 96, function () { lessonNext(); }); pushHit(x, top + 46, 72, vh - 96, function () { lessonPrev(); }); }
-      var sceneCY = top + vh * 0.30, sceneR = Math.min(w * 0.40, vh * 0.22), drift = (1 - e) * 18;
-      // the guided journey is pure vector animation now — clean, uncluttered, the centrepiece
+      var x = sx(), w = cw(), top = topY(), vh = viewH(), cx = x + w / 2, sc = LESSON[UI.lesson.i], last = (UI.lesson.i === LESSON.length - 1), i;
+      var still = reduced(), DUR = 7600, auto = (UI.lesson.auto !== false) && !still;
+      var elapsed = nowT() - UI.lesson.t0;
+      if (auto && !last && elapsed > DUR) { lessonNext(); return; } // auto-advance like a video
+      var te = cl01(elapsed / 620), e = eCubic(te);
+      var fadeOut = (auto && !last) ? cl01((elapsed - (DUR - 520)) / 520) : 0; // cross-fade between slides
+      var alpha = (still ? 1 : cl01(te * 1.5)) * (1 - fadeOut);
+      var cam = still ? 1 : (1.0 + 0.10 * cl01(elapsed / DUR)); // slow Ken-Burns camera push-in
+      if (!last) { pushHit(x, top + 60, w, vh - 150, function () { lessonNext(); }); pushHit(x, top + 60, 72, vh - 150, function () { lessonPrev(); }); }
+      var sceneCY = top + vh * 0.31, sceneR = Math.min(w * 0.40, vh * 0.22), drift = (1 - e) * 18;
+      // the scene — pure vector animation, with a gentle camera move and cross-fade
       var dc = p.drawingContext; if (dc) { dc.save(); dc.globalAlpha = alpha; }
-      drawScene(sc.k, cx, sceneCY - drift, sceneR, nowT());
+      p.push(); p.translate(cx, sceneCY - drift); p.scale(cam); drawScene(sc.k, 0, 0, sceneR, nowT()); p.pop();
       if (dc) dc.restore();
-      var ty = top + vh * 0.55;
-      p.textFont(SANS); p.textSize(30); var tl = wrapLines(sc.t, w - 24); setFont(SANS, 30, INK, p.CENTER, p.TOP, 255 * alpha); bold(); for (i = 0; i < tl.length; i++) p.text(tl[i], cx, ty + i * 35); normal(); ty += tl.length * 35 + 12;
-      p.textFont(SERIF); p.textSize(18); var bl = wrapLines(sc.b, w - 30); setFont(SERIF, 18, INK, p.CENTER, p.TOP, 235 * alpha); for (i = 0; i < bl.length; i++) p.text(bl[i], cx, ty + i * 27); ty += bl.length * 27 + 22;
-      setFont(MONO, 9.5, ACCTX, p.LEFT, p.TOP, 220); p.text('GUIDED JOURNEY · ' + (UI.lesson.i + 1) + ' / ' + LESSON.length, x, top + 12);
+      var ty = top + vh * 0.55, slideIn = (1 - e) * 14;
+      p.textFont(SANS); p.textSize(30); var tl = wrapLines(sc.t, w - 24); setFont(SANS, 30, INK, p.CENTER, p.TOP, 255 * alpha); bold(); for (i = 0; i < tl.length; i++) p.text(tl[i], cx, ty + slideIn + i * 35); normal(); ty += tl.length * 35 + 12;
+      p.textFont(SERIF); p.textSize(18); var bl = wrapLines(sc.b, w - 30); setFont(SERIF, 18, INK, p.CENTER, p.TOP, 235 * alpha); for (i = 0; i < bl.length; i++) p.text(bl[i], cx, ty + slideIn + i * 27); ty += bl.length * 27 + 22;
+      // top bar: chapter label + a film-style progress bar
+      setFont(MONO, 9.5, ACCTX, p.LEFT, p.TOP, 220); p.text('GUIDED JOURNEY · ' + (UI.lesson.i + 1) + ' / ' + LESSON.length, x, top + 10);
+      var pbY = top + 30, prog = still ? 1 : (auto ? cl01(elapsed / DUR) : cl01(te));
+      p.noStroke(); fillc(INK, 45); p.rect(x, pbY, w, 3, 2); fillc(ACC); p.rect(x, pbY, w * prog, 3, 2);
       var dxw = 13, dsx = cx - (LESSON.length * dxw) / 2; for (i = 0; i < LESSON.length; i++) { var on = (i === UI.lesson.i); p.noStroke(); fillc(on ? ACC : INK, on ? 255 : 80); p.ellipse(dsx + i * dxw + dxw / 2, top + vh - 16, on ? 7 : 5, on ? 7 : 5); }
       if (last) { tourBtn('Read my chart ›', cx - 152, ty, 148, 42, function () { UI.lesson = null; UI.screen = 'chart'; }, true); tourBtn('Explore Learn', cx + 6, ty, 148, 42, function () { UI.lesson = null; }, false); }
-      else { setFont(MONO, 10, INK, p.CENTER, p.TOP, 150 * alpha); p.text('TAP TO CONTINUE  ›', cx, top + vh - 42); }
-      tourBtn('Skip', x + w - 66, top + 6, 60, 26, function () { UI.lesson = null; }, false);
+      else { setFont(MONO, 10, INK, p.CENTER, p.TOP, 150 * alpha); p.text(auto ? 'PLAYING · TAP TO SKIP AHEAD' : 'TAP TO CONTINUE  ›', cx, top + vh - 42); }
+      // play / pause + skip controls (top-right), drawn above the tap zone
+      tourBtn(auto ? '❚❚' : '▶', x + w - 138, top + 42, 60, 26, function () { UI.lesson.auto = !(UI.lesson.auto !== false); if (UI.lesson.auto) UI.lesson.t0 = nowT(); }, false);
+      tourBtn('Skip', x + w - 70, top + 42, 64, 26, function () { UI.lesson = null; }, false);
       UI.contentH.learn = 0;
     }
 
@@ -4925,7 +4936,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var pulse = reduced() ? 0 : Math.sin(nowT() * 0.004) * 2; setFont(SANS, 22, GROUNDS[UI.screen], p.RIGHT, p.CENTER); p.text('›', x + w - 18 + pulse, hy + hh / 2);
       pushHit(x, hy, w, hh, function () { startLesson(); }); ly += hh + 20;
       eyebrow('Or explore freely', x, ly, ACC); ly += 26;
-      var cats = [['elements', 'Elements'], ['signs', 'Signs'], ['planets', 'Planets'], ['houses', 'Houses'], ['aspects', 'Aspects'], ['howto', 'How to'], ['history', 'History'], ['myths', 'Myths'], ['famous', 'Like you'], ['glossary', 'Glossary']];
+      var cats = [['elements', 'Elements'], ['signs', 'Signs'], ['planets', 'Planets'], ['houses', 'Houses'], ['aspects', 'Aspects'], ['howto', 'How to'], ['watch', 'Watch'], ['history', 'History'], ['myths', 'Myths'], ['famous', 'Like you'], ['glossary', 'Glossary']];
       var cxp = x, cyp = ly, ci;
       for (ci = 0; ci < cats.length; ci++) { p.textFont(MONO); p.textSize(11); var ww = p.textWidth(cats[ci][1].toUpperCase()) + 28; if (cxp + ww > x + w) { cxp = x; cyp += 40; } chip(cats[ci][1], UI.learnCat === cats[ci][0], cxp, cyp, (function (cc) { return function () { UI.learnCat = cc; UI.learnItem = null; UI.scroll.learn = 0; UI.popT = nowT(); }; })(cats[ci][0])); cxp += ww + 8; }
       ly = cyp + 50;
@@ -4935,6 +4946,21 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       ly = (UI.learnItem == null) ? learnList(c, x, w, ly) : learnDetail(c, b, x, w, ly);
       if (ldc) ldc.restore();
       UI.contentH.learn = ly + 10;
+    }
+    function openURL(u) { try { window.open(u, '_blank', 'noopener'); } catch (e) {} }
+    // lessons on YOUR placements, scoped to named, reputable astrology teachers (opens YouTube; needs a connection).
+    // We anchor each search to a well-known educator + your placement rather than blind video IDs — curated, safe.
+    function watchCards(c, b) {
+      var S = DATA.SIGNS, out = [], sun = S[c.planets.sun.sign].name, moon = S[c.planets.moon.sign].name;
+      var dom = APP.domElement(c.elements), domName = DATA.ELEMENTS[dom].name;
+      var rsign = (b.timeKnown && c.ascBody) ? c.ascBody.sign : c.planets.sun.sign, rk = S[rsign].ruler;
+      out.push({ t: 'Your Sun in ' + sun, who: 'Chris Brennan', q: sun + ' sun sign meaning astrology' });
+      out.push({ t: 'Your Moon in ' + moon, who: 'Steven Forrest', q: moon + ' moon sign astrology' });
+      if (b.timeKnown && c.ascBody) out.push({ t: 'Your ' + S[c.ascBody.sign].name + ' rising', who: 'The Astrology Podcast', q: S[c.ascBody.sign].name + ' rising ascendant astrology' });
+      out.push({ t: 'Your dominant element: ' + domName, who: 'Chani Nicholas', q: domName + ' element astrology dominant' });
+      out.push({ t: 'Your chart ruler: ' + rk, who: 'The AstroTwins', q: rk + ' planet astrology meaning' });
+      out.push({ t: 'How to read a birth chart', who: 'Chris Brennan', q: 'how to read your birth chart beginners astrology' });
+      return out;
     }
     function learnList(c, x, w, ly) {
       var cat = UI.learnCat, rh = 52, i, b = APP.STATE.birth;
@@ -5022,6 +5048,20 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
           (function (idx, ay) { pushHit(x, sY(ay), w, frh, function () { UI.learnItem = idx; UI.scroll.learn = 0; UI.popT = nowT(); }); })(i, ly); ly += frh;
         }
         if (!fm.length) ly += paragraph('No close matches in the set — a rare sky.', x, ly, w, 15, INK, SERIF, 23, 180) + 10;
+      } else if (cat === 'watch') { // sourced video lessons on your placements (reputable teachers)
+        ly += paragraph('Short video lessons on your own placements, taught by well-known astrology educators. Tap to open on YouTube (needs a connection).', x, ly, w, 14.5, INK, SERIF, 22, 200) + 12;
+        var wc = watchCards(c, b), wrh = 60;
+        for (i = 0; i < wc.length; i++) {
+          var wcd = wc[i]; if (i) hairline(x, ly, x + w, 40);
+          var wcy = sY(ly + wrh / 2);
+          // play glyph
+          p.noStroke(); fillc(ACC, 40); p.ellipse(x + 14, wcy, 30, 30); fillc(ACC); p.triangle(x + 9, wcy - 7, x + 9, wcy + 7, x + 22, wcy);
+          setFont(SANS, 15, INK, p.LEFT, p.CENTER); bold(); p.text(wcd.t, x + 38, wcy - 9); normal();
+          setFont(MONO, 9.5, INK, p.LEFT, p.CENTER, 150); p.text((wcd.who + ' · YOUTUBE').toUpperCase(), x + 38, wcy + 10);
+          setFont(SANS, 16, INK, p.RIGHT, p.CENTER, 120); p.text('↗', x + w, wcy);
+          (function (cd, ay) { pushHit(x, sY(ay), w, wrh, function () { openURL('https://www.youtube.com/results?search_query=' + encodeURIComponent(cd.who + ' ' + cd.q)); }); })(wcd, ly); ly += wrh;
+        }
+        ly += 6; setFont(MONO, 8.5, INK, p.LEFT, p.TOP, 140); ly += paragraph('Searches are scoped to named, reputable educators — Aqau Pluto doesn’t host or pick the videos.', x, ly, w, 11, INK, MONO, 16, 140) + 8;
       } else if (cat === 'howto') { // hands-on guides
         ly += paragraph('Short, practical walk-throughs — how to actually do these things yourself, each with a little animation.', x, ly, w, 14.5, INK, SERIF, 22, 200) + 12;
         for (i = 0; i < HOWTO.length; i++) {
@@ -5043,7 +5083,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     }
     // animated explanation diagram per category: builds on entry, idles with life, replays on tap
     function learnDiagram(cat, it, c, x, w, ly) {
-      if (cat === 'history' || cat === 'glossary' || cat === 'famous' || cat === 'myths' || cat === 'howto') return 0; // these draw their own content
+      if (cat === 'history' || cat === 'glossary' || cat === 'famous' || cat === 'myths' || cat === 'howto' || cat === 'watch') return 0; // these draw their own content
       var H0 = 152, cx = x + w / 2, top = sY(ly), cyc = top + H0 / 2;
       var ent = cl01((nowT() - UI.popT) / 1300), e = eExpo(ent), idle = nowT() * 0.001; // slower, more cinematic
       p.noStroke(); fillc(shade(GROUNDS[UI.screen], -10)); p.rect(x, top, w, H0, 10);
