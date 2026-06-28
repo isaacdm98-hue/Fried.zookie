@@ -4361,13 +4361,17 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         }
       }
 
-      ly += 16; eyebrow('Ask your chart', x, ly); ly += 28;
+      UI.contentH.read = ly + 8;
+    }
+    // "Ask your chart" lives in Settings now, so Read stays about you (S7)
+    function drawAskBlock(c, x, ly, w) {
+      eyebrow('Ask your chart', x, ly); ly += 28;
       var topics = ['Love', 'Work', 'Money', 'Emotions', 'Purpose', 'Fear', 'Creativity', 'Home', 'Freedom'];
       var cxp = x, cyp = ly;
       for (var t = 0; t < topics.length; t++) { p.textFont(MONO); p.textSize(11); var ww = p.textWidth(topics[t].toUpperCase()) + 28; if (cxp + ww > x + w) { cxp = x; cyp += 40; } chip(topics[t], UI.askTopic === topics[t], cxp, cyp, (function (tp) { return function () { UI.askTopic = tp; UI.askAns = APP.localAsk(tp, c); UI.popT = nowT(); }; })(topics[t])); cxp += ww + 8; }
       ly = cyp + 50;
       if (UI.askAns) ly += paragraph(UI.askAns, x, ly, w, 16.5, INK, SERIF, 26) + 16;
-      eyebrow('On-device engine \u2014 free, private, offline', x, ly); ly += 28; UI.contentH.read = ly;
+      return ly;
     }
 
     // ---------- TAROT visuals: suit colour, geometric emblems, card back, flip ----------
@@ -5567,6 +5571,8 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       flatBtn('Replay tour', x + 182, ly, 150, 44, function () { startTour(); }, false); ly += 56;
       flatBtn('Walk me through my chart', x, ly, w, 44, function () { startWalk(); }, false); ly += 56;
       flatBtn('Share my chart (image)', x, ly, w, 44, function () { exportChartCard(); }, false); ly += 56;
+      if (APP.STATE.chart) { ly += 8; ly = drawAskBlock(APP.STATE.chart, x, ly, w) + 8; }
+      eyebrow('On-device engine — free, private, offline', x, ly); ly += 24;
       ly += paragraph('Aqau Pluto computes a genuine ephemeris on-device with astronomy-engine (MIT), accurate to about one arcsecond against NOVAS/JPL, and reads it in plain, behavioural language. The whole interface is drawn and animated live in p5.', x, ly, w, 14, INK, SERIF, 21, 170) + 24;
       UI.contentH.settings = ly;
     }
