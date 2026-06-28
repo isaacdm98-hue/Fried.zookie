@@ -1,0 +1,16 @@
+{
+  "name": "Aqau Pluto",
+  "short_name": "Aqau Pluto",
+  "description": "Your birth chart, read straight - genuine on-device astrology with a grounded voice.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "background_color": "#0b0611",
+  "theme_color": "#0b0611",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
