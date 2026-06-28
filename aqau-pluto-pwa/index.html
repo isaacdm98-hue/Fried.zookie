@@ -3026,6 +3026,25 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       el.style.display = 'block'; el.style.left = px + 'px'; el.style.top = py + 'px'; el.style.width = pw + 'px'; el.style.height = ph + 'px'; el.style.lineHeight = ph + 'px';
     }
     function hideSearchInput() { try { if (UI.searchInput) { UI.searchInput.style.display = 'none'; if (document.activeElement === UI.searchInput && UI.searchInput.blur) UI.searchInput.blur(); } } catch (e) {} }
+    // ---- optional online geocoder (off by default): free, keyless, no AI. One debounced call when you pause typing.
+    // place -> lat/lon via OpenStreetMap Nominatim; lat/lon -> IANA timezone via open-meteo. Both CORS + keyless.
+    function geoSearch(query) {
+      if (typeof fetch !== 'function') { UI.geoErr = 'No connection.'; return; }
+      UI.geoLoading = true; UI.geoErr = ''; UI.geoQ = query; var mine = query;
+      fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&addressdetails=0&q=' + encodeURIComponent(query), { headers: { 'Accept': 'application/json' } })
+        .then(function (r) { return r.json(); })
+        .then(function (arr) { if (UI.geoQ !== mine) return; UI.geoLoading = false; UI.geoResults = (arr || []).slice(0, 6).map(function (o) { return { name: o.display_name, lat: parseFloat(o.lat), lon: parseFloat(o.lon) }; }); if (!UI.geoResults.length) UI.geoErr = 'No places found.'; })
+        .catch(function () { if (UI.geoQ === mine) { UI.geoLoading = false; UI.geoErr = 'Couldn’t reach the place search.'; } });
+    }
+    function geoPick(d, r) {
+      d.geo = { lat: r.lat, lon: r.lon, place: r.name.split(',').slice(0, 3).join(',').replace(/\s+/g, ' ').trim(), iana: null }; d.cityIdx = -1; d.geoTzLoading = true;
+      var mine = r.lat + ',' + r.lon;
+      if (typeof fetch !== 'function') { d.geoTzLoading = false; return; }
+      fetch('https://api.open-meteo.com/v1/forecast?latitude=' + r.lat + '&longitude=' + r.lon + '&timezone=auto&forecast_days=1')
+        .then(function (rr) { return rr.json(); })
+        .then(function (j) { if (!d.geo || (d.geo.lat + ',' + d.geo.lon) !== mine) return; d.geo.iana = (j && j.timezone) ? j.timezone : null; d.geoTzLoading = false; })
+        .catch(function () { if (d.geo) d.geoTzLoading = false; });
+    }
     function viewH() { return botY() - topY(); }
     function scrollOf() { return UI.scroll[UI.screen] || 0; }
     function sY(ly) { return topY() - scrollOf() + ly; }
@@ -4078,6 +4097,8 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       fillc(INK); p.ellipse(kx, sly + (kDn ? 1 : 0), 8, 8);
       setFont(MONO, 12, INK, p.LEFT, p.CENTER); p.text('\u00D7' + (st.orbScale || 1).toFixed(1), slx + slw + 12, sly);
       UI.sliderRect = { x: slx, y: sly, w: slw }; ly += 40;
+      ly += toggleRow('Birthplace search', [['off', 'On-device'], ['on', 'Online']], st.geocodeOnline ? 'on' : 'off', ly, function (v) { st.geocodeOnline = (v === 'on'); UI.geoResults = []; UI.geoQ = ''; APP.save(); });
+      ly += paragraph('On-device (default): pick from the built-in city list, fully offline. Online: search any place via free, keyless lookups (OpenStreetMap + open\u2011meteo) \u2014 one request after you pause typing; needs internet, no account, no AI.', x, ly, w, 13.5, INK, SERIF, 20, 180) + 16;
       ly += toggleRow('Cloud reading boost', [['on', 'On'], ['off', 'Off']], st.ai ? 'on' : 'off', ly, function (v) { st.ai = (v === 'on'); APP.save(); });
       ly += paragraph('Off (default): the built-in engine writes every reading on-device \u2014 free, private, works offline with no account. On: an optional cloud pass, only if your deployment provides a connection.', x, ly, w, 13.5, INK, SERIF, 20, 180) + 20;
       flatBtn('Edit birth data', x, ly, 170, 44, function () { UI.draft = newDraft(); UI.screen = 'onboard'; }, true);
@@ -4087,7 +4108,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     }
 
     // ---------- ONBOARDING ----------
-    function newDraft() { var b = APP.STATE.birth; if (b) return { y: b.y, mo: b.mo, d: b.d, hour: b.hour, min: b.min, timeKnown: b.timeKnown, cityIdx: findCity(b), manualTz: !!b.manualTz, tz: b.tz || 0 }; return { y: 1995, mo: 6, d: 15, hour: 12, min: 0, timeKnown: true, cityIdx: -1, manualTz: false, tz: 0 }; }
+    function newDraft() { var b = APP.STATE.birth; if (b) return { y: b.y, mo: b.mo, d: b.d, hour: b.hour, min: b.min, timeKnown: b.timeKnown, cityIdx: findCity(b), manualTz: !!b.manualTz, tz: b.tz || 0, geo: null }; return { y: 1995, mo: 6, d: 15, hour: 12, min: 0, timeKnown: true, cityIdx: -1, manualTz: false, tz: 0, geo: null }; }
     function findCity(b) { for (var i = 0; i < DATA.CITIES.length; i++) if (b.place && b.place.indexOf(DATA.CITIES[i][0]) === 0) return i; return -1; }
     function stepper(label, val, lo, hi, x, ly, w, set) {
       var h = 42, bw = 38, depth = 3; eyebrow(label, x, ly); var by = ly + 15, y = sY(by);
@@ -4119,32 +4140,56 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (!tk) { p.noStroke(); fillc(ACC); p.rect(x, sY(ly), 22, 22, 5); setFont(SANS, 15, GROUNDS[UI.screen], p.CENTER, p.CENTER); p.text('\u2713', x + 11, sY(ly) + 11); }
       else { p.noFill(); strokec(INK, 180); p.strokeWeight(1.4); p.rect(x, sY(ly), 22, 22, 5); }
       setFont(SANS, 13, INK, p.LEFT, p.CENTER); p.text('I don\u2019t know my birth time', x + 32, sY(ly) + 11); pushHit(x, sY(ly), w, 26, function () { d.timeKnown = !d.timeKnown; }); ly += 38;
-      eyebrow('Birth place', x, ly); ly += 24;
-      var selName = d.cityIdx >= 0 ? (DATA.CITIES[d.cityIdx][0] + ', ' + DATA.CITIES[d.cityIdx][1]) : 'None selected \u2014 search or tap below';
-      setFont(MONO, 11, d.cityIdx >= 0 ? ACC : INK, p.LEFT, p.TOP, d.cityIdx >= 0 ? 255 : 140); p.text(selName.toUpperCase(), x, sY(ly)); ly += 22;
+      var online = !!(APP.STATE.settings && APP.STATE.settings.geocodeOnline);
+      eyebrow(online ? 'Birth place \u2014 search anywhere online' : 'Birth place', x, ly); ly += 24;
+      var selName = d.geo ? d.geo.place : (d.cityIdx >= 0 ? (DATA.CITIES[d.cityIdx][0] + ', ' + DATA.CITIES[d.cityIdx][1]) : 'None selected \u2014 search below');
+      var hasSel = !!(d.geo || d.cityIdx >= 0);
+      setFont(MONO, 11, hasSel ? ACC : INK, p.LEFT, p.TOP, hasSel ? 255 : 140); p.text(selName.toUpperCase(), x, sY(ly)); ly += 22;
       var sbH = 40, sbY = sY(ly);
       p.noStroke(); fillc(shade(GROUNDS[UI.screen], -14)); p.rect(x, sbY + 3, w, sbH, 9); fillc(GROUNDS[UI.screen]); p.rect(x, sbY, w, sbH, 9);
       p.noFill(); strokec(INK, 150); p.strokeWeight(1.4); p.rect(x, sbY, w, sbH, 9);
       p.noFill(); strokec(INK, 200); p.strokeWeight(2); p.ellipse(x + 20, sbY + sbH / 2 - 1, 13, 13); p.line(x + 25, sbY + sbH / 2 + 4, x + 30, sbY + sbH / 2 + 9);
       positionSearchInput(x + 40, sbY, w - 78, sbH);
-      if ((UI.citySearch || '').length) { setFont(SANS, 19, INK, p.CENTER, p.CENTER, 190); p.text('\u00D7', x + w - 19, sbY + sbH / 2); pushHit(x + w - 38, sbY, 38, sbH, function () { UI.citySearch = ''; if (UI.searchInput) UI.searchInput.value = ''; }); }
+      if ((UI.citySearch || '').length) { setFont(SANS, 19, INK, p.CENTER, p.CENTER, 190); p.text('\u00D7', x + w - 19, sbY + sbH / 2); pushHit(x + w - 38, sbY, 38, sbH, function () { UI.citySearch = ''; if (UI.searchInput) UI.searchInput.value = ''; UI.geoResults = []; UI.geoQ = ''; }); }
       ly += sbH + 12;
-      var q = (UI.citySearch || '').toLowerCase().replace(/^\s+|\s+$/g, ''), filtered = [];
-      for (var fi = 0; fi < DATA.CITIES.length; fi++) { var cc = DATA.CITIES[fi]; if (!q || cc[0].toLowerCase().indexOf(q) >= 0 || cc[1].toLowerCase().indexOf(q) >= 0) filtered.push(fi); }
-      if (q !== UI.lastCityQ) { UI.lastCityQ = q; UI.cityScroll = 0; }
       var boxH = 196, boxY = sY(ly); p.noFill(); strokec(INK, 160); p.strokeWeight(1.4); p.rect(x, boxY, w, boxH, 10);
-      var rh = 30, off = UI.cityScroll || 0;
       if (p.drawingContext) { p.drawingContext.save(); p.drawingContext.beginPath(); p.drawingContext.rect(x, boxY, w, boxH); p.drawingContext.clip(); }
-      if (!filtered.length) { setFont(MONO, 11, INK, p.CENTER, p.CENTER, 150); p.text('NO MATCHES \u2014 TRY ANOTHER SPELLING', x + w / 2, boxY + boxH / 2); }
-      for (var i = 0; i < filtered.length; i++) {
-        var realI = filtered[i], cy = boxY + 4 + i * rh - off; if (cy > boxY + boxH || cy + rh < boxY) continue; var sel = (d.cityIdx === realI);
-        if (sel) { p.noStroke(); fillc(INK); p.rect(x + 3, cy, w - 6, rh - 2, 6); }
-        setFont(SANS, 13, sel ? GROUNDS[UI.screen] : INK, p.LEFT, p.CENTER); if (sel) bold(); p.text(DATA.CITIES[realI][0], x + 14, cy + rh / 2); normal();
-        setFont(MONO, 9.5, sel ? GROUNDS[UI.screen] : INK, p.RIGHT, p.CENTER, sel ? 220 : 120); p.text(DATA.CITIES[realI][1], x + w - 14, cy + rh / 2);
-        (function (idx, ry) { pushHit(x, Math.max(boxY, ry), w, Math.min(rh, boxY + boxH - ry), function () { d.cityIdx = idx; }); })(realI, cy);
+      if (online) {
+        // debounce: one call ~700ms after typing pauses, deduped, min 3 chars, single in-flight
+        var qq = (UI.citySearch || '').replace(/^\s+|\s+$/g, '');
+        if (qq !== UI.geoTyped) { UI.geoTyped = qq; UI.geoTypedAt = nowT(); }
+        if (qq.length >= 3 && qq !== UI.geoQ && !UI.geoLoading && nowT() - (UI.geoTypedAt || 0) > 700) geoSearch(qq);
+        var grh = 38, gres = UI.geoResults || [];
+        if (UI.geoLoading) { setFont(MONO, 11, INK, p.CENTER, p.CENTER, 160); p.text('SEARCHING\u2026', x + w / 2, boxY + boxH / 2); }
+        else if (qq.length < 3) { setFont(MONO, 10.5, INK, p.CENTER, p.CENTER, 140); p.text('TYPE A PLACE \u2014 CITY, TOWN OR COUNTRY', x + w / 2, boxY + boxH / 2); }
+        else if (UI.geoErr) { setFont(MONO, 10.5, INK, p.CENTER, p.CENTER, 150); p.text(UI.geoErr.toUpperCase(), x + w / 2, boxY + boxH / 2); }
+        else if (!gres.length) { setFont(MONO, 10.5, INK, p.CENTER, p.CENTER, 140); p.text('NO PLACES FOUND', x + w / 2, boxY + boxH / 2); }
+        else for (var gi = 0; gi < gres.length; gi++) {
+          var gr = gres[gi], gy = boxY + 4 + gi * grh; if (gy + grh < boxY || gy > boxY + boxH) continue; var gsel = !!(d.geo && d.geo.lat === gr.lat && d.geo.lon === gr.lon);
+          if (gsel) { p.noStroke(); fillc(INK); p.rect(x + 3, gy, w - 6, grh - 2, 6); }
+          setFont(SANS, 12.5, gsel ? GROUNDS[UI.screen] : INK, p.LEFT, p.CENTER); var nm = gr.name; while (nm.length > 4 && p.textWidth(nm) > w - 28) nm = nm.slice(0, -2); if (nm !== gr.name) nm += '\u2026';
+          p.text(nm, x + 14, gy + grh / 2);
+          (function (rr, ry) { pushHit(x, Math.max(boxY, ry), w, Math.min(grh, boxY + boxH - ry), function () { geoPick(d, rr); }); })(gr, gy);
+        }
+        if (p.drawingContext) p.drawingContext.restore();
+        UI.cityBox = { x: x, y: boxY, w: w, h: boxH }; UI.cityBoxMax = 0; ly += boxH + 8;
+        setFont(MONO, 8.5, INK, p.LEFT, p.TOP, 130); ly += paragraph('Free, keyless lookups (OpenStreetMap + open\u2011meteo). One request after you pause typing \u2014 nothing else leaves your device. Turn off in Settings for fully offline.', x, ly, w, 11, INK, MONO, 15, 130) + 10;
+      } else {
+        var q = (UI.citySearch || '').toLowerCase().replace(/^\s+|\s+$/g, ''), filtered = [];
+        for (var fi = 0; fi < DATA.CITIES.length; fi++) { var cc = DATA.CITIES[fi]; if (!q || cc[0].toLowerCase().indexOf(q) >= 0 || cc[1].toLowerCase().indexOf(q) >= 0) filtered.push(fi); }
+        if (q !== UI.lastCityQ) { UI.lastCityQ = q; UI.cityScroll = 0; }
+        var rh = 30, off = UI.cityScroll || 0;
+        if (!filtered.length) { setFont(MONO, 11, INK, p.CENTER, p.CENTER, 150); p.text('NO MATCHES \u2014 TRY ANOTHER SPELLING', x + w / 2, boxY + boxH / 2); }
+        for (var i = 0; i < filtered.length; i++) {
+          var realI = filtered[i], cy = boxY + 4 + i * rh - off; if (cy > boxY + boxH || cy + rh < boxY) continue; var sel = (d.cityIdx === realI);
+          if (sel) { p.noStroke(); fillc(INK); p.rect(x + 3, cy, w - 6, rh - 2, 6); }
+          setFont(SANS, 13, sel ? GROUNDS[UI.screen] : INK, p.LEFT, p.CENTER); if (sel) bold(); p.text(DATA.CITIES[realI][0], x + 14, cy + rh / 2); normal();
+          setFont(MONO, 9.5, sel ? GROUNDS[UI.screen] : INK, p.RIGHT, p.CENTER, sel ? 220 : 120); p.text(DATA.CITIES[realI][1], x + w - 14, cy + rh / 2);
+          (function (idx, ry) { pushHit(x, Math.max(boxY, ry), w, Math.min(rh, boxY + boxH - ry), function () { d.cityIdx = idx; d.geo = null; }); })(realI, cy);
+        }
+        if (p.drawingContext) p.drawingContext.restore();
+        UI.cityBox = { x: x, y: boxY, w: w, h: boxH }; UI.cityBoxMax = Math.max(0, filtered.length * rh + 8 - boxH); ly += boxH + 18;
       }
-      if (p.drawingContext) p.drawingContext.restore();
-      UI.cityBox = { x: x, y: boxY, w: w, h: boxH }; UI.cityBoxMax = Math.max(0, filtered.length * rh + 8 - boxH); ly += boxH + 18;
       // manual time-zone override (for pre-1970 / DST cases the auto database gets wrong)
       if (!d.manualTz) { p.noFill(); strokec(INK, 180); p.strokeWeight(1.4); p.rect(x, sY(ly), 22, 22, 5); }
       else { p.noStroke(); fillc(ACC); p.rect(x, sY(ly), 22, 22, 5); setFont(SANS, 15, GROUNDS[UI.screen], p.CENTER, p.CENTER); p.text('✓', x + 11, sY(ly) + 11); }
@@ -4161,10 +4206,17 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         ly += oh + 6;
         setFont(MONO, 8.5, INK, p.LEFT, p.TOP, 130); ly += paragraph('Use this when you know the exact offset — e.g. wartime or pre-1970 births the timezone database resolves loosely.', x, ly, w, 11, INK, MONO, 15, 130) + 8;
       }
-      var canBuild = (d.cityIdx >= 0);
-      flatBtn(canBuild ? 'Build my chart' : 'Choose a birth place', x, ly, w, 50, function () { if (canBuild) buildChart(); }, canBuild); ly += 64; UI.contentH.onboard = ly;
+      var canBuild = (d.cityIdx >= 0) || !!(d.geo && d.geo.iana);
+      var buildLabel = canBuild ? 'Build my chart' : (d.geo && d.geoTzLoading ? 'Finding time zone…' : 'Choose a birth place');
+      flatBtn(buildLabel, x, ly, w, 50, function () { if (canBuild) buildChart(); }, canBuild); ly += 64; UI.contentH.onboard = ly;
     }
-    function buildChart() { var d = UI.draft, ci = DATA.CITIES[d.cityIdx]; APP.STATE.birth = { name: '', y: d.y, mo: d.mo, d: d.d, hour: d.hour, min: d.min, tz: d.tz || 0, manualTz: !!d.manualTz, iana: ci[4], lat: ci[2], lon: ci[3], place: ci[0] + ', ' + ci[1], timeKnown: d.timeKnown }; recompute(); UI.selPlanet = 'sun'; UI.popT = nowT(); UI.popFrom = 22; UI.scroll.chart = 0; UI.screen = 'chart'; hideSearchInput(); }
+    function buildChart() {
+      var d = UI.draft, place, iana, lat, lon;
+      if (d.geo && d.geo.iana) { place = d.geo.place; iana = d.geo.iana; lat = d.geo.lat; lon = d.geo.lon; }
+      else { var ci = DATA.CITIES[d.cityIdx]; place = ci[0] + ', ' + ci[1]; iana = ci[4]; lat = ci[2]; lon = ci[3]; }
+      APP.STATE.birth = { name: '', y: d.y, mo: d.mo, d: d.d, hour: d.hour, min: d.min, tz: d.tz || 0, manualTz: !!d.manualTz, iana: iana, lat: lat, lon: lon, place: place, timeKnown: d.timeKnown };
+      recompute(); UI.selPlanet = 'sun'; UI.popT = nowT(); UI.popFrom = 22; UI.scroll.chart = 0; UI.screen = 'chart'; hideSearchInput();
+    }
     function recompute() { APP.STATE.chart = APP.compute(APP.STATE.birth, APP.STATE.settings); APP.save(); UI.readCache = null; UI.readSig = null; UI.readTransit = null; UI.forecast = null; UI.bondCache = null; UI.bondFor = null; if (APP.clearPersonCharts) APP.clearPersonCharts(); UI.askAns = ''; UI.quip = null; UI.quipNext = 0; buildField(); }
 
     // ---------- chrome ----------
