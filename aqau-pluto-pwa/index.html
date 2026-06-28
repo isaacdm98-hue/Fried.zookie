@@ -5201,6 +5201,44 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     function recompute() { APP.STATE.chart = APP.compute(APP.STATE.birth, APP.STATE.settings); APP.save(); UI.readCache = null; UI.readSig = null; UI.readTransit = null; UI.forecast = null; UI.todayCache = null; UI.fmList = null; UI.lifeList = null; UI.calEvents = null; UI.calDay = null; UI.walkTr = null; UI.walkTheme = null; UI.bondCache = null; UI.bondFor = null; if (APP.clearPersonCharts) APP.clearPersonCharts(); UI.askAns = ''; UI.quip = null; UI.quipNext = 0; buildField(); }
 
     // ---------- share / export a clean chart card (own untainted canvas; the live one holds remote images) ----------
+    // share a daily card (clean offscreen canvas) — moon phase + what's live on your chart today
+    function exportTodayCard() {
+      var d = todayData(); if (!d || typeof document === 'undefined') return;
+      var W2 = 1080, H2 = 1350, cv = document.createElement('canvas'); cv.width = W2; cv.height = H2;
+      var g = cv.getContext('2d'); if (!g) return;
+      var ink = INK, acc = ACC, gr = GROUNDS.chart, dk = [clampB(gr[0] - 22), clampB(gr[1] - 22), clampB(gr[2] - 22)];
+      function rgb(a) { return 'rgb(' + a[0] + ',' + a[1] + ',' + a[2] + ')'; }
+      function rgba(a, al) { return 'rgba(' + a[0] + ',' + a[1] + ',' + a[2] + ',' + al + ')'; }
+      var SYM = 'Georgia, "Apple Symbols", "Segoe UI Symbol", serif';
+      function wrap2(str, mw, font) { g.font = font; var words = String(str).split(' '), lines = [], cur = '', i; for (i = 0; i < words.length; i++) { var t = cur ? cur + ' ' + words[i] : words[i]; if (g.measureText(t).width > mw && cur) { lines.push(cur); cur = words[i]; } else cur = t; } if (cur) lines.push(cur); return lines; }
+      g.fillStyle = rgb(gr); g.fillRect(0, 0, W2, H2); g.textAlign = 'center';
+      g.fillStyle = rgba(ink, 0.55); g.font = '28px ' + MONO; g.fillText('A Q A U   P L U T O   ·   T O D A Y', W2 / 2, 92);
+      var now = new Date(), mon = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      g.fillStyle = rgb(ink); g.font = 'bold 60px ' + SANS; g.fillText(now.getDate() + ' ' + mon[now.getMonth()] + ' ' + now.getFullYear(), W2 / 2, 172);
+      // moon disc
+      var e = d.moon ? d.moon.elong : 0, ms = d.f && d.f.sky ? d.f.sky.moon : null, cx = W2 / 2, cy = 400, R = 150;
+      var waxing = e < 180, illum = (1 - Math.cos(e * Math.PI / 180)) / 2, k = Math.cos(e * Math.PI / 180);
+      g.fillStyle = rgb(dk); g.beginPath(); g.arc(cx, cy, R, 0, Math.PI * 2); g.fill();
+      g.fillStyle = 'rgb(238,232,216)'; g.beginPath(); if (waxing) g.arc(cx, cy, R, -Math.PI / 2, Math.PI / 2); else g.arc(cx, cy, R, Math.PI / 2, Math.PI * 1.5); g.fill();
+      g.fillStyle = (illum > 0.5) ? 'rgb(238,232,216)' : rgb(dk); g.beginPath(); g.ellipse(cx, cy, R * Math.abs(k), R, 0, 0, Math.PI * 2); g.fill();
+      g.strokeStyle = rgba(ink, 0.5); g.lineWidth = 2; g.beginPath(); g.arc(cx, cy, R, 0, Math.PI * 2); g.stroke();
+      g.fillStyle = rgb(ink); g.font = 'bold 44px ' + SANS; g.fillText(phaseName(e), W2 / 2, 640);
+      if (ms) { g.fillStyle = rgba(ink, 0.85); g.font = '32px ' + SERIF; g.fillText('Moon in ' + ms.signName + (ms.voc ? '  ·  void of course' : ''), W2 / 2, 690); }
+      var yy = 770;
+      g.textAlign = 'left'; var mx = 90, mw = W2 - 180;
+      if (d.f && d.f.profection) { g.fillStyle = rgb(acc); g.font = '22px ' + MONO; g.fillText('YOUR YEAR', mx, yy); yy += 40; g.fillStyle = rgb(ink); var yl = wrap2(APP.nameFor(d.f.profection.lord) + ' rules your year — house ' + d.f.profection.house + '.', mw, '30px ' + SERIF); for (var i = 0; i < yl.length; i++) { g.fillText(yl[i], mx, yy); yy += 42; } yy += 16; }
+      var dl = (d.tr && d.tr.daily) ? d.tr.daily : [];
+      g.fillStyle = rgb(acc); g.font = '22px ' + MONO; g.fillText('LIVE ON YOUR CHART', mx, yy); yy += 42;
+      g.fillStyle = rgb(ink); g.font = '30px ' + SERIF;
+      if (dl.length) { var n = 0, di; for (di = 0; di < dl.length && n < 2; di++) { var ls = wrap2('• ' + APP.transitSentence(dl[di]), mw, '30px ' + SERIF), j; for (j = 0; j < ls.length; j++) { g.fillText(ls[j], mx, yy); yy += 42; } yy += 8; n++; } }
+      else { var qs = wrap2('A calm sky — no close transits to your chart today.', mw, '30px ' + SERIF), qi; for (qi = 0; qi < qs.length; qi++) { g.fillText(qs[qi], mx, yy); yy += 42; } }
+      g.textAlign = 'center'; g.fillStyle = rgba(ink, 0.4); g.font = '22px ' + MONO; g.fillText('computed on-device · astronomy-engine', W2 / 2, H2 - 56);
+      function dl2() { try { var a = document.createElement('a'); a.href = cv.toDataURL('image/png'); a.download = 'aqau-today.png'; document.body.appendChild(a); a.click(); document.body.removeChild(a); } catch (e2) {} }
+      try {
+        if (cv.toBlob && navigator.share && navigator.canShare) { cv.toBlob(function (blob) { try { var file = new File([blob], 'aqau-today.png', { type: 'image/png' }); if (navigator.canShare({ files: [file] })) navigator.share({ files: [file], title: 'Today', text: phaseName(e) + ' — Aqau Pluto' })['catch'](function () { dl2(); }); else dl2(); } catch (e3) { dl2(); } }, 'image/png'); }
+        else dl2();
+      } catch (e4) { dl2(); }
+    }
     function exportChartCard() {
       var c = APP.STATE.chart, b = APP.STATE.birth; if (!c || !b || typeof document === 'undefined') return;
       var W2 = 1080, H2 = 1350, cv = document.createElement('canvas'); cv.width = W2; cv.height = H2;
@@ -5346,7 +5384,13 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var tm = (d.tr && d.tr.timed) ? d.tr.timed : [];
       if (tm.length) body('• ' + APP.transitSentence(tm[0]), 14);
       else body('The Moon makes no close aspect to your chart right now.', 14);
-      yy += 8;
+      yy += 14;
+      // share today as an image
+      var sbtX = x + pad, sbtY = ty(), sbtW = w - pad * 2, sbtH = 44;
+      p.noStroke(); fillc(INK); p.rect(sbtX, sbtY, sbtW, sbtH, 10);
+      setFont(MONO, 12, GROUNDS[UI.screen], p.CENTER, p.CENTER); p.text('SHARE TODAY (IMAGE)', sbtX + sbtW / 2, sbtY + sbtH / 2 + 0.5);
+      pushHit(sbtX, sbtY, sbtW, sbtH, function () { exportTodayCard(); });
+      yy += sbtH + 10;
       UI.contentH.today = yy + pad;
       dc.restore();
       // clamp panel scroll
