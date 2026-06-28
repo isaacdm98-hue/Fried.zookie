@@ -3426,6 +3426,13 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     function clampB(v) { return v < 0 ? 0 : v > 255 ? 255 : v; }
     function shade(c, d) { return [clampB(c[0] + d), clampB(c[1] + d), clampB(c[2] + d)]; }
     function pressing(x, y, w, h) { return UI.ptrDown && UI.ptrX >= x && UI.ptrX <= x + w && UI.ptrY >= y && UI.ptrY <= y + h; }
+    // AN5 — springy tactile press: eased squish on hold, decaying bounce on release
+    function pressOff(x, y, w, h, depth) {
+      if (reduced()) return pressing(x, y, w, h) ? depth : 0;
+      if (pressing(x, y, w, h)) { var pr = cl01((nowT() - UI.pressT) / 90); return depth * (1 - Math.pow(1 - pr, 2)); }
+      if (UI.lastHit && Math.abs(UI.lastHit.x - x) < 2 && Math.abs(UI.lastHit.y - y) < 2) { var rt = (nowT() - UI.lastHit.t) / 300; if (rt >= 0 && rt < 1) return depth * Math.exp(-rt * 5) * Math.cos(rt * 15); }
+      return 0;
+    }
     function setFont(f, sz, c, ha, va, a) { p.textFont(f); p.textSize(sz); fillc(c, a); p.noStroke(); p.textAlign(ha || p.LEFT, va || p.TOP); p.textStyle(p.NORMAL); }
     function bold() { p.textStyle(p.BOLD); }
     function normal() { p.textStyle(p.NORMAL); }
@@ -3462,7 +3469,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
 
     // ---- widgets ----
     function flatBtn(label, x, ly, w, h, fn, active, small) {
-      var y = sY(ly), depth = 4, r = small ? 5 : 7, dn = pressing(x, y, w, h + depth), off = dn ? depth : 0;
+      var y = sY(ly), depth = 4, r = small ? 5 : 7, off = pressOff(x, y, w, h + depth, depth);
       p.noStroke();
       if (active) {
         fillc(shade(INK, -30)); p.rect(x, y + depth, w, h, r);
@@ -3479,7 +3486,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     }
     function chip(label, on, x, ly, fn) {
       p.textFont(MONO); p.textSize(11);
-      var w = p.textWidth(label.toUpperCase()) + 28, h = 32, y = sY(ly), depth = 3, r = 6, dn = pressing(x, y, w, h + depth), off = dn ? depth : 0;
+      var w = p.textWidth(label.toUpperCase()) + 28, h = 32, y = sY(ly), depth = 3, r = 6, off = pressOff(x, y, w, h + depth, depth);
       p.noStroke();
       if (on) { fillc(shade(ACC, -36)); p.rect(x, y + depth, w, h, r); fillc(ACC); p.rect(x, y + off, w, h, r); }
       else { fillc(shade(GROUNDS[UI.screen], -16)); p.rect(x, y + depth, w, h, r); fillc(GROUNDS[UI.screen]); p.rect(x, y + off, w, h, r); p.noFill(); strokec(INK, 150); p.strokeWeight(1.3); p.rect(x, y + off, w, h, r); }
@@ -5883,10 +5890,10 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     function startTour() { UI.tour = { step: 0 }; UI.screen = 'chart'; }
     function endTour() { UI.tour = null; if (APP.STATE.settings) { APP.STATE.settings.toured = true; APP.save(); } }
     function tourBtn(label, bx, by, bw, bh, fn, primary) {
-      var dn = pressing(bx, by, bw, bh);
-      p.noStroke(); fillc(primary ? INK : GROUNDS.chart); p.rect(bx, by + (dn ? 2 : 0), bw, bh, 7);
-      if (!primary) { p.noFill(); strokec(INK, 200); p.strokeWeight(1.4); p.rect(bx, by + (dn ? 2 : 0), bw, bh, 7); }
-      setFont(MONO, 11, primary ? GROUNDS.chart : INK, p.CENTER, p.CENTER); p.text(label.toUpperCase(), bx + bw / 2, by + (dn ? 2 : 0) + bh / 2 + 0.5);
+      var off = pressOff(bx, by, bw, bh, 3);
+      p.noStroke(); fillc(primary ? INK : GROUNDS.chart); p.rect(bx, by + off, bw, bh, 7);
+      if (!primary) { p.noFill(); strokec(INK, 200); p.strokeWeight(1.4); p.rect(bx, by + off, bw, bh, 7); }
+      setFont(MONO, 11, primary ? GROUNDS.chart : INK, p.CENTER, p.CENTER); p.text(label.toUpperCase(), bx + bw / 2, by + off + bh / 2 + 0.5);
       pushHit(bx, by, bw, bh, fn);
     }
     // a settings gear drawn with shapes (no emoji glyph)
@@ -5900,7 +5907,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     }
     // a play / pause control drawn with shapes (no emoji glyphs)
     function iconBtn(kind, bx, by, bw, bh, fn) {
-      var dn = pressing(bx, by, bw, bh), oy = by + (dn ? 2 : 0), cxx = bx + bw / 2, cyy = oy + bh / 2;
+      var oy = by + pressOff(bx, by, bw, bh, 3), cxx = bx + bw / 2, cyy = oy + bh / 2;
       p.noFill(); strokec(INK, 200); p.strokeWeight(1.4); p.rect(bx, oy, bw, bh, 7);
       p.noStroke(); fillc(INK, 230);
       if (kind === 'pause') { p.rect(cxx - 5, cyy - 6, 3.3, 12, 1); p.rect(cxx + 1.7, cyy - 6, 3.3, 12, 1); }
@@ -5992,7 +5999,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     function release(x, y) {
       UI.ptrDown = false;
       if (UI.inSlider) { UI.inSlider = false; return; }
-      if (!UI.dragging && (nowT() - UI.pressT) < 500) { spawnRipple(x, y); for (var i = hits.length - 1; i >= 0; i--) if (hits[i].fn && inRect(x, y, hits[i])) { blip(660, 0.12, 0.03); hits[i].fn(); break; } }
+      if (!UI.dragging && (nowT() - UI.pressT) < 500) { spawnRipple(x, y); for (var i = hits.length - 1; i >= 0; i--) if (hits[i].fn && inRect(x, y, hits[i])) { blip(660, 0.12, 0.03); UI.lastHit = { x: hits[i].x, y: hits[i].y, t: nowT() }; hits[i].fn(); break; } }
       UI.dragging = false; UI.inCity = false;
     }
     // event -> canvas-local logical coords (robust to any CSS scaling of the artifact iframe)
