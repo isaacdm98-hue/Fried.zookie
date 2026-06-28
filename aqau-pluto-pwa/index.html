@@ -2239,6 +2239,28 @@ var APP = (function () {
     var best = PATKEYS[0]; for (i = 1; i < PATKEYS.length; i++) if (score[PATKEYS[i]] > score[best]) best = PATKEYS[i];
     return { key: best };
   }
+  // unified PROMINENCE model — the "what actually matters in THIS chart" scorer (essential dignity + angularity +
+  // sect + chart rulership + almuten + aspect activity + stellium), with transparent reasons. The intelligence is here.
+  function prominence(c) {
+    var keys = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto'];
+    var isDay = true, sct = sect(c); if (sct) isDay = sct.day;
+    var b = STATE.birth, score = {}, why = {}, i, k;
+    for (i = 0; i < keys.length; i++) { score[keys[i]] = 0; why[keys[i]] = []; }
+    for (i = 0; i < c.aspects.length; i++) { var as = c.aspects[i], add = 1 + Math.max(0, 1 - as.orb / 8); if (score[as.a] != null) score[as.a] += add; if (score[as.b] != null) score[as.b] += add; }
+    for (i = 0; i < 7; i++) { k = keys[i]; var p = c.planets[k]; if (!p) continue; var L = dignityLedger(p.lon, isDay);
+      if (L.domicile === k) { score[k] += 5; why[k].push('in its own sign'); } if (L.exaltation === k) { score[k] += 4; why[k].push('exalted'); }
+      if (L.triplicity === k) score[k] += 3; if (L.bound === k) score[k] += 2; if (L.face === k) score[k] += 1;
+      var dg = dignityOf(k, p.signName); if (dg === 'Detriment') { score[k] -= 4; why[k].push('in detriment'); } if (dg === 'Fall') { score[k] -= 5; why[k].push('in fall'); }
+    }
+    if (b.timeKnown) for (i = 0; i < keys.length; i++) { k = keys[i]; var h = c.planets[k] && c.planets[k].house; if (h === 1 || h === 10) { score[k] += 4; why[k].push('on an angle'); } else if (h === 4 || h === 7) { score[k] += 3; why[k].push('angular'); } }
+    score.sun += 2; score.moon += 2;
+    if (b.timeKnown && c.ascBody) { var ar = RULERKEY[DATA.SIGNS[c.ascBody.sign].ruler]; if (score[ar] != null) { score[ar] += 5; why[ar].push('rules your Ascendant'); } }
+    try { var am = almutenChart(c); if (am && am.lead && score[am.lead] != null) { score[am.lead] += 5; why[am.lead].push('your chart’s almuten'); } } catch (e) {}
+    var bySign = {}; for (i = 0; i < keys.length; i++) { var pp = c.planets[keys[i]]; if (pp) (bySign[pp.sign] = bySign[pp.sign] || []).push(keys[i]); }
+    var sg; for (sg in bySign) if (bySign.hasOwnProperty(sg) && bySign[sg].length >= 3) { for (i = 0; i < bySign[sg].length; i++) { score[bySign[sg][i]] += 2; why[bySign[sg][i]].push('part of a stellium'); } }
+    var ranked = keys.slice().sort(function (a, bk) { return score[bk] - score[a]; });
+    return { ranked: ranked, score: score, why: why, isDay: isDay, oosMalefic: sct ? sct.oosMalefic : null, sect: sct };
+  }
   // any classical planets notably strong or challenged by sign
   function dignityNotes(c) {
     var out = [], order = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn'], i;
@@ -2337,25 +2359,23 @@ var APP = (function () {
   // integrative synthesis: the repeated themes a human astrologer would read across the whole chart
   function composeThemes(c) {
     var themes = [], i, k, cnt = {}, personal = { sun: 1, moon: 1, mercury: 1, venus: 1, mars: 1 };
-    // the almuten figuris — computed, not guessed: the planet that wins the most essential dignity across your chart
-    try {
-      var am = almutenChart(c);
-      if (am && am.lead) {
-        if (am.tie.length > 1) themes.push('By the old mathematics of essential dignity, two planets tie as your chart’s almuten — ' + am.tie.map(nameFor).join(' and ') + ' — sharing command of ' + (DATA.PLANETS[am.lead] ? DATA.PLANETS[am.lead].fn : 'your nature') + '. A chart run by committee.');
-        else themes.push('By the old mathematics of essential dignity, your chart’s almuten — the planet that wins the most dignity across your Sun, Moon, Ascendant, Midheaven and Part of Fortune — is ' + nameFor(am.lead) + '. It is the quiet hand on the whole wheel: ' + (DATA.PLANETS[am.lead] ? DATA.PLANETS[am.lead].fn : '') + ', weighted above all the rest.');
-      }
-    } catch (e0) {}
-    // dispositor chains — follow every planet to the ruler of its sign
-    try {
-      var fd = finalDispositors(c);
-      if (fd && fd.lead) {
-        if (fd.all.length > 1) themes.push('Trace each planet to the ruler of its sign and the chains don’t resolve to one boss — they lock into mutual reception between ' + fd.all.map(nameFor).join(' and ') + ', planets propping each other up. A self-supporting chart with no single master.');
-        else if (fd.count >= 4) themes.push('Trace each planet to the ruler of its sign and the chains converge on ' + nameFor(fd.lead) + ' — it disposits ' + fd.count + ' of your planets, the desk where the whole chart’s business finally lands.');
-      }
-    } catch (e1) {}
-    for (i = 0; i < c.aspects.length; i++) { var as = c.aspects[i]; if (as.a !== 'asc' && as.a !== 'mc') cnt[as.a] = (cnt[as.a] || 0) + 1; if (as.b !== 'asc' && as.b !== 'mc') cnt[as.b] = (cnt[as.b] || 0) + 1; }
-    var focal = null, fmax = 0; for (k in cnt) if (cnt.hasOwnProperty(k) && cnt[k] > fmax) { fmax = cnt[k]; focal = k; }
-    if (focal && fmax >= 3) themes.push('Much of your chart routes through ' + nameFor(focal) + ' (' + fmax + ' aspects) — ' + (DATA.PLANETS[focal] ? DATA.PLANETS[focal].fn : '') + ' is a hub the rest of you keeps negotiating with.');
+    // LEAD WITH WHAT MATTERS: converge prominence + almuten + dispositors on the chart's keystone
+    var pr = prominence(c), am = null, fd = null;
+    try { am = almutenChart(c); } catch (e0) {}
+    try { fd = finalDispositors(c); } catch (e1) {}
+    var top = pr.ranked[0], pdesc = top ? (DATA.PLANETS[top] ? DATA.PLANETS[top].fn : '') : '';
+    var amSingle = am && am.lead && am.tie.length === 1, fdSingle = fd && fd.lead && fd.all.length === 1;
+    if (top && amSingle && am.lead === top && fdSingle && fd.lead === top) {
+      themes.push('Three independent measures converge: by essential dignity (the almuten), by the dispositor chains, and by sheer prominence, ' + nameFor(top) + ' is the keystone of your chart. ' + capit(pdesc) + ' is the hand on everything else.');
+    } else {
+      if (top) { var reasons = pr.why[top].slice(0, 3), rtxt = reasons.length ? (' — ' + reasons.join(', ')) : ''; themes.push('The loudest voice in your chart is ' + nameFor(top) + rtxt + '. ' + capit(pdesc) + ' sets the tone the rest of you answers to.'); }
+      if (amSingle && am.lead !== top) themes.push('By essential dignity, your almuten — the planet that wins the most dignity across your chart — is ' + nameFor(am.lead) + ', a quieter but weighty hand on the wheel.');
+      else if (am && am.tie.length > 1) themes.push('Two planets tie as your chart’s almuten by essential dignity — ' + am.tie.map(nameFor).join(' and ') + ' — sharing command. A chart run by committee.');
+      if (fdSingle && fd.lead !== top && fd.count >= 4) themes.push('Trace each planet to the ruler of its sign and the chains converge on ' + nameFor(fd.lead) + ' — the desk where the whole chart’s business lands.');
+      else if (fd && fd.all.length > 1) themes.push('Your dispositor chains lock into mutual reception between ' + fd.all.map(nameFor).join(' and ') + ' — planets propping each other up, no single master.');
+    }
+    // the sharpest edge: the out-of-sect malefic (classical "major source of difficulty")
+    if (pr.oosMalefic && c.planets[pr.oosMalefic]) themes.push('Handle ' + nameFor(pr.oosMalefic) + ' in ' + c.planets[pr.oosMalefic].signName + ' with the most care — as the malefic out of sect, it’s your chart’s sharpest edge, and the place the most maturity is asked of you.');
     var outers = ['saturn', 'pluto', 'uranus', 'neptune', 'jupiter'], note = { saturn: 'a recurring theme of weight, testing and hard-won mastery', pluto: 'a recurring theme of intensity and transformation', uranus: 'a thread of disruption and the need for freedom', neptune: 'a haze of longing, imagination and idealism', jupiter: 'a note of expansion, faith and excess' };
     for (var oi = 0; oi < outers.length; oi++) { var o = outers[oi], hits = []; for (i = 0; i < c.aspects.length; i++) { var a2 = c.aspects[i], other = (a2.a === o) ? a2.b : (a2.b === o ? a2.a : null); if (other && personal[other]) hits.push(other); } if (hits.length >= 2) { themes.push(nameFor(o) + ' leans on several of your personal planets (' + hits.map(nameFor).join(', ') + ') — ' + note[o] + ' running through your inner life.'); break; } }
     var soft = 0, hard = 0; for (i = 0; i < c.aspects.length; i++) { var q = c.aspects[i].asp.quality; if (q === 'flow' || q === 'opportunity') soft++; else if (q === 'friction' || q === 'tension') hard++; }
@@ -3373,7 +3393,7 @@ var APP = (function () {
     STATE: STATE, save: save, load: load, compute: computeChart,
     composeCore: composeCore, localAsk: localAsk, chartText: chartText, callModel: callModel,
     composeTransits: composeTransits, transitSentence: transitSentence, composeSignatures: composeSignatures,
-    addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenOf: almutenOf, almutenChart: almutenChart, finalDispositors: finalDispositors, composeThemes: composeThemes, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide,
+    addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenOf: almutenOf, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, composeThemes: composeThemes, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide,
     saveCurrentChart: saveCurrentChart, deleteSavedChart: deleteSavedChart, activateSavedChart: activateSavedChart, activeChartKey: activeChartKey, chartKey: chartKey, famousMatches: famousMatches, lifeTransits: lifeTransits, upcomingTransits: upcomingTransits, compositeChart: compositeChart,
     nameFor: nameFor, glyphFor: glyphFor, sgAbbr: sgAbbr, pad: pad,
     domElement: domElement, lowElement: lowElement, domMod: domMod, tzOffsetHours: tzOffsetHours
