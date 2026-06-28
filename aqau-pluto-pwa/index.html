@@ -4477,6 +4477,21 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       { t: 'Synastry', d: 'Comparing two charts to see how two people’s planets meet — the texture of a bond.' },
       { t: 'Part of Fortune', d: 'A calculated point (Ascendant + Moon − Sun by day) marking where ease and luck gather.' }
     ];
+    // the myths behind the twelve signs — told beside the antique constellation art (safe allow-list)
+    var MYTHS = [
+      { s: 0, t: 'The Golden Ram', story: 'Aries is Chrysomallos, the winged ram with the golden fleece who carried the children Phrixus and Helle away from sacrifice. That same fleece, hung in a sacred grove, became the prize Jason and the Argonauts would sail the world to win.' },
+      { s: 1, t: 'Zeus & Europa', story: 'Taurus is the snow-white bull Zeus became to win Europa. She climbed onto his gentle back and he swam her across the sea to Crete. In the sky he is shown only as head and shoulders, rising from the waves.' },
+      { s: 2, t: 'The Twins', story: 'Gemini are Castor and Pollux — one mortal, one immortal, inseparable brothers. When Castor died, Pollux begged to share his own immortality rather than be parted, and Zeus set them together in the stars forever.' },
+      { s: 3, t: 'The Crab', story: 'Cancer is Karkinos, the crab Hera sent to distract Heracles as he fought the Hydra. He crushed it underfoot — but Hera, grateful for its loyalty, lifted the little crab into the heavens.' },
+      { s: 4, t: 'The Nemean Lion', story: 'Leo is the great lion of Nemea, whose hide no blade could pierce. Heracles strangled it with his bare hands as the first of his twelve labours, and wore its golden skin ever after.' },
+      { s: 5, t: 'The Maiden', story: 'Virgo is the maiden of the harvest — often Astraea, goddess of justice. The last immortal to live among us, she withdrew to the sky as the world grew cruel, holding her sheaf of wheat (the bright star Spica).' },
+      { s: 6, t: 'The Scales', story: 'Libra is the only sign that is an object, not a creature: the scales of divine justice held by Astraea. They weigh right against wrong, and ask, always, for balance.' },
+      { s: 7, t: 'The Scorpion', story: 'Scorpio is the scorpion that struck down Orion the boastful hunter. The two were set at opposite ends of the sky, so that as the Scorpion rises, Orion forever flees below the horizon.' },
+      { s: 8, t: 'The Archer', story: 'Sagittarius is the centaur archer — often wise Chiron, the immortal healer — drawing his bow toward the heart of the Scorpion. Half-man, half-horse, he aims always at something higher.' },
+      { s: 9, t: 'The Sea-Goat', story: 'Capricorn is the strange sea-goat: the god Pan, who leapt into the Nile to escape the monster Typhon and turned his lower half to fish. Half mountain-climber, half deep-sea diver — earthly drive with hidden depths.' },
+      { s: 10, t: 'The Cup-Bearer', story: 'Aquarius is Ganymede, the youth carried to Olympus by Zeus’s eagle to pour wine for the gods. He tips his urn and pours the waters of life out upon the world.' },
+      { s: 11, t: 'The Two Fishes', story: 'Pisces are Aphrodite and her son Eros, who became fish and tied themselves together with a cord so they would not lose each other fleeing Typhon — two fish, bound, swimming opposite ways.' }
+    ];
     function startLesson() { UI.lesson = { i: 0, t0: nowT() }; UI.scroll.learn = 0; }
     function lessonNext() { if (!UI.lesson) return; if (UI.lesson.i >= LESSON.length - 1) { UI.lesson = null; return; } UI.lesson.i++; UI.lesson.t0 = nowT(); }
     function lessonPrev() { if (UI.lesson && UI.lesson.i > 0) { UI.lesson.i--; UI.lesson.t0 = nowT(); } }
@@ -4681,7 +4696,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var pulse = reduced() ? 0 : Math.sin(nowT() * 0.004) * 2; setFont(SANS, 22, GROUNDS[UI.screen], p.RIGHT, p.CENTER); p.text('›', x + w - 18 + pulse, hy + hh / 2);
       pushHit(x, hy, w, hh, function () { startLesson(); }); ly += hh + 20;
       eyebrow('Or explore freely', x, ly, ACC); ly += 26;
-      var cats = [['elements', 'Elements'], ['signs', 'Signs'], ['planets', 'Planets'], ['houses', 'Houses'], ['aspects', 'Aspects'], ['history', 'History'], ['famous', 'Like you'], ['glossary', 'Glossary']];
+      var cats = [['elements', 'Elements'], ['signs', 'Signs'], ['planets', 'Planets'], ['houses', 'Houses'], ['aspects', 'Aspects'], ['history', 'History'], ['myths', 'Myths'], ['famous', 'Like you'], ['glossary', 'Glossary']];
       var cxp = x, cyp = ly, ci;
       for (ci = 0; ci < cats.length; ci++) { p.textFont(MONO); p.textSize(11); var ww = p.textWidth(cats[ci][1].toUpperCase()) + 28; if (cxp + ww > x + w) { cxp = x; cyp += 40; } chip(cats[ci][1], UI.learnCat === cats[ci][0], cxp, cyp, (function (cc) { return function () { UI.learnCat = cc; UI.learnItem = null; UI.scroll.learn = 0; UI.popT = nowT(); }; })(cats[ci][0])); cxp += ww + 8; }
       ly = cyp + 50;
@@ -4749,6 +4764,16 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
           setFont(SANS, 18, INK, p.RIGHT, p.CENTER, 120); p.text('\u203A', x + w, sY(ly + rh / 2));
           (function (idx, ay) { pushHit(x, sY(ay), w, rh, function () { UI.learnItem = idx; UI.scroll.learn = 0; UI.popT = nowT(); }); })(i, ly); ly += rh;
         }
+      } else if (cat === 'myths') { // the story behind each sign
+        ly += paragraph('Every sign is a story the ancients pinned to the stars. Here are the twelve, told beside the antique constellation art.', x, ly, w, 14.5, INK, SERIF, 22, 200) + 12;
+        for (i = 0; i < MYTHS.length; i++) {
+          var my = MYTHS[i], S2 = DATA.SIGNS[my.s]; if (i) hairline(x, ly, x + w, 40);
+          setFont(SANS, 17, ACC, p.LEFT, p.CENTER); p.text(S2.glyph, x + 2, sY(ly + rh / 2));
+          setFont(SANS, 14.5, INK, p.LEFT, p.CENTER); bold(); p.text(S2.name, x + 34, sY(ly + rh / 2) - 8); normal();
+          setFont(MONO, 9.5, INK, p.LEFT, p.CENTER, 160); p.text(my.t.toUpperCase(), x + 34, sY(ly + rh / 2) + 10);
+          setFont(SANS, 18, INK, p.RIGHT, p.CENTER, 120); p.text('›', x + w, sY(ly + rh / 2));
+          (function (idx, ay) { pushHit(x, sY(ay), w, rh, function () { UI.learnItem = idx; UI.scroll.learn = 0; UI.popT = nowT(); }); })(i, ly); ly += rh;
+        }
       } else if (cat === 'famous') { // historical figures & icons who share your chart
         if (!UI.fmList) UI.fmList = APP.famousMatches(c);
         var fm = UI.fmList, sunName = DATA.SIGNS[c.planets.sun.sign].name;
@@ -4781,7 +4806,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     }
     // animated explanation diagram per category: builds on entry, idles with life, replays on tap
     function learnDiagram(cat, it, c, x, w, ly) {
-      if (cat === 'history' || cat === 'glossary' || cat === 'famous') return 0; // these draw their own content
+      if (cat === 'history' || cat === 'glossary' || cat === 'famous' || cat === 'myths') return 0; // these draw their own content
       var H0 = 152, cx = x + w / 2, top = sY(ly), cyc = top + H0 / 2;
       var ent = cl01((nowT() - UI.popT) / 1300), e = eExpo(ent), idle = nowT() * 0.001; // slower, more cinematic
       p.noStroke(); fillc(shade(GROUNDS[UI.screen], -10)); p.rect(x, top, w, H0, 10);
@@ -4895,6 +4920,22 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         if (ao.length) { var li; for (li = 0; li < ao.length; li++) { var a0 = ao[li]; setFont(SANS, 15, INK, p.LEFT, p.TOP); p.text(APP.glyphFor(a0.a) + '  ' + A.glyph + '  ' + APP.glyphFor(a0.b), x, sY(ly)); setFont(MONO, 10.5, INK, p.LEFT, p.TOP, 150); p.text(APP.nameFor(a0.a) + ' ' + A.key + ' ' + APP.nameFor(a0.b) + '  \u00B7  orb ' + a0.orb.toFixed(1) + '\u00B0', x + 70, sY(ly) + 3); ly += 26; } }
         else ly += paragraph('You have no ' + A.key + ' aspects within orb.', x, ly, w, 16, INK, SERIF, 24);
         ly += 12;
+      } else if (cat === 'myths') {
+        var my2 = MYTHS[it], S3 = DATA.SIGNS[my2.s];
+        p.textFont(SANS); p.textSize(28); fillc(ACC); p.textStyle(p.BOLD); p.noStroke(); p.text(S3.glyph + '  ', x, sY(ly)); var mgw = p.textWidth(S3.glyph + '  '); fillc(INK); p.text(S3.name, x + mgw, sY(ly)); normal(); ly += 38;
+        eyebrow(my2.t, x, ly, ACC); ly += 24;
+        loadArtifacts('myth' + it, "Urania's Mirror " + S3.name);
+        var mW = w, mH = 224, my0 = sY(ly);
+        p.noStroke(); fillc(shade(GROUNDS[UI.screen], -12)); p.rect(x, my0, mW, mH, 10);
+        var mimg = artNow('myth' + it), mstt = (UI.artStatus && UI.artStatus['myth' + it]) || 'loading';
+        if (mimg) drawArtifactKB(mimg, x + 3, my0 + 3, mW - 6, mH - 6, nowT(), 1);
+        else { setFont(MONO, 10, INK, p.CENTER, p.CENTER, 160); p.text((mstt === 'offline' || mstt === 'err') ? 'CONNECT TO SEE THE CONSTELLATION ART' : 'GATHERING THE CONSTELLATION ART…', x + mW / 2, my0 + mH / 2); }
+        p.noFill(); strokec(INK, 90); p.strokeWeight(1.5); p.rect(x, my0, mW, mH, 10);
+        ly += mH + 8;
+        setFont(MONO, 8.5, INK, p.LEFT, p.TOP, 140); ly += paragraph('Public-domain plate via Wikimedia Commons.', x, ly, w, 11, INK, MONO, 15, 140) + 10;
+        ly += paragraph(my2.story, x, ly, w, 16.5, INK, SERIF, 25) + 12;
+        var ps2 = planetsInSign(c, my2.s);
+        if (ps2.length) ly += paragraph('In your chart, ' + ps2.map(function (k) { return APP.nameFor(k); }).join(', ') + ' ' + (ps2.length === 1 ? 'lives' : 'live') + ' in ' + S3.name + ' — this myth is one of yours.', x, ly, w, 15, INK, SERIF, 23, 215) + 10;
       } else if (cat === 'famous') {
         var fm2 = UI.fmList || (UI.fmList = APP.famousMatches(c)), fp2 = fm2[it];
         if (!fp2) { UI.learnItem = null; return ly; }
