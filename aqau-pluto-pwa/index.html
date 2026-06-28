@@ -2195,6 +2195,24 @@ var APP = (function () {
     return themes.slice(0, 3);
   }
 
+  // aspects from the sensitive points (North Node, Lilith, Part of Fortune) to your natal planets
+  var POINT_KEYS = [['trueNode', 'North Node', 'the growth that stretches you toward who you’re becoming'], ['lilith', 'Black Moon Lilith', 'the wild, unapologetic part of you'], ['pof', 'Part of Fortune', 'where ease and good fortune flow most freely']];
+  function pointAspects(c) {
+    var natal = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto'], out = [], pi, ni;
+    for (pi = 0; pi < POINT_KEYS.length; pi++) {
+      var pk = POINT_KEYS[pi][0], pt = c.points && c.points[pk]; if (!pt) continue;
+      for (ni = 0; ni < natal.length; ni++) {
+        var np = c.planets[natal[ni]]; if (!np) continue;
+        var a = relAspect(angSep(pt.lon, np.lon));
+        if (a) out.push({ point: pk, pointName: POINT_KEYS[pi][1], pointFn: POINT_KEYS[pi][2], np: natal[ni], asp: a.asp, orb: a.orb });
+      }
+    }
+    out.sort(function (x, y) { return x.orb - y.orb; });
+    return out.slice(0, 5);
+  }
+  function pointAspectLine(pa) {
+    return pa.pointName + ' ' + pa.asp.key + ' your ' + nameFor(pa.np) + ' — ' + pa.pointFn + ' ' + aspVerb(pa.asp) + ' your ' + shortFn(pa.np) + ', ' + aspTone(pa.asp) + '.';
+  }
   function composeSignatures(c) {
     var out = [], th = composeThemes(c), ti;
     for (ti = 0; ti < th.length; ti++) out.push({ label: ti === 0 ? 'The throughline' : 'Also running through you', text: th[ti] });
@@ -2216,6 +2234,8 @@ var APP = (function () {
     if (rr.length) out.push({ label: 'Born retrograde', text: rr.map(nameFor).join(', ') + ' ' + (rr.length === 1 ? 'was' : 'were') + ' retrograde at your birth — that energy turns inward first: more reflective, reworked, personal before it’s expressed outwardly.' });
     var fs = starsOn(c);
     if (fs.length) out.push({ label: 'Fixed stars', text: fs.map(function (s) { return nameFor(s.planet) + ' on ' + s.star + ' (' + s.m + ')'; }).join('; ') + '.' });
+    var pa = pointAspects(c);
+    if (pa.length) out.push({ label: 'Nodes, Lilith & Fortune', lines: pa.map(pointAspectLine) });
     var bc = balanceCoaching(c);
     out.push({ label: 'Where you’re light', text: bc.join(' ') });
     return out;
@@ -3751,7 +3771,8 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         for (var sgi = 0; sgi < UI.readSig.length; sgi++) {
           var blk = UI.readSig[sgi];
           setFont(MONO, 9.5, INK, p.LEFT, p.TOP, 210); bold(); p.text(blk.label.toUpperCase(), x, sY(ly)); normal(); ly += 17;
-          ly += paragraph(blk.text, x, ly, w, 15, INK, SERIF, 23) + 14;
+          if (blk.text) ly += paragraph(blk.text, x, ly, w, 15, INK, SERIF, 23) + 14;
+          if (blk.lines) { for (var sL = 0; sL < blk.lines.length; sL++) ly += paragraph('• ' + blk.lines[sL], x, ly, w, 14, INK, SERIF, 21) + 8; ly += 6; }
         }
       }
 
