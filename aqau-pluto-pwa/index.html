@@ -3124,8 +3124,8 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       }
     }
     function selectPlanet(key) {
-      if (key === UI.selPlanet) { UI.popT = nowT(); UI.popFrom = UI.pdia[key] || 22; return; }
       UI.popFrom = UI.pdia[key] || 22; UI.selPlanet = key; UI.popT = nowT();
+      openStory(key); // tapping a placement opens its story (the wheel ripples away to reveal it)
     }
 
     // three reels
@@ -3169,9 +3169,69 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       return 28;
     }
 
+    // ---------- placement STORY: tap a body, the wheel ripples away to reveal what it means ----------
+    var DIGN = {
+      sun: { dom: ['Leo'], exa: 'Aries', det: ['Aquarius'], fal: 'Libra' },
+      moon: { dom: ['Cancer'], exa: 'Taurus', det: ['Capricorn'], fal: 'Scorpio' },
+      mercury: { dom: ['Gemini', 'Virgo'], exa: 'Virgo', det: ['Sagittarius', 'Pisces'], fal: 'Pisces' },
+      venus: { dom: ['Taurus', 'Libra'], exa: 'Pisces', det: ['Aries', 'Scorpio'], fal: 'Virgo' },
+      mars: { dom: ['Aries', 'Scorpio'], exa: 'Capricorn', det: ['Libra', 'Taurus'], fal: 'Cancer' },
+      jupiter: { dom: ['Sagittarius', 'Pisces'], exa: 'Cancer', det: ['Gemini', 'Virgo'], fal: 'Capricorn' },
+      saturn: { dom: ['Capricorn', 'Aquarius'], exa: 'Libra', det: ['Cancer', 'Leo'], fal: 'Aries' }
+    };
+    function dignityBadge(key, signName) { var d = DIGN[key]; if (!d) return ''; if (d.dom.indexOf(signName) >= 0) return 'Domicile'; if (d.exa === signName) return 'Exaltation'; if (d.fal === signName) return 'Fall'; if (d.det.indexOf(signName) >= 0) return 'Detriment'; return ''; }
+    function openStory(key) { UI.story = { key: key, t0: nowT() }; UI.selPlanet = key; UI.scroll.chart = 0; }
+    function closeStory() { UI.story = null; UI.fxT = nowT(); }
+    function storyAspects(c, key) { var out = [], i; for (i = 0; i < c.aspects.length; i++) { var a = c.aspects[i]; if (a.a === key || a.b === key) out.push({ other: (a.a === key) ? a.b : a.a, asp: a.asp, orb: a.orb }); } return out.slice(0, 4); }
+    function drawStory(c, b) {
+      var key = UI.story.key, pl = (key === 'asc') ? c.ascBody : c.planets[key]; if (!pl) { closeStory(); return; }
+      var x = sx(), w = cw(), still = reduced(), te = cl01((nowT() - UI.story.t0) / 600), e = eCubic(te), cx = x + w / 2, ly = 20;
+      flatBtn('‹ Back to the wheel', x, ly, 190, 38, function () { closeStory(); }, false, true); ly += 54;
+      var heroR = 34, hy = sY(ly + heroR);
+      // the wheel expanding away: a ghost zodiac ring grows and dissolves, with ripple rings
+      if (te < 1 && !still) {
+        var gr = 70 * (1 + e * 2.4), ga = (1 - e);
+        p.noFill(); strokec(INK, 180 * ga); p.strokeWeight(1.5); p.ellipse(cx, hy, gr * 2, gr * 2);
+        for (var z = 0; z < 12; z++) { var aa = z * 30 * Math.PI / 180; setFont(SANS, 11, INK, p.CENTER, p.CENTER, 140 * ga); p.text(DATA.SIGNS[z].glyph, cx + Math.cos(aa) * (gr + 12), hy - Math.sin(aa) * (gr + 12)); }
+        for (var r = 0; r < 3; r++) { var rp = cl01(e * 1.25 - r * 0.16); if (rp > 0 && rp < 1) { p.noFill(); strokec(ACC, (1 - rp) * 110); p.strokeWeight(1.4); p.ellipse(cx, hy, rp * 820, rp * 820); } }
+      }
+      // hero glyph blooms at centre
+      var gscale = 0.55 + 0.45 * e, ds = heroR * 2 * gscale, hb = cl01(te * 1.5), pulse = still ? 0.5 : 0.5 + 0.5 * Math.sin(nowT() * 0.005);
+      p.noFill(); strokec(ACC, 200 * hb); p.strokeWeight(2); p.ellipse(cx, hy, ds + 16 + pulse * 6, ds + 16 + pulse * 6);
+      p.noStroke(); fillc(INK, 255 * hb); p.ellipse(cx, hy, ds, ds);
+      setFont(SANS, ds * 0.5, GROUNDS[UI.screen], p.CENTER, p.CENTER); p.text(APP.glyphFor(key), cx, hy + 0.5);
+      ly += heroR * 2 + 18;
+      var ca = still ? 1 : cl01((te - 0.4) / 0.6); // content reveals after the ripple
+      var title = (key === 'asc') ? (pl.signName + ' Rising') : (APP.nameFor(key) + ' in ' + pl.signName);
+      setFont(SANS, 25, INK, p.CENTER, p.TOP, 255 * ca); bold(); p.text(title, cx, sY(ly)); normal(); ly += 34;
+      function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+      var sub = (b.timeKnown ? ('House ' + pl.house + ' · ') : '') + cap(DATA.SIGNS[pl.sign].element) + ' · ' + cap(DATA.SIGNS[pl.sign].modality);
+      setFont(MONO, 10.5, INK, p.CENTER, p.TOP, 200 * ca); p.text(sub.toUpperCase(), cx, sY(ly)); ly += 24;
+      var dg = dignityBadge(key, pl.signName);
+      if (dg) { p.textFont(MONO); p.textSize(10); var bw = p.textWidth(dg.toUpperCase()) + 24, bx = cx - bw / 2, byy = sY(ly), strong = (dg === 'Domicile' || dg === 'Exaltation'); p.noStroke(); fillc(strong ? ACC : shade(GROUNDS[UI.screen], -16), 255 * ca); p.rect(bx, byy, bw, 20, 10); setFont(MONO, 10, strong ? GROUNDS[UI.screen] : INK, p.CENTER, p.CENTER, 255 * ca); p.text(dg.toUpperCase(), cx, byy + 10); ly += 30; }
+      ly += 8;
+      ly += paragraph(planetBlurb(c, key), x, ly, w, 16.5, INK, SERIF, 26, 255 * ca) + 16;
+      var asps = storyAspects(c, key);
+      if (asps.length) {
+        eyebrow('How it connects', x, ly, ACC); ly += 24;
+        for (var i = 0; i < asps.length; i++) {
+          var a = asps[i], qc = a.asp.quality; if (i) hairline(x, ly, x + w, 32);
+          setFont(SANS, 13, (qc === 'flow' || qc === 'opportunity') ? ELHUE.air : (qc === 'fusion' ? INK : ACC), p.LEFT, p.CENTER, 255 * ca); bold(); p.text(a.asp.glyph, x + 2, sY(ly + 16)); normal();
+          setFont(SANS, 13.5, INK, p.LEFT, p.CENTER, 255 * ca); p.text(APP.nameFor(a.other), x + 24, sY(ly + 16));
+          setFont(MONO, 10, INK, p.RIGHT, p.CENTER, 160 * ca); p.text(a.asp.key + ' · ' + a.orb.toFixed(1) + '°', x + w, sY(ly + 16));
+          ly += 30;
+        }
+        ly += 8;
+        ly += paragraph(cap(APP.nameFor(key)) + ' and ' + APP.nameFor(asps[0].other) + ' are ' + asps[0].asp.phrase + '.', x, ly, w, 14.5, INK, SERIF, 22, 220 * ca) + 10;
+      }
+      setFont(MONO, 9, INK, p.CENTER, p.TOP, 120 * ca); p.text('TAP BACK TO RETURN TO YOUR WHEEL', cx, sY(ly)); ly += 26;
+      UI.contentH.chart = ly;
+    }
+
     // ============ SCREENS ============
     function drawChart() {
       var c = APP.STATE.chart, b = APP.STATE.birth; if (!c) { UI.screen = 'onboard'; return; }
+      if (UI.story) { drawStory(c, b); return; }
       var x = sx(), w = cw(), ly = 18;
       eyebrow('Birth chart \u00B7 ' + b.d + '.' + b.mo + '.' + b.y, x, ly); ly += 22;
       var titleSign = b.timeKnown ? c.ascBody.signName : c.planets.sun.signName;
@@ -3620,9 +3680,13 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       p.textStyle(p.BOLD); glitchText('The sky, explained', x, sY(ly), 29, SANS, INK, p.LEFT, p.TOP, gi); normal(); ly += 44;
       var cats = [['elements', 'Elements'], ['signs', 'Signs'], ['planets', 'Planets'], ['houses', 'Houses'], ['aspects', 'Aspects']];
       var cxp = x, cyp = ly, ci;
-      for (ci = 0; ci < cats.length; ci++) { p.textFont(MONO); p.textSize(11); var ww = p.textWidth(cats[ci][1].toUpperCase()) + 28; if (cxp + ww > x + w) { cxp = x; cyp += 40; } chip(cats[ci][1], UI.learnCat === cats[ci][0], cxp, cyp, (function (cc) { return function () { UI.learnCat = cc; UI.learnItem = null; UI.scroll.learn = 0; }; })(cats[ci][0])); cxp += ww + 8; }
+      for (ci = 0; ci < cats.length; ci++) { p.textFont(MONO); p.textSize(11); var ww = p.textWidth(cats[ci][1].toUpperCase()) + 28; if (cxp + ww > x + w) { cxp = x; cyp += 40; } chip(cats[ci][1], UI.learnCat === cats[ci][0], cxp, cyp, (function (cc) { return function () { UI.learnCat = cc; UI.learnItem = null; UI.scroll.learn = 0; UI.popT = nowT(); }; })(cats[ci][0])); cxp += ww + 8; }
       ly = cyp + 50;
+      // a gentle fade-in each time the category or item changes — a small storytelling beat
+      var lfx = Math.max(UI.fxT, UI.popT || 0), le = reduced() ? 1 : eCubic(cl01((nowT() - lfx) / 380));
+      var ldc = p.drawingContext; if (ldc) { ldc.save(); ldc.globalAlpha = 0.12 + 0.88 * le; }
       ly = (UI.learnItem == null) ? learnList(c, x, w, ly) : learnDetail(c, b, x, w, ly);
+      if (ldc) ldc.restore();
       UI.contentH.learn = ly + 10;
     }
     function learnList(c, x, w, ly) {
@@ -3999,7 +4063,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     };
     p.windowResized = function () { measureInsets(); W = p.windowWidth; H = p.windowHeight; p.resizeCanvas(W, H); buildField(); };
     p.draw = function () {
-      if (UI.screen !== UI.prevScreen) { UI.fxT = nowT(); UI.prevScreen = UI.screen; setBodyBg(GROUNDS[UI.screen] || GROUNDS.chart); }
+      if (UI.screen !== UI.prevScreen) { UI.fxT = nowT(); UI.prevScreen = UI.screen; UI.story = null; setBodyBg(GROUNDS[UI.screen] || GROUNDS.chart); }
       UI.bg = (GROUNDS[UI.screen] || GROUNDS.chart); // HARD block-colour cut between sections
       p.background(UI.bg[0], UI.bg[1], UI.bg[2]);
       drawField(); drawRipples();
