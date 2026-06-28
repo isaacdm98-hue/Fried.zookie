@@ -2275,10 +2275,24 @@ var APP = (function () {
     for (i = 0; i < b.length; i++) { var t = b[i]; if (mineBy[t.tp] && !seen[t.tp]) { seen[t.tp] = 1; out.push('Transiting ' + nameFor(t.tp) + ' is touching both charts right now — your ' + nameFor(mineBy[t.tp].np) + ' and their ' + nameFor(t.np) + ' — a theme you’re both feeling at once.'); } }
     return out;
   }
+  // composite chart: the midpoint of each body between two people — the relationship as its own entity
+  function midLon(a, b) { var d = ((b - a + 540) % 360) - 180; return rev(a + d / 2); }
+  function compositeChart(cMe, cThem) {
+    var keys = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn'], out = { planets: {} }, i;
+    for (i = 0; i < keys.length; i++) { var pm = cMe.planets[keys[i]], pt = cThem.planets[keys[i]]; if (pm && pt) { var lon = midLon(pm.lon, pt.lon), sg = Math.floor(lon / 30); out.planets[keys[i]] = { lon: lon, sign: sg, signName: DATA.SIGNS[sg].name }; } }
+    if (cMe.ascBody && cThem.ascBody) { var al = midLon(cMe.ascBody.lon, cThem.ascBody.lon), as = Math.floor(al / 30); out.asc = { lon: al, sign: as, signName: DATA.SIGNS[as].name }; }
+    return out;
+  }
+  function compositeText(comp) {
+    var su = comp.planets.sun, mo = comp.planets.moon, ve = comp.planets.venus; if (!su || !mo) return '';
+    var el = DATA.SIGNS[su.sign].element, purpose = ({ fire: 'action, adventure and keeping each other inspired', earth: 'building something solid and real together', air: 'ideas, conversation and a shared point of view', water: 'feeling, care and emotional depth' })[el] || 'a shared path';
+    return 'Treated as its own being, the relationship has its Sun in ' + su.signName + ', its Moon in ' + mo.signName + (comp.asc ? ', rising ' + comp.asc.signName : '') + (ve ? ', and Venus in ' + ve.signName : '') + '. Its centre of gravity leans toward ' + purpose + ' — the thing the two of you keep returning to.';
+  }
   function composeBond(person) {
     var cMe = STATE.chart, cThem = personChart(person), syn = synastry(cMe, cThem), blocks = [];
     blocks.push({ label: 'Between you', text: bondHeadline(cMe, cThem, syn) });
     var top = syn.slice(0, 5).map(synLine); if (top.length) blocks.push({ label: 'Strongest contacts', lines: top });
+    var comp = compositeChart(cMe, cThem), ctext = compositeText(comp); if (ctext) blocks.push({ label: 'Your composite — the relationship itself', text: ctext });
     var shared = sharedTransits(cMe, cThem); if (shared.length) blocks.push({ label: 'Live between you — today', text: shared.slice(0, 2).join(' ') });
     var trT = composeTransits(cThem);
     if (trT.daily.length) blocks.push({ label: 'Live for them — today', text: 'What the sky is doing to ' + (person.name || 'them') + ' now: ' + trT.daily.slice(0, 2).map(transitSentence).join(' ') });
