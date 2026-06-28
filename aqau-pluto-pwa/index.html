@@ -1492,7 +1492,7 @@ var APP = (function () {
   }
   function aspectMeaning(c, as) {
     function role(k) { if (k === 'asc') return 'your outward self'; if (k === 'mc') return 'your public direction'; return DATA.PLANETS[k].fn; }
-    return capit(role(as.a)) + ' and ' + role(as.b) + ' are ' + as.asp.phrase + '.';
+    return capit(role(as.a)) + ' and ' + role(as.b) + ' are ' + as.asp.phrase + '. ' + capit(practicalTilt(as.asp.quality)) + ' — you’ll feel it most in ' + practicalDomain(as.a) + '.';
   }
   function bodyLine(c, key) {
     var p = c.planets[key]; if (!p) return '';
@@ -2019,10 +2019,47 @@ var APP = (function () {
     if (key === 'mc') return 'your public direction and reputation';
     return DATA.PLANETS[key] ? DATA.PLANETS[key].fn : '';
   }
+  // ground every dynamic in concrete, everyday life — not abstractions
+  function practicalDomain(key) {
+    return ({
+      sun: 'your confidence, your health and what you get recognised for',
+      moon: 'your moods, sleep, eating and home life',
+      mercury: 'your messages, plans, paperwork and conversations',
+      venus: 'money, comfort, romance and the people you want around',
+      mars: 'your energy, your sex drive, workouts and your temper',
+      jupiter: 'opportunities, travel, study and your bigger plans',
+      saturn: 'work, money discipline, responsibilities and where you hit limits',
+      uranus: 'sudden changes, tech, and your need for freedom',
+      neptune: 'sleep, imagination, escapism and what you idealise',
+      pluto: 'control, power struggles and what you can’t let go of',
+      asc: 'how you come across and the first impression you make',
+      mc: 'your job, reputation and public standing',
+      node: 'the direction life keeps nudging you to grow'
+    })[key] || 'this part of your life';
+  }
+  function practicalTilt(quality) {
+    return ({
+      fusion: 'this area gets loud and hard to ignore — put your attention here on purpose',
+      tension: 'expect a tug-of-war here; the fix is a deliberate compromise, not avoiding it',
+      flow: 'this is where things move with little effort — a good place to push your luck',
+      friction: 'expect snags here, so slow down and handle them one at a time',
+      opportunity: 'a small, practical opening here if you actually act on it'
+    })[quality] || 'worth a little conscious attention';
+  }
+  function relDomain(key) {
+    return ({
+      sun: 'whose plans and pride lead', moon: 'comfort, moods and feeling cared for',
+      mercury: 'how you talk things through and make decisions', venus: 'affection, money and taste',
+      mars: 'desire, drive and how you argue', jupiter: 'fun, travel and growing together',
+      saturn: 'commitment, chores and long-term plans', asc: 'first impressions and everyday rapport',
+      mc: 'status, ambition and how you show up as a pair'
+    })[key] || 'day-to-day life together';
+  }
   function transitSentence(t) {
     var base = 'Transiting ' + nameFor(t.tp) + ' is ' + aspVerb(t.asp) + ' your natal ' + nameFor(t.np) + ', ' + aspTone(t.asp);
-    if (t.tp === t.np) return base + ' — the sky’s ' + nameFor(t.tp) + ' stirring your own.';
-    return base + ' — ' + DATA.PLANETS[t.tp].fn + ', meeting ' + natalFn(t.np) + '.';
+    var tail = ' In daily life: ' + practicalDomain(t.np) + ' — ' + practicalTilt(t.asp.quality) + '.';
+    if (t.tp === t.np) return base + ' — the sky’s ' + nameFor(t.tp) + ' stirring your own.' + tail;
+    return base + ' — ' + DATA.PLANETS[t.tp].fn + ', meeting ' + natalFn(t.np) + '.' + tail;
   }
   function transitListCard(list, asMoon) {
     var tc = el('div', { class: 'card list' });
@@ -2335,7 +2372,7 @@ var APP = (function () {
     return out;
   }
   function synLine(s) {
-    return 'Their ' + nameFor(s.theirs) + ' ' + s.asp.key + ' your ' + nameFor(s.mine) + ' — their ' + shortFn(s.theirs) + ' ' + aspVerb(s.asp) + ' your ' + shortFn(s.mine) + ', ' + aspTone(s.asp) + '.';
+    return 'Their ' + nameFor(s.theirs) + ' ' + s.asp.key + ' your ' + nameFor(s.mine) + ' — their ' + shortFn(s.theirs) + ' ' + aspVerb(s.asp) + ' your ' + shortFn(s.mine) + ', ' + aspTone(s.asp) + '. In practice it shows up around ' + relDomain(s.mine) + '.';
   }
   function bondHeadline(cMe, cThem, syn) {
     var flow = 0, fric = 0, i;
@@ -4536,7 +4573,17 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     function drawSynastryWheel(cMe, cThem, syn, cx, cy, r) {
       var asc = cMe.ascBody ? cMe.ascBody.lon : cMe.planets.sun.lon, f = wheelFrame(cx, cy, r, asc), k, inR = r * 0.56, outR = r * 0.82;
       // contact lines first (under the dots)
-      var n = 0; for (k = 0; k < syn.length && n < 9; k++) { var s = syn[k]; if (BWSET.indexOf(s.mine) < 0 || BWSET.indexOf(s.theirs) < 0) continue; var mp = cMe.planets[s.mine], tp = cThem.planets[s.theirs]; if (!mp || !tp) continue; var qc = s.asp.quality, col = (qc === 'flow' || qc === 'opportunity') ? ELHUE.air : (qc === 'fusion' ? INK : ACC); strokec(col, 150); p.strokeWeight(1.2); p.line(f.ax(mp.lon, inR), f.ay(mp.lon, inR), f.ax(tp.lon, outR), f.ay(tp.lon, outR)); n++; }
+      var n = 0; for (k = 0; k < syn.length && n < 9; k++) {
+        var s = syn[k]; if (BWSET.indexOf(s.mine) < 0 || BWSET.indexOf(s.theirs) < 0) continue;
+        var mp = cMe.planets[s.mine], tp = cThem.planets[s.theirs]; if (!mp || !tp) continue;
+        var qc = s.asp.quality, col = (qc === 'flow' || qc === 'opportunity') ? ELHUE.air : (qc === 'fusion' ? INK : ACC);
+        var x1 = f.ax(mp.lon, inR), y1 = f.ay(mp.lon, inR), x2 = f.ax(tp.lon, outR), y2 = f.ay(tp.lon, outR);
+        // AN8 — the two charts stitch together: each contact thread weaves across, one by one
+        var st = reduced() ? 1 : cl01((nowT() - (UI.popT || 0) - n * 85) / 520), ste = eCubic(st), sh = 0.7 + 0.3 * Math.sin(nowT() * 0.005 + n);
+        strokec(col, 150 * st * sh); p.strokeWeight(1.2); p.line(x1, y1, x1 + (x2 - x1) * ste, y1 + (y2 - y1) * ste);
+        if (st > 0.96) { p.noStroke(); fillc(col, 120 * sh); p.ellipse(x2, y2, 4, 4); }
+        n++;
+      }
       for (k = 0; k < BWSET.length; k++) { var mk = cMe.planets[BWSET[k]]; if (!mk) continue; var px = f.ax(mk.lon, inR), py = f.ay(mk.lon, inR); p.noStroke(); fillc(INK); p.ellipse(px, py, 15, 15); setFont(SANS, 9.5, GROUNDS[UI.screen], p.CENTER, p.CENTER); p.text(APP.glyphFor(BWSET[k]), px, py + 0.5); }
       for (k = 0; k < BWSET.length; k++) { var tk = cThem.planets[BWSET[k]]; if (!tk) continue; var qx = f.ax(tk.lon, outR), qy = f.ay(tk.lon, outR); p.noStroke(); fillc(ACC); p.ellipse(qx, qy, 15, 15); setFont(SANS, 9.5, GROUNDS[UI.screen], p.CENTER, p.CENTER); p.text(APP.glyphFor(BWSET[k]), qx, qy + 0.5); }
       setFont(MONO, 8.5, INK, p.CENTER, p.TOP, 170); p.text('● YOU (inner)   ● THEM (outer)', cx, cy + r + 8);
