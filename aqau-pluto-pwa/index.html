@@ -3861,19 +3861,23 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var x = sx(), w = cw(), top = topY(), vh = viewH(), cx = x + w / 2, scenes = walkScenesArr(b);
       if (UI.walk.i >= scenes.length) UI.walk.i = scenes.length - 1; var sc = scenes[UI.walk.i], last = (UI.walk.i >= scenes.length - 1);
       var te = cl01((nowT() - UI.walk.t0) / 560), e = eCubic(te), still = reduced(), alpha = still ? 1 : cl01(te * 1.5), i;
-      if (!last) { pushHit(x, top + 46, w, vh - 96, function () { walkNext(scenes.length); }); pushHit(x, top + 46, 72, vh - 96, function () { walkPrev(); }); }
-      var cy = top + vh * 0.30, r = Math.min(w * 0.34, vh * 0.20), drift = (1 - e) * 18;
+      // controls live at the very bottom; everything above is the stage, so text never collides or gets cut off
+      var ctrlTop = top + vh - (last ? 110 : 64);
+      if (!last) { pushHit(x, top + 64, w, ctrlTop - (top + 64), function () { walkNext(scenes.length); }); pushHit(x, top + 64, 72, ctrlTop - (top + 64), function () { walkPrev(); }); }
+      var cy = top + vh * 0.235, r = Math.min(w * 0.30, vh * 0.16), drift = (1 - e) * 16, cam = still ? 1 : (1.0 + 0.06 * e);
       var dc = p.drawingContext; if (dc) { dc.save(); dc.globalAlpha = alpha; }
-      if (sc.k === 'hour') { celestialEmblem(cx, cy - drift, Math.max(28, r * 0.7), 1); }
-      else { miniWheel(c, b, cx, cy - drift, r, (sc.k === 'body' ? sc.key : (sc.k === 'rising' ? 'asc' : null)), nowT()); if (sc.k === 'today') drawTransitOverlay(c, b, cx, cy - drift, r, walkTr(c)); }
+      p.push(); p.translate(cx, cy - drift); p.scale(cam);
+      if (sc.k === 'hour') { celestialEmblem(0, 0, Math.max(26, r * 0.7), 1); }
+      else { miniWheel(c, b, 0, 0, r, (sc.k === 'body' ? sc.key : (sc.k === 'rising' ? 'asc' : null)), nowT()); if (sc.k === 'today') drawTransitOverlay(c, b, 0, 0, r, walkTr(c)); }
+      p.pop();
       if (dc) dc.restore();
-      var ct = walkContent(c, b, sc), ty = top + vh * 0.55;
-      p.textFont(SANS); p.textSize(26); var tl = wrapLines(ct.t, w - 24); setFont(SANS, 26, INK, p.CENTER, p.TOP, 255 * alpha); bold(); for (i = 0; i < tl.length; i++) p.text(tl[i], cx, ty + i * 31); normal(); ty += tl.length * 31 + 12;
-      p.textFont(SERIF); p.textSize(18); var bl = wrapLines(ct.x, w - 30); setFont(SERIF, 18, INK, p.CENTER, p.TOP, 235 * alpha); for (i = 0; i < bl.length; i++) p.text(bl[i], cx, ty + i * 27); ty += bl.length * 27 + 22;
-      setFont(MONO, 9.5, ACCTX, p.LEFT, p.TOP, 220); p.text('YOUR CHART · ' + (UI.walk.i + 1) + ' / ' + scenes.length, x, top + 12);
-      var dxw = 13, dsx = cx - (scenes.length * dxw) / 2; for (i = 0; i < scenes.length; i++) { var on = (i === UI.walk.i); p.noStroke(); fillc(on ? ACC : INK, on ? 255 : 80); p.ellipse(dsx + i * dxw + dxw / 2, top + vh - 16, on ? 7 : 5, on ? 7 : 5); }
-      if (last) { tourBtn('Explore my chart ›', cx - 152, ty, 148, 42, function () { endWalk(); }, true); tourBtn('Open Read', cx + 6, ty, 148, 42, function () { endWalk(); UI.screen = 'read'; }, false); }
-      else { setFont(MONO, 10, INK, p.CENTER, p.TOP, 150 * alpha); p.text('TAP TO CONTINUE  ›', cx, top + vh - 42); }
+      var ct = walkContent(c, b, sc), ty = top + vh * 0.43, slideIn = (1 - e) * 12;
+      var tl = wrapLines2(ct.t, w - 20, SANS, 23); setFont(SANS, 23, INK, p.CENTER, p.TOP, 255 * alpha); bold(); for (i = 0; i < tl.length; i++) p.text(tl[i], cx, ty + slideIn + i * 29); normal(); ty += tl.length * 29 + 12;
+      var bl = wrapLines2(ct.x, w - 26, SERIF, 16.5); setFont(SERIF, 16.5, INK, p.CENTER, p.TOP, 238 * alpha); for (i = 0; i < bl.length; i++) p.text(bl[i], cx, ty + slideIn + i * 25); ty += bl.length * 25;
+      setFont(MONO, 10, ACCTX, p.LEFT, p.TOP, 220); p.text('YOUR CHART · ' + (UI.walk.i + 1) + ' / ' + scenes.length, x, top + 12);
+      var dxw = 13, dsx = cx - (scenes.length * dxw) / 2; for (i = 0; i < scenes.length; i++) { var on = (i === UI.walk.i); p.noStroke(); fillc(on ? ACC : INK, on ? 255 : 80); p.ellipse(dsx + i * dxw + dxw / 2, top + vh - 14, on ? 7 : 5, on ? 7 : 5); }
+      if (last) { tourBtn('Explore my chart ›', cx - 152, top + vh - 96, 148, 42, function () { endWalk(); }, true); tourBtn('Open Read', cx + 6, top + vh - 96, 148, 42, function () { endWalk(); UI.screen = 'read'; }, false); }
+      else { setFont(MONO, 10, INK, p.CENTER, p.TOP, 160 * alpha); p.text('TAP TO CONTINUE  ›', cx, top + vh - 42); }
       tourBtn('Skip', x + w - 66, top + 6, 60, 26, function () { endWalk(); }, false);
       UI.contentH.chart = 0;
     }
