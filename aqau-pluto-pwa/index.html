@@ -3441,10 +3441,10 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       return out;
     }
     function paragraph(str, x, ly, boxW, sz, c, font, lead, a) {
-      var fs = (APP.STATE.settings && APP.STATE.settings.textScale) || 1; sz = sz * fs * 1.09; // base readability bump + dyslexia-friendly scale
+      var fs = (APP.STATE.settings && APP.STATE.settings.textScale) || 1; sz = sz * fs * 1.2; // larger, bolder reading base + dyslexia-friendly scale
       p.textFont(font || SERIF); p.textSize(sz); p.textStyle(p.NORMAL);
-      var lines = wrapLines(str, boxW), lh = (lead ? lead * fs : sz * 1.5); fillc(c, a); p.textAlign(p.LEFT, p.TOP);
-      strokec(c, a); p.strokeWeight(0.45); // faux-bold: thicken glyphs slightly for a touch more presence
+      var lines = wrapLines(str, boxW), lh = (lead ? lead * fs * 1.08 : sz * 1.52); fillc(c, a); p.textAlign(p.LEFT, p.TOP);
+      strokec(c, a); p.strokeWeight(0.6); // faux-bold: thicken glyphs for clearer, bolder reading
       for (var i = 0; i < lines.length; i++) p.text(lines[i], x, sY(ly + i * lh));
       p.noStroke();
       return lines.length * lh;
@@ -3496,7 +3496,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       else { var bob = reduced() ? 0 : Math.sin(t * 0.0018) * 0.6; fillc(ELHUE.earth); p.rect(bx, by - bob, full, 8 + bob, 4); }
     }
     function eyebrow(txt, x, ly, c) {
-      setFont(MONO, 11.5, (c === ACC ? ACCTX : (c || INK)), p.LEFT, p.TOP, 195);
+      setFont(MONO, 12.5, (c === ACC ? ACCTX : (c || INK)), p.LEFT, p.TOP, 220);
       var s = txt.toUpperCase(), cx = x; for (var i = 0; i < s.length; i++) { p.text(s[i], cx, sY(ly)); cx += p.textWidth(s[i]) + 2; }
     }
 
@@ -3540,25 +3540,26 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     }
     function drawField() {
       var still = reduced(), fc = p.frameCount, F = UI.field, cxC = W / 2, cyC = H / 2;
-      var rot = still ? 0.5 : fc * 0.00015, ca = Math.cos(rot), sa = Math.sin(rot); // the whole sky turns, very slowly
+      var rot = still ? 0.5 : fc * 0.00030, ca = Math.cos(rot), sa = Math.sin(rot); // the whole sky turns — a touch more alive now
       var mx = UI.ptrX, my = UI.ptrY, ptr = (UI.ptrDown || (nowT() - (UI.ptrMoveT || 0) < 160)) && !still;
       p.rectMode(p.CENTER);
       for (var i = 0; i < F.length; i++) {
         var inst = F[i], col = ELHUE[inst.el], st = inst.cst.s, ed = inst.cst.e;
-        var bx = inst.cx - cxC, by = inst.cy - cyC, gx = cxC + bx * ca - by * sa, gy = cyC + bx * sa + by * ca;
+        // each constellation also drifts gently on its own, so the sky feels alive without shouting
+        var selfX = still ? 0 : Math.sin(fc * 0.0022 + inst.tw) * 10, selfY = still ? 0 : Math.cos(fc * 0.0018 + inst.tw * 1.3) * 8;
+        var bx = inst.cx - cxC, by = inst.cy - cyC, gx = cxC + bx * ca - by * sa + selfX, gy = cyC + bx * sa + by * ca + selfY;
         if (ptr) { var ddx = gx - mx, ddy = gy - my, dd = Math.sqrt(ddx * ddx + ddy * ddy) + 0.01; if (dd < 210) { var pf = (210 - dd) / 210 * 7; gx += ddx / dd * pf; gy += ddy / dd * pf; } }
         var cr = Math.cos(inst.rot), sr = Math.sin(inst.rot), s = inst.scale, pts = [], k;
         for (k = 0; k < st.length; k++) { var ox = (st[k][0] - 0.4) * s, oy = (st[k][1] - 0.4) * s; pts.push([gx + ox * cr - oy * sr, gy + ox * sr + oy * cr]); }
-        strokec(col, inst.role ? 40 : 26); p.strokeWeight(1);
+        strokec(col, inst.role ? 28 : 18); p.strokeWeight(1); // fainter lines — less distracting behind the words
         for (k = 0; k < ed.length; k++) { var a = pts[ed[k][0]], b = pts[ed[k][1]]; if (a && b) p.line(a[0], a[1], b[0], b[1]); }
         p.noStroke();
         for (k = 0; k < pts.length; k++) {
           var tw = still ? 0.8 : (0.55 + 0.45 * Math.sin(fc * 0.035 + inst.tw + k)), bright = (k % 3 === 0), pr = pts[k];
-          if (bright) { fillc(col, (inst.role ? 30 : 20) * tw); p.ellipse(pr[0], pr[1], 9, 9); }
-          fillc(col, (bright ? (inst.role ? 165 : 120) : 90) * tw); p.ellipse(pr[0], pr[1], bright ? 3.4 : 2.2, bright ? 3.4 : 2.2);
+          if (bright) { fillc(col, (inst.role ? 24 : 16) * tw); p.ellipse(pr[0], pr[1], 9, 9); }
+          fillc(col, (bright ? (inst.role ? 135 : 95) : 70) * tw); p.ellipse(pr[0], pr[1], bright ? 3.2 : 2.0, bright ? 3.2 : 2.0);
         }
-        // a faint label naming whose constellation this is — makes the relevance explicit
-        if (inst.role && !still) { setFont(MONO, 8.5, INK, p.CENTER, p.TOP, 70); p.text((inst.role + ' · ' + DATA.SIGNS[inst.sign].name).toUpperCase(), gx, gy + s * 0.5 + 6); }
+        // the sky stays wordless — no labels — so it never competes with the text
       }
       p.rectMode(p.CORNER);
       // A7 — a rare, calm shooting star drifting across the sky
@@ -3592,6 +3593,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       UI.quip = { text: pool[Math.floor(Math.random() * pool.length)], t0: nowT(), y: topY() + 64 + Math.random() * (viewH() - 128), dir: Math.random() < 0.5 ? 1 : -1, dur: 13000 };
     }
     function drawQuip() {
+      UI.quip = null; return; // the sky is wordless now — floating asides removed so nothing competes with the text
       if (UI.screen === 'onboard' || !APP.STATE.chart || reduced() || UI.lesson || UI.walk) { UI.quip = null; return; }
       var t = nowT();
       if (!UI.quip) { if (!UI.quipNext) UI.quipNext = t + 22000; if (t > UI.quipNext) launchQuip(); return; }
@@ -5303,7 +5305,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         setFont(MONO, 11, INK, p.CENTER, p.CENTER); p.text(opts[i][1].toUpperCase(), bx + lw / 2, y + off + h / 2);
         pushHit(bx, y, lw, h + depth, (function (v) { return function () { fn(v); }; })(opts[i][0])); bx += lw + 8;
       }
-      return 18 + h + 24;
+      return 18 + h + 34; // extra breathing room so Settings never feels squashed
     }
     function drawSettings() {
       var x = sx(), w = cw(), ly = 18, st = APP.STATE.settings, gi = cl01(1 - (nowT() - UI.fxT) / 500);
@@ -5718,20 +5720,19 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       p.noStroke(); fillc(UI.bg); p.rect(0, navY, W, NAVH + sb);
       strokec(INK, 40); p.strokeWeight(1); p.line(0, navY, W, navY);
       for (var i = 0; i < tabs.length; i++) {
-        var on = UI.screen === tabs[i][1], tx = i * tw, dn = pressing(tx, navY, tw, NAVH + sb);
-        setFont(MONO, 10, INK, p.CENTER, p.CENTER, on ? 255 : (dn ? 170 : 95)); if (on) bold(); p.text(tabs[i][0].toUpperCase(), tx + tw / 2, navY + NAVH / 2 - 2 + (dn ? 1 : 0)); normal();
+        var on = UI.screen === tabs[i][1], tx = i * tw, dn = pressing(tx, navY, tw, NAVH + sb), cy2 = navY + NAVH / 2 - 2 + (dn ? 1 : 0);
+        if (tabs[i][1] === 'settings') { setFont(SANS, 20, INK, p.CENTER, p.CENTER, on ? 255 : (dn ? 185 : 120)); p.text('⚙', tx + tw / 2, cy2); } // a cog, so the menu isn't squashed
+        else { setFont(MONO, 11, INK, p.CENTER, p.CENTER, on ? 255 : (dn ? 175 : 105)); if (on) bold(); p.text(tabs[i][0].toUpperCase(), tx + tw / 2, cy2); normal(); }
         if (on) { p.noStroke(); fillc(ACC); p.ellipse(tx + tw / 2, navY + NAVH - 12, 5, 5); }
         pushHit(tx, navY, tw, NAVH + sb, (function (sc) { return function () { UI.screen = sc; }; })(tabs[i][1]));
       }
     }
-    // glitch reveal overlay on screen change
+    // a slow, graceful cross-fade on screen change — the new screen rises from its own ground colour
     function drawTransition() {
-      var prog = cl01((nowT() - UI.fxT) / 520); if (prog >= 1) return;
-      // a calm, clean colour-block wipe with a single accent edge
-      var band = -W + eCubic(prog) * 2 * W;
-      p.noStroke();
-      fillc(INK); p.rect(band, 0, W, H);
-      fillc(ACC); p.rect(band + W - 5, 0, 5, H);
+      var prog = cl01((nowT() - UI.fxT) / 900); if (prog >= 1) return;
+      var e = eCubic(prog);
+      p.noStroke(); fillc(UI.bg, 255 * (1 - e)); p.rect(0, 0, W, H); // ground veil fades away, content blooms through
+      var sxp = e * W; strokec(ACC, 70 * (1 - prog)); p.strokeWeight(2); p.line(sxp, 0, sxp, H); // a single soft accent sweep
     }
 
     // ---------- first-run tour (a gentle, game-style guide; drawn on the canvas) ----------
