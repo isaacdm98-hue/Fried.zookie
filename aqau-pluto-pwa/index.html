@@ -2457,6 +2457,71 @@ var APP = (function () {
     return out;
   }
 
+  // ================= famous charts like yours =================
+  // Curated public figures (exact Wikipedia titles → bio lead portrait; no open image search).
+  // Births 1700+ so the Sun sign is unambiguous; the engine computes Sun & Moon, we match by sign.
+  var FAMOUS = [
+    { n: 'Vincent van Gogh', w: 'Vincent_van_Gogh', y: 1853, mo: 3, d: 30, by: 'painter' },
+    { n: 'Maya Angelou', w: 'Maya_Angelou', y: 1928, mo: 4, d: 4, by: 'poet' },
+    { n: 'Charlie Chaplin', w: 'Charlie_Chaplin', y: 1889, mo: 4, d: 16, by: 'filmmaker' },
+    { n: 'Thomas Jefferson', w: 'Thomas_Jefferson', y: 1743, mo: 4, d: 13, by: 'statesman' },
+    { n: 'Sigmund Freud', w: 'Sigmund_Freud', y: 1856, mo: 5, d: 6, by: 'psychoanalyst' },
+    { n: 'Audrey Hepburn', w: 'Audrey_Hepburn', y: 1929, mo: 5, d: 4, by: 'actor' },
+    { n: 'Karl Marx', w: 'Karl_Marx', y: 1818, mo: 5, d: 5, by: 'philosopher' },
+    { n: 'Salvador Dalí', w: 'Salvador_Dalí', y: 1904, mo: 5, d: 11, by: 'painter' },
+    { n: 'Bob Dylan', w: 'Bob_Dylan', y: 1941, mo: 5, d: 24, by: 'songwriter' },
+    { n: 'Marilyn Monroe', w: 'Marilyn_Monroe', y: 1926, mo: 6, d: 1, by: 'actor' },
+    { n: 'John F. Kennedy', w: 'John_F._Kennedy', y: 1917, mo: 5, d: 29, by: 'US president' },
+    { n: 'Anne Frank', w: 'Anne_Frank', y: 1929, mo: 6, d: 12, by: 'diarist' },
+    { n: 'Frida Kahlo', w: 'Frida_Kahlo', y: 1907, mo: 7, d: 6, by: 'painter' },
+    { n: 'Nikola Tesla', w: 'Nikola_Tesla', y: 1856, mo: 7, d: 10, by: 'inventor' },
+    { n: 'Nelson Mandela', w: 'Nelson_Mandela', y: 1918, mo: 7, d: 18, by: 'statesman' },
+    { n: 'Ernest Hemingway', w: 'Ernest_Hemingway', y: 1899, mo: 7, d: 21, by: 'writer' },
+    { n: 'Barack Obama', w: 'Barack_Obama', y: 1961, mo: 8, d: 4, by: 'US president' },
+    { n: 'Coco Chanel', w: 'Coco_Chanel', y: 1883, mo: 8, d: 19, by: 'designer' },
+    { n: 'Carl Jung', w: 'Carl_Jung', y: 1875, mo: 7, d: 26, by: 'psychologist' },
+    { n: 'Amelia Earhart', w: 'Amelia_Earhart', y: 1897, mo: 7, d: 24, by: 'aviator' },
+    { n: 'Mother Teresa', w: 'Mother_Teresa', y: 1910, mo: 8, d: 26, by: 'missionary' },
+    { n: 'Michael Jackson', w: 'Michael_Jackson', y: 1958, mo: 8, d: 29, by: 'musician' },
+    { n: 'Freddie Mercury', w: 'Freddie_Mercury', y: 1946, mo: 9, d: 5, by: 'musician' },
+    { n: 'Leo Tolstoy', w: 'Leo_Tolstoy', y: 1828, mo: 9, d: 9, by: 'novelist' },
+    { n: 'Mahatma Gandhi', w: 'Mahatma_Gandhi', y: 1869, mo: 10, d: 2, by: 'independence leader' },
+    { n: 'John Lennon', w: 'John_Lennon', y: 1940, mo: 10, d: 9, by: 'musician' },
+    { n: 'Oscar Wilde', w: 'Oscar_Wilde', y: 1854, mo: 10, d: 16, by: 'writer' },
+    { n: 'Friedrich Nietzsche', w: 'Friedrich_Nietzsche', y: 1844, mo: 10, d: 15, by: 'philosopher' },
+    { n: 'Marie Curie', w: 'Marie_Curie', y: 1867, mo: 11, d: 7, by: 'physicist' },
+    { n: 'Pablo Picasso', w: 'Pablo_Picasso', y: 1881, mo: 10, d: 25, by: 'painter' },
+    { n: 'Theodore Roosevelt', w: 'Theodore_Roosevelt', y: 1858, mo: 10, d: 27, by: 'US president' },
+    { n: 'Indira Gandhi', w: 'Indira_Gandhi', y: 1917, mo: 11, d: 19, by: 'prime minister' },
+    { n: 'Ludwig van Beethoven', w: 'Ludwig_van_Beethoven', y: 1770, mo: 12, d: 17, by: 'composer' },
+    { n: 'Mark Twain', w: 'Mark_Twain', y: 1835, mo: 11, d: 30, by: 'writer' },
+    { n: 'Winston Churchill', w: 'Winston_Churchill', y: 1874, mo: 11, d: 30, by: 'prime minister' },
+    { n: 'Walt Disney', w: 'Walt_Disney', y: 1901, mo: 12, d: 5, by: 'animator' },
+    { n: 'Martin Luther King Jr.', w: 'Martin_Luther_King_Jr.', y: 1929, mo: 1, d: 15, by: 'civil-rights leader' },
+    { n: 'Stephen Hawking', w: 'Stephen_Hawking', y: 1942, mo: 1, d: 8, by: 'physicist' },
+    { n: 'Benjamin Franklin', w: 'Benjamin_Franklin', y: 1706, mo: 1, d: 17, by: 'polymath' },
+    { n: 'Muhammad Ali', w: 'Muhammad_Ali', y: 1942, mo: 1, d: 17, by: 'boxer' },
+    { n: 'Abraham Lincoln', w: 'Abraham_Lincoln', y: 1809, mo: 2, d: 12, by: 'US president' },
+    { n: 'Charles Darwin', w: 'Charles_Darwin', y: 1809, mo: 2, d: 12, by: 'naturalist' },
+    { n: 'Wolfgang Amadeus Mozart', w: 'Wolfgang_Amadeus_Mozart', y: 1756, mo: 1, d: 27, by: 'composer' },
+    { n: 'Oprah Winfrey', w: 'Oprah_Winfrey', y: 1954, mo: 1, d: 29, by: 'broadcaster' },
+    { n: 'Albert Einstein', w: 'Albert_Einstein', y: 1879, mo: 3, d: 14, by: 'physicist' },
+    { n: 'Steve Jobs', w: 'Steve_Jobs', y: 1955, mo: 2, d: 24, by: 'entrepreneur' },
+    { n: 'Kurt Cobain', w: 'Kurt_Cobain', y: 1967, mo: 2, d: 20, by: 'musician' },
+    { n: 'Rihanna', w: 'Rihanna', y: 1988, mo: 2, d: 20, by: 'musician' }
+  ];
+  function famousMatches(c) {
+    var usun = c.planets.sun.sign, umoon = c.planets.moon.sign, ay = c.ayan || 0, out = [], i;
+    for (i = 0; i < FAMOUS.length; i++) {
+      var f = FAMOUS[i], dn = EPH.dayNumber(f.y, f.mo, f.d, 12), pos = EPH.positions(dn);
+      var ss = Math.floor(rev(pos.sun.lon - ay) / 30), ms = Math.floor(rev(pos.moon.lon - ay) / 30);
+      var sunM = (ss === usun), moonM = (ms === umoon), score = (sunM ? 2 : 0) + (moonM ? 1 : 0);
+      if (score > 0) out.push({ name: f.n, wiki: f.w, by: f.by, sun: ss, moon: ms, sunMatch: sunM, moonMatch: moonM, score: score });
+    }
+    out.sort(function (a, b) { return b.score - a.score; });
+    return out;
+  }
+
   function renderRead() {
     var c = STATE.chart, wrap = el('div', { class: 'screen pad' });
     wrap.appendChild(el('div', { class: 'eyebrow', text: 'READ' }));
@@ -3006,7 +3071,7 @@ var APP = (function () {
     composeCore: composeCore, localAsk: localAsk, chartText: chartText, callModel: callModel,
     composeTransits: composeTransits, transitSentence: transitSentence, composeSignatures: composeSignatures,
     addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, dignityOf: dignityOf, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide,
-    saveCurrentChart: saveCurrentChart, deleteSavedChart: deleteSavedChart, activateSavedChart: activateSavedChart, activeChartKey: activeChartKey, chartKey: chartKey,
+    saveCurrentChart: saveCurrentChart, deleteSavedChart: deleteSavedChart, activateSavedChart: activateSavedChart, activeChartKey: activeChartKey, chartKey: chartKey, famousMatches: famousMatches,
     nameFor: nameFor, glyphFor: glyphFor, sgAbbr: sgAbbr, pad: pad,
     domElement: domElement, lowElement: lowElement, domMod: domMod, tzOffsetHours: tzOffsetHours
   };
@@ -4306,6 +4371,35 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     // current artifact for a topic, advancing every ~4.5s
     function artNow(key) { var a = UI.artifacts && UI.artifacts[key]; if (!a || !a.length) return null; var idx = Math.floor(nowT() / 4500) % a.length; return a[idx]; }
 
+    // ---- famous-chart portraits: a specific public figure's Wikipedia bio lead image (no open search) ----
+    function loadFace(wiki) {
+      UI.faces = UI.faces || {}; if (UI.faces[wiki] !== undefined) return;
+      UI.faces[wiki] = null; // pending
+      if (typeof fetch !== 'function') { UI.faces[wiki] = false; return; }
+      fetch('https://en.wikipedia.org/api/rest_v1/page/summary/' + encodeURIComponent(wiki))
+        .then(function (r) { return r.json(); })
+        .then(function (j) {
+          var u = j && j.thumbnail && j.thumbnail.source;
+          if (u && /^https:\/\/upload\.wikimedia\.org\//.test(u)) { var im = new Image(); im.onload = function () { UI.faces[wiki] = im; }; im.onerror = function () { UI.faces[wiki] = false; }; im.src = u; }
+          else UI.faces[wiki] = false;
+        })['catch'](function () { UI.faces[wiki] = false; });
+    }
+    function drawFace(wiki, cx, cy, r) {
+      loadFace(wiki); var im = UI.faces && UI.faces[wiki];
+      p.noStroke();
+      if (im && im !== false && (im.naturalWidth || im.width)) {
+        var dc = p.drawingContext, iw = im.naturalWidth || im.width, ih = im.naturalHeight || im.height, sc = Math.max(2 * r / iw, 2 * r / ih), rw = iw * sc, rh = ih * sc;
+        dc.save(); dc.beginPath(); dc.arc(cx, cy, r, 0, Math.PI * 2); dc.clip();
+        try { dc.drawImage(im, cx - rw / 2, cy - rh / 2, rw, rh); } catch (e) {}
+        dc.restore();
+        p.noFill(); strokec(INK, 130); p.strokeWeight(1.4); p.ellipse(cx, cy, 2 * r, 2 * r);
+      } else {
+        fillc(shade(GROUNDS[UI.screen], -14)); p.ellipse(cx, cy, 2 * r, 2 * r);
+        p.noFill(); strokec(INK, 90); p.strokeWeight(1.2); p.ellipse(cx, cy, 2 * r, 2 * r);
+        setFont(SANS, r * 0.85, INK, p.CENTER, p.CENTER, 110); p.text('✦', cx, cy);
+      }
+    }
+
     function drawLesson() {
       var x = sx(), w = cw(), top = topY(), vh = viewH(), cx = x + w / 2, sc = LESSON[UI.lesson.i], last = (UI.lesson.i === LESSON.length - 1);
       var te = cl01((nowT() - UI.lesson.t0) / 560), e = eCubic(te), still = reduced(), alpha = still ? 1 : cl01(te * 1.5), i;
@@ -4339,7 +4433,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var pulse = reduced() ? 0 : Math.sin(nowT() * 0.004) * 2; setFont(SANS, 22, GROUNDS[UI.screen], p.RIGHT, p.CENTER); p.text('›', x + w - 18 + pulse, hy + hh / 2);
       pushHit(x, hy, w, hh, function () { startLesson(); }); ly += hh + 20;
       eyebrow('Or explore freely', x, ly, ACC); ly += 26;
-      var cats = [['elements', 'Elements'], ['signs', 'Signs'], ['planets', 'Planets'], ['houses', 'Houses'], ['aspects', 'Aspects'], ['history', 'History'], ['glossary', 'Glossary']];
+      var cats = [['elements', 'Elements'], ['signs', 'Signs'], ['planets', 'Planets'], ['houses', 'Houses'], ['aspects', 'Aspects'], ['history', 'History'], ['famous', 'Like you'], ['glossary', 'Glossary']];
       var cxp = x, cyp = ly, ci;
       for (ci = 0; ci < cats.length; ci++) { p.textFont(MONO); p.textSize(11); var ww = p.textWidth(cats[ci][1].toUpperCase()) + 28; if (cxp + ww > x + w) { cxp = x; cyp += 40; } chip(cats[ci][1], UI.learnCat === cats[ci][0], cxp, cyp, (function (cc) { return function () { UI.learnCat = cc; UI.learnItem = null; UI.scroll.learn = 0; UI.popT = nowT(); }; })(cats[ci][0])); cxp += ww + 8; }
       ly = cyp + 50;
@@ -4407,6 +4501,23 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
           setFont(SANS, 18, INK, p.RIGHT, p.CENTER, 120); p.text('\u203A', x + w, sY(ly + rh / 2));
           (function (idx, ay) { pushHit(x, sY(ay), w, rh, function () { UI.learnItem = idx; UI.scroll.learn = 0; UI.popT = nowT(); }); })(i, ly); ly += rh;
         }
+      } else if (cat === 'famous') { // historical figures & icons who share your chart
+        if (!UI.fmList) UI.fmList = APP.famousMatches(c);
+        var fm = UI.fmList, sunName = DATA.SIGNS[c.planets.sun.sign].name, moonName = DATA.SIGNS[c.planets.moon.sign].name;
+        ly += paragraph('People through history who share your Sun in ' + sunName + ' — and, marked with a Moon, your ' + moonName + ' Moon too. Same sky, very different lives.', x, ly, w, 14.5, INK, SERIF, 22, 200) + 14;
+        var frh = 64;
+        for (i = 0; i < fm.length; i++) {
+          var fp = fm[i]; if (i) hairline(x, ly, x + w, 40);
+          var fcy = sY(ly + frh / 2);
+          drawFace(fp.wiki, x + 24, fcy, 22);
+          setFont(SANS, 15, INK, p.LEFT, p.CENTER); bold(); p.text(fp.name, x + 56, fcy - 9); normal();
+          setFont(MONO, 9.5, INK, p.LEFT, p.CENTER, 150); p.text(fp.by.toUpperCase(), x + 56, fcy + 9);
+          // match badges, right-aligned
+          var bx2 = x + w; setFont(SANS, 13, ACC, p.RIGHT, p.CENTER); p.text(APP.glyphFor('sun'), bx2, fcy); bx2 -= 16;
+          if (fp.moonMatch) { setFont(SANS, 13, ACC, p.RIGHT, p.CENTER); p.text(APP.glyphFor('moon'), bx2, fcy); }
+          (function (idx, ay) { pushHit(x, sY(ay), w, frh, function () { UI.learnItem = idx; UI.scroll.learn = 0; UI.popT = nowT(); }); })(i, ly); ly += frh;
+        }
+        if (!fm.length) ly += paragraph('No close matches in the set — a rare sky.', x, ly, w, 15, INK, SERIF, 23, 180) + 10;
       } else { // glossary
         var grh2 = 42;
         for (i = 0; i < GLOSSARY.length; i++) {
@@ -4420,7 +4531,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     }
     // animated explanation diagram per category: builds on entry, idles with life, replays on tap
     function learnDiagram(cat, it, c, x, w, ly) {
-      if (cat === 'history' || cat === 'glossary') return 0; // these draw their own content
+      if (cat === 'history' || cat === 'glossary' || cat === 'famous') return 0; // these draw their own content
       var H0 = 152, cx = x + w / 2, top = sY(ly), cyc = top + H0 / 2;
       var ent = cl01((nowT() - UI.popT) / 1300), e = eExpo(ent), idle = nowT() * 0.001; // slower, more cinematic
       p.noStroke(); fillc(shade(GROUNDS[UI.screen], -10)); p.rect(x, top, w, H0, 10);
@@ -4534,6 +4645,21 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         if (ao.length) { var li; for (li = 0; li < ao.length; li++) { var a0 = ao[li]; setFont(SANS, 15, INK, p.LEFT, p.TOP); p.text(APP.glyphFor(a0.a) + '  ' + A.glyph + '  ' + APP.glyphFor(a0.b), x, sY(ly)); setFont(MONO, 10.5, INK, p.LEFT, p.TOP, 150); p.text(APP.nameFor(a0.a) + ' ' + A.key + ' ' + APP.nameFor(a0.b) + '  \u00B7  orb ' + a0.orb.toFixed(1) + '\u00B0', x + 70, sY(ly) + 3); ly += 26; } }
         else ly += paragraph('You have no ' + A.key + ' aspects within orb.', x, ly, w, 16, INK, SERIF, 24);
         ly += 12;
+      } else if (cat === 'famous') {
+        var fm2 = UI.fmList || (UI.fmList = APP.famousMatches(c)), fp2 = fm2[it];
+        if (!fp2) { UI.learnItem = null; return ly; }
+        var fsun = DATA.SIGNS[fp2.sun], fmoon = DATA.SIGNS[fp2.moon];
+        drawFace(fp2.wiki, x + 46, sY(ly) + 46, 46); // big portrait, left
+        p.textFont(SANS); p.textSize(22); p.textStyle(p.BOLD); fillc(INK); p.noStroke(); var fnl = wrapLines(fp2.name, w - 108); var fni; for (fni = 0; fni < fnl.length; fni++) p.text(fnl[fni], x + 104, sY(ly + 6 + fni * 26)); normal();
+        setFont(MONO, 9.5, ACCTX, p.LEFT, p.TOP, 220); p.text(fp2.by.toUpperCase(), x + 104, sY(ly + 6 + fnl.length * 26 + 2));
+        setFont(SANS, 13, INK, p.LEFT, p.TOP); p.text(APP.glyphFor('sun') + ' ' + fsun.name + (fp2.moonMatch ? ('   ' + APP.glyphFor('moon') + ' ' + fmoon.name) : ''), x + 104, sY(ly + 6 + fnl.length * 26 + 20));
+        ly += 104;
+        hairline(x, ly, x + w, 60); ly += 14; eyebrow('What you share', x, ly, ACC); ly += 22;
+        var shareTxt = 'Like you, ' + fp2.name + ' carries the Sun in ' + fsun.name + ' — ' + fsun.style + '. It’s the same core drive, lived out a world away.';
+        if (fp2.moonMatch) shareTxt += ' You also share a ' + fmoon.name + ' Moon: a kindred inner world, the same instinct for what feels safe.';
+        ly += paragraph(shareTxt, x, ly, w, 16.5, INK, SERIF, 25) + 12;
+        ly += paragraph('A shared Sun sign is a shared theme, never a shared fate — the rest of a chart, and a life, makes each person utterly their own.', x, ly, w, 14, INK, SERIF, 21, 195) + 10;
+        setFont(MONO, 8.5, INK, p.LEFT, p.TOP, 140); ly += paragraph('Portrait via Wikipedia.', x, ly, w, 11, INK, MONO, 15, 140) + 8;
       } else if (cat === 'glossary') {
         var G = GLOSSARY[it];
         p.textFont(SANS); p.textSize(24); p.textStyle(p.BOLD); fillc(INK); p.noStroke(); var gl2 = wrapLines(G.t, w); var gi3; for (gi3 = 0; gi3 < gl2.length; gi3++) p.text(gl2[gi3], x, sY(ly + gi3 * 28)); normal(); ly += gl2.length * 28 + 8;
@@ -4765,7 +4891,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       recompute(); UI.selPlanet = 'sun'; UI.popT = nowT(); UI.popFrom = 22; UI.scroll.chart = 0; UI.screen = 'chart'; hideSearchInput();
       if (!APP.STATE.settings.walked) { UI.walk = { i: 0, t0: nowT() }; UI.walkTr = null; UI.walkTheme = null; } // first reveal: walk them through it
     }
-    function recompute() { APP.STATE.chart = APP.compute(APP.STATE.birth, APP.STATE.settings); APP.save(); UI.readCache = null; UI.readSig = null; UI.readTransit = null; UI.forecast = null; UI.todayCache = null; UI.walkTr = null; UI.walkTheme = null; UI.bondCache = null; UI.bondFor = null; if (APP.clearPersonCharts) APP.clearPersonCharts(); UI.askAns = ''; UI.quip = null; UI.quipNext = 0; buildField(); }
+    function recompute() { APP.STATE.chart = APP.compute(APP.STATE.birth, APP.STATE.settings); APP.save(); UI.readCache = null; UI.readSig = null; UI.readTransit = null; UI.forecast = null; UI.todayCache = null; UI.fmList = null; UI.walkTr = null; UI.walkTheme = null; UI.bondCache = null; UI.bondFor = null; if (APP.clearPersonCharts) APP.clearPersonCharts(); UI.askAns = ''; UI.quip = null; UI.quipNext = 0; buildField(); }
 
     // ---------- share / export a clean chart card (own untainted canvas; the live one holds remote images) ----------
     function exportChartCard() {
