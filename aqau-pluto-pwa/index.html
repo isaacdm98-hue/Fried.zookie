@@ -754,7 +754,12 @@ var DATA = (function () {
     trueNode:  { glyph: '\u260A\uFE0E', name: 'True Node', fn: 'the growth edge, tracked to the Moon\u2019s real orbit' },
     southNode: { glyph: '\u260B\uFE0E', name: 'S. Node',   fn: 'the old comfort and habit you\u2019re here to move beyond' },
     lilith:    { glyph: '\u26B8\uFE0E', name: 'Lilith',    fn: 'the wild, untamed, unapologetic part of you' },
-    pof:       { glyph: '\u2297\uFE0E', name: 'Fortune',   fn: 'where ease, flow and a sense of luck gather' }
+    pof:       { glyph: '\u2297\uFE0E', name: 'Fortune',   fn: 'where ease, flow and a sense of luck gather' },
+    chiron:    { glyph: '\u26B7\uFE0E', name: 'Chiron',    fn: 'the deep wound that becomes your gift for healing others' },
+    ceres:     { glyph: '\u26B3\uFE0E', name: 'Ceres',     fn: 'how you nurture and are nurtured \u2014 care, food, loss and return' },
+    pallas:    { glyph: '\u26B4\uFE0E', name: 'Pallas',    fn: 'your pattern-sense, strategy and creative intelligence' },
+    juno:      { glyph: '\u26B5\uFE0E', name: 'Juno',      fn: 'what you need in commitment and long-term partnership' },
+    vesta:     { glyph: '\u26B6\uFE0E', name: 'Vesta',     fn: 'where you focus, devote and tend your sacred flame' }
   };
   var PLANET_ORDER = ['sun','moon','mercury','venus','mars','jupiter','saturn','uranus','neptune','pluto','node'];
 
@@ -1213,7 +1218,7 @@ var APP = (function () {
   // ---------- state ----------
   var STATE = {
     birth: null, // {name,y,mo,d,hour,min,tz,lat,lon,place,timeKnown}
-    settings: { zodiac: 'tropical', house: 'placidus', orbScale: 1, ai: false, theme: 'light', textScale: 1, sound: false, accent: 0, autoNight: false },
+    settings: { zodiac: 'tropical', house: 'placidus', orbScale: 1, ai: false, theme: 'light', textScale: 1, sound: false, accent: 0, autoNight: false, minorBodies: false },
     chart: null, screen: 'chart', chartView: 'dial',
     people: [], // [{id,name,rel,famrel,y,mo,d,hour,min,tz,iana,lat,lon,place,timeKnown}]
     charts: [] // saved birth charts you can switch between (snapshots of `birth`)
@@ -1331,11 +1336,43 @@ var APP = (function () {
 
     var aspects = buildAspects(planets, asc, mc, settings.orbScale);
     var bal = tally(planets, asc, mc);
+    // optional extra bodies (Chiron + the four big asteroids) — off by default, computed only on request
+    var extras = null;
+    if (settings.minorBodies) {
+      extras = {}; var mb = minorBodies(d, pos.sun.lon), ek;
+      for (ek in mb) if (mb.hasOwnProperty(ek)) { var eb = mkPoint2(ek, rev(mb[ek] - ay), cusps); extras[ek] = eb; }
+    }
     return {
-      d: d, planets: planets, points: points, asc: asc, mc: mc, ascBody: ascBody, mcBody: mcBody,
+      d: d, planets: planets, points: points, extras: extras, asc: asc, mc: mc, ascBody: ascBody, mcBody: mcBody,
       cusps: cusps, aspects: aspects, elements: bal.el, modalities: bal.mo,
       zodiac: settings.zodiac, ayan: ay, house: settings.house
     };
+  }
+  function mkPoint2(key, lon, cusps) { var pt = makeBody(key, lon); pt.house = (cusps && cusps[1] != null) ? EPH.houseOf(lon, cusps) : null; return pt; }
+  // Chiron + Ceres/Pallas/Juno/Vesta — Keplerian propagation of osculating J2000 elements (from JPL via
+  // Swiss Ephemeris), validated geocentric to ~0.5–2.5° over 1985–2040. Heliocentric → geocentric ecliptic.
+  var MINOR_EL = {
+    chiron: { a: 13.605114, e: 0.379345, i: 6.94163, Om: 209.39684, w: 339.1422, M0: 27.99695, n: 0.0196404 },
+    ceres: { a: 2.766496, e: 0.078376, i: 10.58336, Om: 80.49433, w: 73.92308, M0: 6.1765, n: 0.2141949 },
+    pallas: { a: 2.772322, e: 0.229644, i: 34.84611, Om: 173.19777, w: 310.26571, M0: 352.96022, n: 0.21352 },
+    juno: { a: 2.668028, e: 0.258446, i: 12.96741, Om: 170.17269, w: 248.03199, M0: 240.26842, n: 0.2261614 },
+    vesta: { a: 2.361537, e: 0.090023, i: 7.13394, Om: 103.95144, w: 149.58648, M0: 341.02404, n: 0.2715889 }
+  };
+  function minorBodies(d, sunLonRaw) {
+    var D2R = Math.PI / 180, JD = 2451543.5 + d, JD0 = 2451545.0, T = (JD - JD0) / 36525, out = {}, key;
+    var g = (357.52911 + 35999.05029 * T) * D2R, R = 1.00014 - 0.01671 * Math.cos(g) - 0.00014 * Math.cos(2 * g);
+    var Le = (sunLonRaw + 180) * D2R, xe = R * Math.cos(Le), ye = R * Math.sin(Le), prec = 0.013969 * (JD - JD0) / 365.25;
+    for (key in MINOR_EL) {
+      if (!MINOR_EL.hasOwnProperty(key)) continue;
+      var el = MINOR_EL[key], M = ((el.M0 + el.n * (JD - JD0)) % 360) * D2R, E = M, k;
+      for (k = 0; k < 8; k++) E = E - (E - el.e * Math.sin(E) - M) / (1 - el.e * Math.cos(E));
+      var nu = 2 * Math.atan2(Math.sqrt(1 + el.e) * Math.sin(E / 2), Math.sqrt(1 - el.e) * Math.cos(E / 2));
+      var r = el.a * (1 - el.e * Math.cos(E)), u = el.w * D2R + nu, Om = el.Om * D2R, inc = el.i * D2R;
+      var xh = r * (Math.cos(Om) * Math.cos(u) - Math.sin(Om) * Math.sin(u) * Math.cos(inc));
+      var yh = r * (Math.sin(Om) * Math.cos(u) + Math.cos(Om) * Math.sin(u) * Math.cos(inc));
+      out[key] = rev(Math.atan2(yh - ye, xh - xe) / D2R + prec);
+    }
+    return out;
   }
   function makeBody(key, lon) {
     var sign = Math.floor(lon / 30), deg = lon - sign * 30;
@@ -2247,6 +2284,11 @@ var APP = (function () {
     if (rr.length) out.push({ label: 'Born retrograde', text: rr.map(nameFor).join(', ') + ' ' + (rr.length === 1 ? 'was' : 'were') + ' retrograde at your birth — that energy turns inward first: more reflective, reworked, personal before it’s expressed outwardly.' });
     var fs = starsOn(c);
     if (fs.length) out.push({ label: 'Fixed stars', text: fs.map(function (s) { return nameFor(s.planet) + ' on ' + s.star + ' (' + s.m + ')'; }).join('; ') + '.' });
+    if (c.extras) {
+      var exKeys = ['chiron', 'ceres', 'pallas', 'juno', 'vesta'], exLines = [], xi;
+      for (xi = 0; xi < exKeys.length; xi++) { var xb = c.extras[exKeys[xi]]; if (xb) exLines.push(nameFor(exKeys[xi]) + ' in ' + xb.signName + ' — ' + (DATA.PLANETS[exKeys[xi]] ? DATA.PLANETS[exKeys[xi]].fn : '') + '.'); }
+      if (exLines.length) out.push({ label: 'Chiron & the asteroids (approximate)', lines: exLines });
+    }
     var sct = sect(c);
     if (sct) out.push({ label: 'Sect — day or night chart', text: sectText(sct) });
     var pa = pointAspects(c);
@@ -5028,6 +5070,8 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       ly += toggleRow('Sound', [['off', 'Off'], ['on', 'On']], st.sound ? 'on' : 'off', ly, function (v) { st.sound = (v === 'on'); APP.save(); if (st.sound) { audioInit(); chime(); } });
       ly += toggleRow('Zodiac', [['tropical', 'Tropical'], ['sidereal', 'Sidereal']], st.zodiac, ly, function (v) { st.zodiac = v; recompute(); });
       ly += toggleRow('House system', [['whole', 'Whole'], ['equal', 'Equal'], ['placidus', 'Placidus']], st.house, ly, function (v) { st.house = v; recompute(); });
+      ly += toggleRow('Chiron & asteroids', [['off', 'Off'], ['on', 'On']], st.minorBodies ? 'on' : 'off', ly, function (v) { st.minorBodies = (v === 'on'); recompute(); });
+      ly += paragraph('Off by default to keep the chart clear. On: adds Chiron and the four asteroids (Ceres, Pallas, Juno, Vesta) as extra points — computed on-device to about a degree (approximate).', x, ly, w, 13.5, INK, SERIF, 20, 180) + 14;
       eyebrow('Aspect orb  \u00D7' + (st.orbScale || 1).toFixed(1), x, ly); ly += 20;
       var slw = w - 56, slx = x, sly = sY(ly) + 14;
       var tt = ((st.orbScale || 1) - 0.5) / 1.5, kx = slx + tt * slw;
