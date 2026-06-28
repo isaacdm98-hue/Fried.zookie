@@ -2149,6 +2149,84 @@ var APP = (function () {
   };
   function dignityOf(key, signName) { var d = DIGNITY[key]; if (!d) return ''; if (d.dom.indexOf(signName) >= 0) return 'Domicile'; if (d.exa === signName) return 'Exaltation'; if (d.fal === signName) return 'Fall'; if (d.det.indexOf(signName) >= 0) return 'Detriment'; return ''; }
 
+  // ============ FULL PTOLEMAIC ESSENTIAL DIGNITIES — the disciplined, mathematical core ============
+  // traditional (7-planet) domicile rulers by sign index (Aries..Pisces)
+  var TRAD_RULER = ['mars', 'venus', 'mercury', 'moon', 'sun', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'saturn', 'jupiter'];
+  // exaltation by sign index (null where none)
+  var EXALT_SIGN = ['sun', 'moon', null, 'jupiter', null, 'mercury', 'saturn', null, null, 'mars', null, 'venus'];
+  // Dorothean triplicity rulers by element: [day, night, participating]
+  var TRIPLICITY = { fire: ['sun', 'jupiter', 'saturn'], earth: ['venus', 'moon', 'mars'], air: ['saturn', 'mercury', 'jupiter'], water: ['venus', 'mars', 'moon'] };
+  // Egyptian bounds (terms): per sign, [planet, upToDegree]
+  var BOUNDS = [
+    [['jupiter', 6], ['venus', 12], ['mercury', 20], ['mars', 25], ['saturn', 30]],
+    [['venus', 8], ['mercury', 14], ['jupiter', 22], ['saturn', 27], ['mars', 30]],
+    [['mercury', 6], ['jupiter', 12], ['venus', 17], ['mars', 24], ['saturn', 30]],
+    [['mars', 7], ['venus', 13], ['mercury', 19], ['jupiter', 26], ['saturn', 30]],
+    [['jupiter', 6], ['venus', 11], ['saturn', 18], ['mercury', 24], ['mars', 30]],
+    [['mercury', 7], ['venus', 17], ['jupiter', 21], ['mars', 28], ['saturn', 30]],
+    [['saturn', 6], ['mercury', 14], ['jupiter', 21], ['venus', 28], ['mars', 30]],
+    [['mars', 7], ['venus', 11], ['mercury', 19], ['jupiter', 24], ['saturn', 30]],
+    [['jupiter', 12], ['venus', 17], ['mercury', 21], ['saturn', 26], ['mars', 30]],
+    [['mercury', 7], ['jupiter', 14], ['venus', 22], ['saturn', 26], ['mars', 30]],
+    [['mercury', 7], ['venus', 13], ['jupiter', 20], ['mars', 25], ['saturn', 30]],
+    [['venus', 12], ['jupiter', 16], ['mercury', 19], ['mars', 28], ['saturn', 30]]
+  ];
+  // Chaldean faces (decans), per sign three 10° rulers
+  var FACES = [
+    ['mars', 'sun', 'venus'], ['mercury', 'moon', 'saturn'], ['jupiter', 'mars', 'sun'], ['venus', 'mercury', 'moon'],
+    ['saturn', 'jupiter', 'mars'], ['sun', 'venus', 'mercury'], ['moon', 'saturn', 'jupiter'], ['mars', 'sun', 'venus'],
+    ['mercury', 'moon', 'saturn'], ['jupiter', 'mars', 'sun'], ['venus', 'mercury', 'moon'], ['saturn', 'jupiter', 'mars']
+  ];
+  // the dignity ledger at one ecliptic longitude: who rules it by each of the 5 Ptolemaic dignities, with points
+  function dignityLedger(lon, isDay) {
+    var sign = Math.floor(rev(lon) / 30), deg = rev(lon) - sign * 30, el = DATA.SIGNS[sign].element;
+    var dom = TRAD_RULER[sign], exa = EXALT_SIGN[sign], tri = TRIPLICITY[el][isDay ? 0 : 1];
+    var bnd = null, bb = BOUNDS[sign], bi; for (bi = 0; bi < bb.length; bi++) { if (deg < bb[bi][1]) { bnd = bb[bi][0]; break; } } if (!bnd) bnd = bb[bb.length - 1][0];
+    var fac = FACES[sign][Math.min(2, Math.floor(deg / 10))];
+    return { sign: sign, deg: deg, domicile: dom, exaltation: exa, triplicity: tri, bound: bnd, face: fac };
+  }
+  function addScore(s, k, v) { if (k) s[k] = (s[k] || 0) + v; }
+  // almuten of a single point: the planet with the most essential dignity exactly there
+  function almutenOf(lon, isDay) {
+    var L = dignityLedger(lon, isDay), s = {};
+    addScore(s, L.domicile, 5); addScore(s, L.exaltation, 4); addScore(s, L.triplicity, 3); addScore(s, L.bound, 2); addScore(s, L.face, 1);
+    var best = null, bm = -1, k; for (k in s) if (s.hasOwnProperty(k) && s[k] > bm) { bm = s[k]; best = k; }
+    return { winner: best, score: bm, scores: s, ledger: L };
+  }
+  // almuten figuris: the planet that wins the most dignity summed over the chart's hylegic points — the chart's true ruler
+  function almutenChart(c) {
+    var isDay = true, sct = sect(c); if (sct) isDay = sct.day;
+    var pts = [];
+    if (c.planets.sun) pts.push(c.planets.sun.lon);
+    if (c.planets.moon) pts.push(c.planets.moon.lon);
+    if (STATE.birth.timeKnown && c.ascBody) pts.push(c.ascBody.lon);
+    if (STATE.birth.timeKnown && c.mcBody) pts.push(c.mcBody.lon);
+    if (c.points && c.points.pof) pts.push(c.points.pof.lon);
+    var tally = {}, i, k; for (i = 0; i < pts.length; i++) { var L = dignityLedger(pts[i], isDay); addScore(tally, L.domicile, 5); addScore(tally, L.exaltation, 4); addScore(tally, L.triplicity, 3); addScore(tally, L.bound, 2); addScore(tally, L.face, 1); }
+    var best = null, bm = -1, list = []; for (k in tally) if (tally.hasOwnProperty(k) && tally[k] > bm) { bm = tally[k]; best = k; }
+    for (k in tally) if (tally.hasOwnProperty(k) && tally[k] === bm) list.push(k);
+    return { lead: best, score: bm, tie: list, tally: tally, isDay: isDay, points: pts.length };
+  }
+  // dispositor chains (modern rulers): follow each planet to the ruler of its sign until a loop or a planet in its own sign
+  function dispositorEnd(c, k) {
+    var cur = k, path = {}, steps = 0;
+    while (steps < 14) {
+      var pl = c.planets[cur]; if (!pl) return cur;
+      var ruler = RULERKEY[DATA.SIGNS[pl.sign].ruler]; if (!ruler || !c.planets[ruler]) return cur;
+      if (ruler === cur) return cur;           // in its own sign — a final dispositor
+      if (path[ruler]) return ruler;           // mutual reception / loop
+      path[cur] = true; cur = ruler; steps++;
+    }
+    return cur;
+  }
+  function finalDispositors(c) {
+    var keys = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto'], tally = {}, k, e;
+    for (k = 0; k < keys.length; k++) { if (!c.planets[keys[k]]) continue; var end = dispositorEnd(c, keys[k]); tally[end] = (tally[end] || 0) + 1; }
+    var best = null, bm = -1, list = []; for (e in tally) if (tally.hasOwnProperty(e) && tally[e] > bm) { bm = tally[e]; best = e; }
+    for (e in tally) if (tally.hasOwnProperty(e) && tally[e] === bm) list.push(e);
+    return { lead: best, count: bm, all: list, tally: tally };
+  }
+
   function dominantPlanet(c) {
     var b = STATE.birth, score = {}, i, k, p;
     for (i = 0; i < PATKEYS.length; i++) score[PATKEYS[i]] = 0;
@@ -2259,6 +2337,22 @@ var APP = (function () {
   // integrative synthesis: the repeated themes a human astrologer would read across the whole chart
   function composeThemes(c) {
     var themes = [], i, k, cnt = {}, personal = { sun: 1, moon: 1, mercury: 1, venus: 1, mars: 1 };
+    // the almuten figuris — computed, not guessed: the planet that wins the most essential dignity across your chart
+    try {
+      var am = almutenChart(c);
+      if (am && am.lead) {
+        if (am.tie.length > 1) themes.push('By the old mathematics of essential dignity, two planets tie as your chart’s almuten — ' + am.tie.map(nameFor).join(' and ') + ' — sharing command of ' + (DATA.PLANETS[am.lead] ? DATA.PLANETS[am.lead].fn : 'your nature') + '. A chart run by committee.');
+        else themes.push('By the old mathematics of essential dignity, your chart’s almuten — the planet that wins the most dignity across your Sun, Moon, Ascendant, Midheaven and Part of Fortune — is ' + nameFor(am.lead) + '. It is the quiet hand on the whole wheel: ' + (DATA.PLANETS[am.lead] ? DATA.PLANETS[am.lead].fn : '') + ', weighted above all the rest.');
+      }
+    } catch (e0) {}
+    // dispositor chains — follow every planet to the ruler of its sign
+    try {
+      var fd = finalDispositors(c);
+      if (fd && fd.lead) {
+        if (fd.all.length > 1) themes.push('Trace each planet to the ruler of its sign and the chains don’t resolve to one boss — they lock into mutual reception between ' + fd.all.map(nameFor).join(' and ') + ', planets propping each other up. A self-supporting chart with no single master.');
+        else if (fd.count >= 4) themes.push('Trace each planet to the ruler of its sign and the chains converge on ' + nameFor(fd.lead) + ' — it disposits ' + fd.count + ' of your planets, the desk where the whole chart’s business finally lands.');
+      }
+    } catch (e1) {}
     for (i = 0; i < c.aspects.length; i++) { var as = c.aspects[i]; if (as.a !== 'asc' && as.a !== 'mc') cnt[as.a] = (cnt[as.a] || 0) + 1; if (as.b !== 'asc' && as.b !== 'mc') cnt[as.b] = (cnt[as.b] || 0) + 1; }
     var focal = null, fmax = 0; for (k in cnt) if (cnt.hasOwnProperty(k) && cnt[k] > fmax) { fmax = cnt[k]; focal = k; }
     if (focal && fmax >= 3) themes.push('Much of your chart routes through ' + nameFor(focal) + ' (' + fmax + ' aspects) — ' + (DATA.PLANETS[focal] ? DATA.PLANETS[focal].fn : '') + ' is a hub the rest of you keeps negotiating with.');
@@ -2266,7 +2360,7 @@ var APP = (function () {
     for (var oi = 0; oi < outers.length; oi++) { var o = outers[oi], hits = []; for (i = 0; i < c.aspects.length; i++) { var a2 = c.aspects[i], other = (a2.a === o) ? a2.b : (a2.b === o ? a2.a : null); if (other && personal[other]) hits.push(other); } if (hits.length >= 2) { themes.push(nameFor(o) + ' leans on several of your personal planets (' + hits.map(nameFor).join(', ') + ') — ' + note[o] + ' running through your inner life.'); break; } }
     var soft = 0, hard = 0; for (i = 0; i < c.aspects.length; i++) { var q = c.aspects[i].asp.quality; if (q === 'flow' || q === 'opportunity') soft++; else if (q === 'friction' || q === 'tension') hard++; }
     if (soft + hard >= 4) themes.push(hard > soft * 1.5 ? 'Your aspects run hot — more friction than flow. You’re built by challenge; ease has to be chosen.' : soft > hard * 1.5 ? 'Your aspects run smooth — more flow than friction. Gifts come easily; the risk is coasting on them.' : 'Your aspects balance flow and friction — a chart with both real gifts and real grit.');
-    return themes.slice(0, 3);
+    return themes.slice(0, 5);
   }
 
   // aspects from the sensitive points (North Node, Lilith, Part of Fortune) to your natal planets
@@ -3279,7 +3373,7 @@ var APP = (function () {
     STATE: STATE, save: save, load: load, compute: computeChart,
     composeCore: composeCore, localAsk: localAsk, chartText: chartText, callModel: callModel,
     composeTransits: composeTransits, transitSentence: transitSentence, composeSignatures: composeSignatures,
-    addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, dignityOf: dignityOf, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide,
+    addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenOf: almutenOf, almutenChart: almutenChart, finalDispositors: finalDispositors, composeThemes: composeThemes, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide,
     saveCurrentChart: saveCurrentChart, deleteSavedChart: deleteSavedChart, activateSavedChart: activateSavedChart, activeChartKey: activeChartKey, chartKey: chartKey, famousMatches: famousMatches, lifeTransits: lifeTransits, upcomingTransits: upcomingTransits, compositeChart: compositeChart,
     nameFor: nameFor, glyphFor: glyphFor, sgAbbr: sgAbbr, pad: pad,
     domElement: domElement, lowElement: lowElement, domMod: domMod, tzOffsetHours: tzOffsetHours
