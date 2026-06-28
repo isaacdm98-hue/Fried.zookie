@@ -1267,14 +1267,14 @@ var APP = (function () {
     } catch (e) { return null; }
   }
   function utHoursOf(b) {
-    if (b.iana) {
+    if (!b.manualTz && b.iana) {
       var off = tzOffsetHours(b.iana, b.y, b.mo, b.d, b.hour, b.min);
       if (off !== null) return b.hour + b.min / 60 - off;
     }
-    return b.hour + b.min / 60 - (b.tz || 0);
+    return b.hour + b.min / 60 - (b.tz || 0); // manual override (or fallback)
   }
   function offsetOf(b) {
-    if (b.iana) { var off = tzOffsetHours(b.iana, b.y, b.mo, b.d, b.hour, b.min); if (off !== null) return off; }
+    if (!b.manualTz && b.iana) { var off = tzOffsetHours(b.iana, b.y, b.mo, b.d, b.hour, b.min); if (off !== null) return off; }
     return b.tz || 0;
   }
 
@@ -4082,7 +4082,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     }
 
     // ---------- ONBOARDING ----------
-    function newDraft() { var b = APP.STATE.birth; if (b) return { y: b.y, mo: b.mo, d: b.d, hour: b.hour, min: b.min, timeKnown: b.timeKnown, cityIdx: findCity(b) }; return { y: 1995, mo: 6, d: 15, hour: 12, min: 0, timeKnown: true, cityIdx: -1 }; }
+    function newDraft() { var b = APP.STATE.birth; if (b) return { y: b.y, mo: b.mo, d: b.d, hour: b.hour, min: b.min, timeKnown: b.timeKnown, cityIdx: findCity(b), manualTz: !!b.manualTz, tz: b.tz || 0 }; return { y: 1995, mo: 6, d: 15, hour: 12, min: 0, timeKnown: true, cityIdx: -1, manualTz: false, tz: 0 }; }
     function findCity(b) { for (var i = 0; i < DATA.CITIES.length; i++) if (b.place && b.place.indexOf(DATA.CITIES[i][0]) === 0) return i; return -1; }
     function stepper(label, val, lo, hi, x, ly, w, set) {
       var h = 42, bw = 38, depth = 3; eyebrow(label, x, ly); var by = ly + 15, y = sY(by);
@@ -4140,10 +4140,26 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       }
       if (p.drawingContext) p.drawingContext.restore();
       UI.cityBox = { x: x, y: boxY, w: w, h: boxH }; UI.cityBoxMax = Math.max(0, filtered.length * rh + 8 - boxH); ly += boxH + 18;
+      // manual time-zone override (for pre-1970 / DST cases the auto database gets wrong)
+      if (!d.manualTz) { p.noFill(); strokec(INK, 180); p.strokeWeight(1.4); p.rect(x, sY(ly), 22, 22, 5); }
+      else { p.noStroke(); fillc(ACC); p.rect(x, sY(ly), 22, 22, 5); setFont(SANS, 15, GROUNDS[UI.screen], p.CENTER, p.CENTER); p.text('✓', x + 11, sY(ly) + 11); }
+      setFont(SANS, 13, INK, p.LEFT, p.CENTER); p.text('Set the UTC offset myself', x + 32, sY(ly) + 11);
+      pushHit(x, sY(ly), w, 26, function () { d.manualTz = !d.manualTz; }); ly += 36;
+      if (d.manualTz) {
+        var oy = sY(ly), oh = 40, bw2 = 44;
+        p.noStroke(); fillc(GROUNDS[UI.screen]); p.rect(x, oy, w, oh, 8); p.noFill(); strokec(INK, 200); p.strokeWeight(1.4); p.rect(x, oy, w, oh, 8);
+        fillc(ACC); p.noStroke(); p.rect(x + 4, oy + 4, bw2, oh - 8, 6); setFont(SANS, 22, GROUNDS[UI.screen], p.CENTER, p.CENTER); p.text('−', x + 4 + bw2 / 2, oy + oh / 2);
+        fillc(ACC); p.rect(x + w - bw2 - 4, oy + 4, bw2, oh - 8, 6); setFont(SANS, 22, GROUNDS[UI.screen], p.CENTER, p.CENTER); p.text('+', x + w - bw2 - 4 + bw2 / 2, oy + oh / 2);
+        setFont(MONO, 15, INK, p.CENTER, p.CENTER); p.text('UTC' + (d.tz >= 0 ? '+' : '') + d.tz.toFixed(1), x + w / 2, oy + oh / 2);
+        pushHit(x, oy, bw2 + 8, oh, function () { d.tz = Math.max(-12, Math.round((d.tz - 0.5) * 2) / 2); });
+        pushHit(x + w - bw2 - 8, oy, bw2 + 8, oh, function () { d.tz = Math.min(14, Math.round((d.tz + 0.5) * 2) / 2); });
+        ly += oh + 6;
+        setFont(MONO, 8.5, INK, p.LEFT, p.TOP, 130); ly += paragraph('Use this when you know the exact offset — e.g. wartime or pre-1970 births the timezone database resolves loosely.', x, ly, w, 11, INK, MONO, 15, 130) + 8;
+      }
       var canBuild = (d.cityIdx >= 0);
       flatBtn(canBuild ? 'Build my chart' : 'Choose a birth place', x, ly, w, 50, function () { if (canBuild) buildChart(); }, canBuild); ly += 64; UI.contentH.onboard = ly;
     }
-    function buildChart() { var d = UI.draft, ci = DATA.CITIES[d.cityIdx]; APP.STATE.birth = { name: '', y: d.y, mo: d.mo, d: d.d, hour: d.hour, min: d.min, tz: 0, iana: ci[4], lat: ci[2], lon: ci[3], place: ci[0] + ', ' + ci[1], timeKnown: d.timeKnown }; recompute(); UI.selPlanet = 'sun'; UI.popT = nowT(); UI.popFrom = 22; UI.scroll.chart = 0; UI.screen = 'chart'; hideSearchInput(); }
+    function buildChart() { var d = UI.draft, ci = DATA.CITIES[d.cityIdx]; APP.STATE.birth = { name: '', y: d.y, mo: d.mo, d: d.d, hour: d.hour, min: d.min, tz: d.tz || 0, manualTz: !!d.manualTz, iana: ci[4], lat: ci[2], lon: ci[3], place: ci[0] + ', ' + ci[1], timeKnown: d.timeKnown }; recompute(); UI.selPlanet = 'sun'; UI.popT = nowT(); UI.popFrom = 22; UI.scroll.chart = 0; UI.screen = 'chart'; hideSearchInput(); }
     function recompute() { APP.STATE.chart = APP.compute(APP.STATE.birth, APP.STATE.settings); APP.save(); UI.readCache = null; UI.readSig = null; UI.readTransit = null; UI.forecast = null; UI.bondCache = null; UI.bondFor = null; if (APP.clearPersonCharts) APP.clearPersonCharts(); UI.askAns = ''; UI.quip = null; UI.quipNext = 0; buildField(); }
 
     // ---------- chrome ----------
