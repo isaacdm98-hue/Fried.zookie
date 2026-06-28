@@ -2331,7 +2331,9 @@ var APP = (function () {
     var shared = sharedTransits(cMe, cThem); if (shared.length) blocks.push({ label: 'Live between you — today', text: shared.slice(0, 2).join(' ') });
     var trT = composeTransits(cThem);
     if (trT.daily.length) blocks.push({ label: 'Live for them — today', text: 'What the sky is doing to ' + (person.name || 'them') + ' now: ' + trT.daily.slice(0, 2).map(transitSentence).join(' ') });
-    return { blocks: blocks, syn: syn };
+    // the relationship's own forecast: transits to the composite chart over the year ahead
+    var year = []; try { year = upcomingTransits({ planets: comp.planets, ayan: cMe.ayan || 0 }, 8, 16); } catch (e) { year = []; }
+    return { blocks: blocks, syn: syn, comp: comp, cMe: cMe, cThem: cThem, year: year };
   }
 
   // ================= timing & forecast (on-device: profections, progressions, solar return, transits) =================
@@ -3148,7 +3150,7 @@ var APP = (function () {
     composeCore: composeCore, localAsk: localAsk, chartText: chartText, callModel: callModel,
     composeTransits: composeTransits, transitSentence: transitSentence, composeSignatures: composeSignatures,
     addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, dignityOf: dignityOf, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide,
-    saveCurrentChart: saveCurrentChart, deleteSavedChart: deleteSavedChart, activateSavedChart: activateSavedChart, activeChartKey: activeChartKey, chartKey: chartKey, famousMatches: famousMatches, lifeTransits: lifeTransits, upcomingTransits: upcomingTransits,
+    saveCurrentChart: saveCurrentChart, deleteSavedChart: deleteSavedChart, activateSavedChart: activateSavedChart, activeChartKey: activeChartKey, chartKey: chartKey, famousMatches: famousMatches, lifeTransits: lifeTransits, upcomingTransits: upcomingTransits, compositeChart: compositeChart,
     nameFor: nameFor, glyphFor: glyphFor, sgAbbr: sgAbbr, pad: pad,
     domElement: domElement, lowElement: lowElement, domMod: domMod, tzOffsetHours: tzOffsetHours
   };
@@ -4272,6 +4274,31 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       flatBtn('Save person', x, ly, w, 50, function () { savePerson(); }, true); ly += 64; UI.contentH.people = ly;
     }
 
+    // ---- relationship wheels ----
+    var BWSET = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn'];
+    function wheelFrame(cx, cy, r, asc) {
+      var RAD = Math.PI / 180, k;
+      function ax(lon, rr) { var a = (180 + (lon - asc)) * RAD; return cx + rr * Math.cos(a); }
+      function ay(lon, rr) { var a = (180 + (lon - asc)) * RAD; return cy - rr * Math.sin(a); }
+      p.noFill(); strokec(INK, 150); p.strokeWeight(1.4); p.ellipse(cx, cy, r * 2, r * 2);
+      strokec(INK, 55); p.strokeWeight(1); p.ellipse(cx, cy, r * 1.02, r * 1.02);
+      for (k = 0; k < 12; k++) { var bl = k * 30; strokec(INK, k % 3 === 0 ? 110 : 45); p.strokeWeight(1); p.line(ax(bl, r * 1.02), ay(bl, r * 1.02), ax(bl, r), ay(bl, r)); setFont(SANS, 10, INK, p.CENTER, p.CENTER, 140); p.text(DATA.SIGNS[k].glyph, ax(bl + 15, r * 0.91), ay(bl + 15, r * 0.91)); }
+      return { ax: ax, ay: ay };
+    }
+    function drawSynastryWheel(cMe, cThem, syn, cx, cy, r) {
+      var asc = cMe.ascBody ? cMe.ascBody.lon : cMe.planets.sun.lon, f = wheelFrame(cx, cy, r, asc), k, inR = r * 0.56, outR = r * 0.82;
+      // contact lines first (under the dots)
+      var n = 0; for (k = 0; k < syn.length && n < 9; k++) { var s = syn[k]; if (BWSET.indexOf(s.mine) < 0 || BWSET.indexOf(s.theirs) < 0) continue; var mp = cMe.planets[s.mine], tp = cThem.planets[s.theirs]; if (!mp || !tp) continue; var qc = s.asp.quality, col = (qc === 'flow' || qc === 'opportunity') ? ELHUE.air : (qc === 'fusion' ? INK : ACC); strokec(col, 150); p.strokeWeight(1.2); p.line(f.ax(mp.lon, inR), f.ay(mp.lon, inR), f.ax(tp.lon, outR), f.ay(tp.lon, outR)); n++; }
+      for (k = 0; k < BWSET.length; k++) { var mk = cMe.planets[BWSET[k]]; if (!mk) continue; var px = f.ax(mk.lon, inR), py = f.ay(mk.lon, inR); p.noStroke(); fillc(INK); p.ellipse(px, py, 15, 15); setFont(SANS, 9.5, GROUNDS[UI.screen], p.CENTER, p.CENTER); p.text(APP.glyphFor(BWSET[k]), px, py + 0.5); }
+      for (k = 0; k < BWSET.length; k++) { var tk = cThem.planets[BWSET[k]]; if (!tk) continue; var qx = f.ax(tk.lon, outR), qy = f.ay(tk.lon, outR); p.noStroke(); fillc(ACC); p.ellipse(qx, qy, 15, 15); setFont(SANS, 9.5, GROUNDS[UI.screen], p.CENTER, p.CENTER); p.text(APP.glyphFor(BWSET[k]), qx, qy + 0.5); }
+      setFont(MONO, 8.5, INK, p.CENTER, p.TOP, 170); p.text('● YOU (inner)   ● THEM (outer)', cx, cy + r + 8);
+    }
+    function drawCompositeWheel(comp, cx, cy, r) {
+      var asc = comp.asc ? comp.asc.lon : (comp.planets.sun ? comp.planets.sun.lon : 0), f = wheelFrame(cx, cy, r, asc), k;
+      for (k = 0; k < BWSET.length; k++) { var pl = comp.planets[BWSET[k]]; if (!pl) continue; var px = f.ax(pl.lon, r * 0.6), py = f.ay(pl.lon, r * 0.6); var pulse = 0.5 + 0.5 * Math.sin(nowT() * 0.003 + k); p.noStroke(); fillc(ACC, 50 * pulse); p.ellipse(px, py, 22, 22); fillc(INK); p.ellipse(px, py, 15, 15); setFont(SANS, 9.5, GROUNDS[UI.screen], p.CENTER, p.CENTER); p.text(APP.glyphFor(BWSET[k]), px, py + 0.5); }
+      if (comp.asc) { var aR = r; var axp = f.ax(comp.asc.lon, aR), ayp = f.ay(comp.asc.lon, aR); p.noStroke(); fillc(ACC); p.ellipse(axp, ayp, 7, 7); setFont(MONO, 8, ACCTX, p.CENTER, p.CENTER, 230); p.text('Asc', f.ax(comp.asc.lon, r * 1.14), f.ay(comp.asc.lon, r * 1.14)); }
+      setFont(MONO, 8.5, INK, p.CENTER, p.TOP, 170); p.text('THE RELATIONSHIP AS ITS OWN CHART', cx, cy + r + 8);
+    }
     function drawBond() {
       var person = findPerson(UI.viewPerson); if (!person || !APP.STATE.chart) { UI.viewPerson = null; return; }
       var x = sx(), w = cw(), ly = 18, gi = cl01(1 - (nowT() - UI.fxT) / 500), i;
@@ -4281,11 +4308,35 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       eyebrow(relLabel(person.rel, person.famrel) + ' · born ' + person.d + '.' + person.mo + '.' + person.y, x, ly, ACC); ly += 24;
       setFont(MONO, 11, INK, p.LEFT, p.TOP, 200); p.text((su.signName + ' Sun · ' + mo.signName + ' Moon' + (person.timeKnown && ch.ascBody ? ' · ' + ch.ascBody.signName + ' Rising' : '')).toUpperCase(), x, sY(ly)); ly += 28;
       var bond = composeBondCached(person);
+      // ---- relationship wheel: synastry bi-wheel ⟷ composite chart ----
+      if (UI.bondWheel == null) UI.bondWheel = 'synastry';
+      var cxp = x; cxp += chip('Synastry', UI.bondWheel === 'synastry', cxp, ly, function () { UI.bondWheel = 'synastry'; }) + 8;
+      chip('Composite', UI.bondWheel === 'composite', cxp, ly, function () { UI.bondWheel = 'composite'; }); ly += 46;
+      var wR = Math.min(w * 0.40, 120), wcx = x + w / 2, wcy = sY(ly) + wR + 6;
+      if (UI.bondWheel === 'composite' && bond.comp) drawCompositeWheel(bond.comp, wcx, wcy, wR);
+      else drawSynastryWheel(bond.cMe || APP.STATE.chart, bond.cThem || ch, bond.syn, wcx, wcy, wR);
+      ly += wR * 2 + 34;
       for (i = 0; i < bond.blocks.length; i++) {
         var blk = bond.blocks[i];
         ly += 6; eyebrow(blk.label, x, ly, ACC); ly += 22;
         if (blk.text) ly += paragraph(blk.text, x, ly, w, 15.5, INK, SERIF, 24) + 12;
         if (blk.lines) { for (var L = 0; L < blk.lines.length; L++) ly += paragraph('• ' + blk.lines[L], x, ly, w, 14, INK, SERIF, 21) + 8; ly += 4; }
+      }
+      // ---- your year together: transits to the composite chart, best days flagged ----
+      if (bond.year && bond.year.length) {
+        ly += 8; eyebrow('Your year together', x, ly, ACC); ly += 22;
+        ly += paragraph('What the sky brings to the relationship itself over the months ahead. ★ marks the easy, open days worth planning around.', x, ly, w, 13.5, INK, SERIF, 20, 185) + 10;
+        var yi; for (yi = 0; yi < Math.min(bond.year.length, 8); yi++) {
+          var ye = bond.year[yi], good = (ye.quality === 'flow' || ye.quality === 'opportunity' || ye.tp === 'jupiter' || ye.tp === 'venus');
+          if (yi) hairline(x, ly, x + w, 30);
+          if (good) { setFont(SANS, 12, ACC, p.LEFT, p.CENTER); p.text('★', x, sY(ly + 16)); }
+          setFont(MONO, 9.5, INK, p.LEFT, p.CENTER, 200); p.text(fmtShort(ye.date).toUpperCase(), x + 16, sY(ly + 16));
+          var qcol = (ye.quality === 'flow' || ye.quality === 'opportunity') ? ELHUE.air : (ye.quality === 'fusion' ? INK : ACC);
+          setFont(SANS, 12, qcol, p.CENTER, p.CENTER); bold(); p.text(ye.glyph, x + 104, sY(ly + 16)); normal();
+          setFont(MONO, 9.5, INK, p.LEFT, p.CENTER, 200); p.text(APP.nameFor(ye.tp) + ' ' + ye.aspKey + ' ' + APP.nameFor(ye.np), x + 120, sY(ly + 16));
+          ly += 30;
+        }
+        ly += 12;
       }
       ly += 10; eyebrow('All contacts — tightest first', x, ly); ly += 22;
       var syn = bond.syn;
