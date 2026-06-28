@@ -3662,10 +3662,12 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         var rr2 = R * 0.7; for (var pj = 0; pj < placed.length; pj++) if (Math.abs(((pl.lon - placed[pj] + 540) % 360) - 180) < 8) rr2 -= 15; placed.push(pl.lon);
         var base = (key === 'sun' || key === 'moon') ? 26 : 21;
         if (UI.pdia[key] == null) UI.pdia[key] = base;
-        var prv = (still || UI.walk) ? 1 : cl01(((t - UI.fxT) - pi * 55) / 680), prvE = eCubic(prv), curR = 3 + (rr2 - 3) * prvE;
+        var prv = (still || UI.walk) ? 1 : cl01(((t - UI.fxT) - pi * 55) / 680), prvE = eCubic(prv);
+        var curR = R * 0.98 - (R * 0.98 - rr2) * prvE;   // AN1 — sails in from the rim to its resting orbit
+        var curLon = pl.lon + (1 - prvE) * 26;            // sweeping forward along the orbit, settling onto its degree
         var raw = (pl.lon - sw + 360) % 360, adist = Math.min(raw, 360 - raw), beam = (still || rv < 0.96) ? 0 : Math.max(0, (9 - adist) / 9);
-        var it0 = { key: key, x: ax(pl.lon, curR), y: ay(pl.lon, curR), base: base, beam: beam, rev: prv, lon: pl.lon }; pos.push(it0); posMap[key] = it0;
-        strokec(INK, 28 * prv); p.strokeWeight(0.7); p.line(ax(pl.lon, R * 0.3 * prvE), ay(pl.lon, R * 0.3 * prvE), ax(pl.lon, curR), ay(pl.lon, curR));
+        var it0 = { key: key, x: ax(curLon, curR), y: ay(curLon, curR), base: base, beam: beam, rev: prv, lon: pl.lon }; pos.push(it0); posMap[key] = it0;
+        if (prv < 0.999) { strokec(INK, 45 * (1 - prv)); p.strokeWeight(0.8); p.line(ax(curLon + 14 * (1 - prvE), curR), ay(curLon + 14 * (1 - prvE), curR), ax(curLon, curR), ay(curLon, curR)); }
       }
       // A2 — living aspect threads: the selected planet's aspects draw out as shimmering filaments
       if (rv > 0.9 && UI.selPlanet && posMap[UI.selPlanet]) {
@@ -3691,6 +3693,22 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       for (var d1 = 0; d1 < pos.length; d1++) { if (pos[d1].key === UI.selPlanet) continue; drawPlanet(pos[d1], false, t); }
       for (var d2 = 0; d2 < pos.length; d2++) { if (pos[d2].key === UI.selPlanet) drawPlanet(pos[d2], true, t); }
 
+      // AN3 / S3 — today's real-sky transits drawn on the rim, threaded to the natal points they touch (the daily check-in)
+      if (rv > 0.95 && !UI.walk) {
+        var trd = walkTr(c), tay = (trd.ctx && trd.ctx.ay) || 0, tdi;
+        if (trd.ctx && trd.ctx.tp) {
+          for (tdi = 0; tdi < Math.min(trd.daily.length, 5); tdi++) {
+            var tev = trd.daily[tdi], srcp = trd.ctx.tp[tev.tp]; if (!srcp) continue;
+            var natal = posMap[tev.np]; if (!natal) continue;
+            var tlon = ((srcp.lon - tay) % 360 + 360) % 360, orx = ax(tlon, R * 1.04), ory = ay(tlon, R * 1.04);
+            var tq = tev.asp.quality, tcol = (tq === 'flow' || tq === 'opportunity') ? ELHUE.air : (tq === 'fusion' ? INK : ACC);
+            var puls = 0.55 + 0.45 * Math.sin(t * 0.004 + tdi * 1.3);
+            strokec(tcol, 60 * puls); p.strokeWeight(1); p.line(orx, ory, natal.x, natal.y);
+            p.noStroke(); fillc(tcol, 210); p.ellipse(orx, ory, 13, 13);
+            setFont(SANS, 7.5, GROUNDS[UI.screen], p.CENTER, p.CENTER); p.text(APP.glyphFor(tev.tp), orx, ory + 0.5);
+          }
+        }
+      }
       p.noStroke(); fillc(INK, 255 * er); p.ellipse(cx, cy, 5, 5);
       return size;
     }
@@ -3967,6 +3985,17 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       p.textFont(SANS); p.textSize(38); var tw = p.textWidth(titleSign);
       setFont(SANS, 38, INK, p.LEFT, p.TOP, 90); p.textStyle(p.BOLD); p.text(b.timeKnown ? ' rising' : ' sun', x + tw, sY(ly)); normal(); ly += 48;
       ly += hudStrip(c, b, x, ly, w) + 10;
+      // S3 — a one-line daily headline of what the sky is doing to you; tap to open Today
+      (function () {
+        var trd = walkTr(c), te0 = trd.daily && trd.daily[0];
+        var dline = te0 ? (APP.nameFor(te0.tp) + ' ' + te0.asp.key + ' your ' + APP.nameFor(te0.np)) : 'a quiet sky — your pattern runs undisturbed';
+        var puls = reduced() ? 1 : (0.6 + 0.4 * Math.sin(nowT() * 0.004));
+        p.noStroke(); fillc(ACC, 255 * puls); p.ellipse(x + 4, sY(ly) + 8, 6, 6);
+        setFont(MONO, 10, ACCTX, p.LEFT, p.TOP, 235); p.text(('Today · ' + dline).toUpperCase(), x + 16, sY(ly) + 3);
+        setFont(MONO, 9, INK, p.RIGHT, p.TOP, 150); p.text('OPEN ›', x + w, sY(ly) + 4);
+        pushHit(x, sY(ly) - 4, w, 26, function () { openToday(); });
+      })();
+      ly += 28;
 
       ly += dial(c, b, ly) + 4;
       setFont(MONO, 9.5, INK, p.CENTER, p.TOP, 130); p.text('TAP A BODY \u2014 IT LIGHTS ITS THREADS, MEANING BELOW', x + w / 2, sY(ly)); ly += 22;
@@ -3981,7 +4010,11 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         p.textStyle(p.BOLD);
         glitchText(APP.glyphFor(key), x, sY(ly), 20, SANS, ACC, p.LEFT, p.TOP, inten);
         glitchText(APP.nameFor(key), x + 28, sY(ly), 19, SANS, INK, p.LEFT, p.TOP, inten); normal();
-        setFont(MONO, 10.5, INK, p.RIGHT, p.TOP, 150); p.text(UI.degShown.toFixed(1) + '\u00B0 ' + pl.signName + (b.timeKnown ? '  H' + pl.house : ''), x + w, sY(ly) + 4);
+        // AN9 \u2014 the degree counts up with a soft glow that fades as it settles
+        var ticking = Math.abs(UI.degShown - pl.deg) > 0.05, degStr = UI.degShown.toFixed(1) + '\u00B0 ' + pl.signName + (b.timeKnown ? '  H' + pl.house : '');
+        p.textFont(MONO); p.textSize(10.5); var degW = p.textWidth(degStr), glowA = ticking ? 1 : cl01(1 - (nowT() - UI.popT) / 700);
+        if (glowA > 0.02 && !reduced()) { var gp = 0.5 + 0.5 * Math.sin(nowT() * 0.012); p.noStroke(); fillc(ACC, 42 * glowA * gp); p.ellipse(x + w - degW / 2, sY(ly) + 9, degW + 20, 22); }
+        setFont(MONO, 10.5, ticking ? ACCTX : INK, p.RIGHT, p.TOP, ticking ? 230 : 150); p.text(degStr, x + w, sY(ly) + 4);
         ly += 30;
         ly += paragraph(planetBlurb(c, key), x, ly, w, 16, INK, SERIF, 25) + 24;
       }
