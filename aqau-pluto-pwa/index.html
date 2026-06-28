@@ -5397,6 +5397,42 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       out.push({ t: 'The Moon and its phases', who: 'Astronomy film', q: 'the moon phases astronomy educational film' });
       return out;
     }
+    // ===== retro media: Bakelite TVs (YouTube channel playlists, muted + subtitles, sound knob) & radios (Spotify) =====
+    function mediaSets(c, b) {
+      var sun = DATA.SIGNS[c.planets.sun.sign].name;
+      return [
+        { kind: 'tv', t: 'Debra Silverman', sub: 'Moon, elements & shadow', list: 'UU8h-BJfBv-DzhaUSg_IJzFg' },
+        { kind: 'tv', t: 'The Astrology Podcast', sub: 'Sign forecasts & the craft', list: 'UUjeqviBoLp-rsvPaelT8b5Q' },
+        { kind: 'radio', t: 'Ghost of a Podcast', sub: 'Jessica Lanyadoo — ' + sun + ' advice & the weekly sky', show: '1962WYPEmmw0iAAbs6pIHT' },
+        { kind: 'radio', t: 'The Astrology Podcast', sub: 'Deep-dive astrology conversations', show: '6RZiEupZSqbU8WgCWHnV9p' }
+      ];
+    }
+    function ensureMediaFrame() {
+      if (UI.mframe || typeof document === 'undefined') return UI.mframe;
+      try { var f = document.createElement('iframe'); f.setAttribute('allow', 'autoplay; encrypted-media; picture-in-picture; fullscreen'); f.setAttribute('allowfullscreen', 'true'); f.setAttribute('aria-hidden', 'true'); var s = f.style; s.position = 'fixed'; s.zIndex = '7'; s.border = '0'; s.background = '#000'; s.display = 'none'; document.body.appendChild(f); UI.mframe = f; } catch (e) { UI.mframe = null; }
+      return UI.mframe;
+    }
+    function mediaSrc(it) {
+      if (it.kind === 'tv') return 'https://www.youtube-nocookie.com/embed/videoseries?list=' + it.list + '&autoplay=1&mute=1&cc_load_policy=1&playsinline=1&enablejsapi=1&modestbranding=1&rel=0';
+      return 'https://open.spotify.com/embed/show/' + it.show + '?theme=0';
+    }
+    function hideMediaFrame() { try { if (UI.mframe) { UI.mframe.style.display = 'none'; if (UI.mframe.src) UI.mframe.src = 'about:blank'; } } catch (e) {} UI.mframeId = null; }
+    function setMediaActive(idx) { UI.tvActive = idx; UI.tvMuted = true; }
+    function applyTvSound() { try { var mf = UI.mframe; if (mf && mf.contentWindow) mf.contentWindow.postMessage(JSON.stringify({ event: 'command', func: (UI.tvMuted === false ? 'unMute' : 'mute'), args: [] }), '*'); } catch (e) {} }
+    function bakeliteBody(x, y, w, h) {
+      p.noStroke(); fillc([38, 26, 19]); p.rect(x, y + 4, w, h, 16); fillc([64, 45, 33]); p.rect(x, y, w, h, 16);
+      p.noFill(); strokec([96, 68, 50], 200); p.strokeWeight(1.3); p.rect(x + 3, y + 3, w - 6, h - 6, 13);
+    }
+    function tvKnob(cx, cy, r, lit) {
+      p.noStroke(); fillc([18, 13, 10]); p.ellipse(cx, cy + 1.5, r * 2 + 2, r * 2 + 2); fillc(lit ? ACC : [78, 58, 46]); p.ellipse(cx, cy, r * 2, r * 2);
+      strokec(lit ? [255, 240, 230] : [150, 120, 100], 230); p.strokeWeight(2); p.line(cx, cy, cx, cy - r * 0.75); p.noStroke();
+    }
+    function tvStatic(sx0, sy0, sw, sh) {
+      p.noStroke(); fillc([12, 12, 16]); p.rect(sx0, sy0, sw, sh, 6);
+      var dc = p.drawingContext; if (dc) { dc.save(); dc.beginPath(); dc.rect(sx0, sy0, sw, sh); dc.clip(); }
+      if (!reduced()) { var i; for (i = 0; i < 55; i++) { var rx = sx0 + Math.random() * sw, ry = sy0 + Math.random() * sh; p.noStroke(); fillc([200, 200, 210], 25 + Math.random() * 70); p.rect(rx, ry, 2, 2); } }
+      if (dc) dc.restore();
+    }
     function learnList(c, x, w, ly) {
       var cat = UI.learnCat, rh = 52, i, b = APP.STATE.birth;
       if (cat === 'elements') {
@@ -5483,20 +5519,52 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
           (function (idx, ay) { pushHit(x, sY(ay), w, frh, function () { UI.learnItem = idx; UI.scroll.learn = 0; UI.popT = nowT(); }); })(i, ly); ly += frh;
         }
         if (!fm.length) ly += paragraph('No close matches in the set — a rare sky.', x, ly, w, 15, INK, SERIF, 23, 180) + 10;
-      } else if (cat === 'watch') { // sourced video lessons on your placements (reputable teachers)
-        ly += paragraph('Video lessons tuned to your placements and the craft — talks, lectures and films embedded straight from the Internet Archive, a free public library. They play right here in the app (needs a connection).', x, ly, w, 14.5, INK, SERIF, 22, 200) + 12;
-        var wc = watchCards(c, b), wrh = 60;
-        for (i = 0; i < wc.length; i++) {
-          var wcd = wc[i]; if (i) hairline(x, ly, x + w, 40);
-          var wcy = sY(ly + wrh / 2);
-          // play glyph
-          p.noStroke(); fillc(ACC, 40); p.ellipse(x + 14, wcy, 30, 30); fillc(ACC); p.triangle(x + 9, wcy - 7, x + 9, wcy + 7, x + 22, wcy);
-          setFont(SANS, 15, INK, p.LEFT, p.CENTER); bold(); p.text(wcd.t, x + 38, wcy - 9); normal();
-          setFont(MONO, 9.5, INK, p.LEFT, p.CENTER, 150); p.text((wcd.who + ' · ARCHIVE').toUpperCase(), x + 38, wcy + 10);
-          setFont(SANS, 18, INK, p.RIGHT, p.CENTER, 130); p.text('›', x + w, wcy);
-          (function (cd, ay) { pushHit(x, sY(ay), w, wrh, function () { openVideo(cd); }); })(wcd, ly); ly += wrh;
+      } else if (cat === 'watch') { // retro TVs (video) + radios (podcasts), tuned to your chart
+        ly += paragraph('Tune in. Lessons play on the little televisions — muted, with subtitles; turn the VOL knob when you want sound. Podcasts play on the radios. Tap a set to switch it on.', x, ly, w, 14.5, INK, SERIF, 22, 200) + 14;
+        var dev = mediaSets(c, b), di, frameRect = null;
+        for (di = 0; di < dev.length; di++) {
+          var it = dev[di], active = (UI.tvActive === di);
+          if (it.kind === 'tv') {
+            var H = 226, y0 = sY(ly), off = pressOff(x, y0, w, H - 44, 2);
+            bakeliteBody(x, y0 + off, w, H);
+            var sxs = x + 16, sys = y0 + off + 16, sws = w - 32, shs = 134;
+            if (active) { frameRect = { x: sxs + 3, y: sys + 3, w: sws - 6, h: shs - 6 }; p.noStroke(); fillc([0, 0, 0]); p.rect(sxs, sys, sws, shs, 8); }
+            else { tvStatic(sxs, sys, sws, shs); setFont(MONO, 10, [214, 214, 224], p.CENTER, p.CENTER, 210); p.text('TAP TO TUNE IN', sxs + sws / 2, sys + shs / 2); }
+            p.noFill(); strokec([22, 16, 12], 255); p.strokeWeight(4); p.rect(sxs - 2, sys - 2, sws + 4, shs + 4, 9);
+            var cyr = y0 + off + H - 38, gx2; for (gx2 = 0; gx2 < 7; gx2++) { strokec([34, 24, 18], 220); p.strokeWeight(3); p.line(x + 18 + gx2 * 7, cyr - 8, x + 18 + gx2 * 7, cyr + 20); }
+            setFont(SANS, 14, [240, 230, 216], p.LEFT, p.TOP); bold(); var ttl = it.t, tav = w - 158; p.textFont(SANS); p.textSize(14); while (ttl.length > 6 && p.textWidth(ttl) > tav) ttl = ttl.slice(0, -2); p.text(ttl + (ttl !== it.t ? '…' : ''), x + 80, cyr - 10); normal();
+            setFont(MONO, 8.5, [212, 198, 182], p.LEFT, p.TOP, 200); var subt = it.sub.toUpperCase(); p.textFont(MONO); p.textSize(8.5); while (subt.length > 6 && p.textWidth(subt) > tav) subt = subt.slice(0, -2); p.text(subt, x + 80, cyr + 8);
+            var vkx = x + w - 30, ckx = x + w - 64, ky = cyr + 4;
+            tvKnob(ckx, ky, 11, false); tvKnob(vkx, ky, 13, active && UI.tvMuted === false);
+            setFont(MONO, 7, [210, 196, 180], p.CENTER, p.TOP, 180); p.text('CH', ckx, ky + 15); p.text('VOL', vkx, ky + 15);
+            if (active) pushHit(vkx - 18, ky - 18, 36, 36, function () { UI.tvMuted = (UI.tvMuted === false); applyTvSound(); });
+            (function (idx, ay) { pushHit(x, sY(ay), w, H - 44, function () { if (UI.tvActive !== idx) setMediaActive(idx); }); })(di, ly);
+            ly += H + 14;
+          } else {
+            var RH = 176, ry0 = sY(ly), ro = pressOff(x, ry0, w, RH, 2);
+            bakeliteBody(x, ry0 + ro, w, RH);
+            var gcx = x + 44, gcy = ry0 + ro + RH / 2, gg; p.noFill(); for (gg = 1; gg <= 4; gg++) { strokec([34, 24, 18], 210); p.strokeWeight(2); p.ellipse(gcx, gcy, gg * 16, gg * 16); }
+            p.noStroke(); fillc(active && UI.tvActive === di ? ACC : [120, 92, 70]); p.ellipse(gcx, gcy, 7, 7);
+            var pwx = x + 82, pwy = ry0 + ro + 12, pww = w - 82 - 14, pwh = 152;
+            if (active) { frameRect = { x: pwx, y: pwy, w: pww, h: pwh }; p.noStroke(); fillc([18, 18, 22]); p.rect(pwx, pwy, pww, pwh, 8); }
+            else { p.noStroke(); fillc([30, 26, 30]); p.rect(pwx, pwy, pww, pwh, 8); setFont(SANS, 14, [240, 230, 216], p.LEFT, p.TOP); bold(); p.text(it.t, pwx + 12, pwy + 16); normal(); setFont(MONO, 8.5, [212, 198, 182], p.LEFT, p.TOP, 200); var rsl = wrapLines2(it.sub.toUpperCase(), pww - 24, MONO, 8.5), rsi; for (rsi = 0; rsi < rsl.length && rsi < 3; rsi++) p.text(rsl[rsi], pwx + 12, pwy + 38 + rsi * 12); setFont(MONO, 9, ACC, p.LEFT, p.TOP, 230); p.text('TAP TO PLAY ›', pwx + 12, pwy + pwh - 22); }
+            p.noFill(); strokec([22, 16, 12], 255); p.strokeWeight(4); p.rect(pwx - 2, pwy - 2, pww + 4, pwh + 4, 9);
+            (function (idx, ay) { pushHit(x, sY(ay), w, RH, function () { if (UI.tvActive !== idx) setMediaActive(idx); }); })(di, ly);
+            ly += RH + 14;
+          }
         }
-        ly += 6; setFont(MONO, 8.5, INK, p.LEFT, p.TOP, 140); ly += paragraph('Each lesson is found and embedded live from the Internet Archive, a free public library — it plays in-app. Aqau Pluto doesn’t host the videos.', x, ly, w, 11, INK, MONO, 16, 140) + 8;
+        // one active media iframe, tracked to its device's screen as the list scrolls
+        if (frameRect && UI.tvActive != null && dev[UI.tvActive]) {
+          var act = dev[UI.tvActive], mf = ensureMediaFrame();
+          if (mf) {
+            var want = (act.kind === 'tv') ? ('tv:' + act.list) : ('radio:' + act.show);
+            if (UI.mframeId !== want) { mf.src = mediaSrc(act); UI.mframeId = want; }
+            var vis = (frameRect.y >= topY() - 2) && (frameRect.y + frameRect.h <= H - (UI.safeBottom || 0));
+            if (vis) { mf.style.display = 'block'; mf.style.left = frameRect.x + 'px'; mf.style.top = frameRect.y + 'px'; mf.style.width = frameRect.w + 'px'; mf.style.height = frameRect.h + 'px'; mf.style.borderRadius = '6px'; } else mf.style.display = 'none';
+            UI.mediaDrawn = true;
+          }
+        }
+        ly += 4; setFont(MONO, 8.5, INK, p.LEFT, p.TOP, 140); ly += paragraph('TVs stream official YouTube channels (muted, subtitles on — turn VOL for sound). Radios stream shows on Spotify. Everything plays in-app; nothing opens elsewhere.', x, ly, w, 11, INK, MONO, 16, 140) + 8;
       } else if (cat === 'howto') { // hands-on guides
         ly += paragraph('Short, practical walk-throughs — how to actually do these things yourself, each with a little animation.', x, ly, w, 14.5, INK, SERIF, 22, 200) + 12;
         for (i = 0; i < HOWTO.length; i++) {
@@ -6385,17 +6453,18 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     p.draw = function () {
       // auto-dark-at-night: re-apply the theme when the effective key changes (time or accent)
       var ek = effectiveThemeKey() + '|' + ((APP.STATE.settings && APP.STATE.settings.accent) || 0); if (ek !== UI.appliedThemeKey) { applyTheme(); setBodyBg(GROUNDS[UI.screen] || GROUNDS.chart); }
-      if (UI.screen !== UI.prevScreen) { var wasFirst = !UI.prevScreen; UI.fxT = nowT(); UI.prevScreen = UI.screen; UI.story = null; if (UI.video) closeVideo(); if (UI.screen !== 'chart') UI.walk = null; if (UI.screen !== 'tarot') UI.tarotRit = null; if (UI.screen !== 'read') UI.lifeWalk = null; setBodyBg(GROUNDS[UI.screen] || GROUNDS.chart); if (!wasFirst) chime(); }
+      if (UI.screen !== UI.prevScreen) { var wasFirst = !UI.prevScreen; UI.fxT = nowT(); UI.prevScreen = UI.screen; UI.story = null; if (UI.video) closeVideo(); if (UI.screen !== 'chart') UI.walk = null; if (UI.screen !== 'tarot') UI.tarotRit = null; if (UI.screen !== 'read') UI.lifeWalk = null; if (UI.screen !== 'learn') UI.tvActive = null; setBodyBg(GROUNDS[UI.screen] || GROUNDS.chart); if (!wasFirst) chime(); }
       UI.bg = (GROUNDS[UI.screen] || GROUNDS.chart); // HARD block-colour cut between sections
       p.background(UI.bg[0], UI.bg[1], UI.bg[2]);
       drawField(); drawRipples();
       // readability scrim: on text-heavy screens, settle the constellations behind a calm ground so the
       // words always come first (the chart stays lively — it's the visual centrepiece).
       if (({ read: 1, learn: 1, settings: 1, people: 1, tarot: 1 })[UI.screen]) { p.noStroke(); p.fill(UI.bg[0], UI.bg[1], UI.bg[2], 158); p.rect(0, topY() - 8, W, H - (topY() - 8)); }
-      hits = []; p.rectMode(p.CORNER); p.textStyle(p.NORMAL);
+      hits = []; p.rectMode(p.CORNER); p.textStyle(p.NORMAL); UI.mediaDrawn = false;
       if (UI.screen === 'onboard' && !APP.STATE.birth && !UI.introDone) { drawIntro(); clampScroll(); return; }
       var s = UI.screen;
       if (s === 'onboard') drawOnboard(); else { if (!(s === 'people' && UI.padd)) hideSearchInput(); if (s === 'chart') drawChart(); else if (s === 'read') drawRead(); else if (s === 'learn') drawLearn(); else if (s === 'tarot') drawTarot(); else if (s === 'people') drawPeople(); else if (s === 'settings') drawSettings(); }
+      if (!UI.mediaDrawn) hideMediaFrame(); // the retro TV/radio iframe only lives on the Watch shelf
       drawQuip();
       drawTopbar(); if (s !== 'onboard') drawNav();
       drawTodayPanel();
