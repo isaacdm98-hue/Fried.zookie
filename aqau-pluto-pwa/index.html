@@ -1213,7 +1213,7 @@ var APP = (function () {
   // ---------- state ----------
   var STATE = {
     birth: null, // {name,y,mo,d,hour,min,tz,lat,lon,place,timeKnown}
-    settings: { zodiac: 'tropical', house: 'placidus', orbScale: 1, ai: false, theme: 'light', textScale: 1, sound: false },
+    settings: { zodiac: 'tropical', house: 'placidus', orbScale: 1, ai: false, theme: 'light', textScale: 1, sound: false, accent: 0, autoNight: false },
     chart: null, screen: 'chart', chartView: 'dial',
     people: [], // [{id,name,rel,famrel,y,mo,d,hour,min,tz,iana,lat,lon,place,timeKnown}]
     charts: [] // saved birth charts you can switch between (snapshots of `birth`)
@@ -3211,12 +3211,23 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     paper: { ink: [58, 44, 28], acc: [150, 60, 20], acctx: [120, 48, 14], g: { onboard: [235, 225, 199], chart: [235, 225, 199], read: [226, 216, 188], tarot: [232, 219, 194], settings: [228, 221, 202], learn: [221, 213, 192], people: [231, 218, 198] } },
     night: { ink: [214, 223, 240], acc: [126, 152, 232], acctx: [150, 174, 244], g: { onboard: [12, 15, 27], chart: [12, 15, 27], read: [11, 17, 26], tarot: [18, 15, 28], settings: [13, 15, 30], learn: [10, 15, 30], people: [17, 13, 28] } }
   };
+  // custom accent palette (index 0 = the theme's own accent)
+  var ACCENTS = [null, [210, 82, 28], [196, 64, 92], [120, 150, 86], [78, 120, 200], [150, 96, 196], [44, 160, 150]];
+  var ACCENT_NAMES = ['Theme', 'Amber', 'Rose', 'Sage', 'Blue', 'Violet', 'Teal'];
+  function cB(v) { return v < 0 ? 0 : v > 255 ? 255 : v; }
+  function effectiveThemeKey() {
+    var st = APP.STATE.settings || {}, base = st.theme || 'light';
+    if (st.autoNight) { var h = new Date().getHours(); if (h >= 19 || h < 6) base = 'night'; }
+    return THEMES[base] ? base : 'light';
+  }
   function applyTheme() {
-    var t = THEMES[(APP.STATE.settings && APP.STATE.settings.theme)] || THEMES.light, k;
+    var st = APP.STATE.settings || {}, t = THEMES[effectiveThemeKey()] || THEMES.light, k;
     INK[0] = t.ink[0]; INK[1] = t.ink[1]; INK[2] = t.ink[2];
     ACC[0] = t.acc[0]; ACC[1] = t.acc[1]; ACC[2] = t.acc[2];
     ACCTX[0] = t.acctx[0]; ACCTX[1] = t.acctx[1]; ACCTX[2] = t.acctx[2];
+    var ai = st.accent || 0; if (ai > 0 && ACCENTS[ai]) { var a = ACCENTS[ai]; ACC[0] = a[0]; ACC[1] = a[1]; ACC[2] = a[2]; ACCTX[0] = cB(a[0] - 70); ACCTX[1] = cB(a[1] - 42); ACCTX[2] = cB(a[2] - 22); }
     for (k in t.g) if (t.g.hasOwnProperty(k)) GROUNDS[k] = t.g[k].slice();
+    if (typeof UI !== 'undefined' && UI) UI.appliedThemeKey = effectiveThemeKey() + '|' + ai; // UI may not exist on the very first call
   }
   applyTheme();
   var ELHUE = { fire: [199, 78, 36], earth: [150, 120, 40], air: [40, 90, 120], water: [90, 70, 150] };
@@ -4960,6 +4971,18 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       eyebrow('Tune the chart', x, ly); ly += 22;
       p.textStyle(p.BOLD); glitchText('Settings', x, sY(ly), 34, SANS, INK, p.LEFT, p.TOP, gi); normal(); ly += 50;
       ly += toggleRow('Theme', [['light', 'Light'], ['dark', 'Dark'], ['paper', 'Paper'], ['night', 'Night']], st.theme || 'light', ly, function (v) { st.theme = v; APP.save(); applyTheme(); UI.fxT = nowT(); });
+      // accent colour swatches
+      eyebrow('Accent colour', x, ly); ly += 22;
+      var swR = 15, swGap = (w - ACCENTS.length * swR * 2) / (ACCENTS.length - 1), swy = sY(ly) + swR, swi;
+      for (swi = 0; swi < ACCENTS.length; swi++) {
+        var swx = x + swi * (swR * 2 + swGap) + swR, col = ACCENTS[swi] || st && THEMES[effectiveThemeKey()].acc, on = ((st.accent || 0) === swi);
+        p.noStroke(); fillc(col); p.ellipse(swx, swy, swR * 2, swR * 2);
+        if (swi === 0) { setFont(MONO, 7.5, INK, p.CENTER, p.CENTER, 255); p.text('THEME', swx, swy); }
+        if (on) { p.noFill(); strokec(INK, 255); p.strokeWeight(2.5); p.ellipse(swx, swy, swR * 2 + 8, swR * 2 + 8); }
+        (function (idx) { pushHit(swx - swR - 4, swy - swR - 4, swR * 2 + 8, swR * 2 + 8, function () { st.accent = idx; APP.save(); applyTheme(); }); })(swi);
+      }
+      ly += swR * 2 + 18;
+      ly += toggleRow('Auto dark at night', [['off', 'Off'], ['on', 'On']], st.autoNight ? 'on' : 'off', ly, function (v) { st.autoNight = (v === 'on'); APP.save(); applyTheme(); UI.fxT = nowT(); });
       ly += toggleRow('Reading text size', [['1', 'Standard'], ['1.15', 'Large'], ['1.3', 'Larger']], String(st.textScale || 1), ly, function (v) { st.textScale = parseFloat(v); APP.save(); UI.readCache = null; });
       ly += toggleRow('Sound', [['off', 'Off'], ['on', 'On']], st.sound ? 'on' : 'off', ly, function (v) { st.sound = (v === 'on'); APP.save(); if (st.sound) { audioInit(); chime(); } });
       ly += toggleRow('Zodiac', [['tropical', 'Tropical'], ['sidereal', 'Sidereal']], st.zodiac, ly, function (v) { st.zodiac = v; recompute(); });
@@ -5377,6 +5400,8 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     };
     p.windowResized = function () { measureInsets(); W = p.windowWidth; H = p.windowHeight; p.resizeCanvas(W, H); buildField(); };
     p.draw = function () {
+      // auto-dark-at-night: re-apply the theme when the effective key changes (time or accent)
+      var ek = effectiveThemeKey() + '|' + ((APP.STATE.settings && APP.STATE.settings.accent) || 0); if (ek !== UI.appliedThemeKey) { applyTheme(); setBodyBg(GROUNDS[UI.screen] || GROUNDS.chart); }
       if (UI.screen !== UI.prevScreen) { var wasFirst = !UI.prevScreen; UI.fxT = nowT(); UI.prevScreen = UI.screen; UI.story = null; if (UI.screen !== 'chart') UI.walk = null; setBodyBg(GROUNDS[UI.screen] || GROUNDS.chart); if (!wasFirst) chime(); }
       UI.bg = (GROUNDS[UI.screen] || GROUNDS.chart); // HARD block-colour cut between sections
       p.background(UI.bg[0], UI.bg[1], UI.bg[2]);
