@@ -3296,6 +3296,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
   function cB(v) { return v < 0 ? 0 : v > 255 ? 255 : v; }
   function effectiveThemeKey() {
     var st = APP.STATE.settings || {}, base = st.theme || 'light';
+    if (base === 'auto') { var dk = false; try { dk = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches); } catch (e) {} base = dk ? 'night' : 'light'; }
     if (st.autoNight) { var h = new Date().getHours(); if (h >= 19 || h < 6) base = 'night'; }
     return THEMES[base] ? base : 'light';
   }
@@ -5484,11 +5485,27 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       }
       return 18 + h + 34; // extra breathing room so Settings never feels squashed
     }
+    // S11 — collapsible section header so Settings reads as three calm groups, not one long list
+    function foldHeader(title, key, ly, defOpen) {
+      if (!UI.setFold) UI.setFold = {};
+      if (UI.setFold[key] == null) UI.setFold[key] = defOpen;
+      var open = UI.setFold[key], x = sx(), w = cw(), y = sY(ly), h = 42, off = pressOff(x, y, w, h, 2);
+      p.noStroke(); fillc(shade(GROUNDS[UI.screen], open ? -6 : -16)); p.rect(x, y + off, w, h, 9);
+      p.noFill(); strokec(INK, open ? 200 : 120); p.strokeWeight(1.3); p.rect(x, y + off, w, h, 9);
+      setFont(SANS, 15, INK, p.LEFT, p.CENTER); bold(); p.text(title, x + 16, y + off + h / 2 + 0.5); normal();
+      var cxr = x + w - 24, cyr = y + off + h / 2; strokec(INK, 210); p.strokeWeight(2);
+      if (open) { p.line(cxr - 5, cyr - 2, cxr, cyr + 3); p.line(cxr + 5, cyr - 2, cxr, cyr + 3); }
+      else { p.line(cxr - 2, cyr - 5, cxr + 3, cyr); p.line(cxr - 2, cyr + 5, cxr + 3, cyr); }
+      pushHit(x, y, w, h, function () { UI.setFold[key] = !UI.setFold[key]; });
+      return open;
+    }
     function drawSettings() {
       var x = sx(), w = cw(), ly = 18, st = APP.STATE.settings, gi = cl01(1 - (nowT() - UI.fxT) / 500);
       eyebrow('Tune the chart', x, ly); ly += 22;
       p.textStyle(p.BOLD); glitchText('Settings', x, sY(ly), 34, SANS, INK, p.LEFT, p.TOP, gi); normal(); ly += 50;
-      ly += toggleRow('Theme', [['light', 'Light'], ['dark', 'Dark'], ['paper', 'Paper'], ['night', 'Night']], st.theme || 'light', ly, function (v) { st.theme = v; APP.save(); applyTheme(); UI.fxT = nowT(); });
+      if (foldHeader('Look', 'look', ly, true)) {
+      ly += 50;
+      ly += toggleRow('Theme', [['light', 'Light'], ['dark', 'Dark'], ['paper', 'Paper'], ['night', 'Night'], ['auto', 'Auto']], st.theme || 'light', ly, function (v) { st.theme = v; APP.save(); applyTheme(); UI.fxT = nowT(); });
       // accent colour swatches
       eyebrow('Accent colour', x, ly); ly += 22;
       var swR = 15, swGap = (w - ACCENTS.length * swR * 2) / (ACCENTS.length - 1), swy = sY(ly) + swR, swi;
@@ -5500,13 +5517,15 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         (function (idx) { pushHit(swx - swR - 4, swy - swR - 4, swR * 2 + 8, swR * 2 + 8, function () { st.accent = idx; APP.save(); applyTheme(); }); })(swi);
       }
       ly += swR * 2 + 18;
-      ly += toggleRow('Auto dark at night', [['off', 'Off'], ['on', 'On']], st.autoNight ? 'on' : 'off', ly, function (v) { st.autoNight = (v === 'on'); APP.save(); applyTheme(); UI.fxT = nowT(); });
+      } else { ly += 50; }
+      if (foldHeader('Reading', 'reading', ly, false)) {
+      ly += 50;
       ly += toggleRow('Reading text size', [['1', 'Standard'], ['1.15', 'Large'], ['1.3', 'Larger']], String(st.textScale || 1), ly, function (v) { st.textScale = parseFloat(v); APP.save(); UI.readCache = null; });
       ly += toggleRow('Sound', [['off', 'Off'], ['on', 'On']], st.sound ? 'on' : 'off', ly, function (v) { st.sound = (v === 'on'); APP.save(); if (st.sound) { audioInit(); chime(); } });
       ly += toggleRow('Zodiac', [['tropical', 'Tropical'], ['sidereal', 'Sidereal']], st.zodiac, ly, function (v) { st.zodiac = v; recompute(); });
       ly += toggleRow('House system', [['whole', 'Whole'], ['equal', 'Equal'], ['placidus', 'Placidus']], st.house, ly, function (v) { st.house = v; recompute(); });
-      ly += toggleRow('Chiron & asteroids', [['off', 'Off'], ['on', 'On']], st.minorBodies ? 'on' : 'off', ly, function (v) { st.minorBodies = (v === 'on'); recompute(); });
-      ly += paragraph('Off by default to keep the chart clear. On: adds Chiron and the four asteroids (Ceres, Pallas, Juno, Vesta) as extra points — computed on-device to about a degree (approximate).', x, ly, w, 13.5, INK, SERIF, 20, 180) + 14;
+      ly += toggleRow('Show extra points', [['off', 'Off'], ['on', 'On']], st.minorBodies ? 'on' : 'off', ly, function (v) { st.minorBodies = (v === 'on'); recompute(); });
+      ly += paragraph('On: adds Chiron and the four major asteroids (Ceres, Pallas, Juno, Vesta) as extra points — computed on-device to about a degree.', x, ly, w, 13.5, INK, SERIF, 20, 180) + 14;
       eyebrow('Aspect orb  \u00D7' + (st.orbScale || 1).toFixed(1), x, ly); ly += 20;
       var slw = w - 56, slx = x, sly = sY(ly) + 14;
       var tt = ((st.orbScale || 1) - 0.5) / 1.5, kx = slx + tt * slw;
@@ -5518,10 +5537,11 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       fillc(INK); p.ellipse(kx, sly + (kDn ? 1 : 0), 8, 8);
       setFont(MONO, 12, INK, p.LEFT, p.CENTER); p.text('\u00D7' + (st.orbScale || 1).toFixed(1), slx + slw + 12, sly);
       UI.sliderRect = { x: slx, y: sly, w: slw }; ly += 40;
-      ly += toggleRow('Birthplace search', [['off', 'On-device'], ['on', 'Online']], st.geocodeOnline ? 'on' : 'off', ly, function (v) { st.geocodeOnline = (v === 'on'); UI.geoResults = []; UI.geoQ = ''; APP.save(); });
-      ly += paragraph('On-device (default): pick from the built-in city list, fully offline. Online: search any place via free, keyless lookups (OpenStreetMap + open\u2011meteo) \u2014 one request after you pause typing; needs internet, no account, no AI.', x, ly, w, 13.5, INK, SERIF, 20, 180) + 16;
-      ly += toggleRow('Cloud reading boost', [['on', 'On'], ['off', 'Off']], st.ai ? 'on' : 'off', ly, function (v) { st.ai = (v === 'on'); APP.save(); });
-      ly += paragraph('Off (default): the built-in engine writes every reading on-device \u2014 free, private, works offline with no account. On: an optional cloud pass, only if your deployment provides a connection.', x, ly, w, 13.5, INK, SERIF, 20, 180) + 20;
+      } else { ly += 50; UI.sliderRect = null; }
+      if (!foldHeader('Data & privacy', 'data', ly, false)) { ly += 50; UI.contentH.settings = ly; return; }
+      ly += 50;
+      ly += toggleRow('Use the internet (optional)', [['off', 'Off'], ['on', 'On']], (st.geocodeOnline || st.ai) ? 'on' : 'off', ly, function (v) { var onx = (v === 'on'); st.geocodeOnline = onx; st.ai = onx; UI.geoResults = []; UI.geoQ = ''; APP.save(); });
+      ly += paragraph('Off (default): everything runs on-device \u2014 readings written locally, birthplace from the built-in city list, fully private and offline. On: optional keyless lookups (OpenStreetMap + open\u2011meteo) to search any birthplace, plus a cloud reading pass if your deployment provides one. No account, no tracking.', x, ly, w, 13.5, INK, SERIF, 20, 180) + 16;
       // ---- saved charts (switch between your own / family / relocated charts) ----
       eyebrow('Saved charts', x, ly); ly += 24;
       var charts = APP.STATE.charts || [], actKey = APP.activeChartKey(), inList = false, ci2;
