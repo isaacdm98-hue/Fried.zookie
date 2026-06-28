@@ -3596,39 +3596,54 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var R = size * 0.43, ascLon = b.timeKnown ? c.asc : 0;
       function ax(lon, r) { return cx + r * Math.cos((180 + (lon - ascLon)) * Math.PI / 180); }
       function ay(lon, r) { return cy - r * Math.sin((180 + (lon - ascLon)) * Math.PI / 180); }
+      // A1 — the wheel draws itself in on entry (calm, once): rings + ring sweep in, planets glide out from centre
+      var rv = (still || UI.walk) ? 1 : cl01((t - UI.fxT) / 1300), er = eCubic(rv);
 
       // structural rings (near-static; structure, not decoration)
       p.noFill();
-      for (var g = 1; g <= 15; g++) { var rr = (g / 16) * R * 0.82; strokec(INK, 16); p.strokeWeight(1); p.ellipse(cx, cy, rr * 2, rr * 2); }
-      // SWEEP that reads out the chart: a beam rotating once ~12s, highlighting each planet it crosses
+      for (var g = 1; g <= 15; g++) { var rr = (g / 16) * R * 0.82; strokec(INK, 16 * er); p.strokeWeight(1); p.ellipse(cx, cy, rr * 2, rr * 2); }
+      // SWEEP that reads out the chart: a beam rotating once ~12s, highlighting each planet it crosses (after the reveal settles)
       var sw = (fc * 0.5) % 360;
-      if (!still) { for (var s2 = 0; s2 < 26; s2++) { strokec(ACC, 30 - s2 * 1.1); p.strokeWeight(1); p.line(cx, cy, ax(sw - s2 * 1.4, R * 0.8), ay(sw - s2 * 1.4, R * 0.8)); } }
-      // outer ring + corner crosshairs (HUD)
-      p.noFill(); strokec(INK, 220); p.strokeWeight(1.6); p.ellipse(cx, cy, R * 2, R * 2);
+      if (!still && rv > 0.96) { for (var s2 = 0; s2 < 26; s2++) { strokec(ACC, 30 - s2 * 1.1); p.strokeWeight(1); p.line(cx, cy, ax(sw - s2 * 1.4, R * 0.8), ay(sw - s2 * 1.4, R * 0.8)); } }
+      // outer ring — inks itself clockwise from the top during the reveal
+      p.noFill(); strokec(INK, 220); p.strokeWeight(1.6); p.arc(cx, cy, R * 2, R * 2, -Math.PI / 2, -Math.PI / 2 + 2 * Math.PI * (er < 0.999 ? er : 1));
       // zodiac
       for (var z = 0; z < 12; z++) {
-        var card = (z % 3 === 0); strokec(INK, card ? 200 : 90); p.strokeWeight(card ? 1.4 : 1);
+        var card = (z % 3 === 0); strokec(INK, (card ? 200 : 90) * er); p.strokeWeight(card ? 1.4 : 1);
         p.line(ax(z * 30, R), ay(z * 30, R), ax(z * 30, R - (card ? 12 : 6)), ay(z * 30, R - (card ? 12 : 6)));
-        setFont(SANS, 12, INK, p.CENTER, p.CENTER, 150); p.text(DATA.SIGNS[z].glyph, ax(z * 30 + 15, R + 15), ay(z * 30 + 15, R + 15));
+        setFont(SANS, 12, INK, p.CENTER, p.CENTER, 150 * er); p.text(DATA.SIGNS[z].glyph, ax(z * 30 + 15, R + 15), ay(z * 30 + 15, R + 15));
       }
       if (b.timeKnown) {
-        for (var hh = 1; hh <= 12; hh++) { var ang = (hh === 1 || hh === 4 || hh === 7 || hh === 10); strokec(INK, ang ? 70 : 30); p.strokeWeight(ang ? 1.2 : 0.7); p.line(ax(c.cusps[hh], R * 0.3), ay(c.cusps[hh], R * 0.3), ax(c.cusps[hh], R * 0.82), ay(c.cusps[hh], R * 0.82)); }
-        strokec(ACC); p.strokeWeight(2.2); p.line(cx, cy, ax(ascLon, R - 4), ay(ascLon, R - 4));
-        p.noStroke(); fillc(ACC); p.ellipse(ax(ascLon, R - 4), ay(ascLon, R - 4), 8, 8);
-        setFont(MONO, 9, ACC, p.CENTER, p.CENTER); bold(); p.text('ASC', ax(ascLon, R + 15), ay(ascLon, R + 15)); normal();
+        for (var hh = 1; hh <= 12; hh++) { var ang = (hh === 1 || hh === 4 || hh === 7 || hh === 10); strokec(INK, (ang ? 70 : 30) * er); p.strokeWeight(ang ? 1.2 : 0.7); p.line(ax(c.cusps[hh], R * 0.3), ay(c.cusps[hh], R * 0.3), ax(c.cusps[hh], R * 0.82), ay(c.cusps[hh], R * 0.82)); }
+        strokec(ACC, 255 * er); p.strokeWeight(2.2); p.line(cx, cy, ax(ascLon, R - 4), ay(ascLon, R - 4));
+        p.noStroke(); fillc(ACC, 255 * er); p.ellipse(ax(ascLon, R - 4), ay(ascLon, R - 4), 8, 8);
+        setFont(MONO, 9, ACC, p.CENTER, p.CENTER, 255 * er); bold(); p.text('ASC', ax(ascLon, R + 15), ay(ascLon, R + 15)); normal();
       }
 
-      // compute planet positions (declustered)
+      // compute planet positions (declustered); during reveal each glides out from the centre with a small stagger
       var order = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto', 'node'];
-      var pos = [], placed = [];
+      var pos = [], placed = [], posMap = {};
       for (var pi = 0; pi < order.length; pi++) {
         var key = order[pi], pl = c.planets[key]; if (!pl) continue;
         var rr2 = R * 0.7; for (var pj = 0; pj < placed.length; pj++) if (Math.abs(((pl.lon - placed[pj] + 540) % 360) - 180) < 8) rr2 -= 15; placed.push(pl.lon);
         var base = (key === 'sun' || key === 'moon') ? 26 : 21;
         if (UI.pdia[key] == null) UI.pdia[key] = base;
-        var raw = (pl.lon - sw + 360) % 360, adist = Math.min(raw, 360 - raw), beam = still ? 0 : Math.max(0, (9 - adist) / 9);
-        pos.push({ key: key, x: ax(pl.lon, rr2), y: ay(pl.lon, rr2), base: base, beam: beam });
-        strokec(INK, 28); p.strokeWeight(0.7); p.line(ax(pl.lon, R * 0.3), ay(pl.lon, R * 0.3), ax(pl.lon, rr2), ay(pl.lon, rr2));
+        var prv = (still || UI.walk) ? 1 : cl01(((t - UI.fxT) - pi * 55) / 680), prvE = eCubic(prv), curR = 3 + (rr2 - 3) * prvE;
+        var raw = (pl.lon - sw + 360) % 360, adist = Math.min(raw, 360 - raw), beam = (still || rv < 0.96) ? 0 : Math.max(0, (9 - adist) / 9);
+        var it0 = { key: key, x: ax(pl.lon, curR), y: ay(pl.lon, curR), base: base, beam: beam, rev: prv, lon: pl.lon }; pos.push(it0); posMap[key] = it0;
+        strokec(INK, 28 * prv); p.strokeWeight(0.7); p.line(ax(pl.lon, R * 0.3 * prvE), ay(pl.lon, R * 0.3 * prvE), ax(pl.lon, curR), ay(pl.lon, curR));
+      }
+      // A2 — living aspect threads: the selected planet's aspects draw out as shimmering filaments
+      if (rv > 0.9 && UI.selPlanet && posMap[UI.selPlanet]) {
+        var sp = posMap[UI.selPlanet], ap = (still ? 1 : cl01((t - UI.popT) / 640)), apE = eCubic(ap), ai2;
+        for (ai2 = 0; ai2 < c.aspects.length; ai2++) {
+          var asp = c.aspects[ai2], oth = (asp.a === UI.selPlanet) ? asp.b : (asp.b === UI.selPlanet ? asp.a : null); if (!oth) continue;
+          var op = posMap[oth]; if (!op) continue;
+          var q = asp.asp.quality, col = (q === 'flow' || q === 'opportunity') ? ELHUE.air : (q === 'fusion' ? INK : ACC);
+          var sh = 0.7 + 0.3 * Math.sin(t * 0.005 + ai2), ex = sp.x + (op.x - sp.x) * apE, ey = sp.y + (op.y - sp.y) * apE;
+          strokec(col, 150 * ap * sh); p.strokeWeight(1.4); p.line(sp.x, sp.y, ex, ey);
+          if (ap > 0.98) { p.noStroke(); fillc(col, 130 * sh); p.ellipse(op.x, op.y, 4, 4); }
+        }
       }
       // animate diameters
       for (var a2 = 0; a2 < pos.length; a2++) {
@@ -3636,18 +3651,32 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         if (sel) { var prog = cl01((t - UI.popT) / 460); UI.pdia[it.key] = UI.popFrom + (50 - UI.popFrom) * eBack(prog); }
         else { UI.pdia[it.key] += (it.base - UI.pdia[it.key]) * 0.2; }
         // register hit (generous)
-        (function (kk, ex, ey) { pushHit(ex - 16, ey - 16, 32, 32, function () { selectPlanet(kk); spawnRipple(ex, ey); }); })(it.key, it.x, it.y);
+        (function (kk, ex, ey) { pushHit(ex - 16, ey - 16, 32, 32, function () { tapPlanet(kk); spawnRipple(ex, ey); }); })(it.key, it.x, it.y);
       }
-      // draw non-selected first (dim), then selected on top (magnified + halo)
+      // draw non-selected first (dim), then selected on top (magnified + halo + bloom)
       for (var d1 = 0; d1 < pos.length; d1++) { if (pos[d1].key === UI.selPlanet) continue; drawPlanet(pos[d1], false, t); }
       for (var d2 = 0; d2 < pos.length; d2++) { if (pos[d2].key === UI.selPlanet) drawPlanet(pos[d2], true, t); }
 
-      p.noStroke(); fillc(INK); p.ellipse(cx, cy, 5, 5);
+      p.noStroke(); fillc(INK, 255 * er); p.ellipse(cx, cy, 5, 5);
       return size;
+    }
+    // A4 — a brief, body-specific flourish behind a tapped planet (fades in the first ~1.4s)
+    function planetBloom(key, px, py, ds, t) {
+      var age = (t - UI.popT) / 1400; if (age < 0 || age > 1 || reduced()) return;
+      var a = Math.sin(age * Math.PI), r = ds * 0.5, k;
+      p.push(); p.translate(px, py);
+      if (key === 'sun') { strokec(ACC, 200 * a); p.strokeWeight(2); for (k = 0; k < 12; k++) { var ang = k * Math.PI / 6 + t * 0.0008, r0 = r + 6, r1 = r + 16 + 4 * Math.sin(t * 0.006 + k); p.line(Math.cos(ang) * r0, Math.sin(ang) * r0, Math.cos(ang) * r1, Math.sin(ang) * r1); } p.noStroke(); fillc(ACC, 60 * a); p.ellipse(0, 0, ds + 22, ds + 22); }
+      else if (key === 'moon') { var e = ((t * 0.00002) % 1) * 360, kk = Math.cos(e * Math.PI / 180); p.noStroke(); fillc([238, 232, 216], 220 * a); p.arc(0, 0, ds, ds, -Math.PI / 2, Math.PI / 2, p.PIE); fillc(kk > 0 ? [238, 232, 216] : shade(INK, 40), 220 * a); p.ellipse(0, 0, ds * Math.abs(kk), ds); }
+      else if (key === 'mars') { p.noStroke(); for (k = 0; k < 7; k++) { var aa = k * 0.9 + t * 0.002, rad = r + 4 + (k % 3) * 5; fillc([200, 80, 50], 150 * a); p.ellipse(Math.cos(aa) * rad, Math.sin(aa) * rad, 3, 3); } }
+      else if (key === 'saturn') { p.noFill(); strokec(ACC, 200 * a); p.strokeWeight(2); p.push(); p.rotate(-0.5); p.ellipse(0, 0, (ds + 22), (ds + 22) * 0.42); p.pop(); }
+      else if (key === 'jupiter') { strokec(ACC, 150 * a); p.strokeWeight(1.6); p.noFill(); p.arc(0, 0, ds + 14, ds + 14, -0.5, 0.5); p.arc(0, 0, ds + 14, ds + 14, Math.PI - 0.5, Math.PI + 0.5); }
+      else { p.noStroke(); fillc(ACC, 50 * a); p.ellipse(0, 0, ds + 18 + 6 * Math.sin(t * 0.006), ds + 18 + 6 * Math.sin(t * 0.006)); }
+      p.pop();
     }
     function drawPlanet(it, sel, t) {
       var ds = UI.pdia[it.key], px = it.x, py = it.y;
       if (sel) {
+        planetBloom(it.key, px, py, ds, t); // A4 — body-specific flourish behind the tapped planet
         // halo rings pulsing
         var pulse = 0.5 + 0.5 * Math.sin(t * 0.006);
         p.noFill(); strokec(ACC, 200); p.strokeWeight(2); p.ellipse(px, py, ds + 12 + pulse * 6, ds + 12 + pulse * 6);
@@ -3666,7 +3695,12 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     }
     function selectPlanet(key) {
       UI.popFrom = UI.pdia[key] || 22; UI.selPlanet = key; UI.popT = nowT();
-      openStory(key); // tapping a placement opens its story (the wheel ripples away to reveal it)
+      openStory(key); // tapping a placement (in the list) opens its story directly
+    }
+    // on the wheel: first tap highlights (bloom + living aspect threads); a second tap opens the story
+    function tapPlanet(key) {
+      if (UI.selPlanet === key) { openStory(key); return; }
+      UI.popFrom = UI.pdia[key] || 22; UI.selPlanet = key; UI.popT = nowT();
     }
 
     // three reels
@@ -3838,7 +3872,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       ly += hudStrip(c, b, x, ly, w) + 10;
 
       ly += dial(c, b, ly) + 4;
-      setFont(MONO, 9, INK, p.CENTER, p.TOP, 110); p.text('TAP A BODY \u2014 IT MAGNIFIES', x + w / 2, sY(ly)); ly += 22;
+      setFont(MONO, 9.5, INK, p.CENTER, p.TOP, 130); p.text('TAP A BODY TO LIGHT ITS THREADS \u00b7 TAP AGAIN TO READ', x + w / 2, sY(ly)); ly += 22;
       ly += reels(c, b, ly) + 14;
 
       // selected reading - animated, ticking degree
