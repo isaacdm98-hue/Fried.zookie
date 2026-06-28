@@ -3929,7 +3929,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     // animated explanation diagram per category: builds on entry, idles with life, replays on tap
     function learnDiagram(cat, it, c, x, w, ly) {
       var H0 = 152, cx = x + w / 2, top = sY(ly), cyc = top + H0 / 2;
-      var ent = cl01((nowT() - UI.popT) / 750), e = eExpo(ent), idle = nowT() * 0.001;
+      var ent = cl01((nowT() - UI.popT) / 1300), e = eExpo(ent), idle = nowT() * 0.001; // slower, more cinematic
       p.noStroke(); fillc(shade(GROUNDS[UI.screen], -10)); p.rect(x, top, w, H0, 10);
       if (cat === 'elements') {
         var els = ['fire', 'earth', 'air', 'water'], bw = (w - 32) / 4, i;
@@ -3942,13 +3942,14 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
           setFont(MONO, 10, INK, p.CENTER, p.BOTTOM, sel ? 255 : 150); bold(); p.text(Math.round(c.elements[ee] * e) + '%', bx + bw / 2, top + H0 - 28 - barH - puff); normal();
         }
       } else if (cat === 'signs') {
-        var S = DATA.SIGNS[it], hue = ELHUE[S.element], rr = 44;
-        p.noStroke(); fillc(hue, 55); p.rect(x, top, w, H0, 10);
-        p.push(); p.translate(cx, cyc);
-        p.noFill(); strokec(INK, 70); p.strokeWeight(1.5); p.ellipse(0, 0, rr * 2, rr * 2);
-        var a0 = (-90 + it * 30) * Math.PI / 180; strokec(hue, 255); p.strokeWeight(9); p.noFill(); p.arc(0, 0, rr * 2, rr * 2, a0, a0 + (30 * e) * Math.PI / 180);
-        p.pop();
-        setFont(SANS, 38 * (0.45 + 0.55 * e), INK, p.CENTER, p.CENTER); p.text(S.glyph, cx, cyc - 4);
+        // the constellation draws itself, star by star, then the glyph rises \u2014 a small creation story
+        var S = DATA.SIGNS[it], hue = ELHUE[S.element], cst = ZODIAC[it];
+        p.noStroke(); fillc(hue, 42); p.rect(x, top, w, H0, 10);
+        var s = Math.min(w * 0.46, H0 * 0.74), nS = cst.s.length, shown = e * nS, si, ei;
+        strokec(hue, 160); p.strokeWeight(1.3);
+        for (ei = 0; ei < cst.e.length; ei++) { var ed = cst.e[ei], ep = cl01((e * nS - Math.max(ed[0], ed[1])) * 1.4); if (ep <= 0) continue; var ax0 = (cst.s[ed[0]][0] - 0.4) * s + cx, ay0 = (cst.s[ed[0]][1] - 0.4) * s + cyc, ax1 = (cst.s[ed[1]][0] - 0.4) * s + cx, ay1 = (cst.s[ed[1]][1] - 0.4) * s + cyc; p.line(ax0, ay0, ax0 + (ax1 - ax0) * ep, ay0 + (ay1 - ay0) * ep); }
+        for (si = 0; si < nS; si++) { var sa = cl01(shown - si); if (sa <= 0) continue; var sx2 = (cst.s[si][0] - 0.4) * s + cx, sy2 = (cst.s[si][1] - 0.4) * s + cyc, br = (si % 3 === 0); if (br) { p.noStroke(); fillc(hue, 55 * sa); p.ellipse(sx2, sy2, 10, 10); } p.noStroke(); fillc([245, 240, 226], 220 * sa); p.ellipse(sx2, sy2, br ? 3.6 : 2.4, br ? 3.6 : 2.4); }
+        var gA = cl01((e - 0.72) / 0.28); setFont(SANS, 20, INK, p.CENTER, p.TOP, 190 * gA); p.text(S.glyph, cx, top + 8);
         setFont(MONO, 9, INK, p.CENTER, p.TOP, 165); p.text(S.modality.toUpperCase() + '  \u00B7  ' + S.element.toUpperCase() + '  \u00B7  ' + S.ruler.toUpperCase(), cx, top + H0 - 19);
       } else if (cat === 'planets') {
         var pl = c.planets[it]; p.push(); p.translate(cx, cyc);
@@ -3988,6 +3989,9 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     function learnDetail(c, b, x, w, ly) {
       var cat = UI.learnCat, it = UI.learnItem, gi = cl01(1 - (nowT() - UI.popT) / 360), dm = domMinEl(c);
       flatBtn('\u2039 Back', x, ly, 100, 36, function () { UI.learnItem = null; }, false, true); ly += 50;
+      // a slow top-to-bottom "unfurl" \u2014 the page reveals itself like a story being written
+      var ddc = p.drawingContext, rev = reduced() ? 1 : eCubic(cl01((nowT() - UI.popT) / 1500));
+      if (ddc && rev < 1) { ddc.save(); ddc.beginPath(); var ry = topY() + (viewH() + (UI.safeBottom || 0) + 60) * rev; ddc.rect(0, topY() - 44, W, ry - (topY() - 44)); ddc.clip(); }
       ly += learnDiagram(cat, it, c, x, w, ly);
       if (cat === 'elements') {
         var E = DATA.ELEMENTS[it];
@@ -4038,6 +4042,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         else ly += paragraph('You have no ' + A.key + ' aspects within orb.', x, ly, w, 16, INK, SERIF, 24);
         ly += 12;
       }
+      if (ddc && rev < 1) ddc.restore();
       return ly;
     }
 
