@@ -2587,15 +2587,37 @@ var APP = (function () {
     { n: 'Albert Einstein', w: 'Albert_Einstein', y: 1879, mo: 3, d: 14, by: 'physicist' },
     { n: 'Steve Jobs', w: 'Steve_Jobs', y: 1955, mo: 2, d: 24, by: 'entrepreneur' },
     { n: 'Kurt Cobain', w: 'Kurt_Cobain', y: 1967, mo: 2, d: 20, by: 'musician' },
-    { n: 'Rihanna', w: 'Rihanna', y: 1988, mo: 2, d: 20, by: 'musician' }
+    { n: 'Rihanna', w: 'Rihanna', y: 1988, mo: 2, d: 20, by: 'musician' },
+    // modern icons across fields (science, sport, music, activism, letters)
+    { n: 'David Bowie', w: 'David_Bowie', y: 1947, mo: 1, d: 8, by: 'musician' },
+    { n: 'Greta Thunberg', w: 'Greta_Thunberg', y: 2003, mo: 1, d: 3, by: 'climate activist' },
+    { n: 'Ada Lovelace', w: 'Ada_Lovelace', y: 1815, mo: 12, d: 10, by: 'mathematician' },
+    { n: 'Taylor Swift', w: 'Taylor_Swift', y: 1989, mo: 12, d: 13, by: 'songwriter' },
+    { n: 'Toni Morrison', w: 'Toni_Morrison', y: 1931, mo: 2, d: 18, by: 'novelist' },
+    { n: 'Cristiano Ronaldo', w: 'Cristiano_Ronaldo', y: 1985, mo: 2, d: 5, by: 'footballer' },
+    { n: 'Ruth Bader Ginsburg', w: 'Ruth_Bader_Ginsburg', y: 1933, mo: 3, d: 15, by: 'jurist' },
+    { n: 'Jane Goodall', w: 'Jane_Goodall', y: 1934, mo: 4, d: 3, by: 'primatologist' },
+    { n: 'Aretha Franklin', w: 'Aretha_Franklin', y: 1942, mo: 3, d: 25, by: 'singer' },
+    { n: 'David Attenborough', w: 'David_Attenborough', y: 1926, mo: 5, d: 8, by: 'broadcaster' },
+    { n: 'Prince', w: 'Prince_(musician)', y: 1958, mo: 6, d: 7, by: 'musician' },
+    { n: 'Alan Turing', w: 'Alan_Turing', y: 1912, mo: 6, d: 23, by: 'computer scientist' },
+    { n: 'Lionel Messi', w: 'Lionel_Messi', y: 1987, mo: 6, d: 24, by: 'footballer' },
+    { n: 'Malala Yousafzai', w: 'Malala_Yousafzai', y: 1997, mo: 7, d: 12, by: 'activist' },
+    { n: 'Neil Armstrong', w: 'Neil_Armstrong', y: 1930, mo: 8, d: 5, by: 'astronaut' },
+    { n: 'Usain Bolt', w: 'Usain_Bolt', y: 1986, mo: 8, d: 21, by: 'sprinter' },
+    { n: 'Beyoncé', w: 'Beyoncé', y: 1981, mo: 9, d: 4, by: 'musician' },
+    { n: 'Keanu Reeves', w: 'Keanu_Reeves', y: 1964, mo: 9, d: 2, by: 'actor' },
+    { n: 'Stephen King', w: 'Stephen_King', y: 1947, mo: 9, d: 21, by: 'novelist' },
+    { n: 'Serena Williams', w: 'Serena_Williams', y: 1981, mo: 9, d: 26, by: 'tennis champion' }
   ];
   function famousMatches(c) {
-    var usun = c.planets.sun.sign, umoon = c.planets.moon.sign, ay = c.ayan || 0, out = [], i;
+    var usun = c.planets.sun.sign, umoon = c.planets.moon.sign, uven = c.planets.venus ? c.planets.venus.sign : -1, ay = c.ayan || 0, out = [], i;
     for (i = 0; i < FAMOUS.length; i++) {
       var f = FAMOUS[i], dn = EPH.dayNumber(f.y, f.mo, f.d, 12), pos = EPH.positions(dn);
-      var ss = Math.floor(rev(pos.sun.lon - ay) / 30), ms = Math.floor(rev(pos.moon.lon - ay) / 30);
-      var sunM = (ss === usun), moonM = (ms === umoon), score = (sunM ? 2 : 0) + (moonM ? 1 : 0);
-      if (score > 0) out.push({ name: f.n, wiki: f.w, by: f.by, sun: ss, moon: ms, sunMatch: sunM, moonMatch: moonM, score: score });
+      var ss = Math.floor(rev(pos.sun.lon - ay) / 30), ms = Math.floor(rev(pos.moon.lon - ay) / 30), vs = Math.floor(rev(pos.venus.lon - ay) / 30);
+      var sunM = (ss === usun), moonM = (ms === umoon), venM = (vs === uven && uven >= 0);
+      var score = (sunM ? 2 : 0) + (moonM ? 1 : 0) + (venM ? 1 : 0);
+      if (score > 0) out.push({ name: f.n, wiki: f.w, by: f.by, sun: ss, moon: ms, venus: vs, sunMatch: sunM, moonMatch: moonM, venusMatch: venM, score: score });
     }
     out.sort(function (a, b) { return b.score - a.score; });
     return out;
@@ -4718,8 +4740,8 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         }
       } else if (cat === 'famous') { // historical figures & icons who share your chart
         if (!UI.fmList) UI.fmList = APP.famousMatches(c);
-        var fm = UI.fmList, sunName = DATA.SIGNS[c.planets.sun.sign].name, moonName = DATA.SIGNS[c.planets.moon.sign].name;
-        ly += paragraph('People through history who share your Sun in ' + sunName + ' — and, marked with a Moon, your ' + moonName + ' Moon too. Same sky, very different lives.', x, ly, w, 14.5, INK, SERIF, 22, 200) + 14;
+        var fm = UI.fmList, sunName = DATA.SIGNS[c.planets.sun.sign].name;
+        ly += paragraph('People across history who share a placement with you — your Sun (☉), your Moon (☽) or your Venus (♀). Same sky, very different lives.', x, ly, w, 14.5, INK, SERIF, 22, 200) + 14;
         var frh = 64;
         for (i = 0; i < fm.length; i++) {
           var fp = fm[i]; if (i) hairline(x, ly, x + w, 40);
@@ -4727,9 +4749,11 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
           drawFace(fp.wiki, x + 24, fcy, 22);
           setFont(SANS, 15, INK, p.LEFT, p.CENTER); bold(); p.text(fp.name, x + 56, fcy - 9); normal();
           setFont(MONO, 9.5, INK, p.LEFT, p.CENTER, 150); p.text(fp.by.toUpperCase(), x + 56, fcy + 9);
-          // match badges, right-aligned
-          var bx2 = x + w; setFont(SANS, 13, ACC, p.RIGHT, p.CENTER); p.text(APP.glyphFor('sun'), bx2, fcy); bx2 -= 16;
-          if (fp.moonMatch) { setFont(SANS, 13, ACC, p.RIGHT, p.CENTER); p.text(APP.glyphFor('moon'), bx2, fcy); }
+          // match badges (Sun / Moon / Venus), right-aligned
+          var bx2 = x + w;
+          if (fp.venusMatch) { setFont(SANS, 13, ACC, p.RIGHT, p.CENTER); p.text(APP.glyphFor('venus'), bx2, fcy); bx2 -= 18; }
+          if (fp.moonMatch) { setFont(SANS, 13, ACC, p.RIGHT, p.CENTER); p.text(APP.glyphFor('moon'), bx2, fcy); bx2 -= 18; }
+          if (fp.sunMatch) { setFont(SANS, 13, ACC, p.RIGHT, p.CENTER); p.text(APP.glyphFor('sun'), bx2, fcy); }
           (function (idx, ay) { pushHit(x, sY(ay), w, frh, function () { UI.learnItem = idx; UI.scroll.learn = 0; UI.popT = nowT(); }); })(i, ly); ly += frh;
         }
         if (!fm.length) ly += paragraph('No close matches in the set — a rare sky.', x, ly, w, 15, INK, SERIF, 23, 180) + 10;
@@ -4863,17 +4887,21 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       } else if (cat === 'famous') {
         var fm2 = UI.fmList || (UI.fmList = APP.famousMatches(c)), fp2 = fm2[it];
         if (!fp2) { UI.learnItem = null; return ly; }
-        var fsun = DATA.SIGNS[fp2.sun], fmoon = DATA.SIGNS[fp2.moon];
+        var fsun = DATA.SIGNS[fp2.sun], fmoon = DATA.SIGNS[fp2.moon], fven = DATA.SIGNS[fp2.venus];
         drawFace(fp2.wiki, x + 46, sY(ly) + 46, 46); // big portrait, left
         p.textFont(SANS); p.textSize(22); p.textStyle(p.BOLD); fillc(INK); p.noStroke(); var fnl = wrapLines(fp2.name, w - 108); var fni; for (fni = 0; fni < fnl.length; fni++) p.text(fnl[fni], x + 104, sY(ly + 6 + fni * 26)); normal();
         setFont(MONO, 9.5, ACCTX, p.LEFT, p.TOP, 220); p.text(fp2.by.toUpperCase(), x + 104, sY(ly + 6 + fnl.length * 26 + 2));
-        setFont(SANS, 13, INK, p.LEFT, p.TOP); p.text(APP.glyphFor('sun') + ' ' + fsun.name + (fp2.moonMatch ? ('   ' + APP.glyphFor('moon') + ' ' + fmoon.name) : ''), x + 104, sY(ly + 6 + fnl.length * 26 + 20));
+        var badge = ''; if (fp2.sunMatch) badge += APP.glyphFor('sun') + ' ' + fsun.name + '  '; if (fp2.moonMatch) badge += APP.glyphFor('moon') + ' ' + fmoon.name + '  '; if (fp2.venusMatch) badge += APP.glyphFor('venus') + ' ' + fven.name;
+        setFont(SANS, 12.5, INK, p.LEFT, p.TOP); p.text(badge, x + 104, sY(ly + 6 + fnl.length * 26 + 20));
         ly += 104;
         hairline(x, ly, x + w, 60); ly += 14; eyebrow('What you share', x, ly, ACC); ly += 22;
-        var shareTxt = 'Like you, ' + fp2.name + ' carries the Sun in ' + fsun.name + ' — ' + fsun.style + '. It’s the same core drive, lived out a world away.';
-        if (fp2.moonMatch) shareTxt += ' You also share a ' + fmoon.name + ' Moon: a kindred inner world, the same instinct for what feels safe.';
+        var shares = [];
+        if (fp2.sunMatch) shares.push('the Sun in ' + fsun.name + ' — ' + fsun.style + ', the same core drive');
+        if (fp2.moonMatch) shares.push('a ' + fmoon.name + ' Moon — a kindred inner world and instinct for safety');
+        if (fp2.venusMatch) shares.push('Venus in ' + fven.name + ' — a shared way of loving and finding beauty');
+        var shareTxt = 'Like you, ' + fp2.name + ' carries ' + (shares.length === 1 ? shares[0] : shares.slice(0, -1).join('; ') + '; and ' + shares[shares.length - 1]) + '. Lived out a world away, in a wholly different life.';
         ly += paragraph(shareTxt, x, ly, w, 16.5, INK, SERIF, 25) + 12;
-        ly += paragraph('A shared Sun sign is a shared theme, never a shared fate — the rest of a chart, and a life, makes each person utterly their own.', x, ly, w, 14, INK, SERIF, 21, 195) + 10;
+        ly += paragraph('A shared placement is a shared theme, never a shared fate — the rest of a chart, and a life, makes each person utterly their own.', x, ly, w, 14, INK, SERIF, 21, 195) + 10;
         setFont(MONO, 8.5, INK, p.LEFT, p.TOP, 140); ly += paragraph('Portrait via Wikipedia.', x, ly, w, 11, INK, MONO, 15, 140) + 8;
       } else if (cat === 'glossary') {
         var G = GLOSSARY[it];
