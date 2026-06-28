@@ -1213,7 +1213,7 @@ var APP = (function () {
   // ---------- state ----------
   var STATE = {
     birth: null, // {name,y,mo,d,hour,min,tz,lat,lon,place,timeKnown}
-    settings: { zodiac: 'tropical', house: 'placidus', orbScale: 1, ai: false, theme: 'light', textScale: 1 },
+    settings: { zodiac: 'tropical', house: 'placidus', orbScale: 1, ai: false, theme: 'light', textScale: 1, sound: false },
     chart: null, screen: 'chart', chartView: 'dial',
     people: [], // [{id,name,rel,famrel,y,mo,d,hour,min,tz,iana,lat,lon,place,timeKnown}]
     charts: [] // saved birth charts you can switch between (snapshots of `birth`)
@@ -3103,6 +3103,20 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
 
   function reduced() { try { return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) { return false; } }
 
+  // ---- optional, mutable sound (tiny WebAudio synth — no assets, off by default) ----
+  var AUDIO = { ctx: null };
+  function soundOn() { return !!(APP.STATE.settings && APP.STATE.settings.sound); }
+  function audioInit() { if (AUDIO.ctx || typeof window === 'undefined') return; try { var AC = window.AudioContext || window.webkitAudioContext; if (AC) AUDIO.ctx = new AC(); } catch (e) { AUDIO.ctx = null; } if (AUDIO.ctx && AUDIO.ctx.resume) try { AUDIO.ctx.resume(); } catch (e2) {} }
+  function blip(freq, dur, vol) {
+    if (!soundOn() || !AUDIO.ctx) return;
+    try { var t = AUDIO.ctx.currentTime, o = AUDIO.ctx.createOscillator(), g = AUDIO.ctx.createGain();
+      o.type = 'sine'; o.frequency.value = freq;
+      g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vol || 0.04, t + 0.012); g.gain.exponentialRampToValueAtTime(0.0001, t + (dur || 0.18));
+      o.connect(g); g.connect(AUDIO.ctx.destination); o.start(t); o.stop(t + (dur || 0.18) + 0.03);
+    } catch (e) {}
+  }
+  function chime() { if (!soundOn()) return; blip(523.25, 0.22, 0.035); setTimeout(function () { blip(783.99, 0.26, 0.03); }, 90); }
+
   new p5(function (p) {
     var W = 0, H = 0, hits = [];
     var GUT = 22, TOPH = 48, NAVH = 64;
@@ -4524,6 +4538,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       p.textStyle(p.BOLD); glitchText('Settings', x, sY(ly), 34, SANS, INK, p.LEFT, p.TOP, gi); normal(); ly += 50;
       ly += toggleRow('Theme', [['light', 'Light'], ['dark', 'Dark'], ['paper', 'Paper'], ['night', 'Night']], st.theme || 'light', ly, function (v) { st.theme = v; APP.save(); applyTheme(); UI.fxT = nowT(); });
       ly += toggleRow('Reading text size', [['1', 'Standard'], ['1.15', 'Large'], ['1.3', 'Larger']], String(st.textScale || 1), ly, function (v) { st.textScale = parseFloat(v); APP.save(); UI.readCache = null; });
+      ly += toggleRow('Sound', [['off', 'Off'], ['on', 'On']], st.sound ? 'on' : 'off', ly, function (v) { st.sound = (v === 'on'); APP.save(); if (st.sound) { audioInit(); chime(); } });
       ly += toggleRow('Zodiac', [['tropical', 'Tropical'], ['sidereal', 'Sidereal']], st.zodiac, ly, function (v) { st.zodiac = v; recompute(); });
       ly += toggleRow('House system', [['whole', 'Whole'], ['equal', 'Equal'], ['placidus', 'Placidus']], st.house, ly, function (v) { st.house = v; recompute(); });
       eyebrow('Aspect orb  \u00D7' + (st.orbScale || 1).toFixed(1), x, ly); ly += 20;
@@ -4923,7 +4938,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     };
     p.windowResized = function () { measureInsets(); W = p.windowWidth; H = p.windowHeight; p.resizeCanvas(W, H); buildField(); };
     p.draw = function () {
-      if (UI.screen !== UI.prevScreen) { UI.fxT = nowT(); UI.prevScreen = UI.screen; UI.story = null; if (UI.screen !== 'chart') UI.walk = null; setBodyBg(GROUNDS[UI.screen] || GROUNDS.chart); }
+      if (UI.screen !== UI.prevScreen) { var wasFirst = !UI.prevScreen; UI.fxT = nowT(); UI.prevScreen = UI.screen; UI.story = null; if (UI.screen !== 'chart') UI.walk = null; setBodyBg(GROUNDS[UI.screen] || GROUNDS.chart); if (!wasFirst) chime(); }
       UI.bg = (GROUNDS[UI.screen] || GROUNDS.chart); // HARD block-colour cut between sections
       p.background(UI.bg[0], UI.bg[1], UI.bg[2]);
       drawField(); drawRipples();
@@ -4945,6 +4960,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     // ---------- interaction: unified pointer/touch/mouse, bound to the canvas ----------
     function inRect(mx, my, r) { return mx >= r.x && mx <= r.x + r.w && my >= r.y && my <= r.y + r.h; }
     function press(x, y) {
+      if (soundOn()) audioInit(); // first gesture unlocks WebAudio
       UI.ptrX = x; UI.ptrY = y; UI.ptrDown = true; UI.ptrMoveT = nowT();
       UI.pressX = x; UI.pressY = y; UI.pressT = nowT(); UI.dragging = false; UI.scrollStart = scrollOf(); UI.cityScrollStart = UI.cityScroll || 0;
       UI.tScrollStart = UI.tScroll || 0;
@@ -4963,7 +4979,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     function release(x, y) {
       UI.ptrDown = false;
       if (UI.inSlider) { UI.inSlider = false; return; }
-      if (!UI.dragging && (nowT() - UI.pressT) < 500) { spawnRipple(x, y); for (var i = hits.length - 1; i >= 0; i--) if (hits[i].fn && inRect(x, y, hits[i])) { hits[i].fn(); break; } }
+      if (!UI.dragging && (nowT() - UI.pressT) < 500) { spawnRipple(x, y); for (var i = hits.length - 1; i >= 0; i--) if (hits[i].fn && inRect(x, y, hits[i])) { blip(660, 0.12, 0.03); hits[i].fn(); break; } }
       UI.dragging = false; UI.inCity = false;
     }
     // event -> canvas-local logical coords (robust to any CSS scaling of the artifact iframe)
