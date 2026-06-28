@@ -4406,10 +4406,79 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       p.pop();
     }
 
+    // ===== guided ritual: how to read your OWN cards (the app is a companion, it never draws) =====
+    var TAROT_RIT = [
+      { k: 'intro', t: 'Tarot reads you', x: 'This deck never draws a card for you — that’s the point. Aqau Pluto is a companion for the cards you pull with your own hands. Here’s the whole ritual.' },
+      { k: 'deck', t: 'First, get your own deck', x: 'Any deck you feel drawn to. Hold it, take a breath, and shuffle while you turn a real question over in your mind. The cards don’t predict — they give your intuition something to push against.' },
+      { k: 'spread', t: 'Choose how to lay them', x: 'A spread is just positions, each with a meaning. Start simple: one card for a nudge, or three for past, present and future.' },
+      { k: 'lay', t: 'Lay your cards', x: 'Deal them face-down into your spread, then turn each one over slowly. Let the image land before you reach for any words.' },
+      { k: 'sit', t: 'Sit with them first', x: 'Before any book meaning: what do you notice? A colour, a figure, a feeling in your body. That first, wordless read is the most honest one you’ll get.' },
+      { k: 'look', t: 'Now look up the meanings', x: 'Only now open Card meanings — to deepen what you already felt, never to replace it. The card is a mirror; you are the reader.' }
+    ];
+    function startTarotRitual() { UI.tarotRit = { i: 0, t0: nowT() }; UI.scroll.tarot = 0; }
+    function tarotRitNext(n) { if (!UI.tarotRit) return; if (UI.tarotRit.i >= n - 1) { UI.tarotRit = null; return; } UI.tarotRit.i++; UI.tarotRit.t0 = nowT(); }
+    function tarotRitPrev() { if (UI.tarotRit && UI.tarotRit.i > 0) { UI.tarotRit.i--; UI.tarotRit.t0 = nowT(); } }
+    // a single ritual card (face-down back, or a blank "your card" face) with flip + rotation
+    function ritCard(cx, cy, cw0, fp, rot) {
+      var ch0 = cw0 * 1.5, kc = GROUNDS[UI.screen], hue = SUITHUE.major;
+      var sxf = fp < 0.5 ? (1 - fp * 2) : (fp - 0.5) * 2, showFace = fp >= 0.5;
+      p.push(); p.translate(cx, cy); if (rot) p.rotate(rot); p.scale(sxf < 0.04 ? 0.04 : sxf, 1);
+      p.noStroke(); fillc(shade(hue, -28)); p.rectMode(p.CENTER); p.rect(0, 5, cw0, ch0, 10); fillc(hue); p.rect(0, 0, cw0, ch0, 10);
+      p.noFill(); strokec(kc, 70); p.strokeWeight(2); p.rect(0, 0, cw0 - 12, ch0 - 12, 7);
+      if (showFace) { p.noFill(); strokec(kc, 150); p.strokeWeight(1.4); p.ellipse(0, 0, cw0 * 0.34, cw0 * 0.34); p.noStroke(); fillc(kc, 150); p.ellipse(0, 0, cw0 * 0.1, cw0 * 0.1); }
+      else { cardBack(cw0, kc); }
+      p.rectMode(p.CORNER); p.pop();
+    }
+    function drawTarotRitStage(k, cx, cy, r, e) {
+      var t = nowT(), kc = GROUNDS[UI.screen], cwd = r * 0.8, gap = r * 1.28, i;
+      function slotX(i2) { return cx + (i2 - 1) * gap; }
+      if (k === 'intro') { ritCard(cx, cy, cwd * 1.15, reduced() ? 1 : (0.5 + 0.5 * Math.sin(t * 0.0011)), 0); return; }
+      if (k === 'deck') { for (i = 0; i < 5; i++) { var jt = reduced() ? 0 : Math.sin(t * 0.004 + i) * 6; ritCard(cx + (i - 2) * 7, cy + jt - i * 1.2, cwd, 0, (i - 2) * 0.04); } return; }
+      if (k === 'spread') {
+        var dc = p.drawingContext;
+        for (i = 0; i < 3; i++) { var pr = cl01(e * 1.3 - i * 0.18); if (pr <= 0) continue; p.push(); p.translate(slotX(i), cy); p.noFill(); strokec(ACC, 200 * pr); p.strokeWeight(1.6); if (dc) { dc.save(); dc.setLineDash([5, 5]); } p.rectMode(p.CENTER); p.rect(0, 0, cwd * pr, cwd * 1.5 * pr, 7); p.rectMode(p.CORNER); if (dc) { dc.restore(); } setFont(MONO, 11, ACCTX, p.CENTER, p.CENTER, 230 * pr); p.text(String(i + 1), 0, 0); p.pop(); } return;
+      }
+      if (k === 'lay') { for (i = 0; i < 3; i++) { var dpr = cl01(e * 1.4 - i * 0.22), ee = eCubic(dpr), fx = cx + (slotX(i) - cx) * ee, fy = cy - (1 - ee) * r * 0.6, flip = cl01((dpr - 0.6) / 0.4); ritCard(fx, fy, cwd, flip, (1 - dpr) * 0.3); } return; }
+      if (k === 'sit') { for (i = 0; i < 3; i++) { var gl = 0.5 + 0.5 * Math.sin(t * 0.003 + i * 1.2); p.noFill(); strokec(ACC, 70 * gl); p.strokeWeight(2); p.rectMode(p.CENTER); p.rect(slotX(i), cy, cwd + 10, cwd * 1.5 + 10, 9); p.rectMode(p.CORNER); ritCard(slotX(i), cy, cwd, 1, 0); } return; }
+      if (k === 'look') {
+        for (i = 0; i < 3; i++) ritCard(slotX(i), cy, cwd, 1, 0);
+        var mx = slotX(1) + Math.sin(t * 0.0016) * cwd * 0.45, my = cy + Math.cos(t * 0.0016) * cwd * 0.5;
+        p.noFill(); strokec(INK, 210); p.strokeWeight(2.5); p.ellipse(mx, my, 26, 26); p.strokeWeight(3); p.line(mx + 9, my + 9, mx + 18, my + 18); return;
+      }
+    }
+    function drawTarotRitual() {
+      var x = sx(), w = cw(), top = topY(), vh = viewH(), cx = x + w / 2, scenes = TAROT_RIT;
+      if (UI.tarotRit.i >= scenes.length) UI.tarotRit.i = scenes.length - 1;
+      var sc = scenes[UI.tarotRit.i], last = (UI.tarotRit.i >= scenes.length - 1);
+      var te = cl01((nowT() - UI.tarotRit.t0) / 560), e = eCubic(te), still = reduced(), alpha = still ? 1 : cl01(te * 1.5), i;
+      var ctrlTop = top + vh - (last ? 110 : 64);
+      if (!last) { pushHit(x, top + 64, w, ctrlTop - (top + 64), function () { tarotRitNext(scenes.length); }); pushHit(x, top + 64, 72, ctrlTop - (top + 64), function () { tarotRitPrev(); }); }
+      var cy = top + vh * 0.26, stageR = Math.min(w * 0.30, vh * 0.155), drift = (1 - e) * 14;
+      var dc = p.drawingContext; if (dc) { dc.save(); dc.globalAlpha = alpha; }
+      drawTarotRitStage(sc.k, cx, cy - drift, stageR, e);
+      if (dc) dc.restore();
+      var ty = top + vh * 0.47, slideIn = (1 - e) * 12;
+      var tl = wrapLines2(sc.t, w - 20, SANS, 23); setFont(SANS, 23, INK, p.CENTER, p.TOP, 255 * alpha); bold(); for (i = 0; i < tl.length; i++) p.text(tl[i], cx, ty + slideIn + i * 29); normal(); ty += tl.length * 29 + 12;
+      var bl = wrapLines2(sc.x, w - 26, SERIF, 16.5); setFont(SERIF, 16.5, INK, p.CENTER, p.TOP, 238 * alpha); for (i = 0; i < bl.length; i++) p.text(bl[i], cx, ty + slideIn + i * 25);
+      setFont(MONO, 10, ACCTX, p.LEFT, p.TOP, 220); p.text('READ YOUR OWN CARDS · ' + (UI.tarotRit.i + 1) + ' / ' + scenes.length, x, top + 12);
+      var dxw = 15, dsx = cx - (scenes.length * dxw) / 2; for (i = 0; i < scenes.length; i++) { var on = (i === UI.tarotRit.i); p.noStroke(); fillc(on ? ACC : INK, on ? 255 : 80); p.ellipse(dsx + i * dxw + dxw / 2, top + vh - 14, on ? 7 : 5, on ? 7 : 5); }
+      if (last) { tourBtn('Open card meanings', cx - 154, top + vh - 96, 150, 42, function () { UI.tarotRit = null; UI.tarotTab = 'cards'; UI.card = null; UI.scroll.tarot = 0; }, true); tourBtn('Done', cx + 8, top + vh - 96, 120, 42, function () { UI.tarotRit = null; }, false); }
+      else { setFont(MONO, 10, INK, p.CENTER, p.TOP, 160 * alpha); p.text(UI.tarotRit.i === 0 ? 'TAP TO BEGIN  ›' : 'TAP TO CONTINUE  ›', cx, top + vh - 42); }
+      tourBtn('Skip', x + w - 66, top + 6, 60, 26, function () { UI.tarotRit = null; }, false);
+      UI.contentH.tarot = 0;
+    }
     function drawTarot() {
       var x = sx(), w = cw(), ly = 18, gi = cl01(1 - (nowT() - UI.fxT) / 500);
+      if (UI.tarotRit) { drawTarotRitual(); return; }
       eyebrow('Spreads & meanings', x, ly); ly += 22;
-      p.textStyle(p.BOLD); glitchText('Tarot', x, sY(ly), 34, SANS, INK, p.LEFT, p.TOP, gi); normal(); ly += 48;
+      p.textStyle(p.BOLD); glitchText('Tarot', x, sY(ly), 34, SANS, INK, p.LEFT, p.TOP, gi); normal(); ly += 46;
+      // guided ritual hero — how to read your OWN cards (the app never draws for you)
+      var hh = 70, hy = sY(ly); p.noStroke(); fillc(INK); p.rect(x, hy + 3, w, hh, 13); fillc(shade(INK, 16)); p.rect(x, hy + pressOff(x, hy, w, hh, 3), w, hh, 13);
+      var ho = pressOff(x, hy, w, hh, 3);
+      setFont(SANS, 17, GROUNDS[UI.screen], p.LEFT, p.CENTER); bold(); p.text('Read your own cards', x + 18, hy + ho + hh / 2 - 9); normal();
+      setFont(MONO, 9.5, GROUNDS[UI.screen], p.LEFT, p.CENTER, 210); p.text('A GUIDED RITUAL — IN YOUR OWN HANDS', x + 18, hy + ho + hh / 2 + 11);
+      var pulse = reduced() ? 0 : Math.sin(nowT() * 0.004) * 2; setFont(SANS, 22, GROUNDS[UI.screen], p.RIGHT, p.CENTER); p.text('›', x + w - 18 + pulse, hy + ho + hh / 2);
+      pushHit(x, hy, w, hh, function () { startTarotRitual(); }); ly += hh + 18;
       var cxp = x; cxp += chip('Spreads', UI.tarotTab === 'spreads', cxp, ly, function () { UI.tarotTab = 'spreads'; }) + 8;
       chip('Card meanings', UI.tarotTab === 'cards', cxp, ly, function () { UI.tarotTab = 'cards'; }); ly += 48;
       if (UI.tarotTab === 'spreads') {
@@ -6080,7 +6149,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     p.draw = function () {
       // auto-dark-at-night: re-apply the theme when the effective key changes (time or accent)
       var ek = effectiveThemeKey() + '|' + ((APP.STATE.settings && APP.STATE.settings.accent) || 0); if (ek !== UI.appliedThemeKey) { applyTheme(); setBodyBg(GROUNDS[UI.screen] || GROUNDS.chart); }
-      if (UI.screen !== UI.prevScreen) { var wasFirst = !UI.prevScreen; UI.fxT = nowT(); UI.prevScreen = UI.screen; UI.story = null; if (UI.video) closeVideo(); if (UI.screen !== 'chart') UI.walk = null; setBodyBg(GROUNDS[UI.screen] || GROUNDS.chart); if (!wasFirst) chime(); }
+      if (UI.screen !== UI.prevScreen) { var wasFirst = !UI.prevScreen; UI.fxT = nowT(); UI.prevScreen = UI.screen; UI.story = null; if (UI.video) closeVideo(); if (UI.screen !== 'chart') UI.walk = null; if (UI.screen !== 'tarot') UI.tarotRit = null; setBodyBg(GROUNDS[UI.screen] || GROUNDS.chart); if (!wasFirst) chime(); }
       UI.bg = (GROUNDS[UI.screen] || GROUNDS.chart); // HARD block-colour cut between sections
       p.background(UI.bg[0], UI.bg[1], UI.bg[2]);
       drawField(); drawRipples();
