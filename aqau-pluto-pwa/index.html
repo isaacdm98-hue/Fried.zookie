@@ -3691,6 +3691,14 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       return rh;
     }
 
+    // ---- best-days planner: classify upcoming exact transits into actionable days ----
+    var NATAL_DOMAIN = { sun: 'vitality and who you are', moon: 'feelings, home and rest', mercury: 'talks, plans and decisions', venus: 'love, money and pleasure', mars: 'drive and assertion', jupiter: 'growth and opportunity', saturn: 'work, structure and limits', uranus: 'freedom and the unexpected', neptune: 'dreams, art and compassion', pluto: 'power and deep change', node: 'your direction', asc: 'how you show up', mc: 'career and standing' };
+    function dayPlan(ev) {
+      var dom = NATAL_DOMAIN[ev.np] || 'this part of your life', q = ev.quality;
+      if (q === 'flow' || q === 'opportunity') return { kind: 'open', col: ELHUE.air, tag: 'OPEN', line: 'An easy opening around ' + dom + ' — a good day to lean in and act.' };
+      if (q === 'fusion') return { kind: 'charged', col: ACC, tag: 'CHARGED', line: 'A charged spotlight on ' + dom + ' — big energy, so aim it on purpose.' };
+      return { kind: 'gentle', col: ELHUE.fire, tag: 'GENTLE', line: 'Friction around ' + dom + ' — go gentle, and don’t force it.' };
+    }
     function drawRead() {
       var c = APP.STATE.chart, b = APP.STATE.birth; if (!c) { UI.screen = 'onboard'; return; }
       var x = sx(), w = cw(), ly = 18, gi = cl01(1 - (nowT() - UI.fxT) / 500);
@@ -3755,6 +3763,19 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
           ly += 28;
         } }
         ly += 6;
+        // best-days planner — the same transits, turned into days to plan around
+        if (fc2.upcoming && fc2.upcoming.length) {
+          ly += 10; eyebrow('Days to watch', x, ly, ACC); ly += 24;
+          var nDays = Math.min(6, fc2.upcoming.length), dj;
+          for (dj = 0; dj < nDays; dj++) {
+            var dev = fc2.upcoming[dj], dp = dayPlan(dev);
+            p.noStroke(); fillc(dp.col); p.ellipse(x + 5, sY(ly + 7), 9, 9);
+            setFont(MONO, 9.5, INK, p.LEFT, p.TOP, 210); p.text(fmtShort(dev.date).toUpperCase(), x + 18, sY(ly));
+            setFont(MONO, 8.5, dp.col, p.RIGHT, p.TOP, 230); bold(); p.text(dp.tag, x + w, sY(ly + 1)); normal();
+            ly += 16; ly += paragraph(dp.line, x + 18, ly, w - 18, 13.5, INK, SERIF, 19, 225) + 12;
+          }
+          ly += 4;
+        }
       }
 
       ly += 16; eyebrow('Ask your chart', x, ly); ly += 28;
