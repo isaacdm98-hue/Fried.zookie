@@ -1299,8 +1299,23 @@ var DATA = (function () {
     ['Christchurch','New Zealand',-43.5321,172.6362,'Pacific/Auckland'],['Suva','Fiji',-18.1248,178.4501,'Pacific/Fiji']
   ];
 
+  // The lineage behind the meanings — accurate citations of the classical tradition in our own words,
+  // plus a few genuinely public-domain maxims (kept short, attributed). Modern astrologers' books are
+  // copyrighted, so their teaching is summarised, never reproduced.
+  var TRADITION = {
+    general: [
+      { q: 'As above, so below.', src: 'the Hermetic maxim (Emerald Tablet tradition)' },
+      { q: 'Astra inclinant, sed non obligant — the stars incline, they do not compel.', src: 'a traditional astrological maxim' },
+      { q: 'Character is destiny.', src: 'Alan Leo (1860–1917)' }
+    ],
+    elements: 'The four elements descend from Empedocles and the Greek physicians’ four humours — fire (choleric), earth (melancholic), air (sanguine) and water (phlegmatic) — the oldest map of temperament in the West.',
+    signs: 'Each sign blends an element with a mode (cardinal, fixed, mutable) — a scheme set down in Ptolemy’s Tetrabiblos and later systematised for modern readers by Alan Leo.',
+    planets: 'Ptolemy’s Tetrabiblos fixes each planet’s core significations — Mars heat and action, Venus union and pleasure, Saturn limit and time — the root beneath every modern keyword.',
+    houses: 'The twelve houses are the Hellenistic “places” (topoi), each a department of life: from the 1st (the body and self) to the 12th (the hidden, the undoing, what is behind the scenes).',
+    aspects: 'These are the Ptolemaic aspects — conjunction, sextile, square, trine and opposition — the geometric angles Ptolemy held to carry real force between two planets.'
+  };
   return {
-    PLANETS: PLANETS, PLANET_ORDER: PLANET_ORDER, SIGNS: SIGNS,
+    PLANETS: PLANETS, PLANET_ORDER: PLANET_ORDER, SIGNS: SIGNS, TRADITION: TRADITION,
     SUN_IN_SIGN: SUN_IN_SIGN, MOON_IN_SIGN: MOON_IN_SIGN, RISING_IN_SIGN: RISING_IN_SIGN, PLANET_SIGN_TEXT: PLANET_SIGN_TEXT,
     HOUSES: HOUSES, ASPECTS: ASPECTS, MINOR_ASPECTS: MINOR_ASPECTS, ELEMENTS: ELEMENTS, MODALITIES: MODALITIES,
     TAROT: TAROT, SUIT_KW: SUIT_KW, SPREADS: SPREADS, CITIES: CITIES
@@ -6142,6 +6157,14 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         ly += gH + 8;
         setFont(MONO, 8.5, INK, p.LEFT, p.TOP, 140); ly += paragraph('Public-domain plates via Wikimedia Commons.', x, ly, w, 11, INK, MONO, 15, 140) + 10;
         ly += paragraph(Hh.b, x, ly, w, 16.5, INK, SERIF, 25) + 14;
+      }
+      // From the tradition — the real lineage behind the chart-explained categories (attributed, public-domain)
+      var trad = DATA.TRADITION[cat];
+      if (trad) {
+        ly += 12; hairline(x, ly, x + w, 40); ly += 18; eyebrow('From the tradition', x, ly, ACC); ly += 22;
+        ly += paragraph(trad, x, ly, w, 14.5, INK, SERIF, 22, 220) + 10;
+        var gq = DATA.TRADITION.general[((typeof it === 'number' ? it : 0) % DATA.TRADITION.general.length + DATA.TRADITION.general.length) % DATA.TRADITION.general.length];
+        setFont(MONO, 9, ACCTX, p.LEFT, p.TOP, 205); ly += paragraph('“' + gq.q + '”  — ' + gq.src, x, ly, w, 11.5, ACCTX, MONO, 17, 205) + 8;
       }
       if (ddc && rev < 1) ddc.restore();
       return ly;
