@@ -7,14 +7,31 @@ on-device, no server, no API keys.
 
 ### In the Read screen
 
+- **Your chart in four movements** — the reading leads with a synthesised arc:
+  the *spine* (Sun/Moon/Ascendant + dominant element & mode), *what runs the
+  chart* (where the prominence engine, the almuten and the dispositor chains
+  converge on one keystone planet), *your growing edge* (the tightest hard
+  aspect + the out-of-sect malefic + any rare condition), and *where it's
+  heading* (North Node + the current profection time-lord).
+- **The prominence engine** — instead of a flat list, placements are *ranked*
+  by a transparent scorer (essential dignity, angularity, sect, chart-rulership,
+  almuten, aspect activity, stelliums) so the reading leads with what actually
+  carries weight in *this* chart, and shows *why*.
+- **Woven reading (experimental, opt-in)** — turn it on in Settings → Reading
+  and the whole reading can flow as a single voice. An on-device language model
+  (WebGPU; Qwen2.5 / Llama-3.2, downloaded **once** and run fully on your phone)
+  re-voices the engine's exact findings — it is briefed with the complete
+  computed dossier and is hard-constrained never to invent or drop a placement.
+  No WebGPU, no network, or any failure → a deterministic one-voice stitch.
+  Nothing leaves the device.
 - **Daily & time aspects** — live transits to your natal chart, split into
   what's running *today* (the slower planets) and *the passing hour* (the fast
   Moon), each with a plain-language paragraph.
-- **On-device chart intelligence** (no AI) — a weighted *dominant planet*, your
-  *lunar phase at birth*, your Marc-Edmund-Jones *chart shape* (bowl, bucket,
-  locomotive, …) and detected *aspect patterns* (stellium, grand trine,
-  T-square, yod). Pure maths, computed locally; inspired by open-source readers
-  like chart2txt and immanuel-python.
+- **On-device chart intelligence** (no AI) — your *lunar phase at birth*, your
+  Marc-Edmund-Jones *chart shape* (bowl, bucket, locomotive, …), detected
+  *aspect patterns* (stellium, grand trine, T-square, yod), *essential
+  dignities*, *sect*, and rare conditions (combust / cazimi / under-beams /
+  out-of-bounds / stationary) — surfaced only when actually present.
 
 ### In the Tarot screen
 

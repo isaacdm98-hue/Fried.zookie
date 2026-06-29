@@ -1,5 +1,5 @@
 /* Aqau Pluto service worker - ES5, offline-first single-file PWA */
-var CACHE = 'aqau-pluto-v1';
+var CACHE = 'aqau-pluto-v2';
 self.addEventListener('install', function (e) { self.skipWaiting(); });
 self.addEventListener('activate', function (e) {
   e.waitUntil(
@@ -10,6 +10,13 @@ self.addEventListener('activate', function (e) {
 });
 self.addEventListener('fetch', function (e) {
   if (e.request.method !== 'GET') return;
+  // Only ever cache our own files. The optional on-device LLM pulls hundreds of MB
+  // of model shards from a CDN and manages its own Cache/IndexedDB storage — never
+  // shadow-cache those (it would blow quota and double-store the weights). Let any
+  // cross-origin request pass straight through to the network.
+  var sameOrigin;
+  try { sameOrigin = new URL(e.request.url).origin === self.location.origin; } catch (err) { sameOrigin = false; }
+  if (!sameOrigin) return;
   e.respondWith(
     caches.open(CACHE).then(function (cache) {
       return cache.match(e.request).then(function (cached) {
