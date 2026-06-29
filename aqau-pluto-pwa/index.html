@@ -697,6 +697,10 @@ var EPH = (function () {
     var v = AE.GeoVector(AE.Body[bodyName], date, true);
     return rev(AE.Ecliptic(v).elon);
   }
+  // geocentric declination (degrees) — for out-of-bounds detection
+  function declOf(bodyName, d) {
+    try { var v = AE.GeoVector(AE.Body[bodyName], dateOf(d), true); return AE.EquatorFromVector(v).dec; } catch (e) { return null; }
+  }
   var PNAMES = ['Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto'];
   var PKEYS = ['mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto'];
   function positions(d) {
@@ -723,7 +727,7 @@ var EPH = (function () {
   }
 
   return {
-    SIGNS: SIGNS, rev: rev, dayNumber: dayNumber, positions: positions,
+    SIGNS: SIGNS, rev: rev, dayNumber: dayNumber, positions: positions, declOf: declOf,
     angles: angles, houses: houses, houseOf: houseOf, obliquity: obliquity, lstDeg: lstDeg
   };
 })();
@@ -2414,11 +2418,35 @@ var APP = (function () {
       nameFor(o.benefic) + ' is your benefic “of sect”: its gifts arrive more cleanly. ' + nameFor(o.malefic) + ' is the malefic of sect — strict, but ultimately constructive. ' +
       'Out of sect, ' + nameFor(o.oosBenefic) + ' can over-promise, and ' + nameFor(o.oosMalefic) + ' is the one to handle with the most care.';
   }
+  // ===== deepened ephemeris: planetary conditions (only surfaced when actually present, so never filler) =====
+  var BODYNAME = { sun: 'Sun', moon: 'Moon', mercury: 'Mercury', venus: 'Venus', mars: 'Mars', jupiter: 'Jupiter', saturn: 'Saturn', uranus: 'Uranus', neptune: 'Neptune', pluto: 'Pluto' };
+  function chartConditions(c, b) {
+    var out = [], i, sunLon = c.planets.sun ? c.planets.sun.lon : 0;
+    var d = EPH.dayNumber(b.y, b.mo, b.d, b.timeKnown ? (b.hour + (b.min || 0) / 60) : 12);
+    var cf = ['mercury', 'venus', 'mars']; for (i = 0; i < cf.length; i++) { var k = cf[i], p = c.planets[k]; if (!p) continue; var sep = angSep(p.lon, sunLon);
+      if (sep <= 0.283) out.push({ t: 'cazimi', k: k, v: sep }); else if (sep <= 8) out.push({ t: 'combust', k: k, v: sep }); else if (sep <= 15) out.push({ t: 'beams', k: k, v: sep }); }
+    var ob = ['moon', 'mercury', 'venus', 'mars', 'pluto']; for (i = 0; i < ob.length; i++) { var ok = ob[i]; if (!c.planets[ok]) continue; var dec = EPH.declOf(BODYNAME[ok], d); if (dec != null && Math.abs(dec) > 23.4366) out.push({ t: 'oob', k: ok, v: dec }); }
+    try { var p0 = EPH.positions(d - 0.5), p1 = EPH.positions(d + 0.5), sp = ['mercury', 'venus', 'mars', 'jupiter', 'saturn']; for (i = 0; i < sp.length; i++) { var sk = sp[i]; if (!c.planets[sk]) continue; var spd = sdelta(p0[sk].lon, p1[sk].lon); if (Math.abs(spd) < 0.018) out.push({ t: 'stationary', k: sk, v: spd }); } } catch (e) {}
+    return out;
+  }
+  function conditionLine(cd) {
+    var nm = nameFor(cd.k), fn = DATA.PLANETS[cd.k] ? DATA.PLANETS[cd.k].fn : 'this part of you', sf = shortFn(cd.k);
+    if (cd.t === 'cazimi') return nm + ' is cazimi — within 17 arcminutes of the exact heart of the Sun. Not burned but enthroned: ' + fn + ' is fused to your core identity and carries rare authority.';
+    if (cd.t === 'combust') return nm + ' is combust, only ' + cd.v.toFixed(1) + '° from the Sun, its light swallowed by your own drive to shine — so ' + sf + ' has to work hard to be seen on its own terms.';
+    if (cd.t === 'beams') return nm + ' rides under the Sun’s beams (' + cd.v.toFixed(1) + '°), operating half-hidden behind your sense of self: quietly steering rather than speaking out loud.';
+    if (cd.t === 'oob') return nm + ' is out of bounds — its declination of ' + cd.v.toFixed(1) + '° runs past the Sun’s own limit, so ' + sf + ' answers to no one but itself: gifted, excessive, and hard to govern.';
+    if (cd.t === 'stationary') return nm + ' stood almost still at your birth, pivoting between forward and retrograde — so ' + sf + ' sits unusually deep and concentrated in you, a fixed undercurrent rather than a passing mood.';
+    return '';
+  }
+  // strip exact + near-duplicate block texts so no sentence repeats across a reading
+  function dropDupBlocks(out) {
+    var seen = {}, res = [], i, sig;
+    for (i = 0; i < out.length; i++) { var bl = out[i]; if (bl.lines) { res.push(bl); continue; } if (!bl.text) continue; sig = bl.text.toLowerCase().replace(/[^a-z0-9 ]/g, '').slice(0, 55); if (seen[sig]) continue; seen[sig] = 1; res.push(bl); }
+    return res;
+  }
   function composeSignatures(c) {
     var out = [], th = composeThemes(c), ti;
     for (ti = 0; ti < th.length; ti++) out.push({ label: ti === 0 ? 'The throughline' : 'Also running through you', text: th[ti] });
-    var dom = dominantPlanet(c);
-    out.push({ label: 'Loudest voice', text: 'The planet that carries the most weight in your chart is ' + nameFor(dom.key) + ' — ' + (DATA.PLANETS[dom.key] ? DATA.PLANETS[dom.key].fn : '') + '. More than any other, it colours how the whole chart behaves.' });
     var lp = lunarPhase(c);
     out.push({ label: 'Lunar phase at birth', text: 'You were born on the ' + lp.name + ': ' + lp.text });
     var sh = chartShape(c); if (sh) out.push({ label: 'Chart shape', text: sh.text });
@@ -2443,10 +2471,16 @@ var APP = (function () {
     var sct = sect(c);
     if (sct) out.push({ label: 'Sect — day or night chart', text: sectText(sct) });
     var pa = pointAspects(c);
-    if (pa.length) out.push({ label: 'Nodes, Lilith & Fortune', lines: pa.map(pointAspectLine) });
+    if (pa.length) {
+      var byPt = {}, ordp = [], qi; for (qi = 0; qi < pa.length; qi++) { var P = pa[qi]; if (!byPt[P.point]) { byPt[P.point] = { name: P.pointName, fn: P.pointFn, items: [] }; ordp.push(P.point); } byPt[P.point].items.push(nameFor(P.np) + ' (' + aspVerb(P.asp) + ' your ' + shortFn(P.np) + ', ' + aspTone(P.asp) + ')'); }
+      var plines = [], oq; for (oq = 0; oq < ordp.length; oq++) { var G = byPt[ordp[oq]]; plines.push(G.name + ' — ' + G.fn + ' — meets ' + joinKw(G.items) + '.'); }
+      out.push({ label: 'Nodes, Lilith & Fortune', lines: plines });
+    }
+    var cond = chartConditions(c, STATE.birth);
+    if (cond.length) out.push({ label: 'Rare conditions', lines: cond.map(conditionLine) });
     var bc = balanceCoaching(c);
     out.push({ label: 'Where you’re light', text: bc.join(' ') });
-    return out;
+    return dropDupBlocks(out);
   }
 
   // ================= relationships & synastry (on-device, no AI) =================
@@ -3393,7 +3427,7 @@ var APP = (function () {
     STATE: STATE, save: save, load: load, compute: computeChart,
     composeCore: composeCore, localAsk: localAsk, chartText: chartText, callModel: callModel,
     composeTransits: composeTransits, transitSentence: transitSentence, composeSignatures: composeSignatures,
-    addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenOf: almutenOf, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, composeThemes: composeThemes, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide,
+    addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenOf: almutenOf, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide,
     saveCurrentChart: saveCurrentChart, deleteSavedChart: deleteSavedChart, activateSavedChart: activateSavedChart, activeChartKey: activeChartKey, chartKey: chartKey, famousMatches: famousMatches, lifeTransits: lifeTransits, upcomingTransits: upcomingTransits, compositeChart: compositeChart,
     nameFor: nameFor, glyphFor: glyphFor, sgAbbr: sgAbbr, pad: pad,
     domElement: domElement, lowElement: lowElement, domMod: domMod, tzOffsetHours: tzOffsetHours
