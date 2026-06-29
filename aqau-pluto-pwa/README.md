@@ -17,8 +17,14 @@ on-device, no server, no API keys.
   by a transparent scorer (essential dignity, angularity, sect, chart-rulership,
   almuten, aspect activity, stelliums) so the reading leads with what actually
   carries weight in *this* chart, and shows *why*.
-- **Woven reading — your choice of voice** (Settings → Reading, also at onboarding):
-  the whole reading can flow as a single voice, streamed live. Three engines:
+- **Accupi — your robot astrologer** (a separate AI layer at the *bottom* of the
+  reading). The chart is read first by the maths and the writings above; Accupi
+  then reads the whole thing aloud in one voice and **answers your direct
+  questions** ("what does my chart say about work?"). It is briefed with the
+  complete computed dossier + the live sky and hard-constrained never to invent
+  a placement — *the mathematics powers the AI*. It owns being a robot, with the
+  warmth of a very good human astrologer. Choose its engine (Settings → Reading,
+  also at onboarding), streamed live:
   - **Claude (cloud)** — paste your own Anthropic API key; the best wording,
     streamed token-by-token. Only the *computed facts* are sent (to phrase them);
     the maths stays local. Needs internet.

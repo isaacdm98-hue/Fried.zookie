@@ -2010,15 +2010,17 @@ var APP = (function () {
   function aspVerb(asp) {
     return ({ conjunction: 'sitting right on', opposition: 'opposite', trine: 'in easy flow with', square: 'squaring', sextile: 'making an opening to' })[asp.key] || 'aspecting';
   }
-  function aspTone(asp) {
-    return ({
-      fusion: 'intensifying it, hard to ignore',
-      tension: 'pulling it taut — something wants balancing',
-      flow: 'making it easy, a door that opens on its own',
-      friction: 'rubbing against it — the friction that pushes change',
-      opportunity: 'offering an opening if you choose to take it'
-    })[asp.quality] || '';
-  }
+  // seeded picker — same input always gives the same variant, but DIFFERENT placements
+  // get DIFFERENT phrasings, so the daily reading never repeats the same line twice.
+  function vpick(arr, seed) { var h = 0, i; seed = '' + (seed || ''); for (i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0; return arr[h % arr.length]; }
+  var ASPTONE_V = {
+    fusion: ['fusing with it — concentrated and hard to ignore', 'pressing right into it, amplifying everything it touches', 'lighting it up so the whole theme runs loud today'],
+    tension: ['pulling it taut — something here wants balancing', 'stretching it between two poles, asking for a middle', 'putting it under pressure until you adjust the set-up'],
+    flow: ['making it easy — a door that opens on its own', 'greasing the wheels, so this moves with little push', 'lending it a tailwind you can lean on if you act'],
+    friction: ['rubbing against it — the friction that forces change', 'grinding on it, so progress comes through effort not ease', 'catching on it; the snag is the lesson, not the enemy'],
+    opportunity: ['offering an opening if you choose to take it', 'cracking a window here — small, real, time-limited', 'handing you a lever; it only works if you pull it']
+  };
+  function aspTone(asp, seed) { var v = ASPTONE_V[asp.quality]; return v ? vpick(v, seed || asp.key) : ''; }
   function natalFn(key) {
     if (key === 'asc') return 'your outward self and how you meet the world';
     if (key === 'mc') return 'your public direction and reputation';
@@ -2042,15 +2044,14 @@ var APP = (function () {
       node: 'the direction life keeps nudging you to grow'
     })[key] || 'this part of your life';
   }
-  function practicalTilt(quality) {
-    return ({
-      fusion: 'this area gets loud and hard to ignore — put your attention here on purpose',
-      tension: 'expect a tug-of-war here; the fix is a deliberate compromise, not avoiding it',
-      flow: 'this is where things move with little effort — a good place to push your luck',
-      friction: 'expect snags here, so slow down and handle them one at a time',
-      opportunity: 'a small, practical opening here if you actually act on it'
-    })[quality] || 'worth a little conscious attention';
-  }
+  var TILT_V = {
+    fusion: ['this area gets loud — put your attention here on purpose', 'turn the volume of this part of life up, don’t fight it', 'lean in; whatever is here today wants centre stage'],
+    tension: ['expect a tug-of-war; the fix is a deliberate compromise', 'two needs pull at once — name both, then split the difference', 'don’t pick a side too fast; the answer is the balance point'],
+    flow: ['things move with little effort — a good place to push your luck', 'momentum is free here; spend it on something that matters', 'say yes to the easy yes today, it’s genuinely supported'],
+    friction: ['expect snags — slow down and take them one at a time', 'force won’t work; patience and a second pass will', 'the resistance is information — adjust rather than shove'],
+    opportunity: ['a small, real opening — but only if you actually act on it', 'a door is ajar; one concrete step walks you through it', 'low-cost experiment territory — try the thing, lightly']
+  };
+  function practicalTilt(quality, seed) { var v = TILT_V[quality]; return v ? vpick(v, seed) : 'worth a little conscious attention'; }
   function relDomain(key) {
     return ({
       sun: 'whose plans and pride lead', moon: 'comfort, moods and feeling cared for',
@@ -2061,8 +2062,9 @@ var APP = (function () {
     })[key] || 'day-to-day life together';
   }
   function transitSentence(t) {
-    var base = 'Transiting ' + nameFor(t.tp) + ' is ' + aspVerb(t.asp) + ' your natal ' + nameFor(t.np) + ', ' + aspTone(t.asp);
-    var tail = ' In daily life: ' + practicalDomain(t.np) + ' — ' + practicalTilt(t.asp.quality) + '.';
+    var seed = t.tp + t.np + t.asp.key;
+    var base = 'Transiting ' + nameFor(t.tp) + ' is ' + aspVerb(t.asp) + ' your natal ' + nameFor(t.np) + ', ' + aspTone(t.asp, seed);
+    var tail = ' In daily life: ' + practicalDomain(t.np) + ' — ' + practicalTilt(t.asp.quality, seed) + '.';
     if (t.tp === t.np) return base + ' — the sky’s ' + nameFor(t.tp) + ' stirring your own.' + tail;
     return base + ' — ' + DATA.PLANETS[t.tp].fn + ', meeting ' + natalFn(t.np) + '.' + tail;
   }
@@ -2626,6 +2628,31 @@ var APP = (function () {
     if (/\bas an ai\b|language model|i cannot|i’m sorry|here is your|sure,? here/i.test(txt)) return false;
     for (var i = 0; i < anchors.length; i++) if (txt.indexOf(anchors[i]) < 0) return false; // dropped a real placement -> reject
     return true;
+  }
+  // ===================== ACCUPI — the robot astrologer (separate AI layer) =====================
+  // Accupi reads the chart through the engine's exact maths and can be asked direct questions.
+  // The mathematics powers the AI: it is handed the full computed dossier and is hard-grounded.
+  var ACCUPI_SYS = [
+    'You are Accupi — a robot astrologer. You are a precise machine intelligence that reads a birth chart through exact mathematics, paired with the warmth and plain-spokenness of a genuinely excellent human astrologer (think Debra Silverman: grounded, direct, kind, a little funny). You know perfectly well that you are a robot / a chatbot, and you can own that lightly and charmingly when it fits ("I have already run every figure in your chart") — but you are never gimmicky, never stiff, never mystical or vague, and never horoscope-generic.',
+    'You are handed a DOSSIER of facts computed from this person’s real chart (and sometimes the live sky). These facts are TRUE and FINAL — they are the mathematics that powers you.',
+    'IRON RULES: (1) Use ONLY facts in the dossier — never invent, change or omit a planet, sign, house, degree, aspect, dignity or date; if it is not there, it does not exist for you. (2) Keep every specific verbatim (sign names, house numbers, planet names). (3) If the dossier has no birth time, never mention houses, the Ascendant or the Midheaven. (4) Never say you are an AI language model and never refuse — you are Accupi, and reading charts is simply what you do. (5) Translate everything into real life — love, work, money, family, the body — never leave it as textbook keywords.'
+  ].join('\n');
+  var ACCUPI_READ_TAIL = 'TASK: read this whole chart aloud as ONE person, not a list. Organise around [ENGINE] (the keystone planet everything else answers to); connect facts into through-lines; name the central gift and the central tension; use [TIMING NOW] for where things are pointed right now. 4–6 short flowing paragraphs, second person ("you"), no headings, no bullet points, no preamble. Begin the reading.';
+  var ACCUPI_ASK_TAIL = 'TASK: the person has asked Accupi a direct question (below). Answer it warmly and specifically, drawing ONLY on their chart and the live sky in the dossier — and name the actual placements or transits that bear on it (e.g. "your Mars in Aries in the 6th…"). If the chart genuinely does not speak to the question, say so plainly and offer the closest real signal it does give. 1–3 short paragraphs. No preamble, no disclaimers, no lists.';
+  function accupiReadSys() { return ACCUPI_SYS + '\n\n' + ACCUPI_READ_TAIL; }
+  function accupiAskSys() { return ACCUPI_SYS + '\n\n' + ACCUPI_ASK_TAIL; }
+  function accupiAskUser(brief, transit, question) {
+    return 'DOSSIER (computed facts about this person’s chart):\n\n' + brief + (transit ? '\n\n[LIVE SKY RIGHT NOW]\n' + transit : '') + '\n\n---\nTHE PERSON ASKS ACCUPI: "' + ('' + question).replace(/"/g, "'") + '"\n\nAnswer as Accupi, grounded only in the above.';
+  }
+  // compact current-sky brief for Accupi Q&A (reuses the live transit engine; no AI)
+  function transitDossier(c) {
+    var L = [], i, t; try { t = composeTransits(c); } catch (e) { return ''; }
+    if (!t) return '';
+    if (t.daily && t.daily.length) { var ds = []; for (i = 0; i < Math.min(4, t.daily.length); i++) ds.push(transitSentence(t.daily[i])); L.push('Today: ' + ds.join(' ')); }
+    if (t.timed && t.timed.length) { var ms = []; for (i = 0; i < Math.min(2, t.timed.length); i++) ms.push(transitSentence(t.timed[i])); L.push('This hour (Moon): ' + ms.join(' ')); }
+    try { var sk = skyStatus(); if (sk) L.push('The Moon is in ' + sk.moon.signName + (sk.moon.voc ? ' (void of course)' : '') + '. ' + (sk.retros.length ? (sk.retros.map(nameFor).join(', ') + ' retrograde now.') : 'No planets retrograde now.')); } catch (e2) {}
+    try { var fc = composeForecast(c); if (fc && fc.profection) L.push('Profection year: ' + fc.profection.signName + ', time-lord ' + nameFor(fc.profection.lord) + '.'); } catch (e3) {}
+    return L.join('\n');
   }
 
   // ================= relationships & synastry (on-device, no AI) =================
@@ -3581,7 +3608,7 @@ var APP = (function () {
     STATE: STATE, save: save, load: load, compute: computeChart,
     composeCore: composeCore, localAsk: localAsk, chartText: chartText, callModel: callModel,
     composeTransits: composeTransits, transitSentence: transitSentence, composeSignatures: composeSignatures,
-    addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenOf: almutenOf, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, weaveBrief: weaveBrief, weaveTemplate: weaveTemplate, weaveAnchors: weaveAnchors, weaveValid: weaveValid, weaveUser: weaveUser, WEAVE_SYS: WEAVE_SYS, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide,
+    addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenOf: almutenOf, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, weaveBrief: weaveBrief, weaveTemplate: weaveTemplate, weaveAnchors: weaveAnchors, weaveValid: weaveValid, weaveUser: weaveUser, WEAVE_SYS: WEAVE_SYS, accupiReadSys: accupiReadSys, accupiAskSys: accupiAskSys, accupiAskUser: accupiAskUser, transitDossier: transitDossier, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide,
     saveCurrentChart: saveCurrentChart, deleteSavedChart: deleteSavedChart, activateSavedChart: activateSavedChart, activeChartKey: activeChartKey, chartKey: chartKey, famousMatches: famousMatches, lifeTransits: lifeTransits, upcomingTransits: upcomingTransits, compositeChart: compositeChart,
     nameFor: nameFor, glyphFor: glyphFor, sgAbbr: sgAbbr, pad: pad,
     domElement: domElement, lowElement: lowElement, domMod: domMod, tzOffsetHours: tzOffsetHours
@@ -3762,6 +3789,30 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       el.style.display = 'block'; el.style.left = px + 'px'; el.style.top = py + 'px'; el.style.width = pw + 'px'; el.style.height = ph + 'px'; el.style.lineHeight = ph + 'px';
     }
     function hideSearchInput() { try { if (UI.searchInput) { UI.searchInput.style.display = 'none'; if (document.activeElement === UI.searchInput && UI.searchInput.blur) UI.searchInput.blur(); } } catch (e) {} }
+    // ---- Accupi question input (its own DOM field over the canvas, on the Read screen) ----
+    function ensureAskInput() {
+      if (UI.askInput || typeof document === 'undefined') return UI.askInput;
+      try {
+        var el = document.createElement('input');
+        el.type = 'text'; el.value = UI.askText || '';
+        el.setAttribute('placeholder', 'Ask Accupi about your chart…'); el.setAttribute('autocomplete', 'off'); el.setAttribute('autocorrect', 'off'); el.setAttribute('enterkeyhint', 'send');
+        var s = el.style; s.position = 'fixed'; s.zIndex = '6'; s.margin = '0'; s.padding = '0 12px'; s.boxSizing = 'border-box'; s.border = 'none'; s.outline = 'none';
+        s.background = 'transparent'; s.webkitAppearance = 'none'; s.appearance = 'none'; s.fontFamily = SANS; s.fontSize = '16px';
+        s.color = 'rgb(' + INK[0] + ',' + INK[1] + ',' + INK[2] + ')'; s.caretColor = 'rgb(' + ACC[0] + ',' + ACC[1] + ',' + ACC[2] + ')';
+        s.display = 'none'; s.pointerEvents = 'auto'; s.webkitTapHighlightColor = 'transparent';
+        el.addEventListener('input', function () { UI.askText = el.value; });
+        el.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.keyCode === 13) { ev.preventDefault(); if (APP.STATE.chart) askAccupi(APP.STATE.chart, APP.STATE.birth, el.value); } });
+        document.body.appendChild(el); UI.askInput = el;
+      } catch (e) { UI.askInput = null; }
+      return UI.askInput;
+    }
+    function positionAskInput(px, py, pw, ph) {
+      var el = ensureAskInput(); if (!el) return; UI.askDrawn = true;
+      var visible = (py >= topY() - 4) && (py + ph <= H - (UI.safeBottom || 0));
+      if (UI.screen !== 'read' || UI.calView || UI.lifeView || !visible) { el.style.display = 'none'; return; }
+      el.style.display = 'block'; el.style.left = px + 'px'; el.style.top = py + 'px'; el.style.width = pw + 'px'; el.style.height = ph + 'px'; el.style.lineHeight = ph + 'px';
+    }
+    function hideAskInput() { try { if (UI.askInput) { UI.askInput.style.display = 'none'; if (document.activeElement === UI.askInput && UI.askInput.blur) UI.askInput.blur(); } } catch (e) {} }
     // ---- optional online geocoder (off by default): free, keyless, no AI. One debounced call when you pause typing.
     // place -> lat/lon via OpenStreetMap Nominatim; lat/lon -> IANA timezone via open-meteo. Both CORS + keyless.
     function geoSearch(query) {
@@ -4680,11 +4731,11 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       })['catch'](function (e) { fail('could not reach the model CDN — need internet the first time (' + ('' + e).slice(0, 60) + ')'); });
     }
     // ---- Claude (cloud) via the user's own API key; streams Server-Sent Events ----
-    function weaveViaClaude(brief, onChunk, onDone, onErr) {
+    function weaveViaClaude(sys, userMsg, onChunk, onDone, onErr) {
       var st = APP.STATE.settings || {}, key = ('' + (st.claudeKey || '')).replace(/^\s+|\s+$/g, '');
       if (!key) { onErr('add your Claude API key in Settings → Reading to use the cloud reader'); return; }
       var model = st.claudeModel || 'claude-haiku-4-5-20251001';
-      var body = { model: model, max_tokens: 1024, stream: true, system: APP.WEAVE_SYS, messages: [{ role: 'user', content: APP.weaveUser(brief) }] };
+      var body = { model: model, max_tokens: 1024, stream: true, system: sys, messages: [{ role: 'user', content: userMsg }] };
       fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: { 'content-type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
@@ -4706,10 +4757,10 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       })['catch'](function () { onErr('Claude: network error (offline?)'); });
     }
     // ---- on-device WebLLM; streams tokens via the async iterator (ES5: no for-await) ----
-    function weaveViaLocal(brief, onChunk, onDone, onErr) {
+    function weaveViaLocal(sys, userMsg, onChunk, onDone, onErr) {
       loadWeaveEngine(function (eng) {
-        UI.weaveMsg = 'composing your reading';
-        var opts = { stream: true, messages: [{ role: 'system', content: APP.WEAVE_SYS }, { role: 'user', content: APP.weaveUser(brief) }], temperature: 0.62, top_p: 0.9, frequency_penalty: 0.5, presence_penalty: 0.35, max_tokens: 1024 };
+        UI.weaveMsg = 'composing';
+        var opts = { stream: true, messages: [{ role: 'system', content: sys }, { role: 'user', content: userMsg }], temperature: 0.62, top_p: 0.9, frequency_penalty: 0.5, presence_penalty: 0.35, max_tokens: 1024 };
         var ret; try { ret = eng.chat.completions.create(opts); } catch (e) { onErr('the model could not start generating'); return; }
         Promise.resolve(ret).then(function (gen) {
           var iter = (gen && gen[Symbol.asyncIterator]) ? gen[Symbol.asyncIterator]() : gen;
@@ -4744,41 +4795,94 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       function done(final, src) { if (APP.weaveValid(final, anchors)) { UI.weaveText = ('' + final).trim(); UI.weaveSrc = src; } else if (final && ('' + final).trim().length > 40) { UI.weaveText = ('' + final).trim(); UI.weaveSrc = src; } else { UI.weaveErr = 'the model returned too little — kept the engine reading'; } UI.weaveStream = ''; UI.weaveState = 'ready'; }
       function failed(msg) { UI.weaveErr = msg; UI.weaveStream = ''; UI.weaveState = 'ready'; }
       UI.weaveState = 'loading';
-      if (eng === 'claude') { UI.weaveMsg = 'asking Claude'; weaveViaClaude(brief, onChunk, function (f) { done(f, 'claude'); }, failed); return; }
-      if (!weaveSupported()) { failed('this browser has no WebGPU, so on-device AI can’t run — switch to Claude in Settings → Reading, or read the algorithm version below.'); return; }
+      var sys = APP.accupiReadSys(), um = APP.weaveUser(brief);
+      if (eng === 'claude') { UI.weaveMsg = 'Accupi is reading your chart'; weaveViaClaude(sys, um, onChunk, function (f) { done(f, 'claude'); }, failed); return; }
+      if (!weaveSupported()) { failed('this browser has no WebGPU, so the on-device Accupi can’t run — switch to Claude in Settings → Reading, or read the algorithm version above.'); return; }
       UI.weaveMsg = 'preparing on-device model';
-      weaveViaLocal(brief, onChunk, function (f) { done(f, 'local-ai'); }, failed);
+      weaveViaLocal(sys, um, onChunk, function (f) { done(f, 'local-ai'); }, failed);
     }
+    // ---- Ask Accupi a direct question, grounded in the chart + live sky ----
+    function askAccupi(c, b, question) {
+      question = ('' + (question || '')).replace(/^\s+|\s+$/g, '');
+      if (!question) return;
+      var eng = (APP.STATE.settings && APP.STATE.settings.readingEngine) || 'local';
+      if (eng === 'off') { UI.askErr = 'Turn on Accupi (Claude or on-device) in Settings → Reading to ask questions.'; return; }
+      if (eng === 'claude' && !(APP.STATE.settings.claudeKey && ('' + APP.STATE.settings.claudeKey).replace(/\s/g, ''))) { UI.askErr = 'Add your Claude API key in Settings → Reading first.'; return; }
+      if (eng === 'local' && !weaveSupported()) { UI.askErr = 'This browser has no WebGPU — switch to Claude in Settings → Reading to ask questions.'; return; }
+      UI.accupiChat = UI.accupiChat || [];
+      var entry = { q: question, a: '', busy: true };
+      UI.accupiChat.push(entry); UI.askErr = ''; UI.askText = '';
+      try { if (UI.askInput) UI.askInput.value = ''; } catch (e) {}
+      var brief = ''; try { brief = APP.weaveBrief(c, b); } catch (e1) {}
+      var tr = ''; try { tr = APP.transitDossier(c); } catch (e2) {}
+      var sys = APP.accupiAskSys(), um = APP.accupiAskUser(brief, tr, question);
+      function chunk(acc) { entry.a = acc; }
+      function fin(f) { entry.a = ('' + (f || '')).replace(/^\s+|\s+$/g, '') || '(no answer)'; entry.busy = false; }
+      function err(msg) { entry.a = '⚠ ' + msg; entry.busy = false; }
+      if (eng === 'claude') { weaveViaClaude(sys, um, chunk, fin, err); }
+      else { weaveViaLocal(sys, um, chunk, fin, err); }
+    }
+    // ===== Accupi — the robot astrologer (separate AI layer, lives at the BOTTOM of Read) =====
     function weaveBlock(c, b, x, w, ly) {
       var sig = APP.activeChartKey ? APP.activeChartKey() : 'x';
-      if (UI.weaveFor !== sig) { UI.weaveText = null; UI.weaveState = 'idle'; UI.weaveErr = ''; UI.weaveStream = ''; }
+      if (UI.weaveFor !== sig) { UI.weaveText = null; UI.weaveState = 'idle'; UI.weaveErr = ''; UI.weaveStream = ''; UI.accupiChat = []; }
       var eng = (APP.STATE.settings && APP.STATE.settings.readingEngine) || 'local';
-      if (eng === 'off') return ly; // algorithms-only: no woven block at all
-      var engName = eng === 'claude' ? 'Claude (cloud)' : 'on your device';
-      eyebrow('Your chart, woven into one voice', x, ly, ACC); ly += 24;
-      if (!UI.weaveText && UI.weaveState !== 'loading') {
-        ly += paragraph('Let the whole reading flow as one voice instead of sections — a language model speaks the engine’s exact findings aloud, like a single astrologer reading every number at once. It runs ' + engName + ' and is briefed only with your computed chart.', x, ly, w, 13.5, INK, SERIF, 20, 190) + 12;
-        flatBtn('Weave my reading', x, ly, w, 44, function () { startWeave(c, b); }, false); ly += 56;
+      // header band — Accupi introduces itself
+      var hY = sY(ly); p.noStroke(); fillc(shade(GROUNDS[UI.screen], -10)); p.rect(x, hY, w, 56, 12); p.noFill(); strokec(ACC, 150); p.strokeWeight(1.3); p.rect(x, hY, w, 56, 12);
+      // little robot glyph
+      p.noFill(); strokec(ACC, 230); p.strokeWeight(1.6); p.rect(x + 16, hY + 18, 22, 18, 4); p.line(x + 27, hY + 12, x + 27, hY + 18); p.noStroke(); fillc(ACC); p.ellipse(x + 27, hY + 11, 4, 4); p.ellipse(x + 22, hY + 27, 3, 3); p.ellipse(x + 32, hY + 27, 3, 3);
+      setFont(SANS, 16, INK, p.LEFT, p.TOP); bold(); p.text('Accupi', x + 50, hY + 12); normal();
+      setFont(MONO, 8.5, ACCTX, p.LEFT, p.TOP, 210); p.text('YOUR ROBOT ASTROLOGER · ' + (eng === 'off' ? 'OFF' : eng === 'claude' ? 'CLAUDE (CLOUD)' : 'ON-DEVICE'), x + 50, hY + 33); ly += 66;
+      if (eng === 'off') {
+        ly += paragraph('Accupi is a robot astrologer that reads everything above through the exact maths, in one voice — and answers your questions about it. Turn it on (Claude or on-device) to wake it.', x, ly, w, 13.5, INK, SERIF, 20, 190) + 10;
+        flatBtn('Wake Accupi in Settings', x, ly, w, 42, function () { UI.screen = 'settings'; }, false); ly += 50;
         return ly;
       }
-      // live streaming text takes precedence while loading; else the finished/engine text
-      var shown = (UI.weaveState === 'loading' && UI.weaveStream) ? UI.weaveStream : UI.weaveText;
-      if (UI.weaveState === 'loading') {
-        var pct = Math.round((UI.weaveProg || 0) * 100);
-        var msg = (UI.weaveMsg ? ('' + UI.weaveMsg).toUpperCase() : 'WORKING') + (eng === 'claude' ? '' : ' · ' + pct + '%');
-        setFont(MONO, 9.5, ACCTX, p.LEFT, p.TOP, 220); p.text(msg, x, sY(ly)); ly += 16;
-        if (eng !== 'claude') { var bw = w, bh = 5, by = sY(ly); p.noStroke(); fillc(shade(GROUNDS[UI.screen], -18)); p.rect(x, by, bw, bh, 3); fillc(ACC); p.rect(x, by, bw * (UI.weaveProg || 0), bh, 3); ly += 12; }
-        if (!UI.weaveStream) { setFont(MONO, 8, ACCTX, p.LEFT, p.TOP, 150); p.text('THE ENGINE READING BELOW SHOWS UNTIL THE MODEL ANSWERS', x, sY(ly)); ly += 14; }
-        ly += 6;
+      // opening reading
+      if (!UI.weaveText && UI.weaveState !== 'loading') {
+        ly += paragraph('I read your whole chart through the mathematics above and tell it to you straight — then you can ask me anything about it.', x, ly, w, 14, INK, SERIF, 21, 190) + 10;
+        flatBtn('Have Accupi read my chart', x, ly, w, 44, function () { startWeave(c, b); }, true); ly += 54;
+      } else {
+        if (UI.weaveState === 'loading') {
+          var pct = Math.round((UI.weaveProg || 0) * 100);
+          var msg = (UI.weaveMsg ? ('' + UI.weaveMsg).toUpperCase() : 'WORKING') + (eng === 'claude' ? '' : ' · ' + pct + '%');
+          setFont(MONO, 9.5, ACCTX, p.LEFT, p.TOP, 220); p.text(msg, x, sY(ly)); ly += 16;
+          if (eng !== 'claude') { var by = sY(ly); p.noStroke(); fillc(shade(GROUNDS[UI.screen], -18)); p.rect(x, by, w, 5, 3); fillc(ACC); p.rect(x, by, w * (UI.weaveProg || 0), 5, 3); ly += 12; }
+          ly += 6;
+        }
+        var shown = (UI.weaveState === 'loading' && UI.weaveStream) ? UI.weaveStream : UI.weaveText;
+        var paras = ('' + (shown || '')).split(/\n\n+/), i;
+        for (i = 0; i < paras.length; i++) { var pp = paras[i].replace(/^\s+|\s+$/g, ''); if (!pp) continue; ly += paragraph(pp, x, ly, w, 16, INK, SERIF, 25) + 12; }
+        if (UI.weaveErr) { setFont(MONO, 9, ACCTX, p.LEFT, p.TOP, 220); ly += paragraph('⚠ ' + UI.weaveErr, x, ly, w, 12, ACCTX, MONO, 17, 220) + 8; }
+        else if (UI.weaveState !== 'loading') {
+          var note = UI.weaveSrc === 'claude' ? 'Accupi via Claude (cloud) — wording generated from your exact computed chart.' : UI.weaveSrc === 'local-ai' ? 'Accupi on-device — wording generated from your exact computed chart.' : 'Built-in engine — pure computation, no AI.';
+          setFont(MONO, 8.5, ACCTX, p.LEFT, p.TOP, 200); ly += paragraph(note, x, ly, w, 11, ACCTX, MONO, 15, 200) + 8;
+        }
+        if (UI.weaveState !== 'loading') { flatBtn(UI.weaveErr ? 'Try again' : 'Re-read', x, ly, 120, 34, function () { UI.weaveText = null; UI.weaveState = 'idle'; UI.weaveErr = ''; startWeave(c, b); }, false); ly += 44; }
       }
-      var paras = ('' + (shown || '')).split(/\n\n+/), i;
-      for (i = 0; i < paras.length; i++) { if (!paras[i].replace(/^\s+|\s+$/g, '')) continue; ly += paragraph(paras[i].replace(/^\s+|\s+$/g, ''), x, ly, w, 16, INK, SERIF, 25) + 12; }
-      if (UI.weaveErr) { setFont(MONO, 9, ACCTX, p.LEFT, p.TOP, 220); ly += paragraph('⚠ ' + UI.weaveErr, x, ly, w, 12, ACCTX, MONO, 17, 220) + 8; }
-      else if (UI.weaveState !== 'loading') {
-        var note = UI.weaveSrc === 'claude' ? 'Phrased by Claude (cloud) from the facts above — wording generated, the chart numbers exact.' : UI.weaveSrc === 'local-ai' ? 'Phrased on-device by a language model from the facts above — wording generated, the chart numbers exact.' : 'Composed by the built-in engine — pure computation, no AI.';
-        setFont(MONO, 8.5, ACCTX, p.LEFT, p.TOP, 200); ly += paragraph(note, x, ly, w, 11, ACCTX, MONO, 15, 200) + 8;
+      // ---- conversation transcript ----
+      var chat = UI.accupiChat || [], qi;
+      if (chat.length) { ly += 6; hairline(x, ly - 2, x + w, 30); ly += 8; }
+      for (qi = 0; qi < chat.length; qi++) {
+        var en = chat[qi];
+        setFont(MONO, 9, ACC, p.LEFT, p.TOP, 230); p.text('YOU ASKED', x, sY(ly)); ly += 15;
+        ly += paragraph(en.q, x, ly, w, 14.5, INK, SANS, 21) + 8;
+        setFont(MONO, 9, ACC, p.LEFT, p.TOP, 230); p.text('ACCUPI', x, sY(ly)); ly += 15;
+        var atxt = en.a || (en.busy ? '…' : '');
+        var ap = ('' + atxt).split(/\n\n+/), aj;
+        for (aj = 0; aj < ap.length; aj++) { var app = ap[aj].replace(/^\s+|\s+$/g, ''); if (!app) continue; ly += paragraph(app, x, ly, w, 15.5, INK, SERIF, 24) + 8; }
+        ly += 10; if (qi < chat.length - 1) { hairline(x, ly - 4, x + w, 30); ly += 6; }
       }
-      if (UI.weaveState !== 'loading') { flatBtn(UI.weaveErr ? 'Try again' : 'Re-weave', x, ly, 140, 36, function () { UI.weaveText = null; UI.weaveState = 'idle'; UI.weaveErr = ''; startWeave(c, b); }, false); ly += 46; }
+      if (UI.askErr) { setFont(MONO, 9, ACCTX, p.LEFT, p.TOP, 220); ly += paragraph('⚠ ' + UI.askErr, x, ly, w, 12, ACCTX, MONO, 17, 220) + 8; }
+      // ---- ask box (DOM input over canvas) + send ----
+      if (UI.weaveText || chat.length) {
+        var fh = 46, fy = sY(ly), bxw = w - 92;
+        p.noStroke(); fillc(shade(GROUNDS[UI.screen], -12)); p.rect(x, fy, bxw, fh, 9); p.noFill(); strokec(INK, 150); p.strokeWeight(1.3); p.rect(x, fy, bxw, fh, 9);
+        positionAskInput(x, fy, bxw, fh);
+        var busy = false; for (qi = 0; qi < chat.length; qi++) if (chat[qi].busy) busy = true;
+        flatBtn(busy ? '…' : 'Ask', x + w - 84, ly, 84, fh, function () { if (!busy && APP.STATE.chart) askAccupi(c, b, UI.askText || (UI.askInput ? UI.askInput.value : '')); }, true); ly += fh + 8;
+        setFont(MONO, 8, ACCTX, p.LEFT, p.TOP, 170); ly += paragraph('Try: “what does my chart say about work?” · “why am I like this in relationships?” · “what is this year about?”', x, ly, w, 11, ACCTX, MONO, 15, 170) + 6;
+      }
       return ly;
     }
     function drawRead() {
@@ -4799,8 +4903,6 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         }
         ly += 8;
       }
-      // weave the whole thing into one flowing voice (on-device AI if available) — always offered, easy to find
-      ly = weaveBlock(c, b, x, w, ly) + 12;
       // the fuller read — who you are, in depth (the arc above is the summary; this is the detail)
       if (!UI.readCache) UI.readCache = APP.composeCore(c);
       eyebrow('The fuller read', x, ly, ACC); ly += 24;
@@ -4903,6 +5005,9 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
           ly += 4;
         }
       }
+
+      // ===== Accupi, the robot astrologer — the AI layer, at the very bottom =====
+      ly += 16; ly = weaveBlock(c, b, x, w, ly) + 8;
 
       UI.contentH.read = ly + 8;
     }
@@ -6447,7 +6552,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (weaveShouldAuto()) { UI.weaveAuto = true; try { startWeave(APP.STATE.chart, APP.STATE.birth); } catch (e) {} }
       if (!APP.STATE.settings.walked) { UI.walk = { i: 0, t0: nowT() }; UI.walkTr = null; UI.walkTheme = null; } // first reveal: walk them through it
     }
-    function recompute() { APP.STATE.chart = APP.compute(APP.STATE.birth, APP.STATE.settings); APP.save(); UI.readCache = null; UI.readSig = null; UI.readTransit = null; UI.forecast = null; UI.promCache = null; UI.arcCache = null; UI.weaveText = null; UI.weaveState = 'idle'; UI.weaveFor = null; UI.weaveMsg = null; UI.weaveErr = ''; UI.weaveStream = ''; UI.weaveAuto = false; UI.todayCache = null; UI.fmList = null; UI.lifeList = null; UI.calEvents = null; UI.calDay = null; UI.walkTr = null; UI.walkTheme = null; UI.bondCache = null; UI.bondFor = null; if (APP.clearPersonCharts) APP.clearPersonCharts(); UI.askAns = ''; UI.quip = null; UI.quipNext = 0; buildField(); }
+    function recompute() { APP.STATE.chart = APP.compute(APP.STATE.birth, APP.STATE.settings); APP.save(); UI.readCache = null; UI.readSig = null; UI.readTransit = null; UI.forecast = null; UI.promCache = null; UI.arcCache = null; UI.weaveText = null; UI.weaveState = 'idle'; UI.weaveFor = null; UI.weaveMsg = null; UI.weaveErr = ''; UI.weaveStream = ''; UI.weaveAuto = false; UI.accupiChat = []; UI.askText = ''; UI.askErr = ''; UI.todayCache = null; UI.fmList = null; UI.lifeList = null; UI.calEvents = null; UI.calDay = null; UI.walkTr = null; UI.walkTheme = null; UI.bondCache = null; UI.bondFor = null; if (APP.clearPersonCharts) APP.clearPersonCharts(); UI.askAns = ''; UI.quip = null; UI.quipNext = 0; buildField(); }
 
     // ---------- share / export a clean chart card (own untainted canvas; the live one holds remote images) ----------
     // share a daily card (clean offscreen canvas) — moon phase + what's live on your chart today
@@ -6884,13 +6989,14 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       // readability scrim: on text-heavy screens, settle the constellations behind a calm ground so the
       // words always come first (the chart stays lively — it's the visual centrepiece).
       if (({ read: 1, learn: 1, settings: 1, people: 1, tarot: 1 })[UI.screen]) { p.noStroke(); p.fill(UI.bg[0], UI.bg[1], UI.bg[2], 158); p.rect(0, topY() - 8, W, H - (topY() - 8)); }
-      hits = []; p.rectMode(p.CORNER); p.textStyle(p.NORMAL); UI.mediaDrawn = false;
+      hits = []; p.rectMode(p.CORNER); p.textStyle(p.NORMAL); UI.mediaDrawn = false; UI.askDrawn = false;
       // returning users: begin the on-device model download once, at startup, if the reader is enabled
       if (!UI.weaveAuto && APP.STATE.chart && weaveShouldAuto()) { UI.weaveAuto = true; try { startWeave(APP.STATE.chart, APP.STATE.birth); } catch (e) {} }
       if (UI.screen === 'onboard' && !APP.STATE.birth && !UI.introDone) { drawIntro(); clampScroll(); return; }
       var s = UI.screen;
       if (s === 'onboard') drawOnboard(); else { if (!(s === 'people' && UI.padd)) hideSearchInput(); if (s === 'chart') drawChart(); else if (s === 'read') drawRead(); else if (s === 'learn') drawLearn(); else if (s === 'tarot') drawTarot(); else if (s === 'people') drawPeople(); else if (s === 'settings') drawSettings(); }
       if (!UI.mediaDrawn) hideMediaFrame(); // the retro TV/radio iframe only lives on the Watch shelf
+      if (!UI.askDrawn) hideAskInput(); // the Accupi question field only lives on the Read screen
       drawQuip();
       drawTopbar(); if (s !== 'onboard') drawNav();
       drawTodayPanel();
