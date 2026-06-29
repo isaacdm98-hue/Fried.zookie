@@ -2509,6 +2509,33 @@ var APP = (function () {
     out.push({ label: 'Where it’s heading', text: atxt });
     return out;
   }
+  // ---- optional woven narration: feed the engine's own facts to a phraser ----
+  // The facts below are 100% computed; a narrator (local LLM if available, else the
+  // deterministic stitch) only rewords them. weaveBrief is the grounding contract.
+  function weaveBrief(c, b) {
+    var a = composeArc(c, b), lines = [], i;
+    for (i = 0; i < a.length; i++) lines.push('- ' + a[i].text);
+    return lines.join('\n');
+  }
+  function weaveAnchors(c) {
+    // the exact tokens any faithful rewrite MUST keep — used to reject hallucinated output
+    var ks = ['sun', 'moon'], out = [], i; if (c.ascBody) ks.push('asc');
+    for (i = 0; i < ks.length; i++) { var pl = ks[i] === 'asc' ? c.ascBody : c.planets[ks[i]]; if (pl && pl.signName) out.push(pl.signName); }
+    return out;
+  }
+  // deterministic one-voice stitch (the always-available fallback / no-GPU path)
+  function weaveTemplate(c, b) {
+    var a = composeArc(c, b);
+    return a[0].text + ' ' + a[1].text + ' That is the steady part. The live part is the friction — ' + a[2].text + ' ' + a[3].text;
+  }
+  // the hard-grounding instruction handed to whatever model does the rewording
+  var WEAVE_SYS = 'You are a careful copy-editor for a grounded astrologer (in the voice of Debra Silverman: warm, plain, direct, no jargon, no mysticism). You are given FACTS that were computed from a real birth chart. Rewrite them into one flowing reading of 3 to 5 short paragraphs. ABSOLUTE RULES: (1) Use ONLY the facts given. Never invent or change a planet, sign, house, aspect, number or claim. (2) Keep every specific exactly as written (sign names, house numbers, planet names). (3) No bullet points, no headings, no preamble like "Sure" or "Here". (4) Do not mention being an AI or a model. Just the reading.';
+  function weaveValid(txt, anchors) {
+    if (!txt) return false; txt = ('' + txt).trim();
+    if (txt.length < 120 || txt.length > 2200) return false;
+    for (var i = 0; i < anchors.length; i++) if (txt.indexOf(anchors[i]) < 0) return false; // dropped a real placement -> reject
+    return true;
+  }
 
   // ================= relationships & synastry (on-device, no AI) =================
   // Add friends / dates / family by birth date; compare charts and link the live sky to theirs.
@@ -3454,7 +3481,7 @@ var APP = (function () {
     STATE: STATE, save: save, load: load, compute: computeChart,
     composeCore: composeCore, localAsk: localAsk, chartText: chartText, callModel: callModel,
     composeTransits: composeTransits, transitSentence: transitSentence, composeSignatures: composeSignatures,
-    addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenOf: almutenOf, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide,
+    addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenOf: almutenOf, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, weaveBrief: weaveBrief, weaveTemplate: weaveTemplate, weaveAnchors: weaveAnchors, weaveValid: weaveValid, WEAVE_SYS: WEAVE_SYS, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide,
     saveCurrentChart: saveCurrentChart, deleteSavedChart: deleteSavedChart, activateSavedChart: activateSavedChart, activeChartKey: activeChartKey, chartKey: chartKey, famousMatches: famousMatches, lifeTransits: lifeTransits, upcomingTransits: upcomingTransits, compositeChart: compositeChart,
     nameFor: nameFor, glyphFor: glyphFor, sgAbbr: sgAbbr, pad: pad,
     domElement: domElement, lowElement: lowElement, domMod: domMod, tzOffsetHours: tzOffsetHours
@@ -4512,6 +4539,61 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       for (mi = 0; mi < 3; mi++) { var yr = now.getFullYear(), mo = now.getMonth() + mi; while (mo > 11) { mo -= 12; yr++; } ly += drawMonthGrid(yr, mo, x, w, ly) + 8; }
       UI.contentH.read = ly + 20;
     }
+    // ===== optional on-device woven narration (WebLLM over the engine's facts) =====
+    var WLLM = null, WLLM_TRY = false, WLLM_MODEL = 'Qwen2.5-0.5B-Instruct-q4f16_1-MLC';
+    function weaveSupported() { try { return !!(typeof navigator !== 'undefined' && navigator.gpu); } catch (e) { return false; } }
+    function loadWeaveEngine(ok, fail) {
+      if (WLLM) { ok(WLLM); return; }
+      var imp; try { imp = new Function('u', 'return import(u);'); } catch (e) { fail('eval'); return; }
+      imp('https://esm.run/@mlc-ai/web-llm').then(function (mod) {
+        var make = mod.CreateMLCEngine || (mod.webllm && mod.webllm.CreateMLCEngine);
+        if (!make) throw new Error('no-api');
+        return make(WLLM_MODEL, { initProgressCallback: function (r) { UI.weaveProg = (r && typeof r.progress === 'number') ? r.progress : UI.weaveProg; } });
+      }).then(function (eng) { WLLM = eng; ok(eng); })['catch'](function (e) { fail('' + e); });
+    }
+    function startWeave(c, b) {
+      var sig = APP.activeChartKey ? APP.activeChartKey() : 'x';
+      if (UI.weaveFor === sig && UI.weaveText && UI.weaveState === 'ready') return;
+      // deterministic stitch is ready instantly — the model, if any, only refines it
+      try { UI.weaveText = APP.weaveTemplate(c, b); } catch (e) { UI.weaveText = ''; }
+      UI.weaveFor = sig; UI.weaveSrc = 'engine';
+      if (!weaveSupported()) { UI.weaveState = 'ready'; return; }
+      UI.weaveState = 'loading'; UI.weaveProg = 0;
+      var anchors = []; try { anchors = APP.weaveAnchors(c); } catch (e2) {}
+      loadWeaveEngine(function (eng) {
+        var brief = ''; try { brief = APP.weaveBrief(c, b); } catch (e3) {}
+        eng.chat.completions.create({
+          messages: [{ role: 'system', content: APP.WEAVE_SYS }, { role: 'user', content: 'FACTS:\n' + brief + '\n\nWrite the reading now.' }],
+          temperature: 0.4, max_tokens: 420
+        }).then(function (resp) {
+          var txt = resp && resp.choices && resp.choices[0] && resp.choices[0].message ? resp.choices[0].message.content : '';
+          if (APP.weaveValid(txt, anchors)) { UI.weaveText = ('' + txt).trim(); UI.weaveSrc = 'local-ai'; }
+          UI.weaveState = 'ready';
+        })['catch'](function () { UI.weaveState = 'ready'; });
+      }, function () { UI.weaveState = 'ready'; }); // load failed -> keep the engine stitch
+    }
+    function weaveBlock(c, b, x, w, ly) {
+      var sig = APP.activeChartKey ? APP.activeChartKey() : 'x';
+      if (UI.weaveFor !== sig) { UI.weaveText = null; UI.weaveState = 'idle'; }
+      eyebrow('Your chart, woven into one voice', x, ly, ACC); ly += 24;
+      if (!UI.weaveText) {
+        ly += paragraph('Let the reading flow as a single voice instead of sections. Composed from the exact facts above — on your device, privately. If your phone supports on-device AI it phrases it; otherwise the built-in engine does.', x, ly, w, 13.5, INK, SERIF, 20, 190) + 12;
+        flatBtn('Weave my reading', x, ly, w, 44, function () { startWeave(c, b); }, false); ly += 56;
+        return ly;
+      }
+      if (UI.weaveState === 'loading') {
+        var pct = Math.round((UI.weaveProg || 0) * 100);
+        setFont(MONO, 9.5, ACCTX, p.LEFT, p.TOP, 220); p.text('REFINING ON-DEVICE · ' + pct + '%', x, sY(ly)); ly += 16;
+        var bw = w, bh = 5, by = sY(ly); p.noStroke(); fillc(shade(GROUNDS[UI.screen], -18)); p.rect(x, by, bw, bh, 3); fillc(ACC); p.rect(x, by, bw * (UI.weaveProg || 0), bh, 3); ly += 16;
+      }
+      // card with the woven prose
+      var paras = ('' + UI.weaveText).split(/\n\n+/), pre = ly;
+      for (var i = 0; i < paras.length; i++) { if (!paras[i].trim()) continue; ly += paragraph(paras[i].trim(), x, ly, w, 16, INK, SERIF, 25) + 12; }
+      var note = UI.weaveSrc === 'local-ai' ? 'Phrased on-device by a small language model from the facts above — wording is generated, the chart numbers are exact.' : (weaveSupported() ? 'Composed by the built-in engine.' : 'Your device has no on-device AI, so the built-in engine composed this. The numbers are exact.');
+      setFont(MONO, 8.5, ACCTX, p.LEFT, p.TOP, 200); ly += paragraph(note, x, ly, w, 11, ACCTX, MONO, 15, 200) + 8;
+      flatBtn('Re-weave', x, ly, 130, 36, function () { UI.weaveText = null; UI.weaveState = 'idle'; startWeave(c, b); }, false); ly += 46;
+      return ly;
+    }
     function drawRead() {
       var c = APP.STATE.chart, b = APP.STATE.birth; if (!c) { UI.screen = 'onboard'; return; }
       if (UI.calView) { drawTransitCalendar(c, b); return; }
@@ -4530,6 +4612,8 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         }
         ly += 8;
       }
+      // optional: weave the whole thing into one flowing voice (on-device AI if available)
+      if (APP.STATE.settings && APP.STATE.settings.weave) { ly = weaveBlock(c, b, x, w, ly) + 10; }
       // then the general personal reading — who you are
       if (!UI.readCache) UI.readCache = APP.composeCore(c);
       eyebrow('Who you are', x, ly, ACC); ly += 24;
@@ -5968,6 +6052,8 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       ly += toggleRow('House system', [['whole', 'Whole'], ['equal', 'Equal'], ['placidus', 'Placidus']], st.house, ly, function (v) { st.house = v; recompute(); });
       ly += toggleRow('Show extra points', [['off', 'Off'], ['on', 'On']], st.minorBodies ? 'on' : 'off', ly, function (v) { st.minorBodies = (v === 'on'); recompute(); });
       ly += paragraph('On: adds Chiron and the four major asteroids (Ceres, Pallas, Juno, Vesta) as extra points — computed on-device to about a degree.', x, ly, w, 13.5, INK, SERIF, 20, 180) + 14;
+      ly += toggleRow('Woven reading (experimental)', [['off', 'Off'], ['on', 'On']], st.weave ? 'on' : 'off', ly, function (v) { st.weave = (v === 'on'); APP.save(); UI.weaveText = null; UI.weaveState = 'idle'; });
+      ly += paragraph('Adds a “weave into one voice” option to your reading. The facts stay computed; an on-device language model (only if your phone supports WebGPU) rephrases them into flowing prose, otherwise the built-in engine does. Nothing leaves your device; the model downloads once.', x, ly, w, 13.5, INK, SERIF, 20, 180) + 14;
       eyebrow('Aspect orb  \u00D7' + (st.orbScale || 1).toFixed(1), x, ly); ly += 20;
       var slw = w - 56, slx = x, sly = sY(ly) + 14;
       var tt = ((st.orbScale || 1) - 0.5) / 1.5, kx = slx + tt * slw;
