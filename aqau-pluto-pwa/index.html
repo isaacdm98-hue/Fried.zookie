@@ -965,6 +965,13 @@ var DATA = (function () {
     { key: 'square',      glyph: '\u25A1\uFE0E', angle: 90,  orb: 7, quality: 'friction',   phrase: 'grinding against each other, the friction that makes you grow' },
     { key: 'sextile',     glyph: '\u26B9\uFE0E', angle: 60,  orb: 5, quality: 'opportunity',phrase: 'offering an opportunity if you choose to use it' }
   ];
+  // minor aspects \u2014 Astro.com-style, only added to the natal grid when "Minor aspects" is on (kept out of transits to avoid noise)
+  var MINOR_ASPECTS = [
+    { key: 'quincunx',        glyph: '\u26BB\uFE0E', angle: 150, orb: 2.5, quality: 'tension',    phrase: 'an awkward 150\u00B0 \u2014 two parts of you that never quite fit, needing constant small adjustments', minor: true },
+    { key: 'sesquiquadrate',  glyph: '\u26BC\uFE0E', angle: 135, orb: 2,   quality: 'friction',   phrase: 'a 135\u00B0 irritation that flares under pressure', minor: true },
+    { key: 'semisquare',      glyph: '\u2220',       angle: 45,  orb: 2,   quality: 'friction',   phrase: 'a 45\u00B0 friction \u2014 a low, nagging tension', minor: true },
+    { key: 'semisextile',     glyph: '\u26BA\uFE0E', angle: 30,  orb: 1.5, quality: 'opportunity', phrase: 'a mild 30\u00B0 link between neighbouring areas of life', minor: true }
+  ];
 
   var ELEMENTS = {
     fire:  { name: 'Fire',  signs: 'Aries, Leo, Sagittarius', high: 'enthusiasm, courage, momentum', low: 'impatience, burnout, running over people', need: 'You need action and inspiration. Too much and you scorch; too little and you go cold and flat.' },
@@ -1295,7 +1302,7 @@ var DATA = (function () {
   return {
     PLANETS: PLANETS, PLANET_ORDER: PLANET_ORDER, SIGNS: SIGNS,
     SUN_IN_SIGN: SUN_IN_SIGN, MOON_IN_SIGN: MOON_IN_SIGN, RISING_IN_SIGN: RISING_IN_SIGN, PLANET_SIGN_TEXT: PLANET_SIGN_TEXT,
-    HOUSES: HOUSES, ASPECTS: ASPECTS, ELEMENTS: ELEMENTS, MODALITIES: MODALITIES,
+    HOUSES: HOUSES, ASPECTS: ASPECTS, MINOR_ASPECTS: MINOR_ASPECTS, ELEMENTS: ELEMENTS, MODALITIES: MODALITIES,
     TAROT: TAROT, SUIT_KW: SUIT_KW, SPREADS: SPREADS, CITIES: CITIES
   };
 })();
@@ -1339,7 +1346,7 @@ var APP = (function () {
   // ---------- state ----------
   var STATE = {
     birth: null, // {name,y,mo,d,hour,min,tz,lat,lon,place,timeKnown}
-    settings: { zodiac: 'tropical', house: 'placidus', orbScale: 1, theme: 'light', textScale: 1, sound: false, accent: 0, autoNight: false, minorBodies: false },
+    settings: { zodiac: 'tropical', house: 'placidus', orbScale: 1, theme: 'light', textScale: 1, sound: false, accent: 0, autoNight: false, minorBodies: false, minorAspects: false, trueNode: true },
     chart: null, screen: 'chart', chartView: 'dial',
     people: [], // [{id,name,rel,famrel,y,mo,d,hour,min,tz,iana,lat,lon,place,timeKnown}]
     charts: [] // saved birth charts you can switch between (snapshots of `birth`)
@@ -1428,11 +1435,14 @@ var APP = (function () {
     for (var pi = 0; pi < DATA.PLANET_ORDER.length; pi++) {
       var key = DATA.PLANET_ORDER[pi];
       if (!pos[key]) continue;
-      var lon = rev(pos[key].lon - ay);
+      // node: Astro.com defaults to True Node; honour the setting (Mean as the alternative)
+      var useTrue = (settings.trueNode !== false);
+      var rawLon = (key === 'node') ? ((useTrue && pos.trueNode) ? pos.trueNode.lon : pos.node.lon) : pos[key].lon;
+      var rawNext = (key === 'node') ? ((useTrue && pos2.trueNode) ? pos2.trueNode.lon : pos2.node.lon) : pos2[key].lon;
+      var lon = rev(rawLon - ay);
       var retro;
       if (key === 'sun' || key === 'moon') retro = false;
-      else if (key === 'node') retro = true;
-      else retro = sdelta(pos[key].lon, pos2[key].lon) < 0;
+      else retro = sdelta(rawLon, rawNext) < 0; // true node can briefly station/turn direct; mean node is always retrograde
       planets[key] = makeBody(key, lon);
       planets[key].retro = retro;
     }
@@ -1455,14 +1465,15 @@ var APP = (function () {
       points.pof.day = day;
     }
 
-    var aspects = buildAspects(planets, asc, mc, settings.orbScale);
-    var bal = tally(planets, asc, mc);
     // optional extra bodies (Chiron + the four big asteroids) — off by default, computed only on request
     var extras = null;
     if (settings.minorBodies) {
       extras = {}; var mb = minorBodies(d, pos.sun.lon), ek;
       for (ek in mb) if (mb.hasOwnProperty(ek)) { var eb = mkPoint2(ek, rev(mb[ek] - ay), cusps); extras[ek] = eb; }
     }
+    // Chiron + asteroids join the aspect grid when shown (Astro.com includes Chiron by default); minor aspects on request
+    var aspects = buildAspects(planets, asc, mc, settings.orbScale, extras, !!settings.minorAspects);
+    var bal = tally(planets, asc, mc);
     return {
       d: d, planets: planets, points: points, extras: extras, asc: asc, mc: mc, ascBody: ascBody, mcBody: mcBody,
       cusps: cusps, aspects: aspects, elements: bal.el, modalities: bal.mo,
@@ -1509,19 +1520,23 @@ var APP = (function () {
     if (key === 'mc') return 'Midheaven';
     return DATA.PLANETS[key] ? DATA.PLANETS[key].name : key;
   }
-  function buildAspects(planets, asc, mc, orbScale) {
+  function buildAspects(planets, asc, mc, orbScale, extras, useMinor) {
     var pts = [], k;
     for (k in planets) if (planets.hasOwnProperty(k) && k !== 'node') pts.push({ key: k, lon: planets[k].lon });
     pts.push({ key: 'asc', lon: asc }); pts.push({ key: 'mc', lon: mc });
+    if (extras) for (k in extras) if (extras.hasOwnProperty(k) && extras[k]) pts.push({ key: k, lon: extras[k].lon, minorBody: true });
     var out = [];
     for (var i = 0; i < pts.length; i++) for (var j = i + 1; j < pts.length; j++) {
-      var sep = Math.abs(sdelta(pts[i].lon, pts[j].lon));
+      if (pts[i].minorBody && pts[j].minorBody) continue; // skip asteroid-to-asteroid noise
+      var sep = Math.abs(sdelta(pts[i].lon, pts[j].lon)), matched = false;
       for (var a = 0; a < DATA.ASPECTS.length; a++) {
-        var asp = DATA.ASPECTS[a], orb = asp.orb * orbScale;
-        var diff = Math.abs(sep - asp.angle);
-        if (diff <= orb) {
-          out.push({ a: pts[i].key, b: pts[j].key, asp: asp, orb: diff });
-          break;
+        var asp = DATA.ASPECTS[a], diff = Math.abs(sep - asp.angle);
+        if (diff <= asp.orb * orbScale) { out.push({ a: pts[i].key, b: pts[j].key, asp: asp, orb: diff }); matched = true; break; }
+      }
+      if (!matched && useMinor) {
+        for (var m = 0; m < DATA.MINOR_ASPECTS.length; m++) {
+          var ma = DATA.MINOR_ASPECTS[m], md = Math.abs(sep - ma.angle);
+          if (md <= ma.orb * orbScale) { out.push({ a: pts[i].key, b: pts[j].key, asp: ma, orb: md, minor: true }); break; }
         }
       }
     }
@@ -1622,7 +1637,7 @@ var APP = (function () {
     if (c.planets.venus) parts.push('How you love — Venus in ' + c.planets.venus.signName + (tk ? ', ' + ordinal(c.planets.venus.house) + ' house' : '') + ': ' + DATA.PLANET_SIGN_TEXT.venus[c.planets.venus.sign]);
     if (c.planets.mars) parts.push('How you act — Mars in ' + c.planets.mars.signName + (tk ? ', ' + ordinal(c.planets.mars.house) + ' house' : '') + ': ' + DATA.PLANET_SIGN_TEXT.mars[c.planets.mars.sign]);
     var tight = [];
-    for (var i = 0; i < c.aspects.length && tight.length < 2; i++) { var a = c.aspects[i]; if (a.a !== 'asc' && a.a !== 'mc' && a.b !== 'asc' && a.b !== 'mc') tight.push(a); }
+    for (var i = 0; i < c.aspects.length && tight.length < 2; i++) { var a = c.aspects[i]; if (!a.minor && a.a !== 'asc' && a.a !== 'mc' && a.b !== 'asc' && a.b !== 'mc') tight.push(a); }
     if (tight.length) {
       var lines = tight.map(function (a) { return nameFor(a.a) + ' ' + a.asp.key + ' ' + nameFor(a.b) + ' \u2014 ' + aspectText(c, a); });
       var leadT = vpick(['Two threads stand out in how this all wires together.', 'A couple of wires run hot through the whole chart.', 'Two contacts shape how the rest of you connects up.', 'The tightest aspects tell you where the current concentrates.'], seed + 't');
@@ -2575,6 +2590,22 @@ var APP = (function () {
     if (cd.t === 'stationary') return nm + ' stood almost still at your birth, pivoting between forward and retrograde — so ' + sf + ' sits unusually deep and concentrated in you, a fixed undercurrent rather than a passing mood.';
     return '';
   }
+  // declination aspects: parallels (hidden conjunction) & contraparallels (hidden opposition), within ~1° of declination
+  function declAspects(c) {
+    var keys = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto'], dec = {}, i, k, ks = [];
+    for (i = 0; i < keys.length; i++) { k = keys[i]; if (!c.planets[k]) continue; var dv = null; try { dv = EPH.declOf(BODYNAME[k], c.d); } catch (e) {} if (dv != null) { dec[k] = dv; ks.push(k); } }
+    var out = [], a, b;
+    for (a = 0; a < ks.length; a++) for (b = a + 1; b < ks.length; b++) {
+      var da = dec[ks[a]], db = dec[ks[b]], par = Math.abs(da - db), con = Math.abs(da + db);
+      if (par <= 1.0) out.push({ a: ks[a], b: ks[b], type: 'parallel', orb: par, da: da, db: db });
+      else if (con <= 1.0) out.push({ a: ks[a], b: ks[b], type: 'contraparallel', orb: con, da: da, db: db });
+    }
+    out.sort(function (x, y) { return x.orb - y.orb; });
+    return out;
+  }
+  function declAspectLine(p) {
+    return nameFor(p.a) + ' and ' + nameFor(p.b) + ' are ' + (p.type === 'parallel' ? 'parallel by declination — they reinforce each other like a quiet, hidden conjunction' : 'contraparallel — they pull on each other like a hidden opposition') + ' (declinations ' + p.da.toFixed(1) + '° and ' + p.db.toFixed(1) + '°).';
+  }
   // strip exact + near-duplicate block texts so no sentence repeats across a reading
   function dropDupBlocks(out) {
     var seen = {}, res = [], i, sig;
@@ -2615,6 +2646,8 @@ var APP = (function () {
     }
     var cond = chartConditions(c, STATE.birth);
     if (cond.length) out.push({ label: 'Rare conditions', lines: cond.map(conditionLine) });
+    var dpar = declAspects(c);
+    if (dpar.length) out.push({ label: 'Declination aspects (parallels)', lines: dpar.slice(0, 4).map(declAspectLine) });
     var bc = balanceCoaching(c);
     out.push({ label: 'Where you’re light', text: bc.join(' ') });
     return dropDupBlocks(out);
@@ -3632,7 +3665,7 @@ var APP = (function () {
     STATE: STATE, save: save, load: load, compute: computeChart,
     composeCore: composeCore, localAsk: localAsk, chartText: chartText,
     composeTransits: composeTransits, transitSentence: transitSentence, composeSignatures: composeSignatures,
-    addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenOf: almutenOf, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide,
+    addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenOf: almutenOf, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide,
     saveCurrentChart: saveCurrentChart, deleteSavedChart: deleteSavedChart, activateSavedChart: activateSavedChart, activeChartKey: activeChartKey, chartKey: chartKey, famousMatches: famousMatches, lifeTransits: lifeTransits, upcomingTransits: upcomingTransits, transitMotion: transitMotion, compositeChart: compositeChart,
     nameFor: nameFor, glyphFor: glyphFor, sgAbbr: sgAbbr, pad: pad,
     domElement: domElement, lowElement: lowElement, domMod: domMod, tzOffsetHours: tzOffsetHours
@@ -6156,7 +6189,11 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       ly += toggleRow('Zodiac', [['tropical', 'Tropical'], ['sidereal', 'Sidereal']], st.zodiac, ly, function (v) { st.zodiac = v; recompute(); });
       ly += toggleRow('House system', [['whole', 'Whole'], ['equal', 'Equal'], ['placidus', 'Placidus']], st.house, ly, function (v) { st.house = v; recompute(); });
       ly += toggleRow('Show extra points', [['off', 'Off'], ['on', 'On']], st.minorBodies ? 'on' : 'off', ly, function (v) { st.minorBodies = (v === 'on'); recompute(); });
-      ly += paragraph('On: adds Chiron and the four major asteroids (Ceres, Pallas, Juno, Vesta) as extra points — computed on-device to about a degree.', x, ly, w, 13.5, INK, SERIF, 20, 180) + 14;
+      ly += paragraph('On: adds Chiron and the four major asteroids (Ceres, Pallas, Juno, Vesta) — computed on-device to about a degree — and folds Chiron into the aspect grid.', x, ly, w, 13.5, INK, SERIF, 20, 180) + 14;
+      ly += toggleRow('Lunar node', [['true', 'True'], ['mean', 'Mean']], (st.trueNode === false ? 'mean' : 'true'), ly, function (v) { st.trueNode = (v === 'true'); recompute(); });
+      ly += paragraph('True node tracks the Moon’s actual wobbling orbit (Astrodienst’s default); Mean is the smoothed average. They differ by up to ~1.5°.', x, ly, w, 13.5, INK, SERIF, 20, 180) + 14;
+      ly += toggleRow('Minor aspects', [['off', 'Off'], ['on', 'On']], st.minorAspects ? 'on' : 'off', ly, function (v) { st.minorAspects = (v === 'on'); recompute(); });
+      ly += paragraph('On: also shows the quincunx (150°), sesquiquadrate (135°), semisquare (45°) and semisextile (30°) in your natal grid, with tight orbs.', x, ly, w, 13.5, INK, SERIF, 20, 180) + 14;
       eyebrow('Aspect orb  \u00D7' + (st.orbScale || 1).toFixed(1), x, ly); ly += 20;
       var slw = w - 56, slx = x, sly = sY(ly) + 14;
       var tt = ((st.orbScale || 1) - 0.5) / 1.5, kx = slx + tt * slw;
