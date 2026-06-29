@@ -2584,6 +2584,35 @@ var APP = (function () {
     var sign = (ascSign + age) % 12;
     return { age: age, house: (age % 12) + 1, sign: sign, signName: DATA.SIGNS[sign].name, lord: RULERKEY[DATA.SIGNS[sign].ruler], fromAsc: !!b.timeKnown };
   }
+  // ===== Time-lord stack: monthly profection + Zodiacal Releasing (classical, on-device) =====
+  function monthlyProfection(b) {
+    var ann = profection(b), ageNow = ageYearsNow(b);
+    var fracYear = ageNow - Math.floor(ageNow); if (fracYear < 0) fracYear = 0;
+    var monthsIn = Math.floor(fracYear * 12); if (monthsIn > 11) monthsIn = 11;
+    var sign = (ann.sign + monthsIn) % 12, house = ((ann.house - 1 + monthsIn) % 12) + 1;
+    return { annualSign: ann.sign, monthIndex: monthsIn, sign: sign, signName: DATA.SIGNS[sign].name, house: house, lord: RULERKEY[DATA.SIGNS[sign].ruler], fromAsc: ann.fromAsc };
+  }
+  // Hellenistic planetary-period years by sign 0..11 (Aries..Pisces); Capricorn 27, Aquarius 30.
+  var ZR_YEARS = [15, 8, 20, 25, 19, 20, 8, 15, 12, 27, 30, 12];
+  var ZR_RULER = ['mars', 'venus', 'mercury', 'moon', 'sun', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'saturn', 'jupiter'];
+  function zodiacalReleasing(c, b) {
+    if (!b.timeKnown || !c.ascBody) return null;
+    var sct = sect(c), day = sct ? sct.day : (c.planets.sun.house >= 7 && c.planets.sun.house <= 12);
+    var asc = c.ascBody.lon, su = c.planets.sun.lon, mo = c.planets.moon.lon;
+    var spiritLon = day ? rev(asc + su - mo) : rev(asc + mo - su);          // Lot of Spirit
+    var startSign = Math.floor(spiritLon / 30), ageNow = ageYearsNow(b); if (ageNow < 0) ageNow = 0;
+    var cursor = 0, sign = startSign, l1 = null, guard = 0;
+    while (guard < 240) { var yrs = ZR_YEARS[sign];
+      if (ageNow < cursor + yrs || guard === 239) { l1 = { sign: sign, ruler: ZR_RULER[sign], signName: DATA.SIGNS[sign].name, startAge: cursor, endAge: cursor + yrs, years: yrs }; break; }
+      cursor += yrs; sign = (sign + 1) % 12; guard++; }
+    if (!l1) return null;
+    var totalWeight = 0, w; for (w = 0; w < 12; w++) totalWeight += ZR_YEARS[(l1.sign + w) % 12];
+    var l1len = l1.endAge - l1.startAge, subCursor = l1.startAge, l2 = null;
+    for (w = 0; w < 12; w++) { var s2 = (l1.sign + w) % 12, subLen = l1len * (ZR_YEARS[s2] / totalWeight);
+      if (ageNow < subCursor + subLen || w === 11) { l2 = { sign: s2, ruler: ZR_RULER[s2], signName: DATA.SIGNS[s2].name, startAge: subCursor, endAge: subCursor + subLen }; break; }
+      subCursor += subLen; }
+    return { spiritSign: startSign, spiritSignName: DATA.SIGNS[startSign].name, day: day, ageNow: ageNow, l1: l1, l2: l2 };
+  }
   function progressed(c, b) {
     var pos = EPH.positions(c.d + ageYearsNow(b)), ay = c.ayan || 0;
     var sunLon = rev(pos.sun.lon - ay), moonLon = rev(pos.moon.lon - ay);
@@ -2635,7 +2664,7 @@ var APP = (function () {
   }
   function composeForecast(c) {
     var b = STATE.birth;
-    return { profection: profection(b), progressed: progressed(c, b), solarReturn: solarReturnSummary(c, b), upcoming: upcomingTransits(c, 8), sky: skyStatus() };
+    return { profection: profection(b), monthly: monthlyProfection(b), zr: zodiacalReleasing(c, b), progressed: progressed(c, b), solarReturn: solarReturnSummary(c, b), upcoming: upcomingTransits(c, 8), sky: skyStatus() };
   }
 
   // ---- life timeline: the slow, rare outer transits & returns that mark life chapters ----
@@ -3447,7 +3476,7 @@ var APP = (function () {
     STATE: STATE, save: save, load: load, compute: computeChart,
     composeCore: composeCore, localAsk: localAsk, chartText: chartText,
     composeTransits: composeTransits, transitSentence: transitSentence, composeSignatures: composeSignatures,
-    addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenOf: almutenOf, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide,
+    addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenOf: almutenOf, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide,
     saveCurrentChart: saveCurrentChart, deleteSavedChart: deleteSavedChart, activateSavedChart: activateSavedChart, activeChartKey: activeChartKey, chartKey: chartKey, famousMatches: famousMatches, lifeTransits: lifeTransits, upcomingTransits: upcomingTransits, compositeChart: compositeChart,
     nameFor: nameFor, glyphFor: glyphFor, sgAbbr: sgAbbr, pad: pad,
     domElement: domElement, lowElement: lowElement, domMod: domMod, tzOffsetHours: tzOffsetHours
@@ -4597,6 +4626,8 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         ly += 10; eyebrow('The year ahead', x, ly, ACC); ly += 24;
         var pf = fc2.profection;
         ly += paragraph('You’re in a ' + DATA.SIGNS[pf.sign].name + ' profection year (age ' + pf.age + '): your ' + ordinal(pf.house) + ' house is lit up, and ' + APP.nameFor(pf.lord) + ' is your time‑lord — the planet steering this year.', x, ly, w, 15.5, INK, SERIF, 24) + 10;
+        if (fc2.monthly && fc2.monthly.sign !== pf.sign) { var mp = fc2.monthly; ly += paragraph('Within that, this month profects to ' + mp.signName + ' (your ' + ordinal(mp.house) + ' house), so ' + APP.nameFor(mp.lord) + ' carries the next few weeks specifically.', x, ly, w, 14.5, INK, SERIF, 22) + 10; }
+        if (fc2.zr && fc2.zr.l1) { var z = fc2.zr, zr2 = z.l2 ? (' Inside it you’re in a ' + z.l2.signName + ' sub-chapter (ruled by ' + APP.nameFor(z.l2.ruler) + ').') : ''; ly += paragraph('Zodiacal Releasing from your Lot of Spirit puts you in a ' + z.l1.signName + ' life-chapter (roughly age ' + Math.round(z.l1.startAge) + '–' + Math.round(z.l1.endAge) + '), ruled by ' + APP.nameFor(z.l1.ruler) + ' — the long arc of where your purpose is unfolding.' + zr2, x, ly, w, 14.5, INK, SERIF, 22) + 10; }
         var pg = fc2.progressed;
         ly += paragraph('By secondary progression your inner Sun has moved into ' + DATA.SIGNS[pg.sunSign].name + ' and your progressed Moon is in ' + DATA.SIGNS[pg.moonSign].name + ' — the slow seasons of your becoming.', x, ly, w, 15, INK, SERIF, 23) + 10;
         if (fc2.solarReturn) { var sr = fc2.solarReturn; ly += paragraph('Your next solar return — your astrological birthday chart — lands ' + fmtShort(sr.date) + (sr.ascSign != null ? (', rising ' + DATA.SIGNS[sr.ascSign].name) : '') + ', Moon in ' + DATA.SIGNS[sr.moonSign].name + '.', x, ly, w, 15, INK, SERIF, 23) + 12; }
