@@ -30,8 +30,13 @@ on-device, no server, no API keys.
 - **On-device chart intelligence** (no AI) — your *lunar phase at birth*, your
   Marc-Edmund-Jones *chart shape* (bowl, bucket, locomotive, …), detected
   *aspect patterns* (stellium, grand trine, T-square, yod), *essential
-  dignities*, *sect*, and rare conditions (combust / cazimi / under-beams /
-  out-of-bounds / stationary) — surfaced only when actually present.
+  dignities*, *sect*, *declination parallels & contraparallels*, and rare
+  conditions (combust / cazimi / under-beams / out-of-bounds / stationary) —
+  surfaced only when actually present.
+- **Astrodienst-grade options** (Settings) — **True Node** by default (Mean
+  toggle), optional **minor aspects** (quincunx / sesquiquadrate / semisquare /
+  semisextile), and **Chiron + the four major asteroids** folded into the aspect
+  grid. Positions are arcminute-aligned with Astro.com.
 
 ### In the Tarot screen
 
