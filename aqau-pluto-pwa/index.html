@@ -4714,13 +4714,13 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       }
       // the fuller read — who you are, in depth (the arc above is the summary; this is the detail)
       if (!UI.readCache) UI.readCache = APP.composeCore(c);
-      eyebrow('The fuller read', x, ly, ACC); ly += 24;
+      ly += 10; hairline(x, ly, x + w, 40); ly += 22; eyebrow('The fuller read', x, ly, ACC); ly += 24;
       for (var i = 0; i < UI.readCache.length; i++) ly += expandPara(UI.readCache[i], x, ly, w, 'core' + i, 17, 27) + 10;
       ly += 14;
       // a quick visual of the heaviest three — ranked by the prominence engine (no prose; the arc already explained why)
       if (!UI.promCache) { try { UI.promCache = APP.prominence(c); } catch (epr) { UI.promCache = null; } }
       if (UI.promCache) {
-        eyebrow('What carries the most weight', x, ly, ACC); ly += 24;
+        ly += 10; hairline(x, ly, x + w, 40); ly += 22; eyebrow('What carries the most weight', x, ly, ACC); ly += 24;
         var pr = UI.promCache, pn; for (pn = 0; pn < 3; pn++) {
           var pk = pr.ranked[pn], pp = c.planets[pk]; if (!pp) continue;
           setFont(SANS, 18, ACC, p.LEFT, p.TOP); p.text(APP.glyphFor(pk), x, sY(ly));
@@ -4769,7 +4769,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       // ---- on-device chart intelligence: patterns & signatures (no AI) ----
       if (!UI.readSig) { try { UI.readSig = APP.composeSignatures(c); } catch (e) { UI.readSig = []; } }
       if (UI.readSig && UI.readSig.length) {
-        ly += 8; eyebrow('Patterns in your chart', x, ly, ACC); ly += 26;
+        ly += 14; hairline(x, ly, x + w, 40); ly += 22; eyebrow('Patterns in your chart', x, ly, ACC); ly += 26;
         for (var sgi = 0; sgi < UI.readSig.length; sgi++) {
           var blk = UI.readSig[sgi];
           setFont(MONO, 9.5, INK, p.LEFT, p.TOP, 210); bold(); p.text(blk.label.toUpperCase(), x, sY(ly)); normal(); ly += 17;
@@ -4782,7 +4782,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (!UI.forecast || nowT() - (UI.forecastT || 0) > 3600000) { try { UI.forecast = APP.composeForecast(c); } catch (e) { UI.forecast = null; } UI.forecastT = nowT(); }
       var fc2 = UI.forecast;
       if (fc2) {
-        ly += 10; eyebrow('The year ahead', x, ly, ACC); ly += 24;
+        ly += 16; hairline(x, ly, x + w, 40); ly += 22; eyebrow('The year ahead', x, ly, ACC); ly += 24;
         var pf = fc2.profection;
         ly += paragraph('You’re in a ' + DATA.SIGNS[pf.sign].name + ' profection year (age ' + pf.age + '): your ' + ordinal(pf.house) + ' house is lit up, and ' + APP.nameFor(pf.lord) + ' is your time‑lord — the planet steering this year.', x, ly, w, 15.5, INK, SERIF, 24) + 10;
         if (fc2.monthly && fc2.monthly.sign !== pf.sign) { var mp = fc2.monthly; ly += paragraph('Within that, this month profects to ' + mp.signName + ' (your ' + ordinal(mp.house) + ' house), so ' + APP.nameFor(mp.lord) + ' carries the next few weeks specifically.', x, ly, w, 14.5, INK, SERIF, 22) + 10; }
