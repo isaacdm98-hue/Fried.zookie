@@ -2710,8 +2710,14 @@ var APP = (function () {
     if (b.timeKnown) { var hz = EPH.houses(STATE.settings.house, d, b.lat, b.lon); ascSign = Math.floor(rev(hz.asc - ay) / 30); }
     return { date: when, moonSign: Math.floor(rev(pos.moon.lon - ay) / 30), ascSign: ascSign };
   }
+  // signed daily ecliptic motion of a transiting body (deg/day); negative => retrograde
+  function transitMotion(tk, dt, ay) {
+    var dn = jsDayNum(dt), a = EPH.positions(dn - 0.5)[tk].lon, b = EPH.positions(dn + 0.5)[tk].lon;
+    return sdelta(rev(a - (ay || 0)), rev(b - (ay || 0)));
+  }
   function upcomingTransits(c, months, cap) {
     var transiting = ['mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto'], natal = DATA.PLANET_ORDER;
+    var SLOW = { jupiter: 1, saturn: 1, uranus: 1, neptune: 1, pluto: 1 };
     var t0 = new Date(), days = Math.round((months || 8) * 30.4), step = 2, ay = c.ayan || 0, samples = [], k;
     for (k = 0; k <= days; k += step) { var dt = new Date(t0.getTime() + k * 86400000); samples.push({ dt: dt, pos: EPH.positions(jsDayNum(dt)) }); }
     var events = [], ti, ni, ai;
@@ -2728,7 +2734,8 @@ var APP = (function () {
               if (prev && ((prev.hh <= 0 && hh >= 0) || (prev.hh >= 0 && hh <= 0)) && Math.max(Math.abs(prev.hh), Math.abs(hh)) < 20) {
                 var lo = prev.dt.getTime(), hi = samples[s].dt.getTime(), loSign = prev.hh <= 0, it;
                 for (it = 0; it < 22; it++) { var mid = (lo + hi) / 2, sdm = sdelta(np.lon, rev(EPH.positions(jsDayNum(new Date(mid)))[tk].lon - ay)), hm = sdelta(T, sdm); if ((hm <= 0) === loSign) lo = mid; else hi = mid; }
-                events.push({ date: new Date((lo + hi) / 2), tp: tk, np: nk, aspKey: DATA.ASPECTS[ai].key, glyph: DATA.ASPECTS[ai].glyph, quality: DATA.ASPECTS[ai].quality });
+                var exDate = new Date((lo + hi) / 2), mo = transitMotion(tk, exDate, ay);
+                events.push({ date: exDate, tp: tk, np: nk, aspKey: DATA.ASPECTS[ai].key, glyph: DATA.ASPECTS[ai].glyph, quality: DATA.ASPECTS[ai].quality, target: T, rx: mo < 0, slow: SLOW[tk] ? true : false });
               }
               prev = { dt: samples[s].dt, hh: hh };
             }
@@ -2737,8 +2744,29 @@ var APP = (function () {
       }
     }
     events.sort(function (x, y) { return x.date - y.date; });
-    var out = [], e, o; for (e = 0; e < events.length; e++) { var ev = events[e], dup = false; for (o = 0; o < out.length; o++) if (out[o].tp === ev.tp && out[o].np === ev.np && out[o].aspKey === ev.aspKey && Math.abs(out[o].date - ev.date) < 20 * 86400000) { dup = true; break; } if (!dup) out.push(ev); }
-    return out.slice(0, cap || 10);
+    // applying vs separating as of NOW: compare |offset to target| now vs +4 days
+    var nowMs = t0.getTime(), ev0, p0Pos = samples.length ? samples[0].pos : EPH.positions(jsDayNum(t0));
+    for (ev0 = 0; ev0 < events.length; ev0++) {
+      var E = events[ev0], npE = c.planets[E.np];
+      var sdNow = sdelta(npE.lon, rev(p0Pos[E.tp].lon - ay)), gNow = sdelta(E.target, sdNow);
+      var ahead = new Date(nowMs + 4 * 86400000), sdA = sdelta(npE.lon, rev(EPH.positions(jsDayNum(ahead))[E.tp].lon - ay)), gA = sdelta(E.target, sdA);
+      E.applying = Math.abs(gA) < Math.abs(gNow);
+    }
+    // dedup near-identical exact dates (same tp/np/aspKey within 20d), keep earliest
+    var dedup = [], e, o; for (e = 0; e < events.length; e++) { var ev = events[e], dup = false; for (o = 0; o < dedup.length; o++) if (dedup[o].tp === ev.tp && dedup[o].np === ev.np && dedup[o].aspKey === ev.aspKey && Math.abs(dedup[o].date - ev.date) < 20 * 86400000) { dup = true; break; } if (!dup) dedup.push(ev); }
+    // group slow-planet multi-passes (same tp/np/aspKey/target within <=300d) into one event with all dates
+    var grouped = [], g, h;
+    for (g = 0; g < dedup.length; g++) {
+      var cur = dedup[g];
+      if (!cur.slow) { grouped.push(cur); continue; }
+      var host = null;
+      for (h = 0; h < grouped.length; h++) { var G = grouped[h]; if (G.slow && G.tp === cur.tp && G.np === cur.np && G.aspKey === cur.aspKey && G.target === cur.target && Math.abs(cur.date - G.firstDate) <= 300 * 86400000) { host = G; break; } }
+      if (host) { host.passes.push({ date: cur.date, rx: cur.rx }); }
+      else { cur.passes = [{ date: cur.date, rx: cur.rx }]; cur.firstDate = cur.date.getTime(); grouped.push(cur); }
+    }
+    for (g = 0; g < grouped.length; g++) { var GG = grouped[g]; if (GG.passes && GG.passes.length) { GG.passes.sort(function (x, y) { return x.date - y.date; }); GG.date = GG.passes[0].date; GG.rx = GG.passes[0].rx; GG.multi = GG.passes.length > 1; } }
+    grouped.sort(function (x, y) { return x.date - y.date; });
+    return grouped.slice(0, cap || 10);
   }
   function composeForecast(c) {
     var b = STATE.birth;
@@ -3555,7 +3583,7 @@ var APP = (function () {
     composeCore: composeCore, localAsk: localAsk, chartText: chartText,
     composeTransits: composeTransits, transitSentence: transitSentence, composeSignatures: composeSignatures,
     addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenOf: almutenOf, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide,
-    saveCurrentChart: saveCurrentChart, deleteSavedChart: deleteSavedChart, activateSavedChart: activateSavedChart, activeChartKey: activeChartKey, chartKey: chartKey, famousMatches: famousMatches, lifeTransits: lifeTransits, upcomingTransits: upcomingTransits, compositeChart: compositeChart,
+    saveCurrentChart: saveCurrentChart, deleteSavedChart: deleteSavedChart, activateSavedChart: activateSavedChart, activeChartKey: activeChartKey, chartKey: chartKey, famousMatches: famousMatches, lifeTransits: lifeTransits, upcomingTransits: upcomingTransits, transitMotion: transitMotion, compositeChart: compositeChart,
     nameFor: nameFor, glyphFor: glyphFor, sgAbbr: sgAbbr, pad: pad,
     domElement: domElement, lowElement: lowElement, domMod: domMod, tzOffsetHours: tzOffsetHours
   };
@@ -3692,6 +3720,8 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     function pad2(n) { return (n < 10 ? '0' : '') + n; }
     function ordinal(n) { var s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
     function fmtShort(dt) { var mo = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']; return dt.getDate() + ' ' + mo[dt.getMonth()] + ' ' + dt.getFullYear(); }
+    // a multi-pass retrograde transit's later exact dates, e.g. ", again (Rx) 4 Aug 2026, final 12 Dec 2026"
+    function passTail(ev) { if (!ev.passes || ev.passes.length < 2) return ''; var s = '', i; for (i = 1; i < ev.passes.length; i++) { var pp = ev.passes[i]; s += ', ' + (i === ev.passes.length - 1 ? 'final' : 'again') + (pp.rx ? ' (Rx)' : '') + ' ' + fmtShort(pp.date); } return s; }
 
     // ---- layout ----
     function isWide() { return W >= 1000; } // desktop / large tablet in landscape
@@ -4718,8 +4748,12 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
           setFont(SANS, 13.5, INK, p.LEFT, p.CENTER); p.text(APP.glyphFor(ev.tp), x + 84, sY(ly + 15));
           var qc = ev.quality; setFont(SANS, 12, (qc === 'flow' || qc === 'opportunity') ? ELHUE.air : (qc === 'fusion' ? INK : ACC), p.CENTER, p.CENTER); bold(); p.text(ev.glyph, x + 104, sY(ly + 15)); normal();
           setFont(SANS, 13.5, INK, p.LEFT, p.CENTER); p.text(APP.glyphFor(ev.np), x + 120, sY(ly + 15));
-          setFont(MONO, 9.5, INK, p.LEFT, p.CENTER, 170); p.text(APP.nameFor(ev.tp) + ' ' + ev.aspKey + ' ' + APP.nameFor(ev.np), x + 140, sY(ly + 15));
-          ly += 28;
+          setFont(MONO, 9.5, INK, p.LEFT, p.CENTER, 170); p.text(APP.nameFor(ev.tp) + ' ' + ev.aspKey + ' ' + APP.nameFor(ev.np) + (ev.rx ? ' ℞' : ''), x + 140, sY(ly + 15));
+          ly += 26;
+          // detail: applying/separating now, and the retrograde triple-pass dates if any
+          var det = ev.applying ? 'applying — building toward exact' : 'separating — past its peak';
+          if (ev.multi) det = (ev.passes.length >= 3 ? 'three passes' : 'two passes') + ' as ' + APP.nameFor(ev.tp) + ' stations: exact ' + fmtShort(ev.passes[0].date) + passTail(ev);
+          setFont(MONO, 8.5, ACCTX, p.LEFT, p.TOP, 190); ly += paragraph(det, x + 84, ly, w - 84, 10.5, ACCTX, MONO, 14, 190) + 8;
         } }
         ly += 6;
         // best-days planner — the same transits, turned into days to plan around
