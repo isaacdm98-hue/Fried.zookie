@@ -2725,29 +2725,29 @@ var APP = (function () {
     var su = c.planets.sun, mo = c.planets.moon, asc = (b.timeKnown && c.ascBody) ? c.ascBody : null;
     var dom = domElement(c.elements), dm = domMod(c.modalities);
     out.push({ label: 'At a glance', text:
-      'A ' + su.signName + ' Sun' + (asc ? ', a ' + asc.signName + ' Ascendant' : '') + ' and a ' + mo.signName + ' Moon. The chart leans ' + DATA.ELEMENTS[dom].name.toLowerCase() + ' — ' + DATA.ELEMENTS[dom].high + ' — and meets life by ' + (MODE_VERB[dm] || 'finding its own rhythm') + '.' });
+      'A ' + su.signName + ' Sun' + (asc ? ', a ' + asc.signName + ' Ascendant' : '') + ' and a ' + mo.signName + ' Moon. The chart leans ' + DATA.ELEMENTS[dom].name.toLowerCase() + ': ' + DATA.ELEMENTS[dom].high + '. You meet life by ' + (MODE_VERB[dm] || 'finding your own rhythm') + '.' });
     // 2) WHAT RUNS IT — the single keystone everything answers to
     var pr = prominence(c), top = pr.ranked[0], am = null, fd = null; try { am = almutenChart(c); } catch (e1) {} try { fd = finalDispositors(c); } catch (e2) {}
     var converge = (am && am.tie.length === 1 && am.lead === top && fd && fd.all.length === 1 && fd.lead === top);
     out.push({ label: 'What runs it', text:
-      nameFor(top) + ' runs your chart — ' + (DATA.PLANETS[top] ? DATA.PLANETS[top].fn : '') + '. ' +
-      (converge ? 'Three independent measures agree on it: essential dignity, the dispositor chains, and sheer prominence. It is the hand on everything else.'
-                : 'It carries the most weight here (' + pr.why[top].slice(0, 2).join(', ') + '), so the rest of you keeps negotiating with it.') });
+      nameFor(top) + ' runs your chart: ' + (DATA.PLANETS[top] ? DATA.PLANETS[top].fn : '') + '. ' +
+      (converge ? 'Three independent measures agree on this. Essential dignity, the dispositor chains and sheer prominence all point to the same planet. It is the hand on everything else.'
+                : 'It carries the most weight here, by ' + pr.why[top].slice(0, 2).join(' and ') + '. The rest of you keeps negotiating with it.') });
     // 3) THE WORK — the one friction that actually grows you
     var hard = null; for (i = 0; i < c.aspects.length; i++) { var q = c.aspects[i].asp.quality; if (q === 'friction' || q === 'tension' || q === 'fusion') { hard = c.aspects[i]; break; } }
     var cond = chartConditions(c, b);
     var etxt;
-    if (hard) { var meaning = pairAspectText(hard.a, hard.b, hard.asp.key); etxt = 'The friction that grows you is ' + nameFor(hard.a) + ' ' + hard.asp.key + ' ' + nameFor(hard.b) + ' — ' + (meaning || hard.asp.phrase) + '. Worked with, it becomes your spine; ignored, it’s where you keep tripping.'; }
-    else { etxt = 'Your planets mostly run free of one another, so no single tension is handed to you — the growth is in choosing your own discipline rather than reacting to a built-in one.'; }
-    if (pr.oosMalefic && c.planets[pr.oosMalefic]) etxt += ' Handle ' + nameFor(pr.oosMalefic) + ' with the most care — as the malefic out of sect, it asks the most maturity of you.';
+    if (hard) { var meaning = pairAspectText(hard.a, hard.b, hard.asp.key); etxt = 'The friction that grows you is ' + nameFor(hard.a) + ' ' + hard.asp.key + ' ' + nameFor(hard.b) + '. ' + capit(meaning || hard.asp.phrase) + '. Worked with, it becomes your backbone. Ignored, it is where you keep tripping.'; }
+    else { etxt = 'Your planets mostly run free of one another, so no single tension is handed to you. The growth here is in choosing your own discipline, rather than reacting to a built-in one.'; }
+    if (pr.oosMalefic && c.planets[pr.oosMalefic]) etxt += ' Handle ' + nameFor(pr.oosMalefic) + ' with the most care. As the malefic out of sect, it asks the most maturity of you.';
     if (cond.length) etxt += ' ' + conditionLine(cond[0]);
     out.push({ label: 'The work', text: etxt });
     // 4) WHERE IT'S HEADING — direction of travel + the season you're in
     var nodeSign = (c.points && c.points.trueNode) ? c.points.trueNode.sign : (c.planets.node ? c.planets.node.sign : null), atxt = '';
     if (nodeSign != null) atxt += 'Over a lifetime your North Node in ' + DATA.SIGNS[nodeSign].name + ' pulls you toward ' + DATA.SIGNS[nodeSign].style + '. ';
     var fc = null; try { fc = composeForecast(c); } catch (e3) {}
-    if (fc && fc.profection) atxt += 'This year is a ' + DATA.SIGNS[fc.profection.sign].name + ' profection year, run by ' + nameFor(fc.profection.lord) + ' — that’s the planet to watch in the months ahead.';
-    if (!atxt) atxt = 'The chart sets the weather, never the destination — where you take it is yours.';
+    if (fc && fc.profection) atxt += 'This year is a ' + DATA.SIGNS[fc.profection.sign].name + ' profection year, run by ' + nameFor(fc.profection.lord) + '. That is the planet to watch in the months ahead.';
+    if (!atxt) atxt = 'The chart sets the weather, never the destination. Where you take it is yours.';
     out.push({ label: 'Where it’s heading', text: atxt });
     return out;
   }
@@ -2957,15 +2957,15 @@ var APP = (function () {
     jupiter: 'a season of opening and a wider horizon',
     saturn: 'a season of weight, testing and proving yourself',
     uranus: 'a jolt of awakening and a break for freedom',
-    neptune: 'a tide of dreaming, longing and dissolving edges',
-    pluto: 'a deep churning — power, loss and rebirth'
+    neptune: 'a tide of dreaming, longing and softening edges',
+    pluto: 'a deep churning of power, loss and rebirth'
   };
   var MOVER_ADVICE = {
-    jupiter: 'Say yes to what genuinely grows you — just don’t overreach.',
-    saturn: 'Do the unglamorous work; what you build now is what lasts.',
+    jupiter: 'Say yes to what genuinely grows you, but don’t overreach.',
+    saturn: 'Do the unglamorous work. What you build now is what lasts.',
     uranus: 'Loosen your grip and let the change move through you.',
     neptune: 'Stay gentle with yourself, and don’t sign anything blind.',
-    pluto: 'Let what is ending actually end — you’re being remade.'
+    pluto: 'Let what is ending actually end. You are being remade.'
   };
   var TARGET_SHOWS = {
     sun: 'your confidence, vitality and sense of who you are',
@@ -3034,22 +3034,22 @@ var APP = (function () {
     return nameFor(ev.tp) + ' ' + av + ' ' + (ev.np === 'asc' ? 'Asc' : ev.np === 'mc' ? 'MC' : nameFor(ev.np));
   }
   var LIFE_ACT = { 0: 'crosses', 90: 'squares', 180: 'opposes' };
-  var LIFE_FEEL = { 0: 'switching it fully on', 90: 'forcing a real adjustment whether you choose it or not', 180: 'bringing it to a head, usually through other people' };
-  var MOVER_TASK = { jupiter: 'say yes to what genuinely grows you, without overreaching', saturn: 'do the unglamorous work and build something that lasts', uranus: 'loosen your grip and let the change move through you', neptune: 'stay gentle and clear-eyed, and sign nothing blind', pluto: 'let what is ending actually end — you are being remade' };
+  var LIFE_FEEL = { 0: 'It switches that part of you fully on.', 90: 'It forces a real adjustment, whether you choose it or not.', 180: 'It tends to come to a head through other people.' };
+  var MOVER_TASK = { jupiter: 'say yes to what genuinely grows you, without overreaching', saturn: 'do the unglamorous work and build something that lasts', uranus: 'loosen your grip and let the change move through you', neptune: 'stay gentle and clear-eyed, and sign nothing blind', pluto: 'let what is ending actually end, because you are being remade' };
   function lifeText(ev, c) {
-    if (ev.isReturn && ev.tp === 'saturn') return ev.age < 40 ? 'Age ' + Math.round(ev.age) + ': your first Saturn return — the real start of adulthood. You build the life that is actually yours and shoulder its weight. Demanding, and the making of you.' : 'Age ' + Math.round(ev.age) + ': your second Saturn return — a reckoning with what you have built and what you want the rest of it to mean. Mastery, and letting finished things go.';
-    if (ev.isReturn && ev.tp === 'jupiter') return 'Age ' + Math.round(ev.age) + ': a fresh ~12-year Jupiter cycle opens — room to grow, travel, study and believe in something larger. Plant now what you want to harvest over the next decade.';
-    if (ev.isReturn && ev.tp === 'uranus') return 'Age ' + Math.round(ev.age) + ': your Uranus return — a whole lifetime’s arc of freedom comes full circle. Permission to be exactly, unapologetically yourself.';
-    if (ev.isReturn && (ev.tp === 'neptune' || ev.tp === 'pluto')) return 'Age ' + Math.round(ev.age) + ': a rare return of ' + nameFor(ev.tp) + ' — a deep, generational tide swinging back through where it stood at your birth.';
-    if (ev.tp === 'uranus' && ev.np === 'uranus' && ev.ang === 180) return 'Age ' + Math.round(ev.age) + ': the midlife awakening — a restless pull to live more truly, even if it shakes up what you had carefully settled into. The question becomes “is this actually mine?”';
-    // every non-return line is stamped with age, year, the natal point’s real sign + house, and an aspect-specific verb,
+    if (ev.isReturn && ev.tp === 'saturn') return ev.age < 40 ? 'Age ' + Math.round(ev.age) + ': your first Saturn return, the real start of adulthood. You build the life that is genuinely yours, and shoulder its weight. It is demanding, and the making of you.' : 'Age ' + Math.round(ev.age) + ': your second Saturn return. A reckoning with what you have built, and what you want the rest of it to mean. This is mastery, and learning to let finished things go.';
+    if (ev.isReturn && ev.tp === 'jupiter') return 'Age ' + Math.round(ev.age) + ': a fresh twelve-year Jupiter cycle opens. There is room to grow, travel, study and believe in something larger. Plant now what you want to harvest over the next decade.';
+    if (ev.isReturn && ev.tp === 'uranus') return 'Age ' + Math.round(ev.age) + ': your Uranus return. A whole lifetime’s arc of freedom comes full circle. This is permission to be exactly, unapologetically yourself.';
+    if (ev.isReturn && (ev.tp === 'neptune' || ev.tp === 'pluto')) return 'Age ' + Math.round(ev.age) + ': a rare return of ' + nameFor(ev.tp) + '. A deep, generational tide swings back through where it stood at your birth.';
+    if (ev.tp === 'uranus' && ev.np === 'uranus' && ev.ang === 180) return 'Age ' + Math.round(ev.age) + ': the midlife awakening. A restless pull to live more truly, even if it unsettles what you had carefully arranged. The question becomes “is this actually mine?”';
+    // every non-return line is stamped with age, year, the natal point’s real sign and house, and an aspect-specific verb,
     // so no two life moments can read the same and none are vague.
     var nlon = c ? natalLonOf(c, ev.np) : null;
     var sgN = (nlon != null) ? DATA.SIGNS[Math.floor(rev(nlon) / 30)].name : null;
     var hs = (ev.np !== 'asc' && ev.np !== 'mc' && c && c.planets[ev.np]) ? c.planets[ev.np].house : null;
     var who = ev.np === 'asc' ? 'rising sign' : ev.np === 'mc' ? 'Midheaven' : nameFor(ev.np);
     var loc = (sgN ? ' in ' + sgN : '') + (hs ? ', ' + ordinal(hs) + ' house' : '');
-    return 'Age ' + Math.round(ev.age) + ' (' + ev.date.getFullYear() + '): ' + nameFor(ev.tp) + ' ' + (LIFE_ACT[ev.ang] || 'contacts') + ' your ' + who + loc + ' — ' + (MOVER_NOUN[ev.tp] || 'a turning point') + ', ' + (LIFE_FEEL[ev.ang] || '') + '. It plays out through ' + targetArea(ev.np, ev.age) + '; the task is to ' + (MOVER_TASK[ev.tp] || 'meet it consciously') + '.';
+    return 'Age ' + Math.round(ev.age) + ' (' + ev.date.getFullYear() + '). ' + nameFor(ev.tp) + ' ' + (LIFE_ACT[ev.ang] || 'meets') + ' your ' + who + loc + '. This is ' + (MOVER_NOUN[ev.tp] || 'a turning point') + '. ' + (LIFE_FEEL[ev.ang] || '') + ' It plays out through ' + targetArea(ev.np, ev.age) + '. The task is to ' + (MOVER_TASK[ev.tp] || 'meet it consciously') + '.';
   }
 
   // ================= extra information layers =================
@@ -4748,7 +4748,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var x = sx(), w = cw(), ly = 18, gi = cl01(1 - (nowT() - UI.fxT) / 500);
       flatBtn('‹ Read', x, ly, 100, 36, function () { UI.lifeView = false; UI.scroll.read = 0; }, false, true); ly += 50;
       p.textStyle(p.BOLD); glitchText('Your life', x, sY(ly), 32, SANS, INK, p.LEFT, p.TOP, gi); normal(); ly += 42;
-      ly += paragraph('The rare, slow transits and planetary returns that mark the real chapters of a life — what was likely stirring then, and what’s ahead. Astrology as weather, not fate.', x, ly, w, 14.5, INK, SERIF, 22, 205) + 14;
+      ly += paragraph('The rare, slow transits and planetary returns that mark the real chapters of a life. What was likely stirring then, and what is ahead. Astrology as weather, not fate.', x, ly, w, 14.5, INK, SERIF, 22, 205) + 14;
       flatBtn('Play as a journey', x, ly, w, 46, function () { UI.lifeWalk = { i: 0, t0: nowT() }; }, true); ly += 60;
       var ev = UI.lifeList, nowMs = new Date().getTime(), lineX = x + 16, i, nowDrawn = false;
       strokec(INK, 45); p.strokeWeight(2); var topLine = sY(ly), botLine = sY(ly + ev.length * 96 + 40); p.line(lineX, topLine, lineX, botLine);
@@ -4864,7 +4864,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       // then the journeys: life-in-chapters timeline
       var lbY = sY(ly); p.noStroke(); fillc(INK); p.rect(x, lbY + 3, w, 52, 11); fillc(shade(INK, 16)); p.rect(x, lbY, w, 52, 11);
       setFont(SANS, 15, GROUNDS[UI.screen], p.LEFT, p.CENTER); bold(); p.text('✦  Your life in chapters', x + 16, lbY + 26 - 8); normal();
-      setFont(MONO, 9, GROUNDS[UI.screen], p.LEFT, p.CENTER, 200); p.text('THE BIG TRANSITS THAT SHAPED — AND ARE SHAPING — YOU', x + 16, lbY + 26 + 9);
+      setFont(MONO, 9, GROUNDS[UI.screen], p.LEFT, p.CENTER, 200); p.text('THE BIG TRANSITS THAT SHAPED YOU, AND STILL ARE', x + 16, lbY + 26 + 9);
       setFont(SANS, 20, GROUNDS[UI.screen], p.RIGHT, p.CENTER); p.text('›', x + w - 16, lbY + 26);
       pushHit(x, lbY, w, 52, function () { UI.lifeView = true; UI.scroll.read = 0; UI.popT = nowT(); }); ly += 60;
       // open the transit calendar
