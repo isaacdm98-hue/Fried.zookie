@@ -1314,8 +1314,40 @@ var DATA = (function () {
     houses: 'The twelve houses are the Hellenistic “places” (topoi), each a department of life: from the 1st (the body and self) to the 12th (the hidden, the undoing, what is behind the scenes).',
     aspects: 'These are the Ptolemaic aspects — conjunction, sextile, square, trine and opposition — the geometric angles Ptolemy held to carry real force between two planets.'
   };
+  // Per-planet traditional significations (our own words) paired with a genuinely public-domain line.
+  // Ptolemy quotes are the Ashmand translation (1822, PD); Lilly is Christian Astrology (1647, PD), spelling
+  // lightly modernised, ellipses marking omission. The outer planets postdate the classical canon — said so plainly.
+  var PLANET_TRAD = {
+    sun: { sig: 'Vitality, the will, the heart and the essential self — the father, the sovereign, and what you were born to shine at. One of the two Lights, the chart’s source of life.', q: 'The active influence of the Sun is found to be heating and, in a certain degree, drying.', src: 'Ptolemy, Tetrabiblos (Ashmand trans., 1822)' },
+    moon: { sig: 'The body’s instincts, the tides of mood and memory, the mother and what makes you feel safe — the receptive Light that mirrors, carries and tends.', q: 'The Moon’s power consists chiefly in moistening, being near the earth and disposed to the humours thereof.', src: 'Ptolemy, Tetrabiblos (Ashmand trans., 1822)' },
+    mercury: { sig: 'The mind, speech, reason, trade and the messenger between people — quick and adaptable, taking colour from whatever it touches.', q: 'Mercury… presaging a subtle and politic brain, an excellent disputant or logician, arguing with learning and discretion.', src: 'William Lilly, Christian Astrology (1647)' },
+    venus: { sig: 'Love, pleasure, beauty, art and union — what and whom you value, and the urge to make peace and to delight. Traditionally the Lesser Fortune.', q: 'The power of Venus is temperate… and chiefly disposed to moisture.', src: 'Ptolemy, Tetrabiblos (Ashmand trans., 1822)' },
+    mars: { sig: 'Drive, courage, anger and desire — the cutting edge, the will to act and to fight. The Lesser Infortune: heat that must be well aimed.', q: 'The power of Mars is principally to dry and to burn, conformably to his fiery colour.', src: 'Ptolemy, Tetrabiblos (Ashmand trans., 1822)' },
+    jupiter: { sig: 'Growth, faith, abundance, wisdom and generosity — the wider horizon and the urge to expand and to bless. The Greater Fortune.', q: 'The power of Jupiter is temperate… and is consequently fructifying.', src: 'Ptolemy, Tetrabiblos (Ashmand trans., 1822)' },
+    saturn: { sig: 'Time, limit, structure and fear — the slow discipline that endures, and the weight that makes you grow up. The Greater Infortune, keeper of boundaries.', q: 'The power of Saturn is principally to cool, and moderately to dry.', src: 'Ptolemy, Tetrabiblos (Ashmand trans., 1822)' },
+    uranus: { sig: 'Freedom, shock, genius and revolt — the break for independence and the lightning that overturns. Unknown to the classical authors (discovered 1781); its meaning is a modern reading.' },
+    neptune: { sig: 'Dreams, longing, compassion and dissolving edges — the mystic, the artist and the escape. Unknown to the ancients (discovered 1846); a modern signification.' },
+    pluto: { sig: 'Power, depth, death and rebirth — what is buried, what is shared under pressure, and what is utterly transformed. Unknown to the tradition (discovered 1930); a modern reading.' }
+  };
+  // Per-house significations after William Lilly, Christian Astrology (1647, PD) — our summary, then his own line.
+  var HOUSE_TRAD = [
+    { sig: 'The body and the life itself — your appearance, vitality, temperament and the way you meet the world.', q: 'It signifieth the life of man… the stature, colour, complexion, form and shape of him.' },
+    { sig: 'What you own and what you’re worth — money, possessions, resources, and the things you can move and use.', q: 'It signifieth the estate or fortune of the querent, his wealth or poverty, all moveable goods, money lent.' },
+    { sig: 'Brothers and sisters, neighbours and everyday talk — short journeys, letters, messages and the near world.', q: 'It signifieth brethren, sisters, kinsfolk… short journeys, letters, rumours, messengers.' },
+    { sig: 'Home, family roots and the father — land, inheritance, and the ground you come from and return to.', q: 'It hath signification of fathers… of lands, houses, tenements, inheritances.' },
+    { sig: 'Children, romance, creativity and play — pleasure, delight and everything you make for joy.', q: 'It ruleth children… pleasure, delight, banquets, ale-houses, taverns.' },
+    { sig: 'Work, health and daily service — the body’s upkeep, routines, and those who labour with and for you.', q: 'It concerneth sickness… servants, labour, and small cattle.' },
+    { sig: 'Partnership and marriage — the close other, open enemies, contracts and what you meet face to face.', q: 'It giveth judgement of marriage… the open enemy, and law-suits.' },
+    { sig: 'Death and inheritance, what is shared and what is hidden — other people’s resources, and deep change.', q: 'It signifieth the estate of men deceased, death… dowry, fear and anguish of mind.' },
+    { sig: 'The far horizon — long journeys, religion, philosophy, learning and dreams; the search for meaning.', q: 'It hath signification of voyages or long journeys… religion, dreams, and learning.' },
+    { sig: 'Career, calling and public standing — honour, authority, reputation and what you’re known for.', q: 'It signifieth Kings, Princes… honour, preferment, dignity, profession or trade.' },
+    { sig: 'Friends, allies and community — hopes, wishes and the wider circle that carries you forward.', q: 'It signifieth friends… hope, trust, confidence, the praise or dispraise of a man.' },
+    { sig: 'The hidden and the undone — solitude, retreat, secrets, self-undoing, and what works behind the scenes.', q: 'It signifieth private enemies… imprisonment, all manner of affliction, and sorrow.' }
+  ];
+  var TRAD_SRC_LILLY = 'William Lilly, Christian Astrology (1647)';
   return {
     PLANETS: PLANETS, PLANET_ORDER: PLANET_ORDER, SIGNS: SIGNS, TRADITION: TRADITION,
+    PLANET_TRAD: PLANET_TRAD, HOUSE_TRAD: HOUSE_TRAD, TRAD_SRC_LILLY: TRAD_SRC_LILLY,
     SUN_IN_SIGN: SUN_IN_SIGN, MOON_IN_SIGN: MOON_IN_SIGN, RISING_IN_SIGN: RISING_IN_SIGN, PLANET_SIGN_TEXT: PLANET_SIGN_TEXT,
     HOUSES: HOUSES, ASPECTS: ASPECTS, MINOR_ASPECTS: MINOR_ASPECTS, ELEMENTS: ELEMENTS, MODALITIES: MODALITIES,
     TAROT: TAROT, SUIT_KW: SUIT_KW, SPREADS: SPREADS, CITIES: CITIES
@@ -2627,6 +2659,19 @@ var APP = (function () {
     for (i = 0; i < out.length; i++) { var bl = out[i]; if (bl.lines) { res.push(bl); continue; } if (!bl.text) continue; sig = bl.text.toLowerCase().replace(/[^a-z0-9 ]/g, '').slice(0, 55); if (seen[sig]) continue; seen[sig] = 1; res.push(bl); }
     return res;
   }
+  // From the tradition, on your chart — genuine public-domain lines tied to the placements you actually carry
+  // (your keystone planet, your busiest house, any planet in its joy), never as a generic epigraph.
+  function traditionFor(c) {
+    var lines = [], pr; try { pr = prominence(c); } catch (e) { pr = null; }
+    var top = (pr && pr.ranked && pr.ranked.length) ? pr.ranked[0] : 'sun', pt = DATA.PLANET_TRAD[top];
+    if (pt) { var lead = nameFor(top) + ' carries the most weight in your chart. ' + pt.sig; if (pt.q) lead += '  “' + pt.q + '” — ' + pt.src + '.'; lines.push(lead); }
+    if (STATE.birth.timeKnown) {
+      var counts = {}, best = -1, bestH = -1, i; for (i = 0; i < DATA.PLANET_ORDER.length; i++) { var pl = c.planets[DATA.PLANET_ORDER[i]]; if (pl && pl.house) { counts[pl.house] = (counts[pl.house] || 0) + 1; if (counts[pl.house] > best) { best = counts[pl.house]; bestH = pl.house; } } }
+      if (bestH > 0 && best >= 2) { var ht = DATA.HOUSE_TRAD[bestH - 1]; if (ht) lines.push('Your busiest place is the ' + ordinal(bestH) + ' house, with ' + best + ' planets gathered there. ' + ht.sig + '  “' + ht.q + '” — ' + DATA.TRAD_SRC_LILLY + '.'); }
+    }
+    var joys = planetJoys(c); if (joys.length) { var j = joys[0]; lines.push(nameFor(j.key) + ' sits in its joy in the ' + ordinal(j.house) + ' house — ' + j.why + '. The Hellenistic astrologers held this the one place where it is most fully at home.'); }
+    return lines;
+  }
   function composeSignatures(c) {
     var out = [], th = composeThemes(c), ti;
     for (ti = 0; ti < th.length; ti++) out.push({ label: ti === 0 ? 'The throughline' : 'Also running through you', text: th[ti] });
@@ -2645,7 +2690,7 @@ var APP = (function () {
     var rr = natalRetros(c);
     if (rr.length) out.push({ label: 'Born retrograde', text: rr.map(nameFor).join(', ') + ' ' + (rr.length === 1 ? 'was' : 'were') + ' retrograde at your birth — that energy turns inward first: more reflective, reworked, personal before it’s expressed outwardly.' });
     var fs = starsOn(c);
-    if (fs.length) out.push({ label: 'Fixed stars', text: fs.map(function (s) { return nameFor(s.planet) + ' on ' + s.star + ' (' + s.m + ')'; }).join('; ') + '.' });
+    if (fs.length) out.push({ label: 'Fixed stars', text: fs.map(function (s) { return nameFor(s.planet) + ' on ' + s.star + (s.nat ? ' (of ' + s.nat + ' nature)' : '') + ' — ' + s.m; }).join('; ') + '. Star natures after Vivian Robson, The Fixed Stars and Constellations in Astrology (1923).' });
     if (c.extras) {
       var exKeys = ['chiron', 'ceres', 'pallas', 'juno', 'vesta'], exLines = [], xi;
       for (xi = 0; xi < exKeys.length; xi++) { var xb = c.extras[exKeys[xi]]; if (xb) exLines.push(nameFor(exKeys[xi]) + ' in ' + xb.signName + ' — ' + (DATA.PLANETS[exKeys[xi]] ? DATA.PLANETS[exKeys[xi]].fn : '') + '.'); }
@@ -2663,6 +2708,10 @@ var APP = (function () {
     if (cond.length) out.push({ label: 'Rare conditions', lines: cond.map(conditionLine) });
     var dpar = declAspects(c);
     if (dpar.length) out.push({ label: 'Declination aspects (parallels)', lines: dpar.slice(0, 4).map(declAspectLine) });
+    var joys = planetJoys(c);
+    if (joys.length) out.push({ label: 'Planets in their joy', text: joys.map(function (j) { return nameFor(j.key) + ' in the ' + ordinal(j.house) + ' (' + j.why + ')'; }).join('; ') + '. In the Hellenistic scheme a planet in its joy works with unusual ease — it is at home in that department of life.' });
+    var trad = traditionFor(c);
+    if (trad.length) out.push({ label: 'From the tradition, on your chart', lines: trad });
     var bc = balanceCoaching(c);
     out.push({ label: 'Where you’re light', text: bc.join(' ') });
     return dropDupBlocks(out);
@@ -3019,17 +3068,51 @@ var APP = (function () {
     return { decan: d + 1, rulerName: rn, ruler: RULERKEY[rn] };
   }
   function degreeNote(deg) { var d = Math.floor(deg); if (d === 0) return 'at 0° — a raw, first-breath expression of the sign'; if (d === 29) return 'at the 29° anaretic degree — urgency, and a lesson nearly mastered'; return null; }
+  // Natures and meanings follow Vivian Robson, *The Fixed Stars and Constellations in Astrology* (1923,
+  // public domain), summarised in our own words; tropical longitudes are for ~J2000 (precession ~50″/yr).
   var FIXED_STARS = [
-    { n: 'Algol', lon: 56.2, m: 'intensity; the thing you must not look away from' }, { n: 'Aldebaran', lon: 69.8, m: 'integrity and courage, the warrior’s eye' },
-    { n: 'Rigel', lon: 76.8, m: 'teaching and bringing knowledge' }, { n: 'Betelgeuse', lon: 88.8, m: 'success won through sheer grit' },
-    { n: 'Sirius', lon: 104.1, m: 'brilliance, the sacred fire, renown' }, { n: 'Regulus', lon: 149.9, m: 'leadership and honour — lost only through revenge' },
-    { n: 'Spica', lon: 204.0, m: 'a gift, brilliance, protection' }, { n: 'Arcturus', lon: 204.3, m: 'a pioneering new path' },
-    { n: 'Antares', lon: 249.9, m: 'passion and war; all or nothing' }, { n: 'Vega', lon: 285.4, m: 'art, magic, charisma' }, { n: 'Fomalhaut', lon: 334.0, m: 'idealism and fated, mystical gifts' }
+    { n: 'Difda', lon: 2.6, m: 'self-undoing turned to discipline; forced change that finally frees you', nat: 'Saturn' },
+    { n: 'Mirach', lon: 30.4, m: 'beauty, devotion and a gift for drawing the right people close', nat: 'Venus' },
+    { n: 'Hamal', lon: 37.7, m: 'force of will; the readiness to do what it takes to get free', nat: 'Mars/Saturn' },
+    { n: 'Menkar', lon: 44.3, m: 'the throat and the voice; tested through others’ troubles, a fated pull', nat: 'Saturn' },
+    { n: 'Algol', lon: 56.2, m: 'intensity; the thing you must not look away from', nat: 'Saturn/Jupiter' }, { n: 'Aldebaran', lon: 69.8, m: 'integrity and courage, the warrior’s eye', nat: 'Mars' },
+    { n: 'Rigel', lon: 76.8, m: 'teaching and bringing knowledge', nat: 'Jupiter/Mars' }, { n: 'Bellatrix', lon: 80.9, m: 'swift success, and the danger of moving faster than your footing', nat: 'Mars/Mercury' },
+    { n: 'Capella', lon: 81.9, m: 'a restless, questioning love of learning', nat: 'Mars/Mercury' }, { n: 'Betelgeuse', lon: 88.8, m: 'success won through sheer grit', nat: 'Mars/Mercury' },
+    { n: 'Alhena', lon: 99.1, m: 'a wound that confers eminence in art', nat: 'Mercury/Venus' },
+    { n: 'Sirius', lon: 104.1, m: 'brilliance, the sacred fire, renown', nat: 'Jupiter/Mars' }, { n: 'Castor', lon: 110.2, m: 'a keen, publishing mind; sudden fame and sudden loss', nat: 'Mercury' },
+    { n: 'Pollux', lon: 113.2, m: 'spirited and contesting; ruthless if crossed', nat: 'Mars' }, { n: 'Procyon', lon: 115.8, m: 'a swift rise by effort — and as swift a fall if unguarded', nat: 'Mercury/Mars' },
+    { n: 'Alphard', lon: 147.3, m: 'the serpent’s heart: deep feeling and wisdom, with a streak of excess', nat: 'Saturn/Venus' }, { n: 'Regulus', lon: 149.9, m: 'leadership and honour — lost only through revenge', nat: 'Mars/Jupiter' },
+    { n: 'Zosma', lon: 161.3, m: 'benefit won through being underestimated; the burdened heart that endures', nat: 'Saturn/Venus' }, { n: 'Denebola', lon: 171.6, m: 'swift judgement and a turning fortune; honour against the grain of the crowd', nat: 'Saturn/Venus' },
+    { n: 'Vindemiatrix', lon: 189.9, m: 'cleverness shadowed by loss; the gatherer who reaps late', nat: 'Saturn/Mercury' },
+    { n: 'Spica', lon: 204.0, m: 'a gift, brilliance, protection', nat: 'Venus/Mars' }, { n: 'Arcturus', lon: 204.3, m: 'a pioneering new path', nat: 'Jupiter/Mars' },
+    { n: 'Zubeneschamali', lon: 229.4, m: 'the northern scale: good fortune, honour and high aim', nat: 'Jupiter/Mercury' },
+    { n: 'Toliman', lon: 239.5, m: 'close friendships, self-examination and quiet beneficence', nat: 'Venus/Jupiter' }, { n: 'Antares', lon: 249.9, m: 'passion and war; all or nothing', nat: 'Mars/Jupiter' },
+    { n: 'Vega', lon: 285.4, m: 'art, magic, charisma', nat: 'Venus/Mercury' }, { n: 'Deneb Algedi', lon: 323.6, m: 'the lawgiver: sorrow and joy by turns, and integrity that earns trust', nat: 'Saturn/Jupiter' },
+    { n: 'Fomalhaut', lon: 334.0, m: 'idealism and fated, mystical gifts', nat: 'Venus/Mercury' }, { n: 'Achernar', lon: 345.3, m: 'the river’s end: success in public life and a faith that steadies', nat: 'Jupiter' },
+    { n: 'Markab', lon: 353.5, m: 'steadiness and honour, won through danger faced down', nat: 'Mars/Mercury' }, { n: 'Scheat', lon: 359.4, m: 'an original, unworldly mind with ideas ahead of their time', nat: 'Mars/Mercury' }
   ];
   function starsOn(c) {
     var keys = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'asc', 'mc'], out = [], i, s;
-    for (i = 0; i < keys.length; i++) { var p = (keys[i] === 'asc') ? c.ascBody : (keys[i] === 'mc') ? c.mcBody : c.planets[keys[i]]; if (!p) continue; if ((keys[i] === 'asc' || keys[i] === 'mc') && !STATE.birth.timeKnown) continue; var raw = rev(p.lon + (c.ayan || 0)); for (s = 0; s < FIXED_STARS.length; s++) { var o = Math.abs(sdelta(raw, FIXED_STARS[s].lon)); if (o <= 1.4) out.push({ planet: keys[i], star: FIXED_STARS[s].n, m: FIXED_STARS[s].m, orb: o }); } }
+    for (i = 0; i < keys.length; i++) { var p = (keys[i] === 'asc') ? c.ascBody : (keys[i] === 'mc') ? c.mcBody : c.planets[keys[i]]; if (!p) continue; if ((keys[i] === 'asc' || keys[i] === 'mc') && !STATE.birth.timeKnown) continue; var raw = rev(p.lon + (c.ayan || 0)); for (s = 0; s < FIXED_STARS.length; s++) { var o = Math.abs(sdelta(raw, FIXED_STARS[s].lon)); if (o <= 1.4) out.push({ planet: keys[i], star: FIXED_STARS[s].n, m: FIXED_STARS[s].m, nat: FIXED_STARS[s].nat, orb: o }); } }
     out.sort(function (a, b) { return a.orb - b.orb; }); return out.slice(0, 4);
+  }
+  // Planetary joys — the Hellenistic doctrine (Paulus Alexandrinus, et al.) that each of the seven
+  // classical planets "rejoices" in one house, where its nature is most at home. Public-domain tradition.
+  var JOY = { mercury: 1, moon: 3, venus: 5, mars: 6, sun: 9, jupiter: 11, saturn: 12 };
+  var JOY_WHY = {
+    mercury: 'the house of the self and the rising mind — where thought meets the world first',
+    moon: 'the house of kin, neighbours and the everyday rhythms it loves to tend',
+    venus: 'the house of pleasure, love, children and creative play',
+    mars: 'the house of work, effort and the daily fight — where its drive does real good',
+    sun: 'the house of meaning, travel and the higher mind — where it shines toward what matters',
+    jupiter: 'the house of friends, allies and good fortune — its natural blessing',
+    saturn: 'the house of solitude, the hidden and the long inward work it knows best'
+  };
+  function planetJoys(c) {
+    if (!STATE.birth.timeKnown) return [];
+    var keys = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn'], out = [], i;
+    for (i = 0; i < keys.length; i++) { var p = c.planets[keys[i]]; if (p && p.house === JOY[keys[i]]) out.push({ key: keys[i], house: JOY[keys[i]], why: JOY_WHY[keys[i]] }); }
+    return out;
   }
   function balanceCoaching(c) {
     var lowE = lowElement(c.elements), m = c.modalities, lm = 'cardinal'; if (m.fixed < m[lm]) lm = 'fixed'; if (m.mutable < m[lm]) lm = 'mutable';
@@ -3680,7 +3763,7 @@ var APP = (function () {
     STATE: STATE, save: save, load: load, compute: computeChart,
     composeCore: composeCore, localAsk: localAsk, chartText: chartText,
     composeTransits: composeTransits, transitSentence: transitSentence, composeSignatures: composeSignatures,
-    addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenOf: almutenOf, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide,
+    addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenOf: almutenOf, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
     saveCurrentChart: saveCurrentChart, deleteSavedChart: deleteSavedChart, activateSavedChart: activateSavedChart, activeChartKey: activeChartKey, chartKey: chartKey, famousMatches: famousMatches, lifeTransits: lifeTransits, upcomingTransits: upcomingTransits, transitMotion: transitMotion, compositeChart: compositeChart,
     nameFor: nameFor, glyphFor: glyphFor, sgAbbr: sgAbbr, pad: pad,
     domElement: domElement, lowElement: lowElement, domMod: domMod, tzOffsetHours: tzOffsetHours
@@ -6158,13 +6241,16 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         setFont(MONO, 8.5, INK, p.LEFT, p.TOP, 140); ly += paragraph('Public-domain plates via Wikimedia Commons.', x, ly, w, 11, INK, MONO, 15, 140) + 10;
         ly += paragraph(Hh.b, x, ly, w, 16.5, INK, SERIF, 25) + 14;
       }
-      // From the tradition — the real lineage behind the chart-explained categories (attributed, public-domain)
-      var trad = DATA.TRADITION[cat];
-      if (trad) {
+      // From the tradition — the real lineage behind each category. For a planet or house you're actually
+      // looking at, the line is the one for THAT placement (chart-contextual), in the source's own public-domain words.
+      var tlead = DATA.TRADITION[cat], tq = null, tqsrc = null;
+      if (cat === 'planets' && DATA.PLANET_TRAD[it]) { var ptd = DATA.PLANET_TRAD[it]; tlead = ptd.sig; if (ptd.q) { tq = ptd.q; tqsrc = ptd.src; } }
+      else if (cat === 'houses' && DATA.HOUSE_TRAD[it]) { var htd = DATA.HOUSE_TRAD[it]; tlead = htd.sig; tq = htd.q; tqsrc = DATA.TRAD_SRC_LILLY; }
+      if (tlead) {
         ly += 12; hairline(x, ly, x + w, 40); ly += 18; eyebrow('From the tradition', x, ly, ACC); ly += 22;
-        ly += paragraph(trad, x, ly, w, 14.5, INK, SERIF, 22, 220) + 10;
-        var gq = DATA.TRADITION.general[((typeof it === 'number' ? it : 0) % DATA.TRADITION.general.length + DATA.TRADITION.general.length) % DATA.TRADITION.general.length];
-        setFont(MONO, 9, ACCTX, p.LEFT, p.TOP, 205); ly += paragraph('“' + gq.q + '”  — ' + gq.src, x, ly, w, 11.5, ACCTX, MONO, 17, 205) + 8;
+        ly += paragraph(tlead, x, ly, w, 14.5, INK, SERIF, 22, 220) + 10;
+        if (!tq) { var gq = DATA.TRADITION.general[((typeof it === 'number' ? it : 0) % DATA.TRADITION.general.length + DATA.TRADITION.general.length) % DATA.TRADITION.general.length]; tq = gq.q; tqsrc = gq.src; }
+        setFont(MONO, 9, ACCTX, p.LEFT, p.TOP, 205); ly += paragraph('“' + tq + '”  — ' + tqsrc, x, ly, w, 11.5, ACCTX, MONO, 17, 205) + 8;
       }
       if (ddc && rev < 1) ddc.restore();
       return ly;
