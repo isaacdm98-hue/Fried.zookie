@@ -1222,7 +1222,7 @@ var APP = (function () {
   // ---------- state ----------
   var STATE = {
     birth: null, // {name,y,mo,d,hour,min,tz,lat,lon,place,timeKnown}
-    settings: { zodiac: 'tropical', house: 'placidus', orbScale: 1, ai: false, theme: 'light', textScale: 1, sound: false, accent: 0, autoNight: false, minorBodies: false, weave: true },
+    settings: { zodiac: 'tropical', house: 'placidus', orbScale: 1, ai: false, theme: 'light', textScale: 1, sound: false, accent: 0, autoNight: false, minorBodies: false, weave: true, readingEngine: 'local', claudeKey: '', claudeModel: 'claude-haiku-4-5-20251001' },
     chart: null, screen: 'chart', chartView: 'dial',
     people: [], // [{id,name,rel,famrel,y,mo,d,hour,min,tz,iana,lat,lon,place,timeKnown}]
     charts: [] // saved birth charts you can switch between (snapshots of `birth`)
@@ -2844,7 +2844,7 @@ var APP = (function () {
     }
     // dedup (same tp/np/aspect within ~120 days)
     events.sort(function (x, y) { return x.date - y.date; });
-    var out = [], e, o; for (e = 0; e < events.length; e++) { var ev = events[e], dup = false; for (o = 0; o < out.length; o++) if (out[o].tp === ev.tp && out[o].np === ev.np && Math.abs(out[o].date - ev.date) < 1100 * 86400000) { dup = true; break; } if (!dup) { ev.title = lifeTitle(ev); ev.text = lifeText(ev); out.push(ev); } }
+    var out = [], e, o, seenSig = {}; for (e = 0; e < events.length; e++) { var ev = events[e], dup = false; for (o = 0; o < out.length; o++) if (out[o].tp === ev.tp && out[o].np === ev.np && Math.abs(out[o].date - ev.date) < 1100 * 86400000) { dup = true; break; } if (dup) continue; ev.title = lifeTitle(ev); ev.text = lifeText(ev, c); var sig = ev.text.toLowerCase().replace(/age \d+[^:]*:\s*/, '').slice(0, 48); if (seenSig[sig]) continue; seenSig[sig] = 1; out.push(ev); }
     return out;
   }
   function lifeTitle(ev) {
@@ -2853,14 +2853,23 @@ var APP = (function () {
     var av = (ev.ang === 0) ? '∘' : (ev.ang === 180) ? '☍' : '□';
     return nameFor(ev.tp) + ' ' + av + ' ' + (ev.np === 'asc' ? 'Asc' : ev.np === 'mc' ? 'MC' : nameFor(ev.np));
   }
-  function lifeText(ev) {
-    if (ev.isReturn && ev.tp === 'saturn') return ev.age < 40 ? 'Your first Saturn return (~29): the real beginning of adulthood. You build the life that’s actually yours and shoulder its weight — demanding, and the making of you.' : 'Your second Saturn return (~58): a reckoning with the life you’ve built and what you want the rest of it to mean. Mastery, and letting the finished things go.';
-    if (ev.isReturn && ev.tp === 'jupiter') return 'A fresh ~12-year Jupiter cycle opens — room to grow, travel, study and believe in something larger. Plant now what you want to harvest over the next decade.';
-    if (ev.isReturn && ev.tp === 'uranus') return 'Your Uranus return (~84): a whole lifetime’s arc of freedom comes full circle — permission to be exactly, unapologetically yourself.';
-    if (ev.isReturn && (ev.tp === 'neptune' || ev.tp === 'pluto')) return 'A rare return of a slow planet — a deep, generational tide swinging back through where it stood when you were born.';
-    if (ev.tp === 'uranus' && ev.np === 'uranus' && ev.ang === 180) return 'The midlife awakening (~40): a strong, sometimes restless pull to live more truly, even if it shakes up what you’d carefully settled into. The real question becomes “is this actually mine?”';
-    var dyn = (ev.ang === 0) ? 'settles right onto' : (ev.ang === 180) ? 'pulls hard against' : 'grinds against';
-    return capit(targetArea(ev.np, ev.age)) + ' — ' + (MOVER_NOUN[ev.tp] || 'a turning point') + '. Transiting ' + nameFor(ev.tp) + ' ' + dyn + ' ' + (TARGET_SHOWS[ev.np] || 'your life') + '. ' + (MOVER_ADVICE[ev.tp] || '');
+  var LIFE_ACT = { 0: 'crosses', 90: 'squares', 180: 'opposes' };
+  var LIFE_FEEL = { 0: 'switching it fully on', 90: 'forcing a real adjustment whether you choose it or not', 180: 'bringing it to a head, usually through other people' };
+  var MOVER_TASK = { jupiter: 'say yes to what genuinely grows you, without overreaching', saturn: 'do the unglamorous work and build something that lasts', uranus: 'loosen your grip and let the change move through you', neptune: 'stay gentle and clear-eyed, and sign nothing blind', pluto: 'let what is ending actually end — you are being remade' };
+  function lifeText(ev, c) {
+    if (ev.isReturn && ev.tp === 'saturn') return ev.age < 40 ? 'Age ' + Math.round(ev.age) + ': your first Saturn return — the real start of adulthood. You build the life that is actually yours and shoulder its weight. Demanding, and the making of you.' : 'Age ' + Math.round(ev.age) + ': your second Saturn return — a reckoning with what you have built and what you want the rest of it to mean. Mastery, and letting finished things go.';
+    if (ev.isReturn && ev.tp === 'jupiter') return 'Age ' + Math.round(ev.age) + ': a fresh ~12-year Jupiter cycle opens — room to grow, travel, study and believe in something larger. Plant now what you want to harvest over the next decade.';
+    if (ev.isReturn && ev.tp === 'uranus') return 'Age ' + Math.round(ev.age) + ': your Uranus return — a whole lifetime’s arc of freedom comes full circle. Permission to be exactly, unapologetically yourself.';
+    if (ev.isReturn && (ev.tp === 'neptune' || ev.tp === 'pluto')) return 'Age ' + Math.round(ev.age) + ': a rare return of ' + nameFor(ev.tp) + ' — a deep, generational tide swinging back through where it stood at your birth.';
+    if (ev.tp === 'uranus' && ev.np === 'uranus' && ev.ang === 180) return 'Age ' + Math.round(ev.age) + ': the midlife awakening — a restless pull to live more truly, even if it shakes up what you had carefully settled into. The question becomes “is this actually mine?”';
+    // every non-return line is stamped with age, year, the natal point’s real sign + house, and an aspect-specific verb,
+    // so no two life moments can read the same and none are vague.
+    var nlon = c ? natalLonOf(c, ev.np) : null;
+    var sgN = (nlon != null) ? DATA.SIGNS[Math.floor(rev(nlon) / 30)].name : null;
+    var hs = (ev.np !== 'asc' && ev.np !== 'mc' && c && c.planets[ev.np]) ? c.planets[ev.np].house : null;
+    var who = ev.np === 'asc' ? 'rising sign' : ev.np === 'mc' ? 'Midheaven' : nameFor(ev.np);
+    var loc = (sgN ? ' in ' + sgN : '') + (hs ? ', ' + ordinal(hs) + ' house' : '');
+    return 'Age ' + Math.round(ev.age) + ' (' + ev.date.getFullYear() + '): ' + nameFor(ev.tp) + ' ' + (LIFE_ACT[ev.ang] || 'contacts') + ' your ' + who + loc + ' — ' + (MOVER_NOUN[ev.tp] || 'a turning point') + ', ' + (LIFE_FEEL[ev.ang] || '') + '. It plays out through ' + targetArea(ev.np, ev.age) + '; the task is to ' + (MOVER_TASK[ev.tp] || 'meet it consciously') + '.';
   }
 
   // ================= extra information layers =================
@@ -3712,7 +3721,8 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     function fmtShort(dt) { var mo = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']; return dt.getDate() + ' ' + mo[dt.getMonth()] + ' ' + dt.getFullYear(); }
 
     // ---- layout ----
-    function maxW() { return Math.min(W - GUT * 2, 560); }
+    function isWide() { return W >= 1000; } // desktop / large tablet in landscape
+    function maxW() { return Math.min(W - GUT * 2, isWide() ? 820 : 560); } // wider column on desktop -> far less scrolling
     function sx() { return (W - maxW()) / 2; }
     function cw() { return maxW(); }
     function topY() { return TOPH + (UI.safeTop || 0); }
@@ -4630,71 +4640,145 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       for (mi = 0; mi < 3; mi++) { var yr = now.getFullYear(), mo = now.getMonth() + mi; while (mo > 11) { mo -= 12; yr++; } ly += drawMonthGrid(yr, mo, x, w, ly) + 8; }
       UI.contentH.read = ly + 20;
     }
-    // ===== optional on-device woven narration (WebLLM over the engine's full dossier) =====
-    // Model fallback chain: smartest that a phone can plausibly hold first, then lighter.
-    var WLLM = null, WLLM_MODELS = ['Qwen2.5-1.5B-Instruct-q4f16_1-MLC', 'Llama-3.2-1B-Instruct-q4f16_1-MLC', 'Qwen2.5-0.5B-Instruct-q4f16_1-MLC'];
+    // ================== woven narration: Claude (cloud) OR on-device WebLLM ==================
+    // Reading engines: 'claude' (best, needs key+net), 'local' (private, needs WebGPU,
+    // device-aware model), 'off' (algorithms only). The model is briefed with the full
+    // computed dossier and only re-voices it. Everything streams; failures are shown, not hidden.
+    function deviceTier() {
+      try {
+        var ua = (navigator.userAgent || '');
+        var phone = /iPhone|iPod|Android.*Mobile|Windows Phone/i.test(ua);
+        var ipad = /iPad/i.test(ua) || (/Macintosh/i.test(ua) && navigator.maxTouchPoints > 1);
+        if (phone || ipad) return 'mobile';
+        var mem = navigator.deviceMemory || 0; // GB (Chromium); 0 if unknown (Safari)
+        if (mem && mem < 4) return 'mobile';
+        return 'desktop'; // a real computer: more RAM, looser WebGPU limits -> bigger model
+      } catch (e) { return 'mobile'; }
+    }
+    // Desktop tries a large, genuinely-good model first (Gemma-2 9B / Llama-3.1 8B), falling to lighter.
+    // iPhone/iPad: the largest that reliably fits Safari's WebGPU buffer limits, then smaller.
+    var WLLM_DESKTOP = ['gemma-2-9b-it-q4f16_1-MLC', 'Llama-3.1-8B-Instruct-q4f16_1-MLC', 'gemma-2-2b-it-q4f16_1-MLC', 'Qwen2.5-1.5B-Instruct-q4f16_1-MLC'];
+    var WLLM_MOBILE = ['Qwen2.5-1.5B-Instruct-q4f16_1-MLC', 'Llama-3.2-1B-Instruct-q4f16_1-MLC', 'Qwen2.5-0.5B-Instruct-q4f16_1-MLC'];
+    var WLLM = null;
     function weaveSupported() { try { return !!(typeof navigator !== 'undefined' && navigator.gpu); } catch (e) { return false; } }
+    function weaveModels() { return deviceTier() === 'desktop' ? WLLM_DESKTOP : WLLM_MOBILE; }
+    function weaveShouldAuto() { var st = APP.STATE.settings || {}, e = st.readingEngine || 'local'; if (e === 'off') return false; if (e === 'claude') return !!(st.claudeKey && ('' + st.claudeKey).replace(/\s/g, '')); return weaveSupported(); }
     function loadWeaveEngine(ok, fail) {
       if (WLLM) { ok(WLLM); return; }
-      var imp; try { imp = new Function('u', 'return import(u);'); } catch (e) { fail('eval'); return; }
+      var imp; try { imp = new Function('u', 'return import(u);'); } catch (e) { fail('this browser blocks dynamic import (eval)'); return; }
       imp('https://esm.run/@mlc-ai/web-llm').then(function (mod) {
         var make = mod.CreateMLCEngine || (mod.webllm && mod.webllm.CreateMLCEngine);
-        if (!make) throw new Error('no-api');
-        var prog = function (r) { UI.weaveProg = (r && typeof r.progress === 'number') ? r.progress : UI.weaveProg; if (r && r.text) UI.weaveMsg = ('' + r.text).slice(0, 48); };
-        // try each model in turn; first that downloads + initialises wins, then cache it
+        if (!make) { fail('could not load the WebLLM library'); return; }
+        var prog = function (r) { UI.weaveProg = (r && typeof r.progress === 'number') ? r.progress : UI.weaveProg; if (r && r.text) UI.weaveMsg = ('' + r.text).slice(0, 60); };
+        var models = weaveModels(), lastErr = '';
         function tryAt(i) {
-          if (i >= WLLM_MODELS.length) { fail('no-model'); return; }
-          UI.weaveModel = WLLM_MODELS[i];
-          make(WLLM_MODELS[i], { initProgressCallback: prog }).then(function (eng) { WLLM = eng; ok(eng); })['catch'](function () { tryAt(i + 1); });
+          if (i >= models.length) { fail('no model would load on this device' + (lastErr ? ' (' + lastErr.slice(0, 80) + ')' : '')); return; }
+          UI.weaveModel = models[i]; UI.weaveMsg = 'downloading ' + models[i].split('-').slice(0, 2).join(' ');
+          make(models[i], { initProgressCallback: prog }).then(function (eng) { WLLM = eng; ok(eng); })['catch'](function (e) { lastErr = '' + (e && e.message || e); tryAt(i + 1); });
         }
         tryAt(0);
-      })['catch'](function (e) { fail('' + e); });
+      })['catch'](function (e) { fail('could not reach the model CDN — need internet the first time (' + ('' + e).slice(0, 60) + ')'); });
+    }
+    // ---- Claude (cloud) via the user's own API key; streams Server-Sent Events ----
+    function weaveViaClaude(brief, onChunk, onDone, onErr) {
+      var st = APP.STATE.settings || {}, key = ('' + (st.claudeKey || '')).replace(/^\s+|\s+$/g, '');
+      if (!key) { onErr('add your Claude API key in Settings → Reading to use the cloud reader'); return; }
+      var model = st.claudeModel || 'claude-haiku-4-5-20251001';
+      var body = { model: model, max_tokens: 1024, stream: true, system: APP.WEAVE_SYS, messages: [{ role: 'user', content: APP.weaveUser(brief) }] };
+      fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+        body: JSON.stringify(body)
+      }).then(function (resp) {
+        if (!resp.ok) { resp.text().then(function (t) { var m = ''; try { m = JSON.parse(t).error.message; } catch (e) { m = 'HTTP ' + resp.status; } onErr('Claude: ' + m); })['catch'](function () { onErr('Claude HTTP ' + resp.status); }); return; }
+        if (!resp.body || !resp.body.getReader) { resp.json().then(function (j) { var tx = ''; try { tx = j.content[0].text; } catch (e) {} onDone(tx); })['catch'](function () { onErr('Claude: empty response'); }); return; }
+        var reader = resp.body.getReader(), dec = new TextDecoder(), buf = '', acc = '';
+        function pump() {
+          reader.read().then(function (r) {
+            if (r.done) { onDone(acc); return; }
+            buf += dec.decode(r.value, { stream: true });
+            var lines = buf.split('\n'); buf = lines.pop();
+            for (var i = 0; i < lines.length; i++) { var ln = lines[i]; if (ln.indexOf('data:') !== 0) continue; var d = ln.slice(5).replace(/^\s+/, ''); if (!d || d === '[DONE]') continue; try { var j = JSON.parse(d); if (j.type === 'content_block_delta' && j.delta && j.delta.text) { acc += j.delta.text; onChunk(acc); } } catch (e) {} }
+            pump();
+          })['catch'](function () { if (acc) onDone(acc); else onErr('Claude: connection dropped'); });
+        }
+        pump();
+      })['catch'](function () { onErr('Claude: network error (offline?)'); });
+    }
+    // ---- on-device WebLLM; streams tokens via the async iterator (ES5: no for-await) ----
+    function weaveViaLocal(brief, onChunk, onDone, onErr) {
+      loadWeaveEngine(function (eng) {
+        UI.weaveMsg = 'composing your reading';
+        var opts = { stream: true, messages: [{ role: 'system', content: APP.WEAVE_SYS }, { role: 'user', content: APP.weaveUser(brief) }], temperature: 0.62, top_p: 0.9, frequency_penalty: 0.5, presence_penalty: 0.35, max_tokens: 1024 };
+        var ret; try { ret = eng.chat.completions.create(opts); } catch (e) { onErr('the model could not start generating'); return; }
+        Promise.resolve(ret).then(function (gen) {
+          var iter = (gen && gen[Symbol.asyncIterator]) ? gen[Symbol.asyncIterator]() : gen;
+          if (!iter || typeof iter.next !== 'function') { // non-streaming fallback
+            var tx = gen && gen.choices && gen.choices[0] && gen.choices[0].message ? gen.choices[0].message.content : ''; onDone(tx || ''); return;
+          }
+          var acc = '';
+          function step() {
+            iter.next().then(function (r) {
+              if (r.done) { onDone(acc); return; }
+              var ch = r.value && r.value.choices && r.value.choices[0], d = ch && ch.delta && ch.delta.content;
+              if (d) { acc += d; onChunk(acc); }
+              step();
+            })['catch'](function () { onDone(acc); });
+          }
+          step();
+        })['catch'](function () { onErr('the model could not generate text'); });
+      }, function (reason) { onErr(reason || 'on-device model unavailable'); });
     }
     function startWeave(c, b) {
       var sig = APP.activeChartKey ? APP.activeChartKey() : 'x';
-      if (UI.weaveFor === sig && UI.weaveText && UI.weaveState === 'ready' && UI.weaveSrc === 'local-ai') return;
-      // deterministic stitch is ready instantly — the model, when present, replaces it with the woven read
+      var srcOk = (UI.weaveSrc === 'local-ai' || UI.weaveSrc === 'claude');
+      if (UI.weaveFor === sig && UI.weaveText && UI.weaveState === 'ready' && srcOk) return;
+      var eng = (APP.STATE.settings && APP.STATE.settings.readingEngine) || 'local';
+      // deterministic stitch is ready instantly — the model, when present, replaces it
       try { UI.weaveText = APP.weaveTemplate(c, b); } catch (e) { UI.weaveText = ''; }
-      UI.weaveFor = sig; UI.weaveSrc = 'engine';
-      if (!weaveSupported()) { UI.weaveState = 'ready'; return; }
-      UI.weaveState = 'loading'; UI.weaveProg = 0; UI.weaveMsg = 'preparing on-device model';
+      UI.weaveFor = sig; UI.weaveSrc = 'engine'; UI.weaveErr = ''; UI.weaveStream = ''; UI.weaveProg = 0;
+      if (eng === 'off') { UI.weaveState = 'ready'; return; }
       var anchors = []; try { anchors = APP.weaveAnchors(c); } catch (e2) {}
-      loadWeaveEngine(function (eng) {
-        UI.weaveMsg = 'composing your reading';
-        var brief = ''; try { brief = APP.weaveBrief(c, b); } catch (e3) {}
-        eng.chat.completions.create({
-          messages: [{ role: 'system', content: APP.WEAVE_SYS }, { role: 'user', content: APP.weaveUser(brief) }],
-          temperature: 0.62, top_p: 0.9, frequency_penalty: 0.5, presence_penalty: 0.35, max_tokens: 1024
-        }).then(function (resp) {
-          var txt = resp && resp.choices && resp.choices[0] && resp.choices[0].message ? resp.choices[0].message.content : '';
-          if (APP.weaveValid(txt, anchors)) { UI.weaveText = ('' + txt).trim(); UI.weaveSrc = 'local-ai'; }
-          UI.weaveState = 'ready';
-        })['catch'](function () { UI.weaveState = 'ready'; });
-      }, function () { UI.weaveState = 'ready'; }); // load failed -> keep the engine stitch
+      var brief = ''; try { brief = APP.weaveBrief(c, b); } catch (e3) {}
+      function onChunk(acc) { UI.weaveStream = acc; }
+      function done(final, src) { if (APP.weaveValid(final, anchors)) { UI.weaveText = ('' + final).trim(); UI.weaveSrc = src; } else if (final && ('' + final).trim().length > 40) { UI.weaveText = ('' + final).trim(); UI.weaveSrc = src; } else { UI.weaveErr = 'the model returned too little — kept the engine reading'; } UI.weaveStream = ''; UI.weaveState = 'ready'; }
+      function failed(msg) { UI.weaveErr = msg; UI.weaveStream = ''; UI.weaveState = 'ready'; }
+      UI.weaveState = 'loading';
+      if (eng === 'claude') { UI.weaveMsg = 'asking Claude'; weaveViaClaude(brief, onChunk, function (f) { done(f, 'claude'); }, failed); return; }
+      if (!weaveSupported()) { failed('this browser has no WebGPU, so on-device AI can’t run — switch to Claude in Settings → Reading, or read the algorithm version below.'); return; }
+      UI.weaveMsg = 'preparing on-device model';
+      weaveViaLocal(brief, onChunk, function (f) { done(f, 'local-ai'); }, failed);
     }
     function weaveBlock(c, b, x, w, ly) {
       var sig = APP.activeChartKey ? APP.activeChartKey() : 'x';
-      if (UI.weaveFor !== sig) { UI.weaveText = null; UI.weaveState = 'idle'; }
+      if (UI.weaveFor !== sig) { UI.weaveText = null; UI.weaveState = 'idle'; UI.weaveErr = ''; UI.weaveStream = ''; }
+      var eng = (APP.STATE.settings && APP.STATE.settings.readingEngine) || 'local';
+      if (eng === 'off') return ly; // algorithms-only: no woven block at all
+      var engName = eng === 'claude' ? 'Claude (cloud)' : 'on your device';
       eyebrow('Your chart, woven into one voice', x, ly, ACC); ly += 24;
-      if (!UI.weaveText) {
-        var sup = weaveSupported();
-        ly += paragraph('Let the whole reading flow as one voice instead of sections — an on-device language model speaks the engine’s exact findings aloud, like a single astrologer reading every number at once.', x, ly, w, 13.5, INK, SERIF, 20, 190) + 8;
-        ly += paragraph(sup ? 'First time only, it downloads a small model (a few hundred MB) and runs entirely on your phone — nothing leaves the device. After that it’s instant and offline.' : 'Your device doesn’t expose on-device AI (WebGPU), so the built-in engine will compose it instead — still from your exact chart.', x, ly, w, 12.5, ACCTX, SERIF, 18, 190) + 12;
-        flatBtn(sup ? 'Weave my reading (downloads once)' : 'Weave my reading', x, ly, w, 44, function () { startWeave(c, b); }, false); ly += 56;
+      if (!UI.weaveText && UI.weaveState !== 'loading') {
+        ly += paragraph('Let the whole reading flow as one voice instead of sections — a language model speaks the engine’s exact findings aloud, like a single astrologer reading every number at once. It runs ' + engName + ' and is briefed only with your computed chart.', x, ly, w, 13.5, INK, SERIF, 20, 190) + 12;
+        flatBtn('Weave my reading', x, ly, w, 44, function () { startWeave(c, b); }, false); ly += 56;
         return ly;
       }
+      // live streaming text takes precedence while loading; else the finished/engine text
+      var shown = (UI.weaveState === 'loading' && UI.weaveStream) ? UI.weaveStream : UI.weaveText;
       if (UI.weaveState === 'loading') {
         var pct = Math.round((UI.weaveProg || 0) * 100);
-        setFont(MONO, 9.5, ACCTX, p.LEFT, p.TOP, 220); p.text((UI.weaveMsg ? ('' + UI.weaveMsg).toUpperCase() : 'WORKING ON-DEVICE') + ' · ' + pct + '%', x, sY(ly)); ly += 16;
-        var bw = w, bh = 5, by = sY(ly); p.noStroke(); fillc(shade(GROUNDS[UI.screen], -18)); p.rect(x, by, bw, bh, 3); fillc(ACC); p.rect(x, by, bw * (UI.weaveProg || 0), bh, 3); ly += 14;
-        setFont(MONO, 8, ACCTX, p.LEFT, p.TOP, 150); p.text('THE ENGINE STITCH BELOW IS SHOWING UNTIL THE MODEL FINISHES', x, sY(ly)); ly += 16;
+        var msg = (UI.weaveMsg ? ('' + UI.weaveMsg).toUpperCase() : 'WORKING') + (eng === 'claude' ? '' : ' · ' + pct + '%');
+        setFont(MONO, 9.5, ACCTX, p.LEFT, p.TOP, 220); p.text(msg, x, sY(ly)); ly += 16;
+        if (eng !== 'claude') { var bw = w, bh = 5, by = sY(ly); p.noStroke(); fillc(shade(GROUNDS[UI.screen], -18)); p.rect(x, by, bw, bh, 3); fillc(ACC); p.rect(x, by, bw * (UI.weaveProg || 0), bh, 3); ly += 12; }
+        if (!UI.weaveStream) { setFont(MONO, 8, ACCTX, p.LEFT, p.TOP, 150); p.text('THE ENGINE READING BELOW SHOWS UNTIL THE MODEL ANSWERS', x, sY(ly)); ly += 14; }
+        ly += 6;
       }
-      // card with the woven prose
-      var paras = ('' + UI.weaveText).split(/\n\n+/), pre = ly;
-      for (var i = 0; i < paras.length; i++) { if (!paras[i].trim()) continue; ly += paragraph(paras[i].trim(), x, ly, w, 16, INK, SERIF, 25) + 12; }
-      var note = UI.weaveSrc === 'local-ai' ? 'Phrased on-device by a small language model from the facts above — wording is generated, the chart numbers are exact.' : (weaveSupported() ? 'Composed by the built-in engine.' : 'Your device has no on-device AI, so the built-in engine composed this. The numbers are exact.');
-      setFont(MONO, 8.5, ACCTX, p.LEFT, p.TOP, 200); ly += paragraph(note, x, ly, w, 11, ACCTX, MONO, 15, 200) + 8;
-      flatBtn('Re-weave', x, ly, 130, 36, function () { UI.weaveText = null; UI.weaveState = 'idle'; startWeave(c, b); }, false); ly += 46;
+      var paras = ('' + (shown || '')).split(/\n\n+/), i;
+      for (i = 0; i < paras.length; i++) { if (!paras[i].replace(/^\s+|\s+$/g, '')) continue; ly += paragraph(paras[i].replace(/^\s+|\s+$/g, ''), x, ly, w, 16, INK, SERIF, 25) + 12; }
+      if (UI.weaveErr) { setFont(MONO, 9, ACCTX, p.LEFT, p.TOP, 220); ly += paragraph('⚠ ' + UI.weaveErr, x, ly, w, 12, ACCTX, MONO, 17, 220) + 8; }
+      else if (UI.weaveState !== 'loading') {
+        var note = UI.weaveSrc === 'claude' ? 'Phrased by Claude (cloud) from the facts above — wording generated, the chart numbers exact.' : UI.weaveSrc === 'local-ai' ? 'Phrased on-device by a language model from the facts above — wording generated, the chart numbers exact.' : 'Composed by the built-in engine — pure computation, no AI.';
+        setFont(MONO, 8.5, ACCTX, p.LEFT, p.TOP, 200); ly += paragraph(note, x, ly, w, 11, ACCTX, MONO, 15, 200) + 8;
+      }
+      if (UI.weaveState !== 'loading') { flatBtn(UI.weaveErr ? 'Try again' : 'Re-weave', x, ly, 140, 36, function () { UI.weaveText = null; UI.weaveState = 'idle'; UI.weaveErr = ''; startWeave(c, b); }, false); ly += 46; }
       return ly;
     }
     function drawRead() {
@@ -6155,8 +6239,22 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       ly += toggleRow('House system', [['whole', 'Whole'], ['equal', 'Equal'], ['placidus', 'Placidus']], st.house, ly, function (v) { st.house = v; recompute(); });
       ly += toggleRow('Show extra points', [['off', 'Off'], ['on', 'On']], st.minorBodies ? 'on' : 'off', ly, function (v) { st.minorBodies = (v === 'on'); recompute(); });
       ly += paragraph('On: adds Chiron and the four major asteroids (Ceres, Pallas, Juno, Vesta) as extra points — computed on-device to about a degree.', x, ly, w, 13.5, INK, SERIF, 20, 180) + 14;
-      ly += toggleRow('Woven reading (experimental)', [['off', 'Off'], ['on', 'On']], st.weave ? 'on' : 'off', ly, function (v) { st.weave = (v === 'on'); APP.save(); UI.weaveText = null; UI.weaveState = 'idle'; });
-      ly += paragraph('Adds a “weave into one voice” option to your reading. The facts stay computed; an on-device language model (only if your phone supports WebGPU) rephrases them into flowing prose, otherwise the built-in engine does. Nothing leaves your device; the model downloads once.', x, ly, w, 13.5, INK, SERIF, 20, 180) + 14;
+      // ---- reading voice: who writes the one-voice reading ----
+      eyebrow('Reading voice', x, ly); ly += 22;
+      ly += toggleRow('Woven reading', [['claude', 'Claude'], ['local', 'On-device'], ['off', 'Algorithms']], st.readingEngine || 'local', ly, function (v) { st.readingEngine = v; st.weave = (v !== 'off'); APP.save(); UI.weaveText = null; UI.weaveState = 'idle'; UI.weaveErr = ''; UI.weaveAuto = false; });
+      var reHint = (st.readingEngine === 'claude') ? 'Claude (cloud): the best wording, streamed live. Needs internet + your own API key (below). The chart maths stays exact and local; only the computed facts are sent to phrase them.'
+        : (st.readingEngine === 'off') ? 'Algorithms only: no AI at all. The reading is composed purely by the on-device maths engine — precise, specific, no repeated lines.'
+        : 'On-device: a language model runs entirely on your device (needs WebGPU — most desktop browsers, newer iPhones). Bigger model on computers, lighter on phones. Downloads once, then works offline. Private.';
+      ly += paragraph(reHint, x, ly, w, 13, INK, SERIF, 19, 180) + 12;
+      if (st.readingEngine === 'claude') {
+        var hasKey = !!(st.claudeKey && ('' + st.claudeKey).replace(/\s/g, ''));
+        var keyLbl = hasKey ? 'Claude key set ✓ — tap to change' : 'Paste Claude API key';
+        flatBtn(keyLbl, x, ly, w, 40, function () {
+          if (typeof window !== 'undefined' && window.prompt) { var k = window.prompt('Paste your Anthropic (Claude) API key. It is stored only on this device and sent directly to api.anthropic.com.', ''); if (k != null) { st.claudeKey = ('' + k).replace(/^\s+|\s+$/g, ''); APP.save(); UI.weaveText = null; UI.weaveState = 'idle'; UI.weaveErr = ''; UI.weaveAuto = false; } }
+        }, hasKey); ly += 48;
+        ly += toggleRow('Claude model', [['claude-haiku-4-5-20251001', 'Haiku (fast)'], ['claude-sonnet-4-6', 'Sonnet (richer)']], st.claudeModel || 'claude-haiku-4-5-20251001', ly, function (v) { st.claudeModel = v; APP.save(); UI.weaveText = null; UI.weaveState = 'idle'; });
+        ly += paragraph('Get a key at console.anthropic.com. Haiku is fast and cheap; Sonnet is richer. Your key never leaves your device except to call Claude directly.', x, ly, w, 12.5, ACCTX, SERIF, 18, 170) + 12;
+      }
       eyebrow('Aspect orb  \u00D7' + (st.orbScale || 1).toFixed(1), x, ly); ly += 20;
       var slw = w - 56, slx = x, sly = sY(ly) + 14;
       var tt = ((st.orbScale || 1) - 0.5) / 1.5, kx = slx + tt * slw;
@@ -6319,13 +6417,22 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         ly += oh + 6;
         setFont(MONO, 8.5, INK, p.LEFT, p.TOP, 130); ly += paragraph('Use this when you know the exact offset — e.g. wartime or pre-1970 births the timezone database resolves loosely.', x, ly, w, 11, INK, MONO, 15, 130) + 8;
       }
-      // on-device "one voice" reader — set it up here, at the start, so it's ready when you read
-      var wv = !(APP.STATE.settings && APP.STATE.settings.weave === false);
-      if (wv) { p.noStroke(); fillc(ACC); p.rect(x, sY(ly), 22, 22, 5); setFont(SANS, 15, GROUNDS[UI.screen], p.CENTER, p.CENTER); p.text('✓', x + 11, sY(ly) + 11); }
-      else { p.noFill(); strokec(INK, 180); p.strokeWeight(1.4); p.rect(x, sY(ly), 22, 22, 5); }
-      setFont(SANS, 13, INK, p.LEFT, p.CENTER); p.text('Read in one voice (on-device AI)', x + 32, sY(ly) + 11);
-      pushHit(x, sY(ly), w, 26, function () { APP.STATE.settings.weave = !wv; APP.save(); }); ly += 32;
-      setFont(MONO, 8.5, INK, p.LEFT, p.TOP, 130); ly += paragraph('On supported phones, a small language model downloads once and runs entirely on your device to speak your reading as one flowing voice — nothing leaves your phone. You’ll find it on the Read screen either way.', x, ly, w, 11, INK, MONO, 15, 130) + 12;
+      // reading voice — choose here, at the start, so it's ready when you read
+      var stO = APP.STATE.settings, curE = stO.readingEngine || 'local';
+      eyebrow('Reading voice', x, ly); ly += 22;
+      var opts = [['claude', 'Claude'], ['local', 'On-device'], ['off', 'Algorithms']], obw = (w - 16) / 3, oi;
+      for (oi = 0; oi < opts.length; oi++) {
+        var ox = x + oi * (obw + 8), on = (curE === opts[oi][0]);
+        p.noStroke(); fillc(on ? ACC : shade(GROUNDS[UI.screen], -12)); p.rect(ox, sY(ly), obw, 38, 8);
+        if (!on) { p.noFill(); strokec(INK, 120); p.strokeWeight(1.2); p.rect(ox, sY(ly), obw, 38, 8); }
+        setFont(SANS, 13, on ? GROUNDS[UI.screen] : INK, p.CENTER, p.CENTER); if (on) bold(); p.text(opts[oi][1], ox + obw / 2, sY(ly) + 19); normal();
+        (function (val) { pushHit(ox, sY(ly), obw, 38, function () { stO.readingEngine = val; stO.weave = (val !== 'off'); APP.save(); UI.weaveAuto = false; }); })(opts[oi][0]);
+      }
+      ly += 46;
+      var obh = (curE === 'claude') ? 'Claude (cloud): best wording, streamed. Add your API key in Settings → Reading. The maths stays local; only the computed facts are sent to phrase them.'
+        : (curE === 'off') ? 'Algorithms only: no AI — the reading is pure on-device maths, precise and specific.'
+        : 'On-device AI: a model runs entirely on your device (WebGPU — desktops + newer iPhones), bigger on computers. Downloads once, then offline. Private.';
+      setFont(MONO, 8.5, INK, p.LEFT, p.TOP, 130); ly += paragraph(obh, x, ly, w, 11, INK, MONO, 15, 130) + 12;
       var canBuild = (d.cityIdx >= 0) || !!(d.geo && d.geo.iana);
       var buildLabel = canBuild ? 'Build my chart' : (d.geo && d.geoTzLoading ? 'Finding time zone…' : 'Choose a birth place');
       flatBtn(buildLabel, x, ly, w, 50, function () { if (canBuild) buildChart(); }, canBuild); ly += 64; UI.contentH.onboard = ly;
@@ -6337,10 +6444,10 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       APP.STATE.birth = { name: '', y: d.y, mo: d.mo, d: d.d, hour: d.hour, min: d.min, tz: d.tz || 0, manualTz: !!d.manualTz, iana: iana, lat: lat, lon: lon, place: place, timeKnown: d.timeKnown };
       recompute(); UI.selPlanet = 'sun'; UI.popT = nowT(); UI.popFrom = 22; UI.scroll.chart = 0; UI.screen = 'chart'; hideSearchInput();
       // begin the on-device model download right away (at the beginning), so the woven read is ready when reached
-      if (APP.STATE.settings && APP.STATE.settings.weave !== false && weaveSupported()) { UI.weaveAuto = true; try { startWeave(APP.STATE.chart, APP.STATE.birth); } catch (e) {} }
+      if (weaveShouldAuto()) { UI.weaveAuto = true; try { startWeave(APP.STATE.chart, APP.STATE.birth); } catch (e) {} }
       if (!APP.STATE.settings.walked) { UI.walk = { i: 0, t0: nowT() }; UI.walkTr = null; UI.walkTheme = null; } // first reveal: walk them through it
     }
-    function recompute() { APP.STATE.chart = APP.compute(APP.STATE.birth, APP.STATE.settings); APP.save(); UI.readCache = null; UI.readSig = null; UI.readTransit = null; UI.forecast = null; UI.promCache = null; UI.arcCache = null; UI.weaveText = null; UI.weaveState = 'idle'; UI.weaveFor = null; UI.weaveMsg = null; UI.todayCache = null; UI.fmList = null; UI.lifeList = null; UI.calEvents = null; UI.calDay = null; UI.walkTr = null; UI.walkTheme = null; UI.bondCache = null; UI.bondFor = null; if (APP.clearPersonCharts) APP.clearPersonCharts(); UI.askAns = ''; UI.quip = null; UI.quipNext = 0; buildField(); }
+    function recompute() { APP.STATE.chart = APP.compute(APP.STATE.birth, APP.STATE.settings); APP.save(); UI.readCache = null; UI.readSig = null; UI.readTransit = null; UI.forecast = null; UI.promCache = null; UI.arcCache = null; UI.weaveText = null; UI.weaveState = 'idle'; UI.weaveFor = null; UI.weaveMsg = null; UI.weaveErr = ''; UI.weaveStream = ''; UI.weaveAuto = false; UI.todayCache = null; UI.fmList = null; UI.lifeList = null; UI.calEvents = null; UI.calDay = null; UI.walkTr = null; UI.walkTheme = null; UI.bondCache = null; UI.bondFor = null; if (APP.clearPersonCharts) APP.clearPersonCharts(); UI.askAns = ''; UI.quip = null; UI.quipNext = 0; buildField(); }
 
     // ---------- share / export a clean chart card (own untainted canvas; the live one holds remote images) ----------
     // share a daily card (clean offscreen canvas) — moon phase + what's live on your chart today
@@ -6779,7 +6886,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (({ read: 1, learn: 1, settings: 1, people: 1, tarot: 1 })[UI.screen]) { p.noStroke(); p.fill(UI.bg[0], UI.bg[1], UI.bg[2], 158); p.rect(0, topY() - 8, W, H - (topY() - 8)); }
       hits = []; p.rectMode(p.CORNER); p.textStyle(p.NORMAL); UI.mediaDrawn = false;
       // returning users: begin the on-device model download once, at startup, if the reader is enabled
-      if (!UI.weaveAuto && APP.STATE.chart && APP.STATE.settings && APP.STATE.settings.weave !== false && weaveSupported()) { UI.weaveAuto = true; try { startWeave(APP.STATE.chart, APP.STATE.birth); } catch (e) {} }
+      if (!UI.weaveAuto && APP.STATE.chart && weaveShouldAuto()) { UI.weaveAuto = true; try { startWeave(APP.STATE.chart, APP.STATE.birth); } catch (e) {} }
       if (UI.screen === 'onboard' && !APP.STATE.birth && !UI.introDone) { drawIntro(); clampScroll(); return; }
       var s = UI.screen;
       if (s === 'onboard') drawOnboard(); else { if (!(s === 'people' && UI.padd)) hideSearchInput(); if (s === 'chart') drawChart(); else if (s === 'read') drawRead(); else if (s === 'learn') drawLearn(); else if (s === 'tarot') drawTarot(); else if (s === 'people') drawPeople(); else if (s === 'settings') drawSettings(); }

@@ -17,13 +17,20 @@ on-device, no server, no API keys.
   by a transparent scorer (essential dignity, angularity, sect, chart-rulership,
   almuten, aspect activity, stelliums) so the reading leads with what actually
   carries weight in *this* chart, and shows *why*.
-- **Woven reading (experimental, opt-in)** — turn it on in Settings → Reading
-  and the whole reading can flow as a single voice. An on-device language model
-  (WebGPU; Qwen2.5 / Llama-3.2, downloaded **once** and run fully on your phone)
-  re-voices the engine's exact findings — it is briefed with the complete
-  computed dossier and is hard-constrained never to invent or drop a placement.
-  No WebGPU, no network, or any failure → a deterministic one-voice stitch.
-  Nothing leaves the device.
+- **Woven reading — your choice of voice** (Settings → Reading, also at onboarding):
+  the whole reading can flow as a single voice, streamed live. Three engines:
+  - **Claude (cloud)** — paste your own Anthropic API key; the best wording,
+    streamed token-by-token. Only the *computed facts* are sent (to phrase them);
+    the maths stays local. Needs internet.
+  - **On-device** — a language model runs entirely on your device via WebGPU,
+    **device-aware**: a large model (Gemma-2 9B / Llama-3.1 8B) on desktops with
+    more RAM, a lighter one (Qwen2.5-1.5B → Llama-3.2-1B → 0.5B) on iPhones.
+    Downloads once, then offline and private.
+  - **Algorithms** — no AI at all; the reading is composed purely by the
+    on-device maths engine (precise, specific, no repeated lines).
+  Whichever AI engine is chosen, it is briefed with the complete computed
+  dossier and hard-constrained never to invent or drop a placement; any failure
+  falls back to the deterministic reading, and the reason is shown, not hidden.
 - **Daily & time aspects** — live transits to your natal chart, split into
   what's running *today* (the slower planets) and *the passing hour* (the fast
   Moon), each with a plain-language paragraph.
