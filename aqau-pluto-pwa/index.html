@@ -4713,7 +4713,8 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     var WLLM = null;
     function weaveSupported() { try { return !!(typeof navigator !== 'undefined' && navigator.gpu); } catch (e) { return false; } }
     function weaveModels() { return deviceTier() === 'desktop' ? WLLM_DESKTOP : WLLM_MOBILE; }
-    function weaveShouldAuto() { var st = APP.STATE.settings || {}, e = st.readingEngine || 'local'; if (e === 'off') return false; if (e === 'claude') return !!(st.claudeKey && ('' + st.claudeKey).replace(/\s/g, '')); return weaveSupported(); }
+    function localOk() { return deviceTier() === 'desktop' && weaveSupported(); } // on-device AI: desktop browsers only for now
+    function weaveShouldAuto() { var st = APP.STATE.settings || {}, e = st.readingEngine || 'local'; if (e === 'off') return false; if (e === 'claude') return !!(st.claudeKey && ('' + st.claudeKey).replace(/\s/g, '')); return localOk(); }
     function loadWeaveEngine(ok, fail) {
       if (WLLM) { ok(WLLM); return; }
       var imp; try { imp = new Function('u', 'return import(u);'); } catch (e) { fail('this browser blocks dynamic import (eval)'); return; }
@@ -4797,6 +4798,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       UI.weaveState = 'loading';
       var sys = APP.accupiReadSys(), um = APP.weaveUser(brief);
       if (eng === 'claude') { UI.weaveMsg = 'Accupi is reading your chart'; weaveViaClaude(sys, um, onChunk, function (f) { done(f, 'claude'); }, failed); return; }
+      if (deviceTier() !== 'desktop') { failed('On-device Accupi is desktop-only for now (phone browsers can’t run it reliably yet) — open Aqau Pluto on a computer, or switch to Claude in Settings → Reading.'); return; }
       if (!weaveSupported()) { failed('this browser has no WebGPU, so the on-device Accupi can’t run — switch to Claude in Settings → Reading, or read the algorithm version above.'); return; }
       UI.weaveMsg = 'preparing on-device model';
       weaveViaLocal(sys, um, onChunk, function (f) { done(f, 'local-ai'); }, failed);
@@ -4808,6 +4810,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var eng = (APP.STATE.settings && APP.STATE.settings.readingEngine) || 'local';
       if (eng === 'off') { UI.askErr = 'Turn on Accupi (Claude or on-device) in Settings → Reading to ask questions.'; return; }
       if (eng === 'claude' && !(APP.STATE.settings.claudeKey && ('' + APP.STATE.settings.claudeKey).replace(/\s/g, ''))) { UI.askErr = 'Add your Claude API key in Settings → Reading first.'; return; }
+      if (eng === 'local' && deviceTier() !== 'desktop') { UI.askErr = 'On-device Accupi is desktop-only for now — switch to Claude in Settings → Reading to ask on your phone.'; return; }
       if (eng === 'local' && !weaveSupported()) { UI.askErr = 'This browser has no WebGPU — switch to Claude in Settings → Reading to ask questions.'; return; }
       UI.accupiChat = UI.accupiChat || [];
       var entry = { q: question, a: '', busy: true };
@@ -6344,13 +6347,17 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       ly += toggleRow('House system', [['whole', 'Whole'], ['equal', 'Equal'], ['placidus', 'Placidus']], st.house, ly, function (v) { st.house = v; recompute(); });
       ly += toggleRow('Show extra points', [['off', 'Off'], ['on', 'On']], st.minorBodies ? 'on' : 'off', ly, function (v) { st.minorBodies = (v === 'on'); recompute(); });
       ly += paragraph('On: adds Chiron and the four major asteroids (Ceres, Pallas, Juno, Vesta) as extra points — computed on-device to about a degree.', x, ly, w, 13.5, INK, SERIF, 20, 180) + 14;
-      // ---- reading voice: who writes the one-voice reading ----
-      eyebrow('Reading voice', x, ly); ly += 22;
-      ly += toggleRow('Woven reading', [['claude', 'Claude'], ['local', 'On-device'], ['off', 'Algorithms']], st.readingEngine || 'local', ly, function (v) { st.readingEngine = v; st.weave = (v !== 'off'); APP.save(); UI.weaveText = null; UI.weaveState = 'idle'; UI.weaveErr = ''; UI.weaveAuto = false; });
-      var reHint = (st.readingEngine === 'claude') ? 'Claude (cloud): the best wording, streamed live. Needs internet + your own API key (below). The chart maths stays exact and local; only the computed facts are sent to phrase them.'
-        : (st.readingEngine === 'off') ? 'Algorithms only: no AI at all. The reading is composed purely by the on-device maths engine — precise, specific, no repeated lines.'
-        : 'On-device: a language model runs entirely on your device (needs WebGPU — most desktop browsers, newer iPhones). Bigger model on computers, lighter on phones. Downloads once, then works offline. Private.';
+      // ---- reading voice: who writes the one-voice reading (on-device is desktop-only) ----
+      eyebrow('Accupi’s engine', x, ly); ly += 22;
+      var canLocal = (deviceTier() === 'desktop');
+      var engOpts = canLocal ? [['claude', 'Claude'], ['local', 'On-device'], ['off', 'Algorithms']] : [['claude', 'Claude'], ['off', 'Algorithms']];
+      var engVal = (st.readingEngine === 'local' && !canLocal) ? 'off' : (st.readingEngine || (canLocal ? 'local' : 'claude'));
+      ly += toggleRow('Accupi engine', engOpts, engVal, ly, function (v) { st.readingEngine = v; st.weave = (v !== 'off'); APP.save(); UI.weaveText = null; UI.weaveState = 'idle'; UI.weaveErr = ''; UI.weaveAuto = false; });
+      var reHint = (engVal === 'claude') ? 'Claude (cloud): the best wording, streamed live. Needs internet + your own API key (below). The chart maths stays exact and local; only the computed facts are sent to phrase them.'
+        : (engVal === 'off') ? 'Algorithms only: no AI at all — the reading is composed purely by the maths engine. Precise, specific, no repeated lines.'
+        : 'On-device: a language model runs entirely in your browser via WebGPU — private, offline after a one-time download. A larger, better model since you’re on a computer.';
       ly += paragraph(reHint, x, ly, w, 13, INK, SERIF, 19, 180) + 12;
+      if (!canLocal) { setFont(MONO, 8.5, ACCTX, p.LEFT, p.TOP, 170); ly += paragraph('On-device AI is desktop-only for now — phone browsers can’t run it reliably yet, so open Aqau Pluto on a computer to use it. On your phone, Claude is the way.', x, ly, w, 11, ACCTX, MONO, 15, 170) + 10; }
       if (st.readingEngine === 'claude') {
         var hasKey = !!(st.claudeKey && ('' + st.claudeKey).replace(/\s/g, ''));
         var keyLbl = hasKey ? 'Claude key set ✓ — tap to change' : 'Paste Claude API key';
@@ -6522,10 +6529,11 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         ly += oh + 6;
         setFont(MONO, 8.5, INK, p.LEFT, p.TOP, 130); ly += paragraph('Use this when you know the exact offset — e.g. wartime or pre-1970 births the timezone database resolves loosely.', x, ly, w, 11, INK, MONO, 15, 130) + 8;
       }
-      // reading voice — choose here, at the start, so it's ready when you read
-      var stO = APP.STATE.settings, curE = stO.readingEngine || 'local';
-      eyebrow('Reading voice', x, ly); ly += 22;
-      var opts = [['claude', 'Claude'], ['local', 'On-device'], ['off', 'Algorithms']], obw = (w - 16) / 3, oi;
+      // Accupi's engine — choose here, at the start (on-device is desktop-only)
+      var stO = APP.STATE.settings, canLoc = (deviceTier() === 'desktop');
+      var curE = stO.readingEngine || (canLoc ? 'local' : 'claude'); if (curE === 'local' && !canLoc) curE = 'claude';
+      eyebrow('Accupi’s engine', x, ly); ly += 22;
+      var opts = canLoc ? [['claude', 'Claude'], ['local', 'On-device'], ['off', 'Algorithms']] : [['claude', 'Claude'], ['off', 'Algorithms']], obw = (w - (opts.length - 1) * 8) / opts.length, oi;
       for (oi = 0; oi < opts.length; oi++) {
         var ox = x + oi * (obw + 8), on = (curE === opts[oi][0]);
         p.noStroke(); fillc(on ? ACC : shade(GROUNDS[UI.screen], -12)); p.rect(ox, sY(ly), obw, 38, 8);
@@ -6536,8 +6544,8 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       ly += 46;
       var obh = (curE === 'claude') ? 'Claude (cloud): best wording, streamed. Add your API key in Settings → Reading. The maths stays local; only the computed facts are sent to phrase them.'
         : (curE === 'off') ? 'Algorithms only: no AI — the reading is pure on-device maths, precise and specific.'
-        : 'On-device AI: a model runs entirely on your device (WebGPU — desktops + newer iPhones), bigger on computers. Downloads once, then offline. Private.';
-      setFont(MONO, 8.5, INK, p.LEFT, p.TOP, 130); ly += paragraph(obh, x, ly, w, 11, INK, MONO, 15, 130) + 12;
+        : 'On-device AI: a model runs entirely in your browser via WebGPU — private, offline after one download. Desktop only for now.';
+      setFont(MONO, 8.5, INK, p.LEFT, p.TOP, 130); ly += paragraph(obh + (!canLoc ? ' (On phones, Accupi runs on Claude — on-device is desktop-only for now.)' : ''), x, ly, w, 11, INK, MONO, 15, 130) + 12;
       var canBuild = (d.cityIdx >= 0) || !!(d.geo && d.geo.iana);
       var buildLabel = canBuild ? 'Build my chart' : (d.geo && d.geoTzLoading ? 'Finding time zone…' : 'Choose a birth place');
       flatBtn(buildLabel, x, ly, w, 50, function () { if (canBuild) buildChart(); }, canBuild); ly += 64; UI.contentH.onboard = ly;
@@ -6991,6 +6999,8 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (({ read: 1, learn: 1, settings: 1, people: 1, tarot: 1 })[UI.screen]) { p.noStroke(); p.fill(UI.bg[0], UI.bg[1], UI.bg[2], 158); p.rect(0, topY() - 8, W, H - (topY() - 8)); }
       hits = []; p.rectMode(p.CORNER); p.textStyle(p.NORMAL); UI.mediaDrawn = false; UI.askDrawn = false;
       // returning users: begin the on-device model download once, at startup, if the reader is enabled
+      // one-time: a phone can't run the on-device model yet, so move it to Claude (the AI that works on phones)
+      if (!UI.engMig) { UI.engMig = true; if (APP.STATE.settings && APP.STATE.settings.readingEngine === 'local' && deviceTier() !== 'desktop') { APP.STATE.settings.readingEngine = 'claude'; APP.save(); } }
       if (!UI.weaveAuto && APP.STATE.chart && weaveShouldAuto()) { UI.weaveAuto = true; try { startWeave(APP.STATE.chart, APP.STATE.birth); } catch (e) {} }
       if (UI.screen === 'onboard' && !APP.STATE.birth && !UI.introDone) { drawIntro(); clampScroll(); return; }
       var s = UI.screen;
