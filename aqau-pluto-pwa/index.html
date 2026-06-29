@@ -967,9 +967,9 @@ var DATA = (function () {
   ];
   // minor aspects \u2014 Astro.com-style, only added to the natal grid when "Minor aspects" is on (kept out of transits to avoid noise)
   var MINOR_ASPECTS = [
-    { key: 'quincunx',        glyph: '\u26BB\uFE0E', angle: 150, orb: 2.5, quality: 'tension',    phrase: 'an awkward 150\u00B0 \u2014 two parts of you that never quite fit, needing constant small adjustments', minor: true },
+    { key: 'quincunx',        glyph: '\u26BB\uFE0E', angle: 150, orb: 2.5, quality: 'tension',    phrase: 'an awkward 150\u00B0: two parts of you that never quite fit, needing constant small adjustments', minor: true },
     { key: 'sesquiquadrate',  glyph: '\u26BC\uFE0E', angle: 135, orb: 2,   quality: 'friction',   phrase: 'a 135\u00B0 irritation that flares under pressure', minor: true },
-    { key: 'semisquare',      glyph: '\u2220',       angle: 45,  orb: 2,   quality: 'friction',   phrase: 'a 45\u00B0 friction \u2014 a low, nagging tension', minor: true },
+    { key: 'semisquare',      glyph: '\u2220',       angle: 45,  orb: 2,   quality: 'friction',   phrase: 'a 45\u00B0 friction, a low, nagging tension', minor: true },
     { key: 'semisextile',     glyph: '\u26BA\uFE0E', angle: 30,  orb: 1.5, quality: 'opportunity', phrase: 'a mild 30\u00B0 link between neighbouring areas of life', minor: true }
   ];
 
@@ -1308,11 +1308,11 @@ var DATA = (function () {
       { q: 'Astra inclinant, sed non obligant — the stars incline, they do not compel.', src: 'a traditional astrological maxim' },
       { q: 'Character is destiny.', src: 'Alan Leo (1860–1917)' }
     ],
-    elements: 'The four elements descend from Empedocles and the Greek physicians’ four humours — fire (choleric), earth (melancholic), air (sanguine) and water (phlegmatic) — the oldest map of temperament in the West.',
+    elements: 'The four elements descend from Empedocles and the Greek physicians’ four humours: fire (choleric), earth (melancholic), air (sanguine) and water (phlegmatic). They are the oldest map of temperament in the West.',
     signs: 'Each sign blends an element with a mode (cardinal, fixed, mutable) — a scheme set down in Ptolemy’s Tetrabiblos and later systematised for modern readers by Alan Leo.',
-    planets: 'Ptolemy’s Tetrabiblos fixes each planet’s core significations — Mars heat and action, Venus union and pleasure, Saturn limit and time — the root beneath every modern keyword.',
+    planets: 'Ptolemy’s Tetrabiblos fixes each planet’s core significations: Mars heat and action, Venus union and pleasure, Saturn limit and time. This is the root beneath every modern keyword.',
     houses: 'The twelve houses are the Hellenistic “places” (topoi), each a department of life: from the 1st (the body and self) to the 12th (the hidden, the undoing, what is behind the scenes).',
-    aspects: 'These are the Ptolemaic aspects — conjunction, sextile, square, trine and opposition — the geometric angles Ptolemy held to carry real force between two planets.'
+    aspects: 'These are the Ptolemaic aspects: conjunction, sextile, square, trine and opposition. Ptolemy held these geometric angles to carry real force between two planets.'
   };
   // Per-planet traditional significations (our own words) paired with a genuinely public-domain line.
   // Ptolemy quotes are the Ashmand translation (1822, PD); Lilly is Christian Astrology (1647, PD), spelling
@@ -2511,7 +2511,7 @@ var APP = (function () {
     'sun|venus': { conj: 'warmth, charm and a love of beauty are woven into who you are', soft: 'you connect and create easily; people warm to you', hard: 'your wants and your values can tug against each other — vanity vs worth' },
     'mars|sun': { conj: 'drive and identity fuse — forceful, courageous, sometimes too hot', soft: 'will and action align; you go after things cleanly', hard: 'a hot temper or a fight between ego and effort — channel it or it burns' },
     'saturn|sun': { conj: 'a serious, self-disciplined core; authority is a lifelong theme', soft: 'you build steadily and earn what you get', hard: 'an early sense of not-enough that hardens into real competence over time' },
-    'pluto|sun': { conj: 'intensity and power radiate from your core — all-or-nothing', soft: 'you regenerate and deepen with each chapter', hard: 'power struggles and a drive to transform that can overwhelm — or remake — you' },
+    'pluto|sun': { conj: 'intensity and power radiate from your core — all-or-nothing', soft: 'you regenerate and deepen with each chapter', hard: 'power struggles, and a drive to transform that can either overwhelm you or remake you' },
     'sun|uranus': { conj: 'an original, electric identity — you need to be free to be yourself', soft: 'your individuality flows; you innovate without forcing it', hard: 'a restlessness with authority and a need to break out, sometimes abruptly' },
     'neptune|sun': { conj: 'a dreamy, porous, artistic self — identity can blur', soft: 'imagination and compassion colour who you are', hard: 'confusion about who you really are; idealism that needs grounding' },
     'jupiter|sun': { conj: 'big-hearted, optimistic, larger than life', soft: 'luck, faith and growth come naturally', hard: 'over-promising and overreach — your reach exceeds your grasp' },
@@ -2572,7 +2572,7 @@ var APP = (function () {
       themes.push('Three independent measures converge: by essential dignity (the almuten), by the dispositor chains, and by sheer prominence, ' + nameFor(top) + ' is the keystone of your chart. ' + capit(pdesc) + ' is the hand on everything else.');
     } else {
       if (top) { var reasons = pr.why[top].slice(0, 3), rtxt = reasons.length ? (' — ' + reasons.join(', ')) : ''; themes.push('The loudest voice in your chart is ' + nameFor(top) + rtxt + '. ' + capit(pdesc) + ' sets the tone the rest of you answers to.'); }
-      if (amSingle && am.lead !== top) themes.push('By essential dignity, your almuten — the planet that wins the most dignity across your chart — is ' + nameFor(am.lead) + ', a quieter but weighty hand on the wheel.');
+      if (amSingle && am.lead !== top) themes.push('By essential dignity, your almuten (the planet that wins the most dignity across your chart) is ' + nameFor(am.lead) + ', a quieter but weighty hand on the wheel.');
       else if (am && am.tie.length > 1) themes.push('Two planets tie as your chart’s almuten by essential dignity — ' + am.tie.map(nameFor).join(' and ') + ' — sharing command. A chart run by committee.');
       if (fdSingle && fd.lead !== top && fd.count >= 4) themes.push('Trace each planet to the ruler of its sign and the chains converge on ' + nameFor(fd.lead) + ' — the desk where the whole chart’s business lands.');
       else if (fd && fd.all.length > 1) themes.push('Your dispositor chains lock into mutual reception between ' + fd.all.map(nameFor).join(' and ') + ' — planets propping each other up, no single master.');
@@ -4920,7 +4920,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         if (fc2.zr && fc2.zr.l1) { var z = fc2.zr, zr2 = z.l2 ? (' Inside it you’re in a ' + z.l2.signName + ' sub-chapter (ruled by ' + APP.nameFor(z.l2.ruler) + ').') : ''; ly += paragraph('Zodiacal Releasing from your Lot of Spirit puts you in a ' + z.l1.signName + ' life-chapter (roughly age ' + Math.round(z.l1.startAge) + '–' + Math.round(z.l1.endAge) + '), ruled by ' + APP.nameFor(z.l1.ruler) + ' — the long arc of where your purpose is unfolding.' + zr2, x, ly, w, 14.5, INK, SERIF, 22) + 10; }
         var pg = fc2.progressed;
         ly += paragraph('By secondary progression your inner Sun has moved into ' + DATA.SIGNS[pg.sunSign].name + ' and your progressed Moon is in ' + DATA.SIGNS[pg.moonSign].name + ' — the slow seasons of your becoming.', x, ly, w, 15, INK, SERIF, 23) + 10;
-        if (fc2.solarReturn) { var sr = fc2.solarReturn; ly += paragraph('Your next solar return — your astrological birthday chart — lands ' + fmtShort(sr.date) + (sr.ascSign != null ? (', rising ' + DATA.SIGNS[sr.ascSign].name) : '') + ', Moon in ' + DATA.SIGNS[sr.moonSign].name + '.', x, ly, w, 15, INK, SERIF, 23) + 12; }
+        if (fc2.solarReturn) { var sr = fc2.solarReturn; ly += paragraph('Your next solar return, your astrological birthday chart, lands ' + fmtShort(sr.date) + (sr.ascSign != null ? (', rising ' + DATA.SIGNS[sr.ascSign].name) : '') + ', Moon in ' + DATA.SIGNS[sr.moonSign].name + '.', x, ly, w, 15, INK, SERIF, 23) + 12; }
         if (fc2.sky) { var sky = fc2.sky, sl = 'The Moon is in ' + sky.moon.signName + (sky.moon.voc ? ' (void of course — let plans rest a few hours)' : '') + '. ' + (sky.retros.length ? (sky.retros.map(APP.nameFor).join(', ') + ' ' + (sky.retros.length === 1 ? 'is' : 'are') + ' retrograde right now — a time to revisit, not rush.') : 'No planets retrograde right now — a clear runway.'); ly += paragraph(sl, x, ly, w, 15, INK, SERIF, 23) + 12; }
         ly += 4; eyebrow('Coming up', x, ly, ACC); ly += 24;
         if (!fc2.upcoming.length) ly += paragraph('No exact major transits in the next eight months — a steadier stretch.', x, ly, w, 14.5, INK, SERIF, 22, 210) + 8;
@@ -5396,7 +5396,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       { k: 'planets', t: 'The planets are needs', b: 'Each planet is a different hunger: the Sun to shine, the Moon to feel safe, Mercury to think, Venus to love, Mars to act. They orbit — and so do their seasons in you.' },
       { k: 'signs', t: 'Twelve signs', b: 'Every planet lands in a sign — a flavour, a style. Your Sun sign is only the beginning; the Moon and rising colour the whole picture.' },
       { k: 'houses', t: 'Twelve houses', b: 'The wheel is sliced into twelve houses — arenas of life: self, money, love, work, home. A planet’s house tells you where its story plays out.' },
-      { k: 'aspects', t: 'Planets in conversation', b: 'When planets sit at special angles — a flowing trine, a tense square — they talk. Those conversations, easy or difficult, are the threads that weave a chart together.' },
+      { k: 'aspects', t: 'Planets in conversation', b: 'When planets sit at special angles, like a flowing trine or a tense square, they talk. Those conversations, easy or difficult, are the threads that weave a chart together.' },
       { k: 'modalities', t: 'Three ways to move', b: 'Each element comes in three modes. Cardinal signs start things, fixed signs sustain them, mutable signs adapt and let go. It’s the difference between lighting the fire, tending it, and carrying its sparks on the wind.' },
       { k: 'dignity', t: 'A planet at home', b: 'A planet in its own sign is at home — strong and easy. In the opposite sign it’s a guest far from its comfort, and has to work harder. This is called dignity, and it colours how smoothly each placement runs.' },
       { k: 'retro', t: 'When planets turn back', b: 'Now and then a planet appears to loop backward across the sky — retrograde. Nothing really reverses; it’s a trick of perspective. But the energy turns inward: revisited, reworked, slowed down rather than rushed.' },
@@ -5409,7 +5409,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     var HISTORY = [
       { era: true, anim: 'moving', t: 'Babylon — the first sky-watchers', y: 'c. 1800 BCE', b: 'Astrology was born between the Tigris and Euphrates. Babylonian priests kept centuries of records linking events on Earth to omens in the sky, and drew the first zodiac — twelve equal slices along the Sun’s yearly path. The planets were gods whose movements were messages.' },
       { era: true, anim: 'signs', t: 'Egypt — the decans', y: 'c. 2000 BCE', b: 'Egyptian sky-watchers divided the heavens into 36 decans — ten-degree bands of stars that rose in turn through the night to tell the hours. Painted across temple ceilings (most famously the round zodiac of Dendera), the decans still survive as the 10° thirds that shade every sign today.' },
-      { era: true, anim: 'wheel', t: 'India — Jyotisha, the science of light', y: 'from c. 1500 BCE', b: 'India built its own living system, still consulted daily. It is sidereal — tied to the fixed stars rather than the seasons — and adds the 27 nakshatras (lunar mansions) and the dasha system of planetary periods, all woven through the ideas of karma and dharma. (You can switch this app to its sidereal zodiac in Settings.)' },
+      { era: true, anim: 'wheel', t: 'India — Jyotisha, the science of light', y: 'from c. 1500 BCE', b: 'India built its own living system, still consulted daily. It is sidereal, tied to the fixed stars rather than the seasons, and adds the 27 nakshatras (lunar mansions) and the dasha system of planetary periods, all woven through the ideas of karma and dharma. (You can switch this app to its sidereal zodiac in Settings.)' },
       { era: true, anim: 'elements', t: 'China — a different sky', y: 'from c. 1000 BCE', b: 'Chinese astrology runs on a wholly different model: a twelve-year cycle of animals, five elements (wood, fire, earth, metal, water), the lunar calendar, and the balance of yin and yang — read from the year, month, day and hour of birth rather than a zodiac belt.' },
       { era: true, anim: 'planets', t: 'The Maya — keepers of Venus', y: 'c. 250 – 900 CE', b: 'In the Americas the Maya tracked Venus and the Sun with breathtaking precision, interlocking a 260-day sacred count (the Tzolk’in) with the solar year and the Long Count. For them the planets were time itself, sacred and exact.' },
       { era: true, anim: 'aspects', t: 'Greece — the birth of the horoscope', y: 'c. 150 BCE – 150 CE', b: 'Hellenistic astrologers fused Babylonian omens with Greek geometry to cast the personal horoscope — a chart for the exact moment and place of a birth. Claudius Ptolemy’s Tetrabiblos systematised it all; much of what we still do (signs, houses, aspects) traces to here.' },
@@ -5475,7 +5475,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       { s: 5, t: 'The Maiden', story: 'Virgo is the maiden of the harvest — often Astraea, goddess of justice. The last immortal to live among us, she withdrew to the sky as the world grew cruel, holding her sheaf of wheat (the bright star Spica).' },
       { s: 6, t: 'The Scales', story: 'Libra is the only sign that is an object, not a creature: the scales of divine justice held by Astraea. They weigh right against wrong, and ask, always, for balance.' },
       { s: 7, t: 'The Scorpion', story: 'Scorpio is the scorpion that struck down Orion the boastful hunter. The two were set at opposite ends of the sky, so that as the Scorpion rises, Orion forever flees below the horizon.' },
-      { s: 8, t: 'The Archer', story: 'Sagittarius is the centaur archer — often wise Chiron, the immortal healer — drawing his bow toward the heart of the Scorpion. Half-man, half-horse, he aims always at something higher.' },
+      { s: 8, t: 'The Archer', story: 'Sagittarius is the centaur archer, often wise Chiron the immortal healer, drawing his bow toward the heart of the Scorpion. Half-man, half-horse, he aims always at something higher.' },
       { s: 9, t: 'The Sea-Goat', story: 'Capricorn is the strange sea-goat: the god Pan, who leapt into the Nile to escape the monster Typhon and turned his lower half to fish. Half mountain-climber, half deep-sea diver — earthly drive with hidden depths.' },
       { s: 10, t: 'The Cup-Bearer', story: 'Aquarius is Ganymede, the youth carried to Olympus by Zeus’s eagle to pour wine for the gods. He tips his urn and pours the waters of life out upon the world.' },
       { s: 11, t: 'The Two Fishes', story: 'Pisces are Aphrodite and her son Eros, who became fish and tied themselves together with a cord so they would not lose each other fleeing Typhon — two fish, bound, swimming opposite ways.' }
@@ -6310,7 +6310,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       ly += toggleRow('Zodiac', [['tropical', 'Tropical'], ['sidereal', 'Sidereal']], st.zodiac, ly, function (v) { st.zodiac = v; recompute(); });
       ly += toggleRow('House system', [['whole', 'Whole'], ['equal', 'Equal'], ['placidus', 'Placidus']], st.house, ly, function (v) { st.house = v; recompute(); });
       ly += toggleRow('Show extra points', [['off', 'Off'], ['on', 'On']], st.minorBodies ? 'on' : 'off', ly, function (v) { st.minorBodies = (v === 'on'); recompute(); });
-      ly += paragraph('On: adds Chiron and the four major asteroids (Ceres, Pallas, Juno, Vesta) — computed on-device to about a degree — and folds Chiron into the aspect grid.', x, ly, w, 13.5, INK, SERIF, 20, 180) + 14;
+      ly += paragraph('On: adds Chiron and the four major asteroids (Ceres, Pallas, Juno, Vesta), computed on-device to about a degree, and folds Chiron into the aspect grid.', x, ly, w, 13.5, INK, SERIF, 20, 180) + 14;
       ly += toggleRow('Lunar node', [['true', 'True'], ['mean', 'Mean']], (st.trueNode === false ? 'mean' : 'true'), ly, function (v) { st.trueNode = (v === 'true'); recompute(); });
       ly += paragraph('True node tracks the Moon’s actual wobbling orbit (Astrodienst’s default); Mean is the smoothed average. They differ by up to ~1.5°.', x, ly, w, 13.5, INK, SERIF, 20, 180) + 14;
       ly += toggleRow('Minor aspects', [['off', 'Off'], ['on', 'On']], st.minorAspects ? 'on' : 'off', ly, function (v) { st.minorAspects = (v === 'on'); recompute(); });
@@ -6852,7 +6852,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       { tab: 3, t: 'TAROT — spreads to lay yourself, every card’s meaning, and the card art from public-domain decks worldwide.' },
       { tab: 4, t: 'PEOPLE — add a friend, a date, or family by their birthday to compare charts, and see a family tree.' },
       { t: 'TAP THE MOON top-left, on any screen, for Today — the live sky on your chart: moon phase, what’s retrograde, and what’s moving now.' },
-      { tab: 5, t: 'SETTINGS — themes, bigger text, save & switch charts, share your chart as an image, and tune the zodiac and houses. That’s the tour — enjoy exploring.' }
+      { tab: 5, t: 'SETTINGS: themes, bigger text, save and switch charts, share your chart as an image, and tune the zodiac and houses. That is the tour. Enjoy exploring.' }
     ];
     function startTour() { UI.tour = { step: 0 }; UI.screen = 'chart'; }
     function endTour() { UI.tour = null; if (APP.STATE.settings) { APP.STATE.settings.toured = true; APP.save(); } }
