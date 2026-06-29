@@ -2569,18 +2569,18 @@ var APP = (function () {
     if (top && amSingle && am.lead === top && fdSingle && fd.lead === top) {
       themes.push('Three independent measures converge: by essential dignity (the almuten), by the dispositor chains, and by sheer prominence, ' + nameFor(top) + ' is the keystone of your chart. ' + capit(pdesc) + ' is the hand on everything else.');
     } else {
-      if (top) { var reasons = pr.why[top].slice(0, 3), rtxt = reasons.length ? (' — ' + reasons.join(', ')) : ''; themes.push('The loudest voice in your chart is ' + nameFor(top) + rtxt + '. ' + capit(pdesc) + ' sets the tone the rest of you answers to.'); }
+      if (top) { var reasons = pr.why[top].slice(0, 3), rtxt = reasons.length ? (' (' + reasons.join(', ') + ')') : ''; themes.push('The loudest voice in your chart is ' + nameFor(top) + rtxt + '. ' + capit(pdesc) + ' sets the tone the rest of you answers to.'); }
       if (amSingle && am.lead !== top) themes.push('By essential dignity, your almuten (the planet that wins the most dignity across your chart) is ' + nameFor(am.lead) + ', a quieter but weighty hand on the wheel.');
-      else if (am && am.tie.length > 1) themes.push('Two planets tie as your chart’s almuten by essential dignity — ' + am.tie.map(nameFor).join(' and ') + ' — sharing command. A chart run by committee.');
-      if (fdSingle && fd.lead !== top && fd.count >= 4) themes.push('Trace each planet to the ruler of its sign and the chains converge on ' + nameFor(fd.lead) + ' — the desk where the whole chart’s business lands.');
-      else if (fd && fd.all.length > 1) themes.push('Your dispositor chains lock into mutual reception between ' + fd.all.map(nameFor).join(' and ') + ' — planets propping each other up, no single master.');
+      else if (am && am.tie.length > 1) themes.push('Two planets tie as your chart’s almuten by essential dignity: ' + am.tie.map(nameFor).join(' and ') + '. They share command, a chart run by committee.');
+      if (fdSingle && fd.lead !== top && fd.count >= 4) themes.push('Trace each planet to the ruler of its sign and the chains converge on ' + nameFor(fd.lead) + '. That is the desk where the whole chart’s business lands.');
+      else if (fd && fd.all.length > 1) themes.push('Your dispositor chains lock into mutual reception between ' + fd.all.map(nameFor).join(' and ') + '. They prop each other up, with no single master.');
     }
     // the sharpest edge: the out-of-sect malefic (classical "major source of difficulty")
-    if (pr.oosMalefic && c.planets[pr.oosMalefic]) themes.push('Handle ' + nameFor(pr.oosMalefic) + ' in ' + c.planets[pr.oosMalefic].signName + ' with the most care — as the malefic out of sect, it’s your chart’s sharpest edge, and the place the most maturity is asked of you.');
+    if (pr.oosMalefic && c.planets[pr.oosMalefic]) themes.push('Handle ' + nameFor(pr.oosMalefic) + ' in ' + c.planets[pr.oosMalefic].signName + ' with the most care. As the malefic out of sect, it is your chart’s sharpest edge, and the place the most maturity is asked of you.');
     var outers = ['saturn', 'pluto', 'uranus', 'neptune', 'jupiter'], note = { saturn: 'a recurring theme of weight, testing and hard-won mastery', pluto: 'a recurring theme of intensity and transformation', uranus: 'a thread of disruption and the need for freedom', neptune: 'a haze of longing, imagination and idealism', jupiter: 'a note of expansion, faith and excess' };
-    for (var oi = 0; oi < outers.length; oi++) { var o = outers[oi], hits = []; for (i = 0; i < c.aspects.length; i++) { var a2 = c.aspects[i], other = (a2.a === o) ? a2.b : (a2.b === o ? a2.a : null); if (other && personal[other]) hits.push(other); } if (hits.length >= 2) { themes.push(nameFor(o) + ' leans on several of your personal planets (' + hits.map(nameFor).join(', ') + ') — ' + note[o] + ' running through your inner life.'); break; } }
+    for (var oi = 0; oi < outers.length; oi++) { var o = outers[oi], hits = []; for (i = 0; i < c.aspects.length; i++) { var a2 = c.aspects[i], other = (a2.a === o) ? a2.b : (a2.b === o ? a2.a : null); if (other && personal[other]) hits.push(other); } if (hits.length >= 2) { themes.push(nameFor(o) + ' leans on several of your personal planets (' + hits.map(nameFor).join(', ') + '): ' + note[o] + ' running through your inner life.'); break; } }
     var soft = 0, hard = 0; for (i = 0; i < c.aspects.length; i++) { var q = c.aspects[i].asp.quality; if (q === 'flow' || q === 'opportunity') soft++; else if (q === 'friction' || q === 'tension') hard++; }
-    if (soft + hard >= 4) themes.push(hard > soft * 1.5 ? 'Your aspects run hot — more friction than flow. You’re built by challenge; ease has to be chosen.' : soft > hard * 1.5 ? 'Your aspects run smooth — more flow than friction. Gifts come easily; the risk is coasting on them.' : 'Your aspects balance flow and friction — a chart with both real gifts and real grit.');
+    if (soft + hard >= 4) themes.push(hard > soft * 1.5 ? 'Your aspects run hot, with more friction than flow. You’re built by challenge, and ease has to be chosen.' : soft > hard * 1.5 ? 'Your aspects run smooth, with more flow than friction. Gifts come easily, and the risk is coasting on them.' : 'Your aspects balance flow and friction, a chart with both real gifts and real grit.');
     return themes.slice(0, 5);
   }
 
@@ -2600,7 +2600,7 @@ var APP = (function () {
     return out.slice(0, 5);
   }
   function pointAspectLine(pa) {
-    return pa.pointName + ' ' + pa.asp.key + ' your ' + nameFor(pa.np) + ' — ' + pa.pointFn + ' ' + aspVerb(pa.asp) + ' your ' + shortFn(pa.np) + ', ' + aspTone(pa.asp) + '.';
+    return pa.pointName + ' ' + pa.asp.key + ' your ' + nameFor(pa.np) + ': ' + pa.pointFn + ' ' + aspVerb(pa.asp) + ' your ' + shortFn(pa.np) + ', ' + aspTone(pa.asp) + '.';
   }
   // sect: is this a day chart (Sun above the horizon) or a night chart? It reweights the benefics/malefics.
   function sect(c) {
@@ -2611,8 +2611,8 @@ var APP = (function () {
       : { day: false, light: 'moon', benefic: 'venus', malefic: 'mars', oosBenefic: 'jupiter', oosMalefic: 'saturn' };
   }
   function sectText(o) {
-    return 'Yours is a ' + (o.day ? 'day' : 'night') + ' chart — born with the Sun ' + (o.day ? 'above' : 'below') + ' the horizon, so your ' + nameFor(o.light) + ' leads the chart. ' +
-      nameFor(o.benefic) + ' is your benefic “of sect”: its gifts arrive more cleanly. ' + nameFor(o.malefic) + ' is the malefic of sect — strict, but ultimately constructive. ' +
+    return 'Yours is a ' + (o.day ? 'day' : 'night') + ' chart, born with the Sun ' + (o.day ? 'above' : 'below') + ' the horizon, so your ' + nameFor(o.light) + ' leads the chart. ' +
+      nameFor(o.benefic) + ' is your benefic “of sect”: its gifts arrive more cleanly. ' + nameFor(o.malefic) + ' is the malefic of sect: strict, but ultimately constructive. ' +
       'Out of sect, ' + nameFor(o.oosBenefic) + ' can over-promise, and ' + nameFor(o.oosMalefic) + ' is the one to handle with the most care.';
   }
   // ===== deepened ephemeris: planetary conditions (only surfaced when actually present, so never filler) =====
@@ -2628,11 +2628,11 @@ var APP = (function () {
   }
   function conditionLine(cd) {
     var nm = nameFor(cd.k), fn = DATA.PLANETS[cd.k] ? DATA.PLANETS[cd.k].fn : 'this part of you', sf = shortFn(cd.k);
-    if (cd.t === 'cazimi') return nm + ' is cazimi — within 17 arcminutes of the exact heart of the Sun. Not burned but enthroned: ' + fn + ' is fused to your core identity and carries rare authority.';
-    if (cd.t === 'combust') return nm + ' is combust, only ' + cd.v.toFixed(1) + '° from the Sun, its light swallowed by your own drive to shine — so ' + sf + ' has to work hard to be seen on its own terms.';
+    if (cd.t === 'cazimi') return nm + ' is cazimi, within 17 arcminutes of the exact heart of the Sun. Not burned but enthroned: ' + fn + ' is fused to your core identity and carries rare authority.';
+    if (cd.t === 'combust') return nm + ' is combust, only ' + cd.v.toFixed(1) + '° from the Sun, its light swallowed by your own drive to shine, so ' + sf + ' has to work hard to be seen on its own terms.';
     if (cd.t === 'beams') return nm + ' rides under the Sun’s beams (' + cd.v.toFixed(1) + '°), operating half-hidden behind your sense of self: quietly steering rather than speaking out loud.';
-    if (cd.t === 'oob') return nm + ' is out of bounds — its declination of ' + cd.v.toFixed(1) + '° runs past the Sun’s own limit, so ' + sf + ' answers to no one but itself: gifted, excessive, and hard to govern.';
-    if (cd.t === 'stationary') return nm + ' stood almost still at your birth, pivoting between forward and retrograde — so ' + sf + ' sits unusually deep and concentrated in you, a fixed undercurrent rather than a passing mood.';
+    if (cd.t === 'oob') return nm + ' is out of bounds. Its declination of ' + cd.v.toFixed(1) + '° runs past the Sun’s own limit, so ' + sf + ' answers to no one but itself: gifted, excessive, and hard to govern.';
+    if (cd.t === 'stationary') return nm + ' stood almost still at your birth, pivoting between forward and retrograde, so ' + sf + ' sits unusually deep and concentrated in you, a fixed undercurrent rather than a passing mood.';
     return '';
   }
   // declination aspects: parallels (hidden conjunction) & contraparallels (hidden opposition), within ~1° of declination
@@ -2649,7 +2649,7 @@ var APP = (function () {
     return out;
   }
   function declAspectLine(p) {
-    return nameFor(p.a) + ' and ' + nameFor(p.b) + ' are ' + (p.type === 'parallel' ? 'parallel by declination — they reinforce each other like a quiet, hidden conjunction' : 'contraparallel — they pull on each other like a hidden opposition') + ' (declinations ' + p.da.toFixed(1) + '° and ' + p.db.toFixed(1) + '°).';
+    return nameFor(p.a) + ' and ' + nameFor(p.b) + ' are ' + (p.type === 'parallel' ? 'parallel by declination, reinforcing each other like a quiet, hidden conjunction' : 'contraparallel, pulling on each other like a hidden opposition') + ' (declinations ' + p.da.toFixed(1) + '° and ' + p.db.toFixed(1) + '°).';
   }
   // strip exact + near-duplicate block texts so no sentence repeats across a reading
   function dropDupBlocks(out) {
@@ -2695,11 +2695,11 @@ var APP = (function () {
       if (exLines.length) out.push({ label: 'Chiron & the asteroids (approximate)', lines: exLines });
     }
     var sct = sect(c);
-    if (sct) out.push({ label: 'Sect — day or night chart', text: sectText(sct) });
+    if (sct) out.push({ label: 'Sect: day or night chart', text: sectText(sct) });
     var pa = pointAspects(c);
     if (pa.length) {
       var byPt = {}, ordp = [], qi; for (qi = 0; qi < pa.length; qi++) { var P = pa[qi]; if (!byPt[P.point]) { byPt[P.point] = { name: P.pointName, fn: P.pointFn, items: [] }; ordp.push(P.point); } byPt[P.point].items.push(nameFor(P.np) + ' (' + aspVerb(P.asp) + ' your ' + shortFn(P.np) + ', ' + aspTone(P.asp) + ')'); }
-      var plines = [], oq; for (oq = 0; oq < ordp.length; oq++) { var G = byPt[ordp[oq]]; plines.push(G.name + ' — ' + G.fn + ' — meets ' + joinKw(G.items) + '.'); }
+      var plines = [], oq; for (oq = 0; oq < ordp.length; oq++) { var G = byPt[ordp[oq]]; plines.push(G.name + ' (' + G.fn + ') meets ' + joinKw(G.items) + '.'); }
       out.push({ label: 'Nodes, Lilith & Fortune', lines: plines });
     }
     var cond = chartConditions(c, STATE.birth);
