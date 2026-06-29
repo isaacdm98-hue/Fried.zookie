@@ -1305,11 +1305,11 @@ var DATA = (function () {
   var TRADITION = {
     general: [
       { q: 'As above, so below.', src: 'the Hermetic maxim (Emerald Tablet tradition)' },
-      { q: 'Astra inclinant, sed non obligant — the stars incline, they do not compel.', src: 'a traditional astrological maxim' },
+      { q: 'Astra inclinant, sed non obligant: the stars incline, they do not compel.', src: 'a traditional astrological maxim' },
       { q: 'Character is destiny.', src: 'Alan Leo (1860–1917)' }
     ],
     elements: 'The four elements descend from Empedocles and the Greek physicians’ four humours: fire (choleric), earth (melancholic), air (sanguine) and water (phlegmatic). They are the oldest map of temperament in the West.',
-    signs: 'Each sign blends an element with a mode (cardinal, fixed, mutable) — a scheme set down in Ptolemy’s Tetrabiblos and later systematised for modern readers by Alan Leo.',
+    signs: 'Each sign blends an element with a mode (cardinal, fixed, mutable). It is a scheme set down in Ptolemy’s Tetrabiblos and later systematised for modern readers by Alan Leo.',
     planets: 'Ptolemy’s Tetrabiblos fixes each planet’s core significations: Mars heat and action, Venus union and pleasure, Saturn limit and time. This is the root beneath every modern keyword.',
     houses: 'The twelve houses are the Hellenistic “places” (topoi), each a department of life: from the 1st (the body and self) to the 12th (the hidden, the undoing, what is behind the scenes).',
     aspects: 'These are the Ptolemaic aspects: conjunction, sextile, square, trine and opposition. Ptolemy held these geometric angles to carry real force between two planets.'
@@ -2269,9 +2269,9 @@ var APP = (function () {
   function appendTransitReading(wrap, c) {
     var tr = composeTransits(c);
     // ---- daily ----
-    wrap.appendChild(sectionLabel('Live on your chart — today'));
+    wrap.appendChild(sectionLabel('Live on your chart: today'));
     if (!tr.daily.length) {
-      wrap.appendChild(el('p', { class: 'muted', text: 'No close daily transits to your chart right now — a quiet stretch. The natal pattern above is running undisturbed.' }));
+      wrap.appendChild(el('p', { class: 'muted', text: 'No close daily transits to your chart right now. A quiet stretch, with the natal pattern above running undisturbed.' }));
     } else {
       wrap.appendChild(transitListCard(tr.daily.slice(0, 6), false));
       var dread = el('div', { class: 'reading' });
@@ -2279,14 +2279,14 @@ var APP = (function () {
       wrap.appendChild(dread);
     }
     // ---- time / the passing hour ----
-    wrap.appendChild(sectionLabel('Right now — the passing hour'));
+    wrap.appendChild(sectionLabel('Right now: the passing hour'));
     var stamp = clockStr(tr.ctx.now);
     if (!tr.timed.length) {
       wrap.appendChild(el('p', { class: 'muted', text: 'At ' + stamp + ' the Moon isn’t closely touching your chart. It moves about half a degree an hour, so check back later — this part changes fast.' }));
     } else {
       wrap.appendChild(transitListCard(tr.timed.slice(0, 4), true));
       var tread = el('div', { class: 'reading' });
-      tread.appendChild(el('p', { text: 'The Moon is the fast hand of the clock — these shift within hours, not days. As of ' + stamp + ': ' + tr.timed.slice(0, 2).map(transitSentence).join(' ') }));
+      tread.appendChild(el('p', { text: 'The Moon is the fast hand of the clock; these shift within hours, not days. As of ' + stamp + ': ' + tr.timed.slice(0, 2).map(transitSentence).join(' ') }));
       wrap.appendChild(tread);
     }
     wrap.appendChild(el('p', { class: 'source small', text: 'Transits computed live against your natal chart. Tight orbs only (Moon ≤3°, others ≤2–2.5°). Reload to refresh the hour.' }));
@@ -2305,11 +2305,11 @@ var APP = (function () {
     { n: 'New Moon', t: 'instinctive and self-starting; you act before you can fully explain why. A beginner’s drive that never quite leaves you.' },
     { n: 'Waxing Crescent', t: 'pushing away from the past to become your own person. You can feel the pull of the old behind you as you build the new.' },
     { n: 'First Quarter', t: 'a builder under pressure. You grow through decisive action and crisis. Things get made when you’re forced to choose.' },
-    { n: 'Waxing Gibbous', t: 'the perfecter — analytical, driven to refine, rarely satisfied that a thing is finished or quite good enough yet.' },
+    { n: 'Waxing Gibbous', t: 'the perfecter: analytical, driven to refine, rarely satisfied that a thing is finished or quite good enough yet.' },
     { n: 'Full Moon', t: 'relationship is your mirror. You meet yourself through other people, and clarity arrives in what reflects back at you.' },
     { n: 'Disseminating Moon', t: 'a natural teacher and sharer; you take what you’ve learned and pass it on. Meaning matters more to you than novelty.' },
     { n: 'Last Quarter', t: 'a turning-point soul, often a step out of time; you let go of structures others still cling to. A quiet revolutionary.' },
-    { n: 'Balsamic Moon', t: 'a bit of an old soul, here to complete and release rather than begin. The old waning moon — endings make sense to you.' }
+    { n: 'Balsamic Moon', t: 'a bit of an old soul, here to complete and release rather than begin. The old waning moon; endings make sense to you.' }
   ];
   function lunarPhase(c) {
     var elong = rev(c.planets.moon.lon - c.planets.sun.lon), idx = Math.floor(elong / 45) % 8;
