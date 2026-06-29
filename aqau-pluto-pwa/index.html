@@ -1331,18 +1331,18 @@ var DATA = (function () {
   };
   // Per-house significations after William Lilly, Christian Astrology (1647, PD) — our summary, then his own line.
   var HOUSE_TRAD = [
-    { sig: 'The body and the life itself — your appearance, vitality, temperament and the way you meet the world.', q: 'It signifieth the life of man… the stature, colour, complexion, form and shape of him.' },
-    { sig: 'What you own and what you’re worth — money, possessions, resources, and the things you can move and use.', q: 'It signifieth the estate or fortune of the querent, his wealth or poverty, all moveable goods, money lent.' },
-    { sig: 'Brothers and sisters, neighbours and everyday talk — short journeys, letters, messages and the near world.', q: 'It signifieth brethren, sisters, kinsfolk… short journeys, letters, rumours, messengers.' },
-    { sig: 'Home, family roots and the father — land, inheritance, and the ground you come from and return to.', q: 'It hath signification of fathers… of lands, houses, tenements, inheritances.' },
-    { sig: 'Children, romance, creativity and play — pleasure, delight and everything you make for joy.', q: 'It ruleth children… pleasure, delight, banquets, ale-houses, taverns.' },
-    { sig: 'Work, health and daily service — the body’s upkeep, routines, and those who labour with and for you.', q: 'It concerneth sickness… servants, labour, and small cattle.' },
-    { sig: 'Partnership and marriage — the close other, open enemies, contracts and what you meet face to face.', q: 'It giveth judgement of marriage… the open enemy, and law-suits.' },
-    { sig: 'Death and inheritance, what is shared and what is hidden — other people’s resources, and deep change.', q: 'It signifieth the estate of men deceased, death… dowry, fear and anguish of mind.' },
-    { sig: 'The far horizon — long journeys, religion, philosophy, learning and dreams; the search for meaning.', q: 'It hath signification of voyages or long journeys… religion, dreams, and learning.' },
-    { sig: 'Career, calling and public standing — honour, authority, reputation and what you’re known for.', q: 'It signifieth Kings, Princes… honour, preferment, dignity, profession or trade.' },
-    { sig: 'Friends, allies and community — hopes, wishes and the wider circle that carries you forward.', q: 'It signifieth friends… hope, trust, confidence, the praise or dispraise of a man.' },
-    { sig: 'The hidden and the undone — solitude, retreat, secrets, self-undoing, and what works behind the scenes.', q: 'It signifieth private enemies… imprisonment, all manner of affliction, and sorrow.' }
+    { sig: 'The body and the life itself: your appearance, vitality, temperament and the way you meet the world.', q: 'It signifieth the life of man… the stature, colour, complexion, form and shape of him.' },
+    { sig: 'What you own and what you’re worth: money, possessions, resources, and the things you can move and use.', q: 'It signifieth the estate or fortune of the querent, his wealth or poverty, all moveable goods, money lent.' },
+    { sig: 'Brothers and sisters, neighbours and everyday talk: short journeys, letters, messages and the near world.', q: 'It signifieth brethren, sisters, kinsfolk… short journeys, letters, rumours, messengers.' },
+    { sig: 'Home, family roots and the father: land, inheritance, and the ground you come from and return to.', q: 'It hath signification of fathers… of lands, houses, tenements, inheritances.' },
+    { sig: 'Children, romance, creativity and play: pleasure, delight and everything you make for joy.', q: 'It ruleth children… pleasure, delight, banquets, ale-houses, taverns.' },
+    { sig: 'Work, health and daily service: the body’s upkeep, routines, and those who labour with and for you.', q: 'It concerneth sickness… servants, labour, and small cattle.' },
+    { sig: 'Partnership and marriage: the close other, open enemies, contracts and what you meet face to face.', q: 'It giveth judgement of marriage… the open enemy, and law-suits.' },
+    { sig: 'Death and inheritance, what is shared and what is hidden: other people’s resources, and deep change.', q: 'It signifieth the estate of men deceased, death… dowry, fear and anguish of mind.' },
+    { sig: 'The far horizon: long journeys, religion, philosophy, learning and dreams; the search for meaning.', q: 'It hath signification of voyages or long journeys… religion, dreams, and learning.' },
+    { sig: 'Career, calling and public standing: honour, authority, reputation and what you’re known for.', q: 'It signifieth Kings, Princes… honour, preferment, dignity, profession or trade.' },
+    { sig: 'Friends, allies and community: hopes, wishes and the wider circle that carries you forward.', q: 'It signifieth friends… hope, trust, confidence, the praise or dispraise of a man.' },
+    { sig: 'The hidden and the undone: solitude, retreat, secrets, self-undoing, and what works behind the scenes.', q: 'It signifieth private enemies… imprisonment, all manner of affliction, and sorrow.' }
   ];
   var TRAD_SRC_LILLY = 'William Lilly, Christian Astrology (1647)';
   return {
@@ -2684,9 +2684,9 @@ var APP = (function () {
     }
     var pats = aspectPatterns(c);
     if (pats.length) { for (var i = 0; i < Math.min(pats.length, 4); i++) out.push({ label: pats[i].type, text: patternText(pats[i]) }); }
-    else out.push({ label: 'Aspect patterns', text: 'No tight major aspect patterns — your planets tend to work as individuals rather than locking into one big geometric configuration.' });
+    else out.push({ label: 'Aspect patterns', text: 'No tight major aspect patterns. Your planets tend to work as individuals rather than locking into one big geometric configuration.' });
     var rr = natalRetros(c);
-    if (rr.length) out.push({ label: 'Born retrograde', text: rr.map(nameFor).join(', ') + ' ' + (rr.length === 1 ? 'was' : 'were') + ' retrograde at your birth — that energy turns inward first: more reflective, reworked, personal before it’s expressed outwardly.' });
+    if (rr.length) out.push({ label: 'Born retrograde', text: rr.map(nameFor).join(', ') + ' ' + (rr.length === 1 ? 'was' : 'were') + ' retrograde at your birth. That energy turns inward first: more reflective, reworked, and personal before it’s expressed outwardly.' });
     var fs = starsOn(c);
     if (fs.length) out.push({ label: 'Fixed stars', text: fs.map(function (s) { return nameFor(s.planet) + ' on ' + s.star + (s.nat ? ' (of ' + s.nat + ' nature)' : '') + ' — ' + s.m; }).join('; ') + '. Star natures after Vivian Robson, The Fixed Stars and Constellations in Astrology (1923).' });
     if (c.extras) {
@@ -2707,7 +2707,7 @@ var APP = (function () {
     var dpar = declAspects(c);
     if (dpar.length) out.push({ label: 'Declination aspects (parallels)', lines: dpar.slice(0, 4).map(declAspectLine) });
     var joys = planetJoys(c);
-    if (joys.length) out.push({ label: 'Planets in their joy', text: joys.map(function (j) { return nameFor(j.key) + ' in the ' + ordinal(j.house) + ' (' + j.why + ')'; }).join('; ') + '. In the Hellenistic scheme a planet in its joy works with unusual ease — it is at home in that department of life.' });
+    if (joys.length) out.push({ label: 'Planets in their joy', text: joys.map(function (j) { return nameFor(j.key) + ' in the ' + ordinal(j.house) + ' (' + j.why + ')'; }).join('; ') + '. In the Hellenistic scheme a planet in its joy works with unusual ease, at home in that department of life.' });
     var trad = traditionFor(c);
     if (trad.length) out.push({ label: 'From the tradition, on your chart', lines: trad });
     var bc = balanceCoaching(c);
@@ -3065,7 +3065,7 @@ var APP = (function () {
     var st = same.indexOf(signIdx), ord = [same[st], same[(st + 1) % 3], same[(st + 2) % 3]], rn = DATA.SIGNS[ord[d]].ruler;
     return { decan: d + 1, rulerName: rn, ruler: RULERKEY[rn] };
   }
-  function degreeNote(deg) { var d = Math.floor(deg); if (d === 0) return 'at 0° — a raw, first-breath expression of the sign'; if (d === 29) return 'at the 29° anaretic degree — urgency, and a lesson nearly mastered'; return null; }
+  function degreeNote(deg) { var d = Math.floor(deg); if (d === 0) return 'at 0°, a raw, first-breath expression of the sign'; if (d === 29) return 'at the 29° anaretic degree, with urgency and a lesson nearly mastered'; return null; }
   // Natures and meanings follow Vivian Robson, *The Fixed Stars and Constellations in Astrology* (1923,
   // public domain), summarised in our own words; tropical longitudes are for ~J2000 (precession ~50″/yr).
   var FIXED_STARS = [
@@ -3078,8 +3078,8 @@ var APP = (function () {
     { n: 'Capella', lon: 81.9, m: 'a restless, questioning love of learning', nat: 'Mars/Mercury' }, { n: 'Betelgeuse', lon: 88.8, m: 'success won through sheer grit', nat: 'Mars/Mercury' },
     { n: 'Alhena', lon: 99.1, m: 'a wound that confers eminence in art', nat: 'Mercury/Venus' },
     { n: 'Sirius', lon: 104.1, m: 'brilliance, the sacred fire, renown', nat: 'Jupiter/Mars' }, { n: 'Castor', lon: 110.2, m: 'a keen, publishing mind; sudden fame and sudden loss', nat: 'Mercury' },
-    { n: 'Pollux', lon: 113.2, m: 'spirited and contesting; ruthless if crossed', nat: 'Mars' }, { n: 'Procyon', lon: 115.8, m: 'a swift rise by effort — and as swift a fall if unguarded', nat: 'Mercury/Mars' },
-    { n: 'Alphard', lon: 147.3, m: 'the serpent’s heart: deep feeling and wisdom, with a streak of excess', nat: 'Saturn/Venus' }, { n: 'Regulus', lon: 149.9, m: 'leadership and honour — lost only through revenge', nat: 'Mars/Jupiter' },
+    { n: 'Pollux', lon: 113.2, m: 'spirited and contesting; ruthless if crossed', nat: 'Mars' }, { n: 'Procyon', lon: 115.8, m: 'a swift rise by effort, and as swift a fall if unguarded', nat: 'Mercury/Mars' },
+    { n: 'Alphard', lon: 147.3, m: 'the serpent’s heart: deep feeling and wisdom, with a streak of excess', nat: 'Saturn/Venus' }, { n: 'Regulus', lon: 149.9, m: 'leadership and honour, lost only through revenge', nat: 'Mars/Jupiter' },
     { n: 'Zosma', lon: 161.3, m: 'benefit won through being underestimated; the burdened heart that endures', nat: 'Saturn/Venus' }, { n: 'Denebola', lon: 171.6, m: 'swift judgement and a turning fortune; honour against the grain of the crowd', nat: 'Saturn/Venus' },
     { n: 'Vindemiatrix', lon: 189.9, m: 'cleverness shadowed by loss; the gatherer who reaps late', nat: 'Saturn/Mercury' },
     { n: 'Spica', lon: 204.0, m: 'a gift, brilliance, protection', nat: 'Venus/Mars' }, { n: 'Arcturus', lon: 204.3, m: 'a pioneering new path', nat: 'Jupiter/Mars' },
@@ -3098,12 +3098,12 @@ var APP = (function () {
   // classical planets "rejoices" in one house, where its nature is most at home. Public-domain tradition.
   var JOY = { mercury: 1, moon: 3, venus: 5, mars: 6, sun: 9, jupiter: 11, saturn: 12 };
   var JOY_WHY = {
-    mercury: 'the house of the self and the rising mind — where thought meets the world first',
+    mercury: 'the house of the self and the rising mind, where thought meets the world first',
     moon: 'the house of kin, neighbours and the everyday rhythms it loves to tend',
     venus: 'the house of pleasure, love, children and creative play',
-    mars: 'the house of work, effort and the daily fight — where its drive does real good',
-    sun: 'the house of meaning, travel and the higher mind — where it shines toward what matters',
-    jupiter: 'the house of friends, allies and good fortune — its natural blessing',
+    mars: 'the house of work, effort and the daily fight, where its drive does real good',
+    sun: 'the house of meaning, travel and the higher mind, where it shines toward what matters',
+    jupiter: 'the house of friends, allies and good fortune, its natural blessing',
     saturn: 'the house of solitude, the hidden and the long inward work it knows best'
   };
   function planetJoys(c) {
