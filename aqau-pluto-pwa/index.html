@@ -2482,6 +2482,33 @@ var APP = (function () {
     out.push({ label: 'Where you’re light', text: bc.join(' ') });
     return dropDupBlocks(out);
   }
+  // ===== UNIQUE NARRATIVE ARCHITECTURE: Spine -> Engine -> Edge -> Arc, each beat driven by a different computed layer =====
+  function composeArc(c, b) {
+    var out = [], i;
+    // SPINE — the irreducible you
+    var su = c.planets.sun, mo = c.planets.moon, asc = (b.timeKnown && c.ascBody) ? c.ascBody : null;
+    var dom = domElement(c.elements), dm = domMod(c.modalities);
+    out.push({ label: 'Your spine', text: 'At the core you are a ' + su.signName + ' Sun' + (asc ? ' with ' + asc.signName + ' rising' : '') + ', and a ' + mo.signName + ' Moon. Your centre of gravity is ' + DATA.ELEMENTS[dom].name.toLowerCase() + ' and ' + DATA.MODALITIES[dm].name.toLowerCase() + ' — ' + DATA.ELEMENTS[dom].high + ', met in a ' + DATA.MODALITIES[dm].name.toLowerCase() + ' way.' });
+    // ENGINE — what actually runs the chart (the part no other app computes)
+    var pr = prominence(c), top = pr.ranked[0], am = null, fd = null; try { am = almutenChart(c); } catch (e1) {} try { fd = finalDispositors(c); } catch (e2) {}
+    var converge = (am && am.tie.length === 1 && am.lead === top && fd && fd.all.length === 1 && fd.lead === top);
+    out.push({ label: 'What runs the chart', text: 'The engine of the whole chart is ' + nameFor(top) + ' — ' + (DATA.PLANETS[top] ? DATA.PLANETS[top].fn : '') + '. ' + (converge ? 'Essential dignity, the dispositor chains and sheer prominence all converge on it — everything else negotiates with it.' : 'It carries the most weight (' + pr.why[top].slice(0, 2).join(', ') + '), so the rest of you keeps answering to it.') });
+    // EDGE — the friction that grows you
+    var hard = null; for (i = 0; i < c.aspects.length; i++) { var q = c.aspects[i].asp.quality; if (q === 'friction' || q === 'tension' || q === 'fusion') { hard = c.aspects[i]; break; } }
+    var cond = chartConditions(c, b);
+    var etxt = hard ? (capit(nameFor(hard.a)) + ' ' + hard.asp.key + ' ' + nameFor(hard.b) + ' — ' + hard.asp.phrase + '.') : 'Your planets run largely independent of one another, so your growth comes from choosing your own tension rather than being handed one.';
+    if (pr.oosMalefic && c.planets[pr.oosMalefic]) etxt += ' Your sharpest edge is ' + nameFor(pr.oosMalefic) + ', the malefic out of sect — the place that asks the most of you.';
+    if (cond.length) etxt += ' ' + conditionLine(cond[0]);
+    out.push({ label: 'Your growing edge', text: etxt });
+    // ARC — where it's heading
+    var nodeSign = (c.points && c.points.trueNode) ? c.points.trueNode.sign : (c.planets.node ? c.planets.node.sign : null), atxt = '';
+    if (nodeSign != null) atxt += 'Your North Node in ' + DATA.SIGNS[nodeSign].name + ' pulls you, across a lifetime, toward ' + DATA.SIGNS[nodeSign].style + '. ';
+    var fc = null; try { fc = composeForecast(c); } catch (e3) {}
+    if (fc && fc.profection) atxt += 'Right now you’re in a ' + DATA.SIGNS[fc.profection.sign].name + ' profection year, with ' + nameFor(fc.profection.lord) + ' steering it.';
+    if (!atxt) atxt = 'Your path is yours to write — the chart sets the weather, never the destination.';
+    out.push({ label: 'Where it’s heading', text: atxt });
+    return out;
+  }
 
   // ================= relationships & synastry (on-device, no AI) =================
   // Add friends / dates / family by birth date; compare charts and link the live sky to theirs.
@@ -3427,7 +3454,7 @@ var APP = (function () {
     STATE: STATE, save: save, load: load, compute: computeChart,
     composeCore: composeCore, localAsk: localAsk, chartText: chartText, callModel: callModel,
     composeTransits: composeTransits, transitSentence: transitSentence, composeSignatures: composeSignatures,
-    addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenOf: almutenOf, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide,
+    addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenOf: almutenOf, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide,
     saveCurrentChart: saveCurrentChart, deleteSavedChart: deleteSavedChart, activateSavedChart: activateSavedChart, activeChartKey: activeChartKey, chartKey: chartKey, famousMatches: famousMatches, lifeTransits: lifeTransits, upcomingTransits: upcomingTransits, compositeChart: compositeChart,
     nameFor: nameFor, glyphFor: glyphFor, sgAbbr: sgAbbr, pad: pad,
     domElement: domElement, lowElement: lowElement, domMod: domMod, tzOffsetHours: tzOffsetHours
@@ -3998,14 +4025,28 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       return (R + 6) + R + 40;
     }
 
-    function planetBlurb(c, key) {
-      var pl = (key === 'asc') ? c.ascBody : c.planets[key];
-      if (key === 'sun') return DATA.SUN_IN_SIGN[pl.sign];
-      if (key === 'moon') return DATA.MOON_IN_SIGN[pl.sign];
-      if (key === 'asc') return DATA.RISING_IN_SIGN[pl.sign];
-      var pdesc = DATA.PLANETS[key] ? DATA.PLANETS[key].fn : 'this drive';
-      return APP.nameFor(key) + ' carries ' + pdesc + '. In ' + pl.signName + ' it shows up as ' + DATA.SIGNS[pl.sign].style + '.';
+    function dignityPhrase(key, pl) {
+      var dg = APP.dignityOf ? APP.dignityOf(key, pl.signName) : '';
+      if (dg === 'Domicile') return 'Here it works entirely with the grain — strong, natural, at home in itself.';
+      if (dg === 'Exaltation') return 'Here it’s lifted and dignified — shown close to its best.';
+      if (dg === 'Detriment') return 'Here it works against the grain, which is uncomfortable but builds real character.';
+      if (dg === 'Fall') return 'Here it sits under pressure — a quiet lifelong lesson rather than an easy gift.';
+      return '';
     }
+    // compose a specific delineation from the real parts: drive (planet) × style (sign) × arena (house) × dignity × motion
+    function delineate(c, key, b) {
+      var pl = (key === 'asc') ? c.ascBody : c.planets[key]; if (!pl) return '';
+      var core;
+      if (key === 'sun') core = DATA.SUN_IN_SIGN[pl.sign];
+      else if (key === 'moon') core = DATA.MOON_IN_SIGN[pl.sign];
+      else if (key === 'asc') core = DATA.RISING_IN_SIGN[pl.sign];
+      else { var pdesc = DATA.PLANETS[key] ? DATA.PLANETS[key].fn : 'this drive'; core = APP.nameFor(key) + ' carries ' + pdesc + ', and in ' + pl.signName + ' it moves through ' + DATA.SIGNS[pl.sign].style + '.'; }
+      var extra = '', dgp = dignityPhrase(key, pl); if (dgp) extra += ' ' + dgp;
+      if (b && b.timeKnown && pl.house) extra += ' It lives in your ' + ordinal(pl.house) + ' house — ' + DATA.HOUSES[pl.house - 1].meaning;
+      if (pl.retro && key !== 'sun' && key !== 'moon' && key !== 'asc') extra += ' Retrograde at birth, it turns inward first — reworked in private before it’s shown.';
+      return core + extra;
+    }
+    function planetBlurb(c, key) { return delineate(c, key, APP.STATE.birth); }
 
     // animated HUD readout strip
     function hudStrip(c, b, x, ly, w) {
@@ -4478,7 +4519,18 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var x = sx(), w = cw(), ly = 18, gi = cl01(1 - (nowT() - UI.fxT) / 500);
       eyebrow('In plain terms', x, ly); ly += 22;
       p.textStyle(p.BOLD); glitchText('Read', x, sY(ly), 34, SANS, INK, p.LEFT, p.TOP, gi); normal(); ly += 48;
-      // lead with the general personal reading — who you are — before any journeys
+      // lead with the four-movement arc — spine, engine, edge, where it's heading
+      if (!UI.arcCache) { try { UI.arcCache = APP.composeArc(c, b); } catch (ea) { UI.arcCache = null; } }
+      if (UI.arcCache && UI.arcCache.length) {
+        eyebrow('Your chart in four movements', x, ly, ACC); ly += 24;
+        for (var ar = 0; ar < UI.arcCache.length; ar++) {
+          var bt = UI.arcCache[ar];
+          setFont(MONO, 9.5, INK, p.LEFT, p.TOP, 210); bold(); p.text(bt.label.toUpperCase(), x, sY(ly)); normal(); ly += 18;
+          ly += expandPara(bt.text, x, ly, w, 'arc' + ar, 16, 25) + 14;
+        }
+        ly += 8;
+      }
+      // then the general personal reading — who you are
       if (!UI.readCache) UI.readCache = APP.composeCore(c);
       eyebrow('Who you are', x, ly, ACC); ly += 24;
       for (var i = 0; i < UI.readCache.length; i++) ly += expandPara(UI.readCache[i], x, ly, w, 'core' + i, 17, 27) + 10;
@@ -6090,7 +6142,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       recompute(); UI.selPlanet = 'sun'; UI.popT = nowT(); UI.popFrom = 22; UI.scroll.chart = 0; UI.screen = 'chart'; hideSearchInput();
       if (!APP.STATE.settings.walked) { UI.walk = { i: 0, t0: nowT() }; UI.walkTr = null; UI.walkTheme = null; } // first reveal: walk them through it
     }
-    function recompute() { APP.STATE.chart = APP.compute(APP.STATE.birth, APP.STATE.settings); APP.save(); UI.readCache = null; UI.readSig = null; UI.readTransit = null; UI.forecast = null; UI.promCache = null; UI.todayCache = null; UI.fmList = null; UI.lifeList = null; UI.calEvents = null; UI.calDay = null; UI.walkTr = null; UI.walkTheme = null; UI.bondCache = null; UI.bondFor = null; if (APP.clearPersonCharts) APP.clearPersonCharts(); UI.askAns = ''; UI.quip = null; UI.quipNext = 0; buildField(); }
+    function recompute() { APP.STATE.chart = APP.compute(APP.STATE.birth, APP.STATE.settings); APP.save(); UI.readCache = null; UI.readSig = null; UI.readTransit = null; UI.forecast = null; UI.promCache = null; UI.arcCache = null; UI.weaveCache = null; UI.weaveFor = null; UI.todayCache = null; UI.fmList = null; UI.lifeList = null; UI.calEvents = null; UI.calDay = null; UI.walkTr = null; UI.walkTheme = null; UI.bondCache = null; UI.bondFor = null; if (APP.clearPersonCharts) APP.clearPersonCharts(); UI.askAns = ''; UI.quip = null; UI.quipNext = 0; buildField(); }
 
     // ---------- share / export a clean chart card (own untainted canvas; the live one holds remote images) ----------
     // share a daily card (clean offscreen canvas) — moon phase + what's live on your chart today
