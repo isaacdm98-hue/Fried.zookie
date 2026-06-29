@@ -4448,7 +4448,20 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (!UI.readCache) UI.readCache = APP.composeCore(c);
       eyebrow('Who you are', x, ly, ACC); ly += 24;
       for (var i = 0; i < UI.readCache.length; i++) ly += expandPara(UI.readCache[i], x, ly, w, 'core' + i, 17, 27) + 10;
-      ly += 12;
+      ly += 14;
+      // the chart's priorities, ranked by the prominence engine — what carries the most weight, and why
+      if (!UI.promCache) { try { UI.promCache = APP.prominence(c); } catch (epr) { UI.promCache = null; } }
+      if (UI.promCache) {
+        eyebrow('What your chart leans on', x, ly, ACC); ly += 24;
+        var pr = UI.promCache, pn; for (pn = 0; pn < 3; pn++) {
+          var pk = pr.ranked[pn], pp = c.planets[pk]; if (!pp) continue;
+          setFont(SANS, 18, ACC, p.LEFT, p.TOP); p.text(APP.glyphFor(pk), x, sY(ly));
+          setFont(SANS, 15.5, INK, p.LEFT, p.TOP); bold(); p.text(APP.nameFor(pk) + ' in ' + pp.signName + (b.timeKnown && pp.house ? ' · ' + ordinal(pp.house) + ' house' : ''), x + 28, sY(ly)); normal();
+          var why = (pr.why[pk] && pr.why[pk].length) ? pr.why[pk].slice(0, 2).join(' · ') : 'strong and busy with aspects';
+          setFont(MONO, 9.5, ACCTX, p.LEFT, p.TOP, 215); p.text(why.toUpperCase(), x + 28, sY(ly) + 21); ly += 44;
+        }
+        ly += paragraph('These carry the most weight in your chart — measured by dignity, angle, sect, rulership and the company they keep. The reading leads with them on purpose, rather than listing everything flat.', x, ly, w, 13.5, INK, SERIF, 20, 190) + 16;
+      }
       // then the journeys: life-in-chapters timeline
       var lbY = sY(ly); p.noStroke(); fillc(INK); p.rect(x, lbY + 3, w, 52, 11); fillc(shade(INK, 16)); p.rect(x, lbY, w, 52, 11);
       setFont(SANS, 15, GROUNDS[UI.screen], p.LEFT, p.CENTER); bold(); p.text('✦  Your life in chapters', x + 16, lbY + 26 - 8); normal();
@@ -6043,7 +6056,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       recompute(); UI.selPlanet = 'sun'; UI.popT = nowT(); UI.popFrom = 22; UI.scroll.chart = 0; UI.screen = 'chart'; hideSearchInput();
       if (!APP.STATE.settings.walked) { UI.walk = { i: 0, t0: nowT() }; UI.walkTr = null; UI.walkTheme = null; } // first reveal: walk them through it
     }
-    function recompute() { APP.STATE.chart = APP.compute(APP.STATE.birth, APP.STATE.settings); APP.save(); UI.readCache = null; UI.readSig = null; UI.readTransit = null; UI.forecast = null; UI.todayCache = null; UI.fmList = null; UI.lifeList = null; UI.calEvents = null; UI.calDay = null; UI.walkTr = null; UI.walkTheme = null; UI.bondCache = null; UI.bondFor = null; if (APP.clearPersonCharts) APP.clearPersonCharts(); UI.askAns = ''; UI.quip = null; UI.quipNext = 0; buildField(); }
+    function recompute() { APP.STATE.chart = APP.compute(APP.STATE.birth, APP.STATE.settings); APP.save(); UI.readCache = null; UI.readSig = null; UI.readTransit = null; UI.forecast = null; UI.promCache = null; UI.todayCache = null; UI.fmList = null; UI.lifeList = null; UI.calEvents = null; UI.calDay = null; UI.walkTr = null; UI.walkTheme = null; UI.bondCache = null; UI.bondFor = null; if (APP.clearPersonCharts) APP.clearPersonCharts(); UI.askAns = ''; UI.quip = null; UI.quipNext = 0; buildField(); }
 
     // ---------- share / export a clean chart card (own untainted canvas; the live one holds remote images) ----------
     // share a daily card (clean offscreen canvas) — moon phase + what's live on your chart today
