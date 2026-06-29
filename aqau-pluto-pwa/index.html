@@ -826,6 +826,80 @@ var DATA = (function () {
     'People meet a gentle, dreamy, impressionable surface. You absorb the mood of the room; protect your own signal.'
   ];
 
+  // Dedicated planet-in-sign corpus for the personal & social planets (behavioural, classical-tradition voice).
+  // delineate() routes through these so each placement reads specifically, never from a generic template.
+  var MERCURY_IN_SIGN = [
+    'a fast, blunt, decisive mind — you think out loud and argue to win; the skill is the pause before the point.',
+    'a slow, deliberate, practical mind — you decide once and stay put, and you learn by doing rather than theorising.',
+    'a quick, versatile, restless mind at home in itself — a brilliant connector of ideas, if you finish the thought before chasing the next.',
+    'a mind that thinks through feeling and memory — intuitive and retentive, though you can take words personally and reason by mood.',
+    'a confident, persuasive, big-stroke mind — you think in headlines and dislike being corrected; warmth carries your point.',
+    'a precise, analytical mind at home in itself — an editor’s eye for detail, with a tendency to over-correct and worry the small print.',
+    'a mind that weighs every side — diplomatic and fair, sometimes stuck deciding; you think best out loud, with someone.',
+    'a penetrating, investigative mind — you read the subtext and say little while knowing a lot; research is your gift.',
+    'a big-picture, philosophical, frank mind — you love the idea and skip the footnotes; honesty outruns tact.',
+    'a structured, strategic, serious mind — slow but it builds knowledge that lasts, with a dry, deadpan wit.',
+    'an original, inventive, objective mind — you see the whole system at a glance and can be coolly, cleverly contrarian.',
+    'an imaginative, associative, impressionable mind — you think in images and atmospheres; facts blur, but the intuition is uncanny.'
+  ];
+  var VENUS_IN_SIGN = [
+    'you love by pursuing — direct, ardent, quick to want and quick to cool; the chase thrills you more than the catch.',
+    'you love sensually and loyally, at home in yourself — touch, comfort and constancy matter; you hold on, sometimes too tight.',
+    'you love through wit and words — you need a mental spark and variety, and commitment only once your mind is kept interested.',
+    'you love through care and feeding — tender, protective, loyal; when insecure you cling, when safe you nourish everyone.',
+    'you love generously and dramatically — warm, romantic, proud; you want to be adored and you give your whole heart.',
+    'you show love through usefulness and small precise acts — modest and a little picky, quietly afraid you’re not quite enough.',
+    'you love partnership itself, at home in yourself — charming, romantic, harmony-seeking; the risk is dissolving into the other.',
+    'you love with all-or-nothing intensity — magnetic, deep, jealous; you merge completely or withhold completely.',
+    'you love freedom and honesty — warm and adventurous, needing room; routine and clinging cool you fast.',
+    'you love seriously and durably — committed, loyal, status-aware; you guard the heart and warm slowly but for keeps.',
+    'you love as a friend first — unconventional, needing space, drawn to the unusual; cool on the surface, steady underneath.',
+    'you love compassionately and idealistically, lifted here — romantic to the point of self-sacrifice; boundaries are the lesson.'
+  ];
+  var MARS_IN_SIGN = [
+    'a raw, fast, courageous drive at home in itself — you act first and forgive fast, with a hot, short-lived temper.',
+    'a slow-to-rouse, immovable drive — stamina over speed; once you’re moving nothing stops you, and the stubbornness is real.',
+    'a mental, restless, scattered drive — you fight with words and start many things; the work is following one through.',
+    'a defensive, indirect, moody drive — you protect fiercely and anger sideways; learn to want things out loud.',
+    'a proud, dramatic, sustained drive — you perform courage and burn steadily; you sulk when the effort goes unseen.',
+    'an efficient, precise, hard-working drive — anger turns into criticism; your effort is meticulous and tireless.',
+    'a drive that works through other people and avoids open conflict — charm and strategy over force; own your anger directly.',
+    'a relentless, controlled, strategic drive — you never forget and rarely show your hand; a deep, simmering power.',
+    'an enthusiastic, blunt, adventurous drive — you fight for the principle; aim before you fire.',
+    'a disciplined, ambitious, enduring drive lifted here — cold efficiency and the long campaign; you win by outlasting.',
+    'a rebellious, erratic, principle-led drive — you fight the system in sudden bursts; detached but unshakeable once decided.',
+    'a diffuse, indirect, easily-drained drive — you fight hardest for the helpless; give it a clear channel or it leaks away.'
+  ];
+  var JUPITER_IN_SIGN = [
+    'you grow through bold action — luck favours your nerve, and the trap is overreaching.',
+    'you grow through patience and building something solid — luck in resources, with a pull toward over-indulgence.',
+    'you grow through learning and connection — luck through words and variety, if you don’t spread too thin.',
+    'you grow through care, home and feeling, lifted here — luck through family and nurture, with a habit of over-protecting.',
+    'you grow through creativity and generosity — luck on a stage, with a flair for the over-dramatic.',
+    'you grow through service and skill — luck in the details, if you don’t shrink the vision to fit them.',
+    'you grow through relationship and fairness — luck arrives through other people, at the cost of over-accommodating.',
+    'you grow through depth and transformation — luck found in crisis, with an appetite that can turn obsessive.',
+    'you grow through travel, study and belief, at home here — big luck and a big appetite, sometimes a touch preachy.',
+    'you grow through discipline and structure — luck you earn rather than receive, capped only by your own caution.',
+    'you grow through ideas, community and reform — luck in groups, with a streak of utopian overreach.',
+    'you grow through compassion and imagination, at home here — luck through faith and surrender, needing boundaries.'
+  ];
+  var SATURN_IN_SIGN = [
+    'your lesson is patience and measured action — restraint learned early hardens into controlled courage.',
+    'your lesson is security through endurance — an early fear of lack becomes slow, lasting, real worth.',
+    'your lesson is disciplined thought — doubt about your own mind matures into genuine, hard-won expertise.',
+    'your lesson is emotional security the hard way — guarded feeling, learned young, becomes the home you build.',
+    'your lesson is humble, earned authority — a fear of not mattering matures into disciplined creative work.',
+    'your lesson is useful mastery — a harsh inner critic, met honestly, becomes reliable, respected craft.',
+    'your lesson is committed, fair relationship, lifted here — you take duty and justice seriously, and that is your backbone.',
+    'your lesson is power through letting go — a fear of powerlessness forges an almost unbreakable resilience.',
+    'your lesson is grounded belief — doubt about meaning matures into a disciplined, kept-promise kind of faith.',
+    'your lesson is mature authority, at home here — heavy responsibility carried early is the very thing you end up mastering.',
+    'your lesson is responsible freedom, at home here — a real duty to the collective gives your independence its structure.',
+    'your lesson is giving form to the formless — a fear of dissolving matures into disciplined compassion.'
+  ];
+  var PLANET_SIGN_TEXT = { mercury: MERCURY_IN_SIGN, venus: VENUS_IN_SIGN, mars: MARS_IN_SIGN, jupiter: JUPITER_IN_SIGN, saturn: SATURN_IN_SIGN };
+
   var HOUSES = [
     { name: 'House 1', title: 'Self & Body', meaning: 'how you show up, your appearance and first instinct.' },
     { name: 'House 2', title: 'Money & Worth', meaning: 'what you earn, own and how you value yourself.' },
@@ -1177,7 +1251,7 @@ var DATA = (function () {
 
   return {
     PLANETS: PLANETS, PLANET_ORDER: PLANET_ORDER, SIGNS: SIGNS,
-    SUN_IN_SIGN: SUN_IN_SIGN, MOON_IN_SIGN: MOON_IN_SIGN, RISING_IN_SIGN: RISING_IN_SIGN,
+    SUN_IN_SIGN: SUN_IN_SIGN, MOON_IN_SIGN: MOON_IN_SIGN, RISING_IN_SIGN: RISING_IN_SIGN, PLANET_SIGN_TEXT: PLANET_SIGN_TEXT,
     HOUSES: HOUSES, ASPECTS: ASPECTS, ELEMENTS: ELEMENTS, MODALITIES: MODALITIES,
     TAROT: TAROT, SUIT_KW: SUIT_KW, SPREADS: SPREADS, CITIES: CITIES
   };
@@ -1498,6 +1572,10 @@ var APP = (function () {
     parts.push('The chart leans ' + DATA.ELEMENTS[dom].name.toLowerCase() + ' (' + c.elements[dom] + '%): ' + DATA.ELEMENTS[dom].high + '. It runs light on ' + DATA.ELEMENTS[low].name.toLowerCase() + ' (' + c.elements[low] + '%) \u2014 ' + DATA.ELEMENTS[low].need);
     var dm = domMod(c.modalities);
     parts.push('You mostly work in a ' + DATA.MODALITIES[dm].name.toLowerCase() + ' way. ' + DATA.MODALITIES[dm].note);
+    // mind / love / drive — the personal planets, read specifically from the corpus
+    if (c.planets.mercury) parts.push('How you think — Mercury in ' + c.planets.mercury.signName + (tk ? ', ' + ordinal(c.planets.mercury.house) + ' house' : '') + ': ' + DATA.PLANET_SIGN_TEXT.mercury[c.planets.mercury.sign]);
+    if (c.planets.venus) parts.push('How you love — Venus in ' + c.planets.venus.signName + (tk ? ', ' + ordinal(c.planets.venus.house) + ' house' : '') + ': ' + DATA.PLANET_SIGN_TEXT.venus[c.planets.venus.sign]);
+    if (c.planets.mars) parts.push('How you act — Mars in ' + c.planets.mars.signName + (tk ? ', ' + ordinal(c.planets.mars.house) + ' house' : '') + ': ' + DATA.PLANET_SIGN_TEXT.mars[c.planets.mars.sign]);
     var tight = [];
     for (var i = 0; i < c.aspects.length && tight.length < 2; i++) { var a = c.aspects[i]; if (a.a !== 'asc' && a.a !== 'mc' && a.b !== 'asc' && a.b !== 'mc') tight.push(a); }
     if (tight.length) {
@@ -4063,6 +4141,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (key === 'sun') core = DATA.SUN_IN_SIGN[pl.sign];
       else if (key === 'moon') core = DATA.MOON_IN_SIGN[pl.sign];
       else if (key === 'asc') core = DATA.RISING_IN_SIGN[pl.sign];
+      else if (DATA.PLANET_SIGN_TEXT[key]) core = APP.nameFor(key) + ' in ' + pl.signName + ' — ' + DATA.PLANET_SIGN_TEXT[key][pl.sign];
       else { var pdesc = DATA.PLANETS[key] ? DATA.PLANETS[key].fn : 'this drive'; core = APP.nameFor(key) + ' carries ' + pdesc + ', and in ' + pl.signName + ' it moves through ' + DATA.SIGNS[pl.sign].style + '.'; }
       var extra = '', dgp = dignityPhrase(key, pl); if (dgp) extra += ' ' + dgp;
       if (b && b.timeKnown && pl.house) extra += ' It lives in your ' + ordinal(pl.house) + ' house — ' + DATA.HOUSES[pl.house - 1].meaning;
