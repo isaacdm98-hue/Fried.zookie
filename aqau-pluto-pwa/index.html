@@ -2509,18 +2509,81 @@ var APP = (function () {
     out.push({ label: 'Where it’s heading', text: atxt });
     return out;
   }
-  // ---- optional woven narration: feed the engine's own facts to a phraser ----
-  // The facts below are 100% computed; a narrator (local LLM if available, else the
-  // deterministic stitch) only rewords them. weaveBrief is the grounding contract.
+  // ============ optional woven narration: the engine briefs a local LLM ============
+  // Everything below is 100% COMPUTED by the deterministic engine. The model only
+  // re-voices it. weaveBrief is the full dossier (the grounding contract); WEAVE_SYS
+  // is the instruction; weaveValid is the hallucination gate. No fact originates in
+  // the model — it cannot add a placement, only phrase the ones it is handed.
+  function fmtDeg(d) { var dd = Math.floor(d), mm = Math.round((d - dd) * 60); if (mm === 60) { dd += 1; mm = 0; } return dd + '°' + (mm < 10 ? '0' : '') + mm + "'"; }
+  function dignTag(k, p, isDay) {
+    var L = dignityLedger(p.lon, isDay), t = [];
+    if (L.domicile === k) t.push('in domicile (rules this sign)');
+    if (L.exaltation === k) t.push('exalted');
+    if (L.triplicity === k) t.push('triplicity ruler');
+    if (L.bound === k) t.push('in own bound');
+    if (L.face === k) t.push('in own face');
+    var dg = dignityOf(k, p.signName);
+    if (dg === 'Detriment') t.push('in detriment');
+    if (dg === 'Fall') t.push('in fall');
+    if (!t.length) t.push('peregrine (no essential dignity)');
+    return t.join(', ');
+  }
+  function mYear(dt) { try { return ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][dt.getMonth()] + ' ' + dt.getFullYear(); } catch (e) { return ''; } }
+  // The full computed dossier handed to the narrator. Every line is an engine output.
   function weaveBrief(c, b) {
-    var a = composeArc(c, b), lines = [], i;
-    for (i = 0; i < a.length; i++) lines.push('- ' + a[i].text);
-    return lines.join('\n');
+    var L = [], i, k, tk = b.timeKnown, keys = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto'];
+    var sct = sect(c), isDay = sct ? sct.day : true;
+    L.push('CHART: ' + (b.name || 'this person') + (tk ? ', exact birth time known' : ', NO birth time (houses & angles unknown — do not mention houses/Ascendant/Midheaven)') + '.');
+    L.push('SECT: ' + (sct ? (sct.day ? 'DAY chart (Sun above horizon) — Sun-led; benefic of sect ' + nameFor(sct.benefic) + ', malefic of sect ' + nameFor(sct.malefic) + '; out-of-sect malefic to handle with care: ' + nameFor(sct.oosMalefic) : 'NIGHT chart (Sun below horizon) — Moon-led; benefic of sect ' + nameFor(sct.benefic) + ', malefic of sect ' + nameFor(sct.malefic) + '; out-of-sect malefic to handle with care: ' + nameFor(sct.oosMalefic)) : 'unknown (no birth time)') + '.');
+    // --- LUMINARIES & ANGLES ---
+    L.push('\n[CORE]');
+    L.push('Sun ' + fmtDeg(c.planets.sun.deg) + ' ' + c.planets.sun.signName + (tk ? ', house ' + c.planets.sun.house : '') + ' — identity/will: ' + DATA.SIGNS[c.planets.sun.sign].style + '.');
+    L.push('Moon ' + fmtDeg(c.planets.moon.deg) + ' ' + c.planets.moon.signName + (tk ? ', house ' + c.planets.moon.house : '') + ' — emotional needs.');
+    if (tk && c.ascBody) L.push('Ascendant ' + fmtDeg(c.ascBody.deg) + ' ' + c.ascBody.signName + ' — outward manner; chart ruler is ' + nameFor(RULERKEY[DATA.SIGNS[c.ascBody.sign].ruler]) + '.');
+    if (tk && c.mcBody) L.push('Midheaven ' + fmtDeg(c.mcBody.deg) + ' ' + c.mcBody.signName + ' — public direction/vocation.');
+    // --- ELEMENT / MODE BALANCE ---
+    var dom = domElement(c.elements), low = lowElement(c.elements), dm = domMod(c.modalities);
+    L.push('\n[BALANCE] Elements: fire ' + c.elements.fire + '%, earth ' + c.elements.earth + '%, air ' + c.elements.air + '%, water ' + c.elements.water + '%. Strongest: ' + DATA.ELEMENTS[dom].name + ' (' + DATA.ELEMENTS[dom].high + '). Weakest: ' + DATA.ELEMENTS[low].name + ' (' + DATA.ELEMENTS[low].need + '). Dominant mode: ' + DATA.MODALITIES[dm].name + ' — ' + DATA.MODALITIES[dm].note);
+    // --- THE ENGINE: what actually runs this chart (LEAD WITH THIS) ---
+    L.push('\n[ENGINE — computed weighting; the reading must be ORGANISED around this, not list everything flat]');
+    var pr = prominence(c);
+    for (i = 0; i < 4; i++) { var pk = pr.ranked[i]; if (!c.planets[pk]) continue; var rs = (pr.why[pk] && pr.why[pk].length) ? pr.why[pk].join(', ') : 'luminary / aspect activity'; L.push('Prominence #' + (i + 1) + ': ' + nameFor(pk) + ' (score ' + Math.round(pr.score[pk]) + ') — ' + rs + '.'); }
+    try { var am = almutenChart(c); if (am && am.lead) L.push('Almuten figuris (winner of most essential dignity across the hylegic points = the chart’s traditional ruler): ' + (am.tie.length > 1 ? am.tie.map(nameFor).join(' & ') + ' (tie)' : nameFor(am.lead)) + '.'); } catch (e1) {}
+    try { var fd = finalDispositors(c); if (fd && fd.lead) L.push('Final dispositor (every planet’s sign-ruler chain ends here): ' + (fd.all.length > 1 ? fd.all.map(nameFor).join(' & ') + ' (mutual reception)' : nameFor(fd.lead)) + '.'); } catch (e2) {}
+    // --- PLANET-BY-PLANET with dignity + condition ---
+    L.push('\n[PLANETS — sign, degree, house, essential dignity, motion]');
+    var conds = {}; try { var cc = chartConditions(c, b); for (i = 0; i < cc.length; i++) conds[cc[i].k] = (conds[cc[i].k] ? conds[cc[i].k] + '; ' : '') + conditionLine(cc[i]); } catch (e3) {}
+    for (i = 0; i < keys.length; i++) { k = keys[i]; var p = c.planets[k]; if (!p) continue;
+      var ln = nameFor(k) + ': ' + fmtDeg(p.deg) + ' ' + p.signName + (tk ? ', house ' + p.house + ' (' + DATA.HOUSES[p.house - 1].title + ')' : '') + ' — ' + dignTag(k, p, isDay) + (p.retro && k !== 'sun' && k !== 'moon' ? ', RETROGRADE (turns inward)' : '');
+      if (conds[k]) ln += '. CONDITION: ' + conds[k];
+      L.push(ln); }
+    // --- TIGHTEST ASPECTS (with the engine's own established meaning) ---
+    L.push('\n[TIGHTEST ASPECTS — by orb; "MEANING" is the engine’s pre-validated reading, keep its sense]');
+    var na = 0; for (i = 0; i < c.aspects.length && na < 9; i++) { var as = c.aspects[i]; var meaning = pairAspectText(as.a, as.b, as.asp.key); L.push(nameFor(as.a) + ' ' + as.asp.key + ' ' + nameFor(as.b) + ' (orb ' + as.orb.toFixed(1) + '°, ' + as.asp.quality + ')' + (meaning ? ' — MEANING: ' + meaning : '')); na++; }
+    // --- PATTERNS & SHAPE ---
+    var pats = []; try { pats = aspectPatterns(c); } catch (e4) {}
+    if (pats.length) { var pl2 = []; for (i = 0; i < pats.length; i++) pl2.push(pats[i].type + ' (' + pats[i].bodies.map(nameFor).join(', ') + (pats[i].apex ? '; apex ' + nameFor(pats[i].apex) : '') + (pats[i].where ? '; in ' + pats[i].where : '') + ')'); L.push('\n[ASPECT PATTERNS] ' + pl2.join('; ') + '.'); }
+    try { var sh = chartShape(c); if (sh) L.push('[CHART SHAPE] ' + sh.shape + ' — ' + sh.text); } catch (e5) {}
+    // --- SENSITIVE POINTS ---
+    var ptl = [];
+    if (c.points) { if (c.points.trueNode) ptl.push('North Node ' + c.points.trueNode.signName + (tk ? ' house ' + c.points.trueNode.house : '') + ' (the growth direction)'); if (c.points.lilith) ptl.push('Black Moon Lilith ' + c.points.lilith.signName + ' (the untamed part)'); if (c.points.pof) ptl.push('Part of Fortune ' + c.points.pof.signName + (tk ? ' house ' + c.points.pof.house : '') + ' (where ease flows)'); }
+    if (c.extras) { var ex = ['chiron', 'ceres', 'pallas', 'juno', 'vesta']; for (i = 0; i < ex.length; i++) if (c.extras[ex[i]]) ptl.push(nameFor(ex[i]) + ' ' + c.extras[ex[i]].signName); }
+    if (ptl.length) L.push('\n[POINTS] ' + ptl.join('; ') + '.');
+    // --- LUNAR PHASE ---
+    try { var lp = lunarPhase(c); if (lp) L.push('\n[LUNAR PHASE AT BIRTH] ' + lp.name + ' — ' + lp.text); } catch (e6) {}
+    // --- TIMING: where life is right now ---
+    try { var fc = composeForecast(c); if (fc) {
+      var tl = [];
+      if (fc.profection) tl.push('Annual profection: age ' + fc.profection.age + ', ' + fc.profection.signName + ' year, ' + (tk ? ordinal(fc.profection.house) + ' house activated, ' : '') + 'time-lord ' + nameFor(fc.profection.lord) + ' (the planet running this year).');
+      if (fc.progressed) tl.push('Secondary progressions: progressed Sun in ' + DATA.SIGNS[fc.progressed.sunSign].name + ', progressed Moon in ' + DATA.SIGNS[fc.progressed.moonSign].name + ' (current inner season).');
+      if (fc.upcoming && fc.upcoming.length) { var us = []; for (i = 0; i < Math.min(3, fc.upcoming.length); i++) { var u = fc.upcoming[i]; us.push('transiting ' + nameFor(u.tp) + ' ' + u.aspKey + ' natal ' + nameFor(u.np) + ' (' + mYear(u.date) + ')'); } tl.push('Next exact transits: ' + us.join('; ') + '.'); }
+      if (tl.length) L.push('\n[TIMING NOW] ' + tl.join(' ')); } } catch (e7) {}
+    return L.join('\n');
   }
   function weaveAnchors(c) {
-    // the exact tokens any faithful rewrite MUST keep — used to reject hallucinated output
-    var ks = ['sun', 'moon'], out = [], i; if (c.ascBody) ks.push('asc');
-    for (i = 0; i < ks.length; i++) { var pl = ks[i] === 'asc' ? c.ascBody : c.planets[ks[i]]; if (pl && pl.signName) out.push(pl.signName); }
+    // exact tokens a faithful rewrite MUST preserve — the hallucination gate rejects output that drops them
+    var ks = ['sun', 'moon'], out = [], i; if (STATE.birth.timeKnown && c.ascBody) ks.push('asc');
+    for (i = 0; i < ks.length; i++) { var pl = ks[i] === 'asc' ? c.ascBody : c.planets[ks[i]]; if (pl && pl.signName && out.indexOf(pl.signName) < 0) out.push(pl.signName); }
     return out;
   }
   // deterministic one-voice stitch (the always-available fallback / no-GPU path)
@@ -2528,11 +2591,30 @@ var APP = (function () {
     var a = composeArc(c, b);
     return a[0].text + ' ' + a[1].text + ' That is the steady part. The live part is the friction — ' + a[2].text + ' ' + a[3].text;
   }
-  // the hard-grounding instruction handed to whatever model does the rewording
-  var WEAVE_SYS = 'You are a careful copy-editor for a grounded astrologer (in the voice of Debra Silverman: warm, plain, direct, no jargon, no mysticism). You are given FACTS that were computed from a real birth chart. Rewrite them into one flowing reading of 3 to 5 short paragraphs. ABSOLUTE RULES: (1) Use ONLY the facts given. Never invent or change a planet, sign, house, aspect, number or claim. (2) Keep every specific exactly as written (sign names, house numbers, planet names). (3) No bullet points, no headings, no preamble like "Sure" or "Here". (4) Do not mention being an AI or a model. Just the reading.';
+  // ===== ingenious instruction: a disciplined astrologer, hard-grounded, no fabrication =====
+  var WEAVE_SYS = [
+    'You are the narrating voice of a precision astrology engine. Picture a panel of ten seasoned astrologers who have ALREADY done every calculation and agreed on the facts; your only job is to speak their verdict in one warm, human voice — that of Debra Silverman: grounded, plain-spoken, direct, compassionate, a little funny, never mystical or vague, never horoscope-generic.',
+    '',
+    'YOU WILL BE GIVEN A DOSSIER of computed facts under headers ([CORE], [BALANCE], [ENGINE], [PLANETS], [TIGHTEST ASPECTS], [PATTERNS], [POINTS], [LUNAR PHASE], [TIMING NOW]). These facts are TRUE and FINAL.',
+    '',
+    'ABSOLUTE RULES (breaking any one ruins the reading):',
+    '1. Use ONLY facts in the dossier. NEVER invent, guess, change or omit a planet, sign, house number, degree, aspect, dignity or date. If it is not in the dossier, it does not exist.',
+    '2. Keep every specific verbatim — sign names, house numbers, planet names, aspect names.',
+    '3. SYNTHESISE, do not list. A junior lists every placement; a master reads the chart as ONE person. Organise the whole reading around [ENGINE] — the prominence ranking, almuten and final dispositor tell you the keystone planet everything else answers to. Lead there.',
+    '4. Connect facts into through-lines: when an aspect, a dignity and the sect all point the same way, say so. Name the central tension and the central gift.',
+    '5. Translate to lived behaviour — how it actually shows up in love, work, money, family, the body — not textbook keywords.',
+    '6. Honour the dossier’s own MEANING notes on aspects; do not contradict the quality (flowing vs friction) given.',
+    '7. If the dossier says NO birth time, never mention houses, Ascendant or Midheaven.',
+    '',
+    'OUTPUT: 4 to 6 short paragraphs of flowing prose, in this order — (a) the spine: who they fundamentally are; (b) the engine: the keystone planet that runs the chart and why; (c) the gifts that come easily; (d) the central friction / growing edge and how to work it; (e) where life is pointed now (use [TIMING NOW]); (f) one grounded closing line. No headings, no bullet points, no lists, no preamble like "Sure" or "Here is", no mention of being an AI, a model, or a dossier. Second person ("you"). Just begin the reading.'
+  ].join('\n');
+  function weaveUser(brief) {
+    return 'DOSSIER (computed — every line is a fact):\n\n' + brief + '\n\n---\nNow speak the reading in one voice, following every rule. Begin.';
+  }
   function weaveValid(txt, anchors) {
     if (!txt) return false; txt = ('' + txt).trim();
-    if (txt.length < 120 || txt.length > 2200) return false;
+    if (txt.length < 200 || txt.length > 6000) return false;            // too short = refusal; too long = runaway
+    if (/\bas an ai\b|language model|i cannot|i’m sorry|here is your|sure,? here/i.test(txt)) return false;
     for (var i = 0; i < anchors.length; i++) if (txt.indexOf(anchors[i]) < 0) return false; // dropped a real placement -> reject
     return true;
   }
@@ -3481,7 +3563,7 @@ var APP = (function () {
     STATE: STATE, save: save, load: load, compute: computeChart,
     composeCore: composeCore, localAsk: localAsk, chartText: chartText, callModel: callModel,
     composeTransits: composeTransits, transitSentence: transitSentence, composeSignatures: composeSignatures,
-    addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenOf: almutenOf, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, weaveBrief: weaveBrief, weaveTemplate: weaveTemplate, weaveAnchors: weaveAnchors, weaveValid: weaveValid, WEAVE_SYS: WEAVE_SYS, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide,
+    addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenOf: almutenOf, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, weaveBrief: weaveBrief, weaveTemplate: weaveTemplate, weaveAnchors: weaveAnchors, weaveValid: weaveValid, weaveUser: weaveUser, WEAVE_SYS: WEAVE_SYS, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide,
     saveCurrentChart: saveCurrentChart, deleteSavedChart: deleteSavedChart, activateSavedChart: activateSavedChart, activeChartKey: activeChartKey, chartKey: chartKey, famousMatches: famousMatches, lifeTransits: lifeTransits, upcomingTransits: upcomingTransits, compositeChart: compositeChart,
     nameFor: nameFor, glyphFor: glyphFor, sgAbbr: sgAbbr, pad: pad,
     domElement: domElement, lowElement: lowElement, domMod: domMod, tzOffsetHours: tzOffsetHours
@@ -4539,8 +4621,9 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       for (mi = 0; mi < 3; mi++) { var yr = now.getFullYear(), mo = now.getMonth() + mi; while (mo > 11) { mo -= 12; yr++; } ly += drawMonthGrid(yr, mo, x, w, ly) + 8; }
       UI.contentH.read = ly + 20;
     }
-    // ===== optional on-device woven narration (WebLLM over the engine's facts) =====
-    var WLLM = null, WLLM_TRY = false, WLLM_MODEL = 'Qwen2.5-0.5B-Instruct-q4f16_1-MLC';
+    // ===== optional on-device woven narration (WebLLM over the engine's full dossier) =====
+    // Model fallback chain: smartest that a phone can plausibly hold first, then lighter.
+    var WLLM = null, WLLM_MODELS = ['Qwen2.5-1.5B-Instruct-q4f16_1-MLC', 'Llama-3.2-1B-Instruct-q4f16_1-MLC', 'Qwen2.5-0.5B-Instruct-q4f16_1-MLC'];
     function weaveSupported() { try { return !!(typeof navigator !== 'undefined' && navigator.gpu); } catch (e) { return false; } }
     function loadWeaveEngine(ok, fail) {
       if (WLLM) { ok(WLLM); return; }
@@ -4548,23 +4631,31 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       imp('https://esm.run/@mlc-ai/web-llm').then(function (mod) {
         var make = mod.CreateMLCEngine || (mod.webllm && mod.webllm.CreateMLCEngine);
         if (!make) throw new Error('no-api');
-        return make(WLLM_MODEL, { initProgressCallback: function (r) { UI.weaveProg = (r && typeof r.progress === 'number') ? r.progress : UI.weaveProg; } });
-      }).then(function (eng) { WLLM = eng; ok(eng); })['catch'](function (e) { fail('' + e); });
+        var prog = function (r) { UI.weaveProg = (r && typeof r.progress === 'number') ? r.progress : UI.weaveProg; if (r && r.text) UI.weaveMsg = ('' + r.text).slice(0, 48); };
+        // try each model in turn; first that downloads + initialises wins, then cache it
+        function tryAt(i) {
+          if (i >= WLLM_MODELS.length) { fail('no-model'); return; }
+          UI.weaveModel = WLLM_MODELS[i];
+          make(WLLM_MODELS[i], { initProgressCallback: prog }).then(function (eng) { WLLM = eng; ok(eng); })['catch'](function () { tryAt(i + 1); });
+        }
+        tryAt(0);
+      })['catch'](function (e) { fail('' + e); });
     }
     function startWeave(c, b) {
       var sig = APP.activeChartKey ? APP.activeChartKey() : 'x';
-      if (UI.weaveFor === sig && UI.weaveText && UI.weaveState === 'ready') return;
-      // deterministic stitch is ready instantly — the model, if any, only refines it
+      if (UI.weaveFor === sig && UI.weaveText && UI.weaveState === 'ready' && UI.weaveSrc === 'local-ai') return;
+      // deterministic stitch is ready instantly — the model, when present, replaces it with the woven read
       try { UI.weaveText = APP.weaveTemplate(c, b); } catch (e) { UI.weaveText = ''; }
       UI.weaveFor = sig; UI.weaveSrc = 'engine';
       if (!weaveSupported()) { UI.weaveState = 'ready'; return; }
-      UI.weaveState = 'loading'; UI.weaveProg = 0;
+      UI.weaveState = 'loading'; UI.weaveProg = 0; UI.weaveMsg = 'preparing on-device model';
       var anchors = []; try { anchors = APP.weaveAnchors(c); } catch (e2) {}
       loadWeaveEngine(function (eng) {
+        UI.weaveMsg = 'composing your reading';
         var brief = ''; try { brief = APP.weaveBrief(c, b); } catch (e3) {}
         eng.chat.completions.create({
-          messages: [{ role: 'system', content: APP.WEAVE_SYS }, { role: 'user', content: 'FACTS:\n' + brief + '\n\nWrite the reading now.' }],
-          temperature: 0.4, max_tokens: 420
+          messages: [{ role: 'system', content: APP.WEAVE_SYS }, { role: 'user', content: APP.weaveUser(brief) }],
+          temperature: 0.62, top_p: 0.9, frequency_penalty: 0.5, presence_penalty: 0.35, max_tokens: 1024
         }).then(function (resp) {
           var txt = resp && resp.choices && resp.choices[0] && resp.choices[0].message ? resp.choices[0].message.content : '';
           if (APP.weaveValid(txt, anchors)) { UI.weaveText = ('' + txt).trim(); UI.weaveSrc = 'local-ai'; }
@@ -4577,14 +4668,17 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (UI.weaveFor !== sig) { UI.weaveText = null; UI.weaveState = 'idle'; }
       eyebrow('Your chart, woven into one voice', x, ly, ACC); ly += 24;
       if (!UI.weaveText) {
-        ly += paragraph('Let the reading flow as a single voice instead of sections. Composed from the exact facts above — on your device, privately. If your phone supports on-device AI it phrases it; otherwise the built-in engine does.', x, ly, w, 13.5, INK, SERIF, 20, 190) + 12;
-        flatBtn('Weave my reading', x, ly, w, 44, function () { startWeave(c, b); }, false); ly += 56;
+        var sup = weaveSupported();
+        ly += paragraph('Let the whole reading flow as one voice instead of sections — an on-device language model speaks the engine’s exact findings aloud, like a single astrologer reading every number at once.', x, ly, w, 13.5, INK, SERIF, 20, 190) + 8;
+        ly += paragraph(sup ? 'First time only, it downloads a small model (a few hundred MB) and runs entirely on your phone — nothing leaves the device. After that it’s instant and offline.' : 'Your device doesn’t expose on-device AI (WebGPU), so the built-in engine will compose it instead — still from your exact chart.', x, ly, w, 12.5, ACCTX, SERIF, 18, 190) + 12;
+        flatBtn(sup ? 'Weave my reading (downloads once)' : 'Weave my reading', x, ly, w, 44, function () { startWeave(c, b); }, false); ly += 56;
         return ly;
       }
       if (UI.weaveState === 'loading') {
         var pct = Math.round((UI.weaveProg || 0) * 100);
-        setFont(MONO, 9.5, ACCTX, p.LEFT, p.TOP, 220); p.text('REFINING ON-DEVICE · ' + pct + '%', x, sY(ly)); ly += 16;
-        var bw = w, bh = 5, by = sY(ly); p.noStroke(); fillc(shade(GROUNDS[UI.screen], -18)); p.rect(x, by, bw, bh, 3); fillc(ACC); p.rect(x, by, bw * (UI.weaveProg || 0), bh, 3); ly += 16;
+        setFont(MONO, 9.5, ACCTX, p.LEFT, p.TOP, 220); p.text((UI.weaveMsg ? ('' + UI.weaveMsg).toUpperCase() : 'WORKING ON-DEVICE') + ' · ' + pct + '%', x, sY(ly)); ly += 16;
+        var bw = w, bh = 5, by = sY(ly); p.noStroke(); fillc(shade(GROUNDS[UI.screen], -18)); p.rect(x, by, bw, bh, 3); fillc(ACC); p.rect(x, by, bw * (UI.weaveProg || 0), bh, 3); ly += 14;
+        setFont(MONO, 8, ACCTX, p.LEFT, p.TOP, 150); p.text('THE ENGINE STITCH BELOW IS SHOWING UNTIL THE MODEL FINISHES', x, sY(ly)); ly += 16;
       }
       // card with the woven prose
       var paras = ('' + UI.weaveText).split(/\n\n+/), pre = ly;
@@ -6228,7 +6322,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       recompute(); UI.selPlanet = 'sun'; UI.popT = nowT(); UI.popFrom = 22; UI.scroll.chart = 0; UI.screen = 'chart'; hideSearchInput();
       if (!APP.STATE.settings.walked) { UI.walk = { i: 0, t0: nowT() }; UI.walkTr = null; UI.walkTheme = null; } // first reveal: walk them through it
     }
-    function recompute() { APP.STATE.chart = APP.compute(APP.STATE.birth, APP.STATE.settings); APP.save(); UI.readCache = null; UI.readSig = null; UI.readTransit = null; UI.forecast = null; UI.promCache = null; UI.arcCache = null; UI.weaveCache = null; UI.weaveFor = null; UI.todayCache = null; UI.fmList = null; UI.lifeList = null; UI.calEvents = null; UI.calDay = null; UI.walkTr = null; UI.walkTheme = null; UI.bondCache = null; UI.bondFor = null; if (APP.clearPersonCharts) APP.clearPersonCharts(); UI.askAns = ''; UI.quip = null; UI.quipNext = 0; buildField(); }
+    function recompute() { APP.STATE.chart = APP.compute(APP.STATE.birth, APP.STATE.settings); APP.save(); UI.readCache = null; UI.readSig = null; UI.readTransit = null; UI.forecast = null; UI.promCache = null; UI.arcCache = null; UI.weaveText = null; UI.weaveState = 'idle'; UI.weaveFor = null; UI.weaveMsg = null; UI.todayCache = null; UI.fmList = null; UI.lifeList = null; UI.calEvents = null; UI.calDay = null; UI.walkTr = null; UI.walkTheme = null; UI.bondCache = null; UI.bondFor = null; if (APP.clearPersonCharts) APP.clearPersonCharts(); UI.askAns = ''; UI.quip = null; UI.quipNext = 0; buildField(); }
 
     // ---------- share / export a clean chart card (own untainted canvas; the live one holds remote images) ----------
     // share a daily card (clean offscreen canvas) — moon phase + what's live on your chart today
