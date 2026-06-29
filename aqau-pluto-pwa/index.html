@@ -5739,24 +5739,32 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       return out;
     }
     // ===== retro media: Bakelite TVs (YouTube channel playlists, muted + subtitles, sound knob) & radios (Spotify) =====
-    function mediaSets(c, b) {
-      var sun = DATA.SIGNS[c.planets.sun.sign].name;
-      return [
-        { kind: 'tv', t: 'Debra Silverman', sub: 'Moon, elements & shadow', list: 'UU8h-BJfBv-DzhaUSg_IJzFg' },
-        { kind: 'tv', t: 'The Astrology Podcast', sub: 'Sign forecasts & the craft', list: 'UUjeqviBoLp-rsvPaelT8b5Q' },
-        { kind: 'radio', t: 'Ghost of a Podcast', sub: 'Jessica Lanyadoo — ' + sun + ' advice & the weekly sky', show: '1962WYPEmmw0iAAbs6pIHT' },
-        { kind: 'radio', t: 'The Astrology Podcast', sub: 'Deep-dive astrology conversations', show: '6RZiEupZSqbU8WgCWHnV9p' }
-      ];
+    // ---- Internet Archive: public-domain film & audio, searched live to the user's chart ----
+    function iaKey(c, b) { return DATA.SIGNS[c.planets.sun.sign].name + ((b.timeKnown && c.ascBody) ? ('|' + DATA.SIGNS[c.ascBody.sign].name) : ''); }
+    function iaSearch(c, b) {
+      var key = iaKey(c, b); if (UI.iaFor === key) return; // fetched/fetching for this chart already
+      UI.iaFor = key; UI.iaResults = null; UI.iaErr = ''; UI.tvActive = null;
+      if (typeof fetch !== 'function') { UI.iaErr = 'offline'; return; }
+      var sun = DATA.SIGNS[c.planets.sun.sign].name, asc = (b.timeKnown && c.ascBody) ? DATA.SIGNS[c.ascBody.sign].name : '';
+      var signClause = '"' + sun + '"' + (asc && asc !== sun ? (' OR "' + asc + '"') : '');
+      var q = '(' + signClause + ') AND (astrology OR zodiac OR horoscope OR astrological) AND (mediatype:movies OR mediatype:audio)';
+      var url = 'https://archive.org/advancedsearch.php?q=' + encodeURIComponent(q) + '&fl[]=identifier&fl[]=title&fl[]=mediatype&rows=14&sort[]=downloads+desc&output=json';
+      fetch(url).then(function (r) { return r.json(); }).then(function (j) {
+        var docs = (j && j.response && j.response.docs) || [], out = [], i;
+        for (i = 0; i < docs.length; i++) if (docs[i].identifier) out.push({ id: docs[i].identifier, t: docs[i].title || docs[i].identifier, m: docs[i].mediatype });
+        UI.iaResults = out.slice(0, 12); if (!UI.iaResults.length) UI.iaErr = 'none';
+      })['catch'](function () { UI.iaErr = 'net'; });
+    }
+    function iaThumb(id) {
+      UI.iaImg = UI.iaImg || {}; if (UI.iaImg[id] !== undefined) return UI.iaImg[id];
+      UI.iaImg[id] = null; var im = new Image(); im.onload = function () { UI.iaImg[id] = im; }; im.onerror = function () { UI.iaImg[id] = false; }; im.src = 'https://archive.org/services/img/' + id; return null;
     }
     function ensureMediaFrame() {
       if (UI.mframe || typeof document === 'undefined') return UI.mframe;
       try { var f = document.createElement('iframe'); f.setAttribute('allow', 'autoplay; encrypted-media; picture-in-picture; fullscreen'); f.setAttribute('allowfullscreen', 'true'); f.setAttribute('aria-hidden', 'true'); var s = f.style; s.position = 'fixed'; s.zIndex = '7'; s.border = '0'; s.background = '#000'; s.display = 'none'; document.body.appendChild(f); UI.mframe = f; } catch (e) { UI.mframe = null; }
       return UI.mframe;
     }
-    function mediaSrc(it) {
-      if (it.kind === 'tv') return 'https://www.youtube-nocookie.com/embed/videoseries?list=' + it.list + '&autoplay=1&mute=1&cc_load_policy=1&playsinline=1&enablejsapi=1&modestbranding=1&rel=0';
-      return 'https://open.spotify.com/embed/show/' + it.show + '?theme=0';
-    }
+    function mediaSrc(it) { return 'https://archive.org/embed/' + it.id; }
     function hideMediaFrame() { try { if (UI.mframe) { UI.mframe.style.display = 'none'; if (UI.mframe.src) UI.mframe.src = 'about:blank'; } } catch (e) {} UI.mframeId = null; }
     function setMediaActive(idx) { UI.tvActive = idx; UI.tvMuted = true; }
     function applyTvSound() { try { var mf = UI.mframe; if (mf && mf.contentWindow) mf.contentWindow.postMessage(JSON.stringify({ event: 'command', func: (UI.tvMuted === false ? 'unMute' : 'mute'), args: [] }), '*'); } catch (e) {} }
@@ -5860,52 +5868,56 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
           (function (idx, ay) { pushHit(x, sY(ay), w, frh, function () { UI.learnItem = idx; UI.scroll.learn = 0; UI.popT = nowT(); }); })(i, ly); ly += frh;
         }
         if (!fm.length) ly += paragraph('No close matches in the set — a rare sky.', x, ly, w, 15, INK, SERIF, 23, 180) + 10;
-      } else if (cat === 'watch') { // retro TVs (video) + radios (podcasts), tuned to your chart
-        ly += paragraph('Tune in. Lessons play on the little televisions — muted, with subtitles; turn the VOL knob when you want sound. Podcasts play on the radios. Tap a set to switch it on.', x, ly, w, 14.5, INK, SERIF, 22, 200) + 14;
-        var dev = mediaSets(c, b), di, frameRect = null;
-        for (di = 0; di < dev.length; di++) {
-          var it = dev[di], active = (UI.tvActive === di);
-          if (it.kind === 'tv') {
-            var H = 226, y0 = sY(ly), off = pressOff(x, y0, w, H - 44, 2);
-            bakeliteBody(x, y0 + off, w, H);
-            var sxs = x + 16, sys = y0 + off + 16, sws = w - 32, shs = 134;
-            if (active) { frameRect = { x: sxs + 3, y: sys + 3, w: sws - 6, h: shs - 6 }; p.noStroke(); fillc([0, 0, 0]); p.rect(sxs, sys, sws, shs, 8); }
-            else { tvStatic(sxs, sys, sws, shs); setFont(MONO, 10, [214, 214, 224], p.CENTER, p.CENTER, 210); p.text('TAP TO TUNE IN', sxs + sws / 2, sys + shs / 2); }
-            p.noFill(); strokec([22, 16, 12], 255); p.strokeWeight(4); p.rect(sxs - 2, sys - 2, sws + 4, shs + 4, 9);
-            var cyr = y0 + off + H - 38, gx2; for (gx2 = 0; gx2 < 7; gx2++) { strokec([34, 24, 18], 220); p.strokeWeight(3); p.line(x + 18 + gx2 * 7, cyr - 8, x + 18 + gx2 * 7, cyr + 20); }
-            setFont(SANS, 14, [240, 230, 216], p.LEFT, p.TOP); bold(); var ttl = it.t, tav = w - 158; p.textFont(SANS); p.textSize(14); while (ttl.length > 6 && p.textWidth(ttl) > tav) ttl = ttl.slice(0, -2); p.text(ttl + (ttl !== it.t ? '…' : ''), x + 80, cyr - 10); normal();
-            setFont(MONO, 8.5, [212, 198, 182], p.LEFT, p.TOP, 200); var subt = it.sub.toUpperCase(); p.textFont(MONO); p.textSize(8.5); while (subt.length > 6 && p.textWidth(subt) > tav) subt = subt.slice(0, -2); p.text(subt, x + 80, cyr + 8);
-            var vkx = x + w - 30, ckx = x + w - 64, ky = cyr + 4;
-            tvKnob(ckx, ky, 11, false); tvKnob(vkx, ky, 13, active && UI.tvMuted === false);
-            setFont(MONO, 7, [210, 196, 180], p.CENTER, p.TOP, 180); p.text('CH', ckx, ky + 15); p.text('VOL', vkx, ky + 15);
-            if (active) pushHit(vkx - 18, ky - 18, 36, 36, function () { UI.tvMuted = (UI.tvMuted === false); applyTvSound(); });
-            (function (idx, ay) { pushHit(x, sY(ay), w, H - 44, function () { if (UI.tvActive !== idx) setMediaActive(idx); }); })(di, ly);
-            ly += H + 14;
-          } else {
-            var RH = 176, ry0 = sY(ly), ro = pressOff(x, ry0, w, RH, 2);
-            bakeliteBody(x, ry0 + ro, w, RH);
-            var gcx = x + 44, gcy = ry0 + ro + RH / 2, gg; p.noFill(); for (gg = 1; gg <= 4; gg++) { strokec([34, 24, 18], 210); p.strokeWeight(2); p.ellipse(gcx, gcy, gg * 16, gg * 16); }
-            p.noStroke(); fillc(active && UI.tvActive === di ? ACC : [120, 92, 70]); p.ellipse(gcx, gcy, 7, 7);
-            var pwx = x + 82, pwy = ry0 + ro + 12, pww = w - 82 - 14, pwh = 152;
-            if (active) { frameRect = { x: pwx, y: pwy, w: pww, h: pwh }; p.noStroke(); fillc([18, 18, 22]); p.rect(pwx, pwy, pww, pwh, 8); }
-            else { p.noStroke(); fillc([30, 26, 30]); p.rect(pwx, pwy, pww, pwh, 8); setFont(SANS, 14, [240, 230, 216], p.LEFT, p.TOP); bold(); p.text(it.t, pwx + 12, pwy + 16); normal(); setFont(MONO, 8.5, [212, 198, 182], p.LEFT, p.TOP, 200); var rsl = wrapLines2(it.sub.toUpperCase(), pww - 24, MONO, 8.5), rsi; for (rsi = 0; rsi < rsl.length && rsi < 3; rsi++) p.text(rsl[rsi], pwx + 12, pwy + 38 + rsi * 12); setFont(MONO, 9, ACC, p.LEFT, p.TOP, 230); p.text('TAP TO PLAY ›', pwx + 12, pwy + pwh - 22); }
-            p.noFill(); strokec([22, 16, 12], 255); p.strokeWeight(4); p.rect(pwx - 2, pwy - 2, pww + 4, pwh + 4, 9);
-            (function (idx, ay) { pushHit(x, sY(ay), w, RH, function () { if (UI.tvActive !== idx) setMediaActive(idx); }); })(di, ly);
-            ly += RH + 14;
+      } else if (cat === 'watch') { // square retro TVs streaming public-domain media from the Internet Archive, searched to your chart
+        var sunNm = DATA.SIGNS[c.planets.sun.sign].name, ascNm = (b.timeKnown && c.ascBody) ? DATA.SIGNS[c.ascBody.sign].name : '';
+        ly += paragraph('Public-domain film and audio from the Internet Archive, searched live to your chart — your ' + sunNm + ' Sun' + (ascNm && ascNm !== sunNm ? (' and ' + ascNm + ' rising') : '') + '. Tap a screen to play it here, in-app.', x, ly, w, 14.5, INK, SERIF, 22, 200) + 14;
+        iaSearch(c, b);
+        var res = UI.iaResults, frameRect = null, cw2 = (w - 12) / 2, cardH = cw2 + 30;
+        if (UI.iaErr) {
+          var em = (UI.iaErr === 'net' || UI.iaErr === 'offline') ? 'Couldn’t reach the Internet Archive — Watch needs a connection. Tap to try again when you’re online.' : 'No archive matches for your sign right now — tap to try again.';
+          ly += paragraph(em, x, ly, w, 14.5, INK, SERIF, 22, 200) + 12;
+          flatBtn('Try again', x, ly, 160, 42, function () { UI.iaFor = null; }, false); ly += 52;
+        } else if (!res) {
+          setFont(MONO, 10, ACCTX, p.LEFT, p.TOP, 210); p.text('TUNING IN TO THE ARCHIVE…', x, sY(ly)); ly += 22;
+          var s0 = sY(ly); bakeliteBody(x, s0, cw2, cardH); bakeliteBody(x + cw2 + 12, s0, cw2, cardH);
+          tvStatic(x + 12, s0 + 12, cw2 - 24, cw2 - 24); tvStatic(x + cw2 + 24, s0 + 12, cw2 - 24, cw2 - 24);
+          ly += cardH + 14;
+        } else {
+          var si = 0;
+          while (si < res.length) {
+            var rowTop = ly, cc;
+            for (cc = 0; cc < 2 && si < res.length; cc++, si++) {
+              var it = res[si], cx0 = x + cc * (cw2 + 12), sy0 = sY(rowTop), active = (UI.tvActive === si);
+              var off = pressOff(cx0, sy0, cw2, cardH, 2);
+              bakeliteBody(cx0, sy0 + off, cw2, cardH);
+              var scrX = cx0 + 12, scrY = sy0 + off + 12, scrW = cw2 - 24, scrH = cw2 - 24;
+              if (active) { frameRect = { x: scrX + 3, y: scrY + 3, w: scrW - 6, h: scrH - 6 }; p.noStroke(); fillc([0, 0, 0]); p.rect(scrX, scrY, scrW, scrH, 6); }
+              else {
+                var im = iaThumb(it.id);
+                if (im && im !== false && (im.naturalWidth || im.width)) {
+                  var dc = p.drawingContext, iw = im.naturalWidth || im.width, ih = im.naturalHeight || im.height, scc = Math.max(scrW / iw, scrH / ih), rw = iw * scc, rh = ih * scc;
+                  dc.save(); dc.beginPath(); dc.rect(scrX, scrY, scrW, scrH); dc.clip(); try { dc.drawImage(im, scrX + scrW / 2 - rw / 2, scrY + scrH / 2 - rh / 2, rw, rh); } catch (e) {} dc.restore();
+                  p.noStroke(); fillc([0, 0, 0], 120); p.rect(scrX, scrY + scrH - 20, scrW, 20); setFont(MONO, 8, [244, 238, 228], p.CENTER, p.BOTTOM, 235); p.text('TAP TO PLAY', scrX + scrW / 2, scrY + scrH - 6);
+                } else { tvStatic(scrX, scrY, scrW, scrH); setFont(MONO, 9, [214, 214, 224], p.CENTER, p.CENTER, 210); p.text(im === false ? 'NO PREVIEW' : '…', scrX + scrW / 2, scrY + scrH / 2); }
+              }
+              p.noFill(); strokec([22, 16, 12], 255); p.strokeWeight(4); p.rect(scrX - 2, scrY - 2, scrW + 4, scrH + 4, 7);
+              setFont(SANS, 10.5, [240, 230, 216], p.LEFT, p.TOP); var tt = it.t; p.textFont(SANS); p.textSize(10.5); while (tt.length > 4 && p.textWidth(tt) > scrW - 2) tt = tt.slice(0, -2); p.text(tt + (tt !== it.t ? '…' : ''), scrX, sy0 + off + cardH - 19);
+              (function (idx, lx, ltop) { pushHit(lx, sY(ltop), cw2, cardH, function () { setMediaActive(UI.tvActive === idx ? -1 : idx); }); })(si, cx0, rowTop);
+            }
+            ly = rowTop + cardH + 14;
           }
-        }
-        // one active media iframe, tracked to its device's screen as the list scrolls
-        if (frameRect && UI.tvActive != null && dev[UI.tvActive]) {
-          var act = dev[UI.tvActive], mf = ensureMediaFrame();
-          if (mf) {
-            var want = (act.kind === 'tv') ? ('tv:' + act.list) : ('radio:' + act.show);
-            if (UI.mframeId !== want) { mf.src = mediaSrc(act); UI.mframeId = want; }
-            var vis = (frameRect.y >= topY() - 2) && (frameRect.y + frameRect.h <= H - (UI.safeBottom || 0));
-            if (vis) { mf.style.display = 'block'; mf.style.left = frameRect.x + 'px'; mf.style.top = frameRect.y + 'px'; mf.style.width = frameRect.w + 'px'; mf.style.height = frameRect.h + 'px'; mf.style.borderRadius = '6px'; } else mf.style.display = 'none';
-            UI.mediaDrawn = true;
+          // the one active screen gets the live archive.org player, tracked as the grid scrolls
+          if (frameRect && UI.tvActive != null && UI.tvActive >= 0 && res[UI.tvActive]) {
+            var act = res[UI.tvActive], mf = ensureMediaFrame();
+            if (mf) {
+              var want = 'ia:' + act.id; if (UI.mframeId !== want) { mf.src = mediaSrc(act); UI.mframeId = want; }
+              var vis = (frameRect.y >= topY() - 2) && (frameRect.y + frameRect.h <= H - (UI.safeBottom || 0));
+              if (vis) { mf.style.display = 'block'; mf.style.left = frameRect.x + 'px'; mf.style.top = frameRect.y + 'px'; mf.style.width = frameRect.w + 'px'; mf.style.height = frameRect.h + 'px'; mf.style.borderRadius = '4px'; } else mf.style.display = 'none';
+              UI.mediaDrawn = true;
+            }
           }
+          ly += 4; setFont(MONO, 8.5, INK, p.LEFT, p.TOP, 140); ly += paragraph('Streamed from the Internet Archive (archive.org) — public-domain film and audio, searched to your sign. Plays in-app; tap a playing screen again to stop.', x, ly, w, 11, INK, MONO, 16, 140) + 8;
         }
-        ly += 4; setFont(MONO, 8.5, INK, p.LEFT, p.TOP, 140); ly += paragraph('TVs stream official YouTube channels (muted, subtitles on — turn VOL for sound). Radios stream shows on Spotify. Everything plays in-app; nothing opens elsewhere.', x, ly, w, 11, INK, MONO, 16, 140) + 8;
       } else if (cat === 'howto') { // hands-on guides
         ly += paragraph('Short, practical walk-throughs — how to actually do these things yourself, each with a little animation.', x, ly, w, 14.5, INK, SERIF, 22, 200) + 12;
         for (i = 0; i < HOWTO.length; i++) {
