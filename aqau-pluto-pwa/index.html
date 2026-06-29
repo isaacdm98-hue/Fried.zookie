@@ -3043,14 +3043,6 @@ var APP = (function () {
     composeCore(c).forEach(function (para) { out.appendChild(el('p', { text: para })); });
     wrap.appendChild(out);
 
-    if (STATE.settings.ai) {
-      var actions = el('div', { class: 'btnrow' });
-      actions.appendChild(el('button', { class: 'btn', text: 'Deepen with Claude', onclick: function (e) {
-        runReading('Read this chart for me. Give me a tight, grounded portrait: my core pattern, my elemental balance and what it means for how I actually behave, one real strength and one honest growth edge. Then a short closing paragraph on what is genuinely live for me today and in this passing hour, drawn from the current transits below. About 280 words.\n\n' + chartText(c, STATE.birth) + '\n\n--- CURRENT TRANSITS ---\n' + transitText(c), e.target, out);
-      } }));
-      wrap.appendChild(actions);
-    }
-
     // daily + time aspects: what the moving sky is doing to your chart now
     appendTransitReading(wrap, c);
 
@@ -3061,34 +3053,12 @@ var APP = (function () {
     ask.appendChild(ta);
     ask.appendChild(el('button', { class: 'btn primary', text: 'Ask', onclick: function (e) {
       var q = ta.value.trim(); if (!q) return;
-      if (STATE.settings.ai) askWithFallback(q, c, e.target, ansWrap);
-      else { clear(ansWrap); renderProse(ansWrap, localAsk(q, c)); }
+      clear(ansWrap); renderProse(ansWrap, localAsk(q, c));
     } }));
     ask.appendChild(ansWrap);
     wrap.appendChild(ask);
     wrap.appendChild(modelNote());
     return wrap;
-  }
-  function askWithFallback(q, c, btn, target) {
-    var old = btn.textContent; btn.disabled = true; btn.textContent = 'Reading\u2026';
-    clear(target); target.appendChild(loader());
-    callModel('My question: ' + q + '\n\nAnswer using my chart below \u2014 grounded, specific, behavioural, no fortune-telling. About 180 words.\n\n' + chartText(c, STATE.birth),
-      function (txt) { clear(target); renderProse(target, txt); btn.disabled = false; btn.textContent = old; },
-      function () { clear(target); renderProse(target, localAsk(q, c)); target.appendChild(el('p', { class: 'muted', text: '\u2014 answered locally from your chart' })); btn.disabled = false; btn.textContent = old; });
-  }
-  function runReading(prompt, btn, target) {
-    var oldTxt = btn ? btn.textContent : '';
-    if (btn) { btn.disabled = true; btn.textContent = 'Reading\u2026'; }
-    clear(target); target.appendChild(loader());
-    callModel(prompt, function (txt) {
-      clear(target); renderProse(target, txt);
-      if (btn) { btn.disabled = false; btn.textContent = oldTxt; }
-    }, function (why) {
-      clear(target);
-      if (why === 'off') target.appendChild(el('p', { class: 'muted', text: 'The reading model is switched off. Turn it on in Settings, or read the built-in interpretation above.' }));
-      else { composeCore(STATE.chart).forEach(function (p) { target.appendChild(el('p', { text: p })); }); target.appendChild(el('p', { class: 'muted', text: '(Offline \u2014 showing the built-in reading. Connect for a deeper, personalised version.)' })); }
-      if (btn) { btn.disabled = false; btn.textContent = oldTxt; }
-    });
   }
   function renderProse(target, txt) {
     var paras = txt.split(/\n\n+/);
@@ -3388,8 +3358,6 @@ var APP = (function () {
     wrap.appendChild(orbWrap);
 
     // AI toggle
-    wrap.appendChild(toggleRow('Cloud reading boost', [['on', 'On'], ['off', 'Off']], STATE.settings.ai ? 'on' : 'off', function (v) { STATE.settings.ai = (v === 'on'); save(); }));
-    wrap.appendChild(el('p', { class: 'hint', text: 'Off: the built-in engine writes every reading and answers your questions, fully on-device \u2014 free, private, works with no connection. On: Claude Sonnet adds a deeper pass when you have a connection, then falls back to the local engine if it cannot reach the network. The chart maths is always real and on-device either way.' }));
 
     wrap.appendChild(sectionLabel('Birth data'));
     var b = STATE.birth;
@@ -3422,7 +3390,7 @@ var APP = (function () {
     wrap.appendChild(el('h2', { class: 'h2', text: 'How this works' }));
     var body = el('div', { class: 'prose' });
     body.appendChild(el('p', { text: 'Aqau Pluto computes your chart with a Schlyter-algorithm ephemeris running entirely on your device \u2014 validated to arc-minute accuracy against the Swiss Ephemeris for the Sun, Moon, planets, Ascendant, Midheaven and house cusps. The positions are genuine, not invented.' }));
-    body.appendChild(el('p', { text: 'The voice is deliberately grounded: astrology here is a mirror for self-understanding, not a fixed fate. It leans on the four elements and on behaviour you can actually do something about. Deeper readings are composed by Claude Sonnet from your real chart data.' }));
+    body.appendChild(el('p', { text: 'The voice is deliberately grounded: astrology here is a mirror for self-understanding, not a fixed fate. It leans on the four elements and on behaviour you can actually do something about. Every reading is composed on-device from your genuine computed chart.' }));
     body.appendChild(el('p', { text: 'The tarot section never reads cards for you. It shows the standard spreads so you can lay them with a physical deck, and lets you look up a card\u2019s meaning and see many versions of its art pulled from public-domain decks.' }));
     body.appendChild(el('p', { class: 'muted', text: 'Pluto and the lunar node are lower-precision approximations (correct sign and house; wide-orb aspects). Chiron and minor points are intentionally omitted rather than shown inaccurately.' }));
     wrap.appendChild(body);
@@ -3432,7 +3400,7 @@ var APP = (function () {
   // ---------- shared UI bits ----------
   function sectionLabel(t) { return el('div', { class: 'seclabel', text: t }); }
   function loader() { var d = el('div', { class: 'loader' }); d.appendChild(el('span', { class: 'dot' })); d.appendChild(el('span', { class: 'dot' })); d.appendChild(el('span', { class: 'dot' })); return d; }
-  function modelNote() { return el('p', { class: 'source small', text: STATE.settings.ai ? 'Built-in engine, with a Claude Sonnet boost when connected. Composed from your genuine computed chart.' : 'Built-in on-device engine \u2014 free, private, works offline. From your genuine computed chart.' }); }
+  function modelNote() { return el('p', { class: 'source small', text: 'Built-in on-device engine \u2014 free, private, works offline. From your genuine computed chart.' }); }
 
   // ---------- menu ----------
   function openMenu() { var m = $('menu'); if (m) m.classList.add('open'); }
