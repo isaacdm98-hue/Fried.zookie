@@ -20,6 +20,17 @@ on-device, no server, no API keys.
 - **No AI.** Every word is composed on-device by the mathematics and the
   written astrological tradition behind it — precise, specific, never a fortune
   cookie. (An optional AI layer was removed by design.)
+- **From the tradition, on your chart** — the reading surfaces the *source's own
+  public-domain words* for the placements you actually carry: a line from
+  **Ptolemy's *Tetrabiblos*** or **William Lilly's *Christian Astrology* (1647)**
+  on your chart's keystone planet, your busiest house, and any planet sitting in
+  its **Hellenistic joy** — tied to your chart, never a generic epigraph. The
+  Learn screen does the same: each planet and house shows its own classical
+  signification (our summary) beside a short, attributed period quote. Modern
+  astrologers' copyrighted work is summarised in our own words, never reproduced.
+- **An expanded fixed-star catalogue** — 30 named stars with their planetary
+  natures after **Vivian Robson's *The Fixed Stars and Constellations in
+  Astrology* (1923)**, matched to your planets and angles within orb.
 - **The year ahead — a full time-lord stack.** Annual *and* monthly profections
   (with their time-lords), **Zodiacal Releasing** from the Lot of Spirit (your
   current life-chapter + sub-chapter and its ruler), secondary progressions
