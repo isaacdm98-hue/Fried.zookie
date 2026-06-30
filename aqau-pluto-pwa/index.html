@@ -2657,17 +2657,34 @@ var APP = (function () {
     for (i = 0; i < out.length; i++) { var bl = out[i]; if (bl.lines) { res.push(bl); continue; } if (!bl.text) continue; sig = bl.text.toLowerCase().replace(/[^a-z0-9 ]/g, '').slice(0, 55); if (seen[sig]) continue; seen[sig] = 1; res.push(bl); }
     return res;
   }
-  // From the tradition, on your chart — genuine public-domain lines tied to the placements you actually carry
-  // (your keystone planet, your busiest house, any planet in its joy), never as a generic epigraph.
+  // From the tradition, on your chart — genuine public-domain lines tied to the placements you actually carry,
+  // never a generic epigraph. Each is matched to a real feature of THIS chart, with its source named.
+  var HUMOUR = {
+    fire: 'the choleric temperament, hot and dry: quick to kindle, driven and brave, with a temper that flares and clears',
+    earth: 'the melancholic temperament, cold and dry: grave, patient and steady, slow to move and long to remember',
+    air: 'the sanguine temperament, hot and moist: sociable and lively, quick to think and quick to connect',
+    water: 'the phlegmatic temperament, cold and moist: calm and receptive, slow-moving and deeply feeling'
+  };
+  function ptolemyAspectNote(key) {
+    if (key === 'conjunction') return 'Ptolemy treated the conjunction as a bodily union, where two powers stand in one place and act as one';
+    if (key === 'trine' || key === 'sextile') return 'Ptolemy counted the trine and sextile among the aspects of agreement, where two planets fall in signs of kindred nature and work in concord';
+    return 'Ptolemy counted the square and opposition among the aspects of discord, the angles where two planets stand in signs of contrary nature and must be reconciled';
+  }
   function traditionFor(c) {
     var lines = [], pr; try { pr = prominence(c); } catch (e) { pr = null; }
     var top = (pr && pr.ranked && pr.ranked.length) ? pr.ranked[0] : 'sun', pt = DATA.PLANET_TRAD[top];
     if (pt) { var lead = nameFor(top) + ' carries the most weight in your chart. ' + pt.sig; if (pt.q) lead += '  “' + pt.q + '” — ' + pt.src + '.'; lines.push(lead); }
+    // dominant element, read back to the four-humour medicine the elements descend from (Hippocrates, Galen)
+    var dom = domElement(c.elements);
+    if (dom && HUMOUR[dom]) lines.push('The chart leans ' + DATA.ELEMENTS[dom].name.toLowerCase() + ' (' + c.elements[dom] + '%). In the four-humour medicine of Hippocrates and Galen, from which the elements descend, that is ' + HUMOUR[dom] + '.');
     if (STATE.birth.timeKnown) {
       var counts = {}, best = -1, bestH = -1, i; for (i = 0; i < DATA.PLANET_ORDER.length; i++) { var pl = c.planets[DATA.PLANET_ORDER[i]]; if (pl && pl.house) { counts[pl.house] = (counts[pl.house] || 0) + 1; if (counts[pl.house] > best) { best = counts[pl.house]; bestH = pl.house; } } }
       if (bestH > 0 && best >= 2) { var ht = DATA.HOUSE_TRAD[bestH - 1]; if (ht) lines.push('Your busiest place is the ' + ordinal(bestH) + ' house, with ' + best + ' planets gathered there. ' + ht.sig + '  “' + ht.q + '” — ' + DATA.TRAD_SRC_LILLY + '.'); }
     }
-    var joys = planetJoys(c); if (joys.length) { var j = joys[0]; lines.push(nameFor(j.key) + ' sits in its joy in the ' + ordinal(j.house) + ' house — ' + j.why + '. The Hellenistic astrologers held this the one place where it is most fully at home.'); }
+    // the tightest major aspect, read against Ptolemy's doctrine of agreement and discord
+    var ta = null, ai; for (ai = 0; ai < c.aspects.length; ai++) { if (!c.aspects[ai].minor) { ta = c.aspects[ai]; break; } }
+    if (ta) lines.push('Your tightest aspect is ' + nameFor(ta.a) + ' ' + ta.asp.key + ' ' + nameFor(ta.b) + ', within ' + ta.orb.toFixed(1) + '°. ' + ptolemyAspectNote(ta.asp.key) + ' (Ptolemy, Tetrabiblos).');
+    var joys = planetJoys(c); if (joys.length) { var j = joys[0]; lines.push(nameFor(j.key) + ' sits in its joy in the ' + ordinal(j.house) + ' house, ' + j.why + '. The Hellenistic astrologers held this the one place where it is most fully at home.'); }
     return lines;
   }
   function composeSignatures(c) {
@@ -4572,7 +4589,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       // S3 — a one-line daily headline of what the sky is doing to you; tap to open Today
       (function () {
         var trd = walkTr(c), te0 = trd.daily && trd.daily[0];
-        var dline = te0 ? (APP.nameFor(te0.tp) + ' ' + te0.asp.key + ' your ' + APP.nameFor(te0.np)) : 'a quiet sky — your pattern runs undisturbed';
+        var dline = te0 ? (APP.nameFor(te0.tp) + ' ' + te0.asp.key + ' your ' + APP.nameFor(te0.np)) : 'a quiet sky; your pattern runs undisturbed';
         var puls = reduced() ? 1 : (0.6 + 0.4 * Math.sin(nowT() * 0.004));
         p.noStroke(); fillc(ACC, 255 * puls); p.ellipse(x + 4, sY(ly) + 8, 6, 6);
         setFont(MONO, 10, ACCTX, p.LEFT, p.TOP, 235); p.text(('Today · ' + dline).toUpperCase(), x + 16, sY(ly) + 3);
@@ -4771,7 +4788,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         var bl = wrapLines(e.text, w - 36); setFont(SERIF, 13.5, INK, p.LEFT, p.TOP, past ? 175 : 225); var k; for (k = 0; k < bl.length; k++) p.text(bl[k], tx, ry + 38 + k * 19);
         ly += 56 + bl.length * 19 + 18;
       }
-      if (!ev.length) ly += paragraph('No major outer-planet transits found in range — unusual. (A birth time sharpens the angles that catch the most events.)', x, ly, w, 15, INK, SERIF, 23, 180) + 10;
+      if (!ev.length) ly += paragraph('No major outer-planet transits found in range, which is unusual. (A birth time sharpens the angles that catch the most events.)', x, ly, w, 15, INK, SERIF, 23, 180) + 10;
       UI.contentH.read = ly + 20;
     }
     // ---- transit calendar: a scrollable month grid marking the days with notable transits ----
