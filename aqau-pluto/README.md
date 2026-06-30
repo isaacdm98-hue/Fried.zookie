@@ -34,7 +34,18 @@ prose, so every placement reads *specifically* — never a generic template:
 - **No repeated scaffolding.** Each angle carries several phrasings chosen
   deterministically by the planet-pair, so a chart with three trines never prints
   the same closing clause three times — the geometry stays specific, the prose
-  stays fresh.
+  stays fresh. When Sun and Moon land in the *same* contradiction, the engine
+  catches that and writes it as one doubled, load-bearing pattern rather than two
+  near-identical sentences.
+- **A house style sheet** at the top of the engine (second person, one concrete
+  image per line, no hedge filler, gift *and* trap named together, a banned-word
+  list against fortune-cookie phrasing) keeps the corpus reading as one voice
+  across hundreds of lines and future additions.
+- **Generational placements with an image, not a label.** Uranus/Neptune/Pluto
+  by sign are necessarily generational (they move slowly), but each line now
+  carries a concrete, period-specific image — "the nuclear blueprint cracked, and
+  you grew up redrawing what *family* is allowed to mean" — instead of a flat
+  "a generation that…" template repeated twelve times.
 
 ### In the Read screen
 
