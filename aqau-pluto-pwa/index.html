@@ -2803,13 +2803,13 @@ var APP = (function () {
     return out;
   }
   function synLine(s) {
-    return 'Their ' + nameFor(s.theirs) + ' ' + s.asp.key + ' your ' + nameFor(s.mine) + ' — their ' + shortFn(s.theirs) + ' ' + aspVerb(s.asp) + ' your ' + shortFn(s.mine) + ', ' + aspTone(s.asp) + '. In practice it shows up around ' + relDomain(s.mine) + '.';
+    return 'Their ' + nameFor(s.theirs) + ' ' + s.asp.key + ' your ' + nameFor(s.mine) + ': their ' + shortFn(s.theirs) + ' ' + aspVerb(s.asp) + ' your ' + shortFn(s.mine) + ', ' + aspTone(s.asp) + '. In practice it shows up around ' + relDomain(s.mine) + '.';
   }
   function bondHeadline(cMe, cThem, syn) {
     var flow = 0, fric = 0, i;
     for (i = 0; i < syn.length; i++) { var q = syn[i].asp.quality; if (q === 'flow' || q === 'opportunity') flow++; else if (q === 'tension' || q === 'friction') fric++; }
     var meSun = DATA.SIGNS[cMe.planets.sun.sign], themSun = DATA.SIGNS[cThem.planets.sun.sign];
-    var tone = flow > fric * 1.4 ? 'an easy, supportive current runs between you' : fric > flow * 1.4 ? 'there’s real friction here — the kind that grows you or grates, depending how you handle it' : 'a genuine mix of ease and friction — a bond with texture';
+    var tone = flow > fric * 1.4 ? 'an easy, supportive current runs between you' : fric > flow * 1.4 ? 'there’s real friction here, the kind that grows you or grates, depending how you handle it' : 'a genuine mix of ease and friction, a bond with real texture';
     return 'Your ' + meSun.name + ' Sun meets their ' + themSun.name + ' Sun: ' + elementMix(meSun.element, themSun.element) + '. Across both charts, ' + tone + ' (' + flow + ' flowing, ' + fric + ' challenging contacts).';
   }
   // a transit in today's sky touching BOTH charts at once
@@ -2817,7 +2817,7 @@ var APP = (function () {
     var ctx = transitNow(), a = transitsToNatal(ctx.tp, ctx.ay, cMe), b = transitsToNatal(ctx.tp, ctx.ay, cThem);
     var mineBy = {}, out = [], seen = {}, i;
     for (i = 0; i < a.length; i++) if (!mineBy[a[i].tp]) mineBy[a[i].tp] = a[i];
-    for (i = 0; i < b.length; i++) { var t = b[i]; if (mineBy[t.tp] && !seen[t.tp]) { seen[t.tp] = 1; out.push('Transiting ' + nameFor(t.tp) + ' is touching both charts right now — your ' + nameFor(mineBy[t.tp].np) + ' and their ' + nameFor(t.np) + ' — a theme you’re both feeling at once.'); } }
+    for (i = 0; i < b.length; i++) { var t = b[i]; if (mineBy[t.tp] && !seen[t.tp]) { seen[t.tp] = 1; out.push('Transiting ' + nameFor(t.tp) + ' is touching both charts right now: your ' + nameFor(mineBy[t.tp].np) + ' and their ' + nameFor(t.np) + ', a theme you’re both feeling at once.'); } }
     return out;
   }
   // composite chart: the midpoint of each body between two people — the relationship as its own entity
@@ -2831,16 +2831,16 @@ var APP = (function () {
   function compositeText(comp) {
     var su = comp.planets.sun, mo = comp.planets.moon, ve = comp.planets.venus; if (!su || !mo) return '';
     var el = DATA.SIGNS[su.sign].element, purpose = ({ fire: 'action, adventure and keeping each other inspired', earth: 'building something solid and real together', air: 'ideas, conversation and a shared point of view', water: 'feeling, care and emotional depth' })[el] || 'a shared path';
-    return 'Treated as its own being, the relationship has its Sun in ' + su.signName + ', its Moon in ' + mo.signName + (comp.asc ? ', rising ' + comp.asc.signName : '') + (ve ? ', and Venus in ' + ve.signName : '') + '. Its centre of gravity leans toward ' + purpose + ' — the thing the two of you keep returning to.';
+    return 'Treated as its own being, the relationship has its Sun in ' + su.signName + ', its Moon in ' + mo.signName + (comp.asc ? ', rising ' + comp.asc.signName : '') + (ve ? ', and Venus in ' + ve.signName : '') + '. Its centre of gravity leans toward ' + purpose + ', the thing the two of you keep returning to.';
   }
   function composeBond(person) {
     var cMe = STATE.chart, cThem = personChart(person), syn = synastry(cMe, cThem), blocks = [];
     blocks.push({ label: 'Between you', text: bondHeadline(cMe, cThem, syn) });
     var top = syn.slice(0, 5).map(synLine); if (top.length) blocks.push({ label: 'Strongest contacts', lines: top });
-    var comp = compositeChart(cMe, cThem), ctext = compositeText(comp); if (ctext) blocks.push({ label: 'Your composite — the relationship itself', text: ctext });
-    var shared = sharedTransits(cMe, cThem); if (shared.length) blocks.push({ label: 'Live between you — today', text: shared.slice(0, 2).join(' ') });
+    var comp = compositeChart(cMe, cThem), ctext = compositeText(comp); if (ctext) blocks.push({ label: 'Your composite: the relationship itself', text: ctext });
+    var shared = sharedTransits(cMe, cThem); if (shared.length) blocks.push({ label: 'Live between you: today', text: shared.slice(0, 2).join(' ') });
     var trT = composeTransits(cThem);
-    if (trT.daily.length) blocks.push({ label: 'Live for them — today', text: 'What the sky is doing to ' + (person.name || 'them') + ' now: ' + trT.daily.slice(0, 2).map(transitSentence).join(' ') });
+    if (trT.daily.length) blocks.push({ label: 'Live for them: today', text: 'What the sky is doing to ' + (person.name || 'them') + ' now: ' + trT.daily.slice(0, 2).map(transitSentence).join(' ') });
     // the relationship's own forecast: transits to the composite chart over the year ahead
     var year = []; try { year = upcomingTransits({ planets: comp.planets, ayan: cMe.ayan || 0 }, 8, 16); } catch (e) { year = []; }
     return { blocks: blocks, syn: syn, comp: comp, cMe: cMe, cThem: cThem, year: year };
