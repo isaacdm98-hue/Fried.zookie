@@ -26,6 +26,15 @@ prose, so every placement reads *specifically* — never a generic template:
 - **A relevance graph** ranks every aspect in *your* chart by tightness × the
   weight of the two bodies × how loud the angle is, so the reading leads with the
   contacts that actually define you — not just the first ones found.
+- **Written to contradiction.** The sharpest insight is rarely one placement —
+  it's where two parts of the chart want opposite things. When a luminary's
+  sign-nature clashes with the natural element of the house it falls in, the
+  reading names the lived paradox (*"built to roam, yet you keep building the nest
+  to roam from"*) instead of reporting two facts side by side.
+- **No repeated scaffolding.** Each angle carries several phrasings chosen
+  deterministically by the planet-pair, so a chart with three trines never prints
+  the same closing clause three times — the geometry stays specific, the prose
+  stays fresh.
 
 ### In the Read screen
 

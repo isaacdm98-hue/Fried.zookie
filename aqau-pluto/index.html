@@ -1596,22 +1596,60 @@ var ENGINE = (function () {
     if (k === 'semisextile') return 'sxt';
     return 'sq';
   }
-  // The geometry layer: turn a pair's dynamic into a reading specific to THIS angle.
+  // The geometry layer reads each angle SEPARATELY, but the framing is no longer a
+  // fixed clause — each angle carries several phrasings, chosen deterministically by
+  // the pair so the same chart never prints the same scaffolding twice in a row.
+  // {flow}/{grind}/{core} are filled from the pair's dynamic.
+  var LENS = {
+    tri: [
+      'comes to you for free — {flow}; ease this natural is easy to ignore, so spend it on purpose',
+      'flows without effort — {flow}; a gift you were handed rather than built, and the only waste is leaving it idle',
+      'runs with the grain — {flow}; nothing here needs forcing, which is exactly why it can quietly go to seed',
+      'is simply native to you — {flow}; the talent is real, the temptation is to coast on it'
+    ],
+    sex: [
+      'an opening rather than a given — {flow}, but only if you reach for it',
+      'a door left ajar — {flow}; it pays out the moment you make the first move',
+      'latent potential — {flow}, the day you decide to put it to work',
+      'a knack you can develop — {flow}; it stays theoretical until you use it'
+    ],
+    sq: [
+      'the friction that builds you — {grind}; it won’t resolve by thinking, only by doing something with it',
+      'a right-angle tension — {grind}; the pressure keeps returning until you act on it instead of around it',
+      'your growing edge — {grind}; squares don’t soften, they forge, and this one forges through effort',
+      'a standing argument inside you — {grind}; you grow a little each time you stop dodging it and move'
+    ],
+    opp: [
+      '{grind} — and it arrives through other people, swinging between the poles until you can own both ends',
+      '{grind}; an opposition externalises, so you meet it in partners and rivals before you meet it in yourself',
+      '{grind} — played out as a tug-of-war with someone else until you can hold the tension alone',
+      '{grind}; you see it first in others, then realise both ends were always yours'
+    ],
+    inc: [
+      'a quincunx ({core}): two parts of you that never quite line up and need constant small adjustments',
+      'a quincunx — {core} pulling at an awkward angle, asking to be re-tuned rather than resolved',
+      'a 150° misfit between {core}: neither side will convert the other, so you learn to keep adjusting'
+    ],
+    irr: [
+      'a low, nagging friction that flares under pressure rather than head-on: {grind}',
+      'a minor irritation that only shows when you’re stretched — {grind}',
+      'a background hum of tension, easy to ignore until a hard day: {grind}'
+    ],
+    sxt: [
+      'a mild, neighbourly tug between {core} — a quiet link that just asks for a little awareness',
+      'a soft 30° thread connecting {core}, more hint than force',
+      'a gentle link between {core}, working under the surface'
+    ]
+  };
+  function hashPick(arr, key) { var h = 0, i; for (i = 0; i < key.length; i++) { h = (h * 31 + key.charCodeAt(i)) >>> 0; } return arr[h % arr.length]; }
+  function fillLens(tpl, e) { return tpl.replace('{flow}', e.flow).replace('{grind}', e.grind).replace('{core}', e.core); }
   function aspect(a, b, aspKey) {
-    var e = PAIR[[a, b].sort().join('|')];
+    var pkey = [a, b].sort().join('|'), e = PAIR[pkey];
     if (!e) return null;
     var cl = aspClass(aspKey);
     if (e.bespoke && e.bespoke[cl]) return e.bespoke[cl];
-    switch (cl) {
-      case 'conj': return e.fuse;
-      case 'tri': return 'this runs easily — ' + e.flow + '; a trine hands it over for free, so the only real risk is taking it for granted';
-      case 'sex': return 'an open door — ' + e.flow + ' — but a sextile only pays out if you choose to walk through it';
-      case 'sq': return 'the friction that grows you — ' + e.grind + '; a square works through action, generating pressure until you build something with it';
-      case 'opp': return e.grind + ', and an opposition tends to play out through other people — swinging between the two poles until you can hold both ends at once';
-      case 'inc': return 'a quincunx (' + e.core + '): two parts of you that never quite fit, needing constant small adjustments';
-      case 'irr': return 'a low, nagging friction that flares under pressure rather than head-on: ' + e.grind;
-      case 'sxt': return 'a mild, neighbourly tug between ' + e.core + ', a quiet link that just asks for a little awareness';
-    }
+    if (cl === 'conj') return e.fuse;
+    if (LENS[cl]) return fillLens(hashPick(LENS[cl], pkey + cl), e);
     return e.core;
   }
   function pairCore(a, b) { var e = PAIR[[a, b].sort().join('|')]; return e ? e.core : null; }
@@ -1639,6 +1677,42 @@ var ENGINE = (function () {
     return scored;
   }
 
+  // ============================================================================
+  // CONTRADICTION LAYER — the real insight is rarely a single placement; it's where
+  // two parts of the chart want opposite things. When a luminary's sign-element
+  // clashes with the natural element of the house it falls in, that paradox is named
+  // as a lived tension rather than reported as two separate facts.
+  // ============================================================================
+  var HOUSE_EL = ['fire', 'earth', 'air', 'water', 'fire', 'earth', 'air', 'water', 'fire', 'earth', 'air', 'water']; // houses 1..12
+  var EL_DRIVE = { fire: 'to act, burn and stay free', earth: 'to build something solid and lasting', air: 'to think, connect and keep its options open', water: 'to feel its way and bond deeply' };
+  var EL_PULL = { fire: 'self-expression and being seen', earth: 'work, worth and the material', air: 'people, ideas and exchange', water: 'privacy, feeling and the inner world' };
+  var RESOLVE = {
+    'fire>earth': 'you chafe at the slow build, then find the slow build is the only thing that holds your fire',
+    'fire>air': 'your conviction keeps colliding with other people’s angles; you grow by arguing less and persuading more',
+    'fire>water': 'you’re built to roam, yet keep building the nest to roam from — and you only settle once both are true',
+    'earth>fire': 'you want a sure thing in the one area that only rewards the risk; the gift is daring you can actually fund',
+    'earth>air': 'you want it concrete where it lives in ideas and people, so you end up making the abstract practical',
+    'earth>water': 'you reach for something solid to hold in the place that won’t be pinned down, and learn to trust what you can’t measure',
+    'air>fire': 'you weigh every side where life just wants you to commit and go; decisiveness is the lesson',
+    'air>earth': 'you live in theory where the house demands results, and do your best once the idea has a body',
+    'air>water': 'you try to think your way through what can only be felt; the growth is letting the feeling speak first',
+    'water>fire': 'your feeling runs deep where you’re asked to perform and shine; you learn to wear the heart more openly',
+    'water>earth': 'you feel your way through a domain that wants structure, and do your best work when mood meets method',
+    'water>air': 'you take personally what the house treats as just talk, and steady once you stop reading every subtext'
+  };
+  function contradictions(c, timeKnown) {
+    if (!timeKnown) return [];
+    var out = [], order = ['sun', 'moon'], i;
+    for (i = 0; i < order.length; i++) {
+      var k = order[i], pl = c.planets[k]; if (!pl || !pl.house) continue;
+      var se = SIGNS[pl.sign].element, he = HOUSE_EL[pl.house - 1];
+      if (se === he) continue;
+      var r = RESOLVE[se + '>' + he]; if (!r) continue;
+      out.push(cap(nm(k)) + ' in ' + pl.signName + ' wants ' + EL_DRIVE[se] + ', but your ' + ord(pl.house) + ' house runs on ' + EL_PULL[he] + ' — ' + r + '.');
+    }
+    return out;
+  }
+
   return {
     planetInHouse: planetInHouse,
     aspect: aspect,
@@ -1646,6 +1720,7 @@ var ENGINE = (function () {
     pairCore: pairCore,
     hasPair: hasPair,
     rankAspects: rankAspects,
+    contradictions: contradictions,
     PH: PH, PAIR: PAIR
   };
 })();
@@ -1975,11 +2050,16 @@ var APP = (function () {
     } else {
       parts.push('Your Sun is ' + se + ' and your Moon is ' + me + '. Where they meet, ' + elementMix(se, me) + '.');
     }
+    // name the lived paradox where a luminary's nature pulls against the house it sits in
+    if (typeof ENGINE !== 'undefined' && ENGINE.contradictions) {
+      var contra = ENGINE.contradictions(c, tk);
+      if (contra.length) parts.push('Where you pull against yourself — ' + contra.join(' '));
+    }
     var dom = domElement(c.elements), low = lowElement(c.elements), seed = sun.sign + '|' + Math.floor(sun.deg) + '|' + moon.sign;
     var leadE = vpick(['The chart leans', 'Your centre of gravity is', 'The weight of you sits in', 'On balance you run'], seed);
     parts.push(leadE + ' ' + DATA.ELEMENTS[dom].name.toLowerCase() + ' (' + c.elements[dom] + '%): ' + DATA.ELEMENTS[dom].high + '. It runs light on ' + DATA.ELEMENTS[low].name.toLowerCase() + ' (' + c.elements[low] + '%) \u2014 ' + DATA.ELEMENTS[low].need);
     var dm = domMod(c.modalities);
-    var leadM = vpick(['You mostly work in a', 'You meet life in a', 'Your default gear is', 'You operate in a'], seed + 'm');
+    var leadM = vpick(['You mostly work in a', 'You meet life in a', 'You default to a', 'You operate in a'], seed + 'm');
     parts.push(leadM + ' ' + DATA.MODALITIES[dm].name.toLowerCase() + ' way. ' + DATA.MODALITIES[dm].note);
     // mind / love / drive — the personal planets, read specifically from the corpus
     if (c.planets.mercury) parts.push('How you think — Mercury in ' + c.planets.mercury.signName + (tk ? ', ' + ordinal(c.planets.mercury.house) + ' house' : '') + ': ' + DATA.PLANET_SIGN_TEXT.mercury[c.planets.mercury.sign] + phLine('mercury'));
