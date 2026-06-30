@@ -2236,9 +2236,9 @@ var APP = (function () {
   function transitSentence(t) {
     var seed = t.tp + t.np + t.asp.key;
     var base = 'Transiting ' + nameFor(t.tp) + ' is ' + aspVerb(t.asp) + ' your natal ' + nameFor(t.np) + ', ' + aspTone(t.asp, seed);
-    var tail = ' In daily life: ' + practicalDomain(t.np) + ' — ' + practicalTilt(t.asp.quality, seed) + '.';
-    if (t.tp === t.np) return base + ' — the sky’s ' + nameFor(t.tp) + ' stirring your own.' + tail;
-    return base + ' — ' + DATA.PLANETS[t.tp].fn + ', meeting ' + natalFn(t.np) + '.' + tail;
+    var tail = ' In daily life: ' + practicalDomain(t.np) + '. ' + capit(practicalTilt(t.asp.quality, seed)) + '.';
+    if (t.tp === t.np) return base + '. The sky’s ' + nameFor(t.tp) + ' is stirring your own.' + tail;
+    return base + '. ' + capit(DATA.PLANETS[t.tp].fn) + ', meeting ' + natalFn(t.np) + '.' + tail;
   }
   function transitListCard(list, asMoon) {
     var tc = el('div', { class: 'card list' });
@@ -2499,7 +2499,7 @@ var APP = (function () {
     else if (g1 < 64 && distinct >= 8) shape = 'Splash';
     else shape = 'Splay';
     var txt = SHAPE_MEAN[shape];
-    if (shape === 'Bucket' && handle) txt += ' Here the handle is ' + nameFor(handle) + ' — a lot of you flows out through it.';
+    if (shape === 'Bucket' && handle) txt += ' Here the handle is ' + nameFor(handle) + ', and a lot of you flows out through it.';
     return { shape: shape, text: txt };
   }
 
@@ -4816,7 +4816,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var x = sx(), w = cw(), ly = 18, gi = cl01(1 - (nowT() - UI.fxT) / 500);
       flatBtn('‹ Read', x, ly, 100, 36, function () { UI.lifeView = false; UI.calView = false; UI.calDay = null; UI.scroll.read = 0; }, false, true); ly += 50;
       p.textStyle(p.BOLD); glitchText('Transit calendar', x, sY(ly), 28, SANS, INK, p.LEFT, p.TOP, gi); normal(); ly += 40;
-      ly += paragraph('The days over the next few months when a slower planet makes an exact aspect to your chart. A dot marks a day — tap it to read what lands.', x, ly, w, 14.5, INK, SERIF, 22, 205) + 16;
+      ly += paragraph('The days over the next few months when a slower planet makes an exact aspect to your chart. A dot marks a day; tap it to read what lands.', x, ly, w, 14.5, INK, SERIF, 22, 205) + 16;
       if (!UI.calEvents) { var evs = APP.upcomingTransits(c, 4, 80), map = {}, i; for (i = 0; i < evs.length; i++) { var k = ymd(evs[i].date); (map[k] = map[k] || []).push(evs[i]); } UI.calEvents = map; }
       // selected-day detail FIRST, so it's always visible near the top (was buried below all three months)
       if (UI.calDay && UI.calEvents[UI.calDay]) {
@@ -5016,7 +5016,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     // ===== guided ritual: how to read your OWN cards (the app is a companion, it never draws) =====
     var TAROT_RIT = [
       { k: 'intro', t: 'Tarot reads you', x: 'This deck never draws a card for you, and that is the point. Aqau Pluto is a companion for the cards you pull with your own hands. Here’s the whole ritual.' },
-      { k: 'deck', t: 'First, get your own deck', x: 'Any deck you feel drawn to. Hold it, take a breath, and shuffle while you turn a real question over in your mind. The cards don’t predict — they give your intuition something to push against.' },
+      { k: 'deck', t: 'First, get your own deck', x: 'Any deck you feel drawn to. Hold it, take a breath, and shuffle while you turn a real question over in your mind. The cards don’t predict; they give your intuition something to push against.' },
       { k: 'spread', t: 'Choose how to lay them', x: 'A spread is just positions, each with a meaning. Tap a layout below: one card for a nudge, three for past · present · future, or the cross for a fuller picture.' },
       { k: 'lay', t: 'Lay your cards', x: 'Deal them face-down into your spread, then turn each one over slowly. Let the image land before you reach for any words.' },
       { k: 'sit', t: 'Sit with them first', x: 'Before any book meaning: what do you notice? A colour, a figure, a feeling in your body. That first, wordless read is the most honest one you’ll get.' },
@@ -5439,7 +5439,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     ];
     var GLOSSARY = [
       { t: 'Ascendant (Rising)', d: 'The zodiac sign rising on the eastern horizon at your birth, your outward style, the “front door” of the chart. Needs a birth time.' },
-      { t: 'Aspect', d: 'An angle between two planets (0°, 60°, 90°, 120°, 180°) that links them into a conversation — flowing or tense.' },
+      { t: 'Aspect', d: 'An angle between two planets (0°, 60°, 90°, 120°, 180°) that links them into a conversation, flowing or tense.' },
       { t: 'Conjunction', d: 'Two planets at ~0° apart: fused, amplifying and complicating each other.' },
       { t: 'Trine', d: 'Two planets ~120° apart: easy, natural flow, a gift you can take for granted.' },
       { t: 'Square', d: 'Two planets ~90° apart: friction that drives growth and action.' },
@@ -5452,7 +5452,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       { t: 'Transit', d: 'Where a planet is *now* versus your birth chart: what the moving sky is doing to you today.' },
       { t: 'Progression', d: 'A symbolic clock (a day after birth = a year of life) showing your slow inner seasons.' },
       { t: 'Profection', d: 'An annual time-lord system: each year activates a new house and its ruling planet.' },
-      { t: 'Solar return', d: 'The chart for the moment the Sun returns to its birth position — your astrological birthday.' },
+      { t: 'Solar return', d: 'The chart for the moment the Sun returns to its birth position: your astrological birthday.' },
       { t: 'Lunar node', d: 'Where the Moon’s path crosses the Sun’s: the North Node is your growth edge, the South your comfort.' },
       { t: 'Void of course', d: 'A spell when the Moon makes no more aspects before changing sign; a good time to rest, not launch.' },
       { t: 'Decan', d: 'A 10° third of a sign, each with a sub-ruling planet that shades its meaning.' },
@@ -5471,12 +5471,12 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     ];
     // hands-on guides — how to actually do these things yourself
     var HOWTO = [
-      { t: 'Read your chart in 5 steps', anim: 'bigthree', steps: ['Start with the big three: your Sun (what you’re becoming), Moon (what you need) and rising (how you meet the world). That’s the headline.', 'Find your dominant element and mode (Read → Patterns) — your basic temperament.', 'Note the loudest planet (the one with the most aspects) and where it sits.', 'Read the tight aspects (small orbs) first — they’re the strongest conversations.', 'Only then zoom into individual placements. Detail last, story first.'] },
-      { t: 'Find your dominant element', anim: 'elements', steps: ['Open Chart — the little four-colour bar (F/E/A/W) is your elemental balance.', 'The biggest slice is your dominant element; the smallest is your growth edge.', 'Fire = drive, Earth = substance, Air = thought, Water = feeling.', 'Tap Learn → Elements to read what leaning into the light element looks like.'] },
+      { t: 'Read your chart in 5 steps', anim: 'bigthree', steps: ['Start with the big three: your Sun (what you’re becoming), Moon (what you need) and rising (how you meet the world). That’s the headline.', 'Find your dominant element and mode (Read → Patterns): your basic temperament.', 'Note the loudest planet (the one with the most aspects) and where it sits.', 'Read the tight aspects (small orbs) first — they’re the strongest conversations.', 'Only then zoom into individual placements. Detail last, story first.'] },
+      { t: 'Find your dominant element', anim: 'elements', steps: ['Open Chart: the little four-colour bar (F/E/A/W) is your elemental balance.', 'The biggest slice is your dominant element; the smallest is your growth edge.', 'Fire = drive, Earth = substance, Air = thought, Water = feeling.', 'Tap Learn → Elements to read what leaning into the light element looks like.'] },
       { t: 'Read a transit', anim: 'moving', steps: ['A transit is where a planet is *now* versus your birth chart.', 'Open the Today sheet (tap the moon, top-left) or Read → Live on your chart.', 'Note the transiting planet, the aspect, and your natal planet it touches.', 'Slow planets (Saturn–Pluto) = long, defining chapters; the Moon = a passing mood.', 'Use Read → Transit calendar to see the exact dates ahead.'] },
-      { t: 'Compare two charts (synastry)', anim: 'synastry', steps: ['Add the other person in People (just their birthday; a birth time sharpens it).', 'Open their bond — the synastry bi-wheel shows both charts and the contact lines.', 'Flowing lines (trine/sextile, cool colour) = ease; hard lines (square/opposition) = friction with growth.', 'Switch to the Composite wheel to see the relationship as its own chart.', 'Check “Your year together” for the dates ahead.'] },
-      { t: 'Spot a stellium or pattern', anim: 'stellium', steps: ['A stellium is 3+ planets crowded in one sign or house — a loud, concentrated theme.', 'Open Read → Patterns; the engine names any stellium, grand trine, T-square or yod for you.', 'On the wheel, look for a cluster of dots close together — that’s a stellium by eye.', 'Whatever sign/house it falls in is where a huge amount of your energy goes.'] },
-      { t: 'Use the tarot as a companion', anim: 'tarot', steps: ['Pull your cards in real life — this app is a reference, not a random draw.', 'Open Tarot → Card meanings and look up each card you drew.', 'Read upright or reversed to match how the card landed, plus In Love / At Work.', 'Note the astrological correspondence — each card ties to a planet or sign.', 'Lay a spread (Tarot → Spreads) to see what each position is asking.'] }
+      { t: 'Compare two charts (synastry)', anim: 'synastry', steps: ['Add the other person in People (just their birthday; a birth time sharpens it).', 'Open their bond: the synastry bi-wheel shows both charts and the contact lines.', 'Flowing lines (trine/sextile, cool colour) = ease; hard lines (square/opposition) = friction with growth.', 'Switch to the Composite wheel to see the relationship as its own chart.', 'Check “Your year together” for the dates ahead.'] },
+      { t: 'Spot a stellium or pattern', anim: 'stellium', steps: ['A stellium is 3+ planets crowded in one sign or house: a loud, concentrated theme.', 'Open Read → Patterns; the engine names any stellium, grand trine, T-square or yod for you.', 'On the wheel, look for a cluster of dots close together — that’s a stellium by eye.', 'Whatever sign/house it falls in is where a huge amount of your energy goes.'] },
+      { t: 'Use the tarot as a companion', anim: 'tarot', steps: ['Pull your cards in real life: this app is a reference, not a random draw.', 'Open Tarot → Card meanings and look up each card you drew.', 'Read upright or reversed to match how the card landed, plus In Love / At Work.', 'Note the astrological correspondence — each card ties to a planet or sign.', 'Lay a spread (Tarot → Spreads) to see what each position is asking.'] }
     ];
     // glossary terms that have a matching explanatory animation
     var GLOSS_ANIM = { 'Ascendant (Rising)': 'bigthree', 'Aspect': 'aspects', 'Conjunction': 'aspects', 'Trine': 'aspects', 'Square': 'aspects', 'Opposition': 'aspects', 'House': 'houses', 'Element': 'elements', 'Modality': 'modalities', 'Dignity': 'dignity', 'Retrograde': 'retro', 'Transit': 'moving', 'Lunar node': 'nodes', 'Void of course': 'moonphases', 'Decan': 'decan', 'Synastry': 'synastry', 'Sect': 'sect', 'Stellium': 'stellium', 'Solar return': 'wheel', 'Progression': 'moving', 'Profection': 'wheel', 'Draconic chart': 'nodes', 'Chart ruler': 'bigthree' };
@@ -5484,14 +5484,14 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     var MYTHS = [
       { s: 0, t: 'The Golden Ram', story: 'Aries is Chrysomallos, the winged ram with the golden fleece who carried the children Phrixus and Helle away from sacrifice. That same fleece, hung in a sacred grove, became the prize Jason and the Argonauts would sail the world to win.' },
       { s: 1, t: 'Zeus & Europa', story: 'Taurus is the snow-white bull Zeus became to win Europa. She climbed onto his gentle back and he swam her across the sea to Crete. In the sky he is shown only as head and shoulders, rising from the waves.' },
-      { s: 2, t: 'The Twins', story: 'Gemini are Castor and Pollux — one mortal, one immortal, inseparable brothers. When Castor died, Pollux begged to share his own immortality rather than be parted, and Zeus set them together in the stars forever.' },
-      { s: 3, t: 'The Crab', story: 'Cancer is Karkinos, the crab Hera sent to distract Heracles as he fought the Hydra. He crushed it underfoot — but Hera, grateful for its loyalty, lifted the little crab into the heavens.' },
+      { s: 2, t: 'The Twins', story: 'Gemini are Castor and Pollux, one mortal and one immortal, inseparable brothers. When Castor died, Pollux begged to share his own immortality rather than be parted, and Zeus set them together in the stars forever.' },
+      { s: 3, t: 'The Crab', story: 'Cancer is Karkinos, the crab Hera sent to distract Heracles as he fought the Hydra. He crushed it underfoot, but Hera, grateful for its loyalty, lifted the little crab into the heavens.' },
       { s: 4, t: 'The Nemean Lion', story: 'Leo is the great lion of Nemea, whose hide no blade could pierce. Heracles strangled it with his bare hands as the first of his twelve labours, and wore its golden skin ever after.' },
-      { s: 5, t: 'The Maiden', story: 'Virgo is the maiden of the harvest — often Astraea, goddess of justice. The last immortal to live among us, she withdrew to the sky as the world grew cruel, holding her sheaf of wheat (the bright star Spica).' },
+      { s: 5, t: 'The Maiden', story: 'Virgo is the maiden of the harvest, often Astraea, goddess of justice. The last immortal to live among us, she withdrew to the sky as the world grew cruel, holding her sheaf of wheat (the bright star Spica).' },
       { s: 6, t: 'The Scales', story: 'Libra is the only sign that is an object, not a creature: the scales of divine justice held by Astraea. They weigh right against wrong, and ask, always, for balance.' },
       { s: 7, t: 'The Scorpion', story: 'Scorpio is the scorpion that struck down Orion the boastful hunter. The two were set at opposite ends of the sky, so that as the Scorpion rises, Orion forever flees below the horizon.' },
       { s: 8, t: 'The Archer', story: 'Sagittarius is the centaur archer, often wise Chiron the immortal healer, drawing his bow toward the heart of the Scorpion. Half-man, half-horse, he aims always at something higher.' },
-      { s: 9, t: 'The Sea-Goat', story: 'Capricorn is the strange sea-goat: the god Pan, who leapt into the Nile to escape the monster Typhon and turned his lower half to fish. Half mountain-climber, half deep-sea diver — earthly drive with hidden depths.' },
+      { s: 9, t: 'The Sea-Goat', story: 'Capricorn is the strange sea-goat: the god Pan, who leapt into the Nile to escape the monster Typhon and turned his lower half to fish. Half mountain-climber, half deep-sea diver: earthly drive with hidden depths.' },
       { s: 10, t: 'The Cup-Bearer', story: 'Aquarius is Ganymede, the youth carried to Olympus by Zeus’s eagle to pour wine for the gods. He tips his urn and pours the waters of life out upon the world.' },
       { s: 11, t: 'The Two Fishes', story: 'Pisces are Aphrodite and her son Eros, who became fish and tied themselves together with a cord so they would not lose each other fleeing Typhon — two fish, bound, swimming opposite ways.' }
     ];
@@ -5583,7 +5583,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       p.noFill(); strokec(INK, 70); p.strokeWeight(1.2); p.ellipse(cx, cy, r * 1.2, r * 1.2);
       p.noStroke(); fillc(ACC, (home ? 70 : 12) * (0.6 + 0.4 * pul)); p.ellipse(cx, cy, r * (home ? 0.95 : 0.6), r * (home ? 0.95 : 0.6));
       fillc(home ? ACC : shade(INK, 40)); p.ellipse(cx, cy, r * 0.4, r * 0.4); setFont(SANS, r * 0.2, GROUNDS[UI.screen], p.CENTER, p.CENTER); p.text(APP.glyphFor('mars'), cx, cy + 0.5);
-      setFont(MONO, 9, INK, p.CENTER, p.TOP, 190); p.text(home ? 'AT HOME · STRONG (DOMICILE)' : 'DISPLACED — STRAINED (FALL)', cx, cy + r * 0.72);
+      setFont(MONO, 9, INK, p.CENTER, p.TOP, 190); p.text(home ? 'AT HOME · STRONG (DOMICILE)' : 'DISPLACED · STRAINED (FALL)', cx, cy + r * 0.72);
     }
     function sceneSect(cx, cy, r, t) {
       var day = (Math.sin(t * 0.0009) > 0);
@@ -5592,7 +5592,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var sy = day ? cy - r * 0.5 : cy + r * 0.5;
       p.noStroke(); fillc(ACC, 60); p.ellipse(cx, sy, r * 0.5, r * 0.5); fillc(ACC); p.ellipse(cx, sy, r * 0.32, r * 0.32);
       if (day) { strokec(ACC, 180); p.strokeWeight(2); for (var k = 0; k < 8; k++) { var a = k * Math.PI / 4 + t * 0.001; p.line(cx + Math.cos(a) * r * 0.22, sy + Math.sin(a) * r * 0.22, cx + Math.cos(a) * r * 0.3, sy + Math.sin(a) * r * 0.3); } }
-      setFont(MONO, 9, INK, p.CENTER, p.TOP, 190); p.text(day ? 'DAY CHART · THE SUN LEADS' : 'NIGHT CHART — THE MOON LEADS', cx, cy + r * 0.78);
+      setFont(MONO, 9, INK, p.CENTER, p.TOP, 190); p.text(day ? 'DAY CHART · THE SUN LEADS' : 'NIGHT CHART · THE MOON LEADS', cx, cy + r * 0.78);
     }
     function sceneTarot(cx, cy, r, t) {
       // three cards fanning and a gentle flip
@@ -6029,10 +6029,10 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
               UI.mediaDrawn = true;
             }
           }
-          ly += 4; setFont(MONO, 8.5, INK, p.LEFT, p.TOP, 140); ly += paragraph('Streamed from the Internet Archive (archive.org) — public-domain film and audio, searched to your sign. Plays in-app; tap a playing screen again to stop.', x, ly, w, 11, INK, MONO, 16, 140) + 8;
+          ly += 4; setFont(MONO, 8.5, INK, p.LEFT, p.TOP, 140); ly += paragraph('Streamed from the Internet Archive (archive.org): public-domain film and audio, searched to your sign. Plays in-app; tap a playing screen again to stop.', x, ly, w, 11, INK, MONO, 16, 140) + 8;
         }
       } else if (cat === 'howto') { // hands-on guides
-        ly += paragraph('Short, practical walk-throughs — how to actually do these things yourself, each with a little animation.', x, ly, w, 14.5, INK, SERIF, 22, 200) + 12;
+        ly += paragraph('Short, practical walk-throughs: how to actually do these things yourself, each with a little animation.', x, ly, w, 14.5, INK, SERIF, 22, 200) + 12;
         for (i = 0; i < HOWTO.length; i++) {
           if (i) hairline(x, ly, x + w, 40);
           setFont(SANS, 15, INK, p.LEFT, p.CENTER); bold(); p.text(HOWTO[i].t, x + 2, sY(ly + rh / 2)); normal();
@@ -6350,7 +6350,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       eyebrow('Saved charts', x, ly); ly += 24;
       var charts = APP.STATE.charts || [], actKey = APP.activeChartKey(), inList = false, ci2;
       for (ci2 = 0; ci2 < charts.length; ci2++) if (APP.chartKey(charts[ci2]) === actKey) inList = true;
-      ly += paragraph('Save and switch between charts — your own, a relocation, or someone you read for often. The active chart drives the whole app.', x, ly, w, 13.5, INK, SERIF, 20, 180) + 12;
+      ly += paragraph('Save and switch between charts: your own, a relocation, or someone you read for often. The active chart drives the whole app.', x, ly, w, 13.5, INK, SERIF, 20, 180) + 12;
       var rhc = 46;
       for (ci2 = 0; ci2 < charts.length; ci2++) {
         var ch2 = charts[ci2], active = APP.chartKey(ch2) === actKey, ry = sY(ly);
@@ -6490,7 +6490,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         pushHit(x, oy, bw2 + 8, oh, function () { d.tz = Math.max(-12, Math.round((d.tz - 0.5) * 2) / 2); });
         pushHit(x + w - bw2 - 8, oy, bw2 + 8, oh, function () { d.tz = Math.min(14, Math.round((d.tz + 0.5) * 2) / 2); });
         ly += oh + 6;
-        setFont(MONO, 8.5, INK, p.LEFT, p.TOP, 130); ly += paragraph('Use this when you know the exact offset — e.g. wartime or pre-1970 births the timezone database resolves loosely.', x, ly, w, 11, INK, MONO, 15, 130) + 8;
+        setFont(MONO, 8.5, INK, p.LEFT, p.TOP, 130); ly += paragraph('Use this when you know the exact offset, e.g. wartime or pre-1970 births the timezone database resolves loosely.', x, ly, w, 11, INK, MONO, 15, 130) + 8;
       }
       var canBuild = (d.cityIdx >= 0) || !!(d.geo && d.geo.iana);
       var buildLabel = canBuild ? 'Build my chart' : (d.geo && d.geoTzLoading ? 'Finding time zone…' : 'Choose a birth place');
@@ -6532,7 +6532,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (ms) { g.fillStyle = rgba(ink, 0.85); g.font = '32px ' + SERIF; g.fillText('Moon in ' + ms.signName + (ms.voc ? '  ·  void of course' : ''), W2 / 2, 690); }
       var yy = 770;
       g.textAlign = 'left'; var mx = 90, mw = W2 - 180;
-      if (d.f && d.f.profection) { g.fillStyle = rgb(acc); g.font = '22px ' + MONO; g.fillText('YOUR YEAR', mx, yy); yy += 40; g.fillStyle = rgb(ink); var yl = wrap2(APP.nameFor(d.f.profection.lord) + ' rules your year — house ' + d.f.profection.house + '.', mw, '30px ' + SERIF); for (var i = 0; i < yl.length; i++) { g.fillText(yl[i], mx, yy); yy += 42; } yy += 16; }
+      if (d.f && d.f.profection) { g.fillStyle = rgb(acc); g.font = '22px ' + MONO; g.fillText('YOUR YEAR', mx, yy); yy += 40; g.fillStyle = rgb(ink); var yl = wrap2(APP.nameFor(d.f.profection.lord) + ' rules your year, house ' + d.f.profection.house + '.', mw, '30px ' + SERIF); for (var i = 0; i < yl.length; i++) { g.fillText(yl[i], mx, yy); yy += 42; } yy += 16; }
       var dl = (d.tr && d.tr.daily) ? d.tr.daily : [];
       g.fillStyle = rgb(acc); g.font = '22px ' + MONO; g.fillText('LIVE ON YOUR CHART', mx, yy); yy += 42;
       g.fillStyle = rgb(ink); g.font = '30px ' + SERIF;
