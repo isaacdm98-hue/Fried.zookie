@@ -5015,12 +5015,12 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
 
     // ===== guided ritual: how to read your OWN cards (the app is a companion, it never draws) =====
     var TAROT_RIT = [
-      { k: 'intro', t: 'Tarot reads you', x: 'This deck never draws a card for you — that’s the point. Aqau Pluto is a companion for the cards you pull with your own hands. Here’s the whole ritual.' },
+      { k: 'intro', t: 'Tarot reads you', x: 'This deck never draws a card for you, and that is the point. Aqau Pluto is a companion for the cards you pull with your own hands. Here’s the whole ritual.' },
       { k: 'deck', t: 'First, get your own deck', x: 'Any deck you feel drawn to. Hold it, take a breath, and shuffle while you turn a real question over in your mind. The cards don’t predict — they give your intuition something to push against.' },
-      { k: 'spread', t: 'Choose how to lay them', x: 'A spread is just positions, each with a meaning. Tap a layout below — one card for a nudge, three for past · present · future, or the cross for a fuller picture.' },
+      { k: 'spread', t: 'Choose how to lay them', x: 'A spread is just positions, each with a meaning. Tap a layout below: one card for a nudge, three for past · present · future, or the cross for a fuller picture.' },
       { k: 'lay', t: 'Lay your cards', x: 'Deal them face-down into your spread, then turn each one over slowly. Let the image land before you reach for any words.' },
       { k: 'sit', t: 'Sit with them first', x: 'Before any book meaning: what do you notice? A colour, a figure, a feeling in your body. That first, wordless read is the most honest one you’ll get.' },
-      { k: 'look', t: 'Now look up the meanings', x: 'Only now open Card meanings — to deepen what you already felt, never to replace it. The card is a mirror; you are the reader.' }
+      { k: 'look', t: 'Now look up the meanings', x: 'Only now open Card meanings, to deepen what you already felt, never to replace it. The card is a mirror; you are the reader.' }
     ];
     var RIT_SPREADS = [
       { name: 'One card', n: 1, pos: [[0, 0]] },
@@ -5406,19 +5406,19 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
 
     // ============ GUIDED LESSON — a tap-through, video-like journey through the sky ============
     var LESSON = [
-      { k: 'wheel', t: 'The sky is a wheel', b: 'Astrology begins with a circle — the zodiac. As the Earth turns, the heavens wheel slowly overhead. Your birth chart is simply a snapshot of that wheel at the moment you arrived.' },
-      { k: 'elements', t: 'Four elements', b: 'Everything sorts into fire, earth, air and water — drive, substance, thought and feeling. The balance of these across your chart is your basic temperament.' },
-      { k: 'planets', t: 'The planets are needs', b: 'Each planet is a different hunger: the Sun to shine, the Moon to feel safe, Mercury to think, Venus to love, Mars to act. They orbit — and so do their seasons in you.' },
-      { k: 'signs', t: 'Twelve signs', b: 'Every planet lands in a sign — a flavour, a style. Your Sun sign is only the beginning; the Moon and rising colour the whole picture.' },
-      { k: 'houses', t: 'Twelve houses', b: 'The wheel is sliced into twelve houses — arenas of life: self, money, love, work, home. A planet’s house tells you where its story plays out.' },
+      { k: 'wheel', t: 'The sky is a wheel', b: 'Astrology begins with a circle, the zodiac. As the Earth turns, the heavens wheel slowly overhead. Your birth chart is simply a snapshot of that wheel at the moment you arrived.' },
+      { k: 'elements', t: 'Four elements', b: 'Everything sorts into fire, earth, air and water: drive, substance, thought and feeling. The balance of these across your chart is your basic temperament.' },
+      { k: 'planets', t: 'The planets are needs', b: 'Each planet is a different hunger: the Sun to shine, the Moon to feel safe, Mercury to think, Venus to love, Mars to act. They orbit, and so do their seasons in you.' },
+      { k: 'signs', t: 'Twelve signs', b: 'Every planet lands in a sign, a flavour and a style. Your Sun sign is only the beginning; the Moon and rising colour the whole picture.' },
+      { k: 'houses', t: 'Twelve houses', b: 'The wheel is sliced into twelve houses, the arenas of life: self, money, love, work, home. A planet’s house tells you where its story plays out.' },
       { k: 'aspects', t: 'Planets in conversation', b: 'When planets sit at special angles, like a flowing trine or a tense square, they talk. Those conversations, easy or difficult, are the threads that weave a chart together.' },
       { k: 'modalities', t: 'Three ways to move', b: 'Each element comes in three modes. Cardinal signs start things, fixed signs sustain them, mutable signs adapt and let go. It’s the difference between lighting the fire, tending it, and carrying its sparks on the wind.' },
-      { k: 'dignity', t: 'A planet at home', b: 'A planet in its own sign is at home — strong and easy. In the opposite sign it’s a guest far from its comfort, and has to work harder. This is called dignity, and it colours how smoothly each placement runs.' },
-      { k: 'retro', t: 'When planets turn back', b: 'Now and then a planet appears to loop backward across the sky — retrograde. Nothing really reverses; it’s a trick of perspective. But the energy turns inward: revisited, reworked, slowed down rather than rushed.' },
-      { k: 'nodes', t: 'The Moon’s crossings', b: 'Where the Moon’s tilted path crosses the Sun’s, you get the lunar nodes. The North Node is your growth edge — unfamiliar but right; the South Node is the comfort you already know and are here to move beyond.' },
+      { k: 'dignity', t: 'A planet at home', b: 'A planet in its own sign is at home, strong and easy. In the opposite sign it’s a guest far from its comfort, and has to work harder. This is called dignity, and it colours how smoothly each placement runs.' },
+      { k: 'retro', t: 'When planets turn back', b: 'Now and then a planet appears to loop backward across the sky, which is called retrograde. Nothing really reverses; it’s a trick of perspective. But the energy turns inward: revisited, reworked, slowed down rather than rushed.' },
+      { k: 'nodes', t: 'The Moon’s crossings', b: 'Where the Moon’s tilted path crosses the Sun’s, you get the lunar nodes. The North Node is your growth edge, unfamiliar but right; the South Node is the comfort you already know and are here to move beyond.' },
       { k: 'bigthree', t: 'Your big three', b: 'Three placements carry most of the weight: your Sun (what you’re becoming), your Moon (what you need to feel safe) and your rising sign (the face you meet the world with). Together they’re the headline of who you are.' },
-      { k: 'moving', t: 'The sky keeps turning', b: 'Your birth chart is fixed — but the real planets keep moving. When today’s sky touches your birth placements, that’s a transit: the weather of your life right now, written in the same language.' },
-      { k: 'you', t: 'Now — your own sky', b: 'That’s the language. Your chart is your sentence in it. Open the wheel and tap any placement to hear what it says about you.' }
+      { k: 'moving', t: 'The sky keeps turning', b: 'Your birth chart is fixed, but the real planets keep moving. When today’s sky touches your birth placements, that’s a transit: the weather of your life right now, written in the same language.' },
+      { k: 'you', t: 'Now: your own sky', b: 'That’s the language. Your chart is your sentence in it. Open the wheel and tap any placement to hear what it says about you.' }
     ];
     // History of astrology — a teaching timeline (animated eras) + the antique star-atlas plates (photos).
     var HISTORY = [
@@ -6720,28 +6720,28 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var xbx = x + w - pad - 22, xby = top + pad - 2; setFont(SANS, 22, INK, p.CENTER, p.CENTER, 200); p.text('×', xbx + 11, xby + 9);
       pushHit(xbx - 4, xby - 6, 36, 36, function () { UI.today = false; });
       yy += 36;
-      if (!d) { body('A quiet sky — couldn’t read the moment just now.'); dc.restore(); p.pop(); return; }
+      if (!d) { body('A quiet sky; couldn’t read the moment just now.'); dc.restore(); p.pop(); return; }
       // live moon
       var e = d.moon ? d.moon.elong : 0, ms = d.f && d.f.sky ? d.f.sky.moon : null;
       var discY = ty() + 24; drawMoonDisc(x + pad + 24, discY, 24, e, 1);
       setFont(SANS, 16, INK, p.LEFT, p.TOP); bold(); p.text(phaseName(e), x + pad + 60, ty() + 2); normal();
       if (ms) { setFont(SERIF, 13.5, INK, p.LEFT, p.TOP, 220); p.text('Moon in ' + ms.signName, x + pad + 60, ty() + 24); }
       yy += 56;
-      if (ms) { body(ms.voc ? 'Void of course — the Moon makes no more aspects before changing sign. A good window to rest, finish, reflect; a poor one to launch.' : 'About ' + ms.hours + 'h until the Moon leaves ' + ms.signName + '. Its mood still colours the next few hours.', 13.5); }
+      if (ms) { body(ms.voc ? 'Void of course: the Moon makes no more aspects before changing sign. A good window to rest, finish, reflect; a poor one to launch.' : 'About ' + ms.hours + 'h until the Moon leaves ' + ms.signName + '. Its mood still colours the next few hours.', 13.5); }
       rule();
       // your year (profection)
-      if (d.f && d.f.profection) { var pf = d.f.profection; head('Your year'); body(APP.nameFor(pf.lord) + ' rules your year — you’re profected to ' + pf.signName + ' (house ' + pf.house + '). Wherever ' + APP.nameFor(pf.lord) + ' sits and what it touches is unusually loud this year.', 14); }
+      if (d.f && d.f.profection) { var pf = d.f.profection; head('Your year'); body(APP.nameFor(pf.lord) + ' rules your year. You’re profected to ' + pf.signName + ' (house ' + pf.house + '). Wherever ' + APP.nameFor(pf.lord) + ' sits and what it touches is unusually loud this year.', 14); }
       // retrogrades now
       var rr = d.f && d.f.sky ? d.f.sky.retros : [];
       head('Retrogrades now');
-      if (rr && rr.length) { var rn = []; for (var ri = 0; ri < rr.length; ri++) rn.push(APP.nameFor(rr[ri])); body(rn.join(', ') + (rr.length === 1 ? ' is' : ' are') + ' retrograde — a time to revisit and review those themes, not force them forward.', 14); }
+      if (rr && rr.length) { var rn = []; for (var ri = 0; ri < rr.length; ri++) rn.push(APP.nameFor(rr[ri])); body(rn.join(', ') + (rr.length === 1 ? ' is' : ' are') + ' retrograde, a time to revisit and review those themes, not force them forward.', 14); }
       else { body('All planets direct. The current pulls forward.', 14); }
       rule();
       // live on your chart today
       head('Live on your chart');
       var dl = (d.tr && d.tr.daily) ? d.tr.daily : [];
       if (dl.length) { var di; for (di = 0; di < Math.min(2, dl.length); di++) body('• ' + APP.transitSentence(dl[di]), 14); }
-      else body('No close transits to your planets today — a calm stretch.', 14);
+      else body('No close transits to your planets today, a calm stretch.', 14);
       // the passing hour
       head('This passing hour');
       var tm = (d.tr && d.tr.timed) ? d.tr.timed : [];
