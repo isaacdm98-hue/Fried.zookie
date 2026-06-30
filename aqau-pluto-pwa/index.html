@@ -3139,33 +3139,33 @@ var APP = (function () {
   function joinKw(a) { if (!a || !a.length) return ''; if (a.length === 1) return a[0]; return a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1]; }
   // Golden Dawn astrological correspondences for the Major Arcana — ties the tarot to this app's astrology.
   var MAJOR_ASTRO = { 0: 'Uranus / Air', 1: 'Mercury', 2: 'the Moon', 3: 'Venus', 4: 'Aries', 5: 'Taurus', 6: 'Gemini', 7: 'Cancer', 8: 'Leo', 9: 'Virgo', 10: 'Jupiter', 11: 'Libra', 12: 'Neptune / Water', 13: 'Scorpio', 14: 'Sagittarius', 15: 'Capricorn', 16: 'Mars', 17: 'Aquarius', 18: 'Pisces', 19: 'the Sun', 20: 'Pluto / Fire', 21: 'Saturn' };
-  var RANK_STAGE = { 1: 'the pure seed of the suit — raw potential, a gift offered', 2: 'a first choice or partnership, two forces meeting', 3: 'first growth and collaboration; the idea takes shape', 4: 'a stable plateau — foundations, for better or worse', 5: 'the suit under strain: loss, conflict or instability', 6: 'harmony restored — reciprocity and forward movement', 7: 'assessment and perseverance, the lonely middle of the work', 8: 'momentum and mastery in motion; things accelerate', 9: 'near the end — the full intensity, and its cost', 10: 'completion: the whole weight of the suit, fulfilled or overloaded' };
-  var COURT_STAGE = { 11: 'a student and messenger of the suit — curious, learning, bringing news', 12: 'the suit in motion — pursuit, drive, action taken', 13: 'inner mastery of the suit — holding its power within, nurturing it', 14: 'outer mastery of the suit — authority and command over its domain' };
+  var RANK_STAGE = { 1: 'the pure seed of the suit: raw potential, a gift offered', 2: 'a first choice or partnership, two forces meeting', 3: 'first growth and collaboration; the idea takes shape', 4: 'a stable plateau: foundations, for better or worse', 5: 'the suit under strain: loss, conflict or instability', 6: 'harmony restored: reciprocity and forward movement', 7: 'assessment and perseverance, the lonely middle of the work', 8: 'momentum and mastery in motion; things accelerate', 9: 'near the end: the full intensity, and its cost', 10: 'completion: the whole weight of the suit, fulfilled or overloaded' };
+  var COURT_STAGE = { 11: 'a student and messenger of the suit: curious, learning, bringing news', 12: 'the suit in motion: pursuit, drive, action taken', 13: 'inner mastery of the suit: holding its power within, nurturing it', 14: 'outer mastery of the suit: authority and command over its domain' };
   function loveFlavor(suit, kw) {
-    if (suit === 'Wands') return 'passion and chemistry are lit — ' + kw + ' drives the romance, fast and warm.';
-    if (suit === 'Cups') return 'the heart’s own territory — ' + kw + ' flows through the feeling between you.';
-    if (suit === 'Swords') return 'it lives in words and truth — ' + kw + ' shapes what is said, and what must be.';
-    return 'love built on solid ground — ' + kw + ' shows in steadiness, commitment and the everyday.';
+    if (suit === 'Wands') return 'passion and chemistry are lit, and ' + kw + ' drives the romance, fast and warm.';
+    if (suit === 'Cups') return 'this is the heart’s own territory, and ' + kw + ' flows through the feeling between you.';
+    if (suit === 'Swords') return 'it lives in words and truth, and ' + kw + ' shapes what is said, and what must be.';
+    return 'love built on solid ground, where ' + kw + ' shows in steadiness, commitment and the everyday.';
   }
   function workFlavor(suit, kw) {
-    if (suit === 'Wands') return 'creativity and drive — ' + kw + ' powers the project; momentum is your ally.';
-    if (suit === 'Cups') return 'morale and intuition matter most — ' + kw + ' colours the team and the mood.';
-    if (suit === 'Swords') return 'ideas, strategy and clear decisions — ' + kw + ' is where the work turns.';
-    return 'money, craft and tangible results — ' + kw + ' shows in what you actually build.';
+    if (suit === 'Wands') return 'creativity and drive, where ' + kw + ' powers the project; momentum is your ally.';
+    if (suit === 'Cups') return 'morale and intuition matter most, and ' + kw + ' colours the team and the mood.';
+    if (suit === 'Swords') return 'ideas, strategy and clear decisions, and ' + kw + ' is where the work turns.';
+    return 'money, craft and tangible results, where ' + kw + ' shows in what you actually build.';
   }
   function tarotGuide(card) {
     var up = joinKw(card.up), rev = joinKw(card.rev), out = {};
     if (card.arcana === 'major') {
       out.corr = 'Major Arcana · ' + (MAJOR_ASTRO[card.num] || '');
-      out.upright = card.ess + ' Upright it carries ' + up + ' — a large, archetypal force, a chapter rather than a passing mood. As card ' + card.num + ' of the Fool’s journey, it marks a real turning point in the soul’s story.';
-      out.reversed = 'Reversed, the lesson is blocked, delayed or turned inward: ' + rev + '. The force hasn’t gone — it’s asking to be met more honestly.';
-      out.love = 'a defining theme rather than a detail — ' + card.up[0] + ' colours the whole connection.';
+      out.upright = card.ess + ' Upright it carries ' + up + ': a large, archetypal force, a chapter rather than a passing mood. As card ' + card.num + ' of the Fool’s journey, it marks a real turning point in the soul’s story.';
+      out.reversed = 'Reversed, the lesson is blocked, delayed or turned inward: ' + rev + '. The force hasn’t gone; it’s asking to be met more honestly.';
+      out.love = 'a defining theme rather than a detail, where ' + card.up[0] + ' colours the whole connection.';
       out.work = card.up[1 < card.up.length ? 1 : 0] + ' is the headline; treat it as structural, not a small task.';
       out.advice = 'lean into ' + card.up[0] + ', and watch for ' + card.rev[0] + '.';
     } else {
       var sf = DATA.SUIT_KW[card.arcana], el = sf ? sf.el : '', stage = (card.num <= 10) ? RANK_STAGE[card.num] : COURT_STAGE[card.num];
       var rank = String(card.name).split(' of ')[0];
-      out.corr = el + ' · ' + card.arcana + ' — ' + (sf ? sf.theme : '');
+      out.corr = el + ' · ' + card.arcana + ' · ' + (sf ? sf.theme : '');
       out.upright = card.ess + ' Upright it speaks of ' + up + '. As the ' + rank + ' of ' + card.arcana + ' it is ' + stage + ', played out in the realm of ' + (sf ? sf.theme : '') + '.';
       out.reversed = 'Reversed: ' + rev + '. The same ' + (el ? el.toLowerCase() + ' ' : '') + 'energy, but stuck, overdone, or pointed the wrong way.';
       out.love = loveFlavor(card.arcana, card.up[0]);
@@ -5097,7 +5097,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var hh = 70, hy = sY(ly); p.noStroke(); fillc(INK); p.rect(x, hy + 3, w, hh, 13); fillc(shade(INK, 16)); p.rect(x, hy + pressOff(x, hy, w, hh, 3), w, hh, 13);
       var ho = pressOff(x, hy, w, hh, 3);
       setFont(SANS, 17, GROUNDS[UI.screen], p.LEFT, p.CENTER); bold(); p.text('Read your own cards', x + 18, hy + ho + hh / 2 - 9); normal();
-      setFont(MONO, 9.5, GROUNDS[UI.screen], p.LEFT, p.CENTER, 210); p.text('A GUIDED RITUAL — IN YOUR OWN HANDS', x + 18, hy + ho + hh / 2 + 11);
+      setFont(MONO, 9.5, GROUNDS[UI.screen], p.LEFT, p.CENTER, 210); p.text('A GUIDED RITUAL, IN YOUR OWN HANDS', x + 18, hy + ho + hh / 2 + 11);
       var pulse = reduced() ? 0 : Math.sin(nowT() * 0.004) * 2; setFont(SANS, 22, GROUNDS[UI.screen], p.RIGHT, p.CENTER); p.text('›', x + w - 18 + pulse, hy + ho + hh / 2);
       pushHit(x, hy, w, hh, function () { startTarotRitual(); }); ly += hh + 18;
       var cxp = x; cxp += chip('Spreads', UI.tarotTab === 'spreads', cxp, ly, function () { UI.tarotTab = 'spreads'; }) + 8;
@@ -5345,7 +5345,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         }
         ly += 12;
       }
-      ly += 10; eyebrow('All contacts — tightest first', x, ly); ly += 22;
+      ly += 10; eyebrow('All contacts, tightest first', x, ly); ly += 22;
       var syn = bond.syn;
       for (i = 0; i < Math.min(syn.length, 14); i++) {
         var s = syn[i]; if (i) hairline(x, ly, x + w, 32);
@@ -5575,7 +5575,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       // a cluster of planets bunched in one sign, gently breathing together
       var base = -1.1, pul = 0.5 + 0.5 * Math.sin(t * 0.004);
       var glyphs = ['sun', 'mercury', 'venus', 'mars']; for (k = 0; k < glyphs.length; k++) { var a2 = base + (k - 1.5) * 0.12, rr = r * 0.62, px = cx + Math.cos(a2) * rr, py = cy + Math.sin(a2) * rr; p.noStroke(); fillc(ACC, 40 * pul); p.ellipse(px, py, 22, 22); fillc(INK); p.ellipse(px, py, 14, 14); setFont(SANS, 9, GROUNDS[UI.screen], p.CENTER, p.CENTER); p.text(APP.glyphFor(glyphs[k]), px, py + 0.5); }
-      setFont(MONO, 8.5, INK, p.CENTER, p.TOP, 170); p.text('FOUR PLANETS, ONE SIGN — A STELLIUM', cx, cy + r * 0.92);
+      setFont(MONO, 8.5, INK, p.CENTER, p.TOP, 170); p.text('FOUR PLANETS, ONE SIGN · A STELLIUM', cx, cy + r * 0.92);
     }
     function sceneDignity(cx, cy, r, t) {
       // a planet bright "at home", dim when displaced — alternating
@@ -5583,7 +5583,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       p.noFill(); strokec(INK, 70); p.strokeWeight(1.2); p.ellipse(cx, cy, r * 1.2, r * 1.2);
       p.noStroke(); fillc(ACC, (home ? 70 : 12) * (0.6 + 0.4 * pul)); p.ellipse(cx, cy, r * (home ? 0.95 : 0.6), r * (home ? 0.95 : 0.6));
       fillc(home ? ACC : shade(INK, 40)); p.ellipse(cx, cy, r * 0.4, r * 0.4); setFont(SANS, r * 0.2, GROUNDS[UI.screen], p.CENTER, p.CENTER); p.text(APP.glyphFor('mars'), cx, cy + 0.5);
-      setFont(MONO, 9, INK, p.CENTER, p.TOP, 190); p.text(home ? 'AT HOME — STRONG (DOMICILE)' : 'DISPLACED — STRAINED (FALL)', cx, cy + r * 0.72);
+      setFont(MONO, 9, INK, p.CENTER, p.TOP, 190); p.text(home ? 'AT HOME · STRONG (DOMICILE)' : 'DISPLACED — STRAINED (FALL)', cx, cy + r * 0.72);
     }
     function sceneSect(cx, cy, r, t) {
       var day = (Math.sin(t * 0.0009) > 0);
@@ -5592,7 +5592,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var sy = day ? cy - r * 0.5 : cy + r * 0.5;
       p.noStroke(); fillc(ACC, 60); p.ellipse(cx, sy, r * 0.5, r * 0.5); fillc(ACC); p.ellipse(cx, sy, r * 0.32, r * 0.32);
       if (day) { strokec(ACC, 180); p.strokeWeight(2); for (var k = 0; k < 8; k++) { var a = k * Math.PI / 4 + t * 0.001; p.line(cx + Math.cos(a) * r * 0.22, sy + Math.sin(a) * r * 0.22, cx + Math.cos(a) * r * 0.3, sy + Math.sin(a) * r * 0.3); } }
-      setFont(MONO, 9, INK, p.CENTER, p.TOP, 190); p.text(day ? 'DAY CHART — THE SUN LEADS' : 'NIGHT CHART — THE MOON LEADS', cx, cy + r * 0.78);
+      setFont(MONO, 9, INK, p.CENTER, p.TOP, 190); p.text(day ? 'DAY CHART · THE SUN LEADS' : 'NIGHT CHART — THE MOON LEADS', cx, cy + r * 0.78);
     }
     function sceneTarot(cx, cy, r, t) {
       // three cards fanning and a gentle flip
@@ -5606,7 +5606,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var lit = Math.floor(t / 1100) % 3, k; p.noFill();
       for (k = 0; k < 3; k++) { var a0 = (-60 + k * 30) * Math.PI / 180, a1 = (-60 + (k + 1) * 30) * Math.PI / 180; strokec(ACC, k === lit ? 230 : 70); p.strokeWeight(k === lit ? 5 : 3); p.arc(cx, cy, r * 1.5, r * 1.5, a0, a1); }
       setFont(SANS, r * 0.3, INK, p.CENTER, p.CENTER, 200); p.text(DATA.SIGNS[(Math.floor(t / 3300)) % 12].glyph, cx, cy);
-      setFont(MONO, 8.5, INK, p.CENTER, p.TOP, 180); p.text('EACH SIGN — THREE 10° DECANS', cx, cy + r * 0.8);
+      setFont(MONO, 8.5, INK, p.CENTER, p.TOP, 180); p.text('EACH SIGN · THREE 10° DECANS', cx, cy + r * 0.8);
     }
     // the big three: a radiant Sun, a phased Moon, and a rising horizon — held together
     function sceneBigThree(cx, cy, r, t) {
@@ -5805,7 +5805,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       // guided-journey hero — the default, video-like lesson you tap through
       var hh = 70, hy = sY(ly); p.noStroke(); fillc(INK); p.rect(x, hy + 3, w, hh, 13); fillc(shade(INK, 16)); p.rect(x, hy, w, hh, 13);
       setFont(SANS, 17, GROUNDS[UI.screen], p.LEFT, p.CENTER); bold(); p.text('✦  A guided journey through the sky', x + 18, hy + hh / 2 - 9); normal();
-      setFont(MONO, 9.5, GROUNDS[UI.screen], p.LEFT, p.CENTER, 210); p.text('TAP TO BEGIN — A SHORT ANIMATED LESSON', x + 18, hy + hh / 2 + 11);
+      setFont(MONO, 9.5, GROUNDS[UI.screen], p.LEFT, p.CENTER, 210); p.text('TAP TO BEGIN · A SHORT ANIMATED LESSON', x + 18, hy + hh / 2 + 11);
       var pulse = reduced() ? 0 : Math.sin(nowT() * 0.004) * 2; setFont(SANS, 22, GROUNDS[UI.screen], p.RIGHT, p.CENTER); p.text('›', x + w - 18 + pulse, hy + hh / 2);
       pushHit(x, hy, w, hh, function () { startLesson(); }); ly += hh + 20;
       eyebrow('Or explore freely', x, ly, ACC); ly += 26;
@@ -5965,7 +5965,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       } else if (cat === 'famous') { // historical figures & icons who share your chart
         if (!UI.fmList) UI.fmList = APP.famousMatches(c);
         var fm = UI.fmList, sunName = DATA.SIGNS[c.planets.sun.sign].name;
-        ly += paragraph('People across history who share a placement with you — your Sun (☉), your Moon (☽) or your Venus (♀). Same sky, very different lives.', x, ly, w, 14.5, INK, SERIF, 22, 200) + 14;
+        ly += paragraph('People across history who share a placement with you: your Sun (☉), your Moon (☽) or your Venus (♀). Same sky, very different lives.', x, ly, w, 14.5, INK, SERIF, 22, 200) + 14;
         var frh = 64;
         for (i = 0; i < fm.length; i++) {
           var fp = fm[i]; if (i) hairline(x, ly, x + w, 40);
@@ -5980,14 +5980,14 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
           if (fp.sunMatch) { setFont(SANS, 13, ACC, p.RIGHT, p.CENTER); p.text(APP.glyphFor('sun'), bx2, fcy); }
           (function (idx, ay) { pushHit(x, sY(ay), w, frh, function () { UI.learnItem = idx; UI.scroll.learn = 0; UI.popT = nowT(); }); })(i, ly); ly += frh;
         }
-        if (!fm.length) ly += paragraph('No close matches in the set — a rare sky.', x, ly, w, 15, INK, SERIF, 23, 180) + 10;
+        if (!fm.length) ly += paragraph('No close matches in the set, a rare sky.', x, ly, w, 15, INK, SERIF, 23, 180) + 10;
       } else if (cat === 'watch') { // square retro TVs streaming public-domain media from the Internet Archive, searched to your chart
         var sunNm = DATA.SIGNS[c.planets.sun.sign].name, ascNm = (b.timeKnown && c.ascBody) ? DATA.SIGNS[c.ascBody.sign].name : '';
-        ly += paragraph('Public-domain film and audio from the Internet Archive, searched live to your chart — your ' + sunNm + ' Sun' + (ascNm && ascNm !== sunNm ? (' and ' + ascNm + ' rising') : '') + '. Tap a screen to play it here, in-app.', x, ly, w, 14.5, INK, SERIF, 22, 200) + 14;
+        ly += paragraph('Public-domain film and audio from the Internet Archive, searched live to your chart: your ' + sunNm + ' Sun' + (ascNm && ascNm !== sunNm ? (' and ' + ascNm + ' rising') : '') + '. Tap a screen to play it here, in-app.', x, ly, w, 14.5, INK, SERIF, 22, 200) + 14;
         iaSearch(c, b);
         var res = UI.iaResults, frameRect = null, cw2 = (w - 12) / 2, cardH = cw2 + 30;
         if (UI.iaErr) {
-          var em = (UI.iaErr === 'net' || UI.iaErr === 'offline') ? 'Couldn’t reach the Internet Archive — Watch needs a connection. Tap to try again when you’re online.' : 'No archive matches for your sign right now — tap to try again.';
+          var em = (UI.iaErr === 'net' || UI.iaErr === 'offline') ? 'Couldn’t reach the Internet Archive. Watch needs a connection, so tap to try again when you’re online.' : 'No archive matches for your sign right now. Tap to try again.';
           ly += paragraph(em, x, ly, w, 14.5, INK, SERIF, 22, 200) + 12;
           flatBtn('Try again', x, ly, 160, 42, function () { UI.iaFor = null; }, false); ly += 52;
         } else if (!res) {
@@ -6191,7 +6191,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         setFont(MONO, 8.5, INK, p.LEFT, p.TOP, 140); ly += paragraph('Public-domain plate via Wikimedia Commons.', x, ly, w, 11, INK, MONO, 15, 140) + 10;
         ly += paragraph(my2.story, x, ly, w, 16.5, INK, SERIF, 25) + 12;
         var ps2 = planetsInSign(c, my2.s);
-        if (ps2.length) ly += paragraph('In your chart, ' + ps2.map(function (k) { return APP.nameFor(k); }).join(', ') + ' ' + (ps2.length === 1 ? 'lives' : 'live') + ' in ' + S3.name + ' — this myth is one of yours.', x, ly, w, 15, INK, SERIF, 23, 215) + 10;
+        if (ps2.length) ly += paragraph('In your chart, ' + ps2.map(function (k) { return APP.nameFor(k); }).join(', ') + ' ' + (ps2.length === 1 ? 'lives' : 'live') + ' in ' + S3.name + ', so this myth is one of yours.', x, ly, w, 15, INK, SERIF, 23, 215) + 10;
       } else if (cat === 'famous') {
         var fm2 = UI.fmList || (UI.fmList = APP.famousMatches(c)), fp2 = fm2[it];
         if (!fp2) { UI.learnItem = null; return ly; }
@@ -6204,12 +6204,12 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         ly += 104;
         hairline(x, ly, x + w, 60); ly += 14; eyebrow('What you share', x, ly, ACC); ly += 22;
         var shares = [];
-        if (fp2.sunMatch) shares.push('the Sun in ' + fsun.name + ' — ' + fsun.style + ', the same core drive');
-        if (fp2.moonMatch) shares.push('a ' + fmoon.name + ' Moon — a kindred inner world and instinct for safety');
-        if (fp2.venusMatch) shares.push('Venus in ' + fven.name + ' — a shared way of loving and finding beauty');
+        if (fp2.sunMatch) shares.push('the Sun in ' + fsun.name + ', ' + fsun.style + ', the same core drive');
+        if (fp2.moonMatch) shares.push('a ' + fmoon.name + ' Moon, a kindred inner world and instinct for safety');
+        if (fp2.venusMatch) shares.push('Venus in ' + fven.name + ', a shared way of loving and finding beauty');
         var shareTxt = 'Like you, ' + fp2.name + ' carries ' + (shares.length === 1 ? shares[0] : shares.slice(0, -1).join('; ') + '; and ' + shares[shares.length - 1]) + '. Lived out a world away, in a wholly different life.';
         ly += paragraph(shareTxt, x, ly, w, 16.5, INK, SERIF, 25) + 12;
-        ly += paragraph('A shared placement is a shared theme, never a shared fate — the rest of a chart, and a life, makes each person utterly their own.', x, ly, w, 14, INK, SERIF, 21, 195) + 10;
+        ly += paragraph('A shared placement is a shared theme, never a shared fate. The rest of a chart, and a life, makes each person utterly their own.', x, ly, w, 14, INK, SERIF, 21, 195) + 10;
         setFont(MONO, 8.5, INK, p.LEFT, p.TOP, 140); ly += paragraph('Portrait via Wikipedia.', x, ly, w, 11, INK, MONO, 15, 140) + 8;
       } else if (cat === 'howto') {
         var HT = HOWTO[it];
@@ -6372,7 +6372,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       flatBtn('Walk me through my chart', x, ly, w, 44, function () { startWalk(); }, false); ly += 56;
       flatBtn('Share my chart (image)', x, ly, w, 44, function () { exportChartCard(); }, false); ly += 56;
       if (APP.STATE.chart) { ly += 8; ly = drawAskBlock(APP.STATE.chart, x, ly, w) + 8; }
-      eyebrow('On-device engine — free, private, offline', x, ly); ly += 24;
+      eyebrow('On-device engine · free, private, offline', x, ly); ly += 24;
       ly += paragraph('Aqau Pluto computes a genuine ephemeris on-device with astronomy-engine (MIT), accurate to about one arcsecond against NOVAS/JPL, and reads it in plain, behavioural language. The whole interface is drawn and animated live in p5.', x, ly, w, 14, INK, SERIF, 21, 170) + 24;
       UI.contentH.settings = ly;
     }
@@ -6537,7 +6537,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       g.fillStyle = rgb(acc); g.font = '22px ' + MONO; g.fillText('LIVE ON YOUR CHART', mx, yy); yy += 42;
       g.fillStyle = rgb(ink); g.font = '30px ' + SERIF;
       if (dl.length) { var n = 0, di; for (di = 0; di < dl.length && n < 2; di++) { var ls = wrap2('• ' + APP.transitSentence(dl[di]), mw, '30px ' + SERIF), j; for (j = 0; j < ls.length; j++) { g.fillText(ls[j], mx, yy); yy += 42; } yy += 8; n++; } }
-      else { var qs = wrap2('A calm sky — no close transits to your chart today.', mw, '30px ' + SERIF), qi; for (qi = 0; qi < qs.length; qi++) { g.fillText(qs[qi], mx, yy); yy += 42; } }
+      else { var qs = wrap2('A calm sky, no close transits to your chart today.', mw, '30px ' + SERIF), qi; for (qi = 0; qi < qs.length; qi++) { g.fillText(qs[qi], mx, yy); yy += 42; } }
       g.textAlign = 'center'; g.fillStyle = rgba(ink, 0.4); g.font = '22px ' + MONO; g.fillText('computed on-device · astronomy-engine', W2 / 2, H2 - 56);
       function dl2() { try { var a = document.createElement('a'); a.href = cv.toDataURL('image/png'); a.download = 'aqau-today.png'; document.body.appendChild(a); a.click(); document.body.removeChild(a); } catch (e2) {} }
       try {
@@ -6861,12 +6861,12 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     // The whole app is one canvas, so DOM tour libs (Shepherd/Intro/Driver) can't attach —
     // this is a small native coachmark sequence that points at the nav and explains each area.
     var TOUR = [
-      { t: 'Welcome. This is your chart, read straight — real astronomy, plain language, all on your device. Here’s a 20-second tour.' },
-      { tab: 0, t: 'CHART — your birth wheel. Tap any planet and it magnifies, with what it means for you.' },
-      { tab: 1, t: 'READ — your chart in plain words: what’s live today and this very hour, and the patterns that make you you.' },
-      { tab: 3, t: 'TAROT — spreads to lay yourself, every card’s meaning, and the card art from public-domain decks worldwide.' },
-      { tab: 4, t: 'PEOPLE — add a friend, a date, or family by their birthday to compare charts, and see a family tree.' },
-      { t: 'TAP THE MOON top-left, on any screen, for Today — the live sky on your chart: moon phase, what’s retrograde, and what’s moving now.' },
+      { t: 'Welcome. This is your chart, read straight: real astronomy, plain language, all on your device. Here’s a 20-second tour.' },
+      { tab: 0, t: 'CHART · your birth wheel. Tap any planet and it magnifies, with what it means for you.' },
+      { tab: 1, t: 'READ · your chart in plain words: what’s live today and this very hour, and the patterns that make you you.' },
+      { tab: 3, t: 'TAROT · spreads to lay yourself, every card’s meaning, and the card art from public-domain decks worldwide.' },
+      { tab: 4, t: 'PEOPLE · add a friend, a date, or family by their birthday to compare charts, and see a family tree.' },
+      { t: 'TAP THE MOON top-left, on any screen, for Today · the live sky on your chart: moon phase, what’s retrograde, and what’s moving now.' },
       { tab: 5, t: 'SETTINGS: themes, bigger text, save and switch charts, share your chart as an image, and tune the zodiac and houses. That is the tour. Enjoy exploring.' }
     ];
     function startTour() { UI.tour = { step: 0 }; UI.screen = 'chart'; }
