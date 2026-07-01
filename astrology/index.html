@@ -3011,9 +3011,155 @@ var APP = (function () {
     grouped.sort(function (x, y) { return x.date - y.date; });
     return grouped.slice(0, cap || 10);
   }
+  // ===== the full solar-return chart: the year's own horoscope, cast for the exact return instant at the birthplace =====
+  function solarReturnChart(c, b, sum) {
+    if (!sum) return null;
+    try {
+      var d = jsDayNum(sum.date), pos = EPH.positions(d), ay = c.ayan || 0, planets = {}, k;
+      for (k in pos) if (pos.hasOwnProperty(k) && pos[k] && pos[k].lon != null) { var lon = rev(pos[k].lon - ay), sg = Math.floor(lon / 30); planets[k] = { lon: lon, sign: sg, signName: DATA.SIGNS[sg].name, deg: lon - sg * 30 }; }
+      var out = { date: sum.date, planets: planets, asc: 0 };
+      if (b.timeKnown) {
+        var hz = EPH.houses(STATE.settings.house, d, b.lat, b.lon), ascLon = rev(hz.asc - ay), as = Math.floor(ascLon / 30);
+        out.asc = ascLon; out.ascBody = { lon: ascLon, sign: as, signName: DATA.SIGNS[as].name };
+        var mcLon = rev(((hz.mc != null) ? hz.mc : (hz.asc + 270)) - ay);
+        if (c.cusps) { for (var h2 = 1; h2 <= 12; h2++) { var a2 = c.cusps[h2], b2 = c.cusps[h2 % 12 + 1], span = rev(b2 - a2); if (rev(ascLon - a2) < span) { out.ascNatalHouse = h2; break; } } }
+        var on = [], kk;
+        for (kk in planets) if (planets.hasOwnProperty(kk)) { if (Math.min(Math.abs(sdelta(planets[kk].lon, ascLon)), Math.abs(sdelta(planets[kk].lon, mcLon))) <= 3) on.push(kk); }
+        out.onAngles = on;
+      }
+      return out;
+    } catch (e) { return null; }
+  }
+  // ===== eclipses: where the node-axis strikes — from astronomy-engine's own eclipse search =====
+  function upcomingEclipses(c, n) {
+    var A = (typeof Astronomy !== 'undefined') ? Astronomy : (typeof window !== 'undefined' ? window.Astronomy : null);
+    if (!A || !A.SearchLunarEclipse || !A.SearchGlobalSolarEclipse) return [];
+    var out = [], ay = c.ayan || 0, t = new Date(), i;
+    function houseOfLon(lon) { if (!STATE.birth.timeKnown || !c.cusps) return 0; for (var h2 = 1; h2 <= 12; h2++) { var a2 = c.cusps[h2], b2 = c.cusps[h2 % 12 + 1], span = rev(b2 - a2); if (rev(lon - a2) < span) return h2; } return 0; }
+    function mk(type, kind, date) {
+      var pos = EPH.positions(jsDayNum(date));
+      var lon = rev(((type === 'lunar') ? pos.moon.lon : pos.sun.lon) - ay), sign = Math.floor(lon / 30);
+      var near = null, ks = DATA.PLANET_ORDER, k2;
+      for (k2 = 0; k2 < ks.length; k2++) { var np2 = c.planets[ks[k2]]; if (!np2) continue; var o2 = Math.abs(sdelta(np2.lon, lon)); if (o2 <= 3 && (!near || o2 < near.orb)) near = { key: ks[k2], orb: o2 }; }
+      return { type: type, kind: String(kind || 'total').toLowerCase(), date: date, lon: lon, sign: sign, deg: lon - sign * 30, house: houseOfLon(lon), near: near };
+    }
+    try { var le = A.SearchLunarEclipse(t); for (i = 0; i < (n || 2) && le; i++) { if (String(le.kind).toLowerCase() !== 'penumbral') out.push(mk('lunar', le.kind, le.peak.date)); le = A.NextLunarEclipse(le.peak); } } catch (e1) {}
+    try { var se = A.SearchGlobalSolarEclipse(t); for (i = 0; i < (n || 2) && se; i++) { out.push(mk('solar', se.kind, se.peak.date)); se = A.NextGlobalSolarEclipse(se.peak); } } catch (e2) {}
+    out.sort(function (x, y) { return x.date - y.date; });
+    return out.slice(0, 3);
+  }
+  // ===== electional helper: tell it the intention, it searches the sky ahead and shows its working =====
+  var ELECT_INTENTS = [
+    { key: 'launch', label: 'Launch', rel: { sun: 1, mars: 1, jupiter: 1, mc: 1, asc: 1 }, moon: [0, 4, 8], waxing: true, mercury: true, line: 'starting something new' },
+    { key: 'sign', label: 'Sign / commit', rel: { mercury: 1, saturn: 1, sun: 1 }, moon: [1, 9, 6], waxing: true, mercury: true, line: 'signing and committing' },
+    { key: 'ask', label: 'Ask / pitch', rel: { mercury: 1, venus: 1, jupiter: 1 }, moon: [2, 4, 6], waxing: true, mercury: true, line: 'asking, pitching, persuading' },
+    { key: 'love', label: 'Love', rel: { venus: 1, moon: 1, sun: 1 }, moon: [1, 3, 6, 11], waxing: true, mercury: false, line: 'a date, or a talk of the heart' },
+    { key: 'money', label: 'Money', rel: { venus: 1, jupiter: 1, sun: 1 }, moon: [1, 5, 9], waxing: true, mercury: true, line: 'money moves' },
+    { key: 'rest', label: 'Rest', rel: { moon: 1, neptune: 1 }, moon: [3, 11, 5], waxing: false, mercury: false, line: 'rest, retreat and repair' }
+  ];
+  function electIntents() { return ELECT_INTENTS; }
+  function bestDaysFor(c, intentKey, daysAhead) {
+    var IT = ELECT_INTENTS[0], i;
+    for (i = 0; i < ELECT_INTENTS.length; i++) if (ELECT_INTENTS[i].key === intentKey) IT = ELECT_INTENTS[i];
+    var ay = c.ayan || 0, t0 = new Date(); daysAhead = daysAhead || 45;
+    function keyOf(dt) { return dt.getFullYear() + '-' + (dt.getMonth() + 1) + '-' + dt.getDate(); }
+    var evs = upcomingTransits(c, Math.ceil(daysAhead / 30.4), 60), evByDay = {}, e;
+    for (e = 0; e < evs.length; e++) { var pss = evs[e].passes || [{ date: evs[e].date }]; for (var pI = 0; pI < pss.length; pI++) { var kk = keyOf(pss[pI].date); (evByDay[kk] = evByDay[kk] || []).push(evs[e]); } }
+    var out = [];
+    for (i = 1; i <= daysAhead; i++) {
+      var dt = new Date(t0.getFullYear(), t0.getMonth(), t0.getDate() + i, 12, 0, 0), dn = jsDayNum(dt);
+      var pos = EPH.positions(dn), mLon = rev(pos.moon.lon - ay), mSign = Math.floor(mLon / 30);
+      var waxing = rev(pos.moon.lon - pos.sun.lon) < 180;
+      var score = 0, why = [];
+      if (IT.moon.indexOf(mSign) >= 0) { score += 2; why.push('the Moon in ' + DATA.SIGNS[mSign].name + ' suits ' + IT.line); }
+      if (IT.waxing === true && waxing) { score += 1; why.push('a building (waxing) Moon'); }
+      else if (IT.waxing === false && !waxing) { score += 1; why.push('a releasing (waning) Moon'); }
+      if (IT.mercury && transitMotion('mercury', dt, ay) < 0) { score -= 2; why.push('Mercury retrograde — expect revisions'); }
+      var evd = evByDay[keyOf(dt)] || [], k2;
+      for (k2 = 0; k2 < evd.length; k2++) {
+        var E2 = evd[k2], relW = IT.rel[E2.np] ? 2 : 1, good = (E2.quality === 'flow' || E2.quality === 'opportunity');
+        var ben = (E2.tp === 'jupiter'), mal = (E2.tp === 'saturn' || E2.tp === 'mars' || E2.tp === 'pluto');
+        if (good) { score += relW + (ben ? 1 : 0); why.push(nameFor(E2.tp) + ' ' + E2.aspKey + ' your ' + nameFor(E2.np) + ' is exact — an open door'); }
+        else if (E2.quality === 'fusion') { if (ben) { score += relW; why.push(nameFor(E2.tp) + ' conjunct your ' + nameFor(E2.np) + ' — expansive'); } else if (mal) { score -= 1; why.push(nameFor(E2.tp) + ' conjunct your ' + nameFor(E2.np) + ' — heavy, use deliberately'); } }
+        else { score -= relW; why.push(nameFor(E2.tp) + ' ' + E2.aspKey + ' your ' + nameFor(E2.np) + ' lands that day — friction'); }
+      }
+      out.push({ date: dt, score: score, why: why.slice(0, 3), moonSign: mSign, waxing: waxing });
+    }
+    out.sort(function (a2, b2) { return (b2.score - a2.score) || (a2.date - b2.date); });
+    return out.slice(0, 5);
+  }
+  // ===== The Book of You: the entire reading, typeset as one printable document =====
+  function bookPlacement(c, key) {
+    var pl = c.planets[key]; if (!pl) return null;
+    var core;
+    if (key === 'sun') core = DATA.SUN_IN_SIGN[pl.sign];
+    else if (key === 'moon') core = DATA.MOON_IN_SIGN[pl.sign];
+    else if (DATA.PLANET_SIGN_TEXT[key]) core = DATA.PLANET_SIGN_TEXT[key][pl.sign];
+    else core = capit((DATA.PLANETS[key] ? DATA.PLANETS[key].fn : 'this drive')) + ', carried through ' + DATA.SIGNS[pl.sign].style + '.';
+    var extra = '';
+    if (STATE.birth.timeKnown && pl.house) extra += ' It lives in the ' + ordinal(pl.house) + ' house — ' + DATA.HOUSES[pl.house - 1].meaning;
+    var dn = degreeNote(pl.deg); if (dn) extra += ' It sits ' + dn + '.';
+    if (pl.retro && key !== 'sun' && key !== 'moon') extra += ' Retrograde at birth: turned inward first, reworked before it is shown.';
+    return { title: nameFor(key) + ' in ' + pl.signName, meta: pl.deg.toFixed(1) + '\u00B0 ' + pl.signName + (STATE.birth.timeKnown && pl.house ? ' \u00B7 house ' + pl.house : '') + (pl.retro ? ' \u00B7 retrograde' : ''), text: core + extra };
+  }
+  function exportBook() {
+    var c = STATE.chart, b = STATE.birth; if (!c || !b || typeof document === 'undefined') return;
+    function esc(s2) { return String(s2).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+    function para(t2) { return '<p>' + esc(t2) + '</p>'; }
+    var h = [], i, j, name = b.name || 'You';
+    var big3 = c.planets.sun.signName + ' Sun \u00B7 ' + c.planets.moon.signName + ' Moon' + (b.timeKnown && c.ascBody ? (' \u00B7 ' + c.ascBody.signName + ' Rising') : '');
+    h.push('<!DOCTYPE html><html><head><meta charset="utf-8"><title>The Book of You \u2014 ' + esc(name) + '</title><meta name="viewport" content="width=device-width, initial-scale=1">');
+    h.push('<style>body{font-family:Georgia,serif;color:#221d18;background:#f4efe2;margin:0;padding:0}main{max-width:680px;margin:0 auto;padding:48px 28px}h1{font-size:42px;margin:.2em 0}h2{font-size:24px;margin-top:2.2em;border-bottom:1px solid #b9ad95;padding-bottom:.3em}h3{font-size:17px;margin:1.4em 0 .3em}p{line-height:1.62;font-size:16px;margin:.5em 0}.eyebrow{font-family:Menlo,Consolas,monospace;font-size:11px;letter-spacing:.18em;color:#96431c;text-transform:uppercase}.meta{font-family:Menlo,Consolas,monospace;font-size:11.5px;color:#7d715c}.cover{text-align:center;padding:70px 0 30px}.rule{border:0;border-top:1px solid #cabfa6;margin:2em 0}@media print{body{background:#fff}main{max-width:none;padding:24px}h2{page-break-after:avoid}}</style></head><body><main>');
+    h.push('<div class="cover"><div class="eyebrow">Aqau Pluto \u00B7 a complete chart report</div><h1>The Book of ' + esc(name) + '</h1><p class="meta">' + esc('Born ' + b.d + '.' + b.mo + '.' + b.y + (b.timeKnown ? (' at ' + b.hour + ':' + (b.min < 10 ? '0' : '') + b.min) : '') + (b.place ? (' \u00B7 ' + b.place) : '')) + '</p><p><strong>' + esc(big3) + '</strong></p></div>');
+    try { var arc = composeArc(c, b); h.push('<h2>I \u00B7 The four movements</h2>'); for (i = 0; i < arc.length; i++) h.push('<h3>' + esc(arc[i].label) + '</h3>' + para(arc[i].text)); } catch (e1) {}
+    try { var core2 = composeCore(c); h.push('<h2>II \u00B7 The reading</h2>'); for (i = 0; i < core2.length; i++) h.push(para(core2[i])); } catch (e2) {}
+    h.push('<h2>III \u00B7 Every placement</h2>');
+    for (i = 0; i < DATA.PLANET_ORDER.length; i++) { var bp = bookPlacement(c, DATA.PLANET_ORDER[i]); if (bp) h.push('<h3>' + esc(bp.title) + '</h3><p class="meta">' + esc(bp.meta) + '</p>' + para(bp.text)); }
+    if (b.timeKnown && c.ascBody) h.push('<h3>' + esc(c.ascBody.signName + ' rising') + '</h3>' + para(DATA.RISING_IN_SIGN[c.ascBody.sign]));
+    h.push('<h2>IV \u00B7 The conversations (aspects)</h2>');
+    var nA = 0; for (i = 0; i < c.aspects.length && nA < 12; i++) { var A2 = c.aspects[i]; if (A2.minor) continue; nA++; h.push('<h3>' + esc(nameFor(A2.a) + ' ' + A2.asp.key + ' ' + nameFor(A2.b)) + ' <span class="meta">' + A2.orb.toFixed(1) + '\u00B0</span></h3>' + para(capit(aspectText(c, A2)) + '.')); }
+    try { var sigs = composeSignatures(c); h.push('<h2>V \u00B7 Signatures & structure</h2>'); for (i = 0; i < sigs.length; i++) { h.push('<h3>' + esc(sigs[i].label) + '</h3>'); if (sigs[i].text) h.push(para(sigs[i].text)); if (sigs[i].lines) for (j = 0; j < sigs[i].lines.length; j++) h.push(para('\u2022 ' + sigs[i].lines[j])); } } catch (e3) {}
+    try {
+      var fc = composeForecast(c); h.push('<h2>VI \u00B7 The year ahead</h2>');
+      if (fc.profection) h.push(para('A ' + DATA.SIGNS[fc.profection.sign].name + ' profection year (age ' + fc.profection.age + '), time-lord ' + nameFor(fc.profection.lord) + '.'));
+      if (fc.zr && fc.zr.l1) h.push(para('Zodiacal Releasing: a ' + fc.zr.l1.signName + ' life-chapter, roughly age ' + Math.round(fc.zr.l1.startAge) + '\u2013' + Math.round(fc.zr.l1.endAge) + ', ruled by ' + nameFor(fc.zr.l1.ruler) + '.'));
+      if (fc.progressed) h.push(para('Progressed Sun in ' + DATA.SIGNS[fc.progressed.sunSign].name + '; progressed Moon in ' + DATA.SIGNS[fc.progressed.moonSign].name + '.'));
+      if (fc.solarReturn) h.push(para('Next solar return: ' + fc.solarReturn.date.toDateString() + (fc.srChart && fc.srChart.ascBody ? (', rising ' + fc.srChart.ascBody.signName) : '') + '.'));
+      if (fc.eclipses) for (i = 0; i < fc.eclipses.length; i++) { var EC2 = fc.eclipses[i]; h.push(para('A ' + EC2.kind + ' ' + EC2.type + ' eclipse on ' + EC2.date.toDateString() + ' at ' + EC2.deg.toFixed(0) + '\u00B0 ' + DATA.SIGNS[EC2.sign].name + (EC2.house ? (', in the ' + ordinal(EC2.house) + ' house') : '') + '.')); }
+      if (fc.upcoming && fc.upcoming.length) { h.push('<h3>Exact transits coming</h3>'); for (i = 0; i < fc.upcoming.length; i++) { var ev2 = fc.upcoming[i]; h.push(para(ev2.date.toDateString() + ' \u2014 ' + nameFor(ev2.tp) + ' ' + ev2.aspKey + ' ' + nameFor(ev2.np) + (ev2.rx ? ' (retrograde pass)' : '') + '.')); } }
+    } catch (e4) {}
+    h.push('<hr class="rule"><p class="meta">Computed entirely on-device with astronomy-engine (MIT) \u2014 no AI, no server. Classical material after Ptolemy, Lilly (1647) and Robson (1923), summarised or quoted from the public domain.</p>');
+    h.push('</main></body></html>');
+    try {
+      var blob = new Blob([h.join('\n')], { type: 'text/html' }), url = URL.createObjectURL(blob), wref = null;
+      try { wref = window.open(url, '_blank'); } catch (eo) {}
+      if (!wref) { var a = document.createElement('a'); a.href = url; a.download = 'the-book-of-you.html'; document.body.appendChild(a); a.click(); document.body.removeChild(a); }
+      setTimeout(function () { try { URL.revokeObjectURL(url); } catch (er) {} }, 60000);
+    } catch (e5) {}
+  }
+  // ===== backup & restore: everything the app knows, as one file you own =====
+  var BACKUP_KEYS = ['aqau_birth', 'aqau_settings', 'aqau_people', 'aqau_charts', 'aqau_journal', 'aqp_watch'];
+  function exportBackup() {
+    try {
+      var out = { app: 'aqau-pluto', v: 1, at: new Date().toISOString(), data: {} }, i;
+      for (i = 0; i < BACKUP_KEYS.length; i++) { var v = localStorage.getItem(BACKUP_KEYS[i]); if (v != null) out.data[BACKUP_KEYS[i]] = v; }
+      var blob = new Blob([JSON.stringify(out, null, 1)], { type: 'application/json' }), url = URL.createObjectURL(blob);
+      var a = document.createElement('a'); a.href = url; a.download = 'aqau-backup.json'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(function () { try { URL.revokeObjectURL(url); } catch (e2) {} }, 30000);
+    } catch (e) {}
+  }
+  function importBackup(obj) {
+    try {
+      if (!obj || obj.app !== 'aqau-pluto' || !obj.data) return false;
+      var i, wrote = 0;
+      for (i = 0; i < BACKUP_KEYS.length; i++) { var k = BACKUP_KEYS[i]; if (typeof obj.data[k] === 'string') { try { JSON.parse(obj.data[k]); localStorage.setItem(k, obj.data[k]); wrote++; } catch (ek) {} } }
+      return wrote > 0;
+    } catch (e) { return false; }
+  }
   function composeForecast(c) {
     var b = STATE.birth;
-    return { profection: profection(b), monthly: monthlyProfection(b), zr: zodiacalReleasing(c, b), progressed: progressed(c, b), solarReturn: solarReturnSummary(c, b), upcoming: upcomingTransits(c, 8), sky: skyStatus() };
+    var srSum = solarReturnSummary(c, b);
+    return { profection: profection(b), monthly: monthlyProfection(b), zr: zodiacalReleasing(c, b), progressed: progressed(c, b), solarReturn: srSum, srChart: solarReturnChart(c, b, srSum), eclipses: upcomingEclipses(c, 2), upcoming: upcomingTransits(c, 8), sky: skyStatus() };
   }
 
   // ---- life timeline: the slow, rare outer transits & returns that mark life chapters ----
@@ -3827,6 +3973,8 @@ var APP = (function () {
     STATE: STATE, save: save, load: load, compute: computeChart,
     composeCore: composeCore, localAsk: localAsk, chartText: chartText,
     composeTransits: composeTransits, transitSentence: transitSentence, composeSignatures: composeSignatures,
+    solarReturnChart: solarReturnChart, upcomingEclipses: upcomingEclipses, bestDaysFor: bestDaysFor, electIntents: electIntents,
+    exportBook: exportBook, exportBackup: exportBackup, importBackup: importBackup,
     addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenOf: almutenOf, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
     saveCurrentChart: saveCurrentChart, deleteSavedChart: deleteSavedChart, activateSavedChart: activateSavedChart, activeChartKey: activeChartKey, chartKey: chartKey, famousMatches: famousMatches, lifeTransits: lifeTransits, upcomingTransits: upcomingTransits, transitMotion: transitMotion, compositeChart: compositeChart,
     nameFor: nameFor, glyphFor: glyphFor, sgAbbr: sgAbbr, pad: pad,
@@ -5226,8 +5374,30 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         if (fc2.zr && fc2.zr.l1) { var z = fc2.zr, zr2 = z.l2 ? (' Inside it you’re in a ' + z.l2.signName + ' sub-chapter (ruled by ' + APP.nameFor(z.l2.ruler) + ').') : ''; ly += paragraph('Zodiacal Releasing from your Lot of Spirit puts you in a ' + z.l1.signName + ' life-chapter (roughly age ' + Math.round(z.l1.startAge) + '–' + Math.round(z.l1.endAge) + '), ruled by ' + APP.nameFor(z.l1.ruler) + ' — the long arc of where your purpose is unfolding.' + zr2, x, ly, w, 14.5, INK, SERIF, 22) + 10; }
         var pg = fc2.progressed;
         ly += paragraph('By secondary progression your inner Sun has moved into ' + DATA.SIGNS[pg.sunSign].name + ' and your progressed Moon is in ' + DATA.SIGNS[pg.moonSign].name + ' — the slow seasons of your becoming.', x, ly, w, 15, INK, SERIF, 23) + 10;
-        if (fc2.solarReturn) { var sr = fc2.solarReturn; ly += paragraph('Your next solar return — your astrological birthday chart — lands ' + fmtShort(sr.date) + (sr.ascSign != null ? (', rising ' + DATA.SIGNS[sr.ascSign].name) : '') + ', Moon in ' + DATA.SIGNS[sr.moonSign].name + '.', x, ly, w, 15, INK, SERIF, 23) + 12; }
+        if (fc2.solarReturn) {
+          var sr = fc2.solarReturn, SRC = fc2.srChart;
+          ly += 4; eyebrow('Your solar return — the year’s own chart', x, ly, ACC); ly += 24;
+          ly += paragraph('The Sun returns to its natal degree on ' + fmtShort(sr.date) + ' — your astrological birthday. The chart of that instant is the year’s own horoscope:', x, ly, w, 14.5, INK, SERIF, 22) + 8;
+          if (SRC) {
+            var srR = Math.min(w * 0.30, 110), srCx = x + w / 2, srCy = sY(ly) + srR + 6;
+            miniWheel(SRC, { timeKnown: !!SRC.ascBody }, srCx, srCy, srR, null, nowT(), null);
+            ly += srR * 2 + 22;
+            if (SRC.ascBody) ly += paragraph('The year rises in ' + SRC.ascBody.signName + ' — the whole year wears its style' + (SRC.ascNatalHouse ? (', and that Ascendant falls in your natal ' + ordinal(SRC.ascNatalHouse) + ' house: the year’s main arena is ' + DATA.HOUSES[SRC.ascNatalHouse - 1].title.toLowerCase() + '.') : '.'), x, ly, w, 14.5, INK, SERIF, 22) + 8;
+            ly += paragraph('The return’s Moon is in ' + SRC.planets.moon.signName + ' — what this year needs to feel right.' + (SRC.onAngles && SRC.onAngles.length ? (' And ' + SRC.onAngles.map(function (k4) { return APP.nameFor(k4); }).join(' and ') + ' sit' + (SRC.onAngles.length === 1 ? 's' : '') + ' right on the year’s angles — loud, defining, unmissable.') : ''), x, ly, w, 14.5, INK, SERIF, 22) + 12;
+          } else ly += paragraph('Rising ' + (sr.ascSign != null ? DATA.SIGNS[sr.ascSign].name : '—') + ', Moon in ' + DATA.SIGNS[sr.moonSign].name + '. Add a birth time for the full return chart.', x, ly, w, 14.5, INK, SERIF, 22) + 12;
+        }
         if (fc2.sky) { var sky = fc2.sky, sl = 'The Moon is in ' + sky.moon.signName + (sky.moon.voc ? ' (void of course — let plans rest a few hours)' : '') + '. ' + (sky.retros.length ? (sky.retros.map(APP.nameFor).join(', ') + ' ' + (sky.retros.length === 1 ? 'is' : 'are') + ' retrograde right now — a time to revisit, not rush.') : 'No planets retrograde right now — a clear runway.'); ly += paragraph(sl, x, ly, w, 15, INK, SERIF, 23) + 12; }
+        if (fc2.eclipses && fc2.eclipses.length) {
+          ly += 4; eyebrow('Eclipses ahead', x, ly, ACC); ly += 24;
+          ly += paragraph('Eclipses are the node-axis striking a match — thresholds, not routine. The next to touch your sky:', x, ly, w, 13.5, INK, SERIF, 20, 200) + 8;
+          var eci; for (eci = 0; eci < fc2.eclipses.length; eci++) {
+            var EC = fc2.eclipses[eci];
+            var houseTxt = EC.house ? (' It strikes your ' + ordinal(EC.house) + ' house — ' + DATA.HOUSES[EC.house - 1].title.toLowerCase() + '.') : '';
+            var onTxt = EC.near ? (' It lands within ' + EC.near.orb.toFixed(1) + '° of your natal ' + APP.nameFor(EC.near.key) + ' — expect this one to be personal.') : '';
+            ly += paragraph(walkCap('a ' + EC.kind + ' ' + EC.type + ' eclipse') + ' on ' + fmtShort(EC.date) + ', at ' + EC.deg.toFixed(0) + '° ' + DATA.SIGNS[EC.sign].name + '.' + houseTxt + onTxt, x, ly, w, 14.5, INK, SERIF, 22) + 8;
+          }
+          ly += 6;
+        }
         ly += 4; eyebrow('Coming up', x, ly, ACC); ly += 24;
         if (!fc2.upcoming.length) ly += paragraph('No exact major transits in the next eight months — a steadier stretch.', x, ly, w, 14.5, INK, SERIF, 22, 210) + 8;
         else { for (var ui = 0; ui < fc2.upcoming.length; ui++) { var ev = fc2.upcoming[ui]; if (ui) hairline(x, ly, x + w, 30);
@@ -5255,6 +5425,25 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
             ly += 16; ly += paragraph(dp.line, x + 18, ly, w - 18, 13.5, INK, SERIF, 19, 225) + 12;
           }
           ly += 4;
+        }
+        // ---- pick a day: the electional helper — name the intention, it searches the sky ahead and shows its working ----
+        ly += 10; eyebrow('Pick a day for…', x, ly, ACC); ly += 28;
+        var ites = APP.electIntents(), cxp2 = x, cyp2 = ly, ii2;
+        for (ii2 = 0; ii2 < ites.length; ii2++) { p.textFont(MONO); p.textSize(11); var ww2 = p.textWidth(ites[ii2].label.toUpperCase()) + 28; if (cxp2 + ww2 > x + w) { cxp2 = x; cyp2 += 40; } chip(ites[ii2].label, UI.electFor === ites[ii2].key, cxp2, cyp2, (function (kk2) { return function () { UI.electFor = kk2; UI.electList = null; UI.popT = nowT(); }; })(ites[ii2].key)); cxp2 += ww2 + 8; }
+        ly = cyp2 + 48;
+        if (UI.electFor) {
+          if (!UI.electList) { try { UI.electList = APP.bestDaysFor(c, UI.electFor, 45); } catch (eEl) { UI.electList = []; } }
+          var el2 = UI.electList || [], bi2;
+          if (!el2.length) ly += paragraph('Nothing stands out in the next six weeks — any ordinary day will do.', x, ly, w, 14, INK, SERIF, 21, 200) + 8;
+          for (bi2 = 0; bi2 < el2.length; bi2++) {
+            var BD = el2[bi2];
+            if (bi2) hairline(x, ly, x + w, 30);
+            setFont(SANS, 14.5, INK, p.LEFT, p.TOP); bold(); p.text(fmtShort(BD.date), x, sY(ly)); normal();
+            setFont(MONO, 9.5, ACCTX, p.RIGHT, p.TOP, 235); p.text((BD.score >= 4 ? '★★★' : BD.score >= 2 ? '★★' : '★') + '  MOON IN ' + DATA.SIGNS[BD.moonSign].name.toUpperCase(), x + w, sY(ly + 2));
+            ly += 22;
+            if (BD.why.length) ly += paragraph(walkCap(BD.why.join('; ')) + '.', x, ly, w, 12.5, INK, SERIF, 18, 215) + 10; else ly += 6;
+          }
+          if (el2.length) ly += paragraph('Ranked entirely on-device: the Moon’s sign and phase for the task, Mercury’s motion, and the exact transits landing each day.', x, ly, w, 11, INK, MONO, 16, 150) + 8;
         }
       }
 
@@ -6956,6 +7145,11 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       flatBtn('Replay tour', x + 182, ly, 150, 44, function () { startTour(); }, false); ly += 56;
       flatBtn('Walk me through my chart', x, ly, w, 44, function () { startWalk(); }, false); ly += 56;
       flatBtn('Share my chart (image)', x, ly, w, 44, function () { exportChartCard(); }, false); ly += 56;
+      flatBtn('The Book of You — full printable report', x, ly, w, 44, function () { APP.exportBook(); }, true); ly += 56;
+      ly += paragraph('Every layer of your reading — the movements, placements, aspects, signatures and the year ahead — typeset as one document you can print or save as PDF. Composed on-device, like everything else.', x, ly, w, 13, INK, SERIF, 19, 180) + 12;
+      flatBtn('Back up everything', x, ly, (w - 10) / 2, 44, function () { APP.exportBackup(); }, false);
+      flatBtn('Restore backup', x + (w - 10) / 2 + 10, ly, (w - 10) / 2, 44, function () { importBackupUI(); }, false); ly += 56;
+      ly += paragraph('Backup writes one file with your birth data, settings, people, saved charts, journal and Watch guide. Restore reads it back on any device — your data never touches a server.', x, ly, w, 13, INK, SERIF, 19, 180) + 12;
       if (APP.STATE.chart) { ly += 8; ly = drawAskBlock(APP.STATE.chart, x, ly, w) + 8; }
       eyebrow('On-device engine — free, private, offline', x, ly); ly += 24;
       ly += paragraph('Aqau Pluto computes a genuine ephemeris on-device with astronomy-engine (MIT), accurate to about one arcsecond against NOVAS/JPL, and reads it in plain, behavioural language. The whole interface is drawn and animated live in p5.', x, ly, w, 14, INK, SERIF, 21, 170) + 24;
@@ -7354,6 +7548,18 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       el.style.display = 'block'; el.style.left = px + 'px'; el.style.top = py + 'px'; el.style.width = pw + 'px'; el.style.height = ph + 'px';
     }
     function hideJournalInput() { try { if (UI.jInput && UI.jFor) { UI.jInput.style.display = 'none'; if (document.activeElement === UI.jInput && UI.jInput.blur) UI.jInput.blur(); UI.jFor = null; } } catch (e) {} }
+    function importBackupUI() {
+      try {
+        var inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'application/json,.json';
+        inp.addEventListener('change', function () {
+          var f = inp.files && inp.files[0]; if (!f) return;
+          var rd = new FileReader();
+          rd.onload = function () { try { if (APP.importBackup(JSON.parse(String(rd.result)))) location.reload(); } catch (e2) {} };
+          rd.readAsText(f);
+        });
+        inp.click();
+      } catch (e) {}
+    }
     function drawTodayPanel() {
       if (!UI.today) return;
       // AN4 — the sheet grows out of the live moon emblem in the top bar
@@ -7384,6 +7590,29 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       pushHit(xbx - 4, xby - 6, 36, 36, function () { UI.today = false; });
       yy += 36;
       if (!d) { body('A quiet sky — couldn’t read the moment just now.'); dc.restore(); p.pop(); return; }
+      // the week, as a shape: seven days, each dot sized and coloured by what lands on your chart
+      if (!UI.weekMap || nowT() - (UI.weekMapT || 0) > 3600000) { try { var wkEv = APP.upcomingTransits(APP.STATE.chart, 0.35, 30), wm = {}, wi2; for (wi2 = 0; wi2 < wkEv.length; wi2++) { var wps = wkEv[wi2].passes || [{ date: wkEv[wi2].date }]; for (var wj = 0; wj < wps.length; wj++) { var wkk = ymd(wps[wj].date); (wm[wkk] = wm[wkk] || []).push(wkEv[wi2]); } } UI.weekMap = wm; } catch (eW) { UI.weekMap = {}; } UI.weekMapT = nowT(); }
+      var dow2 = ['S', 'M', 'T', 'W', 'T', 'F', 'S'], wi3;
+      for (wi3 = 0; wi3 < 7; wi3++) {
+        var wdt = new Date(now.getFullYear(), now.getMonth(), now.getDate() + wi3), wkey = ymd(wdt), wevs = UI.weekMap[wkey] || [];
+        var wx = x + pad + (w - pad * 2) / 7 * (wi3 + 0.5), wyc = ty() + 14;
+        var wsz = wevs.length ? Math.min(16, 8 + wevs.length * 3) : 5;
+        var wq = wevs.length ? wevs[0].quality : null, wcol = wq ? ((wq === 'flow' || wq === 'opportunity') ? ELHUE.air : (wq === 'fusion' ? INK : ACC)) : INK;
+        p.noStroke(); fillc(wcol, wevs.length ? 235 : 70); p.ellipse(wx, wyc, wsz, wsz);
+        if (wi3 === 0) { p.noFill(); strokec(ACC, 220); p.strokeWeight(1.4); p.ellipse(wx, wyc, 21, 21); }
+        setFont(MONO, 8.5, INK, p.CENTER, p.TOP, 160); p.text(wi3 === 0 ? 'NOW' : dow2[wdt.getDay()], wx, wyc + 13);
+        (function (kk3) { pushHit(wx - 16, wyc - 13, 32, 38, function () { UI.today = false; UI.screen = 'read'; UI.calView = true; UI.calDay = kk3; UI.calEvents = null; UI.jMap = null; UI.scroll.read = 0; }); })(wkey);
+      }
+      yy += 46; rule();
+      // eclipse season: flagged only when one is genuinely close
+      if (d.f && d.f.eclipses && d.f.eclipses.length) {
+        var EC0 = d.f.eclipses[0], dd0 = Math.round((EC0.date - now) / 86400000);
+        if (dd0 >= -2 && dd0 <= 15) {
+          head('Eclipse season');
+          body((EC0.type === 'solar' ? 'A ' + EC0.kind + ' solar eclipse' : 'A ' + EC0.kind + ' lunar eclipse') + (dd0 <= 0 ? ' is exact now' : (' lands in ' + dd0 + (dd0 === 1 ? ' day' : ' days'))) + ', at ' + EC0.deg.toFixed(0) + '° ' + DATA.SIGNS[EC0.sign].name + (EC0.house ? (', in your ' + ordinal(EC0.house) + ' house') : '') + '. Eclipses fast-forward the node-axis: expect thresholds, not routine.', 14);
+          rule();
+        }
+      }
       // live moon
       var e = d.moon ? d.moon.elong : 0, ms = d.f && d.f.sky ? d.f.sky.moon : null;
       var discY = ty() + 24; drawMoonDisc(x + pad + 24, discY, 24, e, 1);
