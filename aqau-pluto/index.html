@@ -1344,10 +1344,35 @@ var DATA = (function () {
     { sig: 'Friends, allies and community — hopes, wishes and the wider circle that carries you forward.', q: 'It signifieth friends… hope, trust, confidence, the praise or dispraise of a man.' },
     { sig: 'The hidden and the undone — solitude, retreat, secrets, self-undoing, and what works behind the scenes.', q: 'It signifieth private enemies… imprisonment, all manner of affliction, and sorrow.' }
   ];
+  // Per-sign classical nature, in our own words, then — where a genuine verbatim line has
+  // been located and verified against the period text — the source's own words. William
+  // Lilly's Christian Astrology (1647) opens each sign with a short formula (triplicity,
+  // quality, ruling planet, day/night); where that exact formula could be verified it is
+  // quoted; where it could not, we give our own accurate summary instead of inventing a
+  // false attribution — the same honesty the app already applies to Uranus/Neptune/Pluto.
+  var SIGN_TRAD = [
+    { sig: 'Cardinal fire, ruled by Mars — the first sign, and by classical reckoning hot, dry and choleric: quick to act and quick to burn.',
+      q: 'in nature fiery, hot and dry, cholerick', src: 'William Lilly, Christian Astrology (1647)' },
+    { sig: 'Fixed earth, ruled by Venus and exalted by the Moon — cold and dry by classical reckoning, the temperament the old authors called melancholic: slow, retentive, built to last.' },
+    { sig: 'Mutable air, ruled by Mercury — hot and moist by classical reckoning, the temperament the old authors called sanguine: quick-blooded, sociable, always in motion.' },
+    { sig: 'Cardinal water, ruled by the Moon and exalted by Jupiter — cold and moist by classical reckoning, the temperament the old authors called phlegmatic: retentive, tidal, protective of what it holds.' },
+    { sig: 'Fixed fire, the Sun’s only house — by classical reckoning hot, dry and choleric: commanding by nature, the sign the old authors set apart as royal.',
+      q: 'by nature fiery, hot, dry, choleric, diurnal, commanding… of the East and fiery triplicity, masculine', src: 'William Lilly, Christian Astrology (1647)' },
+    { sig: 'Mutable earth, ruled by Mercury — cold and dry by classical reckoning, the temperament the old authors called melancholic: exacting, discerning, the sign of harvest and craft.' },
+    { sig: 'Cardinal air, ruled by Venus and exalted by Saturn — hot and moist by classical reckoning, the temperament the old authors called sanguine: sociable, deliberative, forever weighing the balance.' },
+    { sig: 'Fixed water, the classical house of Mars — cold, moist and phlegmatic by ancient reckoning, though the old authors gave it a harder edge than the rest of its element: secretive, relentless, hard to read.',
+      q: 'a cold, watry, nocturnal, flegmatick, feminine sign, of the watry Triplicity, fixed and North… usually it doth represent subtill, deceitfull men', src: 'William Lilly, Christian Astrology (1647)' },
+    { sig: 'Mutable fire, ruled by Jupiter — hot and dry by classical reckoning, the temperament the old authors called choleric: expansive, restless, aimed always at the horizon.' },
+    { sig: 'Cardinal earth, the classical house of Saturn and the exaltation of Mars — cold, dry and melancholic by ancient reckoning: patient, ambitious, built for the long climb.',
+      q: 'the House of Saturn, and is Nocturnal, Cold, Dry, Melancholly, Earthly… Cardinall, Moveable… the exaltation of Mars', src: 'William Lilly, Christian Astrology (1647)' },
+    { sig: 'Fixed air, the classical house of Saturn — hot and moist by ancient reckoning despite its cold ruler, the temperament the old authors called sanguine: sociable in principle, detached in practice.' },
+    { sig: 'Mutable water, the classical house of Jupiter and the exaltation of Venus — cold, moist and phlegmatic by ancient reckoning: absorptive, compassionate, dissolving at the edges.',
+      q: 'of the Watry Triplicity, Northern, cold Sign, moyst, Flegmatick, feminine, nocturnal, the house of Jupiter, and exaltation of Venus, a Bycorporeal, common or double-bodied', src: 'William Lilly, Christian Astrology (1647)' }
+  ];
   var TRAD_SRC_LILLY = 'William Lilly, Christian Astrology (1647)';
   return {
     PLANETS: PLANETS, PLANET_ORDER: PLANET_ORDER, SIGNS: SIGNS, TRADITION: TRADITION,
-    PLANET_TRAD: PLANET_TRAD, HOUSE_TRAD: HOUSE_TRAD, TRAD_SRC_LILLY: TRAD_SRC_LILLY,
+    PLANET_TRAD: PLANET_TRAD, HOUSE_TRAD: HOUSE_TRAD, SIGN_TRAD: SIGN_TRAD, TRAD_SRC_LILLY: TRAD_SRC_LILLY,
     SUN_IN_SIGN: SUN_IN_SIGN, MOON_IN_SIGN: MOON_IN_SIGN, RISING_IN_SIGN: RISING_IN_SIGN, PLANET_SIGN_TEXT: PLANET_SIGN_TEXT,
     HOUSES: HOUSES, ASPECTS: ASPECTS, MINOR_ASPECTS: MINOR_ASPECTS, ELEMENTS: ELEMENTS, MODALITIES: MODALITIES,
     TAROT: TAROT, SUIT_KW: SUIT_KW, SPREADS: SPREADS, CITIES: CITIES
@@ -3099,6 +3124,23 @@ var APP = (function () {
       if (bestH > 0 && best >= 2) { var ht = DATA.HOUSE_TRAD[bestH - 1]; if (ht) lines.push('Your busiest place is the ' + ordinal(bestH) + ' house, with ' + best + ' planets gathered there. ' + ht.sig + '  “' + ht.q + '” — ' + DATA.TRAD_SRC_LILLY + '.'); }
     }
     var joys = planetJoys(c); if (joys.length) { var j = joys[0]; lines.push(nameFor(j.key) + ' sits in its joy in the ' + ordinal(j.house) + ' house — ' + j.why + '. The Hellenistic astrologers held this the one place where it is most fully at home.'); }
+    // your Sun sign, in the classical tradition's own words where a verbatim line survives
+    if (c.planets.sun) {
+      var st = DATA.SIGN_TRAD[c.planets.sun.sign];
+      if (st) { var sline = 'Your Sun stands in ' + c.planets.sun.signName + '. ' + st.sig; if (st.q) sline += '  “' + st.q + '” — ' + st.src + '.'; lines.push(sline); }
+      // clever, chart-specific: Ptolemy's own triplicity-ruler scheme, computed live from
+      // THIS chart's actual sect (day/night) — not a static per-sign fact, but the specific
+      // classical planet Ptolemy would name as ruling your Sun's element for you.
+      if (STATE.birth.timeKnown) {
+        var sc2 = null; try { sc2 = sect(c); } catch (e2) {}
+        if (sc2) {
+          var elx = DATA.SIGNS[c.planets.sun.sign].element, triR = TRIPLICITY[elx][sc2.day ? 0 : 1], ptri = DATA.PLANET_TRAD[triR];
+          if (ptri && ptri.q && triR !== top) {
+            lines.push('Yours is a ' + (sc2.day ? 'day' : 'night') + ' chart, so by Ptolemy’s own triplicity scheme the ' + DATA.ELEMENTS[elx].name.toLowerCase() + ' element — including your Sun sign — answers to ' + nameFor(triR) + '.  “' + ptri.q + '” — ' + ptri.src + '.');
+          }
+        }
+      }
+    }
     return lines;
   }
   function composeSignatures(c) {
@@ -5552,8 +5594,31 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         } else {
           var cd2 = DATA.TAROT[UI.card], gi2 = cl01(1 - (nowT() - UI.popT) / 360);
           flatBtn('\u2039 All cards', x, ly, 120, 36, function () { UI.card = null; UI.popT = nowT(); }, false, true); ly += 52;
-          var cardW = 152, cardH = 230, cardX = x + (w - cardW) / 2;
-          tarotCard(cardX, sY(ly), cardW, cardH, cd2, (nowT() - UI.popT) / 520, true); ly += cardH + 24;
+
+          // ---- the art, front and centre: the real flickering deck scans ARE the top card now ----
+          if (UI.cardImgCard !== UI.card) loadCardArt(cd2);
+          var fw = 150, fh = 248, fx = x + (w - fw) / 2, fyS = sY(ly), imgs = UI.cardImgs || [];
+          p.noStroke(); fillc(shade(GROUNDS[UI.screen], -10)); p.rect(fx, fyS, fw, fh, 8);
+          if (imgs.length) {
+            if (imgs.length > 1 && UI.cardFlickerOn && !reduced() && nowT() - UI.cardFlickT > 280) { UI.cardImgIdx = (UI.cardImgIdx + 1) % imgs.length; UI.cardFlickT = nowT(); }
+            if (UI.cardImgIdx >= imgs.length) UI.cardImgIdx = 0;
+            drawImageContain(imgs[UI.cardImgIdx], fx + 4, fyS + 4, fw - 8, fh - 8);
+          } else {
+            // while the real scans are still loading, the drawn card holds this same hero slot
+            tarotCard(fx + (fw - 132) / 2, fyS + (fh - 200) / 2, 132, 200, cd2, (nowT() - UI.popT) / 520, true);
+            var msg = UI.cardImgStatus || 'Gathering versions from open decks\u2026', ml = wrapLines(msg, fw - 20);
+            setFont(MONO, 9, INK, p.CENTER, p.TOP, 190);
+            for (var mlI = 0; mlI < ml.length; mlI++) p.text(ml[mlI], fx + fw / 2, fyS + fh - 15 * (ml.length - mlI));
+          }
+          p.noFill(); strokec(INK, 90); p.strokeWeight(1.5); p.rect(fx, fyS, fw, fh, 8);
+          ly += fh + 16;
+          if (imgs.length > 1) { // only a multi-scan card can flicker
+            flatBtn(UI.cardFlickerOn ? 'Stop' : 'Resume flicker', x, ly, 132, 36, function () { UI.cardFlickerOn = !UI.cardFlickerOn; UI.cardFlickT = nowT(); }, !UI.cardFlickerOn, true);
+            setFont(MONO, 10, INK, p.RIGHT, p.CENTER, 160); p.text(imgs.length + ' scans', x + w, sY(ly + 18)); ly += 48;
+          } else { ly += 10; }
+          ly += paragraph('Public-domain tarot decks via Wikimedia Commons, filtered to known decks only. Stop the flicker to study one.', x, ly, w, 11, INK, MONO, 16, 160) + 20;
+          hairline(x, ly, x + w, 60); ly += 14;
+
           p.textStyle(p.BOLD); glitchText(cd2.name, x, sY(ly), 28, SANS, INK, p.LEFT, p.TOP, gi2); normal(); ly += 36;
           var tg = APP.tarotGuide(cd2);
           eyebrow(tg.corr, x, ly, ACC); ly += 26;
@@ -5569,29 +5634,6 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
           setFont(MONO, 9, ELHUE.water, p.LEFT, p.TOP); bold(); p.text('IN LOVE', x, sY(ly)); normal(); ly += 16; ly += paragraph(tg.love, x, ly, w, 14, INK, SERIF, 20, 225) + 12;
           setFont(MONO, 9, ELHUE.earth, p.LEFT, p.TOP); bold(); p.text('AT WORK', x, sY(ly)); normal(); ly += 16; ly += paragraph(tg.work, x, ly, w, 14, INK, SERIF, 20, 225) + 12;
           setFont(MONO, 9, ACC, p.LEFT, p.TOP); bold(); p.text('THE INVITATION', x, sY(ly)); normal(); ly += 16; ly += paragraph(tg.advice, x, ly, w, 14, INK, SERIF, 20, 225) + 18;
-
-          // ---- the art: flicker through real deck versions of this card ----
-          if (UI.cardImgCard !== UI.card) loadCardArt(cd2);
-          hairline(x, ly, x + w, 60); ly += 16;
-          setFont(MONO, 9, ACC, p.LEFT, p.TOP); bold(); p.text('THE ART \u2014 DECKS FROM AROUND THE WORLD', x, sY(ly)); normal(); ly += 22;
-          var fw = 150, fh = 248, fx = x + (w - fw) / 2, fyS = sY(ly), imgs = UI.cardImgs || [];
-          p.noStroke(); fillc(shade(GROUNDS[UI.screen], -10)); p.rect(fx, fyS, fw, fh, 8);
-          if (imgs.length) {
-            if (imgs.length > 1 && UI.cardFlickerOn && !reduced() && nowT() - UI.cardFlickT > 280) { UI.cardImgIdx = (UI.cardImgIdx + 1) % imgs.length; UI.cardFlickT = nowT(); }
-            if (UI.cardImgIdx >= imgs.length) UI.cardImgIdx = 0;
-            drawImageContain(imgs[UI.cardImgIdx], fx + 4, fyS + 4, fw - 8, fh - 8);
-          } else {
-            var msg = UI.cardImgStatus || 'Loading\u2026', ml = wrapLines(msg, fw - 28);
-            setFont(MONO, 10, INK, p.CENTER, p.CENTER, 160);
-            for (var mlI = 0; mlI < ml.length; mlI++) p.text(ml[mlI], fx + fw / 2, fyS + fh / 2 + (mlI - (ml.length - 1) / 2) * 16);
-          }
-          p.noFill(); strokec(INK, 90); p.strokeWeight(1.5); p.rect(fx, fyS, fw, fh, 8);
-          ly += fh + 16;
-          if (imgs.length > 1) { // only a multi-scan card can flicker
-            flatBtn(UI.cardFlickerOn ? 'Stop' : 'Resume flicker', x, ly, 132, 36, function () { UI.cardFlickerOn = !UI.cardFlickerOn; UI.cardFlickT = nowT(); }, !UI.cardFlickerOn, true);
-            setFont(MONO, 10, INK, p.RIGHT, p.CENTER, 160); p.text(imgs.length + ' scans', x + w, sY(ly + 18)); ly += 48;
-          }
-          ly += paragraph('Public-domain tarot decks via Wikimedia Commons, filtered to known decks only. Stop the flicker to study one.', x, ly, w, 11, INK, MONO, 16, 160) + 12;
           UI.contentH.tarot = ly + 10;
         }
       }

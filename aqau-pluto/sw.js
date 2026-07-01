@@ -1,5 +1,5 @@
 /* Aqau Pluto service worker - ES5, offline-first single-file PWA */
-var CACHE = 'aqau-pluto-v5';
+var CACHE = 'aqau-pluto-v6';
 self.addEventListener('install', function (e) { self.skipWaiting(); });
 self.addEventListener('activate', function (e) {
   e.waitUntil(

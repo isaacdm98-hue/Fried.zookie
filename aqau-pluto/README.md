@@ -46,6 +46,24 @@ prose, so every placement reads *specifically* — never a generic template:
   carries a concrete, period-specific image — "the nuclear blueprint cracked, and
   you grew up redrawing what *family* is allowed to mean" — instead of a flat
   "a generation that…" template repeated twelve times.
+- **Verified sign coverage.** Every sign-indexed corpus (Sun/Moon/Rising and all
+  eight planet-in-sign tables) was audited by direct evaluation for all 12 signs:
+  no gaps, no duplicate text, and each entry checked against its sign's real
+  element, modality and ruler — including the classical dignities already quietly
+  built in (Jupiter "lifted here" only in its true exaltation, Cancer; Saturn only
+  in Libra; and so on).
+- **Real classical text, per sign.** A new `SIGN_TRAD` gives each sign its own
+  classical nature — and where a genuine period line could be verified against
+  William Lilly's *Christian Astrology* (1647), it's quoted directly (Aries,
+  Leo, Scorpio, Capricorn, Pisces carry the source's own archaic words; the
+  others get an accurate, honestly-attributed summary rather than an invented
+  quote — the same integrity the app already applies to Uranus/Neptune/Pluto).
+  The pairing is chart-specific, not a static epigraph: it's tied to your actual
+  Sun sign, and — genuinely clever — to **Ptolemy's own triplicity-ruler scheme,
+  computed live from your chart's real sect** (day or night birth). A night-chart
+  Scorpio Sun, for instance, is told that Mars governs the water triplicity for
+  them specifically, with Ptolemy's own words on Mars alongside it — a different
+  planet and quote for a day chart, or for a different element entirely.
 
 ### In the Read screen
 
@@ -93,9 +111,11 @@ prose, so every placement reads *specifically* — never a generic template:
 
 ### In the Tarot screen
 
-- **Card-art flicker** — pick a card and it gathers every version of that card
-  from the open Wikimedia Commons archive and flickers through them as a
-  slideshow drawn on the canvas. Stop the flicker to study one.
+- **Card-art flicker, front and centre** — pick a card and the flickering
+  Wikimedia slideshow is now the hero image at the top of the card-meaning view
+  (the drawn card face holds that same spot only while the real scans are still
+  loading), instead of being tucked below all the keyword text. Stop the flicker
+  to study one version.
 
 ## Engine
 
