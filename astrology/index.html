@@ -4008,7 +4008,52 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       strokec(c, a); p.strokeWeight(0.7); // faux-bold: thicken glyphs for clearer, bolder reading
       for (var i = 0; i < lines.length; i++) p.text(lines[i], x, sY(ly + i * lh));
       p.noStroke();
+      // any glossary term in the paragraph becomes tappable — a dotted underline opens its definition in place
+      if (sz >= 13) { var gm = glossScan(lines), gj; for (gj = 0; gj < gm.length; gj++) { var g = gm[gj], gln = lines[g.i], px0 = x + p.textWidth(gln.slice(0, g.ix)), gtw = p.textWidth(gln.substr(g.ix, g.len)), uy = sY(ly + g.i * lh) + sz * 1.12; strokec(ACC, 130); p.strokeWeight(1); for (var gd = 0; gd < gtw; gd += 5) p.line(px0 + gd, uy, px0 + Math.min(gd + 2.6, gtw), uy); p.noStroke(); (function (gi) { pushHit(px0 - 2, uy - sz * 1.25, gtw + 4, sz * 1.5, function () { UI.gloss = { gi: gi, T: nowT() }; }); })(g.gi); } }
       return lines.length * lh;
+    }
+    // ---- tappable glossary: term detection (cached per paragraph) + the in-place definition card ----
+    var GLOSS_TAP = null;
+    function glossTapList() {
+      if (GLOSS_TAP) return GLOSS_TAP;
+      if (typeof GLOSSARY === 'undefined' || !GLOSSARY) return [];
+      var alias = { 'Ascendant (Rising)': ['ascendant'], 'Trine': ['trine'], 'Square': ['square'], 'Opposition': ['opposition'], 'Conjunction': ['conjunction'], 'Dignity': ['dignity', 'domicile', 'exaltation', 'detriment'], 'Retrograde': ['retrograde'], 'Progression': ['progression', 'progressed'], 'Profection': ['profection', 'profections'], 'Solar return': ['solar return'], 'Lunar node': ['north node', 'south node', 'lunar node'], 'Void of course': ['void of course'], 'Decan': ['decan'], 'Synastry': ['synastry'], 'Part of Fortune': ['part of fortune'], 'Sect': ['sect'], 'Ayanamsa': ['ayanamsa'], 'Applying vs separating': ['applying', 'separating'], 'Cazimi / combust': ['cazimi', 'combust'], 'Mutual reception': ['mutual reception'], 'Stellium': ['stellium'], 'Chart ruler': ['chart ruler'], 'Out of bounds': ['out of bounds', 'out-of-bounds'], 'Draconic chart': ['draconic'] };
+      GLOSS_TAP = []; var i, k;
+      for (i = 0; i < GLOSSARY.length; i++) { var al = alias[GLOSSARY[i].t]; if (!al) continue; for (k = 0; k < al.length; k++) GLOSS_TAP.push({ a: al[k], gi: i }); }
+      GLOSS_TAP.sort(function (u, v) { return v.a.length - u.a.length; });
+      return GLOSS_TAP;
+    }
+    function glossScan(lines) {
+      var key = lines.join('\n');
+      UI.gscan = UI.gscan || {}; if (UI.gscan[key] !== undefined) return UI.gscan[key];
+      if (UI.gscanN == null) UI.gscanN = 0; if (UI.gscanN > 400) { UI.gscan = {}; UI.gscanN = 0; }
+      var list = glossTapList(), out = [], used = {}, i, j;
+      for (i = 0; i < lines.length && out.length < 2; i++) {
+        var lo = lines[i].toLowerCase();
+        for (j = 0; j < list.length; j++) {
+          var t = list[j]; if (used[t.gi]) continue;
+          var ix = lo.indexOf(t.a); if (ix < 0) continue;
+          var pre = ix > 0 ? lo.charAt(ix - 1) : ' ', post = (ix + t.a.length) < lo.length ? lo.charAt(ix + t.a.length) : ' ';
+          if (/[a-z\u00e0-\u00ff]/.test(pre) || /[a-z\u00e0-\u00ff]/.test(post)) continue;
+          used[t.gi] = 1; out.push({ i: i, ix: ix, len: t.a.length, gi: t.gi });
+          if (out.length >= 2) break;
+        }
+      }
+      UI.gscan[key] = out; UI.gscanN++;
+      return out;
+    }
+    function drawGlossPop() {
+      if (!UI.gloss) return;
+      var G = (typeof GLOSSARY !== 'undefined') && GLOSSARY[UI.gloss.gi]; if (!G) { UI.gloss = null; return; }
+      var w2 = Math.min(W - 44, 460), x2 = (W - w2) / 2, e = reduced() ? 1 : eCubic(cl01((nowT() - UI.gloss.T) / 260));
+      p.textFont(SERIF); p.textSize(14.5); var dl = wrapLines(G.d, w2 - 44);
+      var hh2 = 76 + dl.length * 21, y2 = H - (UI.safeBottom || 0) - NAVH - hh2 - 12 + (1 - e) * 24, gk = GROUNDS[UI.screen] || GROUNDS.chart, di;
+      pushHit(0, 0, W, H, function () { UI.gloss = null; });
+      p.noStroke(); fillc(INK, 246 * e); p.rect(x2, y2 + 3, w2, hh2, 14); fillc(shade(INK, 14), 255 * e); p.rect(x2, y2, w2, hh2, 14);
+      setFont(MONO, 9, ACC, p.LEFT, p.TOP, 240 * e); p.text('GLOSSARY — TAP FOR THE FULL ENTRY', x2 + 22, y2 + 13);
+      setFont(SANS, 17, gk, p.LEFT, p.TOP, 255 * e); bold(); p.text(G.t, x2 + 22, y2 + 29); normal();
+      p.textFont(SERIF); p.textSize(14.5); fillc(gk, 235 * e); p.textAlign(p.LEFT, p.TOP); for (di = 0; di < dl.length; di++) p.text(dl[di], x2 + 22, y2 + 55 + di * 21);
+      (function (gi) { pushHit(x2, y2, w2, hh2, function () { UI.gloss = null; UI.screen = 'learn'; UI.learnCat = 'glossary'; UI.learnItem = gi; UI.scroll.learn = 0; UI.popT = nowT(); }); })(UI.gloss.gi);
     }
     // S6/S29 — show the first ~2 sentences, with a tap to expand the rest (keeps readings calm by default)
     function sentences2(str, n) {
@@ -5637,9 +5682,111 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       { s: 10, t: 'The Cup-Bearer', story: 'Aquarius is Ganymede, the youth carried to Olympus by Zeus’s eagle to pour wine for the gods. He tips his urn and pours the waters of life out upon the world.' },
       { s: 11, t: 'The Two Fishes', story: 'Pisces are Aphrodite and her son Eros, who became fish and tied themselves together with a cord so they would not lose each other fleeing Typhon — two fish, bound, swimming opposite ways.' }
     ];
-    function startLesson() { UI.lesson = { i: 0, t0: nowT() }; UI.scroll.learn = 0; }
-    function lessonNext() { if (!UI.lesson) return; if (UI.lesson.i >= LESSON.length - 1) { UI.lesson = null; return; } UI.lesson.i++; UI.lesson.t0 = nowT(); }
-    function lessonPrev() { if (UI.lesson && UI.lesson.i > 0) { UI.lesson.i--; UI.lesson.t0 = nowT(); } }
+    // ===== the guided journey, deepened: every chapter is a mini-arc — the idea, the mechanics, then YOUR chart doing it =====
+    // a second teaching beat per chapter: the concrete mechanics behind the idea
+    var LESSON_MORE = {
+      wheel: 'The circle is the ecliptic — the Sun’s yearly path — cut into twelve equal 30° slices. Every planet gets an address on it: a degree, a sign, and (with a birth time) a house.',
+      elements: 'Fire acts before it thinks. Earth builds what lasts. Air names and connects. Water feels its way. Every sign belongs to one of the four — so every placement in you carries an element.',
+      planets: 'The fast ones — Sun through Mars — are personal: they change sign in days or weeks, so they are distinctly yours. Jupiter and Saturn shape your longer seasons. Uranus, Neptune and Pluto move so slowly they mark whole generations.',
+      signs: 'A sign is HOW, never WHAT. Mars in Cancer still acts — but sideways, protectively. The planet is the verb; the sign is the adverb.',
+      houses: 'Houses come from the Earth’s daily spin, not the yearly orbit — that is why they need your birth time and place. The same sky an hour later puts everything in different houses.',
+      aspects: 'The distances matter: 120° (trine) flows, 90° (square) grinds, 180° (opposition) tugs, 0° (conjunction) fuses. The tighter the angle to exact — the smaller the “orb” — the louder the conversation.',
+      modalities: 'Each element comes in all three modes: Aries starts fire, Leo keeps it burning, Sagittarius carries it abroad. Cross the four elements with the three modes and you get exactly twelve signs — the whole zodiac is that grid.',
+      dignity: 'Each planet rules the sign most like itself: Mars rules Aries, Venus rules Taurus and Libra, the Moon rules Cancer. Opposite its home it is in detriment — a guest who has to work by the house rules.',
+      retro: 'Earth overtakes the slower planets like a runner on an inside lane — from here they seem to slip backward for a while. Mercury does it three times a year; everyone alive has retrograde planets somewhere.',
+      nodes: 'The nodes are not bodies — they are crossing points, where eclipses happen. They drift backward through the zodiac, coming home every 18.6 years. That is why ages 18–19 and 37 so often feel like a page turning.',
+      bigthree: 'The Sun is the plot, the Moon is the mood, the rising is the opening scene. When strangers say “that’s so you”, they usually mean your rising; when your oldest friend describes you, they are describing your Moon.',
+      moving: 'Slow transits — Saturn out to Pluto — are chapters that last months or years. Fast ones are weather. The art is telling which is which, so you never mistake an afternoon for an era.'
+    };
+    // the landing beat: each chapter closes inside the user's own chart
+    var LESSON_YOU = {
+      wheel: function (c, b) { return 'Your own wheel froze at one exact moment: ' + DATA.SIGNS[c.planets.sun.sign].name + ' season' + ((b && b.timeKnown && c.ascBody) ? (', with ' + c.ascBody.signName + ' climbing the eastern horizon') : '') + '. Every chapter after this one is read off that single snapshot.'; },
+      elements: function (c) { var d = APP.domElement(c.elements), l = APP.lowElement(c.elements); return 'In you the balance runs fire ' + c.elements.fire + '%, earth ' + c.elements.earth + '%, air ' + c.elements.air + '%, water ' + c.elements.water + '%. You lead with ' + DATA.ELEMENTS[d].name.toLowerCase() + '; your growth edge is ' + DATA.ELEMENTS[l].name.toLowerCase() + '.'; },
+      planets: function (c) { return 'Take your own Moon — the hunger to feel safe. Yours wears ' + c.planets.moon.signName + ', so in you that need leans toward ' + DATA.SIGNS[c.planets.moon.sign].style + '.'; },
+      signs: function (c) { var s = c.planets.sun.sign, m = c.planets.moon.sign; return s === m ? ('Your Sun and Moon both wear ' + DATA.SIGNS[s].name + ' — a double pour of one flavour. What you are and what you need speak with a single voice.') : ('Your Sun wears ' + DATA.SIGNS[s].name + ' while your Moon wears ' + DATA.SIGNS[m].name + ' — two flavours in one person. That contrast is not a flaw; it is the plot.'); },
+      houses: function (c, b) { if (!b || !b.timeKnown) return 'Houses are the one layer that needs your birth time — add yours in Settings and this whole dimension of your chart unlocks.'; var cnt = {}, k, best = 1; for (k in c.planets) if (c.planets.hasOwnProperty(k) && c.planets[k].house) { cnt[c.planets[k].house] = (cnt[c.planets[k].house] || 0) + 1; if (cnt[c.planets[k].house] > (cnt[best] || 0)) best = c.planets[k].house; } return 'Your busiest arena is the ' + ordinal(best) + ' house — ' + DATA.HOUSES[best - 1].title.toLowerCase() + '. That is where this chart spends its energy.'; },
+      aspects: function (c) { var a0 = c.aspects && c.aspects[0]; return a0 ? ('The loudest conversation in you: ' + APP.nameFor(a0.a) + ' ' + a0.asp.key + ' ' + APP.nameFor(a0.b) + ', just ' + a0.orb.toFixed(1) + '° from exact. You will meet it again in the walkthrough of your chart.') : 'Your planets sit unusually far apart — few loud conversations. Your chart runs on independent engines, and that independence is its own signature.'; },
+      modalities: function (c) { var dm = 'cardinal', k; for (k in c.modalities) if (c.modalities.hasOwnProperty(k) && c.modalities[k] > c.modalities[dm]) dm = k; return 'You mostly move in a ' + DATA.MODALITIES[dm].name.toLowerCase() + ' way — ' + c.modalities[dm] + '% of your chart. ' + DATA.MODALITIES[dm].note; },
+      dignity: function (c) { var ks = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn'], i, hm = null, dt = null; for (i = 0; i < ks.length; i++) { var pl = c.planets[ks[i]]; if (!pl) continue; if (DATA.SIGNS[pl.sign].ruler === APP.nameFor(ks[i])) hm = ks[i]; else if (DATA.SIGNS[(pl.sign + 6) % 12].ruler === APP.nameFor(ks[i])) dt = ks[i]; } if (hm) return 'You carry one: your ' + APP.nameFor(hm) + ' sits in ' + c.planets[hm].signName + ' — its own sign. That placement runs at home, with the whole house at its disposal.'; if (dt) return 'In your chart, ' + APP.nameFor(dt) + ' sits in ' + c.planets[dt].signName + ' — opposite its home sign. It works harder there, and what it builds is the more deliberate for it.'; return 'None of your seven classical planets sits in its own sign — your chart runs on guests and negotiations rather than planets on home ground. Adaptable, not entrenched.'; },
+      retro: function (c) { var n = 0, k; for (k in c.planets) if (c.planets.hasOwnProperty(k) && c.planets[k].retro) n++; return n ? ('You were born with ' + n + (n === 1 ? ' planet' : ' planets') + ' retrograde — energies that work inwardly first in you, reworked and revised before they are shown.') : 'You were born with nothing retrograde — every planet moving openly forward. Rarer than you would think.'; },
+      nodes: function (c) { var nn = c.planets.node; return nn ? ('Your North Node sits in ' + nn.signName + ' — the direction that feels unfamiliar but right. Its opposite you already know by heart; that is precisely why it cannot teach you anything new.') : ''; },
+      bigthree: function (c, b) { return 'Yours: Sun in ' + c.planets.sun.signName + ', Moon in ' + c.planets.moon.signName + ((b && b.timeKnown && c.ascBody) ? (', ' + c.ascBody.signName + ' rising') : ' — and a rising sign waiting on a birth time') + '. That is the headline of you.'; },
+      moving: function (c) { try { var tr = APP.composeTransits(c); if (tr.daily && tr.daily.length) return 'It is happening to you right now: ' + APP.transitSentence(tr.daily[0]); } catch (e) {} return 'Right now the sky is quiet on your chart — your natal pattern running undisturbed. Check Read tomorrow; it never stays quiet for long.'; },
+      you: function (c) { return 'Your sentence begins: Sun in ' + c.planets.sun.signName + ', Moon in ' + c.planets.moon.signName + '. The rest of this app reads you the whole paragraph.'; }
+    };
+    // recall checks — one tap-question per chapter, answered (where possible) by the user's own sky
+    function signOpts(cs) { var others = [DATA.SIGNS[(cs + 5) % 12].name, DATA.SIGNS[(cs + 9) % 12].name], ci = cs % 3, o = [], i, oi = 0; for (i = 0; i < 3; i++) o.push(i === ci ? DATA.SIGNS[cs].name : others[oi++]); return { o: o, ci: ci }; }
+    var LQUIZ = {
+      wheel: function () { return { q: 'Your birth chart is…', o: ['A prediction of your future', 'A snapshot of the sky when you arrived', 'A personality test'], ci: 1, why: 'It is simply the sky, frozen: where every planet stood at your first breath. Everything else is reading that map.' }; },
+      elements: function (c) { var els = ['fire', 'earth', 'air', 'water'], d = APP.domElement(c.elements); return { q: 'Which element leads YOUR chart?', o: ['Fire', 'Earth', 'Air', 'Water'], ci: els.indexOf(d), why: 'Yours runs ' + c.elements[d] + '% ' + d + ' — the fuel you default to.' }; },
+      planets: function () { return { q: 'Which planet is the need to feel safe?', o: ['Mars', 'The Moon', 'Mercury'], ci: 1, why: 'The Moon — the fastest body and the deepest need. Mars is the drive; Mercury is the mind.' }; },
+      signs: function (c) { var so = signOpts(c.planets.sun.sign); return { q: 'Which sign is YOUR Sun in?', o: so.o, ci: so.ci, why: 'Your Sun sits in ' + c.planets.sun.signName + ' — the season you were born into.' }; },
+      houses: function () { return { q: 'A planet’s house tells you…', o: ['How strong the planet is', 'Where in life its story plays out', 'What element it carries'], ci: 1, why: 'Sign is how, house is where — the arena of life the energy shows up in.' }; },
+      aspects: function () { return { q: 'A square between two planets is…', o: ['An easy, natural gift', 'Friction that drives growth', 'Two planets fused together'], ci: 1, why: '90° grinds — and that grinding is where charts (and people) do their growing.' }; },
+      modalities: function () { return { q: 'Cardinal signs are the ones that…', o: ['Start things', 'Sustain things', 'Adapt and let go'], ci: 0, why: 'Cardinal lights the fire, fixed tends it, mutable carries the sparks onward.' }; },
+      dignity: function () { return { q: 'A planet in its own sign is said to be…', o: ['In domicile — at home', 'Retrograde', 'Combust'], ci: 0, why: 'Domicile: the planet is on home ground, with the whole house at its disposal.' }; },
+      retro: function () { return { q: 'A retrograde planet really…', o: ['Moves backward through space', 'Appears to move backward from Earth', 'Stops moving entirely'], ci: 1, why: 'It is perspective — Earth overtaking on the inside lane. Nothing reverses; the energy just turns inward.' }; },
+      nodes: function () { return { q: 'Your North Node marks…', o: ['Comfort you already know', 'Growth that feels unfamiliar but right', 'Your career'], ci: 1, why: 'The North Node is the unfamiliar direction — the South Node is the comfort you are here to grow beyond.' }; },
+      bigthree: function (c, b) { if (b && b.timeKnown && c.ascBody) { var so = signOpts(c.ascBody.sign); return { q: 'Which is YOUR rising sign?', o: so.o, ci: so.ci, why: c.ascBody.signName + ' was climbing the eastern horizon the minute you were born.' }; } return { q: 'The “big three” are…', o: ['Sun, Moon and rising', 'Venus, Mars and Jupiter', 'The three outer planets'], ci: 0, why: 'What you are becoming, what you need, and how you meet the world.' }; },
+      moving: function () { return { q: 'A transit is…', o: ['A planet inside your birth chart', 'Today’s sky touching your birth chart', 'An aspect between two houses'], ci: 1, why: 'Your chart is fixed; the sky keeps moving. Where the live sky touches your natal map — that is a transit.' }; }
+    };
+    function startLesson() { UI.lesson = { i: 0, beat: 0, t0: nowT() }; UI.scroll.learn = 0; lessonSeen(0); }
+    function lessonSeen(i) { try { var st = APP.STATE.settings; if (!st) return; st.lseen = st.lseen || {}; if (!st.lseen[i]) { st.lseen[i] = 1; APP.save(); } } catch (e) {} }
+    function lqRecord(k, ok) { try { var st = APP.STATE.settings; if (!st) return; st.lq = st.lq || {}; st.lq[k] = ok ? 1 : 0; APP.save(); } catch (e) {} }
+    function lessonNext() { if (!UI.lesson) return; if (UI.lesson.i >= LESSON.length - 1) { UI.lesson = null; return; } UI.lesson.i++; UI.lesson.beat = 0; UI.lesson.qa = null; UI.lesson.t0 = nowT(); lessonSeen(UI.lesson.i); }
+    function lessonPrev() { if (UI.lesson && UI.lesson.i > 0) { UI.lesson.i--; UI.lesson.beat = 0; UI.lesson.qa = null; UI.lesson.t0 = nowT(); } }
+    function lessonBeatsFor(sc, c, b) {
+      UI.lbCache = UI.lbCache || {};
+      if (UI.lbCache.k === sc.k) return UI.lbCache.v;
+      var out = [sc.b], m = LESSON_MORE[sc.k]; if (m) out.push(m);
+      var yf = LESSON_YOU[sc.k]; if (yf) { try { var t = yf(c, b); if (t) out.push(t); } catch (e) {} }
+      UI.lbCache = { k: sc.k, v: out };
+      return out;
+    }
+    function lessonQuizFor(sc, c, b) {
+      UI.lqzCache = UI.lqzCache || {};
+      if (UI.lqzCache.k === sc.k) return UI.lqzCache.v;
+      var q = null; try { q = LQUIZ[sc.k] ? LQUIZ[sc.k](c, b) : null; } catch (e) { q = null; }
+      UI.lqzCache = { k: sc.k, v: q };
+      return q;
+    }
+    function lessonStep(fw, beats, quiz) {
+      var L = UI.lesson; if (!L) return;
+      if (fw) {
+        if (L.beat < beats.length - 1) { L.beat++; L.t0 = nowT(); }
+        else if (quiz && L.beat < beats.length) { L.beat = beats.length; L.t0 = nowT(); }
+        else lessonNext();
+      } else {
+        if (L.beat > 0) { L.beat--; L.qa = null; L.t0 = nowT(); } else lessonPrev();
+      }
+    }
+    // ===== live how-to tours: the guide actually takes you to the real screen for each step =====
+    var HOWTO_GO = [
+      [function () { UI.screen = 'chart'; }, function () { UI.screen = 'read'; }, function () { UI.screen = 'read'; }, function () { UI.screen = 'chart'; }, function () { UI.screen = 'read'; }],
+      [function () { UI.screen = 'chart'; }, function () { UI.screen = 'chart'; }, null, function () { UI.screen = 'learn'; UI.learnCat = 'elements'; UI.learnItem = null; }],
+      [null, function () { openToday(); }, null, function () { UI.today = false; UI.screen = 'read'; }, function () { UI.screen = 'read'; }],
+      [function () { UI.screen = 'people'; }, null, null, null, null],
+      [function () { UI.screen = 'read'; }, null, function () { UI.screen = 'chart'; }, null],
+      [function () { UI.screen = 'tarot'; UI.tarotTab = 'meanings'; }, null, null, null, function () { UI.tarotTab = 'spreads'; }]
+    ];
+    function howGo(hi, si) { var g = HOWTO_GO[hi] && HOWTO_GO[hi][si]; if (g) try { g(); } catch (e) {} UI.scroll[UI.screen] = 0; }
+    function startHowTour(hi) { UI.howtour = { h: hi, i: 0 }; howGo(hi, 0); }
+    function drawHowTour() {
+      if (!UI.howtour) return;
+      var HT = HOWTO[UI.howtour.h]; if (!HT) { UI.howtour = null; return; }
+      var i2 = UI.howtour.i, n = HT.steps.length, w2 = Math.min(W - 28, 500), x2 = (W - w2) / 2;
+      p.textFont(SERIF); p.textSize(14); var sl = wrapLines(HT.steps[i2], w2 - 40);
+      var hh2 = 78 + sl.length * 20, y2 = H - (UI.safeBottom || 0) - NAVH - hh2 - 10, gk = GROUNDS[UI.screen] || GROUNDS.chart, i3;
+      p.noStroke(); fillc(INK, 248); p.rect(x2, y2 + 3, w2, hh2, 14); fillc(shade(INK, 14)); p.rect(x2, y2, w2, hh2, 14);
+      setFont(MONO, 9, ACC, p.LEFT, p.TOP, 245); p.text(HT.t.toUpperCase() + ' · STEP ' + (i2 + 1) + '/' + n, x2 + 18, y2 + 12);
+      p.textFont(SERIF); p.textSize(14); fillc(gk, 240); p.textAlign(p.LEFT, p.TOP); for (i3 = 0; i3 < sl.length; i3++) p.text(sl[i3], x2 + 18, y2 + 32 + i3 * 20);
+      var byy = y2 + hh2 - 30;
+      if (i2 > 0) { setFont(MONO, 10, gk, p.LEFT, p.CENTER, 200); p.text('‹ BACK', x2 + 18, byy + 12); pushHit(x2 + 10, byy, 70, 28, function () { UI.howtour.i--; howGo(UI.howtour.h, UI.howtour.i); }); }
+      setFont(MONO, 10, ACC, p.RIGHT, p.CENTER, 255); p.text(i2 < n - 1 ? 'NEXT ›' : 'DONE ✓', x2 + w2 - 18, byy + 12);
+      pushHit(x2 + w2 - 92, byy, 84, 28, function () { if (UI.howtour.i < n - 1) { UI.howtour.i++; howGo(UI.howtour.h, UI.howtour.i); } else UI.howtour = null; });
+      setFont(SANS, 13, gk, p.RIGHT, p.TOP, 200); p.text('✕', x2 + w2 - 16, y2 + 10);
+      pushHit(x2 + w2 - 40, y2, 40, 32, function () { UI.howtour = null; });
+    }
     function drawScene(k, cx, cy, r, t) {
       if (k === 'wheel') sceneWheel(cx, cy, r, t);
       else if (k === 'elements') sceneElements(cx, cy, r, t);
@@ -5908,31 +6055,67 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     }
 
     function drawLesson() {
+      var c = APP.STATE.chart, b = APP.STATE.birth;
       var x = sx(), w = cw(), top = topY(), vh = viewH(), cx = x + w / 2, sc = LESSON[UI.lesson.i], last = (UI.lesson.i === LESSON.length - 1), i;
-      var still = reduced(), DUR = 7600, auto = (UI.lesson.auto !== false) && !still;
-      var elapsed = nowT() - UI.lesson.t0;
-      if (auto && !last && elapsed > DUR) { lessonNext(); return; } // auto-advance like a video
+      if (UI.lesson.beat == null) UI.lesson.beat = 0;
+      var beats = lessonBeatsFor(sc, c, b), qz = lessonQuizFor(sc, c, b);
+      if (UI.lesson.beat > beats.length - (qz ? 0 : 1)) UI.lesson.beat = qz ? beats.length : beats.length - 1;
+      var inQuiz = !!(qz && UI.lesson.beat >= beats.length);
+      var still = reduced(), elapsed = nowT() - UI.lesson.t0;
+      var btxt = inQuiz ? '' : beats[UI.lesson.beat];
+      var DUR = 3600 + Math.min(46, ('' + btxt).split(' ').length) * 235;
+      var auto = (UI.lesson.auto !== false) && !still && !inQuiz;
+      if (auto && elapsed > DUR && !(last && !qz && UI.lesson.beat >= beats.length - 1)) { lessonStep(true, beats, qz); return; } // plays like a film; the quiz pauses it
       var te = cl01(elapsed / 620), e = eCubic(te);
-      var fadeOut = (auto && !last) ? cl01((elapsed - (DUR - 520)) / 520) : 0; // cross-fade between slides
+      var fadeOut = auto ? cl01((elapsed - (DUR - 520)) / 520) : 0;
       var alpha = (still ? 1 : cl01(te * 1.5)) * (1 - fadeOut);
-      var cam = still ? 1 : (1.0 + 0.10 * cl01(elapsed / DUR)); // slow Ken-Burns camera push-in
-      if (!last) { pushHit(x, top + 60, w, vh - 150, function () { lessonNext(); }); pushHit(x, top + 60, 72, vh - 150, function () { lessonPrev(); }); }
-      var sceneCY = top + vh * 0.31, sceneR = Math.min(w * 0.40, vh * 0.22), drift = (1 - e) * 18;
-      // the scene — pure vector animation, with a gentle camera move and cross-fade
-      var dc = p.drawingContext; if (dc) { dc.save(); dc.globalAlpha = alpha; }
-      p.push(); p.translate(cx, sceneCY - drift); p.scale(cam); drawScene(sc.k, 0, 0, sceneR, nowT()); p.pop();
+      // the camera alternates per beat — push in on one thought, pull back for the next
+      var cam = still ? 1 : ((UI.lesson.beat % 2) ? (1.10 - 0.10 * cl01(elapsed / DUR)) : (1.0 + 0.10 * cl01(elapsed / DUR)));
+      if (!inQuiz) { pushHit(x, top + 60, w, vh - 150, function () { lessonStep(true, beats, qz); }); pushHit(x, top + 60, 72, vh - 150, function () { lessonStep(false, beats, qz); }); }
+      var sceneCY = top + vh * (inQuiz ? 0.155 : 0.30), sceneR = Math.min(w * 0.40, vh * 0.21) * (inQuiz ? 0.55 : 1), drift = (1 - e) * 18;
+      var dc = p.drawingContext; if (dc) { dc.save(); dc.globalAlpha = inQuiz ? 1 : alpha; }
+      // each beat restarts the scene clock, so the diagram replays and advances with the teaching
+      p.push(); p.translate(cx, sceneCY - drift); p.scale(cam); drawScene(sc.k, 0, 0, sceneR, still ? nowT() : elapsed + 400); p.pop();
       if (dc) dc.restore();
-      var ty = top + vh * 0.55, slideIn = (1 - e) * 14;
-      p.textFont(SANS); p.textSize(30); var tl = wrapLines(sc.t, w - 24); setFont(SANS, 30, INK, p.CENTER, p.TOP, 255 * alpha); bold(); for (i = 0; i < tl.length; i++) p.text(tl[i], cx, ty + slideIn + i * 35); normal(); ty += tl.length * 35 + 12;
-      p.textFont(SERIF); p.textSize(18); var bl = wrapLines(sc.b, w - 30); setFont(SERIF, 18, INK, p.CENTER, p.TOP, 235 * alpha); for (i = 0; i < bl.length; i++) p.text(bl[i], cx, ty + slideIn + i * 27); ty += bl.length * 27 + 22;
-      // top bar: chapter label + a film-style progress bar
-      setFont(MONO, 9.5, ACCTX, p.LEFT, p.TOP, 220); p.text('GUIDED JOURNEY · ' + (UI.lesson.i + 1) + ' / ' + LESSON.length, x, top + 10);
-      var pbY = top + 30, prog = still ? 1 : (auto ? cl01(elapsed / DUR) : cl01(te));
-      p.noStroke(); fillc(INK, 45); p.rect(x, pbY, w, 3, 2); fillc(ACC); p.rect(x, pbY, w * prog, 3, 2);
-      var dxw = 13, dsx = cx - (LESSON.length * dxw) / 2; for (i = 0; i < LESSON.length; i++) { var on = (i === UI.lesson.i); p.noStroke(); fillc(on ? ACC : INK, on ? 255 : 80); p.ellipse(dsx + i * dxw + dxw / 2, top + vh - 16, on ? 7 : 5, on ? 7 : 5); }
-      if (last) { tourBtn('Read my chart ›', cx - 152, ty, 148, 42, function () { UI.lesson = null; UI.screen = 'chart'; }, true); tourBtn('Explore Learn', cx + 6, ty, 148, 42, function () { UI.lesson = null; }, false); }
-      else { setFont(MONO, 10, INK, p.CENTER, p.TOP, 150 * alpha); p.text(auto ? 'PLAYING · TAP TO SKIP AHEAD' : 'TAP TO CONTINUE  ›', cx, top + vh - 42); }
-      // play / pause + skip controls (top-right), drawn above the tap zone
+      var ty = top + vh * (inQuiz ? 0.285 : 0.52), slideIn = (1 - e) * 14;
+      p.textFont(SANS); p.textSize(28); var tl = wrapLines(sc.t, w - 24); setFont(SANS, 28, INK, p.CENTER, p.TOP, 255 * (inQuiz ? 1 : alpha)); bold(); for (i = 0; i < tl.length; i++) p.text(tl[i], cx, ty + i * 33); normal(); ty += tl.length * 33 + 10;
+      if (inQuiz) {
+        // the recall beat — one question, answered (where possible) by your own sky
+        setFont(MONO, 9.5, ACCTX, p.CENTER, p.TOP, 235); p.text('QUICK CHECK — EARN THE STAR', cx, ty); ty += 24;
+        p.textFont(SERIF); p.textSize(17); var ql = wrapLines(qz.q, w - 30); setFont(SERIF, 17, INK, p.CENTER, p.TOP, 245); for (i = 0; i < ql.length; i++) p.text(ql[i], cx, ty + i * 25); ty += ql.length * 25 + 14;
+        var done = (UI.lesson.qa != null);
+        for (i = 0; i < qz.o.length; i++) {
+          var on = done && i === qz.ci, wrong = done && UI.lesson.qa === i && i !== qz.ci;
+          var bw2 = Math.min(w, 380), bx2 = cx - bw2 / 2, byy = ty;
+          p.noStroke(); fillc(on ? ACC : INK, on ? 255 : (wrong ? 36 : 24)); p.rect(bx2, byy, bw2, 40, 10);
+          p.noFill(); strokec(INK, on ? 0 : 70); p.strokeWeight(1); p.rect(bx2, byy, bw2, 40, 10);
+          setFont(SANS, 14.5, on ? (GROUNDS[UI.screen] || GROUNDS.chart) : INK, p.CENTER, p.CENTER, wrong ? 110 : 255); p.text(qz.o[i], cx, byy + 20);
+          if (!done) (function (ii) { pushHit(bx2, byy, bw2, 40, function () { UI.lesson.qa = ii; lqRecord(sc.k, ii === qz.ci); if (ii === qz.ci) chime(); }); })(i);
+          ty += 48;
+        }
+        if (done) {
+          var right = UI.lesson.qa === qz.ci;
+          setFont(SANS, 14.5, ACCTX, p.CENTER, p.TOP, 245); bold(); p.text(right ? '★ Exactly.' : 'Not quite —', cx, ty); normal(); ty += 22;
+          p.textFont(SERIF); p.textSize(14.5); var wl = wrapLines(qz.why, w - 40); setFont(SERIF, 14.5, INK, p.CENTER, p.TOP, 225); for (i = 0; i < wl.length; i++) p.text(wl[i], cx, ty + i * 21); ty += wl.length * 21 + 14;
+          tourBtn(last ? 'Finish ›' : 'Continue ›', cx - 74, ty, 148, 42, function () { lessonNext(); }, true); ty += 50;
+        }
+      } else {
+        p.textFont(SERIF); p.textSize(18); var bl = wrapLines(btxt, w - 30); setFont(SERIF, 18, INK, p.CENTER, p.TOP, 235 * alpha); for (i = 0; i < bl.length; i++) p.text(bl[i], cx, ty + slideIn + i * 27); ty += bl.length * 27 + 22;
+      }
+      // top bar: chapter · beat label + a film-style progress bar across the chapter's beats
+      var nb = beats.length + (qz ? 1 : 0);
+      setFont(MONO, 9.5, ACCTX, p.LEFT, p.TOP, 220); p.text('GUIDED JOURNEY · ' + (UI.lesson.i + 1) + ' / ' + LESSON.length + ' · BEAT ' + (Math.min(UI.lesson.beat, nb - 1) + 1) + '/' + nb, x, top + 10);
+      var pbY = top + 30, prog = (Math.min(UI.lesson.beat, nb) + (inQuiz ? 0.6 : (auto ? cl01(elapsed / DUR) : cl01(te)))) / nb;
+      p.noStroke(); fillc(INK, 45); p.rect(x, pbY, w, 3, 2); fillc(ACC); p.rect(x, pbY, w * cl01(prog), 3, 2);
+      // the chapter dots double as a scrub bar; earned stars glow brighter
+      var dxw = 13, dsx = cx - (LESSON.length * dxw) / 2, lqm = (APP.STATE.settings && APP.STATE.settings.lq) || {};
+      for (i = 0; i < LESSON.length; i++) {
+        var on2 = (i === UI.lesson.i), star = lqm[LESSON[i].k] === 1;
+        p.noStroke(); fillc(on2 ? ACC : (star ? ACC : INK), on2 ? 255 : (star ? 140 : 80)); p.ellipse(dsx + i * dxw + dxw / 2, top + vh - 16, on2 ? 7 : 5, on2 ? 7 : 5);
+        (function (idx) { pushHit(dsx + idx * dxw, top + vh - 29, dxw, 26, function () { UI.lesson.i = idx; UI.lesson.beat = 0; UI.lesson.qa = null; UI.lesson.t0 = nowT(); lessonSeen(idx); }); })(i);
+      }
+      if (last && !qz && UI.lesson.beat >= beats.length - 1) { tourBtn('Read my chart ›', cx - 152, top + vh - 96, 148, 42, function () { UI.lesson = null; UI.screen = 'chart'; }, true); tourBtn('Explore Learn', cx + 6, top + vh - 96, 148, 42, function () { UI.lesson = null; }, false); }
+      else if (!inQuiz) { setFont(MONO, 10, INK, p.CENTER, p.TOP, 150 * alpha); p.text(auto ? 'PLAYING · TAP TO SKIP AHEAD' : 'TAP TO CONTINUE  ›', cx, top + vh - 42); }
       iconBtn(auto ? 'pause' : 'play', x + w - 138, top + 42, 60, 26, function () { UI.lesson.auto = !(UI.lesson.auto !== false); if (UI.lesson.auto) UI.lesson.t0 = nowT(); });
       tourBtn('Skip', x + w - 70, top + 42, 64, 26, function () { UI.lesson = null; }, false);
       UI.contentH.learn = 0;
@@ -5947,14 +6130,27 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       // guided-journey hero — the default, video-like lesson you tap through
       var hh = 70, hy = sY(ly); p.noStroke(); fillc(INK); p.rect(x, hy + 3, w, hh, 13); fillc(shade(INK, 16)); p.rect(x, hy, w, hh, 13);
       setFont(SANS, 17, GROUNDS[UI.screen], p.LEFT, p.CENTER); bold(); p.text('✦  A guided journey through the sky', x + 18, hy + hh / 2 - 9); normal();
-      setFont(MONO, 9.5, GROUNDS[UI.screen], p.LEFT, p.CENTER, 210); p.text('TAP TO BEGIN — A SHORT ANIMATED LESSON', x + 18, hy + hh / 2 + 11);
+      var stJ = APP.STATE.settings || {}, seenN = 0, starN = 0, jk;
+      if (stJ.lseen) for (jk in stJ.lseen) if (stJ.lseen.hasOwnProperty(jk)) seenN++;
+      if (stJ.lq) for (jk in stJ.lq) if (stJ.lq.hasOwnProperty(jk) && stJ.lq[jk] === 1) starN++;
+      setFont(MONO, 9.5, GROUNDS[UI.screen], p.LEFT, p.CENTER, 210); p.text(seenN ? (Math.min(seenN, LESSON.length) + '/' + LESSON.length + ' CHAPTERS · ' + starN + ' ★ EARNED — CONTINUE') : 'TAP TO BEGIN — A SHORT ANIMATED LESSON', x + 18, hy + hh / 2 + 11);
       var pulse = reduced() ? 0 : Math.sin(nowT() * 0.004) * 2; setFont(SANS, 22, GROUNDS[UI.screen], p.RIGHT, p.CENTER); p.text('›', x + w - 18 + pulse, hy + hh / 2);
       pushHit(x, hy, w, hh, function () { startLesson(); }); ly += hh + 20;
-      eyebrow('Or explore freely', x, ly, ACC); ly += 26;
-      var cats = [['elements', 'Elements'], ['signs', 'Signs'], ['planets', 'Planets'], ['houses', 'Houses'], ['aspects', 'Aspects'], ['howto', 'How to'], ['watch', 'Watch'], ['history', 'History'], ['myths', 'Myths'], ['famous', 'Like you'], ['glossary', 'Glossary']];
-      var cxp = x, cyp = ly, ci;
-      for (ci = 0; ci < cats.length; ci++) { p.textFont(MONO); p.textSize(11); var ww = p.textWidth(cats[ci][1].toUpperCase()) + 28; if (cxp + ww > x + w) { cxp = x; cyp += 40; } chip(cats[ci][1], UI.learnCat === cats[ci][0], cxp, cyp, (function (cc) { return function () { UI.learnCat = cc; UI.learnItem = null; UI.scroll.learn = 0; UI.popT = nowT(); }; })(cats[ci][0])); cxp += ww + 8; }
-      ly = cyp + 50;
+      // the curriculum: Learn is levelled — foundations first, then reading a chart, then time & tradition
+      var LEVELS = [
+        ['Level 1 · Foundations', [['elements', 'Elements'], ['signs', 'Signs'], ['planets', 'Planets']]],
+        ['Level 2 · Reading a chart', [['houses', 'Houses'], ['aspects', 'Aspects'], ['howto', 'How to']]],
+        ['Level 3 · Time & tradition', [['history', 'History'], ['myths', 'Myths'], ['glossary', 'Glossary']]],
+        ['Yours', [['famous', 'Like you'], ['watch', 'Watch']]]
+      ];
+      var li2, cxp, cyp = ly, ci;
+      for (li2 = 0; li2 < LEVELS.length; li2++) {
+        eyebrow(LEVELS[li2][0], x, cyp, ACC); cyp += 28;
+        var cats = LEVELS[li2][1]; cxp = x;
+        for (ci = 0; ci < cats.length; ci++) { p.textFont(MONO); p.textSize(11); var ww = p.textWidth(cats[ci][1].toUpperCase()) + 28; if (cxp + ww > x + w) { cxp = x; cyp += 40; } chip(cats[ci][1], UI.learnCat === cats[ci][0], cxp, cyp, (function (cc) { return function () { UI.learnCat = cc; UI.learnItem = null; UI.scroll.learn = 0; UI.popT = nowT(); }; })(cats[ci][0])); cxp += ww + 8; }
+        cyp += 46;
+      }
+      ly = cyp + 4;
       // a gentle fade-in each time the category or item changes — a small storytelling beat
       var lfx = Math.max(UI.fxT, UI.popT || 0), le = reduced() ? 1 : eCubic(cl01((nowT() - lfx) / 380));
       var ldc = p.drawingContext; if (ldc) { ldc.save(); ldc.globalAlpha = 0.12 + 0.88 * le; }
@@ -6357,6 +6553,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         var HT = HOWTO[it];
         p.textFont(SANS); p.textSize(24); p.textStyle(p.BOLD); fillc(INK); p.noStroke(); var hl = wrapLines(HT.t, w); var hli; for (hli = 0; hli < hl.length; hli++) p.text(hl[hli], x, sY(ly + hli * 28)); normal(); ly += hl.length * 28 + 8;
         if (HT.anim) ly += animBox(HT.anim, x, ly, w) + 4;
+        flatBtn('Walk me through it — live in the app ›', x, ly, Math.min(w, 360), 44, (function (hi) { return function () { startHowTour(hi); }; })(it), true); ly += 56;
         eyebrow('Step by step', x, ly, ACC); ly += 26;
         var st; for (st = 0; st < HT.steps.length; st++) {
           setFont(SANS, 15, ACC, p.LEFT, p.TOP); bold(); p.text(String(st + 1), x, sY(ly)); normal();
@@ -7095,6 +7292,8 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       drawTopbar(); if (s !== 'onboard') drawNav();
       drawTodayPanel();
       drawVideoModal();
+      drawHowTour();
+      drawGlossPop();
       // a small, brief celestial wink on screen entry (kept subtle so it doesn't over-stimulate)
       if (!reduced() && s !== 'onboard') { var te = (nowT() - UI.fxT) / 520; if (te >= 0 && te < 1) { var al = (1 - te) * (1 - te); celestialEmblem(W / 2, topY() + viewH() * 0.26, Math.min(W, H) * 0.07 * (0.8 + 0.2 * eCubic(te)), al * 0.4); } }
       // first run: once a chart exists, gently guide the newcomer
