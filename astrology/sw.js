@@ -49,3 +49,23 @@ self.addEventListener('fetch', function (e) {
     })
   );
 });
+
+// opt-in daily background check (where supported): a gentle nudge to look at today's sky
+self.addEventListener('periodicsync', function (e) {
+  if (e.tag !== 'aqau-daily') return;
+  e.waitUntil(
+    self.registration.showNotification('Aqau Pluto', {
+      body: 'The sky has moved - open to see what today touches in your chart.',
+      icon: 'icon-192.png', tag: 'aqau-day'
+    })['catch'](function () {})
+  );
+});
+self.addEventListener('notificationclick', function (e) {
+  e.notification.close();
+  e.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (cs) {
+      for (var i = 0; i < cs.length; i++) if (cs[i].focus) return cs[i].focus();
+      if (self.clients.openWindow) return self.clients.openWindow('./');
+    })
+  );
+});

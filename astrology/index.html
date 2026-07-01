@@ -2858,6 +2858,30 @@ var APP = (function () {
     var el = DATA.SIGNS[su.sign].element, purpose = ({ fire: 'action, adventure and keeping each other inspired', earth: 'building something solid and real together', air: 'ideas, conversation and a shared point of view', water: 'feeling, care and emotional depth' })[el] || 'a shared path';
     return 'Treated as its own being, the relationship has its Sun in ' + su.signName + ', its Moon in ' + mo.signName + (comp.asc ? ', rising ' + comp.asc.signName : '') + (ve ? ', and Venus in ' + ve.signName : '') + '. Its centre of gravity leans toward ' + purpose + ' — the thing the two of you keep returning to.';
   }
+  // per-dimension synastry grades with receipts — every number expandable to the exact contacts that made it
+  var SYN_DIMS = [
+    { key: 'chemistry', name: 'Chemistry', pairs: { sun: 1, moon: 1, venus: 2, mars: 2 } },
+    { key: 'communication', name: 'Communication', pairs: { mercury: 2, moon: 1, jupiter: 0.5 } },
+    { key: 'stability', name: 'Stability', pairs: { saturn: 2, sun: 1, moon: 1 } },
+    { key: 'growth', name: 'Growth', pairs: { jupiter: 2, uranus: 1, sun: 0.5 } }
+  ];
+  function synScores(syn) {
+    var out = [], i, j;
+    for (i = 0; i < SYN_DIMS.length; i++) {
+      var D = SYN_DIMS[i], raw = 0, wsum = 0, rec = [];
+      for (j = 0; j < syn.length; j++) {
+        var sc = syn[j], wgt = Math.max(D.pairs[sc.mine] || 0, D.pairs[sc.theirs] || 0); if (!wgt) continue;
+        var tight = Math.max(0.35, 1 - sc.orb / 8), q = sc.asp.quality;
+        var val = (q === 'flow' || q === 'opportunity') ? 1 : (q === 'fusion') ? 0.55 : -0.55;
+        // classic doctrine: hard Saturn contacts act as glue for stability, not solvent
+        if (D.key === 'stability' && (sc.mine === 'saturn' || sc.theirs === 'saturn') && val < 0) val = 0.15;
+        raw += val * wgt * tight; wsum += wgt * tight;
+        rec.push({ s: sc, good: val > 0 });
+      }
+      out.push({ key: D.key, name: D.name, score: wsum ? Math.round(50 + 50 * (raw / wsum)) : null, rec: rec.slice(0, 5) });
+    }
+    return out;
+  }
   function composeBond(person) {
     var cMe = STATE.chart, cThem = personChart(person), syn = synastry(cMe, cThem), blocks = [];
     blocks.push({ label: 'Between you', text: bondHeadline(cMe, cThem, syn) });
@@ -2868,7 +2892,7 @@ var APP = (function () {
     if (trT.daily.length) blocks.push({ label: 'Live for them — today', text: 'What the sky is doing to ' + (person.name || 'them') + ' now: ' + trT.daily.slice(0, 2).map(transitSentence).join(' ') });
     // the relationship's own forecast: transits to the composite chart over the year ahead
     var year = []; try { year = upcomingTransits({ planets: comp.planets, ayan: cMe.ayan || 0 }, 8, 16); } catch (e) { year = []; }
-    return { blocks: blocks, syn: syn, comp: comp, cMe: cMe, cThem: cThem, year: year };
+    return { blocks: blocks, syn: syn, comp: comp, cMe: cMe, cThem: cThem, year: year, scores: synScores(syn) };
   }
 
   // ================= timing & forecast (on-device: profections, progressions, solar return, transits) =================
@@ -4193,7 +4217,8 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         var extra = ['venus', 'mars', 'mercury', 'jupiter', 'saturn'];
         for (var x = 0; x < extra.length; x++) if (c.planets[extra[x]]) picks.push({ sign: c.planets[extra[x]].sign, role: '' });
       } else { for (var z = 0; z < 5; z++) picks.push({ sign: Math.floor(Math.random() * 12), role: '' }); }
-      var count = Math.max(5, Math.min(8, picks.length));
+      var lowP = false; try { lowP = (navigator.hardwareConcurrency || 8) <= 4; } catch (eL) {}
+      var count = Math.max(lowP ? 3 : 5, Math.min(lowP ? 4 : 8, picks.length));
       for (var i = 0; i < count; i++) {
         var pk = picks[i % picks.length], big = i < 3;
         UI.field.push({ sign: pk.sign, role: pk.role, el: elementOfSign(pk.sign), cst: ZODIAC[pk.sign],
@@ -4472,6 +4497,23 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       return 28;
     }
 
+    // the daily hook: one glance on opening — headline transit, the Moon, the door into Today
+    function todayCardStrip(c, b, x, ly, w) {
+      var d = todayData(); if (!d) return 0;
+      var h = 96, y = sY(ly), off = pressOff(x, y, w, h, 2);
+      p.noStroke(); fillc(shade(GROUNDS[UI.screen], -16)); p.rect(x, y + 3, w, h, 12); fillc(shade(GROUNDS[UI.screen], -5)); p.rect(x, y + off, w, h, 12);
+      p.noFill(); strokec(INK, 90); p.strokeWeight(1.2); p.rect(x, y + off, w, h, 12);
+      setFont(MONO, 9, ACCTX, p.LEFT, p.TOP, 235); p.text('TODAY ON YOUR CHART', x + 14, y + off + 10);
+      var ms = d.f && d.f.sky ? d.f.sky.moon : null, ph2 = phaseName(d.moon ? d.moon.elong : 0);
+      var mline = ms ? ('Moon in ' + ms.signName + ' · ' + ph2 + (ms.voc ? ' · VOID OF COURSE — drift, don\u2019t launch' : '')) : ph2;
+      setFont(MONO, 9, INK, p.LEFT, p.TOP, 185); p.text(mline.toUpperCase(), x + 14, y + off + 25);
+      var dl = d.tr && d.tr.daily, headline = (dl && dl.length) ? APP.transitSentence(dl[0]) : 'A calm sky — your natal pattern runs undisturbed today.';
+      p.textFont(SERIF); p.textSize(14.5); var hl = wrapLines(headline, w - 28);
+      setFont(SERIF, 14.5, INK, p.LEFT, p.TOP, 245); var i; for (i = 0; i < Math.min(hl.length, 2); i++) p.text(hl[i] + (i === 1 && hl.length > 2 ? '\u2026' : ''), x + 14, y + off + 44 + i * 21);
+      setFont(MONO, 9, ACCTX, p.RIGHT, p.TOP, 225); p.text('OPEN \u203A', x + w - 14, y + off + 10);
+      pushHit(x, y, w, h + 3, function () { openToday(); });
+      return h + 3;
+    }
     // ---------- placement STORY: tap a body, the wheel ripples away to reveal what it means ----------
     function dignityBadge(key, signName) { return APP.dignityOf ? APP.dignityOf(key, signName) : ''; }
     function openStory(key) { UI.story = { key: key, t0: nowT() }; UI.selPlanet = key; UI.scroll.chart = 0; }
@@ -4823,6 +4865,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       p.textFont(SANS); p.textSize(38); var tw = p.textWidth(titleSign);
       setFont(SANS, 38, INK, p.LEFT, p.TOP, 90); p.textStyle(p.BOLD); p.text(b.timeKnown ? ' rising' : ' sun', x + tw, sY(ly)); normal(); ly += 48;
       ly += hudStrip(c, b, x, ly, w) + 10;
+      ly += todayCardStrip(c, b, x, ly, w) + 14;
       // S3 — a one-line daily headline of what the sky is doing to you; tap to open Today
       (function () {
         var trd = walkTr(c), te0 = trd.daily && trd.daily[0];
@@ -5044,8 +5087,10 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         if (isSel) { p.noStroke(); fillc(ACC, 45); p.ellipse(ccx, ccy, 34, 34); }
         if (isToday) { p.noFill(); strokec(ACC, 230); p.strokeWeight(1.8); p.ellipse(ccx, ccy, 30, 30); }
         setFont(SANS, 14, INK, p.CENTER, p.CENTER, evs ? 255 : 150); if (evs) bold(); p.text(String(dnum), ccx, ccy - (evs ? 3 : 0)); normal();
-        if (evs) { p.noStroke(); var q = evs[0].quality; fillc((q === 'flow' || q === 'opportunity') ? ELHUE.air : (q === 'fusion' ? INK : ACC)); p.ellipse(ccx, ccy + 11, 5, 5);
-          (function (k) { pushHit(x + col * cellW, sY(ly + row * cellH), cellW, cellH, function () { UI.calDay = (UI.calDay === k) ? null : k; if (UI.calDay) UI.scroll.read = 0; }); })(key); }
+        var hasNote = !!(UI.jMap && UI.jMap[key]);
+        if (evs) { p.noStroke(); var q = evs[0].quality; fillc((q === 'flow' || q === 'opportunity') ? ELHUE.air : (q === 'fusion' ? INK : ACC)); p.ellipse(ccx - (hasNote ? 4 : 0), ccy + 11, 5, 5); }
+        if (hasNote) { p.noStroke(); fillc(INK, 210); p.ellipse(ccx + (evs ? 4 : 0), ccy + 11, 4, 4); } // a day you journalled
+        (function (k) { pushHit(x + col * cellW, sY(ly + row * cellH), cellW, cellH, function () { UI.calDay = (UI.calDay === k) ? null : k; if (UI.calDay) UI.scroll.read = 0; }); })(key);
       }
       return 28 + 18 + rows * cellH + 8;
     }
@@ -5055,10 +5100,11 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       p.textStyle(p.BOLD); glitchText('Transit calendar', x, sY(ly), 28, SANS, INK, p.LEFT, p.TOP, gi); normal(); ly += 40;
       ly += paragraph('The days over the next few months when a slower planet makes an exact aspect to your chart. A dot marks a day — tap it to read what lands.', x, ly, w, 14.5, INK, SERIF, 22, 205) + 16;
       if (!UI.calEvents) { var evs = APP.upcomingTransits(c, 4, 80), map = {}, i; for (i = 0; i < evs.length; i++) { var k = ymd(evs[i].date); (map[k] = map[k] || []).push(evs[i]); } UI.calEvents = map; }
+      if (!UI.jMap) UI.jMap = journalAll();
       // selected-day detail FIRST, so it's always visible near the top (was buried below all three months)
-      if (UI.calDay && UI.calEvents[UI.calDay]) {
+      if (UI.calDay) {
         var parts = UI.calDay.split('-'), dd = new Date(parts[0], parts[1] - 1, parts[2]);
-        var de = UI.calEvents[UI.calDay], j, panelH = 40 + de.length * 36 + 12, py0 = sY(ly);
+        var de = UI.calEvents[UI.calDay] || [], j, panelH = 40 + de.length * 36 + (de.length ? 12 : 42) + 116, py0 = sY(ly);
         p.noStroke(); fillc(shade(GROUNDS[UI.screen], -14)); p.rect(x - 6, py0, w + 12, panelH, 12);
         p.noFill(); strokec(ACC, 150); p.strokeWeight(1.3); p.rect(x - 6, py0, w + 12, panelH, 12);
         ly += 12; eyebrow(fmtShort(dd), x, ly, ACC); ly += 26;
@@ -5070,9 +5116,17 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
           setFont(MONO, 10.5, INK, p.LEFT, p.CENTER, 220); p.text(APP.nameFor(ev.tp) + ' ' + ev.aspKey + ' ' + APP.nameFor(ev.np), x + 60, sY(ly + rh / 2));
           ly += rh + 6;
         }
-        ly += 14;
+        if (!de.length) ly += paragraph('A quiet day by transit \u2014 nothing exact lands. All the more room for your own note.', x, ly, w, 12.5, INK, SERIF, 18, 200) + 8;
+        ly += 6;
+        // the note you kept (or keep now) for this day \u2014 the journal reads against the sky
+        eyebrow('Your note for this day', x, ly, ACC); ly += 22;
+        var jb2Y = sY(ly), jb2H = 68;
+        p.noStroke(); fillc(shade(GROUNDS[UI.screen], -8)); p.rect(x, jb2Y, w, jb2H, 10); p.noFill(); strokec(INK, 60); p.strokeWeight(1); p.rect(x, jb2Y, w, jb2H, 10);
+        var jv2 = !UI.today && (jb2Y >= topY() - 4) && (jb2Y + jb2H <= H - (UI.safeBottom || 0) - NAVH);
+        positionJournalInput(UI.calDay, x + 6, jb2Y + 6, w - 12, jb2H - 12, jv2); UI.jDrawn = true;
+        ly += jb2H + 14;
         flatBtn('Clear day', x, ly, 110, 32, function () { UI.calDay = null; }, false); ly += 44;
-      } else { setFont(MONO, 9.5, ACCTX, p.LEFT, p.TOP, 200); ly += paragraph('Tap any dotted day below to read what lands that day.', x, ly, w, 12, INK, MONO, 17, 200) + 10; }
+      } else { setFont(MONO, 9.5, ACCTX, p.LEFT, p.TOP, 200); ly += paragraph('Tap any day to read what lands \u2014 and to keep a note against it. \u25CF colour marks a transit; the small ink dot marks a day you journalled.', x, ly, w, 12, INK, MONO, 17, 200) + 10; }
       var now = new Date(), mi;
       for (mi = 0; mi < 3; mi++) { var yr = now.getFullYear(), mo = now.getMonth() + mi; while (mo > 11) { mo -= 12; yr++; } ly += drawMonthGrid(yr, mo, x, w, ly) + 8; }
       UI.contentH.read = ly + 20;
@@ -5543,6 +5597,33 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (comp.asc) { var aR = r; var axp = f.ax(comp.asc.lon, aR), ayp = f.ay(comp.asc.lon, aR); p.noStroke(); fillc(ACC); p.ellipse(axp, ayp, 7, 7); setFont(MONO, 8, ACCTX, p.CENTER, p.CENTER, 230); p.text('Asc', f.ax(comp.asc.lon, r * 1.14), f.ay(comp.asc.lon, r * 1.14)); }
       setFont(MONO, 8.5, INK, p.CENTER, p.TOP, 170); p.text('THE RELATIONSHIP AS ITS OWN CHART', cx, cy + r + 8);
     }
+    // the scoreboard: per-dimension synastry grades — tap any line for the exact contacts behind the number
+    function bondScores(bond, x, w, ly) {
+      var sc = bond.scores; if (!sc || !sc.length) return ly;
+      if (!UI.synExp) UI.synExp = {};
+      eyebrow('The scoreboard — tap a line for its receipts', x, ly, ACC); ly += 26;
+      var i, j;
+      for (i = 0; i < sc.length; i++) {
+        var D = sc[i]; if (D.score == null) continue;
+        var rowY = sY(ly), grade = D.score >= 85 ? 'rare' : D.score >= 70 ? 'strong' : D.score >= 55 ? 'real' : D.score >= 40 ? 'workable' : 'hard-won';
+        setFont(SANS, 14, INK, p.LEFT, p.CENTER); bold(); p.text(D.name, x, rowY + 12); normal();
+        var bx = x + 128, bw = w - 128 - 96;
+        p.noFill(); strokec(INK, 60); p.strokeWeight(1); p.rect(bx, rowY + 6, bw, 12, 6);
+        p.noStroke(); fillc(D.score >= 55 ? ACC : INK, D.score >= 55 ? 235 : 130); p.rect(bx, rowY + 6, bw * D.score / 100, 12, 6);
+        setFont(MONO, 9.5, INK, p.RIGHT, p.CENTER, 215); p.text(D.score + ' · ' + grade.toUpperCase(), x + w, rowY + 12);
+        (function (k) { pushHit(x, rowY, w, 26, function () { UI.synExp[k] = !UI.synExp[k]; }); })(D.key);
+        ly += 30;
+        if (UI.synExp[D.key]) {
+          if (!D.rec.length) ly += paragraph('No contacts touch this dimension — it simply isn\u2019t wired between you, for better and worse.', x + 16, ly, w - 16, 12.5, INK, SERIF, 18, 190) + 6;
+          for (j = 0; j < D.rec.length; j++) {
+            var R2 = D.rec[j], s2 = R2.s;
+            ly += paragraph((R2.good ? '+ ' : '\u2212 ') + 'their ' + APP.nameFor(s2.theirs) + ' ' + s2.asp.key + ' your ' + APP.nameFor(s2.mine) + ' (' + s2.orb.toFixed(1) + '\u00B0)', x + 16, ly, w - 16, 12, INK, MONO, 17, 205) + 4;
+          }
+          ly += paragraph('Computed only from these contacts and their tightness — nothing hidden, nothing invented.', x + 16, ly, w - 16, 11.5, INK, SERIF, 17, 165) + 8;
+        }
+      }
+      return ly + 10;
+    }
     function drawBond() {
       var person = findPerson(UI.viewPerson); if (!person || !APP.STATE.chart) { UI.viewPerson = null; return; }
       var x = sx(), w = cw(), ly = 18, gi = cl01(1 - (nowT() - UI.fxT) / 500), i;
@@ -5552,6 +5633,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       eyebrow(relLabel(person.rel, person.famrel) + ' · born ' + person.d + '.' + person.mo + '.' + person.y, x, ly, ACC); ly += 24;
       setFont(MONO, 11, INK, p.LEFT, p.TOP, 200); p.text((su.signName + ' Sun · ' + mo.signName + ' Moon' + (person.timeKnown && ch.ascBody ? ' · ' + ch.ascBody.signName + ' Rising' : '')).toUpperCase(), x, sY(ly)); ly += 28;
       var bond = composeBondCached(person);
+      ly = bondScores(bond, x, w, ly);
       // ---- relationship wheel: synastry bi-wheel ⟷ composite chart ----
       if (UI.bondWheel == null) UI.bondWheel = 'synastry';
       var cxp = x; cxp += chip('Synastry', UI.bondWheel === 'synastry', cxp, ly, function () { UI.bondWheel = 'synastry'; }) + 8;
@@ -6811,6 +6893,8 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       ly += 50;
       ly += toggleRow('Reading text size', [['1', 'Standard'], ['1.15', 'Large'], ['1.3', 'Larger']], String(st.textScale || 1), ly, function (v) { st.textScale = parseFloat(v); APP.save(); UI.readCache = null; });
       ly += toggleRow('Sound', [['off', 'Off'], ['on', 'On']], st.sound ? 'on' : 'off', ly, function (v) { st.sound = (v === 'on'); APP.save(); if (st.sound) { audioInit(); chime(); } });
+      ly += toggleRow('Transit reminders', [['off', 'Off'], ['on', 'On']], st.notify ? 'on' : 'off', ly, function (v) { st.notify = (v === 'on'); APP.save(); if (st.notify) enableNotify(); });
+      ly += paragraph('On: when you open the app on a day a planet lands exactly on your chart, you get one system notification. Where the browser supports it, a daily background check is registered too. Nothing leaves the device.', x, ly, w, 13.5, INK, SERIF, 20, 180) + 14;
       ly += toggleRow('Zodiac', [['tropical', 'Tropical'], ['sidereal', 'Sidereal']], st.zodiac, ly, function (v) { st.zodiac = v; recompute(); });
       ly += toggleRow('House system', [['whole', 'Whole'], ['equal', 'Equal'], ['placidus', 'Placidus']], st.house, ly, function (v) { st.house = v; recompute(); });
       if (APP.STATE.birth && !APP.STATE.birth.timeKnown) {
@@ -6963,7 +7047,17 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         setFont(MONO, 8.5, INK, p.LEFT, p.TOP, 130); ly += paragraph('Free, keyless lookups (OpenStreetMap + open\u2011meteo). One request after you pause typing \u2014 nothing else leaves your device. Turn off in Settings for fully offline.', x, ly, w, 11, INK, MONO, 15, 130) + 10;
       } else {
         var q = (UI.citySearch || '').toLowerCase().replace(/^\s+|\s+$/g, ''), filtered = [];
-        for (var fi = 0; fi < DATA.CITIES.length; fi++) { var cc = DATA.CITIES[fi]; if (!q || cc[0].toLowerCase().indexOf(q) >= 0 || cc[1].toLowerCase().indexOf(q) >= 0) filtered.push(fi); }
+        if (!q) { for (var fi0 = 0; fi0 < DATA.CITIES.length; fi0++) filtered.push(fi0); }
+        else { // ranked: name-prefix first, then word-start, then any substring (incl. country) \u2014 DB order breaks ties
+          var t1 = [], t2 = [], t3 = [];
+          for (var fi = 0; fi < DATA.CITIES.length; fi++) {
+            var cc = DATA.CITIES[fi], nm2 = cc[0].toLowerCase(), ctr = cc[1].toLowerCase();
+            if (nm2.indexOf(q) === 0) t1.push(fi);
+            else if (nm2.indexOf(' ' + q) >= 0) t2.push(fi);
+            else if (nm2.indexOf(q) >= 0 || ctr.indexOf(q) >= 0) t3.push(fi);
+          }
+          filtered = t1.concat(t2, t3);
+        }
         if (q !== UI.lastCityQ) { UI.lastCityQ = q; UI.cityScroll = 0; }
         var rh = 30, off = UI.cityScroll || 0;
         if (!filtered.length) { setFont(MONO, 11, INK, p.CENTER, p.CENTER, 150); p.text('NO MATCHES \u2014 TRY ANOTHER SPELLING', x + w / 2, boxY + boxH / 2); }
@@ -6977,6 +7071,8 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         if (p.drawingContext) p.drawingContext.restore();
         UI.cityBox = { x: x, y: boxY, w: w, h: boxH }; UI.cityBoxMax = Math.max(0, filtered.length * rh + 8 - boxH); ly += boxH + 18;
       }
+      var placeSel = d.geo || (d.cityIdx != null && DATA.CITIES[d.cityIdx]);
+      if (placeSel) ly += paragraph('Time zone resolves from this place and your birth date automatically \u2014 historical DST included. Positions are computed on-device to about an arcminute, aligned with Astro.com.', x, ly, w, 11.5, ACCTX, MONO, 17, 205) + 8;
       // manual time-zone override (for pre-1970 / DST cases the auto database gets wrong)
       if (!d.manualTz) { p.noFill(); strokec(INK, 180); p.strokeWeight(1.4); p.rect(x, sY(ly), 22, 22, 5); }
       else { p.noStroke(); fillc(ACC); p.rect(x, sY(ly), 22, 22, 5); setFont(SANS, 15, GROUNDS[UI.screen], p.CENTER, p.CENTER); p.text('✓', x + 11, sY(ly) + 11); }
@@ -7045,6 +7141,45 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         if (cv.toBlob && navigator.share && navigator.canShare) { cv.toBlob(function (blob) { try { var file = new File([blob], 'aqau-today.png', { type: 'image/png' }); if (navigator.canShare({ files: [file] })) navigator.share({ files: [file], title: 'Today', text: phaseName(e) + ' — Aqau Pluto' })['catch'](function () { dl2(); }); else dl2(); } catch (e3) { dl2(); } }, 'image/png'); }
         else dl2();
       } catch (e4) { dl2(); }
+    }
+    // 9:16 story card: the big three + element balance + today's headline \u2014 made to be posted
+    function exportStoryCard() {
+      var c = APP.STATE.chart, b = APP.STATE.birth, d = todayData(); if (!c || !b || typeof document === 'undefined') return;
+      var W2 = 1080, H2 = 1920, cv = document.createElement('canvas'); cv.width = W2; cv.height = H2;
+      var g = cv.getContext('2d'); if (!g) return;
+      var ink = INK, acc = ACC, gr = GROUNDS.chart;
+      function rgb(a) { return 'rgb(' + a[0] + ',' + a[1] + ',' + a[2] + ')'; }
+      function rgba(a, al) { return 'rgba(' + a[0] + ',' + a[1] + ',' + a[2] + ',' + al + ')'; }
+      var SYM = 'Georgia, "Apple Symbols", "Segoe UI Symbol", serif';
+      function wrap2(str, mw, font) { g.font = font; var words = String(str).split(' '), lines = [], cur = '', i; for (i = 0; i < words.length; i++) { var t = cur ? cur + ' ' + words[i] : words[i]; if (g.measureText(t).width > mw && cur) { lines.push(cur); cur = words[i]; } else cur = t; } if (cur) lines.push(cur); return lines; }
+      g.fillStyle = rgb(gr); g.fillRect(0, 0, W2, H2); g.textAlign = 'center';
+      g.fillStyle = rgba(ink, 0.5); g.font = '30px ' + MONO; g.fillText('M Y   B I G   T H R E E', W2 / 2, 170);
+      var three = [['sun', c.planets.sun, 'SUN'], ['moon', c.planets.moon, 'MOON']];
+      if (b.timeKnown && c.ascBody) three.push(['asc', c.ascBody, 'RISING']);
+      var yy0 = 340, i;
+      for (i = 0; i < three.length; i++) {
+        g.fillStyle = rgb(acc); g.font = '120px ' + SYM; g.fillText(APP.glyphFor(three[i][0]), W2 / 2 - 260, yy0 + 42);
+        g.textAlign = 'left';
+        g.fillStyle = rgba(ink, 0.5); g.font = '28px ' + MONO; g.fillText(three[i][2], W2 / 2 - 130, yy0 - 22);
+        g.fillStyle = rgb(ink); g.font = 'bold 82px ' + SANS; g.fillText(three[i][1].signName, W2 / 2 - 130, yy0 + 56);
+        g.textAlign = 'center'; yy0 += 250;
+      }
+      var els = ['fire', 'earth', 'air', 'water'], bx0 = 140, bw0 = W2 - 280, acc2 = 0, by0 = yy0 + 30, ei;
+      for (ei = 0; ei < 4; ei++) { var seg = c.elements[els[ei]] / 100 * bw0; g.fillStyle = rgb(ELHUE[els[ei]]); g.fillRect(bx0 + acc2, by0, seg, 34); acc2 += seg; }
+      g.strokeStyle = rgba(ink, 0.6); g.lineWidth = 3; g.strokeRect(bx0, by0, bw0, 34);
+      g.fillStyle = rgba(ink, 0.6); g.font = '26px ' + MONO; g.fillText('FIRE ' + c.elements.fire + '  \u00B7  EARTH ' + c.elements.earth + '  \u00B7  AIR ' + c.elements.air + '  \u00B7  WATER ' + c.elements.water, W2 / 2, by0 + 84);
+      var dl = (d && d.tr && d.tr.daily && d.tr.daily.length) ? APP.transitSentence(d.tr.daily[0]) : '';
+      if (dl) {
+        g.fillStyle = rgb(acc); g.font = '28px ' + MONO; g.fillText('TODAY, LIVE ON THIS CHART', W2 / 2, by0 + 210);
+        g.fillStyle = rgb(ink); var ls2 = wrap2(dl, W2 - 260, '38px ' + SERIF), li2;
+        for (li2 = 0; li2 < Math.min(ls2.length, 4); li2++) g.fillText(ls2[li2], W2 / 2, by0 + 274 + li2 * 54);
+      }
+      g.fillStyle = rgba(ink, 0.4); g.font = '24px ' + MONO; g.fillText('AQAU PLUTO \u00B7 computed on-device, no AI', W2 / 2, H2 - 90);
+      function dl3() { try { var a = document.createElement('a'); a.href = cv.toDataURL('image/png'); a.download = 'aqau-story.png'; document.body.appendChild(a); a.click(); document.body.removeChild(a); } catch (e2) {} }
+      try {
+        if (cv.toBlob && navigator.share && navigator.canShare) { cv.toBlob(function (blob) { try { var file = new File([blob], 'aqau-story.png', { type: 'image/png' }); if (navigator.canShare({ files: [file] })) navigator.share({ files: [file], title: 'My big three' })['catch'](function () { dl3(); }); else dl3(); } catch (e3) { dl3(); } }, 'image/png'); }
+        else dl3();
+      } catch (e4) { dl3(); }
     }
     function exportChartCard() {
       var c = APP.STATE.chart, b = APP.STATE.birth; if (!c || !b || typeof document === 'undefined') return;
@@ -7195,6 +7330,30 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       return UI.todayCache;
     }
     function openToday() { if (!APP.STATE.chart) { UI.screen = 'onboard'; return; } UI.today = true; UI.tScroll = 0; UI.todayCache = null; UI.todayT0 = nowT(); }
+    // ---------- transit journal: one note per day, kept on-device, shown against the sky that day ----------
+    function journalAll() { try { return JSON.parse(localStorage.getItem('aqau_journal') || '{}'); } catch (e) { return {}; } }
+    function journalGet(k) { var m = journalAll(); return m[k] || ''; }
+    function journalPut(k, v) { try { var m = journalAll(); if (v) m[k] = v; else delete m[k]; localStorage.setItem('aqau_journal', JSON.stringify(m)); } catch (e) {} }
+    function ensureJournalInput() {
+      if (UI.jInput || typeof document === 'undefined') return UI.jInput;
+      try {
+        var el = document.createElement('textarea');
+        el.setAttribute('placeholder', 'How was this day, really?');
+        var st2 = el.style; st2.position = 'fixed'; st2.zIndex = '6'; st2.margin = '0'; st2.padding = '6px 8px'; st2.border = 'none'; st2.outline = 'none'; st2.resize = 'none';
+        st2.background = 'transparent'; st2.fontFamily = SERIF; st2.fontSize = '14px'; st2.display = 'none'; st2.webkitTapHighlightColor = 'transparent';
+        el.addEventListener('input', function () { if (UI.jFor) journalPut(UI.jFor, el.value); UI.jMap = null; });
+        document.body.appendChild(el); UI.jInput = el;
+      } catch (e) { UI.jInput = null; }
+      return UI.jInput;
+    }
+    function positionJournalInput(k, px, py, pw, ph, visible) {
+      var el = ensureJournalInput(); if (!el) return;
+      if (!visible) { if (UI.jFor) { el.style.display = 'none'; if (document.activeElement === el && el.blur) el.blur(); UI.jFor = null; } return; }
+      if (UI.jFor !== k) { UI.jFor = k; el.value = journalGet(k); }
+      el.style.color = 'rgb(' + INK[0] + ',' + INK[1] + ',' + INK[2] + ')'; el.style.caretColor = 'rgb(' + ACC[0] + ',' + ACC[1] + ',' + ACC[2] + ')';
+      el.style.display = 'block'; el.style.left = px + 'px'; el.style.top = py + 'px'; el.style.width = pw + 'px'; el.style.height = ph + 'px';
+    }
+    function hideJournalInput() { try { if (UI.jInput && UI.jFor) { UI.jInput.style.display = 'none'; if (document.activeElement === UI.jInput && UI.jInput.blur) UI.jInput.blur(); UI.jFor = null; } } catch (e) {} }
     function drawTodayPanel() {
       if (!UI.today) return;
       // AN4 — the sheet grows out of the live moon emblem in the top bar
@@ -7252,11 +7411,24 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (tm.length) body('• ' + APP.transitSentence(tm[0]), 14);
       else body('The Moon makes no close aspect to your chart right now.', 14);
       yy += 14;
-      // share today as an image
-      var sbtX = x + pad, sbtY = ty(), sbtW = w - pad * 2, sbtH = 44;
+      // journal: one line to your future self, kept on-device against today's sky
+      head('Journal — this day, in your own words');
+      var jbY = ty(), jbH = 76, jk2 = (function (dt) { return dt.getFullYear() + '-' + pad2(dt.getMonth() + 1) + '-' + pad2(dt.getDate()); })(new Date());
+      p.noStroke(); fillc(shade(GROUNDS[UI.screen], -8)); p.rect(x + pad, jbY, w - pad * 2, jbH, 10);
+      p.noFill(); strokec(INK, 60); p.strokeWeight(1); p.rect(x + pad, jbY, w - pad * 2, jbH, 10);
+      var jVis = me > 0.95 && (jbY >= top + 6) && (jbY + jbH <= top + availH - 6);
+      positionJournalInput(jk2, x + pad + 6, jbY + 6, w - pad * 2 - 12, jbH - 12, jVis); UI.jDrawn = true;
+      yy += jbH + 6;
+      setFont(MONO, 8.5, INK, p.LEFT, p.TOP, 140); p.text('SAVED AS YOU TYPE · OLD NOTES LIVE IN READ → TRANSIT CALENDAR', x + pad, ty()); yy += 22;
+      // share today: feed card or 9:16 story
+      var sbtX = x + pad, sbtY = ty(), sbtW = Math.floor((w - pad * 2 - 10) / 2), sbtH = 44;
       p.noStroke(); fillc(INK); p.rect(sbtX, sbtY, sbtW, sbtH, 10);
-      setFont(MONO, 12, GROUNDS[UI.screen], p.CENTER, p.CENTER); p.text('SHARE TODAY (IMAGE)', sbtX + sbtW / 2, sbtY + sbtH / 2 + 0.5);
+      setFont(MONO, 11, GROUNDS[UI.screen], p.CENTER, p.CENTER); p.text('SHARE TODAY', sbtX + sbtW / 2, sbtY + sbtH / 2 + 0.5);
       pushHit(sbtX, sbtY, sbtW, sbtH, function () { exportTodayCard(); });
+      var sb2X = sbtX + sbtW + 10;
+      p.noStroke(); fillc(INK); p.rect(sb2X, sbtY, sbtW, sbtH, 10);
+      setFont(MONO, 11, GROUNDS[UI.screen], p.CENTER, p.CENTER); p.text('STORY 9:16', sb2X + sbtW / 2, sbtY + sbtH / 2 + 0.5);
+      pushHit(sb2X, sbtY, sbtW, sbtH, function () { exportStoryCard(); });
       yy += sbtH + 10;
       UI.contentH.today = yy + pad;
       dc.restore(); p.pop();
@@ -7435,6 +7607,27 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       window.addEventListener('orientationchange', function () { setTimeout(function () { measureInsets(); W = p.windowWidth; H = vpH(); p.resizeCanvas(W, H); buildField(); }, 250); });
       window.addEventListener('load', function () { setTimeout(function () { measureInsets(); W = p.windowWidth; H = vpH(); p.resizeCanvas(W, H); }, 320); });
     } catch (e) {}
+    // ---- transit reminders: a local notification on days something exact lands (opt-in, on-device) ----
+    function enableNotify() {
+      try { if (typeof Notification !== 'undefined' && Notification.requestPermission) Notification.requestPermission().then(function () { registerDailySync(); maybeNotifyToday(); })['catch'](function () {}); } catch (e) {}
+    }
+    function registerDailySync() {
+      try { if (navigator.serviceWorker && navigator.serviceWorker.ready) navigator.serviceWorker.ready.then(function (reg) { if (reg.periodicSync && reg.periodicSync.register) reg.periodicSync.register('aqau-daily', { minInterval: 24 * 3600 * 1000 })['catch'](function () {}); })['catch'](function () {}); } catch (e) {}
+    }
+    function maybeNotifyToday() {
+      try {
+        var st = APP.STATE.settings; if (!st || !st.notify) return;
+        if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+        var c = APP.STATE.chart; if (!c || !navigator.serviceWorker) return;
+        var now2 = new Date(), stamp = 'aqau_notif_' + now2.getFullYear() + '-' + pad2(now2.getMonth() + 1) + '-' + pad2(now2.getDate());
+        if (localStorage.getItem(stamp)) return;
+        var tr = APP.composeTransits(c); if (!tr.daily || !tr.daily.length) return;
+        localStorage.setItem(stamp, '1');
+        navigator.serviceWorker.ready.then(function (reg) { if (reg.showNotification) reg.showNotification('Today on your chart', { body: APP.transitSentence(tr.daily[0]), icon: 'icon-192.png', tag: 'aqau-day' }); })['catch'](function () {});
+      } catch (e) {}
+    }
+    // battery: stop the draw loop entirely while the tab/app is hidden
+    try { document.addEventListener('visibilitychange', function () { try { if (document.hidden) p.noLoop(); else { p.loop(); } } catch (e2) {} }); } catch (e3) {}
     p.draw = function () {
       // auto-dark-at-night: re-apply the theme when the effective key changes (time or accent)
       var ek = effectiveThemeKey() + '|' + ((APP.STATE.settings && APP.STATE.settings.accent) || 0); if (ek !== UI.appliedThemeKey) { applyTheme(); setBodyBg(GROUNDS[UI.screen] || GROUNDS.chart); }
@@ -7445,7 +7638,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       // readability scrim: on text-heavy screens, settle the constellations behind a calm ground so the
       // words always come first (the chart stays lively — it's the visual centrepiece).
       if (({ read: 1, learn: 1, settings: 1, people: 1, tarot: 1 })[UI.screen]) { p.noStroke(); p.fill(UI.bg[0], UI.bg[1], UI.bg[2], 158); p.rect(0, topY() - 8, W, H - (topY() - 8)); }
-      hits = []; p.rectMode(p.CORNER); p.textStyle(p.NORMAL); UI.mediaDrawn = false;
+      hits = []; p.rectMode(p.CORNER); p.textStyle(p.NORMAL); UI.mediaDrawn = false; UI.jDrawn = false;
       if (UI.screen === 'onboard' && !APP.STATE.birth && !UI.introDone) { drawIntro(); clampScroll(); return; }
       var s = UI.screen;
       if (s === 'onboard') drawOnboard(); else { if (!(s === 'people' && UI.padd)) hideSearchInput(); if (s === 'chart') drawChart(); else if (s === 'read') drawRead(); else if (s === 'learn') drawLearn(); else if (s === 'tarot') drawTarot(); else if (s === 'people') drawPeople(); else if (s === 'settings') drawSettings(); }
@@ -7456,6 +7649,8 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       drawVideoModal();
       drawHowTour();
       drawGlossPop();
+      if (!UI.jDrawn) hideJournalInput();
+      if (!UI.notifChecked && APP.STATE.chart) { UI.notifChecked = true; setTimeout(maybeNotifyToday, 4000); }
       // a small, brief celestial wink on screen entry (kept subtle so it doesn't over-stimulate)
       if (!reduced() && s !== 'onboard') { var te = (nowT() - UI.fxT) / 520; if (te >= 0 && te < 1) { var al = (1 - te) * (1 - te); celestialEmblem(W / 2, topY() + viewH() * 0.26, Math.min(W, H) * 0.07 * (0.8 + 0.2 * eCubic(te)), al * 0.4); } }
       // first run: once a chart exists, gently guide the newcomer
