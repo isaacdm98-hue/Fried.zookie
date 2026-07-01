@@ -87,6 +87,27 @@ on-device, no server, no API keys.
   ranked offline city search with a timezone/accuracy statement; and the
   draw loop now sleeps when the app is hidden.
 
+## Third wave — the professional's toolkit
+
+- **Timing, three clocks deep**: Firdaria (Persian time-lords) join profections
+  and Zodiacal Releasing; the progressed Moon's sign-changes and progressed
+  New/Full Moons are dated years ahead; and real retrograde seasons (stations
+  found from actual planetary motion) are mapped onto your natal houses.
+- **Solar return & eclipses**: the year's own chart fully cast and read;
+  astronomy-engine's true eclipse search placed into your houses, with an
+  eclipse-season notice in Today.
+- **Hidden geometry**: the Sun/Moon midpoint, antiscia & contra-antiscia
+  (mirror degrees across the solstice axis), and the draconic chart with its
+  exact hits on the natal.
+- **Jyotisha layer** (sidereal mode): the Moon's nakshatra & pada, and the
+  Vimshottari mahadasha/antardasha clock.
+- **Electional helper**: "Pick a day for…" ranks the next 45 days for a named
+  intention, showing its working. Plus a 7-day intensity strip in Today.
+- **The Book of You**: the entire reading as one typeset, printable report.
+- **Search everything**, spoken walkthrough (on-device Web Speech), haptics,
+  app shortcuts & icon badge, transit journal with sky-pattern insights,
+  one-file backup/restore.
+
 ## Engine
 
 Planet / Sun / Moon positions come from **astronomy-engine** (Don Cross,
