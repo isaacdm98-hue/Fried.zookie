@@ -55,6 +55,38 @@ on-device, no server, no API keys.
   from the open Wikimedia Commons archive and flickers through them as a
   slideshow drawn on the canvas. Stop the flicker to study one.
 
+## This release — thirty upgrades, five movements
+
+- **The walkthrough is now a staged performance.** Every act has its own
+  light (a per-planet ground wash), tempo and camera — Mars punches in,
+  Saturn settles heavily, the Moon floats — with hand-off lines carrying
+  the story between acts and an elemental motif on the built-in synth.
+  The tightest aspect is performed as a duet (the two planets converge
+  from the wings, the chord bows and snaps taut, the orb counts down);
+  the rising sun actually crests the horizon; the finale reassembles the
+  whole chart, planet by planet, under "This is you". AUTO mode plays it
+  like a film; the scene dots scrub.
+- **Lessons that teach.** Each guided-journey chapter is a mini-arc of
+  beats — idea, mechanics, then *your chart doing it* — ending in a recall
+  check answered by your own sky, earning persistent stars. Learn is a
+  levelled curriculum; how-to guides can walk you through the real app
+  step by step; every glossary term in every paragraph is tappable.
+- **Watch is a curated channel guide.** Your sign's programme (a matched
+  public-domain classic, your ruling planet on film, your myth), newsreels
+  from your birth year, short science films, and the live open dial — each
+  pick with a written "why this is yours". The guide is remembered and its
+  thumbnails cached, so it renders offline.
+- **The reading engine goes deeper.** Seeded sentence-variety banks on
+  every beat, decans and the anaretic/0° degrees in placements, orb
+  tightness woven into aspect sentences, derived house-ruler chains,
+  absences (unaspected planets, empty elements) read as first-class beats,
+  and an honest no-birth-time register with a rough-time-of-day picker.
+- **Modern-app parity.** A Today hook card on opening; synastry graded
+  per dimension with expandable receipts; an on-device transit journal
+  against the calendar; a 9:16 story export; opt-in transit reminders;
+  ranked offline city search with a timezone/accuracy statement; and the
+  draw loop now sleeps when the app is hidden.
+
 ## Engine
 
 Planet / Sun / Moon positions come from **astronomy-engine** (Don Cross,
