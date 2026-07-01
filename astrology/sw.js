@@ -1,10 +1,11 @@
 /* Aqau Pluto service worker - ES5, offline-first single-file PWA */
-var CACHE = 'aqau-pluto-v2';
+var CACHE = 'aqau-pluto-v3';
+var THUMBS = 'aqau-thumbs-v1';
 self.addEventListener('install', function (e) { self.skipWaiting(); });
 self.addEventListener('activate', function (e) {
   e.waitUntil(
     caches.keys().then(function (keys) {
-      return Promise.all(keys.map(function (k) { if (k !== CACHE) return caches['delete'](k); }));
+      return Promise.all(keys.map(function (k) { if (k !== CACHE && k !== THUMBS) return caches['delete'](k); }));
     }).then(function () { return self.clients.claim(); })
   );
 });
@@ -16,7 +17,26 @@ self.addEventListener('fetch', function (e) {
   // cross-origin request pass straight through to the network.
   var sameOrigin;
   try { sameOrigin = new URL(e.request.url).origin === self.location.origin; } catch (err) { sameOrigin = false; }
-  if (!sameOrigin) return;
+  if (!sameOrigin) {
+    // narrow exception: the tiny Internet Archive thumbnails that back the Watch
+    // channel guide are cached, so the guide still renders offline. Everything
+    // else cross-origin (incl. any large media) passes straight through.
+    var isIaThumb = false;
+    try { var u = new URL(e.request.url); isIaThumb = (u.hostname === 'archive.org' && u.pathname.indexOf('/services/img/') === 0); } catch (err2) {}
+    if (!isIaThumb) return;
+    e.respondWith(
+      caches.open(THUMBS).then(function (cache) {
+        return cache.match(e.request).then(function (cached) {
+          var net = fetch(e.request).then(function (resp) {
+            if (resp && (resp.status === 200 || resp.type === 'opaque')) cache.put(e.request, resp.clone());
+            return resp;
+          })['catch'](function () { return cached; });
+          return cached || net;
+        });
+      })
+    );
+    return;
+  }
   e.respondWith(
     caches.open(CACHE).then(function (cache) {
       return cache.match(e.request).then(function (cached) {

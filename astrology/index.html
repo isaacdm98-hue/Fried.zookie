@@ -6210,6 +6210,154 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       UI.iaImg = UI.iaImg || {}; if (UI.iaImg[id] !== undefined) return UI.iaImg[id];
       UI.iaImg[id] = null; var im = new Image(); im.onload = function () { UI.iaImg[id] = im; }; im.onerror = function () { UI.iaImg[id] = false; }; im.src = 'https://archive.org/services/img/' + id; return null;
     }
+    // ===== curated channels: a hand-tuned public-domain programme per chart (items resolved live from the Internet Archive, cached for offline) =====
+    var SIGN_FILM = [
+      { q: 'title:(great train robbery) AND mediatype:movies', t: 'The Great Train Robbery (1903)', why: 'Cinema’s first act of pure daring — twelve minutes that invented the action film. Aries energy, from frame one.' },
+      { q: 'title:(the gold rush) chaplin AND mediatype:movies', t: 'The Gold Rush (1925)', why: 'Chaplin turning hunger, gold and stubborn persistence into poetry — the Taurus appetites, on film.' },
+      { q: 'title:(his girl friday) AND mediatype:movies', t: 'His Girl Friday (1940)', why: 'The fastest talking ever filmed — two minds fencing at full speed. Your Mercury-ruled element, played as sport.' },
+      { q: 'title:(the kid) chaplin AND mediatype:movies', t: 'The Kid (1921)', why: 'A foundling, and a home made out of nothing — the Cancer story: family is whoever you decide to protect.' },
+      { q: 'title:(the thief of bagdad) AND mediatype:movies', t: 'The Thief of Bagdad (1924)', why: 'Palaces, spectacle and a hero grinning through the grandest show of the silent era. Leo, in gold leaf.' },
+      { q: 'title:(one week) keaton AND mediatype:movies', t: 'One Week (1920)', why: 'Buster Keaton assembling a build-it-yourself house, precisely, catastrophically — the Virgo comedy of craft meeting chaos.' },
+      { q: 'title:(my man godfrey) AND mediatype:movies', t: 'My Man Godfrey (1936)', why: 'Elegance, wit, and the weighing of love against fairness — a screwball romance with Libra’s scales at its heart.' },
+      { q: 'title:(nosferatu) AND mediatype:movies', t: 'Nosferatu (1922)', why: 'The first great film about what waits in the dark. Scorpio’s home ground: depth, dread and transformation.' },
+      { q: 'title:(the lost world) AND date:[1925-01-01 TO 1926-01-01] AND mediatype:movies', t: 'The Lost World (1925)', why: 'An expedition past the edge of the map, dinosaurs included — the Sagittarian itch for the far horizon.' },
+      { q: 'title:(metropolis) AND mediatype:movies', t: 'Metropolis (1927)', why: 'The towering city, the machinery of ambition, and what it costs — Saturn’s questions, built in art-deco stone.' },
+      { q: 'title:(a trip to the moon) melies OR title:(le voyage dans la lune)', t: 'A Trip to the Moon (1902)', why: 'Méliès firing a rocket into the Moon’s eye in 1902 — the future imagined before its time. Aquarius is the patron sign of the strange tomorrow.' },
+      { q: 'title:(20,000 leagues under the sea) AND mediatype:movies', t: '20,000 Leagues Under the Sea (1916)', why: 'The first undersea epic — the screen dissolving into the deep, which is where Pisces lives.' }
+    ];
+    var RULER_FILM = {
+      Sun: { q: 'title:(our mr sun)', why: 'Your chart is ruled by the Sun — and this is the beloved 1956 Bell Science film that explained your ruling star to a generation, with cartoons and awe.' },
+      Moon: { q: 'apollo 11 moon nasa film', why: 'Your ruler is the Moon — here is humanity actually going there. The same light that runs your chart, with bootprints on it.' },
+      Mercury: { q: 'planet mercury nasa mariner', why: 'Mercury rules you — the smallest, fastest planet, first photographed up close by Mariner 10. Speed, in person.' },
+      Venus: { q: 'planet venus nasa mariner film', why: 'Venus rules you — Earth’s veiled bright twin. The first missions to your ruling planet, on film.' },
+      Mars: { q: 'planet mars nasa mariner film', why: 'Mars rules you — and these are the first real looks humanity ever got at your ruling planet: the red world, no longer imagined.' },
+      Jupiter: { q: 'jupiter voyager nasa film', why: 'Jupiter rules you — the giant whose gravity shelters the whole solar system. Voyager’s grand tour past your ruling planet.' },
+      Saturn: { q: 'saturn voyager nasa film', why: 'Saturn rules you — the ringed timekeeper. The missions that turned your ruler from a telescope smudge into a world.' },
+      Uranus: { q: 'uranus voyager nasa', why: 'Uranus rules you — the sideways planet, visited exactly once in all of history. Suitably contrary.' },
+      Neptune: { q: 'neptune voyager nasa', why: 'Neptune rules you — the far blue dream at the edge of the map, seen close only once, in 1989.' },
+      Pluto: { q: 'pluto planet nasa new horizons OR clyde tombaugh', why: 'Pluto rules you — found by a Kansas farm boy comparing photographs, and still the underworld’s quiet king.' }
+    };
+    var MYTH_Q = ['jason argonauts golden fleece', 'zeus europa OR greek mythology bull', 'castor pollux OR gemini twins mythology', 'hercules hydra OR heracles labours', 'hercules nemean lion OR greek hero film', 'greek goddess harvest OR demeter mythology', 'scales of justice OR goddess justice film', 'orion mythology OR constellation orion film', 'centaur chiron OR greek centaur mythology', 'god pan mythology OR greek gods film', 'ganymede zeus OR greek cupbearer mythology', 'aphrodite eros OR venus goddess mythology'];
+    var FILM_SCHOOL = [
+      { k: 'fs1', q: 'title:(our mr sun)', t: 'Our Mr. Sun (1956)', why: 'The Bell Science classic — the star at the middle of every chart, explained with wit and animation.' },
+      { k: 'fs2', q: 'constellations astronomy educational film', t: 'Finding the constellations', why: 'How to actually locate the figures this app keeps naming, in your own night sky.' },
+      { k: 'fs3', q: 'solar eclipse film', t: 'Eclipses, on film', why: 'Eclipses happen exactly at the Moon’s nodes — the same two points in your chart as your North and South Node.' }
+    ];
+    function watchChannels(c, b) {
+      var sun = c.planets.sun.sign, S = DATA.SIGNS[sun], ruler = S.ruler, rf = RULER_FILM[ruler] || RULER_FILM.Sun;
+      var ch = [];
+      ch.push({ h: 'CH 1 · YOUR SIGN’S PROGRAMME', intro: 'Three picks tuned to ' + S.name + ' — its character, its ruler, its myth. Each one explained.', items: [
+        { k: 'sf' + sun, q: SIGN_FILM[sun].q, t: SIGN_FILM[sun].t, why: SIGN_FILM[sun].why },
+        { k: 'rf' + ruler, q: rf.q, t: 'Your ruler: ' + ruler, why: rf.why },
+        { k: 'mq' + sun, q: MYTH_Q[sun], t: 'The myth: ' + MYTHS[sun].t, why: 'The story the ancients pinned to your stars — ' + MYTHS[sun].t + '. Read the full telling in Learn → Myths.' }
+      ] });
+      if (b && b.y) ch.push({ h: 'CH 2 · BORN UNDER THIS SKY', intro: 'What the world was watching in ' + b.y + ', beneath the same sky you arrived under.', items: [
+        { k: 'ny' + b.y, q: 'collection:(universal_newsreels) AND date:[' + b.y + '-01-01 TO ' + b.y + '-12-31]', t: 'Newsreels of ' + b.y, why: 'The headlines of your birth year, exactly as people first saw them.' },
+        { k: 'py' + b.y, q: 'collection:(prelinger) AND date:[' + b.y + '-01-01 TO ' + b.y + '-12-31]', t: 'Everyday life, ' + b.y, why: 'Ordinary days from your birth year — the texture of the world you joined.' }
+      ] });
+      ch.push({ h: 'CH 3 · FILM SCHOOL — THE REAL SKY', intro: 'Short public-domain science films: the actual objects behind the chart.', items: FILM_SCHOOL });
+      return ch;
+    }
+    // resolve one curated slot to a real archive item (memory + localStorage cache, so the guide renders offline)
+    function iaSlot(key, q) {
+      UI.iaSlot = UI.iaSlot || {};
+      if (UI.iaSlot[key] !== undefined) return UI.iaSlot[key];
+      var cached = watchCacheGet(key);
+      if (cached) { UI.iaSlot[key] = cached; return cached; }
+      if (typeof fetch !== 'function' || (typeof navigator !== 'undefined' && navigator.onLine === false)) { UI.iaSlot[key] = false; return false; }
+      UI.iaSlot[key] = null;
+      var url = 'https://archive.org/advancedsearch.php?q=' + encodeURIComponent('(' + q + ') AND (mediatype:movies OR mediatype:audio)') + '&fl[]=identifier&fl[]=title&rows=3&sort[]=downloads+desc&output=json';
+      fetch(url).then(function (r) { return r.json(); }).then(function (j) {
+        var docs = (j && j.response && j.response.docs) || [];
+        var hit = docs.length ? { id: docs[0].identifier, t: docs[0].title || docs[0].identifier } : false;
+        UI.iaSlot[key] = hit; if (hit) watchCachePut(key, hit);
+      })['catch'](function () { UI.iaSlot[key] = false; });
+      return null;
+    }
+    function watchCacheGet(key) { try { var m = JSON.parse(localStorage.getItem('aqp_watch') || '{}'); return m[key] || null; } catch (e) { return null; } }
+    function watchCachePut(key, v) { try { var m = JSON.parse(localStorage.getItem('aqp_watch') || '{}'); m[key] = v; localStorage.setItem('aqp_watch', JSON.stringify(m)); } catch (e) {} }
+    // one Bakelite TV tile; returns a frameRect when this tile is the live one
+    function tvTile(it, res, cx0, rowTop, cw2, cardH) {
+      var sy0 = sY(rowTop), active = (UI.tvActive === it.k) && res;
+      var off = pressOff(cx0, sy0, cw2, cardH, 2), frameRect = null;
+      bakeliteBody(cx0, sy0 + off, cw2, cardH);
+      var scrX = cx0 + 12, scrY = sy0 + off + 12, scrW = cw2 - 24, scrH = cw2 - 24;
+      if (active) { frameRect = { x: scrX + 3, y: scrY + 3, w: scrW - 6, h: scrH - 6 }; p.noStroke(); fillc([0, 0, 0]); p.rect(scrX, scrY, scrW, scrH, 6); }
+      else if (res) {
+        var im = iaThumb(res.id);
+        if (im && im !== false && (im.naturalWidth || im.width)) {
+          var dc = p.drawingContext, iw = im.naturalWidth || im.width, ih = im.naturalHeight || im.height, scc = Math.max(scrW / iw, scrH / ih), rw = iw * scc, rh2 = ih * scc;
+          dc.save(); dc.beginPath(); dc.rect(scrX, scrY, scrW, scrH); dc.clip(); try { dc.drawImage(im, scrX + scrW / 2 - rw / 2, scrY + scrH / 2 - rh2 / 2, rw, rh2); } catch (e) {} dc.restore();
+          p.noStroke(); fillc([0, 0, 0], 120); p.rect(scrX, scrY + scrH - 20, scrW, 20); setFont(MONO, 8, [244, 238, 228], p.CENTER, p.BOTTOM, 235); p.text('TAP TO PLAY', scrX + scrW / 2, scrY + scrH - 6);
+        } else { tvStatic(scrX, scrY, scrW, scrH); setFont(MONO, 9, [214, 214, 224], p.CENTER, p.CENTER, 210); p.text(im === false ? 'NO PREVIEW — TAP TO PLAY' : '…', scrX + scrW / 2, scrY + scrH / 2); }
+      } else { tvStatic(scrX, scrY, scrW, scrH); setFont(MONO, 9, [214, 214, 224], p.CENTER, p.CENTER, 210); p.text(res === false ? 'OFF AIR — TAP TO RETUNE' : 'TUNING…', scrX + scrW / 2, scrY + scrH / 2); }
+      p.noFill(); strokec([22, 16, 12], 255); p.strokeWeight(4); p.rect(scrX - 2, scrY - 2, scrW + 4, scrH + 4, 7);
+      var tt = it.t; p.textFont(SANS); p.textSize(10.5); while (tt.length > 4 && p.textWidth(tt) > scrW - 2) tt = tt.slice(0, -2);
+      setFont(SANS, 10.5, [240, 230, 216], p.LEFT, p.TOP); p.text(tt + (tt !== it.t ? '…' : ''), scrX, sy0 + off + cardH - 19);
+      (function (key) { pushHit(cx0, sy0, cw2, cardH, function () { if (UI.iaSlot && UI.iaSlot[key] === false) { delete UI.iaSlot[key]; return; } UI.tvActive = (UI.tvActive === key ? null : key); UI.tvMuted = true; }); })(it.k);
+      return frameRect;
+    }
+    function watchShelf(c, b, x, w, ly) {
+      var chs = watchChannels(c, b), cw2 = (w - 12) / 2, cardH = cw2 + 30, frameRect = null, activeIt = null, ci, si;
+      ly += paragraph('Four channels, tuned to your chart — public-domain film and audio from the Internet Archive, each pick explained. Tap a set to play it right here.', x, ly, w, 14.5, INK, SERIF, 22, 200) + 14;
+      for (ci = 0; ci < chs.length; ci++) {
+        var ch = chs[ci];
+        eyebrow(ch.h, x, ly, ACC); ly += 22;
+        ly += paragraph(ch.intro, x, ly, w, 13, INK, SERIF, 19, 190) + 10;
+        si = 0;
+        while (si < ch.items.length) {
+          var rowTop = ly, cc, rowWhy = null;
+          for (cc = 0; cc < 2 && si < ch.items.length; cc++, si++) {
+            var it = ch.items[si], res = iaSlot(it.k, it.q);
+            var fr = tvTile(it, res, x + cc * (cw2 + 12), rowTop, cw2, cardH);
+            if (fr) { frameRect = fr; activeIt = res; }
+            if (UI.tvActive === it.k) rowWhy = it.why;
+          }
+          ly = rowTop + cardH + 12;
+          if (rowWhy) { setFont(MONO, 8.5, ACCTX, p.LEFT, p.TOP, 235); p.text('WHY THIS IS YOURS', x, sY(ly)); ly += 16; ly += paragraph(rowWhy, x, ly, w, 13.5, INK, SERIF, 20, 225) + 10; }
+        }
+        ly += 8;
+      }
+      // CH 4 · the open dial — a live search on your sign, for serendipity
+      eyebrow('CH 4 · THE OPEN DIAL', x, ly, ACC); ly += 22;
+      var sunNm = DATA.SIGNS[c.planets.sun.sign].name, ascNm = (b.timeKnown && c.ascBody) ? DATA.SIGNS[c.ascBody.sign].name : '';
+      ly += paragraph('A live sweep of the archive for your ' + sunNm + ' Sun' + (ascNm && ascNm !== sunNm ? (' and ' + ascNm + ' rising') : '') + ' — whatever is out there tonight.', x, ly, w, 13, INK, SERIF, 19, 190) + 10;
+      iaSearch(c, b);
+      var res2 = UI.iaResults;
+      if (UI.iaErr) {
+        var em = (UI.iaErr === 'net' || UI.iaErr === 'offline') ? 'Couldn’t reach the Internet Archive — the open dial needs a connection. Your curated channels above still show their guide from the last visit.' : 'No archive matches for your sign right now — tap to try again.';
+        ly += paragraph(em, x, ly, w, 14, INK, SERIF, 21, 200) + 12;
+        flatBtn('Try again', x, ly, 160, 42, function () { UI.iaFor = null; }, false); ly += 52;
+      } else if (!res2) {
+        setFont(MONO, 10, ACCTX, p.LEFT, p.TOP, 210); p.text('TUNING IN TO THE ARCHIVE…', x, sY(ly)); ly += 22;
+        var s0 = sY(ly); bakeliteBody(x, s0, cw2, cardH); bakeliteBody(x + cw2 + 12, s0, cw2, cardH);
+        tvStatic(x + 12, s0 + 12, cw2 - 24, cw2 - 24); tvStatic(x + cw2 + 24, s0 + 12, cw2 - 24, cw2 - 24);
+        ly += cardH + 14;
+      } else {
+        var di = 0;
+        while (di < Math.min(res2.length, 6)) {
+          var rowTop2 = ly, cc2;
+          for (cc2 = 0; cc2 < 2 && di < Math.min(res2.length, 6); cc2++, di++) {
+            var dit = res2[di], key2 = 'dial:' + dit.id;
+            var fr2 = tvTile({ k: key2, t: dit.t }, { id: dit.id, t: dit.t }, x + cc2 * (cw2 + 12), rowTop2, cw2, cardH);
+            if (fr2) { frameRect = fr2; activeIt = { id: dit.id, t: dit.t }; }
+          }
+          ly = rowTop2 + cardH + 14;
+        }
+      }
+      // the one live screen gets the real archive.org player, tracked as the shelf scrolls
+      if (frameRect && activeIt) {
+        var mf = ensureMediaFrame();
+        if (mf) {
+          var want = 'ia:' + activeIt.id; if (UI.mframeId !== want) { mf.src = mediaSrc(activeIt); UI.mframeId = want; }
+          var vis = (frameRect.y >= topY() - 2) && (frameRect.y + frameRect.h <= H - (UI.safeBottom || 0));
+          if (vis) { mf.style.display = 'block'; mf.style.left = frameRect.x + 'px'; mf.style.top = frameRect.y + 'px'; mf.style.width = frameRect.w + 'px'; mf.style.height = frameRect.h + 'px'; mf.style.borderRadius = '4px'; } else mf.style.display = 'none';
+          UI.mediaDrawn = true;
+        }
+      }
+      ly += 4; ly += paragraph('Streamed from the Internet Archive (archive.org) — public-domain film and audio. The channel guide is remembered, so it appears even offline; playing needs a connection. Tap a playing screen again to stop.', x, ly, w, 11, INK, MONO, 16, 140) + 8;
+      return ly;
+    }
     function ensureMediaFrame() {
       if (UI.mframe || typeof document === 'undefined') return UI.mframe;
       try { var f = document.createElement('iframe'); f.setAttribute('allow', 'autoplay; encrypted-media; picture-in-picture; fullscreen'); f.setAttribute('allowfullscreen', 'true'); f.setAttribute('aria-hidden', 'true'); var s = f.style; s.position = 'fixed'; s.zIndex = '7'; s.border = '0'; s.background = '#000'; s.display = 'none'; document.body.appendChild(f); UI.mframe = f; } catch (e) { UI.mframe = null; }
@@ -6319,56 +6467,8 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
           (function (idx, ay) { pushHit(x, sY(ay), w, frh, function () { UI.learnItem = idx; UI.scroll.learn = 0; UI.popT = nowT(); }); })(i, ly); ly += frh;
         }
         if (!fm.length) ly += paragraph('No close matches in the set — a rare sky.', x, ly, w, 15, INK, SERIF, 23, 180) + 10;
-      } else if (cat === 'watch') { // square retro TVs streaming public-domain media from the Internet Archive, searched to your chart
-        var sunNm = DATA.SIGNS[c.planets.sun.sign].name, ascNm = (b.timeKnown && c.ascBody) ? DATA.SIGNS[c.ascBody.sign].name : '';
-        ly += paragraph('Public-domain film and audio from the Internet Archive, searched live to your chart — your ' + sunNm + ' Sun' + (ascNm && ascNm !== sunNm ? (' and ' + ascNm + ' rising') : '') + '. Tap a screen to play it here, in-app.', x, ly, w, 14.5, INK, SERIF, 22, 200) + 14;
-        iaSearch(c, b);
-        var res = UI.iaResults, frameRect = null, cw2 = (w - 12) / 2, cardH = cw2 + 30;
-        if (UI.iaErr) {
-          var em = (UI.iaErr === 'net' || UI.iaErr === 'offline') ? 'Couldn’t reach the Internet Archive — Watch needs a connection. Tap to try again when you’re online.' : 'No archive matches for your sign right now — tap to try again.';
-          ly += paragraph(em, x, ly, w, 14.5, INK, SERIF, 22, 200) + 12;
-          flatBtn('Try again', x, ly, 160, 42, function () { UI.iaFor = null; }, false); ly += 52;
-        } else if (!res) {
-          setFont(MONO, 10, ACCTX, p.LEFT, p.TOP, 210); p.text('TUNING IN TO THE ARCHIVE…', x, sY(ly)); ly += 22;
-          var s0 = sY(ly); bakeliteBody(x, s0, cw2, cardH); bakeliteBody(x + cw2 + 12, s0, cw2, cardH);
-          tvStatic(x + 12, s0 + 12, cw2 - 24, cw2 - 24); tvStatic(x + cw2 + 24, s0 + 12, cw2 - 24, cw2 - 24);
-          ly += cardH + 14;
-        } else {
-          var si = 0;
-          while (si < res.length) {
-            var rowTop = ly, cc;
-            for (cc = 0; cc < 2 && si < res.length; cc++, si++) {
-              var it = res[si], cx0 = x + cc * (cw2 + 12), sy0 = sY(rowTop), active = (UI.tvActive === si);
-              var off = pressOff(cx0, sy0, cw2, cardH, 2);
-              bakeliteBody(cx0, sy0 + off, cw2, cardH);
-              var scrX = cx0 + 12, scrY = sy0 + off + 12, scrW = cw2 - 24, scrH = cw2 - 24;
-              if (active) { frameRect = { x: scrX + 3, y: scrY + 3, w: scrW - 6, h: scrH - 6 }; p.noStroke(); fillc([0, 0, 0]); p.rect(scrX, scrY, scrW, scrH, 6); }
-              else {
-                var im = iaThumb(it.id);
-                if (im && im !== false && (im.naturalWidth || im.width)) {
-                  var dc = p.drawingContext, iw = im.naturalWidth || im.width, ih = im.naturalHeight || im.height, scc = Math.max(scrW / iw, scrH / ih), rw = iw * scc, rh = ih * scc;
-                  dc.save(); dc.beginPath(); dc.rect(scrX, scrY, scrW, scrH); dc.clip(); try { dc.drawImage(im, scrX + scrW / 2 - rw / 2, scrY + scrH / 2 - rh / 2, rw, rh); } catch (e) {} dc.restore();
-                  p.noStroke(); fillc([0, 0, 0], 120); p.rect(scrX, scrY + scrH - 20, scrW, 20); setFont(MONO, 8, [244, 238, 228], p.CENTER, p.BOTTOM, 235); p.text('TAP TO PLAY', scrX + scrW / 2, scrY + scrH - 6);
-                } else { tvStatic(scrX, scrY, scrW, scrH); setFont(MONO, 9, [214, 214, 224], p.CENTER, p.CENTER, 210); p.text(im === false ? 'NO PREVIEW' : '…', scrX + scrW / 2, scrY + scrH / 2); }
-              }
-              p.noFill(); strokec([22, 16, 12], 255); p.strokeWeight(4); p.rect(scrX - 2, scrY - 2, scrW + 4, scrH + 4, 7);
-              setFont(SANS, 10.5, [240, 230, 216], p.LEFT, p.TOP); var tt = it.t; p.textFont(SANS); p.textSize(10.5); while (tt.length > 4 && p.textWidth(tt) > scrW - 2) tt = tt.slice(0, -2); p.text(tt + (tt !== it.t ? '…' : ''), scrX, sy0 + off + cardH - 19);
-              (function (idx, lx, ltop) { pushHit(lx, sY(ltop), cw2, cardH, function () { setMediaActive(UI.tvActive === idx ? -1 : idx); }); })(si, cx0, rowTop);
-            }
-            ly = rowTop + cardH + 14;
-          }
-          // the one active screen gets the live archive.org player, tracked as the grid scrolls
-          if (frameRect && UI.tvActive != null && UI.tvActive >= 0 && res[UI.tvActive]) {
-            var act = res[UI.tvActive], mf = ensureMediaFrame();
-            if (mf) {
-              var want = 'ia:' + act.id; if (UI.mframeId !== want) { mf.src = mediaSrc(act); UI.mframeId = want; }
-              var vis = (frameRect.y >= topY() - 2) && (frameRect.y + frameRect.h <= H - (UI.safeBottom || 0));
-              if (vis) { mf.style.display = 'block'; mf.style.left = frameRect.x + 'px'; mf.style.top = frameRect.y + 'px'; mf.style.width = frameRect.w + 'px'; mf.style.height = frameRect.h + 'px'; mf.style.borderRadius = '4px'; } else mf.style.display = 'none';
-              UI.mediaDrawn = true;
-            }
-          }
-          ly += 4; setFont(MONO, 8.5, INK, p.LEFT, p.TOP, 140); ly += paragraph('Streamed from the Internet Archive (archive.org) — public-domain film and audio, searched to your sign. Plays in-app; tap a playing screen again to stop.', x, ly, w, 11, INK, MONO, 16, 140) + 8;
-        }
+      } else if (cat === 'watch') { // curated retro-TV channels: a hand-tuned public-domain programme per chart
+        ly = watchShelf(c, b, x, w, ly);
       } else if (cat === 'howto') { // hands-on guides
         ly += paragraph('Short, practical walk-throughs — how to actually do these things yourself, each with a little animation.', x, ly, w, 14.5, INK, SERIF, 22, 200) + 12;
         for (i = 0; i < HOWTO.length; i++) {
