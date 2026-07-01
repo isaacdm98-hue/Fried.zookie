@@ -4433,7 +4433,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       UI.contentH.chart = ly;
     }
 
-    // ---- personalised, animated walkthrough of YOUR chart (first reveal + daily/hour transits) ----
+    // ---- personalised, animated walkthrough of YOUR chart — staged as ACTS: each has its own light, tempo, camera, choreography and score ----
     function walkTr(c) { if (!UI.walkTr) { try { UI.walkTr = APP.composeTransits(c); } catch (e) { UI.walkTr = { daily: [], timed: [], ctx: null }; } } return UI.walkTr; }
     function walkTheme(c) { if (UI.walkTheme == null) { try { var s = APP.composeSignatures(c), f = '', i; for (i = 0; i < s.length; i++) if (s[i].label === 'The throughline') { f = s[i].text; break; } UI.walkTheme = f || (s[0] ? s[0].text : ''); } catch (e) { UI.walkTheme = ''; } } return UI.walkTheme; }
     function walkCap(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
@@ -4445,6 +4445,69 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       s.push({ k: 'elements' }, { k: 'aspect' }, { k: 'theme' }, { k: 'famous' });
       s.push({ k: 'today' }, { k: 'hour' }, { k: 'close' });
       return s;
+    }
+    // stage direction per act: the ground light it washes the stage in, how it enters, how the camera holds it, how it idles
+    function actStage(sc, c) {
+      var s = { tint: null, ta: 22, ent: 560, ease: 'cubic', cam: 'push', idle: 'none' };
+      if (sc.k === 'body') {
+        s.tint = BODYCOL[sc.key] || null;
+        if (sc.key === 'moon') { s.ent = 980; s.cam = 'float'; s.idle = 'bob'; s.ta = 30; }
+        else if (sc.key === 'mars') { s.ent = 360; s.ease = 'back'; s.cam = 'punch'; }
+        else if (sc.key === 'saturn') { s.ent = 1200; s.cam = 'settle'; s.ta = 26; }
+        else if (sc.key === 'sun') { s.ent = 700; s.idle = 'blaze'; }
+        else if (sc.key === 'mercury') { s.ent = 420; s.idle = 'orbit'; }
+        else if (sc.key === 'venus') { s.ent = 680; s.idle = 'bob'; s.ta = 26; }
+        else if (sc.key === 'jupiter') { s.ent = 620; s.ease = 'back'; }
+      }
+      else if (sc.k === 'rising') { s.tint = ELHUE[DATA.SIGNS[c.ascBody.sign].element]; s.ent = 1400; }
+      else if (sc.k === 'elements') { s.tint = ELHUE[APP.domElement(c.elements)]; s.ent = 800; }
+      else if (sc.k === 'aspect') { s.tint = ACC; s.ta = 16; s.ent = 700; }
+      else if (sc.k === 'outer') { s.ent = 900; s.idle = 'orbit'; }
+      else if (sc.k === 'close') { s.ent = 900; s.cam = 'pull'; }
+      return s;
+    }
+    // the score: a tiny elemental motif per act on the built-in synth (only if sound is on in Settings)
+    var MOTIFS = {
+      fire: [[659.25, 0, 0.16], [783.99, 110, 0.16], [987.77, 220, 0.3]],
+      earth: [[196, 0, 0.4], [246.94, 240, 0.4], [293.66, 480, 0.6]],
+      air: [[587.33, 0, 0.14], [739.99, 120, 0.14], [880, 240, 0.26]],
+      water: [[440, 0, 0.5], [523.25, 200, 0.5], [622.25, 400, 0.8]]
+    };
+    function actMotif(sc, c) {
+      if (!soundOn()) return;
+      var seq = null;
+      if (sc.k === 'body' && c.planets[sc.key]) seq = MOTIFS[DATA.SIGNS[c.planets[sc.key].sign].element];
+      else if (sc.k === 'rising') seq = MOTIFS[DATA.SIGNS[c.ascBody.sign].element];
+      else if (sc.k === 'aspect') seq = [[392, 0, 0.24], [523.25, 160, 0.24], [466.16, 340, 0.42]];
+      else if (sc.k === 'close') seq = [[523.25, 0, 0.3], [659.25, 140, 0.3], [783.99, 280, 0.5], [1046.5, 480, 0.8]];
+      else if (sc.k === 'intro') seq = [[440, 0, 0.5], [659.25, 220, 0.6]];
+      else seq = [[587.33, 0, 0.22], [880, 150, 0.3]];
+      var i; for (i = 0; i < seq.length; i++) (function (n) { setTimeout(function () { blip(n[0], n[2], 0.032); }, n[1]); })(seq[i]);
+    }
+    // the hand-off: a short connective line that carries the story from the last act into this one
+    function walkPre(c, b, sc) {
+      if (sc.k === 'body') {
+        var sunNm = DATA.SIGNS[c.planets.sun.sign].name;
+        return {
+          sun: 'Every chart has a centre of gravity. Yours —',
+          moon: 'That was your ' + sunNm + ' daylight. Now the night side —',
+          mercury: 'Sun and Moon set the key. Now the voice —',
+          venus: 'And when the talking softens —',
+          mars: 'Venus draws you toward things. This is what goes and gets them —',
+          jupiter: 'The personal planets are cast. Enter the first great teacher —',
+          saturn: 'Jupiter says yes. This one says — prove it.'
+        }[sc.key] || '';
+      }
+      if (sc.k === 'rising') return 'Who you are is cast. This is the door the world knocks on —';
+      if (sc.k === 'outer') return 'Beyond Saturn, three planets so slow they belong to your whole generation —';
+      if (sc.k === 'elements') return 'Step back. Seen from above, the whole cast resolves into four colours —';
+      if (sc.k === 'aspect') return 'You’ve met the players one by one. Now hear the two closest of them talk —';
+      if (sc.k === 'theme') return 'If this whole sky said only one thing —';
+      if (sc.k === 'famous') return 'You are not the first to carry this arrangement —';
+      if (sc.k === 'today') return 'Your chart is the stage. This is what’s crossing it right now —';
+      if (sc.k === 'hour') return 'And faster still —';
+      if (sc.k === 'close') return 'Curtain call —';
+      return '';
     }
     function walkContent(c, b, sc) {
       if (sc.k === 'intro') return { t: 'Here is your sky', x: 'This is the exact arrangement of the heavens the moment you arrived — your birth chart. Tap through and I’ll walk you, piece by piece, through everything written here.' };
@@ -4483,7 +4546,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       }
       if (sc.k === 'today') { var tr = walkTr(c); return { t: 'Live on your chart — today', x: tr.daily.length ? ('Right now the moving sky is touching you here: ' + tr.daily.slice(0, 2).map(APP.transitSentence).join(' ')) : 'A quiet sky today — your natal pattern is running undisturbed.' }; }
       if (sc.k === 'hour') { var tr2 = walkTr(c); return { t: 'Right now — this passing hour', x: 'The Moon is the fast hand of the clock. ' + (tr2.timed.length ? tr2.timed.slice(0, 1).map(APP.transitSentence).join(' ') : 'It isn’t closely touching your chart this hour — it moves fast, so look again later.') }; }
-      return { t: 'Now it’s yours', x: 'That’s your whole sky. Tap any body on the wheel any time to revisit its meaning, and come back to Read to see what’s live for you each day.' };
+      return { t: 'This is you', x: 'Every piece you just met, back in its true place — one sky, one arrangement, yours alone. Tap any body on the wheel any time to revisit its meaning, and come back to Read for what’s live each day.' };
     }
     function miniWheel(c, b, cx, cy, r, hl, t, chord) {
       var RAD = Math.PI / 180, asc = b.timeKnown ? c.asc : 0, z, k;
@@ -4506,53 +4569,147 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       function ayf(lon, rr) { return cy - rr * Math.sin((180 + (lon - asc)) * RAD); }
       for (i = 0; i < Math.min(tr.daily.length, 4); i++) { var t2 = tr.daily[i], src = tr.ctx.tp[t2.tp]; if (!src) continue; var tlon = ((src.lon - ay0) % 360 + 360) % 360, np = c.planets[t2.np]; if (!np) continue; var ox = ax(tlon, r * 1.14), oy = ayf(tlon, r * 1.14), nx = ax(np.lon, r * 0.66), ny = ayf(np.lon, r * 0.66); strokec(ACC, 110); p.strokeWeight(1); p.line(ox, oy, nx, ny); p.noStroke(); fillc(ACC); p.ellipse(ox, oy, 13, 13); setFont(SANS, 8, GROUNDS[UI.screen], p.CENTER, p.CENTER); p.text(APP.glyphFor(t2.tp), ox, oy + 0.5); }
     }
-    function startWalk() { UI.walk = { i: 0, t0: nowT() }; UI.walkTr = null; UI.walkTheme = null; UI.screen = 'chart'; UI.scroll.chart = 0; }
+    // the aspect act: the two planets enter from opposite wings, converge to their true angle, and the chord between them bows, then snaps taut
+    function sceneAspectDuet(c, cx, cy, r, tt) {
+      var a0 = c.aspects && c.aspects[0]; if (!a0) return;
+      var half = ((a0.asp.angle || 0) * Math.PI / 180) / 2; if (half < 0.10) half = 0.10;
+      var e1 = eCubic(cl01(tt / 1100)), rr = r * 0.8, t = nowT();
+      var a1 = -Math.PI / 2 - half, a2 = -Math.PI / 2 + half;
+      var fx1 = cx + Math.cos(a1) * rr, fy1 = cy + Math.sin(a1) * rr, fx2 = cx + Math.cos(a2) * rr, fy2 = cy + Math.sin(a2) * rr;
+      var x1 = (cx - r * 2.1) + (fx1 - (cx - r * 2.1)) * e1, x2 = (cx + r * 2.1) + (fx2 - (cx + r * 2.1)) * e1;
+      p.noFill(); strokec(INK, 40); p.strokeWeight(1); p.ellipse(cx, cy, rr * 2, rr * 2);
+      var e2 = cl01((tt - 1150) / 900), snap = tt > 2050;
+      if (e2 > 0) {
+        var mx = (x1 + x2) / 2, my = (fy1 + fy2) / 2, bow = snap ? 0 : Math.sin(e2 * Math.PI) * r * 0.34;
+        var qx = mx, qy = my + bow, seg = 22, ee = eCubic(e2), j;
+        strokec(ACC, 90 + 140 * ee); p.strokeWeight(snap ? 2.6 : 1.8); p.noFill(); p.beginShape();
+        for (j = 0; j <= Math.floor(seg * ee); j++) { var u = j / seg, ix = (1 - u) * (1 - u) * x1 + 2 * (1 - u) * u * qx + u * u * x2, iy = (1 - u) * (1 - u) * fy1 + 2 * (1 - u) * u * qy + u * u * fy2; p.vertex(ix, iy); }
+        p.endShape();
+        if (snap) { var pulse = 0.5 + 0.5 * Math.sin(t * 0.006); setFont(SANS, 22, ACC, p.CENTER, p.CENTER, 190 + pulse * 65); p.text(a0.asp.glyph, mx, my - 16); }
+      }
+      var orbNow = 8 - (8 - a0.orb) * e1;
+      setFont(MONO, 10, ACCTX, p.CENTER, p.TOP, 230); p.text('ORB ' + orbNow.toFixed(1) + '°' + (snap ? ' — CLOSE ENOUGH TO HOLD' : ''), cx, cy + rr + 14);
+      function duetBody(k, X, Y, br) {
+        if (c.planets[k] && BODYCOL[k]) { celestialBody(k, X, Y, br, t); return; }
+        p.noStroke(); fillc(ACC); p.ellipse(X, Y, br * 1.8, br * 1.8); setFont(SANS, br, GROUNDS[UI.screen], p.CENTER, p.CENTER); p.text(APP.glyphFor(k), X, Y + 0.5);
+      }
+      duetBody(a0.a, x1, fy1, r * 0.30); duetBody(a0.b, x2, fy2, r * 0.30);
+      setFont(SANS, 12, INK, p.CENTER, p.TOP, 220 * e1); p.text(APP.nameFor(a0.a), x1, fy1 + r * 0.40); p.text(APP.nameFor(a0.b), x2, fy2 + r * 0.40);
+    }
+    // the finale: the whole cast returns — every planet flies home to its true place, the aspects lace in one by one, the wheel completes
+    function sceneAssembly(c, b, cx, cy, r, tt) {
+      var RAD = Math.PI / 180, asc = b.timeKnown ? c.asc : 0, order = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto'], i;
+      function ax(lon, rr) { return cx + rr * Math.cos((180 + (lon - asc)) * RAD); }
+      function ay2(lon, rr) { return cy - rr * Math.sin((180 + (lon - asc)) * RAD); }
+      var re = eCubic(cl01(tt / 800));
+      p.noFill(); strokec(INK, 200 * re); p.strokeWeight(1.5); p.ellipse(cx, cy, r * 2 * re, r * 2 * re);
+      if (re > 0.9) { var ga = cl01((tt - 800) / 500); for (i = 0; i < 12; i++) { var a = i * 30; strokec(INK, (i % 3 === 0 ? 150 : 60) * ga); p.strokeWeight(1); p.line(ax(a, r), ay2(a, r), ax(a, r - (i % 3 === 0 ? 9 : 5)), ay2(a, r - (i % 3 === 0 ? 9 : 5))); setFont(SANS, 11, INK, p.CENTER, p.CENTER, 140 * ga); p.text(DATA.SIGNS[i].glyph, ax(a + 15, r + 13), ay2(a + 15, r + 13)); } }
+      if (b.timeKnown && tt > 700) { strokec(ACC, 200 * cl01((tt - 700) / 500)); p.strokeWeight(1.8); p.line(cx, cy, ax(asc, r - 3), ay2(asc, r - 3)); }
+      var startL = 2400, per = 260, n = Math.min((c.aspects || []).length, 9);
+      for (i = 0; i < n; i++) {
+        var le = cl01((tt - startL - i * per) / 420); if (le <= 0) break;
+        var A = c.aspects[i], pa = c.planets[A.a], pb = c.planets[A.b]; if (!pa || !pb) continue;
+        var lx1 = ax(pa.lon, r * 0.62), ly1 = ay2(pa.lon, r * 0.62), lx2 = ax(pb.lon, r * 0.62), ly2b = ay2(pb.lon, r * 0.62);
+        var hard = (A.asp.quality === 'friction' || A.asp.quality === 'tension'), ld = eCubic(le);
+        strokec(hard ? ACC : INK, (hard ? 170 : 90) * le); p.strokeWeight(hard ? 1.6 : 1); p.line(lx1, ly1, lx1 + (lx2 - lx1) * ld, ly1 + (ly2b - ly1) * ld);
+      }
+      for (i = 0; i < order.length; i++) {
+        var pl = c.planets[order[i]]; if (!pl) continue;
+        var pe = eBack(cl01((tt - 450 - i * 150) / 620)); if (pe <= 0) continue;
+        var px = cx + (ax(pl.lon, r * 0.78) - cx) * pe, py = cy + (ay2(pl.lon, r * 0.78) - cy) * pe;
+        p.noStroke(); fillc(BODYCOL[order[i]] || INK, 255); p.ellipse(px, py, 15, 15);
+        p.noFill(); strokec(INK, 120); p.strokeWeight(1); p.ellipse(px, py, 15, 15);
+        setFont(SANS, 9, GROUNDS[UI.screen], p.CENTER, p.CENTER, 235); p.text(APP.glyphFor(order[i]), px, py + 0.5);
+      }
+      p.noStroke(); fillc(INK); p.ellipse(cx, cy, 5, 5);
+    }
+    function startWalk() { UI.walk = { i: 0, t0: nowT() }; UI.walkTr = null; UI.walkTheme = null; UI.walkAuto = false; UI.walkMotifI = -1; UI.screen = 'chart'; UI.scroll.chart = 0; audioInit(); }
     function walkNext(n) { if (!UI.walk) return; if (UI.walk.i >= n - 1) { endWalk(); return; } UI.walk.i++; UI.walk.t0 = nowT(); }
     function walkPrev() { if (UI.walk && UI.walk.i > 0) { UI.walk.i--; UI.walk.t0 = nowT(); } }
-    function endWalk() { UI.walk = null; if (APP.STATE.settings) { APP.STATE.settings.walked = true; APP.save(); } }
-    // a living elemental ring — the four elements as proportional arcs (used in the walkthrough)
-    function drawElementRing(c, cx, cy, r) {
+    function endWalk() { UI.walk = null; UI.walkAuto = false; if (APP.STATE.settings) { APP.STATE.settings.walked = true; APP.save(); } }
+    // a living elemental ring — each element sweeps in on its own beat, its share counting up as it fills
+    function drawElementRing(c, cx, cy, r, prog) {
+      if (prog == null) prog = 1;
       var els = ['fire', 'earth', 'air', 'water'], total = 0, k, ang = -Math.PI / 2, rr = r * 0.82;
       for (k = 0; k < 4; k++) total += c.elements[els[k]]; if (total <= 0) total = 1;
       p.noFill(); strokec(INK, 30); p.strokeWeight(1); p.ellipse(cx, cy, rr * 2, rr * 2);
       p.strokeCap(p.PROJECT); p.strokeWeight(r * 0.30);
-      for (k = 0; k < 4; k++) { var frac = c.elements[els[k]] / total, span = frac * Math.PI * 2; if (span <= 0.001) continue; strokec(ELHUE[els[k]], 235); p.arc(cx, cy, rr * 2, rr * 2, ang + 0.03, ang + span - 0.03); ang += span; }
+      for (k = 0; k < 4; k++) {
+        var pk = eCubic(cl01(prog * 4.6 - k * 1.1));
+        var frac = c.elements[els[k]] / total, span = frac * Math.PI * 2 * pk;
+        if (span > 0.06) { strokec(ELHUE[els[k]], 235); p.arc(cx, cy, rr * 2, rr * 2, ang + 0.03, ang + span - 0.03); }
+        ang += frac * Math.PI * 2;
+      }
       p.strokeCap(p.ROUND);
       ang = -Math.PI / 2;
-      for (k = 0; k < 4; k++) { var f2 = c.elements[els[k]] / total; if (f2 > 0.07) { var mid = ang + f2 * Math.PI, lx = cx + Math.cos(mid) * rr, ly2 = cy + Math.sin(mid) * rr; setFont(MONO, 9, GROUNDS[UI.screen], p.CENTER, p.CENTER, 255); p.text(c.elements[els[k]] + '%', lx, ly2); } ang += f2 * Math.PI * 2; }
-      setFont(MONO, 8.5, INK, p.CENTER, p.CENTER, 150); p.text('FIRE · EARTH · AIR · WATER', cx, cy);
+      for (k = 0; k < 4; k++) { var pk2 = eCubic(cl01(prog * 4.6 - k * 1.1)), f2 = c.elements[els[k]] / total; if (f2 > 0.07 && pk2 > 0.15) { var mid = ang + f2 * Math.PI, lx = cx + Math.cos(mid) * rr, ly2 = cy + Math.sin(mid) * rr; setFont(MONO, 9, GROUNDS[UI.screen], p.CENTER, p.CENTER, 255 * pk2); p.text(Math.round(c.elements[els[k]] * pk2) + '%', lx, ly2); } ang += f2 * Math.PI * 2; }
+      setFont(MONO, 8.5, INK, p.CENTER, p.CENTER, 150 * cl01(prog * 2)); p.text('FIRE · EARTH · AIR · WATER', cx, cy);
     }
     function drawWalkthrough(c, b) {
       var x = sx(), w = cw(), top = topY(), vh = viewH(), cx = x + w / 2, scenes = walkScenesArr(b);
-      if (UI.walk.i >= scenes.length) UI.walk.i = scenes.length - 1; var sc = scenes[UI.walk.i], last = (UI.walk.i >= scenes.length - 1);
-      var te = cl01((nowT() - UI.walk.t0) / 560), e = eCubic(te), still = reduced(), alpha = still ? 1 : cl01(te * 1.5), i;
-      // controls live at the very bottom; everything above is the stage, so text never collides or gets cut off
+      if (UI.walk.i >= scenes.length) UI.walk.i = scenes.length - 1;
+      var sc = scenes[UI.walk.i], last = (UI.walk.i >= scenes.length - 1), still = reduced(), i;
+      var stg = actStage(sc, c), tt = still ? 99999 : (nowT() - UI.walk.t0), t = nowT();
+      var te = cl01(tt / stg.ent), e = (stg.ease === 'back') ? eBack(te) : eCubic(te), alpha = still ? 1 : cl01(te * 1.6);
+      if (UI.walkMotifI !== UI.walk.i) { UI.walkMotifI = UI.walk.i; actMotif(sc, c); }
+      // the act's light: wash the stage in this scene's own ground
+      if (stg.tint) { p.noStroke(); fillc(stg.tint, stg.ta * cl01(te * 1.2)); p.rect(0, 0, W, H); }
+      var ct = walkContent(c, b, sc), pre = walkPre(c, b, sc);
+      // video mode: each act runs to the length of what it has to say, then hands over
+      var dur = 3400 + Math.min(40, ('' + ct.x).split(' ').length) * 230 + (pre ? 500 : 0);
+      if (UI.walkAuto && !last && tt > dur && !still) { walkNext(scenes.length); return; }
       var ctrlTop = top + vh - (last ? 110 : 64);
       if (!last) { pushHit(x, top + 64, w, ctrlTop - (top + 64), function () { walkNext(scenes.length); }); pushHit(x, top + 64, 72, ctrlTop - (top + 64), function () { walkPrev(); }); }
-      var cy = top + vh * 0.235, r = Math.min(w * 0.30, vh * 0.16), drift = (1 - e) * 16, cam = still ? 1 : (1.0 + 0.06 * e);
+      var cy = top + vh * 0.235, r = Math.min(w * 0.30, vh * 0.16);
+      // per-act camera: Mars punches in, Saturn settles heavily, the Moon floats, the finale pulls back
+      var drift = (1 - e) * 16, cam = 1.0 + 0.06 * e, rot = 0, bob = 0;
+      if (!still) {
+        if (stg.cam === 'punch') cam = 0.72 + 0.28 * e;
+        else if (stg.cam === 'pull') cam = 1.14 - 0.14 * e;
+        else if (stg.cam === 'settle') { cam = 1.0 + 0.02 * e; drift = (1 - e) * -34; }
+        else if (stg.cam === 'float') cam = 0.96 + 0.08 * e;
+        if (stg.idle === 'bob') bob = Math.sin(t * 0.0012) * 4;
+        else if (stg.idle === 'orbit') rot = 0.03 * Math.sin(t * 0.0004);
+        else if (stg.idle === 'blaze') cam *= 1 + 0.01 * Math.sin(t * 0.002);
+      }
       var dc = p.drawingContext; if (dc) { dc.save(); dc.globalAlpha = alpha; }
-      p.push(); p.translate(cx, cy - drift); p.scale(cam);
-      if (sc.k === 'body') { celestialBody(sc.key, 0, 0, r * 1.05, nowT()); }
-      else if (sc.k === 'rising') { drawRisingScene(0, 0, r * 1.05, nowT(), c); }
-      else if (sc.k === 'outer') { var oc = ['uranus', 'neptune', 'pluto'], oi; for (oi = 0; oi < 3; oi++) celestialBody(oc[oi], (oi - 1) * r * 1.02, 0, r * 0.46, nowT()); }
+      p.push(); p.translate(cx, cy - drift + bob); if (rot) p.rotate(rot); p.scale(cam);
+      if (sc.k === 'body') { celestialBody(sc.key, 0, 0, r * 1.05, t); }
+      else if (sc.k === 'rising') { drawRisingScene(0, 0, r * 1.05, t, c, still ? 1 : eCubic(cl01(tt / 1900))); }
+      else if (sc.k === 'outer') { var oc = ['uranus', 'neptune', 'pluto'], oi; for (oi = 0; oi < 3; oi++) { var oe = still ? 1 : eCubic(cl01((tt - oi * 260) / 700)); if (oe > 0.02) celestialBody(oc[oi], (oi - 1) * r * 1.02, (1 - oe) * 26, r * 0.46 * (0.4 + 0.6 * oe), t); } }
       else if (sc.k === 'hour') { celestialEmblem(0, 0, Math.max(26, r * 0.7), 1); }
-      else if (sc.k === 'elements') { drawElementRing(c, 0, 0, r); }
+      else if (sc.k === 'elements') { drawElementRing(c, 0, 0, r, still ? 1 : cl01(tt / 2600)); }
+      else if (sc.k === 'aspect' && c.aspects && c.aspects[0]) { sceneAspectDuet(c, 0, 0, r, still ? 99999 : tt); }
+      else if (sc.k === 'close') { sceneAssembly(c, b, 0, 0, r * 1.15, still ? 99999 : tt); }
       else {
-        var hlk = null, chord = null;
+        var hlk = null;
         if (sc.k === 'famous') hlk = ['sun', 'moon', 'venus'];
-        else if (sc.k === 'aspect') { var a0 = c.aspects && c.aspects[0]; if (a0) { hlk = [a0.a, a0.b]; chord = [a0.a, a0.b]; } }
-        miniWheel(c, b, 0, 0, r, hlk, nowT(), chord);
+        miniWheel(c, b, 0, 0, r, hlk, t, null);
         if (sc.k === 'today') drawTransitOverlay(c, b, 0, 0, r, walkTr(c));
       }
       p.pop();
       if (dc) dc.restore();
-      var ct = walkContent(c, b, sc), ty = top + vh * 0.44, slideIn = (1 - e) * 12;
-      var tl = wrapLines2(ct.t, w - 16, SANS, 27); setFont(SANS, 27, INK, p.CENTER, p.TOP, 255 * alpha); bold(); for (i = 0; i < tl.length; i++) p.text(tl[i], cx, ty + slideIn + i * 33); normal(); ty += tl.length * 33 + 12;
-      var bl = wrapLines2(ct.x, w - 24, SERIF, 18.5); setFont(SERIF, 18.5, INK, p.CENTER, p.TOP, 246 * alpha); strokec(INK, 246 * alpha); p.strokeWeight(0.5); for (i = 0; i < bl.length; i++) p.text(bl[i], cx, ty + slideIn + i * 27); p.noStroke(); ty += bl.length * 27;
+      // the words arrive in beats, timed to the staging: the hand-off line, then the title, then the body line by line
+      var ty = top + vh * 0.415;
+      if (pre) { var pa2 = still ? 1 : cl01((tt - 60) / 380); setFont(SERIF, 14.5, ACCTX, p.CENTER, p.TOP, 225 * pa2); p.textStyle(p.ITALIC); p.text(pre, cx, ty + (1 - pa2) * 8); p.textStyle(p.NORMAL); ty += 26; }
+      var ta2 = still ? 1 : cl01((tt - 260) / 430);
+      var tl = wrapLines2(ct.t, w - 16, SANS, 27); setFont(SANS, 27, INK, p.CENTER, p.TOP, 255 * ta2); bold(); for (i = 0; i < tl.length; i++) p.text(tl[i], cx, ty + (1 - ta2) * 12 + i * 33); normal(); ty += tl.length * 33 + 12;
+      var bl = wrapLines2(ct.x, w - 24, SERIF, 18.5);
+      for (i = 0; i < bl.length; i++) { var la = still ? 1 : cl01((tt - 720 - i * 360) / 430); if (la <= 0) break; setFont(SERIF, 18.5, INK, p.CENTER, p.TOP, 246 * la); strokec(INK, 246 * la); p.strokeWeight(0.5); p.text(bl[i], cx, ty + (1 - la) * 10 + i * 27); p.noStroke(); }
+      ty += bl.length * 27;
       setFont(MONO, 10, ACCTX, p.LEFT, p.TOP, 220); p.text('YOUR CHART · ' + (UI.walk.i + 1) + ' / ' + scenes.length, x, top + 12);
-      var dxw = 13, dsx = cx - (scenes.length * dxw) / 2; for (i = 0; i < scenes.length; i++) { var on = (i === UI.walk.i); p.noStroke(); fillc(on ? ACC : INK, on ? 255 : 80); p.ellipse(dsx + i * dxw + dxw / 2, top + vh - 14, on ? 7 : 5, on ? 7 : 5); }
+      // film controls: auto-play toggle + a per-act progress bar
+      setFont(MONO, 10, UI.walkAuto ? ACCTX : INK, p.RIGHT, p.TOP, UI.walkAuto ? 255 : 170); p.text(UI.walkAuto ? 'AUTO ■' : 'AUTO ▶', x + w - 76, top + 12);
+      pushHit(x + w - 138, top + 2, 66, 30, function () { UI.walkAuto = !UI.walkAuto; UI.walk.t0 = nowT(); audioInit(); });
+      if (UI.walkAuto && !last) { var pf = cl01(tt / dur); p.noStroke(); fillc(INK, 40); p.rect(x, top + 36, w, 2); fillc(ACC, 220); p.rect(x, top + 36, w * pf, 2); }
+      // the scene dots double as a scrub bar — tap any act to jump straight to it
+      var dxw = 13, dsx = cx - (scenes.length * dxw) / 2;
+      for (i = 0; i < scenes.length; i++) {
+        var on = (i === UI.walk.i); p.noStroke(); fillc(on ? ACC : INK, on ? 255 : 80); p.ellipse(dsx + i * dxw + dxw / 2, top + vh - 14, on ? 7 : 5, on ? 7 : 5);
+        (function (idx) { pushHit(dsx + idx * dxw, top + vh - 27, dxw, 26, function () { UI.walk.i = idx; UI.walk.t0 = nowT(); }); })(i);
+      }
       if (last) { tourBtn('Explore my chart ›', cx - 152, top + vh - 96, 148, 42, function () { endWalk(); }, true); tourBtn('Open Read', cx + 6, top + vh - 96, 148, 42, function () { endWalk(); UI.screen = 'read'; }, false); }
-      else { setFont(MONO, 10, INK, p.CENTER, p.TOP, 160 * alpha); p.text(UI.walk.i === 0 ? 'TAP TO BEGIN  ›' : 'TAP TO CONTINUE  ›', cx, top + vh - 42); }
+      else { setFont(MONO, 10, INK, p.CENTER, p.TOP, 160 * alpha); p.text(UI.walk.i === 0 ? 'TAP TO BEGIN  ›' : (UI.walkAuto ? 'PLAYING — TAP TO SKIP AHEAD  ›' : 'TAP TO CONTINUE  ›'), cx, top + vh - 42); }
       tourBtn('Skip', x + w - 66, top + 6, 60, 26, function () { endWalk(); }, false);
       UI.contentH.chart = 0;
     }
@@ -6642,16 +6799,19 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       // crisp ink rim — the line-art signature that ties it to the rest of the app
       p.noFill(); strokec(INK, 150); p.strokeWeight(1.6); p.ellipse(cx, cy, r * 2, r * 2);
     }
-    // the rising sign: a sun cresting the horizon, tinted by the rising sign's element
-    function drawRisingScene(cx, cy, r, t, c) {
+    // the rising sign: the sun actually climbs from below the horizon and crests it, the sky warming as it rises
+    function drawRisingScene(cx, cy, r, t, c, prog) {
+      if (prog == null) prog = 1;
       var el = DATA.SIGNS[c.ascBody.sign].element, col = ELHUE[el] || [230, 180, 120], gi;
-      p.noStroke(); for (gi = 0; gi < 3; gi++) { fillc(col, 20 - gi * 5); p.ellipse(cx, cy + r * 0.2, r * (2.0 + gi * 0.55), r * (2.0 + gi * 0.55)); }
       var hy = cy + r * 0.5, dc = p.drawingContext;
+      p.noStroke(); fillc(col, 13 * prog); p.rect(cx - r * 1.7, cy - r * 1.7, r * 3.4, hy - (cy - r * 1.7));
+      for (gi = 0; gi < 3; gi++) { fillc(col, (20 - gi * 5) * prog); p.ellipse(cx, cy + r * 0.2, r * (2.0 + gi * 0.55), r * (2.0 + gi * 0.55)); }
       if (dc) { dc.save(); dc.beginPath(); dc.rect(cx - r * 1.7, cy - r * 1.7, r * 3.4, hy - (cy - r * 1.7)); dc.clip(); }
-      celestialBody('sun', cx, cy + r * 0.18, r * 0.78, t);
+      var sy0 = hy + r * 0.95, syF = cy + r * 0.18;
+      celestialBody('sun', cx, sy0 + (syF - sy0) * prog, r * 0.78, t);
       if (dc) dc.restore();
       strokec(INK, 210); p.strokeWeight(2); p.line(cx - r * 1.5, hy, cx + r * 1.5, hy);
-      setFont(SANS, 24, ACC, p.CENTER, p.CENTER, 245); p.text(DATA.SIGNS[c.ascBody.sign].glyph, cx, hy + 26);
+      setFont(SANS, 24, ACC, p.CENTER, p.CENTER, 245 * cl01(prog * 1.6)); p.text(DATA.SIGNS[c.ascBody.sign].glyph, cx, hy + 26);
     }
     function celestialEmblem(cx, cy, r, al) {
       var t = nowT();
