@@ -1,5 +1,28 @@
 # Changelog
 
+## 1.5.0 — 2026-07-02
+
+The mystic, the diagrams, and a cleaner tongue.
+
+- **The walker became a mystic**: a genderless figure in a floor-length robe
+  that moves like slow water, wide sleeves, a smooth featureless head, the
+  accent scarf, and a small guiding star that keeps above them, twinkling.
+- **Labelled diagrams, animated**: each life chapter chalks its own geometry
+  into the sky's corner: your natal point, the mover sweeping to its exact
+  angle with the degrees counting up, both labelled. A return sweeps the
+  full 360.
+- **Animated words**: chapter titles and the finale line rise letter by
+  letter into place.
+- **The mystic wanders the timeline too**: a tiny cameo walks beside the
+  travelling light down your life's thread, stepping as you scroll.
+- **Longer scenes**: choreography breathes at five seconds, the camera leans
+  in over nine; captions wrap at the colon instead of ever clipping.
+- **Engine**: live transits now know applying from separating (still
+  building versus already easing), told in the reading.
+- **Text audit**: nested colons unwound at their sources, "31th year"
+  becomes a real ordinal, a lowercase seam after full stops capitalised,
+  and a stray double space closed.
+
 ## 1.4.1 — 2026-07-02
 
 - **The walker got friendly**: rebuilt on playful silhouette principles: a

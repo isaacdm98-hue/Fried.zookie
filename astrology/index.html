@@ -1324,11 +1324,11 @@ var APP = (function () {
   // get DIFFERENT phrasings, so the daily reading never repeats the same line twice.
   function vpick(arr, seed) { var h = 0, i; seed = '' + (seed || ''); for (i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0; return arr[h % arr.length]; }
   var ASPTONE_V = {
-    fusion: ['fusing with it: concentrated and hard to ignore', 'pressing right into it, amplifying everything it touches', 'lighting it up so the whole theme runs loud today'],
-    tension: ['pulling it taut: something here wants balancing', 'stretching it between two poles, asking for a middle', 'putting it under pressure until you adjust the set-up'],
-    flow: ['making it easy: a door that opens on its own', 'greasing the wheels, so this moves with little push', 'lending it a tailwind you can lean on if you act'],
-    friction: ['rubbing against it: the friction that forces change', 'grinding on it, so progress comes through effort not ease', 'catching on it; the snag is the lesson, not the enemy'],
-    opportunity: ['offering an opening if you choose to take it', 'cracking a window here: small, real, time-limited', 'handing you a lever; it only works if you pull it']
+    fusion: ['fusing with it, concentrated and hard to ignore', 'pressing right into it, amplifying everything it touches', 'lighting it up so the whole theme runs loud today'],
+    tension: ['pulling it taut, something here wants balancing', 'stretching it between two poles, asking for a middle', 'putting it under pressure until you adjust the set-up'],
+    flow: ['making it easy, a door that opens on its own', 'greasing the wheels, so this moves with little push', 'lending it a tailwind you can lean on if you act'],
+    friction: ['rubbing against it, the friction that forces change', 'grinding on it, so progress comes through effort not ease', 'catching on it; the snag is the lesson, not the enemy'],
+    opportunity: ['offering an opening if you choose to take it', 'cracking a window here, small, real, time-limited', 'handing you a lever; it only works if you pull it']
   };
   function aspTone(asp, seed) { var v = ASPTONE_V[asp.quality]; return v ? vpick(v, seed || asp.key) : ''; }
   function natalFn(key) {
@@ -1374,7 +1374,9 @@ var APP = (function () {
   function transitSentence(t) {
     var seed = t.tp + t.np + t.asp.key;
     var base = 'Transiting ' + nameFor(t.tp) + ' is ' + aspVerb(t.asp) + ' your natal ' + nameFor(t.np) + ', ' + aspTone(t.asp, seed);
-    var tail = ' In daily life: ' + practicalDomain(t.np) + ': ' + practicalTilt(t.asp.quality, seed) + '.';
+    var tail = ' In daily life: ' + practicalDomain(t.np) + '; ' + practicalTilt(t.asp.quality, seed) + '.';
+    if (t.applying === true) tail += ' Still applying: it builds before it peaks.';
+    else if (t.applying === false) tail += ' Separating now: the pressure is already easing.';
     if (t.tp === t.np) return base + ': the sky’s ' + nameFor(t.tp) + ' stirring your own.' + tail;
     return base + ': ' + DATA.PLANETS[t.tp].fn + ', meeting ' + natalFn(t.np) + '.' + tail;
   }
@@ -2662,7 +2664,7 @@ var APP = (function () {
     if (d0) {
       var hx = (b.timeKnown && c.planets[d0.np] && c.planets[d0.np].house) ? (' The contact lands in your ' + ordinal(c.planets[d0.np].house) + ' house, so expect it around ' + DATA.HOUSES[c.planets[d0.np].house - 1].title.toLowerCase() + '.') : '';
       var pt0 = pairAspectText(d0.tp, d0.np, d0.asp.key);
-      s.push(vpick(['The day’s main event: ', 'What actually matters today: ', 'One contact outranks the rest: '], seed + 'b') + 'transiting ' + nameFor(d0.tp) + ' ' + d0.asp.key + ' your natal ' + nameFor(d0.np) + ', ' + d0.orb.toFixed(1) + '° from exact. ' + (pt0 ? (capit(pt0) + '.') : '') + hx);
+      s.push(vpick(['The day’s main event: ', 'What actually matters today: ', 'One contact outranks the rest: '], seed + 'b') + 'transiting ' + nameFor(d0.tp) + ' ' + d0.asp.key + ' your natal ' + nameFor(d0.np) + ', ' + d0.orb.toFixed(1) + '° from exact.' + (pt0 ? (' ' + capit(pt0) + '.') : '') + hx);
     }
     var d1 = tr.daily[1];
     if (d1) {
@@ -2674,7 +2676,7 @@ var APP = (function () {
     try {
       var pf = profection(b), lordHit = null, i;
       for (i = 0; i < tr.daily.length; i++) if (tr.daily[i].np === pf.lord || tr.daily[i].tp === pf.lord) { lordHit = tr.daily[i]; break; }
-      if (lordHit) s.push('And note: ' + nameFor(pf.lord) + ': the time-lord of your profection year, is part of today’s weather. Contacts involving the year’s lord count double. Treat this one as an appointment, not a mood.');
+      if (lordHit) s.push('And note: ' + nameFor(pf.lord) + ', the time-lord of your profection year, is part of today’s weather. Contacts involving the year’s lord count double. Treat this one as an appointment, not a mood.');
       else if (d0) s.push('Timing note: ' + (d0.orb <= 0.5 ? 'the aspect is effectively exact. This is the day itself, not the approach.' : d0.orb <= 1.5 ? 'the orb is tight; the theme is live now and peaks within the day.' : 'the orb is wide. This is the theme of the stretch, not an appointment.'));
     } catch (eP) {}
     var out = [], si; for (si = 0; si < s.length; si++) if (s[si]) out.push(s[si]);
@@ -2694,7 +2696,7 @@ var APP = (function () {
     saturn: 'a season of weight, testing and proving yourself',
     uranus: 'a jolt of awakening and a break for freedom',
     neptune: 'a tide of dreaming, longing and dissolving edges',
-    pluto: 'a deep churning: power, loss and rebirth'
+    pluto: 'a deep churning of power, loss and rebirth'
   };
   var MOVER_ADVICE = {
     jupiter: 'Say yes to what genuinely grows you, just don’t overreach.',
@@ -2789,12 +2791,12 @@ var APP = (function () {
     var ageN = Math.round(ev.age), seed5 = (c ? chartFP(c) : '') + ev.tp + ev.np + ev.ang + ageN;
     var stage5 = ageN < 13 ? 'child' : ageN < 20 ? 'teen' : ageN < 30 ? 'young' : ageN < 46 ? 'mid' : ageN < 62 ? 'ripe' : 'elder';
     var OPEN5 = {
-      child: ['You were ' + ageN + '.', 'At ' + ageN + ', before you had words for it,', 'Somewhere in your ' + ageN + 'th year,'],
+      child: ['You were ' + ageN + '.', 'At ' + ageN + ', before you had words for it,', 'Somewhere in your ' + ordinal(ageN) + ' year,'],
       teen: ['You were ' + ageN + ', and everything already felt loud.', 'At ' + ageN + ',', ageN + '. The self was still wet paint.'],
       young: ['At ' + ageN + ',', 'You were ' + ageN + ', building at speed.', ageN + ': the years of first real stakes.'],
-      mid: ['At ' + ageN + ',', ageN + '. By now you knew your own patterns,', 'In your ' + ageN + 'th year,'],
+      mid: ['At ' + ageN + ',', ageN + '. By now you knew your own patterns,', 'In your ' + ordinal(ageN) + ' year,'],
       ripe: ['At ' + ageN + ',', ageN + ': the long middle, where things compound.', 'You were ' + ageN + ','],
-      elder: ['At ' + ageN + ',', ageN + '. Little left to prove,', 'In your ' + ageN + 'th year,']
+      elder: ['At ' + ageN + ',', ageN + '. Little left to prove,', 'In your ' + ordinal(ageN) + ' year,']
     };
     var PLOT5 = {
       90: ['{TP} squared your {WHO}{LOC}: a wall where a door used to be. What that year asked was effort, and what the effort built stayed built.',
@@ -2811,6 +2813,7 @@ var APP = (function () {
           'the conjunction: {TP} fused with your {WHO}{LOC}, and for a while it was hard to tell which of you was speaking. What emerged was more than either.']
     };
     var open5 = vpick(OPEN5[stage5], seed5 + 'o'), plot5 = vpick(PLOT5[ev.ang] || PLOT5[0], seed5 + 'p');
+    if (/[.!?]$/.test(open5.replace(/\s+$/, ''))) plot5 = plot5.charAt(0).toUpperCase() + plot5.slice(1);
     plot5 = plot5.replace('{TP}', nameFor(ev.tp)).replace('{WHO}', who).replace('{LOC}', loc);
     return open5 + ' ' + plot5 + (MOVER_NOUN[ev.tp] ? ' ' + vpick([nameFor(ev.tp) + ' is ' + MOVER_NOUN[ev.tp] + '; it leaves a mark shaped like itself.', 'That is ' + nameFor(ev.tp) + ' for you: ' + MOVER_NOUN[ev.tp] + '.', 'It bore the signature of ' + nameFor(ev.tp) + ': ' + MOVER_NOUN[ev.tp] + '.'], seed5 + 'tl') : '');
     // (superseded by the story register above)
@@ -3254,7 +3257,12 @@ var APP = (function () {
           var asp = DATA.ASPECTS[a];
           var orbLimit = (tk === 'moon') ? 3 : (asp.key === 'conjunction' || asp.key === 'opposition' ? 2.5 : 2);
           var diff = Math.abs(sep - asp.angle);
-          if (diff <= orbLimit) { out.push({ tp: tk, np: nk, asp: asp, orb: diff }); break; }
+          if (diff <= orbLimit) {
+            var applying = null;
+            try { var tom = rev(EPH.positions(jsDayNum(new Date(new Date().getTime() + (tk === 'moon' ? 7200000 : 86400000))) )[tk].lon - ay); applying = Math.abs(Math.abs(sdelta(tom, c.planets[nk].lon)) - asp.angle) < diff; } catch (eA9) {}
+            out.push({ tp: tk, np: nk, asp: asp, orb: diff, applying: applying });
+            break;
+          }
         }
       }
     }
@@ -5118,9 +5126,6 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       return { kind: 'gentle', col: ELHUE.fire, tag: 'GENTLE', line: 'Friction around ' + dom + ': go gentle, and don’t force it.' };
     }
     // ---- life-in-chapters timeline: the slow transits & returns across a lifetime ----
-    function lifeWalkNext(n) { if (!UI.lifeWalk) return; if (UI.lifeWalk.i >= n) { UI.lifeWalk = null; return; } UI.lifeWalk.i++; UI.lifeWalk.t0 = nowT(); }
-    function lifeWalkPrev() { if (UI.lifeWalk && UI.lifeWalk.i > 0) { UI.lifeWalk.i--; UI.lifeWalk.t0 = nowT(); } }
-    // an unspecific person: head, a living spine, two legs, two arms. Everything said with posture.
     // ===== THE ACTOR: a gesture-drawing come to life. Head ball with construction cross,
     // ribcage and pelvis masses, two-bone limbs solved by IK, and a faint red underdrawing. =====
     function ik2(ax, ay, tx, ty, l1, l2, bend) {
@@ -5131,65 +5136,94 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       return { jx: ax + Math.cos(ja) * l1, jy: ay + Math.sin(ja) * l1, hx: ax + ux * d, hy: ay + uy * d };
     }
     function actorFigure(rig, alf) {
-      // a playful silhouette, about two-and-a-half heads tall: big round head, bean body,
-      // stubby limbs, mitten hands, big soft feet, a cowlick, and the scarf. Circles read as warm.
+      // a mystical, genderless figure: a smooth oval head, a floor-length robe that moves
+      // like slow water, wide sleeves, the accent scarf, and a small star that keeps above them.
       var h = rig.h, lean = rig.lean || 0, cr = rig.crouch || 0, look = rig.look || 0, col = rig.col || [34, 29, 25];
-      var br = reduced() ? 0 : Math.sin(nowT() * 0.0021 + (rig.ph || 0)) * h * 0.008;
-      var hipX = rig.x + lean * h * 0.04, hipY = rig.y - h * (0.30 - cr * 0.09);
-      var chX = hipX + lean * h * 0.10, chY = hipY - h * 0.20 + cr * h * 0.04;
-      var hdR = h * 0.155, hdX = chX + lean * h * 0.08 + look * h * 0.05, hdY = chY - h * 0.065 - hdR + br;
+      var br = reduced() ? 0 : Math.sin(nowT() * 0.0021 + (rig.ph || 0)) * h * 0.006;
+      var wind9 = rig.wind == null ? 1 : rig.wind;
+      var hipX = rig.x + lean * h * 0.05, hipY = rig.y - h * (0.42 - cr * 0.12);
+      var chX = hipX + lean * h * 0.13, chY = hipY - h * 0.24 + cr * h * 0.05 + br;
+      var hdR = h * 0.082, hdX = chX + lean * h * 0.06 + look * h * 0.045, hdY = chY - h * 0.145;
       var fL = rig.fL || { x: rig.x - h * 0.10, y: rig.y }, fR = rig.fR || { x: rig.x + h * 0.10, y: rig.y };
-      var hL = rig.hL || { x: chX - h * 0.17, y: chY + h * 0.16 }, hR = rig.hR || { x: chX + h * 0.17, y: chY + h * 0.16 };
-      var lg1 = h * 0.17, lg2 = h * 0.15, ar1 = h * 0.14, ar2 = h * 0.13;
+      var hL = rig.hL || { x: chX - h * 0.16, y: chY + h * 0.24 }, hR = rig.hR || { x: chX + h * 0.16, y: chY + h * 0.24 };
+      var lg1 = h * 0.23, lg2 = h * 0.21, ar1 = h * 0.15, ar2 = h * 0.14;
       var passes = rig.rim ? 2 : 1, pi9;
       for (pi9 = 0; pi9 < passes; pi9++) {
         var rim9 = (passes === 2 && pi9 === 0);
         var cP = rim9 ? rig.rim : col, aP = rim9 ? 80 * alf : 242 * alf;
         var ox9 = rim9 ? (rig.rimOff ? rig.rimOff[0] : -2) : 0, oy9 = rim9 ? (rig.rimOff ? rig.rimOff[1] : -2) : 0;
-        // stubby legs and big soft feet
+        // legs, mostly veiled by the robe; they show when a step or a stance lifts them
         var kL = ik2(hipX, hipY, fL.x, fL.y, lg1, lg2, -1), kR = ik2(hipX, hipY, fR.x, fR.y, lg1, lg2, 1);
         strokec(cP, aP); p.noFill();
-        p.strokeWeight(h * 0.075); p.line(hipX + ox9, hipY + oy9, kL.jx + ox9, kL.jy + oy9); p.line(kL.jx + ox9, kL.jy + oy9, kL.hx + ox9, kL.hy + oy9);
+        p.strokeWeight(h * 0.048); p.line(hipX + ox9, hipY + oy9, kL.jx + ox9, kL.jy + oy9); p.line(kL.jx + ox9, kL.jy + oy9, kL.hx + ox9, kL.hy + oy9);
         p.line(hipX + ox9, hipY + oy9, kR.jx + ox9, kR.jy + oy9); p.line(kR.jx + ox9, kR.jy + oy9, kR.hx + ox9, kR.hy + oy9);
         p.noStroke(); fillc(cP, aP);
-        p.ellipse(kL.hx + h * 0.02 + ox9, kL.hy - h * 0.012 + oy9, h * 0.115, h * 0.055);
-        p.ellipse(kR.hx + h * 0.02 + ox9, kR.hy - h * 0.012 + oy9, h * 0.115, h * 0.055);
-        // the bean body: hips wide, chest tucked, one soft mass
-        p.ellipse(hipX + ox9, hipY - h * 0.01 + oy9, h * 0.24, h * 0.21);
-        p.ellipse(chX + ox9, chY + h * 0.02 + oy9, h * 0.20, h * 0.18);
-        strokec(cP, aP); p.strokeWeight(h * 0.17);
-        p.line(hipX + ox9, hipY - h * 0.03 + oy9, chX + ox9, chY + h * 0.03 + oy9);
-        p.noFill();
-        // stubby arms with mitten hands
-        var eL = ik2(chX - h * 0.06, chY, hL.x, hL.y, ar1, ar2, hL.bend == null ? -1 : hL.bend);
-        var eR = ik2(chX + h * 0.06, chY, hR.x, hR.y, ar1, ar2, hR.bend == null ? 1 : hR.bend);
-        strokec(cP, aP); p.strokeWeight(h * 0.06);
-        p.line(chX - h * 0.06 + ox9, chY + oy9, eL.jx + ox9, eL.jy + oy9); p.line(eL.jx + ox9, eL.jy + oy9, eL.hx + ox9, eL.hy + oy9);
-        p.line(chX + h * 0.06 + ox9, chY + oy9, eR.jx + ox9, eR.jy + oy9); p.line(eR.jx + ox9, eR.jy + oy9, eR.hx + ox9, eR.hy + oy9);
-        p.noStroke(); fillc(cP, aP); p.ellipse(eL.hx + ox9, eL.hy + oy9, h * 0.075, h * 0.075); p.ellipse(eR.hx + ox9, eR.hy + oy9, h * 0.075, h * 0.075);
-        // the big round head, sitting right on the shoulders; breath gives it a soft squash
-        var sq9 = 1 + (reduced() ? 0 : Math.sin(nowT() * 0.0021 + (rig.ph || 0)) * 0.015);
-        p.ellipse(hdX + ox9, hdY + oy9, hdR * 2, hdR * 2 * sq9);
-        // a little profile nose when the head turns: the oldest silhouette charm there is
-        if (Math.abs(look) > 0.12) { var nd9 = look > 0 ? 1 : -1; p.ellipse(hdX + nd9 * hdR * 0.94 + ox9, hdY + hdR * 0.10 + oy9, hdR * 0.34, hdR * 0.26); }
-        // hair: one soft bump and a small cowlick flicking in the wind
-        p.ellipse(hdX - hdR * 0.25 + ox9, hdY - hdR * 0.86 + oy9, hdR * 0.9, hdR * 0.55);
-        var tw9 = reduced() ? 0 : Math.sin(nowT() * 0.005 + (rig.ph || 0)) * h * 0.014;
-        strokec(cP, aP); p.strokeWeight(h * 0.035); p.noFill();
-        p.bezier(hdX + hdR * 0.05 + ox9, hdY - hdR * 1.02 + oy9, hdX + hdR * 0.25 + tw9 + ox9, hdY - hdR * 1.45 + oy9, hdX + hdR * 0.65 + tw9 * 1.6 + ox9, hdY - hdR * 1.35 + oy9, hdX + hdR * 0.72 + tw9 * 2 + ox9, hdY - hdR * 1.15 + oy9);
+        p.ellipse(kL.hx + h * 0.014 + ox9, kL.hy - h * 0.007 + oy9, h * 0.08, h * 0.032);
+        p.ellipse(kR.hx + h * 0.014 + ox9, kR.hy - h * 0.007 + oy9, h * 0.08, h * 0.032);
+        // the robe: one unbroken fall from the shoulders to the ground, hem alive in the wind
+        var hemY = rig.y - h * 0.035 + cr * h * 0.05;
+        var spread9 = Math.max(Math.abs(fL.x - rig.x), Math.abs(fR.x - rig.x)) * 0.7 + h * 0.10;
+        var sway9 = reduced() ? 0 : Math.sin(nowT() * 0.0031 + (rig.ph || 0)) * h * 0.018 * wind9;
+        var back9 = -lean * h * 0.09 - h * 0.025 * wind9;
+        p.beginShape();
+        p.vertex(chX - h * 0.075 + ox9, chY - h * 0.03 + oy9);
+        p.bezierVertex(chX - h * 0.095 + ox9, chY + h * 0.16 + oy9, hipX - spread9 * 0.75 + back9 + sway9 * 0.7 + ox9, hemY - h * 0.16 + oy9, hipX - spread9 + back9 + sway9 + ox9, hemY + oy9);
+        p.bezierVertex(hipX - spread9 * 0.3 + sway9 * 0.4 + ox9, hemY + h * 0.02 + oy9, hipX + spread9 * 0.3 - sway9 * 0.2 + ox9, hemY - h * 0.015 + oy9, hipX + spread9 * 0.92 - sway9 * 0.4 + ox9, hemY + oy9);
+        p.bezierVertex(hipX + spread9 * 0.68 + ox9, hemY - h * 0.16 + oy9, chX + h * 0.095 + ox9, chY + h * 0.16 + oy9, chX + h * 0.075 + ox9, chY - h * 0.03 + oy9);
+        p.endShape(p.CLOSE);
+        // shoulders, soft and narrow: a column, not a costume
+        p.noStroke(); fillc(cP, aP); p.ellipse(chX + ox9, chY + oy9, h * 0.15, h * 0.13);
+        // arms with wide draped sleeves
+        var eL = ik2(chX - h * 0.05, chY, hL.x, hL.y, ar1, ar2, hL.bend == null ? -1 : hL.bend);
+        var eR = ik2(chX + h * 0.05, chY, hR.x, hR.y, ar1, ar2, hR.bend == null ? 1 : hR.bend);
+        strokec(cP, aP);
+        p.strokeWeight(h * 0.062); p.line(chX - h * 0.05 + ox9, chY + oy9, eL.jx + ox9, eL.jy + oy9);
+        p.strokeWeight(h * 0.040); p.line(eL.jx + ox9, eL.jy + oy9, eL.hx + ox9, eL.hy + oy9);
+        p.strokeWeight(h * 0.062); p.line(chX + h * 0.05 + ox9, chY + oy9, eR.jx + ox9, eR.jy + oy9);
+        p.strokeWeight(h * 0.040); p.line(eR.jx + ox9, eR.jy + oy9, eR.hx + ox9, eR.hy + oy9);
+        // sleeve cuffs: a soft flare where the hand emerges
+        p.noStroke(); fillc(cP, aP);
+        p.ellipse(eL.jx * 0.35 + eL.hx * 0.65 + ox9, eL.jy * 0.35 + eL.hy * 0.65 + oy9, h * 0.065, h * 0.05);
+        p.ellipse(eR.jx * 0.35 + eR.hx * 0.65 + ox9, eR.jy * 0.35 + eR.hy * 0.65 + oy9, h * 0.065, h * 0.05);
+        p.ellipse(eL.hx + ox9, eL.hy + oy9, h * 0.042, h * 0.042); p.ellipse(eR.hx + ox9, eR.hy + oy9, h * 0.042, h * 0.042);
+        // the head: a smooth oval, nothing declared, everything possible; a slender neck
+        strokec(cP, aP); p.strokeWeight(h * 0.038); p.line(chX + ox9, chY - h * 0.02 + oy9, hdX + ox9, hdY + hdR * 0.9 + oy9);
+        p.noStroke(); fillc(cP, aP); p.ellipse(hdX + ox9, hdY + oy9, hdR * 1.72, hdR * 2.05);
       }
-      // the scarf: the one coloured thing the silhouette owns, always in some wind
+      // their small star: it keeps above them, twinkling, the way a guide does
+      if (rig.star !== false) {
+        var stX = hdX + (reduced() ? 0 : Math.sin(nowT() * 0.0016 + (rig.ph || 0)) * h * 0.03);
+        var stY = hdY - hdR * 2.1 + (reduced() ? 0 : Math.cos(nowT() * 0.0013 + (rig.ph || 0)) * h * 0.014);
+        var stT = reduced() ? 0.8 : 0.55 + 0.45 * Math.sin(nowT() * 0.005 + (rig.ph || 0) * 2);
+        var stR = h * 0.028 * (0.8 + 0.35 * stT);
+        p.noStroke(); fillc([255, 244, 200], 70 * stT * alf); p.ellipse(stX, stY, stR * 3.2, stR * 3.2);
+        strokec([255, 244, 200], 235 * stT * alf); p.strokeWeight(1.2);
+        p.line(stX - stR, stY, stX + stR, stY); p.line(stX, stY - stR, stX, stY + stR);
+        p.line(stX - stR * 0.5, stY - stR * 0.5, stX + stR * 0.5, stY + stR * 0.5); p.line(stX - stR * 0.5, stY + stR * 0.5, stX + stR * 0.5, stY - stR * 0.5);
+      }
+      // the scarf: the one coloured thing they own, always in some wind
       if (rig.scarf !== false) {
-        var nx9 = chX - h * 0.03, ny9 = chY - h * 0.045, wind9 = rig.wind == null ? 1 : rig.wind, sPrev = { x: nx9, y: ny9 }, si9;
+        var nx9 = chX - h * 0.03, ny9 = chY - h * 0.05, sPrev = { x: nx9, y: ny9 }, si9;
         for (si9 = 1; si9 <= 4; si9++) {
           var tp9 = nowT() * 0.0042 - si9 * 0.62 + (rig.ph || 0);
           var sxn = nx9 - si9 * h * (0.055 + 0.02 * wind9) * (1 + 0.35 * Math.max(0, lean)) - si9 * si9 * h * 0.004;
-          var syn = ny9 + si9 * h * 0.014 + (reduced() ? 0 : Math.sin(tp9) * h * 0.02 * si9 * 0.45 * wind9);
-          strokec(ACC, (225 - si9 * 34) * alf); p.strokeWeight(h * (0.055 - si9 * 0.009));
+          var syn = ny9 + si9 * h * 0.012 + (reduced() ? 0 : Math.sin(tp9) * h * 0.018 * si9 * 0.45 * wind9);
+          strokec(ACC, (225 - si9 * 34) * alf); p.strokeWeight(h * (0.045 - si9 * 0.007));
           p.line(sPrev.x, sPrev.y, sxn, syn);
           sPrev = { x: sxn, y: syn };
         }
       }
+    }
+    function riseText(txt, cxr, yr, sz, fnt, colr, t0r, per9, alr) {
+      p.textFont(fnt); p.textSize(sz); p.textStyle(p.BOLD);
+      var tw0 = p.textWidth(txt), xr = cxr - tw0 / 2, i9;
+      p.textAlign(p.LEFT, p.TOP); p.noStroke();
+      for (i9 = 0; i9 < txt.length; i9++) {
+        var ar9 = reduced() ? 1 : cl01((nowT() - t0r - i9 * (per9 || 24)) / 300), er9 = eCubic(ar9);
+        if (er9 > 0.01) { fillc(colr, (alr == null ? 255 : alr) * er9); p.text(txt.charAt(i9), xr, yr + (1 - er9) * 9); }
+        xr += p.textWidth(txt.charAt(i9));
+      }
+      p.textStyle(p.NORMAL);
     }
     // back-compat shim for the title and finale cards
     function stageFigure(fx, fy, h, pz, alf, col9) {
@@ -5258,7 +5292,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         var bowP = still ? 0 : (eCubic(cl01((tt1 - 0.7) / 1.0)) * (1 - eCubic(cl01((tt1 - 2.6) / 1.0))));
         p.noStroke(); fillc([20, 18, 26], 70 * lift); p.ellipse(cx + 40, fy1 + 3, 120 - 50 * bowP, 9);
         actorFigure({ x: cx, y: fy1, h: 96, lean: 0.5 * bowP, crouch: 0.10 * bowP, look: -0.5 - 0.3 * bowP, col: [22, 20, 30], rim: [255, 216, 150], rimOff: [-2.2, -1.4], wind: 1.2, hL: bowP > 0.1 ? { x: cx - 34, y: fy1 - 96 * 0.30 - bowP * 8 } : null, hR: bowP > 0.1 ? { x: cx + 30, y: fy1 - 96 * 0.55 + bowP * 20 } : null }, 1);
-        setFont(SERIF, 30, INK, p.CENTER, p.TOP, 255 * lift); bold(); p.text('And the sky goes on writing', cx, top + vh * 0.52); normal();
+        riseText('And the sky goes on writing', cx, top + vh * 0.52, 30, SERIF, INK, UI.lifeWalk.t0 + 800, 34, 255 * lift);
         var nowMs1 = new Date().getTime(), nf1 = null; for (i = 0; i < ev.length; i++) if (ev[i].date.getTime() > nowMs1) { nf1 = ev[i]; break; }
         if (nf1) { setFont(MONO, 10, ACCTX, p.CENTER, p.TOP, 225 * lift); p.text(('NEXT CHAPTER EN ROUTE: ' + nf1.title + ' · ' + nf1.date.getFullYear()).toUpperCase(), cx, top + vh * 0.52 + 44); }
         else { setFont(MONO, 10, ACCTX, p.CENTER, p.TOP, 200 * lift); p.text('THE NEXT SLOW CHAPTER IS STILL OFFSTAGE', cx, top + vh * 0.52 + 44); }
@@ -5277,9 +5311,9 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var cy = top + vh * 0.25, r = Math.min(w * 0.30, vh * 0.15);
       var bodyK = (e0.tp && BODYCOL[e0.tp]) ? e0.tp : 'saturn', dc = p.drawingContext;
       var stageY = cy + r * 1.28, setK = lwStaging(e0);
-      var t3 = (nowT() - UI.lifeWalk.t0) / 3600, t2 = still ? 1 : cl01(t3);
+      var t3 = (nowT() - UI.lifeWalk.t0) / 5000, t2 = still ? 1 : cl01(t3);
       var te2 = cl01((nowT() - UI.lifeWalk.t0) / 560), ee = eCubic(te2);
-      var cam9 = still ? 1 : 1 + 0.045 * cl01((nowT() - UI.lifeWalk.t0) / 6500);
+      var cam9 = still ? 1 : 1 + 0.045 * cl01((nowT() - UI.lifeWalk.t0) / 9200);
       var shk9 = (e0.ang === 90 && !still && t2 > 0.36 && t2 < 0.52) ? Math.sin(nowT() * 0.09) * 2.4 * (1 - (t2 - 0.36) / 0.16) : 0;
       p.push(); p.translate(cx + shk9, stageY - r * 0.6); p.scale(cam9); p.translate(-cx, -(stageY - r * 0.6));
       // ---- the world: a sky the mover owns, hills in layers, weather that means something ----
@@ -5350,7 +5384,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var rig = { x: fx0, y: gy, h: fh, ph: UI.lifeWalk.i };
       var chest9 = gy - fh * 0.62;
       // every actor walks to their mark first
-      var ent = still ? 0 : (1 - eCubic(cl01((nowT() - UI.lifeWalk.t0) / 750)));
+      var ent = still ? 0 : (1 - eCubic(cl01((nowT() - UI.lifeWalk.t0) / 950)));
       rig.x -= ent * w * 0.20;
       if (ent > 0.02) { var stp9 = Math.sin(nowT() * 0.02); rig.fL = { x: rig.x - fh * 0.11 + stp9 * fh * 0.09 * ent, y: gy - Math.max(0, stp9) * 4 * ent }; rig.fR = { x: rig.x + fh * 0.11 - stp9 * fh * 0.09 * ent, y: gy - Math.max(0, -stp9) * 4 * ent }; rig.lean = 0.14 * ent; }
       if (e0.isReturn) {
@@ -5433,18 +5467,38 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (!still) { var mi9; for (mi9 = 0; mi9 < 10; mi9++) { var myc9 = ((nowT() * (0.00003 + (mi9 % 3) * 0.00002) + mi9 * 0.137) % 1); var mxx9 = cx + Math.sin(nowT() * 0.0004 + mi9 * 2.4) * r * (0.45 + (mi9 % 4) * 0.3); var myy9 = top + 34 + myc9 * (stageY - top - 40); p.noStroke(); fillc([255, 244, 214], 26 * Math.sin(myc9 * Math.PI) * ee); p.ellipse(mxx9, myy9, 2.2, 2.2); } }
       if (dc) dc.restore();
       p.pop();
-      var capFs9 = 8.5; p.textFont(MONO); p.textSize(capFs9); if (p.textWidth(capTxt) > w - 12) capFs9 = 7.5;
-      setFont(MONO, capFs9, [252, 246, 232], p.CENTER, p.TOP, 235 * cl01(t2 * 2)); p.text(capTxt, cx, stageY + 34);
-      if (capSub) { setFont(MONO, 7.5, [214, 206, 188], p.CENTER, p.TOP, 190 * cl01(t2 * 2)); p.text(capSub, cx, stageY + 47); }
+      (function () {
+        var dR = 27, dX = x + 42, dY = top + 132, chalk = [250, 246, 232];
+        var ang9 = e0.isReturn ? 360 : (e0.ang || 0);
+        var sw9 = still ? 1 : eCubic(cl01((nowT() - UI.lifeWalk.t0 - 700) / 1900));
+        if (sw9 <= 0.01) return;
+        p.noFill(); strokec(chalk, 80 * sw9); p.strokeWeight(1); p.ellipse(dX, dY, dR * 2, dR * 2);
+        p.noStroke(); fillc(chalk, 235 * sw9); p.ellipse(dX, dY - dR, 5, 5);
+        setFont(MONO, 7, chalk, p.CENTER, p.TOP, 220 * sw9); p.text(('YOUR ' + (e0.np === 'asc' ? 'ASC' : e0.np === 'mc' ? 'MC' : APP.nameFor(e0.np))).toUpperCase(), dX, dY - dR - 12);
+        var curA = -Math.PI / 2 + (ang9 * Math.PI / 180) * sw9;
+        strokec(ACC, 210 * sw9); p.strokeWeight(1.6); p.noFill();
+        if (ang9 > 0) p.arc(dX, dY, dR * 1.18, dR * 1.18, -Math.PI / 2, curA + 0.001);
+        var mx9 = dX + Math.cos(curA) * dR, my9 = dY + Math.sin(curA) * dR;
+        p.noStroke(); fillc(BODYCOL[bodyK] || ACC, 245 * sw9); p.ellipse(mx9, my9, 7, 7);
+        setFont(MONO, 7, chalk, p.CENTER, p.TOP, 220 * sw9); p.text(APP.nameFor(e0.tp).toUpperCase(), dX, dY + dR + 6);
+        setFont(MONO, 9, ACC, p.CENTER, p.CENTER, 245 * sw9); p.text(Math.round(ang9 * sw9) + '\u00B0', dX, dY);
+      })();
+      var capFs9 = 8.5, capL1 = capTxt, capL2 = null; p.textFont(MONO); p.textSize(capFs9);
+      if (p.textWidth(capTxt) > w - 12) { capFs9 = 7.5; p.textSize(capFs9); }
+      if (p.textWidth(capTxt) > w - 16) { var ci9 = capTxt.indexOf(': '); if (ci9 > 0) { capL1 = capTxt.slice(0, ci9 + 1); capL2 = capTxt.slice(ci9 + 2); capFs9 = 8.5; } }
+      setFont(MONO, capFs9, [252, 246, 232], p.CENTER, p.TOP, 235 * cl01(t2 * 2)); p.text(capL1, cx, stageY + 34);
+      var capY9 = stageY + 47;
+      if (capL2) { setFont(MONO, 8, [252, 246, 232], p.CENTER, p.TOP, 225 * cl01(t2 * 2)); p.text(capL2, cx, capY9); capY9 += 13; }
+      if (capSub) { setFont(MONO, 7.5, [214, 206, 188], p.CENTER, p.TOP, 190 * cl01(t2 * 2)); p.text(capSub, cx, capY9); }
       if (!still) { p.noStroke(); fillc([10, 8, 6], 190 * (1 - cl01(te * 2.2))); p.rect(0, 0, W, H); }
       // ---- the reading: a measured stack that always fits ----
       if (UI.lifeAgeShown == null) UI.lifeAgeShown = e0.age;
       UI.lifeAgeShown += (e0.age - UI.lifeAgeShown) * 0.12;
       var ticking3 = Math.abs(UI.lifeAgeShown - e0.age) > 0.3;
-      var textTop = Math.max(stageY + 66, top + vh * 0.44), slideIn = (1 - ee) * 12;
+      var textTop = Math.max(stageY + 80, top + vh * 0.44), slideIn = (1 - ee) * 12;
       setFont(MONO, 12, ticking3 ? ACC : ACCTX, p.CENTER, p.TOP, 235); p.text('AGE ' + Math.round(UI.lifeAgeShown) + '   ·   ' + e0.date.getFullYear(), cx, textTop);
       var ty = textTop + 24;
-      var tl = wrapLines2(e0.title || 'A chapter', w - 16, SANS, 25); setFont(SANS, 25, INK, p.CENTER, p.TOP, 255 * alpha); bold(); for (i = 0; i < tl.length; i++) p.text(tl[i], cx, ty + slideIn + i * 31); normal(); ty += tl.length * 31 + 10;
+      var tl = wrapLines2(e0.title || 'A chapter', w - 16, SANS, 25); for (i = 0; i < tl.length; i++) riseText(tl[i], cx, ty + slideIn + i * 31, 25, SANS, INK, UI.lifeWalk.t0 + 260 + i * 200); ty += tl.length * 31 + 10;
       var bodyFs = 18, bl = wrapLines2(e0.text || '', w - 24, SERIF, bodyFs);
       var avail9 = (top + vh - 56) - ty;
       if (bl.length * bodyFs * 1.44 > avail9) { bodyFs = 15.5; bl = wrapLines2(e0.text || '', w - 24, SERIF, bodyFs); }
@@ -5469,7 +5523,10 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       strokec(INK, 45); p.strokeWeight(2); var topLine = sY(ly), botLine = sY(ly + ev.length * 96 + 40); p.line(lineX, topLine, lineX, botLine);
       // A14 — a travelling light runs the thread as you scroll, lighting each chapter it passes
       var cometY = Math.max(topLine, Math.min(botLine, topY() + viewH() * 0.42));
-      if (!reduced()) { var ci; for (ci = 0; ci < 9; ci++) { strokec(ACC, 95 - ci * 10); p.strokeWeight(2.2 - ci * 0.18); p.line(lineX, cometY - ci * 5, lineX, cometY - (ci + 1) * 5); } p.noStroke(); fillc(ACC, 55); p.ellipse(lineX, cometY, 18, 18); fillc(ACC); p.ellipse(lineX, cometY, 7, 7); }
+      if (!reduced()) { var ci; for (ci = 0; ci < 9; ci++) { strokec(ACC, 95 - ci * 10); p.strokeWeight(2.2 - ci * 0.18); p.line(lineX, cometY - ci * 5, lineX, cometY - (ci + 1) * 5); } p.noStroke(); fillc(ACC, 55); p.ellipse(lineX, cometY, 18, 18); fillc(ACC); p.ellipse(lineX, cometY, 7, 7);
+        var stp9 = Math.sin((UI.scroll.read || 0) * 0.06);
+        actorFigure({ x: lineX - 21, y: cometY + 15, h: 30, look: 0.5, wind: 1.1, ph: 5, scarf: true, fL: { x: lineX - 24.3 + stp9 * 2.6, y: cometY + 15 - Math.max(0, stp9) * 1.6 }, fR: { x: lineX - 17.7 - stp9 * 2.6, y: cometY + 15 - Math.max(0, -stp9) * 1.6 } }, 1);
+      }
       for (i = 0; i < ev.length; i++) {
         var e = ev[i], past = e.date.getTime() < nowMs, ry = sY(ly);
         if (!nowDrawn && !past) { // a NOW marker
