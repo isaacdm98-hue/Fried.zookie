@@ -49,18 +49,18 @@ var DATA = (function () {
 
   // Dedicated headline text (grounded, behavioural voice)
   var SUN_IN_SIGN = [
-    'You are wired to initiate. The work of a lifetime is learning to finish what you start, and to slow down enough to bring people with you.',
-    'You are built to value and to endure. Your job is to enjoy what you have without gripping it so hard nothing new can arrive.',
-    'You came here to connect ideas and people. Watch the habit of using words to stay one step ahead of your own feelings.',
-    'You lead with feeling and memory. Your task is to care for others without making your moods the weather everyone else lives in.',
-    'You are here to shine and to give. The growth edge is needing the applause a little less, and creating because it is yours.',
-    'You are here to be useful and to refine. Your challenge is to let "good enough" exist, and to turn the critical eye into kindness.',
-    'You are built for relationship and fairness. The work is having your own opinion before you ask for everyone else\u2019s.',
-    'You came to go deep and to transform. Your task is to trust people with the truth rather than controlling what they see.',
-    'You are here to explore and to mean it. The growth edge is staying long enough for the meaning to actually land.',
-    'You are built to climb and to build. Your work is to let the ambition serve a life, not replace one.',
-    'You came here to think for yourself and to be free. The challenge is staying close to people while keeping your independence.',
-    'You are here to imagine and to feel everything. Your task is to give the dreaming a form, and to keep some boundaries intact.'
+    'You are wired to initiate. The work of a lifetime is learning to finish what you start, and to slow down enough to bring people with you. You were not built to wait your turn.',
+    'You are built to value and to endure. Your job is to enjoy what you have without gripping it so hard nothing new can arrive. What you keep, keeps you; choose it well.',
+    'You came here to connect ideas and people. Watch the habit of using words to stay one step ahead of your own feelings. Curiosity is your form of loyalty.',
+    'You lead with feeling and memory. Your task is to care for others without making your moods the weather everyone else lives in. You remember for people who forget themselves.',
+    'You are here to shine and to give. The growth edge is needing the applause a little less, and creating because it is yours. Warmth is your argument; you rarely need another.',
+    'You are here to be useful and to refine. Your challenge is to let "good enough" exist, and to turn the critical eye into kindness. Perfection is not the goal; it is the compass.',
+    'You are built for relationship and fairness. The work is having your own opinion before you ask for everyone else\u2019s. Fairness, in your hands, is a kind of beauty.',
+    'You came to go deep and to transform. Your task is to trust people with the truth rather than controlling what they see. You would rather have the truth than the comfort, every time.',
+    'You are here to explore and to mean it. The growth edge is staying long enough for the meaning to actually land. The horizon is not a destination; it is your address.',
+    'You are built to climb and to build. Your work is to let the ambition serve a life, not replace one. You build slowly because you build for weather.',
+    'You came here to think for yourself and to be free. The challenge is staying close to people while keeping your independence. You belong everywhere by belonging to no one’s script.',
+    'You are here to imagine and to feel everything. Your task is to give the dreaming a form, and to keep some boundaries intact. You feel the sea the rest of us only stand beside.'
   ];
   var MOON_IN_SIGN = [
     'You feel safe when you can act. Sitting with an emotion, rather than discharging it, is the skill to build.',
