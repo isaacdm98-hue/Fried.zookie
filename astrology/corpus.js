@@ -580,12 +580,10 @@ var DATA = (function () {
     aspects: 'These are the Ptolemaic aspects: conjunction, sextile, square, trine and opposition. The geometric angles Ptolemy held to carry real force between two planets.'
   };
   // Per-planet traditional significations (our own words) paired with a genuinely public-domain line.
-  // Ptolemy quotes are the Ashmand translation (1822, PD); Lilly is William Lilly (1647) (1647, PD), spelling
   // lightly modernised, ellipses marking omission. The outer planets postdate the classical canon — said so plainly.
   var PLANET_TRAD = {
     sun: { sig: 'Vitality, the will, the heart and the essential self. The father, the sovereign, and what you were born to shine at. One of the two Lights, the chart’s source of life.', q: 'The active influence of the Sun is found to be heating and, in a certain degree, drying.', src: 'Ptolemy, Tetrabiblos (Ashmand trans., 1822)' },
     moon: { sig: 'The body’s instincts, the tides of mood and memory, the mother and what makes you feel safe. The receptive Light that mirrors, carries and tends.', q: 'The Moon’s power consists chiefly in moistening, being near the earth and disposed to the humours thereof.', src: 'Ptolemy, Tetrabiblos (Ashmand trans., 1822)' },
-    mercury: { sig: 'The mind, speech, reason, trade and the messenger between people. Quick and adaptable, taking colour from whatever it touches.', q: 'Mercury… presaging a subtle and politic brain, an excellent disputant or logician, arguing with learning and discretion.', src: 'William Lilly, William Lilly, 1647' },
     venus: { sig: 'Love, pleasure, beauty, art and union. What and whom you value, and the urge to make peace and to delight. Traditionally the Lesser Fortune.', q: 'The power of Venus is temperate… and chiefly disposed to moisture.', src: 'Ptolemy, Tetrabiblos (Ashmand trans., 1822)' },
     mars: { sig: 'Drive, courage, anger and desire. The cutting edge, the will to act and to fight. The Lesser Infortune: heat that must be well aimed.', q: 'The power of Mars is principally to dry and to burn, conformably to his fiery colour.', src: 'Ptolemy, Tetrabiblos (Ashmand trans., 1822)' },
     jupiter: { sig: 'Growth, faith, abundance, wisdom and generosity. The wider horizon and the urge to expand and to bless. The Greater Fortune.', q: 'The power of Jupiter is temperate… and is consequently fructifying.', src: 'Ptolemy, Tetrabiblos (Ashmand trans., 1822)' },
@@ -594,25 +592,23 @@ var DATA = (function () {
     neptune: { sig: 'Dreams, longing, compassion and dissolving edges, the mystic, the artist and the escape. Unknown to the ancients (discovered 1846); a modern signification.' },
     pluto: { sig: 'Power, depth, death and rebirth. What is buried, what is shared under pressure, and what is utterly transformed. Unknown to the tradition (discovered 1930); a modern reading.' }
   };
-  // Per-house significations after William Lilly, William Lilly (1647) (1647, PD) — our summary, then his own line.
   var HOUSE_TRAD = [
-    { sig: 'The body and the life itself: your appearance, vitality, temperament and the way you meet the world.', q: 'It signifieth the life of man… the stature, colour, complexion, form and shape of him.' },
-    { sig: 'What you own and what you’re worth. Money, possessions, resources, and the things you can move and use.', q: 'It signifieth the estate or fortune of the querent, his wealth or poverty, all moveable goods, money lent.' },
-    { sig: 'Brothers and sisters, neighbours and everyday talk. Short journeys, letters, messages and the near world.', q: 'It signifieth brethren, sisters, kinsfolk… short journeys, letters, rumours, messengers.' },
-    { sig: 'Home, family roots and the father. Land, inheritance, and the ground you come from and return to.', q: 'It hath signification of fathers… of lands, houses, tenements, inheritances.' },
-    { sig: 'Children, romance, creativity and play. Pleasure, delight and everything you make for joy.', q: 'It ruleth children… pleasure, delight, banquets, ale-houses, taverns.' },
-    { sig: 'Work, health and daily service. The body’s upkeep, routines, and those who labour with and for you.', q: 'It concerneth sickness… servants, labour, and small cattle.' },
-    { sig: 'Partnership and marriage: the close other, open enemies, contracts and what you meet face to face.', q: 'It giveth judgement of marriage… the open enemy, and law-suits.' },
-    { sig: 'Death and inheritance, what is shared and what is hidden, other people’s resources, and deep change.', q: 'It signifieth the estate of men deceased, death… dowry, fear and anguish of mind.' },
-    { sig: 'The far horizon: long journeys, religion, philosophy, learning and dreams; the search for meaning.', q: 'It hath signification of voyages or long journeys… religion, dreams, and learning.' },
-    { sig: 'Career, calling and public standing. Honour, authority, reputation and what you’re known for.', q: 'It signifieth Kings, Princes… honour, preferment, dignity, profession or trade.' },
-    { sig: 'Friends, allies and community. Hopes, wishes and the wider circle that carries you forward.', q: 'It signifieth friends… hope, trust, confidence, the praise or dispraise of a man.' },
-    { sig: 'The hidden and the undone: solitude, retreat, secrets, self-undoing, and what works behind the scenes.', q: 'It signifieth private enemies… imprisonment, all manner of affliction, and sorrow.' }
+    { sig: 'The body and the life itself: your appearance, vitality, temperament and the way you meet the world.' },
+    { sig: 'What you own and what you’re worth. Money, possessions, resources, and the things you can move and use.' },
+    { sig: 'Brothers and sisters, neighbours and everyday talk. Short journeys, letters, messages and the near world.' },
+    { sig: 'Home, family roots and the father. Land, inheritance, and the ground you come from and return to.' },
+    { sig: 'Children, romance, creativity and play. Pleasure, delight and everything you make for joy.' },
+    { sig: 'Work, health and daily service. The body’s upkeep, routines, and those who labour with and for you.' },
+    { sig: 'Partnership and marriage: the close other, open enemies, contracts and what you meet face to face.' },
+    { sig: 'Death and inheritance, what is shared and what is hidden, other people’s resources, and deep change.' },
+    { sig: 'The far horizon: long journeys, religion, philosophy, learning and dreams; the search for meaning.' },
+    { sig: 'Career, calling and public standing. Honour, authority, reputation and what you’re known for.' },
+    { sig: 'Friends, allies and community. Hopes, wishes and the wider circle that carries you forward.' },
+    { sig: 'The hidden and the undone: solitude, retreat, secrets, self-undoing, and what works behind the scenes.' }
   ];
-  var TRAD_SRC_LILLY = 'William Lilly, William Lilly, 1647';
   return {
     PLANETS: PLANETS, PLANET_ORDER: PLANET_ORDER, SIGNS: SIGNS, TRADITION: TRADITION,
-    PLANET_TRAD: PLANET_TRAD, HOUSE_TRAD: HOUSE_TRAD, TRAD_SRC_LILLY: TRAD_SRC_LILLY,
+    PLANET_TRAD: PLANET_TRAD, HOUSE_TRAD: HOUSE_TRAD,
     SUN_IN_SIGN: SUN_IN_SIGN, MOON_IN_SIGN: MOON_IN_SIGN, RISING_IN_SIGN: RISING_IN_SIGN, PLANET_SIGN_TEXT: PLANET_SIGN_TEXT,
     HOUSES: HOUSES, ASPECTS: ASPECTS, MINOR_ASPECTS: MINOR_ASPECTS, ELEMENTS: ELEMENTS, MODALITIES: MODALITIES,
     TAROT: TAROT, SUIT_KW: SUIT_KW, SPREADS: SPREADS, CITIES: CITIES

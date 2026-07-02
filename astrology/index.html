@@ -2265,7 +2265,7 @@ var APP = (function () {
       if (fc.eclipses) for (i = 0; i < fc.eclipses.length; i++) { var EC2 = fc.eclipses[i]; h.push(para(anA(EC2.kind, true) + ' ' + EC2.type + ' eclipse on ' + EC2.date.toDateString() + ' at ' + EC2.deg.toFixed(0) + '\u00B0 ' + DATA.SIGNS[EC2.sign].name + (EC2.house ? (', in the ' + ordinal(EC2.house) + ' house') : '') + '.')); }
       if (fc.upcoming && fc.upcoming.length) { h.push('<h3>Exact transits coming</h3>'); for (i = 0; i < fc.upcoming.length; i++) { var ev2 = fc.upcoming[i]; h.push(para(ev2.date.toDateString() + ' \u2014 ' + nameFor(ev2.tp) + ' ' + ev2.aspKey + ' ' + nameFor(ev2.np) + (ev2.rx ? ' (retrograde pass)' : '') + '.')); } }
     } catch (e4) {}
-    h.push('<hr class="rule"><p class="meta">Computed entirely on-device with astronomy-engine (MIT), no AI, no server. Classical material after Ptolemy, Lilly (1647) and Robson (1923), summarised or quoted from the public domain.</p>');
+    h.push('<hr class="rule"><p class="meta">Computed entirely on-device with astronomy-engine (MIT), no AI, no server. Classical material after Ptolemy, Valens and Robson (1923), summarised or quoted from the public domain.</p>');
     h.push('</main></body></html>');
     try {
       var blob = new Blob([h.join('\n')], { type: 'text/html' }), url = URL.createObjectURL(blob), wref = null;
@@ -6802,7 +6802,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       // looking at, the line is the one for THAT placement (chart-contextual), in the source's own public-domain words.
       var tlead = DATA.TRADITION[cat], tq = null, tqsrc = null;
       if (cat === 'planets' && DATA.PLANET_TRAD[it]) { var ptd = DATA.PLANET_TRAD[it]; tlead = ptd.sig; if (ptd.q) { tq = ptd.q; tqsrc = ptd.src; } }
-      else if (cat === 'houses' && DATA.HOUSE_TRAD[it]) { var htd = DATA.HOUSE_TRAD[it]; tlead = htd.sig; tq = htd.q; tqsrc = DATA.TRAD_SRC_LILLY; }
+      else if (cat === 'houses' && DATA.HOUSE_TRAD[it]) { tlead = DATA.HOUSE_TRAD[it].sig; }
       if (tlead) {
         ly += 12; hairline(x, ly, x + w, 40); ly += 18; eyebrow('From the tradition', x, ly, ACC); ly += 22;
         ly += paragraph(tlead, x, ly, w, 14.5, INK, SERIF, 22, 220) + 10;
