@@ -2799,7 +2799,7 @@ var APP = (function () {
     };
     var open5 = vpick(OPEN5[stage5], seed5 + 'o'), plot5 = vpick(PLOT5[ev.ang] || PLOT5[0], seed5 + 'p');
     plot5 = plot5.replace('{TP}', nameFor(ev.tp)).replace('{WHO}', who).replace('{LOC}', loc);
-    return open5 + ' ' + plot5 + (MOVER_NOUN[ev.tp] ? ' ' + nameFor(ev.tp) + ' is ' + MOVER_NOUN[ev.tp] + '; it always leaves a mark shaped like itself.' : '');
+    return open5 + ' ' + plot5 + (MOVER_NOUN[ev.tp] ? ' ' + vpick([nameFor(ev.tp) + ' is ' + MOVER_NOUN[ev.tp] + '; it leaves a mark shaped like itself.', 'That is ' + nameFor(ev.tp) + ' for you: ' + MOVER_NOUN[ev.tp] + '.', 'It bore the signature of ' + nameFor(ev.tp) + ': ' + MOVER_NOUN[ev.tp] + '.'], seed5 + 'tl') : '');
     // (superseded by the story register above)
   }
 
@@ -4648,13 +4648,15 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (cap && cap !== UI.reelCap) { UI.reelCap = cap; UI.reelCapT = nowT(); blip(392, 0.18, 0.035); buzz(8); }
       if (!cap) UI.reelCap = null;
       setFont(MONO, 10, ACCTX, p.LEFT, p.TOP, 235); p.text('THE REEL \u00B7 YOUR LIFE, SCRUBBABLE', x, top + 12);
-      setFont(MONO, 10, INK, p.RIGHT, p.TOP, 190); p.text(when.getUTCFullYear() + '', x + w - 74, top + 12);
+      var MON9 = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+      setFont(MONO, 10, INK, p.RIGHT, p.TOP, 190); p.text(MON9[when.getUTCMonth()] + ' ' + when.getUTCFullYear(), x + w - 74, top + 12);
       if (dc) { dc.save(); dc.font = 'bold 74px Georgia, serif'; dc.textAlign = 'center'; dc.textBaseline = 'alphabetic'; dc.fillStyle = 'rgba(' + INK[0] + ',' + INK[1] + ',' + INK[2] + ',0.92)'; dc.fillText('AGE ' + Math.floor(ageY), cx, top + 72); dc.restore(); }
       if (UI.reelCap) { var cpA = reduced() ? 1 : (0.65 + 0.35 * Math.sin(nowT() * 0.006)); setFont(SANS, 15, ACC, p.CENTER, p.TOP, 245 * cpA); bold(); p.text(UI.reelCap.toUpperCase(), cx, cy + R + 22); normal(); }
       else { setFont(MONO, 9.5, INK, p.CENTER, p.TOP, 150); p.text('DRAG THE BAR \u00B7 THREADS LIGHT WHERE THE SKY TOUCHES YOU', cx, cy + R + 24); }
       // the scrub bar
       var bx3 = x + 8, bw3 = w - 16, by3 = top + vh - 74;
       UI.reelBar = { x: bx3, y: by3, w: bw3 };
+      var dk9; for (dk9 = 1; dk9 < 9; dk9++) { strokec(INK, 60); p.strokeWeight(1); p.line(bx3 + bw3 * dk9 / 9, by3 - 6, bx3 + bw3 * dk9 / 9, by3 + 6); }
       strokec(INK, 70); p.strokeWeight(4); p.line(bx3, by3, bx3 + bw3, by3);
       strokec(ACC, 235); p.line(bx3, by3, bx3 + bw3 * f, by3);
       p.noStroke(); fillc(shade(ACC, -30)); p.ellipse(bx3 + bw3 * f, by3 + 2, 26, 26); fillc(ACC); p.ellipse(bx3 + bw3 * f, by3, 26, 26); fillc(GROUNDS.chart); p.ellipse(bx3 + bw3 * f, by3, 7, 7);
@@ -5950,7 +5952,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       bigthree: function (c, b) { if (b && b.timeKnown && c.ascBody) { var so = signOpts(c.ascBody.sign); return { q: 'Which is YOUR rising sign?', o: so.o, ci: so.ci, why: c.ascBody.signName + ' was climbing the eastern horizon the minute you were born.' }; } return { q: 'The “big three” are…', o: ['Sun, Moon and rising', 'Venus, Mars and Jupiter', 'The three outer planets'], ci: 0, why: 'What you are becoming, what you need, and how you meet the world.' }; },
       moving: function () { return { q: 'A transit is…', o: ['A planet inside your birth chart', 'Today’s sky touching your birth chart', 'An aspect between two houses'], ci: 1, why: 'Your chart is fixed; the sky keeps moving. Where the live sky touches your natal map, that is a transit.' }; }
     };
-    function startLesson() { UI.lesson = { i: 0, beat: 0, t0: nowT() + (reduced() ? 0 : 2300), lead: nowT() }; UI.scroll.learn = 0; lessonSeen(0); }
+    function startLesson() { var lead9 = !UI.leaderSeen && !reduced(); UI.leaderSeen = true; UI.lesson = { i: 0, beat: 0, t0: nowT() + (lead9 ? 2300 : 0), lead: lead9 ? nowT() : 0 }; UI.scroll.learn = 0; lessonSeen(0); }
     // the projector moment: the room goes dark, the beam flickers on, the film leader counts down
     function drawFilmLeader(x, w, top, vh, cx) {
       var el2 = nowT() - UI.lesson.lead, dc = p.drawingContext;
@@ -6334,7 +6336,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
           p.noStroke(); fillc(on ? ACC : INK, on ? 255 : (wrong ? 36 : 24)); p.rect(bx2, byy, bw2, 40, 10);
           p.noFill(); strokec(INK, on ? 0 : 70); p.strokeWeight(1); p.rect(bx2, byy, bw2, 40, 10);
           setFont(SANS, 14.5, on ? (GROUNDS[UI.screen] || GROUNDS.chart) : INK, p.CENTER, p.CENTER, wrong ? 110 : 255); p.text(qz.o[i], cx, byy + 20);
-          if (!done) (function (ii) { pushHit(bx2, byy, bw2, 40, function () { UI.lesson.qa = ii; lqRecord(sc.k, ii === qz.ci); if (ii === qz.ci) chime(); }); })(i);
+          if (!done) (function (ii) { pushHit(bx2, byy, bw2, 40, function () { UI.lesson.qa = ii; lqRecord(sc.k, ii === qz.ci); if (ii === qz.ci) { chime(); buzz([16, 40, 16]); } }); })(i);
           ty += 48;
         }
         if (done) {
@@ -6605,7 +6607,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       p.noFill(); strokec([22, 16, 12], 255); p.strokeWeight(4); p.rect(scrX - 2, scrY - 2, scrW + 4, scrH + 4, 7);
       var tt = it.t; p.textFont(SANS); p.textSize(10.5); while (tt.length > 4 && p.textWidth(tt) > scrW - 2) tt = tt.slice(0, -2);
       setFont(SANS, 10.5, [240, 230, 216], p.LEFT, p.TOP); p.text(tt + (tt !== it.t ? '…' : ''), scrX, sy0 + off + cardH - 19);
-      (function (key) { pushHit(cx0, sy0, cw2, cardH, function () { if (UI.iaSlot && UI.iaSlot[key] === false) { delete UI.iaSlot[key]; return; } UI.tvActive = (UI.tvActive === key ? null : key); UI.tvMuted = true; }); })(it.k);
+      (function (key) { pushHit(cx0, sy0, cw2, cardH, function () { if (UI.iaSlot && UI.iaSlot[key] === false) { delete UI.iaSlot[key]; try { var m9 = JSON.parse(localStorage.getItem('aqp_watch') || '{}'); delete m9[key]; localStorage.setItem('aqp_watch', JSON.stringify(m9)); } catch (e9) {} return; } UI.tvActive = (UI.tvActive === key ? null : key); UI.tvMuted = true; }); })(it.k);
       return frameRect;
     }
     function watchShelf(c, b, x, w, ly) {
@@ -7541,7 +7543,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (UI.jInput || typeof document === 'undefined') return UI.jInput;
       try {
         var el = document.createElement('textarea');
-        el.setAttribute('placeholder', 'How was this day, really?');
+        el.setAttribute('placeholder', 'How was this day, really?'); el.setAttribute('maxlength', '1200');
         var st2 = el.style; st2.position = 'fixed'; st2.zIndex = '6'; st2.margin = '0'; st2.padding = '6px 8px'; st2.border = 'none'; st2.outline = 'none'; st2.resize = 'none';
         st2.background = 'transparent'; st2.fontFamily = SERIF; st2.fontSize = '14px'; st2.display = 'none'; st2.webkitTapHighlightColor = 'transparent';
         el.addEventListener('input', function () { if (UI.jFor) journalPut(UI.jFor, el.value); UI.jMap = null; });
@@ -7889,7 +7891,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     p.draw = function () {
       // auto-dark-at-night: re-apply the theme when the effective key changes (time or accent)
       var ek = effectiveThemeKey() + '|' + ((APP.STATE.settings && APP.STATE.settings.accent) || 0); if (ek !== UI.appliedThemeKey) { applyTheme(); setBodyBg(GROUNDS[UI.screen] || GROUNDS.chart); }
-      if (UI.screen !== UI.prevScreen) { var wasFirst = !UI.prevScreen; UI.fxT = nowT(); UI.prevScreen = UI.screen; UI.story = null; if (UI.video) closeVideo(); if (UI.screen !== 'chart') UI.walk = null; if (UI.screen !== 'tarot') UI.tarotRit = null; if (UI.screen !== 'read') UI.lifeWalk = null; if (UI.screen !== 'learn') { UI.tvActive = null; if (UI.learnSearch) { UI.learnSearch = false; try { if (UI.searchInput) UI.searchInput.setAttribute('placeholder', 'Search city or country'); } catch (eP4) {} } } setBodyBg(GROUNDS[UI.screen] || GROUNDS.chart); if (!wasFirst) chime(); }
+      if (UI.screen !== UI.prevScreen) { var wasFirst = !UI.prevScreen; UI.fxT = nowT(); UI.prevScreen = UI.screen; UI.story = null; if (UI.video) closeVideo(); if (UI.screen !== 'chart') { UI.walk = null; UI.pcard = null; UI.reel = null; } if (UI.screen !== 'tarot') UI.tarotRit = null; if (UI.screen !== 'read') UI.lifeWalk = null; if (UI.screen !== 'learn') { UI.tvActive = null; if (UI.learnSearch) { UI.learnSearch = false; try { if (UI.searchInput) UI.searchInput.setAttribute('placeholder', 'Search city or country'); } catch (eP4) {} } } setBodyBg(GROUNDS[UI.screen] || GROUNDS.chart); if (!wasFirst) chime(); }
       UI.bg = (GROUNDS[UI.screen] || GROUNDS.chart); // HARD block-colour cut between sections
       p.background(UI.bg[0], UI.bg[1], UI.bg[2]);
       drawField(); drawRipples();
@@ -7939,9 +7941,9 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (!UI.ptrDown) return;
       var dy = y - UI.pressY, dx = x - UI.pressX; if (Math.abs(dy) > 6 || Math.abs(dx) > 6) UI.dragging = true;
       if (UI.video) return; // the embedded player handles its own area
-      if (UI.today) { UI.tScroll = (UI.tScrollStart || 0) - dy; if (UI.tScroll < 0) UI.tScroll = 0; return; }
+      if (UI.today) { if ((UI.tScrollStart || 0) <= 0 && dy > 90) { UI.today = false; buzz(6); return; } UI.tScroll = (UI.tScrollStart || 0) - dy; if (UI.tScroll < 0) UI.tScroll = 0; return; }
       if (UI.inReel) { UI.reel.f = Math.max(0.0002, Math.min(1, (x - UI.reelBar.x) / UI.reelBar.w)); return; }
-      if (UI.inPcard) { UI.pcScroll = Math.max(0, Math.min(UI.pcMax || 0, UI.pcStart - dy)); return; }
+      if (UI.inPcard) { if ((UI.pcStart || 0) <= 0 && dy > 80) { UI.pcard = null; UI.inPcard = false; buzz(6); return; } UI.pcScroll = Math.max(0, Math.min(UI.pcMax || 0, UI.pcStart - dy)); return; }
       if (UI.inSlider) { var tt = (x - UI.sliderRect.x) / UI.sliderRect.w; tt = Math.max(0, Math.min(1, tt)); APP.STATE.settings.orbScale = Math.round((0.5 + tt * 1.5) * 10) / 10; recompute(); }
       else if (UI.inCity) { UI.cityScroll = UI.cityScrollStart - dy; if (UI.cityScroll < 0) UI.cityScroll = 0; if (UI.cityScroll > UI.cityBoxMax) UI.cityScroll = UI.cityBoxMax; }
       else { UI.chartScrollAnim = null; UI.scroll[UI.screen] = UI.scrollStart - dy; clampScroll(); }
