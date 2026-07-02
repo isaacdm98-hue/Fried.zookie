@@ -4017,7 +4017,14 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       p.text(q.text, startX + (endX - startX) * prog, q.y);
       p.textStyle(p.NORMAL);
     }
-    function spawnRipple(x, y) { UI.ripples.push({ x: x, y: y, t: nowT() }); if (UI.ripples.length > 12) UI.ripples.shift(); }
+    function spawnRipple(x, y) {
+      UI.ripples.push({ x: x, y: y, t: nowT() }); if (UI.ripples.length > 12) UI.ripples.shift();
+      if (!reduced()) {
+        if (!UI.sparks) UI.sparks = [];
+        for (var i9 = 0; i9 < 3; i9++) { var a9 = Math.random() * Math.PI * 2, v9 = 40 + Math.random() * 70; UI.sparks.push({ x: x, y: y, vx: Math.cos(a9) * v9, vy: Math.sin(a9) * v9 - 60, t: nowT() }); }
+        if (UI.sparks.length > 24) UI.sparks.splice(0, UI.sparks.length - 24);
+      }
+    }
     function drawRipples() {
       var keep = [];
       for (var i = 0; i < UI.ripples.length; i++) {
@@ -4025,12 +4032,27 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         if (prog < 1) { keep.push(r); var rad = 6 + eExpo(prog) * 78, a = (1 - prog) * 110; p.noFill(); strokec(INK, a); p.strokeWeight(1.4); p.ellipse(r.x, r.y, rad * 2, rad * 2); }
       }
       UI.ripples = keep;
+      if (UI.sparks && UI.sparks.length) {
+        var keep2 = [];
+        for (var j9 = 0; j9 < UI.sparks.length; j9++) {
+          var sp9 = UI.sparks[j9], dt9 = (nowT() - sp9.t) / 1000;
+          if (dt9 < 0.55) {
+            keep2.push(sp9);
+            var px9 = sp9.x + sp9.vx * dt9, py9 = sp9.y + sp9.vy * dt9 + 190 * dt9 * dt9, sa9 = (1 - dt9 / 0.55) * 200, r9 = 2.6 * (1 - dt9 / 0.7);
+            strokec(ACC, sa9); p.strokeWeight(1.2); p.line(px9 - r9, py9, px9 + r9, py9); p.line(px9, py9 - r9, px9, py9 + r9);
+          }
+        }
+        UI.sparks = keep2;
+      }
     }
 
     // ============ HERO DIAL with MAGNIFY-ON-TAP ============
     function dial(c, b, ly) {
       var size = Math.min(cw(), 380), still = reduced(), fc = p.frameCount, t = nowT();
       var cx = sx() + cw() / 2, cy = sY(ly + size / 2);
+      var sv9 = scrollOf() - (UI.sPrev == null ? scrollOf() : UI.sPrev); UI.sPrev = scrollOf();
+      UI.wLag = ((UI.wLag || 0) + sv9 * 0.22) * 0.86;
+      if (!still) cy += Math.max(-13, Math.min(13, UI.wLag));
       var R = size * 0.43, ascLon = b.timeKnown ? c.asc : 0;
       function ax(lon, r) { return cx + r * Math.cos((180 + (lon - ascLon)) * Math.PI / 180); }
       function ay(lon, r) { return cy - r * Math.sin((180 + (lon - ascLon)) * Math.PI / 180); }
@@ -4081,7 +4103,10 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
           var op = posMap[oth]; if (!op) continue;
           var q = asp.asp.quality, col = (q === 'flow' || q === 'opportunity') ? ELHUE.air : (q === 'fusion' ? INK : ACC);
           var sh = 0.7 + 0.3 * Math.sin(t * 0.005 + ai2), ex = sp.x + (op.x - sp.x) * apE, ey = sp.y + (op.y - sp.y) * apE;
-          strokec(col, 150 * ap * sh); p.strokeWeight(1.4); p.line(sp.x, sp.y, ex, ey);
+          var tp9 = (t - UI.popT - 680) / 900, pk9 = (still || tp9 <= 0 || tp9 >= 1) ? 0 : Math.sin(tp9 * 18 + ai2) * (1 - tp9) * 8;
+          strokec(col, 150 * ap * sh); p.strokeWeight(1.4);
+          if (pk9) { var mx9 = (sp.x + ex) / 2, my9 = (sp.y + ey) / 2, ddx9 = ey - sp.y, ddy9 = -(ex - sp.x), dl9 = Math.sqrt(ddx9 * ddx9 + ddy9 * ddy9) || 1; p.noFill(); p.beginShape(); p.vertex(sp.x, sp.y); p.quadraticVertex(mx9 + ddx9 / dl9 * pk9, my9 + ddy9 / dl9 * pk9, ex, ey); p.endShape(); }
+          else p.line(sp.x, sp.y, ex, ey);
           if (ap > 0.98) { p.noStroke(); fillc(col, 130 * sh); p.ellipse(op.x, op.y, 4, 4); }
         }
       }
@@ -4660,7 +4685,29 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       setFont(MONO, 10, ACCTX, p.LEFT, p.TOP, 235); p.text('THE REEL \u00B7 YOUR LIFE, SCRUBBABLE', x, top + 12);
       var MON9 = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
       setFont(MONO, 10, INK, p.RIGHT, p.TOP, 190); p.text(MON9[when.getUTCMonth()] + ' ' + when.getUTCFullYear(), x + w - 74, top + 12);
-      if (dc) { dc.save(); dc.font = 'bold 74px Georgia, serif'; dc.textAlign = 'center'; dc.textBaseline = 'alphabetic'; dc.fillStyle = 'rgba(' + INK[0] + ',' + INK[1] + ',' + INK[2] + ',0.92)'; dc.fillText('AGE ' + Math.floor(ageY), cx, top + 72); dc.restore(); }
+      if (dc) {
+        // the age is an odometer: each digit rests solid, then rolls over in the last stretch before its wrap
+        dc.save(); dc.font = 'bold 72px Georgia, serif'; dc.textAlign = 'center'; dc.textBaseline = 'alphabetic';
+        var age9 = Math.floor(ageY), digs9 = String(age9).length, dw9 = 44, oy9 = top + 74;
+        var gw9 = 146 + 22 + digs9 * dw9, lx9 = cx - 18 - gw9 / 2;
+        dc.fillStyle = 'rgba(' + INK[0] + ',' + INK[1] + ',' + INK[2] + ',0.92)';
+        dc.fillText('AGE', lx9 + 73, oy9);
+        for (var d9i = 0; d9i < digs9; d9i++) {
+          var pw9 = Math.pow(10, digs9 - 1 - d9i), dv9 = Math.floor(age9 / pw9) % 10;
+          var raw9 = (pw9 === 1) ? (ageY % 1) : Math.max(0, (ageY % pw9) - (pw9 - 1));
+          var fr9 = reduced() ? 0 : Math.max(0, (raw9 - 0.8) / 0.2);
+          var dgx9 = lx9 + 168 + d9i * dw9 + dw9 / 2;
+          if (fr9 > 0.001) {
+            dc.fillStyle = 'rgba(' + INK[0] + ',' + INK[1] + ',' + INK[2] + ',' + (0.92 * (1 - fr9)).toFixed(3) + ')';
+            dc.fillText(String(dv9), dgx9, oy9 - fr9 * 16);
+            dc.fillStyle = 'rgba(' + INK[0] + ',' + INK[1] + ',' + INK[2] + ',' + (0.92 * fr9).toFixed(3) + ')';
+            dc.fillText(String((dv9 + 1) % 10), dgx9, oy9 + (1 - fr9) * 16);
+          } else {
+            dc.fillText(String(dv9), dgx9, oy9);
+          }
+        }
+        dc.restore();
+      }
       if (UI.reelCap) { var cpA = reduced() ? 1 : (0.65 + 0.35 * Math.sin(nowT() * 0.006)); setFont(SANS, 15, ACC, p.CENTER, p.TOP, 245 * cpA); bold(); p.text(UI.reelCap.toUpperCase(), cx, cy + R + 22); normal(); }
       else { setFont(MONO, 9.5, INK, p.CENTER, p.TOP, 150); p.text('DRAG THE BAR \u00B7 THREADS LIGHT WHERE THE SKY TOUCHES YOU', cx, cy + R + 24); }
       // the scrub bar
@@ -4689,7 +4736,8 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       fillc(shade(gk, -18)); p.rect(x - 8, shY + 4, w + 16, shH + sb, 18);
       fillc(shade(gk, 6)); p.rect(x - 8, shY, w + 16, shH + sb, 18);
       p.noFill(); strokec(INK, 70); p.strokeWeight(1); p.rect(x - 8, shY, w + 16, shH + sb, 18);
-      p.noStroke(); fillc(INK, 90); p.rect(x + w / 2 - 20, shY + 8, 40, 4, 2);
+      var nod9 = 0; if (!reduced() && !(UI.pcScroll > 0)) { var nt9 = nowT() - UI.popT; if (nt9 > 1400 && nt9 < 1900) nod9 = 3.5 * Math.sin((nt9 - 1400) / 500 * Math.PI); }
+      p.noStroke(); fillc(INK, 90); p.rect(x + w / 2 - 20, shY + 8 + nod9, 40, 4, 2);
       pushHit(x - 8, shY, w + 16, 26, function () { UI.pcard = null; });
       var dc = p.drawingContext; if (dc) { dc.save(); dc.beginPath(); dc.rect(x - 8, shY + 18, w + 16, shH + sb - 18); dc.clip(); }
       var yy = shY + 30 - (UI.pcScroll || 0), hR = 27, tSel = nowT() - UI.popT;
@@ -7910,7 +7958,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       } catch (e) {}
     }
     // battery: stop the draw loop entirely while the tab/app is hidden
-    try { document.addEventListener('visibilitychange', function () { try { if (document.hidden) p.noLoop(); else { p.loop(); } } catch (e2) {} }); } catch (e3) {}
+    try { document.addEventListener('visibilitychange', function () { try { if (document.hidden) p.noLoop(); else { var d9 = new Date(), k9 = d9.getFullYear() * 10000 + (d9.getMonth() + 1) * 100 + d9.getDate(); if (UI.dayKey && UI.dayKey !== k9) { UI.todayCache = null; UI.calEvents = null; UI.walkTr = null; UI.fmList = null; UI.readCache = null; } UI.dayKey = k9; p.loop(); } } catch (e2) {} }); } catch (e3) {}
     p.draw = function () {
       // auto-dark-at-night: re-apply the theme when the effective key changes (time or accent)
       var ek = effectiveThemeKey() + '|' + ((APP.STATE.settings && APP.STATE.settings.accent) || 0); if (ek !== UI.appliedThemeKey) { applyTheme(); setBodyBg(GROUNDS[UI.screen] || GROUNDS.chart); }
@@ -8030,6 +8078,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         if (UI.card != null) { UI.card = null; return false; }
         return false;
       }
+      if (UI.reel && (k9 === 37 || k9 === 39)) { UI.reel.f = Math.max(0.0002, Math.min(1, UI.reel.f + (k9 === 39 ? 1 : -1) / 1080)); return false; }
       if (k9 === 38 || k9 === 40) {
         var dd9 = (k9 === 40 ? 64 : -64);
         if (UI.today) { UI.tScroll = Math.max(0, (UI.tScroll || 0) + dd9); }
