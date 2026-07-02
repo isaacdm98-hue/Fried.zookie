@@ -1,7 +1,7 @@
 /* Aqau Pluto service worker - ES5, offline-first single-file PWA */
-var CACHE = 'aqau-pluto-v7';
+var CACHE = 'aqau-pluto-v8';
 var THUMBS = 'aqau-thumbs-v1';
-var CORE = ['./', 'index.html', 'corpus.js', 'lib-astronomy.js', 'lib-p5.js', 'manifest.webmanifest', 'icon-180.png', 'icon-192.png', 'icon-512.png'];
+var CORE = ['./', 'index.html', 'corpus.js', 'lib-astronomy.js', 'lib-p5.js', 'voice-pack.js', 'manifest.webmanifest', 'icon-180.png', 'icon-192.png', 'icon-512.png'];
 self.addEventListener('install', function (e) {
   // precache the whole app at install, so offline works before every file has been visited
   e.waitUntil(
@@ -29,7 +29,7 @@ self.addEventListener('fetch', function (e) {
     // channel guide are cached, so the guide still renders offline. Everything
     // else cross-origin (incl. any large media) passes straight through.
     var isIaThumb = false;
-    try { var u = new URL(e.request.url); isIaThumb = (u.hostname === 'archive.org' && u.pathname.indexOf('/services/img/') === 0); } catch (err2) {}
+    try { var u = new URL(e.request.url); isIaThumb = (u.hostname === 'archive.org' && u.pathname.indexOf('/services/img/') === 0) || u.hostname === 'cdn.jsdelivr.net'; } catch (err2) {}
     if (!isIaThumb) return;
     e.respondWith(
       caches.open(THUMBS).then(function (cache) {

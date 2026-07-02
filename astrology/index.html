@@ -2726,7 +2726,7 @@ var APP = (function () {
     var samples = [], ms; for (ms = startMs; ms <= endMs; ms += step) samples.push({ ms: ms, pos: EPH.positions(jsDayNum(new Date(ms))) });
     var movers = ['jupiter', 'saturn', 'uranus', 'neptune', 'pluto'];
     var tg = ['sun', 'moon']; if (b.timeKnown && c.ascBody) { tg.push('asc'); tg.push('mc'); }
-    var ASP = [{ k: 'conjunction', a: 0, v: 'meeting' }, { k: 'square', a: 90, v: 'challenging' }, { k: 'opposition', a: 180, v: 'opposing' }];
+    var ASP = [{ k: 'conjunction', a: 0, v: 'meeting' }, { k: 'square', a: 90, v: 'challenging' }, { k: 'opposition', a: 180, v: 'opposing' }, { k: 'trine', a: 120, v: 'freeing' }];
     var events = [], mi, ti, ai;
     for (mi = 0; mi < movers.length; mi++) {
       var mk = movers[mi], natalTargets = tg.slice(); natalTargets.push(mk); // include its own return
@@ -2737,7 +2737,7 @@ var APP = (function () {
         else if (mk === 'saturn') { aspList = [ASP[0]]; } // Saturn: returns + conjunctions only — its squares/oppositions recur every ~7 yrs and become repetitive
         else aspList = (tk === mk) ? (mk === 'uranus' ? [ASP[0], ASP[2]] : [ASP[0]]) : ASP; // outer planets: the rare, momentous hits to personal points
         for (ai = 0; ai < aspList.length; ai++) {
-          var A = aspList[ai], targs = (A.a === 0) ? [0] : (A.a === 180 ? [180] : [90, -90]), gi;
+          var A = aspList[ai], targs = (A.a === 0) ? [0] : (A.a === 180 ? [180] : [A.a, -A.a]), gi;
           for (gi = 0; gi < targs.length; gi++) {
             var T = targs[gi], prev = null, s;
             // skip aspects already near-exact at birth — those are natal configurations, not later life chapters
@@ -2766,11 +2766,11 @@ var APP = (function () {
   function lifeTitle(ev) {
     if (ev.isReturn) { if (ev.tp === 'saturn') return 'Saturn return'; if (ev.tp === 'jupiter') return 'Jupiter return'; if (ev.tp === 'uranus') return 'Uranus return'; return nameFor(ev.tp) + ' return'; }
     if (ev.tp === 'uranus' && ev.np === 'uranus' && ev.ang === 180) return 'Uranus opposition (midlife)';
-    var av = (ev.ang === 0) ? '∘' : (ev.ang === 180) ? '☍' : '□';
+    var av = (ev.ang === 0) ? '∘' : (ev.ang === 180) ? '☍' : (ev.ang === 120) ? '△' : '□';
     return nameFor(ev.tp) + ' ' + av + ' ' + (ev.np === 'asc' ? 'Asc' : ev.np === 'mc' ? 'MC' : nameFor(ev.np));
   }
-  var LIFE_ACT = { 0: 'crosses', 90: 'squares', 180: 'opposes' };
-  var LIFE_FEEL = { 0: 'switching it fully on', 90: 'forcing a real adjustment whether you choose it or not', 180: 'bringing it to a head, usually through other people' };
+  var LIFE_ACT = { 0: 'crosses', 90: 'squares', 180: 'opposes', 120: 'trines' };
+  var LIFE_FEEL = { 0: 'switching it fully on', 90: 'forcing a real adjustment whether you choose it or not', 180: 'bringing it to a head, usually through other people', 120: 'opening it so smoothly you could miss the door swinging' };
   var MOVER_TASK = { jupiter: 'say yes to what genuinely grows you, without overreaching', saturn: 'do the unglamorous work and build something that lasts', uranus: 'loosen your grip and let the change move through you', neptune: 'stay gentle and clear-eyed, and sign nothing blind', pluto: 'let what is ending actually end: you are being remade' };
   function lifeText(ev, c) {
     if (ev.isReturn && ev.tp === 'saturn') return ev.age < 40 ? 'Age ' + Math.round(ev.age) + ': your first Saturn return, the real start of adulthood. You build the life that is actually yours and shoulder its weight. Demanding, and the making of you.' : 'Age ' + Math.round(ev.age) + ': your second Saturn return. A reckoning with what you have built and what you want the rest of it to mean. Mastery, and letting finished things go.';
@@ -2803,6 +2803,9 @@ var APP = (function () {
       180: ['{TP} stood opposite your {WHO}{LOC}: a standoff across the whole sky. The year kept asking one question: how much is theirs, how much is yours.',
             '{TP} took the far end of the axis from your {WHO}{LOC}, and life arrived through other people until you found the balance point.',
             'the opposition from {TP} stretched your {WHO}{LOC} like a rope pulled from the other bank. Neither side wins; the tension itself was the teacher.'],
+      120: ['{TP} trined your {WHO}{LOC}: a year when that door swung at a touch. Ease is quiet, and easy to waste; what you did with it is what remained.',
+            '{TP} slid into trine with your {WHO}{LOC}, and things that usually cost went freely. The gift of that season was momentum with no receipt.',
+            'the trine from {TP} reached your {WHO}{LOC} like current under a boat. Nothing dramatic; everything a few degrees easier, for a long while.'],
       0: ['{TP} arrived exactly on your {WHO}{LOC}: not a visit, a merger. Whatever that part of you is, it was rebuilt with new material that year.',
           '{TP} sat down on your {WHO}{LOC} and stayed. Seasons like that do not pass; they change the architecture.',
           'the conjunction: {TP} fused with your {WHO}{LOC}, and for a while it was hard to tell which of you was speaking. What emerged was more than either.']
@@ -4697,11 +4700,11 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     function startWalk() { UI.walk = { i: 0, t0: nowT() }; UI.walkTr = null; UI.walkTheme = null; UI.walkAuto = false; UI.walkMotifI = -1; UI.screen = 'chart'; UI.scroll.chart = 0; audioInit(); }
     function walkNext(n) { if (!UI.walk) return; if (UI.walk.i >= n - 1) { endWalk(); return; } UI.walk.i++; UI.walk.t0 = nowT(); }
     function walkPrev() { if (UI.walk && UI.walk.i > 0) { UI.walk.i--; UI.walk.t0 = nowT(); } }
-    function endWalk() { UI.walk = null; UI.walkAuto = false; UI.walkVoice = false; try { if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel(); } catch (eV) {} if (APP.STATE.settings) { APP.STATE.settings.walked = true; APP.save(); } }
+    function endWalk() { UI.walk = null; UI.walkAuto = false; UI.walkVoice = false; try { if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel(); } catch (eV) {} try { if (window.AqauVoice) window.AqauVoice.stop(); } catch (eV2) {} if (APP.STATE.settings) { APP.STATE.settings.walked = true; APP.save(); } }
     // spoken walkthrough: the on-device Web Speech voice reads each act aloud — no network, no AI service
     function speakAct(pre, ct) {
       try {
-        if (typeof window !== 'undefined' && window.AqauVoice && window.AqauVoice.speak) { window.AqauVoice.speak((pre ? pre + ' ' : '') + ct.t + '. ' + ct.x); return; }
+        if (typeof window !== 'undefined' && window.AqauVoice && window.AqauVoice.state === 'ready' && APP.STATE.settings && APP.STATE.settings.voice === 'human') { window.AqauVoice.speak((pre ? pre + ' ' : '') + ct.t + '. ' + ct.x); return; }
         if (typeof speechSynthesis === 'undefined' || typeof SpeechSynthesisUtterance === 'undefined') return;
         speechSynthesis.cancel();
         var u = new SpeechSynthesisUtterance((pre ? pre.replace(/—/g, ',') + ' ' : '') + ct.t + '. ' + ct.x);
@@ -5106,108 +5109,283 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       return { kind: 'gentle', col: ELHUE.fire, tag: 'GENTLE', line: 'Friction around ' + dom + ': go gentle, and don’t force it.' };
     }
     // ---- life-in-chapters timeline: the slow transits & returns across a lifetime ----
-    function lifeWalkNext(n) { if (!UI.lifeWalk) return; if (UI.lifeWalk.i >= n - 1) { UI.lifeWalk = null; return; } UI.lifeWalk.i++; UI.lifeWalk.t0 = nowT(); }
+    function lifeWalkNext(n) { if (!UI.lifeWalk) return; if (UI.lifeWalk.i >= n) { UI.lifeWalk = null; return; } UI.lifeWalk.i++; UI.lifeWalk.t0 = nowT(); }
     function lifeWalkPrev() { if (UI.lifeWalk && UI.lifeWalk.i > 0) { UI.lifeWalk.i--; UI.lifeWalk.t0 = nowT(); } }
     // an unspecific person: head, a living spine, two legs, two arms. Everything said with posture.
-    function stageFigure(fx, fy, h, pz, alf) {
-      var hw = h * 0.072, lean = pz.lean || 0, cr = pz.crouch || 0, str = pz.stride || 0, wt = pz.weight || 1;
-      var hipY = fy - h * (0.42 - cr * 0.10), shY = fy - h * (0.78 - cr * 0.16);
-      var shX = fx + lean * h * 0.18, hipX = fx + lean * h * 0.05;
-      var hdX = shX + lean * h * 0.07, hdY = shY - h * 0.125;
-      strokec(INK, 235 * alf); p.strokeWeight(2.4 * wt); p.noFill();
-      p.bezier(hipX, hipY, hipX + lean * h * 0.03, hipY - h * 0.14, shX - lean * h * 0.03, shY + h * 0.10, shX, shY);
-      p.line(hipX, hipY, fx - h * 0.10 - str * h * 0.10, fy); p.line(hipX, hipY, fx + h * 0.10 + str * h * 0.10, fy);
-      var aL = pz.armL == null ? 2.6 : pz.armL, aR = pz.armR == null ? 0.5 : pz.armR;
-      p.line(shX, shY, shX + Math.cos(aL) * h * 0.27, shY + Math.sin(aL) * h * 0.27);
-      p.line(shX, shY, shX + Math.cos(aR) * h * 0.27, shY + Math.sin(aR) * h * 0.27);
-      p.ellipse(hdX, hdY, hw * 2, hw * 2);
+    // ===== THE ACTOR: a gesture-drawing come to life. Head ball with construction cross,
+    // ribcage and pelvis masses, two-bone limbs solved by IK, and a faint red underdrawing. =====
+    function ik2(ax, ay, tx, ty, l1, l2, bend) {
+      var dx = tx - ax, dy = ty - ay, dd = Math.sqrt(dx * dx + dy * dy) || 0.001, d = Math.min(dd, l1 + l2 - 0.5);
+      var ux = dx / dd, uy = dy / dd;
+      var cosA = (l1 * l1 + d * d - l2 * l2) / (2 * l1 * d); if (cosA > 1) cosA = 1; if (cosA < -1) cosA = -1;
+      var a1 = Math.acos(cosA), base = Math.atan2(uy, ux), ja = base + a1 * (bend || 1);
+      return { jx: ax + Math.cos(ja) * l1, jy: ay + Math.sin(ja) * l1, hx: ax + ux * d, hy: ay + uy * d };
     }
+    function actorFigure(rig, alf) {
+      // rig: x,y ground centre; h height; lean; crouch; look (-1..1); hL/hR {x,y,bend}; fL/fR {x,y}; alf alpha 0..1
+      var h = rig.h, lean = rig.lean || 0, cr = rig.crouch || 0, look = rig.look || 0, col = rig.col || INK;
+      var br = reduced() ? 0 : Math.sin(nowT() * 0.0021 + (rig.ph || 0)) * h * 0.007;
+      var hipX = rig.x + lean * h * 0.05, hipY = rig.y - h * (0.48 - cr * 0.14);
+      var chX = hipX + lean * h * 0.15, chY = hipY - h * 0.27 + cr * h * 0.05 + br;
+      var hdR = h * 0.072, hdX = chX + lean * h * 0.07 + look * h * 0.045, hdY = chY - h * 0.155 + Math.abs(look) * h * 0.008;
+      var fL = rig.fL || { x: rig.x - h * 0.11, y: rig.y }, fR = rig.fR || { x: rig.x + h * 0.11, y: rig.y };
+      var hL = rig.hL || { x: chX - h * 0.17, y: chY + h * 0.26 }, hR = rig.hR || { x: chX + h * 0.17, y: chY + h * 0.26 };
+      var lg1 = h * 0.27, lg2 = h * 0.25, ar1 = h * 0.165, ar2 = h * 0.155;
+      var pass, off9, aP;
+      for (pass = 0; pass < 2; pass++) {
+        // pass 0: the red pencil underdrawing, a breath offset behind the ink
+        off9 = pass ? 0 : 1.4; aP = pass ? 235 * alf : 46 * alf;
+        strokec(pass ? col : ACC, aP); p.noFill();
+        var kL = ik2(hipX, hipY, fL.x, fL.y, lg1, lg2, -1), kR = ik2(hipX, hipY, fR.x, fR.y, lg1, lg2, 1);
+        p.strokeWeight(2.5); p.line(hipX + off9, hipY + off9, kL.jx + off9, kL.jy + off9); p.line(kL.jx + off9, kL.jy + off9, kL.hx + off9, kL.hy + off9);
+        p.line(hipX + off9, hipY + off9, kR.jx + off9, kR.jy + off9); p.line(kR.jx + off9, kR.jy + off9, kR.hx + off9, kR.hy + off9);
+        p.strokeWeight(2.1); p.line(kL.hx - h * 0.02 + off9, kL.hy + off9, kL.hx + h * 0.055 + off9, kL.hy + off9);
+        p.line(kR.hx - h * 0.02 + off9, kR.hy + off9, kR.hx + h * 0.055 + off9, kR.hy + off9);
+        // pelvis and ribcage: the two masses that make a body read
+        p.strokeWeight(2.2); p.ellipse(hipX + off9, hipY - h * 0.015 + off9, h * 0.13, h * 0.10);
+        p.strokeWeight(2.6); p.bezier(hipX + off9, hipY - h * 0.04 + off9, hipX + lean * h * 0.04 + off9, hipY - h * 0.15 + off9, chX - lean * h * 0.04 + off9, chY + h * 0.10 + off9, chX + off9, chY + off9);
+        p.strokeWeight(2.2); p.ellipse(chX + off9, chY + h * 0.015 + off9, h * 0.17, h * 0.14);
+        // arms
+        var eL = ik2(chX - h * 0.035, chY, hL.x, hL.y, ar1, ar2, hL.bend == null ? -1 : hL.bend);
+        var eR = ik2(chX + h * 0.035, chY, hR.x, hR.y, ar1, ar2, hR.bend == null ? 1 : hR.bend);
+        p.strokeWeight(2.3); p.line(chX - h * 0.035 + off9, chY + off9, eL.jx + off9, eL.jy + off9); p.line(eL.jx + off9, eL.jy + off9, eL.hx + off9, eL.hy + off9);
+        p.line(chX + h * 0.035 + off9, chY + off9, eR.jx + off9, eR.jy + off9); p.line(eR.jx + off9, eR.jy + off9, eR.hx + off9, eR.hy + off9);
+        if (pass) { p.noStroke(); fillc(col, aP); p.ellipse(eL.hx, eL.hy, h * 0.036, h * 0.036); p.ellipse(eR.hx, eR.hy, h * 0.036, h * 0.036); p.noFill(); strokec(col, aP); }
+        // neck and the head ball with its sketch cross, turned the way the actor looks
+        p.strokeWeight(2.3); p.line(chX + off9, chY - h * 0.03 + off9, hdX + off9, hdY + hdR * 0.9 + off9);
+        p.strokeWeight(2.5); p.ellipse(hdX + off9, hdY + off9, hdR * 2, hdR * 2);
+        if (pass) { strokec(col, 80 * alf); p.strokeWeight(1); p.line(hdX + look * hdR * 0.8, hdY - hdR * 0.85, hdX + look * hdR * 0.8, hdY + hdR * 0.85); p.arc(hdX, hdY, hdR * 1.9, hdR * 1.9, look > 0 ? -0.5 : Math.PI - 0.5, look > 0 ? 0.5 : Math.PI + 0.5); }
+      }
+    }
+    // back-compat shim for the title and finale cards
+    function stageFigure(fx, fy, h, pz, alf, col9) {
+      actorFigure({ x: fx, y: fy, h: h, lean: (pz.lean || 0) * 0.8, crouch: pz.crouch || 0, look: pz.lean ? (pz.lean > 0 ? 0.5 : -0.5) : 0, col: col9 }, alf);
+    }
+    function lifeWalkNext(n) { if (!UI.lifeWalk) return; if (UI.lifeWalk.i >= n) { UI.lifeWalk = null; return; } UI.lifeWalk.i++; UI.lifeWalk.t0 = nowT(); }
+    function lifeWalkPrev() { if (UI.lifeWalk && UI.lifeWalk.i > 0) { UI.lifeWalk.i--; UI.lifeWalk.t0 = nowT(); } }
+    // what stage the chapter plays on: the natal point names the set
+    function lwStaging(e0) {
+      if (e0.isReturn || e0.np === e0.tp) return 'self';
+      if (e0.np === 'mc') return 'mc'; if (e0.np === 'asc') return 'asc';
+      if (e0.np === 'moon') return 'moon'; if (e0.np === 'sun') return 'sun';
+      return 'self';
+    }
+    var LW_SETCAP = { mc: ' · ON THE STAIR OF THE PUBLIC LIFE', asc: ' · AT THE DOOR YOU MEET THE WORLD THROUGH', moon: ' · OVER THE HOUSE OF FEELING', sun: ' · INSIDE THE LIGHT YOU RUN ON', self: '' };
     function drawLifeWalk(c, b) {
       var ev = UI.lifeList || []; if (!ev.length) { UI.lifeWalk = null; return; }
       var x = sx(), w = cw(), top = topY(), vh = viewH(), cx = x + w / 2, i;
-      if (UI.lifeWalk.i >= ev.length) UI.lifeWalk.i = ev.length - 1;
-      var e0 = ev[UI.lifeWalk.i], last = (UI.lifeWalk.i >= ev.length - 1);
-      var te = cl01((nowT() - UI.lifeWalk.t0) / 560), ee = eCubic(te), still = reduced(), alpha = still ? 1 : cl01(te * 1.5);
-      var ctrlTop = top + vh - (last ? 110 : 64);
-      if (!last) { pushHit(x, top + 64, w, ctrlTop - (top + 64), function () { lifeWalkNext(ev.length); }); pushHit(x, top + 64, 72, ctrlTop - (top + 64), function () { lifeWalkPrev(); }); }
-      var cy = top + vh * 0.25, r = Math.min(w * 0.30, vh * 0.15), drift = (1 - ee) * 14;
+      if (UI.lifeWalk.i > ev.length) UI.lifeWalk.i = ev.length;
+      var still = reduced(), dcW = p.drawingContext;
+      // ---- the cold open: a dark house, one light warming, the bill of the show ----
+      if (UI.lifeWalk.i < 0) {
+        var tt0 = (nowT() - UI.lifeWalk.t0) / 1000;
+        p.noStroke(); fillc(GROUNDS.read); p.rect(0, 0, W, H); fillc([16, 13, 10], 216); p.rect(0, 0, W, H);
+        var warm0 = still ? 1 : cl01((tt0 - 0.3) / 1.5), fy0 = top + vh * 0.40;
+        if (dcW && !still) { var sg0 = dcW.createRadialGradient(cx, fy0 - 60, 8, cx, fy0 - 60, 210); sg0.addColorStop(0, 'rgba(255,243,210,' + (0.30 * warm0) + ')'); sg0.addColorStop(1, 'rgba(255,243,210,0)'); dcW.fillStyle = sg0; dcW.fillRect(0, top, W, vh); }
+        strokec([238, 232, 216], 45 * warm0); p.strokeWeight(1); p.line(cx - 130, fy0 + 2, cx + 130, fy0 + 2);
+        actorFigure({ x: cx, y: fy0, h: 96, look: 0.15, col: [238, 232, 216] }, warm0);
+        p.noStroke(); fillc([12, 9, 7], 40 * warm0); p.ellipse(cx, fy0, 52, 8);
+        var a1 = still ? 1 : cl01((tt0 - 1.1) / 0.7), a2 = still ? 1 : cl01((tt0 - 1.6) / 0.7), a3 = still ? 1 : cl01((tt0 - 2.1) / 0.7);
+        setFont(SERIF, 40, [238, 232, 216], p.CENTER, p.TOP, 255 * a1); bold(); p.text('Your life', cx, top + vh * 0.50 + (1 - a1) * 10); normal();
+        setFont(MONO, 11, [238, 232, 216], p.CENTER, p.TOP, 210 * a2); p.text(('IN ' + ev.length + ' CHAPTERS').toUpperCase(), cx, top + vh * 0.50 + 54 + (1 - a2) * 10);
+        setFont(MONO, 9, [238, 232, 216], p.CENTER, p.TOP, 140 * a3); p.text('THE SLOW PLANETS ONLY · WEATHER, NOT FATE', cx, top + vh * 0.50 + 76 + (1 - a3) * 10);
+        if (a3 > 0.8) { var pls0 = 0.6 + 0.4 * Math.sin(nowT() * 0.004); setFont(MONO, 10, ACC, p.CENTER, p.TOP, 235 * (still ? 1 : pls0)); p.text('TAP TO RAISE THE CURTAIN ›', cx, top + vh - 46); }
+        pushHit(x, top + 40, w, vh - 60, function () { UI.lifeWalk.i = 0; UI.lifeWalk.t0 = nowT(); blip(392, 0.2, 0.03); });
+        tourBtn('Skip', x + w - 66, top + 6, 60, 26, function () { UI.lifeWalk = null; }, false);
+        UI.contentH.read = 0;
+        return;
+      }
+      // ---- the finale: house lights, a bow, and the next chapter already en route ----
+      if (UI.lifeWalk.i >= ev.length) {
+        var tt1 = (nowT() - UI.lifeWalk.t0) / 1000, lift = still ? 1 : cl01(tt1 / 1.6);
+        p.noStroke(); fillc(GROUNDS.read); p.rect(0, 0, W, H); fillc([16, 13, 10], Math.round(216 - 200 * lift)); p.rect(0, 0, W, H);
+        var fy1 = top + vh * 0.42;
+        if (dcW && !still) { var sg1 = dcW.createRadialGradient(cx, fy1 - 60, 10, cx, fy1 - 60, 260); sg1.addColorStop(0, 'rgba(255,243,210,' + (0.24 * lift) + ')'); sg1.addColorStop(1, 'rgba(255,243,210,0)'); dcW.fillStyle = sg1; dcW.fillRect(0, top, W, vh); }
+        strokec(INK, 60); p.strokeWeight(1); p.line(cx - 140, fy1 + 2, cx + 140, fy1 + 2);
+        var bowP = still ? 0 : (eCubic(cl01((tt1 - 0.7) / 1.0)) * (1 - eCubic(cl01((tt1 - 2.6) / 1.0))));
+        actorFigure({ x: cx, y: fy1, h: 96, lean: 0.5 * bowP, crouch: 0.10 * bowP, look: 0.3 - 0.7 * bowP, col: (lift < 0.5 ? [238, 232, 216] : null), hL: bowP > 0.1 ? { x: cx - 34, y: fy1 - 96 * 0.30 - bowP * 8 } : null, hR: bowP > 0.1 ? { x: cx + 30, y: fy1 - 96 * 0.55 + bowP * 20 } : null }, 1);
+        p.noStroke(); fillc([12, 9, 7], 44); p.ellipse(cx, fy1, 52, 8);
+        setFont(SERIF, 30, INK, p.CENTER, p.TOP, 255 * lift); bold(); p.text('And the sky goes on writing', cx, top + vh * 0.52); normal();
+        var nowMs1 = new Date().getTime(), nf1 = null; for (i = 0; i < ev.length; i++) if (ev[i].date.getTime() > nowMs1) { nf1 = ev[i]; break; }
+        if (nf1) { setFont(MONO, 10, ACCTX, p.CENTER, p.TOP, 225 * lift); p.text(('NEXT CHAPTER EN ROUTE: ' + nf1.title + ' · ' + nf1.date.getFullYear()).toUpperCase(), cx, top + vh * 0.52 + 44); }
+        else { setFont(MONO, 10, ACCTX, p.CENTER, p.TOP, 200 * lift); p.text('THE NEXT SLOW CHAPTER IS STILL OFFSTAGE', cx, top + vh * 0.52 + 44); }
+        setFont(MONO, 9, INK, p.CENTER, p.TOP, 150 * lift); p.text((ev.length + ' CHAPTERS · COMPUTED FROM THE EPHEMERIS · YOURS ALONE').toUpperCase(), cx, top + vh * 0.52 + 66);
+        tourBtn('Back to timeline', cx - 150, top + vh - 96, 145, 42, function () { UI.lifeWalk = null; }, true);
+        tourBtn('Done', cx + 10, top + vh - 96, 120, 42, function () { UI.lifeWalk = null; UI.lifeView = false; }, false);
+        tourBtn('Skip', x + w - 66, top + 6, 60, 26, function () { UI.lifeWalk = null; }, false);
+        UI.contentH.read = 0;
+        return;
+      }
+      var e0 = ev[UI.lifeWalk.i];
+      var te = cl01((nowT() - UI.lifeWalk.t0) / 560), ee = eCubic(te), alpha = still ? 1 : cl01(te * 1.5);
+      if (UI.lwNoteI !== UI.lifeWalk.i) { UI.lwNoteI = UI.lifeWalk.i; blip(e0.isReturn ? 523 : e0.ang === 90 ? 196 : e0.ang === 180 ? 262 : e0.ang === 120 ? 440 : 392, 0.22, 0.03); }
+      var ctrlTop = top + vh - 64;
+      pushHit(x, top + 64, w, ctrlTop - (top + 64), function () { lifeWalkNext(ev.length); }); pushHit(x, top + 64, 72, ctrlTop - (top + 64), function () { lifeWalkPrev(); });
+      var cy = top + vh * 0.25, r = Math.min(w * 0.30, vh * 0.15);
       var bodyK = (e0.tp && BODYCOL[e0.tp]) ? e0.tp : 'saturn', dc = p.drawingContext;
-      // a puppet theatre: the chapter's planet performs under a spotlight, grounded on the boards
       if (!still && BODYCOL[bodyK]) { p.noStroke(); fillc(BODYCOL[bodyK], 24 * cl01(te * 1.2)); p.rect(0, 0, W, H); }
-      var stageY = cy + r * 1.28;
+      var stageY = cy + r * 1.28, setK = lwStaging(e0);
+      // the camera leans in over the scene, slow as breath; a square lands with a tremor
+      var t3 = (nowT() - UI.lifeWalk.t0) / 3600, t2 = still ? 1 : cl01(t3);
+      var cam9 = still ? 1 : 1 + 0.045 * cl01((nowT() - UI.lifeWalk.t0) / 6500);
+      var shk9 = (e0.ang === 90 && !still && t2 > 0.36 && t2 < 0.52) ? Math.sin(nowT() * 0.09) * 2.4 * (1 - (t2 - 0.36) / 0.16) : 0;
+      p.push(); p.translate(cx + shk9, stageY - r * 0.6); p.scale(cam9); p.translate(-cx, -(stageY - r * 0.6));
       if (dc && !still) {
-        // curtain shadow falls in from the wings
-        var cg = dc.createLinearGradient(0, top, 0, top + vh * 0.5); cg.addColorStop(0, 'rgba(10,8,6,0.34)'); cg.addColorStop(1, 'rgba(10,8,6,0)');
+        var wingA = e0.tp === 'saturn' ? 0.5 : 0.34;
+        var cg = dc.createLinearGradient(0, top, 0, top + vh * 0.5); cg.addColorStop(0, 'rgba(10,8,6,' + wingA + ')'); cg.addColorStop(1, 'rgba(10,8,6,0)');
         dc.fillStyle = cg; dc.fillRect(x - 40, top, 60, vh * 0.5); dc.fillRect(x + w - 20, top, 60, vh * 0.5);
-        // the spotlight cone, warm and slightly alive
         var flick = 0.92 + 0.08 * Math.sin(nowT() * 0.0021);
+        if (e0.tp === 'uranus') flick *= (Math.sin(nowT() * 0.032) > 0.93 ? 1.5 : 1); // the awakener trips the lamp
+        var coneW = (e0.tp === 'jupiter' ? 2.5 : 2.0) * (setK === 'sun' ? (e0.ang === 90 ? 1.35 - 0.6 * Math.sin(cl01(t2 / 0.7) * Math.PI) : 1.15) : 1);
         var sg = dc.createRadialGradient(cx, top - 30, 10, cx, cy, r * 3.1);
         sg.addColorStop(0, 'rgba(255,244,214,' + (0.20 * flick * ee) + ')'); sg.addColorStop(0.55, 'rgba(255,244,214,' + (0.09 * flick * ee) + ')'); sg.addColorStop(1, 'rgba(255,244,214,0)');
-        dc.save(); dc.beginPath(); dc.moveTo(cx - 26, top - 30); dc.lineTo(cx + 26, top - 30); dc.lineTo(cx + r * 2.0, stageY); dc.lineTo(cx - r * 2.0, stageY); dc.closePath(); dc.clip();
-        dc.fillStyle = sg; dc.fillRect(cx - r * 2.2, top - 30, r * 4.4, stageY - top + 40); dc.restore();
+        dc.save(); dc.beginPath(); dc.moveTo(cx - 26, top - 30); dc.lineTo(cx + 26, top - 30); dc.lineTo(cx + r * coneW, stageY); dc.lineTo(cx - r * coneW, stageY); dc.closePath(); dc.clip();
+        dc.fillStyle = sg; dc.fillRect(cx - r * 3, top - 30, r * 6, stageY - top + 40); dc.restore();
       }
-      // the boards, and the puppet's shadow pooling beneath it
+      // the boards
       strokec(INK, 60); p.strokeWeight(1); p.line(cx - r * 1.9, stageY, cx + r * 1.9, stageY);
       strokec(INK, 26); p.line(cx - r * 1.6, stageY + 7, cx + r * 1.6, stageY + 7);
-      var scl = still ? 1 : (0.88 + 0.12 * eBack(te)), bob2 = still ? 0 : Math.sin(nowT() * 0.0016) * 2.5;
-      // ===== THE FIGURE: an unspecific person acts the chapter. The planet is the event; the figure is you. =====
-      var t2 = still ? 1 : cl01((nowT() - UI.lifeWalk.t0) / 3600);
-      var fh = r * 1.55, fx0 = cx + r * 0.62, plR = r * 0.30, capTxt = '';
-      var pz = { lean: 0, crouch: 0, stride: 0, armL: 2.6, armR: 0.5, weight: 1 }, plX = cx, plY = cy, plScl = 1, plBehind = false, thread = 0;
+      // ---- the set, named by what the chapter touches ----
+      var fh = r * 1.55, fx0 = cx + r * 0.62, gy = stageY, plR = r * 0.30;
+      if (setK === 'mc') {
+        // a staircase: the public life is climbed, tread by tread
+        var stW = r * 0.52, stH = r * 0.20, stX = cx - r * 0.35, si9;
+        strokec(INK, 110 * ee); p.strokeWeight(1.5); p.noFill();
+        p.beginShape(); p.vertex(stX, stageY);
+        for (si9 = 0; si9 < 3; si9++) { p.vertex(stX + si9 * stW, stageY - stH * (si9 + 1)); p.vertex(stX + (si9 + 1) * stW, stageY - stH * (si9 + 1)); }
+        p.vertex(stX + 3 * stW, stageY); p.endShape();
+        strokec(INK, 40 * ee); p.line(stX + 3 * stW, stageY - stH * 3, stX + 3 * stW, stageY);
+        gy = stageY - stH * 3; fx0 = stX + 2.5 * stW;
+      } else if (setK === 'asc') {
+        // the doorway: an arch of light at the threshold (the storyboard frame)
+        var dwX = cx - r * 1.15, dwW = r * 0.85, dwH = fh * 1.35, dwT = stageY - dwH;
+        if (dc && !still) { var dg = dc.createLinearGradient(dwX, 0, dwX + dwW, 0); dg.addColorStop(0, 'rgba(255,243,210,' + (0.20 * ee) + ')'); dg.addColorStop(1, 'rgba(255,243,210,0)'); dc.fillStyle = dg; dc.beginPath(); dc.moveTo(dwX, stageY); dc.lineTo(dwX, dwT + dwW * 0.5); dc.arc(dwX + dwW * 0.5, dwT + dwW * 0.5, dwW * 0.5, Math.PI, 0, false); dc.lineTo(dwX + dwW, stageY); dc.closePath(); dc.fill(); }
+        p.noFill(); strokec(INK, 120 * ee); p.strokeWeight(1.6);
+        p.line(dwX, stageY, dwX, dwT + dwW * 0.5); p.line(dwX + dwW, stageY, dwX + dwW, dwT + dwW * 0.5);
+        p.arc(dwX + dwW * 0.5, dwT + dwW * 0.5, dwW, dwW, Math.PI, Math.PI * 2);
+      } else if (setK === 'moon') {
+        // a small house, one warm window
+        var hoX = x + r * 0.5, hoY = stageY, hoW = r * 0.66, hoH = r * 0.5;
+        p.noFill(); strokec(INK, 110 * ee); p.strokeWeight(1.5);
+        p.rect(hoX, hoY - hoH, hoW, hoH); p.line(hoX - 4, hoY - hoH, hoX + hoW / 2, hoY - hoH - r * 0.3); p.line(hoX + hoW / 2, hoY - hoH - r * 0.3, hoX + hoW + 4, hoY - hoH);
+        var wGlow = still ? 0.8 : 0.65 + 0.35 * Math.sin(nowT() * 0.0018);
+        p.noStroke(); fillc([255, 214, 140], 150 * wGlow * ee); p.rect(hoX + hoW * 0.58, hoY - hoH * 0.62, hoW * 0.2, hoH * 0.3, 2);
+      } else if (e0.isReturn) {
+        p.noFill(); strokec(INK, 30 * ee); p.strokeWeight(1); p.ellipse(fx0 - fh * 0.40, stageY - fh * 0.58, fh * 1.6, fh * 0.94);
+      }
+      // ---- weather from the mover ----
+      if (!still) {
+        if (e0.tp === 'neptune' && dc) { var fi9; for (fi9 = 0; fi9 < 3; fi9++) { var fyv = stageY - fh * (0.15 + fi9 * 0.3), fxv = cx + Math.sin(nowT() * 0.00012 + fi9 * 2.1) * r * 1.1; p.noStroke(); fillc([220, 226, 235], 16 * ee); p.rect(fxv - r * 1.5, fyv - 7, r * 3, 14, 7); } }
+        if (e0.tp === 'pluto') { var em9; for (em9 = 0; em9 < 5; em9++) { var eyc = ((nowT() * (0.00005 + (em9 % 2) * 0.00003) + em9 * 0.19) % 1); p.noStroke(); fillc([206, 96, 54], 60 * (1 - eyc) * ee); p.ellipse(cx + Math.sin(em9 * 2.3) * r * 1.2 + Math.sin(nowT() * 0.001 + em9) * 6, stageY - 6 - eyc * fh * 0.9, 2.6, 2.6); } }
+      }
+      // ---- the choreography: aspect is the verb, played by a jointed actor ----
+      var plX = cx, plY = cy, plBehind = false, thread = 0, capTxt = '';
+      var rig = { x: fx0, y: gy, h: fh, ph: UI.lifeWalk.i };
+      var chest9 = gy - fh * 0.62;
+      // every actor walks to their mark first
+      var ent = still ? 0 : (1 - eCubic(cl01((nowT() - UI.lifeWalk.t0) / 750)));
+      rig.x -= ent * w * 0.20;
+      if (ent > 0.02) { var stp9 = Math.sin(nowT() * 0.02); rig.fL = { x: rig.x - fh * 0.11 + stp9 * fh * 0.09 * ent, y: gy - Math.max(0, stp9) * 4 * ent }; rig.fR = { x: rig.x + fh * 0.11 - stp9 * fh * 0.09 * ent, y: gy - Math.max(0, -stp9) * 4 * ent }; rig.lean = 0.14 * ent; }
       if (e0.isReturn) {
-        // THE RETURN: it circles your whole sky, and finds you changed
         var orbA = -Math.PI / 2 + t2 * Math.PI * 2;
-        plX = fx0 - r * 0.1 + Math.cos(orbA) * fh * 0.72; plY = (stageY - fh * 0.55) + Math.sin(orbA) * fh * 0.34; plBehind = Math.sin(orbA) < 0;
-        if (t2 < 0.4) { pz.armR = -0.6; }
-        else if (t2 < 0.7) { var sit = eCubic(cl01((t2 - 0.4) / 0.3)); pz.crouch = 0.5 * sit; pz.armL = 2.2; pz.armR = 1.0; }
-        else { var rise = eCubic(cl01((t2 - 0.7) / 0.3)); pz.crouch = 0.5 - 0.55 * rise; pz.weight = 1 + 0.4 * rise; pz.armL = 2.6 - 0.4 * rise; pz.armR = 0.5 - 0.9 * rise; }
+        plX = fx0 - fh * 0.40 + Math.cos(orbA) * fh * 0.80; plY = (gy - fh * 0.58) + Math.sin(orbA) * fh * 0.47; plBehind = Math.sin(orbA) < 0;
+        if (t2 < 0.4) { }
+        else if (t2 < 0.7) { var sit = eCubic(cl01((t2 - 0.4) / 0.3)); rig.crouch = 0.5 * sit; rig.hL = { x: rig.x - fh * 0.13, y: gy - fh * 0.30 }; rig.hR = { x: rig.x + fh * 0.13, y: gy - fh * 0.30 }; }
+        else { var rise = eCubic(cl01((t2 - 0.7) / 0.3)); rig.crouch = 0.5 - 0.56 * rise; rig.hL = { x: rig.x - fh * (0.13 + 0.12 * rise), y: gy - fh * (0.30 + 0.28 * rise) }; rig.hR = { x: rig.x + fh * (0.13 + 0.12 * rise), y: gy - fh * (0.30 + 0.28 * rise) }; }
         capTxt = 'THE RETURN: IT CIRCLED YOUR WHOLE SKY, AND FOUND YOU CHANGED';
       } else if (e0.ang === 90) {
-        // THE SQUARE: it pushed. You pushed back.
-        var press = eBack(cl01(t2 / 0.38)), chest = stageY - fh * 0.62;
-        plX = (x - r * 1.4) + ((fx0 - fh * 0.58) - (x - r * 1.4)) * press; plY = chest;
-        if (t2 < 0.38) { pz.lean = -0.15 * cl01(t2 / 0.38); }
-        else if (t2 < 0.72) { var fight = (t2 - 0.38) / 0.34; pz.lean = -0.3 + 0.75 * eCubic(fight); pz.crouch = 0.3 - 0.15 * fight; pz.armL = Math.PI + 0.45; pz.armR = Math.PI - 0.3; pz.stride = 0.6; }
-        else { var win = eCubic(cl01((t2 - 0.72) / 0.28)); pz.lean = 0.45 - 0.4 * win; pz.crouch = 0.15 - 0.2 * win; pz.weight = 1 + 0.3 * win; pz.armL = Math.PI + 0.45 + (2.6 - Math.PI - 0.45) * win; pz.armR = Math.PI - 0.3 + (0.5 - Math.PI + 0.3) * win; pz.stride = 0.6 * (1 - win); plX -= fh * 0.34 * win; plY -= fh * 0.22 * win; thread = win; }
+        var press = eBack(cl01(t2 / 0.38));
+        plX = (x - r * 1.4) + ((rig.x - fh * 0.52) - (x - r * 1.4)) * press; plY = chest9;
+        if (t2 < 0.38) { rig.lean = -0.16 * cl01(t2 / 0.38); rig.hL = { x: rig.x - fh * 0.30, y: chest9 - fh * 0.02, bend: -1 }; rig.hR = { x: rig.x - fh * 0.24, y: chest9 + fh * 0.10, bend: -1 }; }
+        else if (t2 < 0.72) {
+          var fight = (t2 - 0.38) / 0.34;
+          rig.lean = 0.42 * eCubic(fight); rig.crouch = 0.30 - 0.10 * fight;
+          rig.fL = { x: rig.x - fh * 0.30, y: gy }; rig.fR = { x: rig.x + fh * 0.14, y: gy };
+          rig.hL = { x: plX + plR * 0.85, y: plY - plR * 0.35, bend: -1 }; rig.hR = { x: plX + plR * 0.85, y: plY + plR * 0.45, bend: -1 };
+          var dpi; if (!still) for (dpi = 0; dpi < 3; dpi++) { var dph = ((nowT() * 0.003 + dpi * 0.37) % 1); p.noStroke(); fillc(INK, 38 * (1 - dph)); p.ellipse(rig.x - fh * 0.28 - dph * 10, gy - 3 - dph * 9, 4 + dph * 7, 3 + dph * 4); }
+        } else {
+          var win = eCubic(cl01((t2 - 0.72) / 0.28));
+          plX -= fh * 0.36 * win; plY -= fh * 0.20 * win;
+          rig.lean = 0.42 - 0.38 * win; rig.crouch = 0.20 - 0.22 * win;
+          rig.hL = { x: plX + plR * 0.85, y: plY + plR * 0.2, bend: -1 }; rig.hR = { x: rig.x + fh * 0.16, y: chest9 + fh * (0.30 - 0.06 * win), bend: 1 };
+          thread = win;
+        }
         capTxt = 'THE SQUARE: IT PUSHED. YOU PUSHED BACK.';
       } else if (e0.ang === 180) {
-        // THE OPPOSITION: held from both ends
-        fx0 = cx - r * 0.95; var chest2 = stageY - fh * 0.62;
-        plX = (x + w + r) + ((cx + r * 0.95) - (x + w + r)) * eCubic(cl01(t2 / 0.4)); plY = chest2;
+        fx0 = cx - r * 0.95; rig.x = fx0 - ent * w * 0.12;
+        plX = (x + w + r) + ((cx + r * 0.95) - (x + w + r)) * eCubic(cl01(t2 / 0.4)); plY = chest9;
         var pull = t2 < 0.4 ? 0 : Math.sin(cl01((t2 - 0.4) / 0.6) * Math.PI);
-        pz.lean = -0.32 * pull; pz.armR = 0.15; pz.armL = 2.9; pz.stride = 0.5 * pull; pz.crouch = 0.12 * pull;
+        rig.lean = -0.30 * pull; rig.crouch = 0.10 * pull;
+        rig.fL = { x: rig.x - fh * (0.11 + 0.14 * pull), y: gy }; rig.fR = { x: rig.x + fh * (0.11 + 0.10 * pull), y: gy };
+        rig.hR = { x: rig.x + fh * 0.34 - pull * fh * 0.04, y: chest9 + fh * 0.04, bend: 1 };
+        rig.hL = { x: rig.x - fh * (0.20 + 0.06 * pull), y: chest9 + fh * 0.18, bend: -1 };
         thread = cl01((t2 - 0.4) / 0.25);
         capTxt = 'THE OPPOSITION: HELD FROM BOTH ENDS, UNTIL YOU FOUND THE MIDDLE';
+      } else if (e0.ang === 120) {
+        var glide = eCubic(cl01(t2 / 0.55));
+        var sxT = x - r, syT = top + vh * 0.08, exT = rig.x - fh * 0.22, eyT = gy - fh * 0.98;
+        plX = sxT + (exT - sxT) * glide; plY = syT + (eyT - syT) * glide - Math.sin(glide * Math.PI) * r * 0.55;
+        if (t2 >= 0.35) {
+          var open9 = eCubic(cl01((t2 - 0.35) / 0.4));
+          rig.hL = { x: rig.x - fh * (0.10 + 0.13 * open9), y: gy - fh * (0.60 + 0.32 * open9), bend: -1 };
+          rig.hR = { x: rig.x + fh * 0.19, y: chest9 + fh * (0.26 - 0.10 * open9), bend: 1 };
+          rig.crouch = -0.05 * open9;
+          rig.fL = { x: rig.x - fh * 0.13, y: gy - open9 * 3 }; // the heel lifts: the catch is light
+        }
+        if (t2 > 0.75 && !still) plY += Math.sin(nowT() * 0.002) * 3;
+        thread = cl01((t2 - 0.6) / 0.3) * 0.7;
+        capTxt = 'THE TRINE: IT ARRIVED LIKE WEATHER YOU WERE BUILT FOR';
       } else {
-        // THE CONJUNCTION: it became part of you
-        var drop = eCubic(cl01(t2 / 0.5)), chest3 = stageY - fh * 0.66;
-        plX = fx0 - fh * 0.30; plY = (top - r) + (chest3 - (top - r)) * drop;
-        if (t2 >= 0.5) { var merge = cl01((t2 - 0.5) / 0.5); pz.armL = 2.6 - 1.5 * merge; pz.armR = 0.5 + 1.4 * merge; pz.weight = 1 + 0.5 * merge; pz.crouch = -0.06 * merge;
-          if (dc && !still) { var mg = dc.createRadialGradient(plX, plY, 2, plX, plY, plR * 3.4); mg.addColorStop(0, 'rgba(255,240,205,' + (0.32 * Math.sin(merge * Math.PI)) + ')'); mg.addColorStop(1, 'rgba(255,240,205,0)'); dc.fillStyle = mg; dc.fillRect(plX - plR * 4, plY - plR * 4, plR * 8, plR * 8); } }
+        var drop = eCubic(cl01(t2 / 0.5)), chest3 = gy - fh * 0.70;
+        plX = rig.x - fh * 0.02; plY = (top - r) + (chest3 - (top - r)) * drop;
+        if (t2 < 0.5) { rig.crouch = 0.15 * drop; rig.hL = { x: rig.x - fh * 0.16, y: chest9 + fh * 0.06, bend: -1 }; rig.hR = { x: rig.x + fh * 0.16, y: chest9 + fh * 0.06, bend: 1 }; }
+        else {
+          var merge = cl01((t2 - 0.5) / 0.5);
+          rig.crouch = 0.15 - 0.23 * merge;
+          rig.hL = { x: rig.x - fh * (0.16 + 0.14 * merge), y: chest9 - fh * 0.14 * merge, bend: -1 };
+          rig.hR = { x: rig.x + fh * (0.16 + 0.14 * merge), y: chest9 - fh * 0.14 * merge, bend: 1 };
+          plY = chest3 + fh * 0.06 * merge; plX = rig.x;
+          if (dc && !still) { var mg = dc.createRadialGradient(plX, plY, 2, plX, plY, plR * 3.4); mg.addColorStop(0, 'rgba(255,240,205,' + (0.32 * Math.sin(merge * Math.PI)) + ')'); mg.addColorStop(1, 'rgba(255,240,205,0)'); dc.fillStyle = mg; dc.fillRect(plX - plR * 4, plY - plR * 4, plR * 8, plR * 8); }
+          if (!still && merge > 0.2) { var ryi; strokec([255, 240, 205], 55 * Math.sin(merge * Math.PI)); p.strokeWeight(1); for (ryi = 0; ryi < 6; ryi++) { var ra = nowT() * 0.0004 + ryi * Math.PI / 3; p.line(plX + Math.cos(ra) * plR * 1.3, plY + Math.sin(ra) * plR * 1.3, plX + Math.cos(ra) * plR * 2.4, plY + Math.sin(ra) * plR * 2.4); } }
+        }
         capTxt = 'THE CONJUNCTION: IT BECAME PART OF YOU';
       }
+      var capSub = (LW_SETCAP[setK] || '').replace(' \u00B7 ', '');
+      if (t2 >= 1 && !still) { plX += Math.sin(nowT() * 0.0011) * 3; plY += Math.cos(nowT() * 0.0008) * 2; }
+      // the actor watches the planet: the head follows the event
+      if (rig.look == null) rig.look = Math.max(-0.6, Math.min(0.6, (plX - rig.x) / (fh * 1.6)));
       if (dc) { dc.save(); dc.globalAlpha = alpha; }
-      // shadows ground everyone on the boards
-      p.noStroke(); fillc([12, 9, 7], 52 * ee); p.ellipse(fx0, stageY - 2, fh * 0.42, fh * 0.07);
-      if (plY > stageY - fh) { fillc([12, 9, 7], 40 * ee); p.ellipse(plX, stageY - 2, plR * 2.2, plR * 0.4); }
+      p.noStroke(); fillc([12, 9, 7], 52 * ee); p.ellipse(rig.x, gy - 2, fh * 0.42, fh * 0.07);
+      if (plY > gy - fh && plY < gy + 40) { fillc([12, 9, 7], 40 * ee); p.ellipse(plX, gy - 2, plR * 2.2, plR * 0.4); }
       if (plBehind) { p.push(); p.translate(plX, plY); p.scale(0.8); celestialBody(bodyK, 0, 0, plR, nowT()); p.pop(); }
-      if (thread > 0) { strokec(ACC, 160 * thread); p.strokeWeight(1.5); p.line(plX + plR * 0.8, plY, fx0 - fh * 0.18, stageY - fh * 0.62); }
-      stageFigure(fx0, stageY, fh, pz, ee);
+      if (thread > 0) { var hx9 = rig.x + (e0.ang === 180 ? fh * 0.34 : e0.ang === 120 ? -fh * 0.23 : fh * 0.0), hy9 = e0.ang === 120 ? gy - fh * 0.92 : chest9 + fh * 0.04, sag9 = fh * 0.10 * (1 - thread * 0.5) + (still ? 0 : Math.sin(nowT() * 0.006) * 2.5); strokec(ACC, 160 * thread); p.strokeWeight(1.5); p.noFill(); p.bezier(plX, plY + plR * 0.6, (plX + hx9) / 2, (plY + hy9) / 2 + sag9, (plX + hx9) / 2, (plY + hy9) / 2 + sag9, hx9, hy9); }
+      actorFigure(rig, ee);
       if (!plBehind) { p.push(); p.translate(plX, plY); celestialBody(bodyK, 0, 0, plR, nowT()); p.pop(); }
-      setFont(MONO, 8.5, ACCTX, p.CENTER, p.TOP, 210 * cl01(t2 * 2)); p.text(capTxt, cx, stageY + 14);
+      // chiaroscuro: the world outside the light falls away
+      if (dc && !still) { var vg = dc.createRadialGradient(cx, gy - fh * 0.5, r * 1.5, cx, gy - fh * 0.5, r * 3.4); vg.addColorStop(0, 'rgba(8,6,5,0)'); vg.addColorStop(1, 'rgba(8,6,5,0.34)'); dc.fillStyle = vg; dc.fillRect(0, top - 10, W, vh * 0.72); }
+      if (!still) { var mi9; for (mi9 = 0; mi9 < 10; mi9++) { var myc9 = ((nowT() * (0.00003 + (mi9 % 3) * 0.00002) + mi9 * 0.137) % 1); var mxx9 = cx + Math.sin(nowT() * 0.0004 + mi9 * 2.4) * r * (0.45 + (mi9 % 4) * 0.3); var myy9 = top + 34 + myc9 * (stageY - top - 40); p.noStroke(); fillc([255, 244, 214], 26 * Math.sin(myc9 * Math.PI) * ee); p.ellipse(mxx9, myy9, 2.2, 2.2); } }
       if (dc) dc.restore();
-      // the years themselves travel: the age counts across to the new chapter
+      p.pop();
+      var capFs9 = 8.5; p.textFont(MONO); p.textSize(capFs9); if (p.textWidth(capTxt) > w - 12) capFs9 = 7.5;
+      setFont(MONO, capFs9, ACCTX, p.CENTER, p.TOP, 210 * cl01(t2 * 2)); p.text(capTxt, cx, stageY + 16);
+      if (capSub) { setFont(MONO, 7.5, INK, p.CENTER, p.TOP, 150 * cl01(t2 * 2)); p.text(capSub, cx, stageY + 29); }
+      if (!still) { p.noStroke(); fillc([10, 8, 6], 190 * (1 - cl01(te * 2.2))); p.rect(0, 0, W, H); }
+      // ---- the reading: a measured stack that always fits ----
       if (UI.lifeAgeShown == null) UI.lifeAgeShown = e0.age;
       UI.lifeAgeShown += (e0.age - UI.lifeAgeShown) * 0.12;
       var ticking3 = Math.abs(UI.lifeAgeShown - e0.age) > 0.3;
-      setFont(MONO, 12, ticking3 ? ACC : ACCTX, p.CENTER, p.TOP, 235); p.text('AGE ' + Math.round(UI.lifeAgeShown) + '   ·   ' + e0.date.getFullYear(), cx, top + vh * 0.42);
-      var ty = top + vh * 0.47, slideIn = (1 - ee) * 12;
+      var textTop = Math.max(stageY + 44, top + vh * 0.44), slideIn = (1 - ee) * 12;
+      setFont(MONO, 12, ticking3 ? ACC : ACCTX, p.CENTER, p.TOP, 235); p.text('AGE ' + Math.round(UI.lifeAgeShown) + '   ·   ' + e0.date.getFullYear(), cx, textTop);
+      var ty = textTop + 24;
       var tl = wrapLines2(e0.title || 'A chapter', w - 16, SANS, 25); setFont(SANS, 25, INK, p.CENTER, p.TOP, 255 * alpha); bold(); for (i = 0; i < tl.length; i++) p.text(tl[i], cx, ty + slideIn + i * 31); normal(); ty += tl.length * 31 + 10;
-      var bl = wrapLines2(e0.text || '', w - 24, SERIF, 18); setFont(SERIF, 18, INK, p.CENTER, p.TOP, 246 * alpha); strokec(INK, 246 * alpha); p.strokeWeight(0.5); for (i = 0; i < bl.length; i++) p.text(bl[i], cx, ty + slideIn + i * 26); p.noStroke();
+      var bodyFs = 18, bl = wrapLines2(e0.text || '', w - 24, SERIF, bodyFs);
+      var avail9 = (top + vh - 56) - ty;
+      if (bl.length * bodyFs * 1.44 > avail9) { bodyFs = 15.5; bl = wrapLines2(e0.text || '', w - 24, SERIF, bodyFs); }
+      if (bl.length * bodyFs * 1.44 > avail9) { bodyFs = 13.5; bl = wrapLines2(e0.text || '', w - 24, SERIF, bodyFs); }
+      setFont(SERIF, bodyFs, INK, p.CENTER, p.TOP, 246 * alpha); strokec(INK, 246 * alpha); p.strokeWeight(0.5); for (i = 0; i < bl.length; i++) p.text(bl[i], cx, ty + slideIn + i * bodyFs * 1.44); p.noStroke();
       setFont(MONO, 10, ACCTX, p.LEFT, p.TOP, 220); p.text('YOUR LIFE · ' + (UI.lifeWalk.i + 1) + ' / ' + ev.length, x, top + 12);
       var pbw = w * 0.6, pbx = cx - pbw / 2, pby = top + vh - 16; p.noStroke(); fillc(INK, 45); p.rect(pbx, pby, pbw, 3, 2); fillc(ACC); p.rect(pbx, pby, pbw * ((UI.lifeWalk.i + 1) / ev.length), 3, 2);
-      if (last) { tourBtn('Back to timeline', cx - 150, top + vh - 96, 145, 42, function () { UI.lifeWalk = null; }, true); tourBtn('Done', cx + 10, top + vh - 96, 120, 42, function () { UI.lifeWalk = null; UI.lifeView = false; }, false); }
-      else { setFont(MONO, 10, INK, p.CENTER, p.TOP, 160 * alpha); p.text(UI.lifeWalk.i === 0 ? 'TAP TO BEGIN  ›' : 'TAP TO CONTINUE  ›', cx, top + vh - 42); }
+      setFont(MONO, 10, INK, p.CENTER, p.TOP, 160 * alpha); p.text(UI.lifeWalk.i >= ev.length - 1 ? 'TAP FOR THE FINALE  ›' : 'TAP TO CONTINUE  ›', cx, top + vh - 42);
       tourBtn('Skip', x + w - 66, top + 6, 60, 26, function () { UI.lifeWalk = null; }, false);
       UI.contentH.read = 0;
     }
@@ -5218,7 +5396,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       flatBtn('‹ Read', x, ly, 100, 36, function () { UI.lifeView = false; UI.scroll.read = 0; }, false, true); ly += 50;
       p.textStyle(p.BOLD); glitchText('Your life', x, sY(ly), 32, SANS, INK, p.LEFT, p.TOP, gi); normal(); ly += 42;
       ly += paragraph('The rare, slow transits and planetary returns that mark the real chapters of a life. What was likely stirring then, and what’s ahead. Astrology as weather, not fate.', x, ly, w, 14.5, INK, SERIF, 22, 205) + 14;
-      flatBtn('Play as a journey', x, ly, w, 46, function () { UI.lifeWalk = { i: 0, t0: nowT() }; }, true); ly += 60;
+      flatBtn('Play as a journey', x, ly, w, 46, function () { UI.lifeWalk = { i: -1, t0: nowT() }; UI.lwNoteI = null; }, true); ly += 60;
       var ev = UI.lifeList, nowMs = new Date().getTime(), lineX = x + 16, i, nowDrawn = false;
       strokec(INK, 45); p.strokeWeight(2); var topLine = sY(ly), botLine = sY(ly + ev.length * 96 + 40); p.line(lineX, topLine, lineX, botLine);
       // A14 — a travelling light runs the thread as you scroll, lighting each chapter it passes
@@ -7425,8 +7603,18 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       ly += toggleRow('Sound', [['off', 'Off'], ['on', 'On']], st.sound ? 'on' : 'off', ly, function (v) { st.sound = (v === 'on'); APP.save(); if (st.sound) { audioInit(); chime(); } });
       ly += toggleRow('Transit reminders', [['off', 'Off'], ['on', 'On']], st.notify ? 'on' : 'off', ly, function (v) { st.notify = (v === 'on'); APP.save(); if (st.notify) enableNotify(); });
       ly += toggleRow('Haptics', [['on', 'On'], ['off', 'Off']], st.haptics === false ? 'off' : 'on', ly, function (v) { st.haptics = (v === 'on'); APP.save(); if (st.haptics) buzz(14); });
-      ly += toggleRow('Narration voice', [['off', 'Off'], ['system', 'System']], st.voice === 'system' ? 'system' : 'off', ly, function (v) { st.voice = v; APP.save(); });
-      ly += paragraph('Straight answer: the human voice pack is not downloadable yet. The app is wired for it: the moment a voice-pack.js (Kokoro, open source, Apache-2.0, roughly 90MB, kept on-device) sits beside the app, narration uses it automatically. Building and hosting that pack needs a network session; until then System is the browser voice, plainly robotic, and Off is the honest default.', x, ly, w, 13.5, INK, SERIF, 20, 180) + 14;
+      var hv9 = (typeof window !== 'undefined' && window.AqauVoice) ? window.AqauVoice : null;
+      var vOpts9 = [['off', 'Off'], ['system', 'System']]; if (hv9 && hv9.state === 'ready') vOpts9.push(['human', 'Human']);
+      ly += toggleRow('Narration voice', vOpts9, (st.voice === 'human' && hv9 && hv9.state === 'ready') ? 'human' : (st.voice === 'system' ? 'system' : 'off'), ly, function (v) { st.voice = v; APP.save(); });
+      if (hv9 && hv9.state === 'ready') {
+        ly += paragraph('The human voice is on this device now: Kokoro, open source (Apache-2.0), spoken locally. No words leave the phone. Choose Human above and the walkthrough reads itself aloud.', x, ly, w, 13, INK, SERIF, 19, 190) + 14;
+      } else if (hv9 && hv9.state === 'loading') {
+        p.noStroke(); fillc(INK, 30); p.rect(x, sY(ly), w, 8, 4); fillc(ACC); p.rect(x, sY(ly), Math.max(4, w * (hv9.progress || 0)), 8, 4); ly += 18;
+        ly += paragraph((hv9.status || 'Downloading') + ' \u00B7 ' + Math.round((hv9.progress || 0) * 100) + '%. Keep the app open. It is cached on-device; after this it works offline.', x, ly, w, 12, INK, MONO, 17, 190) + 12;
+      } else {
+        flatBtn('Download the human voice \u00B7 ~90MB, once', x, ly, w, 42, function () { if (hv9) hv9.load(); }, true); ly += 54;
+        ly += paragraph('Kokoro, an open Apache-2.0 voice, fetched once from a public CDN and kept on this device. It reads the walkthrough like a person, not a robot. Network needed for the first download only.' + (hv9 && hv9.state === 'error' ? ' Last attempt: ' + hv9.status : (hv9 ? '' : ' (This browser cannot run it; System remains available.)')), x, ly, w, 12.5, INK, SERIF, 19, 180) + 14;
+      }
       ly += paragraph('On: when you open the app on a day a planet lands exactly on your chart, you get one system notification. Where the browser supports it, a daily background check is registered too. Nothing leaves the device.', x, ly, w, 13.5, INK, SERIF, 20, 180) + 14;
       ly += toggleRow('Zodiac', [['tropical', 'Tropical'], ['sidereal', 'Sidereal']], st.zodiac, ly, function (v) { st.zodiac = v; recompute(); });
       ly += toggleRow('House system', [['whole', 'Whole'], ['equal', 'Equal'], ['porphyry', 'Porphyry'], ['placidus', 'Placidus']], st.house, ly, function (v) { st.house = v; recompute(); });
@@ -8408,6 +8596,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
 })();
 
 </script>
+<script src="voice-pack.js"></script>
 <script>if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js')['catch'](function(){});});}</script>
 </body>
 </html>

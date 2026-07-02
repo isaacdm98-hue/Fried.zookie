@@ -1,5 +1,35 @@
 # Changelog
 
+## 1.3.0 — 2026-07-02
+
+The company arrives: a jointed actor, sets that mean something, and a human voice.
+
+- **The actor**: the life-journey figure is now a gesture drawing come to life:
+  head ball with a construction cross that turns to watch the planet, ribcage
+  and pelvis masses, two-bone limbs solved by IK, small hands and feet, breath,
+  and a faint red-pencil underdrawing behind the ink.
+- **Sets from the story**: the chapter's meaning stages the scene. Transits to
+  the Midheaven play on a staircase; to the Ascendant at an arched doorway of
+  light; to the Moon over a small house with one warm window; to the Sun inside
+  the spotlight itself, which narrows under a square and widens as you win.
+- **Weather from the mover**: Neptune brings drifting fog, Pluto rising embers,
+  Uranus trips the lamp, Saturn deepens the wings, Jupiter warms and widens
+  the light.
+- **The show has a shape**: a cold open (dark house, one light warming, the
+  bill of the show), an entrance walk to the mark, per-aspect choreography
+  including the new trine (caught like weather, one heel lifted), a camera
+  that leans in slow as breath, a tremor when a square lands, chiaroscuro
+  around the light, and a finale where the actor bows and the next chapter is
+  announced with its real year.
+- **Trines join the life chapters**: rare outer-planet trines to your personal
+  points are now found and told, so ease gets chapters too, not only struggle.
+- **The human voice, downloadable at last**: Kokoro-82M (Apache-2.0), the best
+  small open voice there is. One ~90MB download from Settings, cached
+  on-device, spoken locally; no words leave the phone. The walkthrough reads
+  itself aloud when you choose Human.
+- The chapter text now sits in a measured stack that always fits: captions
+  split and shrink to width, the body adapts its size to the space.
+
 ## 1.2.1 — 2026-07-02
 
 The six-dimension audit: edge charts, offline, people, data, layout, speed.
