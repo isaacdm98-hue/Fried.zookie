@@ -2821,6 +2821,153 @@ var APP = (function () {
     for (i = 0; i < pl.length && voc; i++) { if (!t.tp[pl[i]]) continue; var plon = rev(t.tp[pl[i]].lon - ay); for (a = 0; a < ang.length; a++) { for (z = -1; z <= 1; z += 2) { var arc = rev((plon + z * ang[a]) - moon); if (arc > 0.01 && arc < toB) { voc = false; break; } } } }
     return { sign: sign, signName: DATA.SIGNS[sign].name, voc: voc, hours: Math.round(toB / 0.5485) };
   }
+
+  // ===== The Rings: every planet's cycle, counted and dated. Returns are the oldest timing tool there is. =====
+  var RETURN_YEARS = { moon: 0.07480, sun: 1.00002, mercury: 1.0, venus: 1.0, mars: 1.8808, jupiter: 11.8618, saturn: 29.4571, node: 18.6129, uranus: 84.0205, neptune: 164.8, pluto: 248.35 };
+  function searchLonCross(k, targetLon, ay, fromMs, dirSign, horizonDays, stepDays) {
+    var prev = null, t;
+    for (t = 0; t <= horizonDays; t += stepDays) {
+      var ms = fromMs + dirSign * t * 86400000;
+      var lon = rev(EPH.positions(jsDayNum(new Date(ms)))[k].lon - ay), sd = sdelta(targetLon, lon);
+      if (prev && ((prev.sd <= 0 && sd >= 0) || (prev.sd >= 0 && sd <= 0)) && Math.abs(sd) < 45 && Math.abs(prev.sd) < 45) {
+        var lo = prev.ms, hi = ms, loNeg = prev.sd <= 0, it;
+        for (it = 0; it < 26; it++) { var mid = (lo + hi) / 2, sm = sdelta(targetLon, rev(EPH.positions(jsDayNum(new Date(mid)))[k].lon - ay)); if ((sm <= 0) === loNeg) lo = mid; else hi = mid; }
+        return new Date((lo + hi) / 2);
+      }
+      prev = { sd: sd, ms: ms };
+    }
+    return null;
+  }
+  function returnsAlmanac(c, b) {
+    var ay = c.ayan || 0, nowMs = new Date().getTime(), age = ageYearsNow(b), out = [], i;
+    var K = ['moon', 'sun', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'node', 'uranus', 'neptune', 'pluto'];
+    var t = transitNow();
+    for (i = 0; i < K.length; i++) {
+      var k = K[i], np = c.planets[k]; if (!np || !t.tp[k]) continue;
+      var period = RETURN_YEARS[k], cur = rev(t.tp[k].lon - ay);
+      var f = (k === 'node') ? rev(np.lon - cur) / 360 : rev(cur - np.lon) / 360;
+      var count = Math.max(0, Math.round(age / period - f));
+      var e = { k: k, period: period, frac: f, count: count, next: null, last: null, half: null, estYear: null };
+      var stepD = Math.max(0.5, Math.min(120, period * 365.2422 / 140));
+      var horizon = Math.min(period * 1.35, 96) * 365.2422;
+      if ((1 - f) * period < 95 && period < 95) e.next = searchLonCross(k, np.lon, ay, nowMs, 1, horizon, stepD);
+      else e.estYear = new Date().getFullYear() + Math.round((1 - f) * period);
+      if (count > 0 && period < 95) e.last = searchLonCross(k, np.lon, ay, nowMs, -1, horizon, stepD);
+      if (k === 'saturn' || k === 'uranus' || k === 'node') {
+        var fh = (k === 'node') ? rev(rev(np.lon + 180) - cur) : rev(cur - rev(np.lon + 180));
+        if ((360 - fh) / 360 * period < 60) e.half = searchLonCross(k, rev(np.lon + 180), ay, nowMs, 1, Math.min(period * 0.7, 62) * 365.2422, stepD);
+      }
+      out.push(e);
+    }
+    return out;
+  }
+
+  // ===== The phase of your life: the progressed lunation cycle, after Dane Rudhyar (The Lunation Cycle, 1967) =====
+  var PLUN_NAMES = ['New', 'Crescent', 'First Quarter', 'Gibbous', 'Full', 'Disseminating', 'Last Quarter', 'Balsamic'];
+  function progressedLunation(c, b) {
+    var ay = c.ayan || 0, aNow = ageYearsNow(b);
+    function elongAt(a) { var p9 = EPH.positions(c.d + a); return rev(p9.moon.lon - p9.sun.lon); } // the ayanamsa cancels in a difference
+    function crossAge(targetDeg, from, dir) {
+      var a = from, prev = sdelta(targetDeg, elongAt(a)), g, step = 0.08 * dir;
+      for (g = 0; g < 800; g++) {
+        var a2 = a + step, cur = sdelta(targetDeg, elongAt(a2));
+        if (((prev <= 0 && cur >= 0) || (prev >= 0 && cur <= 0)) && Math.abs(prev) < 25 && Math.abs(cur) < 25) {
+          var lo = a, hi = a2, it;
+          for (it = 0; it < 24; it++) { var mid = (lo + hi) / 2, sm = sdelta(targetDeg, elongAt(mid)); if ((sm <= 0) === (prev <= 0)) lo = mid; else hi = mid; }
+          return (lo + hi) / 2;
+        }
+        a = a2; prev = cur;
+      }
+      return null;
+    }
+    function ageDate(a) { return (a == null) ? null : new Date(natalInstant(b).getTime() + a * 365.2422 * 86400000); }
+    var e0 = elongAt(aNow), idx = Math.floor(rev(e0) / 45) % 8;
+    var startAge = crossAge(idx * 45, aNow, -1), endAge = crossAge(((idx + 1) * 45) % 360, aNow, 1);
+    var nextNew = crossAge(0, aNow, 1), nextFull = crossAge(180, aNow, 1);
+    var eBirth = elongAt(0), kWrap = Math.round((12.19 * aNow - (e0 - eBirth)) / 360);
+    var swept = (e0 - eBirth) + 360 * kWrap, cycle = Math.floor((eBirth + swept) / 360) + 1;
+    var pm = rev(EPH.positions(c.d + aNow).moon.lon - ay), pmSign = Math.floor(pm / 30), pmHouse = null;
+    if (b.timeKnown && c.ascBody) pmHouse = ((pmSign - c.ascBody.sign + 12) % 12) + 1;
+    return { elong: e0, idx: idx, name: PLUN_NAMES[idx], cycle: cycle,
+      startAge: startAge, endAge: endAge, startDate: ageDate(startAge), endDate: ageDate(endAge),
+      nextNewDate: ageDate(nextNew), nextNewAge: nextNew, nextFullDate: ageDate(nextFull),
+      moonSign: pmSign, moonHouse: pmHouse };
+  }
+
+  // ===== Planetary hours: the classical hour-lords, cut from true sunrise and sunset =====
+  var CHALDEAN = ['saturn', 'jupiter', 'mars', 'sun', 'venus', 'mercury', 'moon'];
+  var DAY_RULERS = ['sun', 'moon', 'mars', 'mercury', 'jupiter', 'venus', 'saturn']; // Sunday..Saturday
+  function planetaryHours(lat, lon) {
+    try {
+      var AE9 = (typeof Astronomy !== 'undefined') ? Astronomy : null;
+      if (!AE9 || !AE9.SearchRiseSet || lat == null || lon == null) return null;
+      var body9 = (AE9.Body && AE9.Body.Sun) ? AE9.Body.Sun : 'Sun';
+      var obs = new AE9.Observer(lat, lon, 0), now = new Date();
+      function bracket(dirFlag) {
+        var ev = AE9.SearchRiseSet(body9, obs, dirFlag, new Date(now.getTime() - 30 * 3600000), 3), lastE = null, guard = 0;
+        while (ev && ev.date.getTime() <= now.getTime() && guard < 6) { lastE = ev; ev = AE9.SearchRiseSet(body9, obs, dirFlag, new Date(ev.date.getTime() + 60000), 3); guard++; }
+        return { last: lastE ? lastE.date : null, next: ev ? ev.date : null };
+      }
+      var R = bracket(1), S = bracket(-1);
+      if (!R.last || !S.last || !R.next || !S.next) return null;
+      var isDay = R.last.getTime() > S.last.getTime();
+      var segStart = isDay ? R.last : S.last, segEnd = isDay ? S.next : R.next;
+      var segLen = (segEnd.getTime() - segStart.getTime()) / 12;
+      var idxIn = Math.min(11, Math.max(0, Math.floor((now.getTime() - segStart.getTime()) / segLen)));
+      var hourNum = (isDay ? 0 : 12) + idxIn;
+      var wd = R.last.getDay(); // the planetary day runs sunrise to sunrise
+      var startIdx = CHALDEAN.indexOf(DAY_RULERS[wd]);
+      return { ruler: CHALDEAN[(startIdx + hourNum) % 7], dayRuler: DAY_RULERS[wd], isDay: isDay, hourNum: hourNum + 1,
+        start: new Date(segStart.getTime() + idxIn * segLen), end: new Date(segStart.getTime() + (idxIn + 1) * segLen),
+        segStart: segStart, segEnd: segEnd, segLen: segLen, chaldeanStart: startIdx };
+    } catch (e9) { return null; }
+  }
+
+  // ===== The exact void-of-course window: last perfected aspect, then the ingress, both timed =====
+  function moonVoidWindow() {
+    try {
+      var t0 = transitNow(), ay = t0.ay, now = new Date();
+      function moonAt(ms) { return rev(EPH.positions(jsDayNum(new Date(ms))).moon.lon - ay); }
+      var m0 = moonAt(now.getTime()), sign = Math.floor(m0 / 30), bound = ((sign + 1) * 30) % 360;
+      var pl = ['sun', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto'], ang = [0, 60, 90, 120, 180];
+      function offsets(ms) {
+        var pos = EPH.positions(jsDayNum(new Date(ms))), mo = rev(pos.moon.lon - ay), o = [], i, a, z;
+        for (i = 0; i < pl.length; i++) { if (!pos[pl[i]]) continue; var plon = rev(pos[pl[i]].lon - ay);
+          for (a = 0; a < ang.length; a++) for (z = -1; z <= 1; z += 2) { if (ang[a] === 0 && z === 1) continue; o.push({ pl: pl[i], ang: ang[a], d: sdelta(rev(plon + z * ang[a]), mo) }); } }
+        o.push({ pl: '_ingress', ang: 0, d: sdelta(bound, mo) });
+        return o;
+      }
+      function scan(dir) { // dir 1: forward to ingress; -1: backward; returns {perfs:[Date], ingress:Date|null}
+        var perfs = [], ingress = null, prev = offsets(now.getTime()), h;
+        for (h = 1; h <= 84 && !ingress; h++) {
+          var ms = now.getTime() + dir * h * 3600000, cur = offsets(ms), i;
+          for (i = 0; i < cur.length; i++) {
+            var a1 = prev[i].d, a2 = cur[i].d;
+            if (((a1 <= 0 && a2 >= 0) || (a1 >= 0 && a2 <= 0)) && Math.abs(a1) < 8 && Math.abs(a2) < 8) {
+              var lo = ms - dir * 3600000, hi = ms, loNeg = a1 <= 0, it, ii = i;
+              for (it = 0; it < 18; it++) { var mid = (lo + hi) / 2, dm = offsets(mid)[ii].d; if ((dm <= 0) === loNeg) lo = mid; else hi = mid; }
+              var when9 = new Date((lo + hi) / 2);
+              if (cur[i].pl === '_ingress') { if (dir === 1) ingress = when9; }
+              else perfs.push({ when: when9, pl: cur[i].pl, ang: cur[i].ang });
+            }
+          }
+          prev = cur;
+        }
+        return { perfs: perfs, ingress: ingress };
+      }
+      var fwd = scan(1); if (!fwd.ingress) return null;
+      var before = [], i2;
+      for (i2 = 0; i2 < fwd.perfs.length; i2++) if (fwd.perfs[i2].when.getTime() < fwd.ingress.getTime()) before.push(fwd.perfs[i2]);
+      before.sort(function (a9, b9) { return a9.when - b9.when; });
+      var lastPerf = before.length ? before[before.length - 1] : null;
+      var voidNow = !before.length; var from = null, lastAspect = null;
+      if (voidNow) {
+        var bwd = scan(-1); bwd.perfs.sort(function (a9, b9) { return b9.when - a9.when; });
+        if (bwd.perfs.length) { from = bwd.perfs[0].when; lastAspect = bwd.perfs[0]; }
+      } else { from = lastPerf.when; lastAspect = lastPerf; }
+      return { voidNow: voidNow, from: from, until: fwd.ingress, nextSign: (sign + 1) % 12, sign: sign, lastAspect: lastAspect };
+    } catch (e9) { return null; }
+  }
   function decanOf(signIdx, deg) {
     var d = Math.min(2, Math.floor(deg / 10)), el = DATA.SIGNS[signIdx].element, same = [], s; for (s = 0; s < 12; s++) if (DATA.SIGNS[s].element === el) same.push(s);
     var st = same.indexOf(signIdx), ord = [same[st], same[(st + 1) % 3], same[(st + 2) % 3]], rn = DATA.SIGNS[ord[d]].ruler;
@@ -3525,7 +3672,7 @@ var APP = (function () {
     solarReturnChart: solarReturnChart, upcomingEclipses: upcomingEclipses, bestDaysFor: bestDaysFor, electIntents: electIntents,
     progressedTimeline: progressedTimeline, retroSeasons: retroSeasons,
     exportBook: exportBook, exportBackup: exportBackup, importBackup: importBackup, composeDailyEssay: composeDailyEssay, chartFP: chartFP, weaveNote: weaveNote, termOf: termOf, anA: anA, composeColleague: composeColleague, exportColleague: exportColleague,
-    addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenOf: almutenOf, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
+    addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenOf: almutenOf, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, returnsAlmanac: returnsAlmanac, progressedLunation: progressedLunation, planetaryHours: planetaryHours, moonVoidWindow: moonVoidWindow, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
     saveCurrentChart: saveCurrentChart, deleteSavedChart: deleteSavedChart, activateSavedChart: activateSavedChart, activeChartKey: activeChartKey, chartKey: chartKey, famousMatches: famousMatches, lifeTransits: lifeTransits, upcomingTransits: upcomingTransits, transitMotion: transitMotion, compositeChart: compositeChart,
     nameFor: nameFor, glyphFor: glyphFor, sgAbbr: sgAbbr, pad: pad,
     domElement: domElement, lowElement: lowElement, domMod: domMod, tzOffsetHours: tzOffsetHours
@@ -5167,8 +5314,82 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       for (mi = 0; mi < 3; mi++) { var yr = now.getFullYear(), mo = now.getMonth() + mi; while (mo > 11) { mo -= 12; yr++; } ly += drawMonthGrid(yr, mo, x, w, ly) + 8; }
       UI.contentH.read = ly + 20;
     }
+    // ===== THE RINGS: every planet's cycle as tree rings — counted, dated, yours =====
+    var RING_ORDER9 = ['moon', 'sun', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'node', 'uranus', 'neptune', 'pluto'];
+    var RING_SUB9 = { moon: 'THE EMOTIONAL MONTH \u00B7 27.3 DAYS', sun: 'THE YEAR OF YOU \u00B7 1 YEAR', mercury: 'THE MIND\u2019S LAP \u00B7 ~1 YEAR', venus: 'THE HEART\u2019S LAP \u00B7 ~1 YEAR', mars: 'THE DRIVE\u2019S LAP \u00B7 ~2 YEARS', jupiter: 'THE GROWTH RING \u00B7 11.9 YEARS', saturn: 'THE GREAT TEACHER\u2019S LAP \u00B7 29.5 YEARS', node: 'THE COMPASS RING \u00B7 18.6 YEARS', uranus: 'THE AWAKENER \u00B7 84 YEARS', neptune: 'THE DREAM\u2019S AEON \u00B7 165 YEARS', pluto: 'THE DEEP AEON \u00B7 248 YEARS' };
+    function ringStory(e, b) {
+      var nm = APP.nameFor(e.k), natal9 = new Date(b.y, b.mo - 1, b.d);
+      function ageAt9(d9) { return d9 ? Math.floor((d9.getTime() - natal9.getTime()) / (365.2422 * 86400000)) : null; }
+      var age9 = (new Date().getTime() - natal9.getTime()) / (365.2422 * 86400000);
+      var pct90 = Math.min(100, Math.round((e.frac + (90 - age9) / e.period) * 100));
+      switch (e.k) {
+        case 'moon': return 'The Moon has circled your whole chart ' + e.count + ' times: your emotional month, counted. Lap ' + (e.count + 1) + ' completes ' + fmtShort(e.next) + '. A lunar return is the monthly weather reset: the feelings reload from their natal set-point.';
+        case 'sun': return e.count + ' circuits complete. This is the wheel you already keep: your birthday is the Sun retaking its natal degree, exact to the minute, next on ' + fmtShort(e.next) + '.';
+        case 'mercury': return 'About a year to the lap, wobbling with retrogrades. The next return, ' + fmtShort(e.next) + ', is the yearly reset of how you think, speak and connect.';
+        case 'venus': return 'About a year to the lap. The next return, ' + fmtShort(e.next) + ', brings taste, love and worth back to their starting note: a good week to remember what you actually like.';
+        case 'mars': return 'Two years to the lap: the will resets. Next return ' + fmtShort(e.next) + ': energy comes home to its natal signature. Classical practice restarts campaigns and training here.';
+        case 'jupiter': return 'Jupiter has lapped your chart ' + (e.count === 1 ? 'once' : e.count === 2 ? 'twice' : e.count + ' times') + (e.last ? ', most recently ' + fmtShort(e.last) : '') + '. The next return is exact ' + fmtShort(e.next) + ', at age ' + ageAt9(e.next) + ': every twelve years growth knocks on the same door. Answer it bigger this time.';
+        case 'saturn': return (e.count ? ('Your first Saturn return was exact ' + fmtShort(e.last) + '; you are ' + Math.round(e.frac * 100) + '% into the ring\u2019s ' + (e.count === 1 ? 'second' : 'next') + ' lap.') : ('Your first Saturn return, adulthood\u2019s formal signature, lands ' + fmtShort(e.next) + ', age ' + ageAt9(e.next) + '.')) + (e.half ? (' The opposition, the mid-lap reckoning, comes ' + fmtShort(e.half) + '.') : '') + (e.count && e.next ? (' The ' + (e.count === 1 ? 'second' : 'next') + ' return: ' + fmtShort(e.next) + ', age ' + ageAt9(e.next) + '.') : '') + ' Saturn pays in structure for whatever was honestly built.';
+        case 'node': return 'The nodes run backward: an 18.6-year compass. ' + (e.last ? ('Your last nodal return was ' + fmtShort(e.last) + '; the next comes ' + fmtShort(e.next) + ', age ' + ageAt9(e.next) + '.') : ('Your first nodal return comes ' + fmtShort(e.next) + ', age ' + ageAt9(e.next) + '.')) + ' Choices made near a nodal return steer the whole lap.';
+        case 'uranus': return 'Nobody finishes this ring young: 84 years to the lap. The event that matters is the opposition, the famous midlife squaring-up' + (e.half ? (': yours lands ' + fmtShort(e.half) + ', age ' + ageAt9(e.half) + '.') : ' at around age 42.') + ' Expect the authentic to insist on itself.';
+        case 'neptune': return 'A 165-year ring: it will not close in one lifetime. By 90 you will have seen about ' + pct90 + '% of it. That is the teaching of an unfinishable circle: some tides are larger than a biography.';
+        case 'pluto': return 'The deep aeon: 248 years to the lap. By 90 you will have crossed about ' + pct90 + '% of it. This ring belongs to generations; your stretch of it is your era\u2019s underworld chapter.';
+      }
+      return '';
+    }
+    function drawRings(c, b) {
+      var x = sx(), w = cw(), top = topY(), vh = viewH(), cx = x + w / 2, t = nowT();
+      p.noStroke(); fillc(shade(GROUNDS.read, -10)); p.rect(0, 0, W, H);
+      setFont(MONO, 10, ACCTX, p.LEFT, p.TOP, 235); p.text('THE RINGS \u00B7 EVERY CYCLE, COUNTED', x, top + 12);
+      flatBtn('Close', x + w - 86, 8, 86, 34, function () { UI.rings = null; }, false, true);
+      if (!UI.ringsData) {
+        if (!UI.ringsBusy) { UI.ringsBusy = true; setTimeout(function () { try { UI.ringsData = APP.returnsAlmanac(APP.STATE.chart, APP.STATE.birth); } catch (e9) { UI.ringsData = []; } UI.ringsBusy = false; UI.ringsT = nowT(); }, 60); }
+        var la9 = (t % 2400) / 2400, li9;
+        for (li9 = 0; li9 < 5; li9++) { p.noFill(); strokec(INK, 50 - li9 * 8); p.strokeWeight(1); p.arc(cx, top + vh * 0.4, (40 + li9 * 26) * 2, (40 + li9 * 26) * 2, la9 * 6.283 + li9, la9 * 6.283 + li9 + 3.6); }
+        setFont(MONO, 10.5, INK, p.CENTER, p.CENTER, 190); p.text('COUNTING THE RINGS OF YOUR LIFE\u2026', cx, top + vh * 0.4 + 190);
+        return;
+      }
+      var cy = top + vh * 0.36, maxR = Math.min(w * 0.46, vh * 0.30), R0 = maxR * 0.16, gap = (maxR - R0) / (RING_ORDER9.length - 1);
+      if (!UI.ringSel) { // default to the ring whose return is soonest: the one that matters now
+        var best9 = null, bi9; for (bi9 = 0; bi9 < UI.ringsData.length; bi9++) { var eb9 = UI.ringsData[bi9]; if (eb9.next && eb9.k !== 'moon' && eb9.k !== 'sun' && (!best9 || eb9.next < best9.next)) best9 = eb9; }
+        UI.ringSel = best9 ? best9.k : 'saturn'; UI.ringSelT = nowT();
+      }
+      var byK9 = {}, di9; for (di9 = 0; di9 < UI.ringsData.length; di9++) byK9[UI.ringsData[di9].k] = UI.ringsData[di9];
+      var i9;
+      for (i9 = 0; i9 < RING_ORDER9.length; i9++) {
+        var k9 = RING_ORDER9[i9], e9 = byK9[k9]; if (!e9) continue;
+        var r9 = R0 + i9 * gap, col9 = BODYCOL[k9] || INK, sel9 = UI.ringSel === k9;
+        var pr9 = reduced() ? 1 : cl01((t - (UI.ringsT || 0) - i9 * 110) / 900), pe9 = eCubic(pr9);
+        if (pr9 <= 0) continue;
+        p.noFill(); strokec(INK, 30 * pe9); p.strokeWeight(1); p.ellipse(cx, cy, r9 * 2, r9 * 2);
+        if (e9.count > 0) { strokec(col9, (sel9 ? 60 : 38) * pe9); p.strokeWeight(Math.min(gap * 0.55, 1.4 + Math.log(e9.count + 1) * 1.5)); p.ellipse(cx, cy, r9 * 2, r9 * 2); }
+        var af9 = e9.frac * pe9;
+        strokec(col9, (sel9 ? 245 : 150) * pe9); p.strokeWeight(sel9 ? 3 : 2.2);
+        p.arc(cx, cy, r9 * 2, r9 * 2, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * af9);
+        var ta9 = -Math.PI / 2 + Math.PI * 2 * af9, tx9 = cx + Math.cos(ta9) * r9, ty9 = cy + Math.sin(ta9) * r9;
+        p.noStroke(); if (sel9 && !reduced()) { fillc(col9, 90 + 70 * Math.sin(t * 0.006)); p.ellipse(tx9, ty9, 13, 13); }
+        fillc(col9, 255 * pe9); p.ellipse(tx9, ty9, sel9 ? 7 : 5.5, sel9 ? 7 : 5.5);
+        // glyph gates staggered across two diagonals so the inner rings can breathe
+        var ga9 = Math.PI * (i9 % 2 ? 0.62 : 0.82), gx9 = cx + Math.cos(ga9) * r9, gy9 = cy + Math.sin(ga9) * r9;
+        p.noStroke(); fillc(shade(GROUNDS.read, -10), 255); p.ellipse(gx9, gy9, 17, 17);
+        setFont(SANS, 11, sel9 ? ACC : INK, p.CENTER, p.CENTER, sel9 ? 255 : 170 * pe9); p.text(APP.glyphFor(k9), gx9, gy9 + 0.5);
+        (function (kk9) { pushHit(gx9 - 16, gy9 - 16, 32, 32, function () { UI.ringSel = kk9; UI.ringSelT = nowT(); buzz(6); }); })(k9);
+      }
+      setFont(MONO, 8.5, INK, p.CENTER, p.TOP, 120); p.text('EACH RING: ONE PLANET\u2019S LAP OF YOUR CHART \u00B7 TAP A GLYPH', cx, cy + maxR + 16);
+      // the selected ring's story
+      var se9 = byK9[UI.ringSel];
+      if (se9) {
+        var cty9 = cy + maxR + 40, ca9 = reduced() ? 1 : cl01((t - (UI.ringSelT || 0)) / 340);
+        setFont(SANS, 18, INK, p.LEFT, p.TOP, 255 * ca9); bold(); p.text(APP.nameFor(se9.k), x, cty9 + (1 - ca9) * 8); normal();
+        setFont(MONO, 9, ACCTX, p.LEFT, p.TOP, 220 * ca9); p.text(RING_SUB9[se9.k], x, cty9 + 26 + (1 - ca9) * 8);
+        var st9 = wrapLines2(ringStory(se9, b), w, SERIF, 14.5), li2;
+        setFont(SERIF, 14.5, INK, p.LEFT, p.TOP, 242 * ca9);
+        for (li2 = 0; li2 < st9.length; li2++) p.text(st9[li2], x, cty9 + 46 + li2 * 21 + (1 - ca9) * 8);
+      }
+    }
     function drawRead() {
       var c = APP.STATE.chart, b = APP.STATE.birth; if (!c) { UI.screen = 'onboard'; return; }
+      if (UI.rings) { drawRings(c, b); return; }
       if (UI.calView) { drawTransitCalendar(c, b); return; }
       if (UI.lifeView) { drawLifeTimeline(c, b); return; }
       var x = sx(), w = cw(), ly = 18, gi = cl01(1 - (nowT() - UI.fxT) / 500);
@@ -5276,6 +5497,54 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var fc2 = UI.forecast;
       if (fc2) {
         if (rt === 'timing') {
+        // ===== the phase of your life: the progressed lunation cycle, after Rudhyar =====
+        if (!UI.plun) { try { UI.plun = APP.progressedLunation(c, b); UI.plunT = nowT(); } catch (eL9) { UI.plun = false; } }
+        if (UI.plun) {
+          var PL = UI.plun, PLN9 = ['New', 'Crescent', 'First Quarter', 'Gibbous', 'Full', 'Disseminating', 'Last Quarter', 'Balsamic'];
+          var PLTX9 = [
+            ['You are in the dark of your own cycle: something genuinely new is germinating, and it does not need your full understanding yet. Act on instinct; plant without demanding to see the whole field. What begins now sets the tone for thirty years.',
+             'A whole cycle has closed and a new self is seeding in low light. You cannot see far ahead, and that is correct: this phase asks for beginnings made on faith, not on proof. Start small, start true.'],
+            ['The new thing has broken ground and the old life is pulling at it. This is the effort phase: every step away from the familiar costs, and every step is compound interest. Protect the sprout; do not replant it daily by doubting.',
+             'You are leaving a known shore with the new self half-built. Expect resistance: from habit, from others, from your own nostalgia. The work is simple and hard: keep choosing the new thing until it can stand.'],
+            ['This is the crisis in action: the phase where the new life demands structures. Decisions build the house now: where you live, what you commit to, what you cut. Friction is not a sign of error; it is the tool. Build anyway.',
+             'The cycle squares itself: what you seeded now insists on form. Expect confrontation with the practical: money, commitments, walls and doors. Choose fast, build solid, repair later. Motion is the teacher in this phase.'],
+            ['Almost: that is this phase\u2019s whole flavour. The thing you are building works, roughly, and now asks to be refined. Analyse, adjust, apprentice yourself to the craft of it. Perfecting is not stalling when the cycle itself asks for it.',
+             'The build is up; the finish is not. This phase is for the second draft: sharpening technique, closing gaps, humbling yourself before details. What you polish now is what the Full phase will illuminate.'],
+            ['The cycle flowers: what you planted at the New phase stands in full light, whatever it turned out to be. Meaning arrives through other people now: relationships mirror the work back. Look plainly at the harvest: this is what that seed was.',
+             'Maximum light. Results are visible, to you and to everyone: the honest inventory of what began years ago. Fulfilment and disillusion both live here, and both are information. Let it be seen.'],
+            ['Harvest is in; now it wants distributing. This phase makes you the carrier of what you learned: teach it, share it, spend it into your people. Meaning now comes from transmission, not accumulation.',
+             'You have something to give away, and giving it away is the phase\u2019s work. Write it down, hand it on, mentor it forward. What is not shared in this phase is lost to the next cycle.'],
+            ['The crisis in consciousness: the structures that carried you now feel too small, and the doubt is the point. Question the system you built; prune what is done. This is inner demolition in service of the next seed, years away.',
+             'The cycle turns on itself: beliefs that built the last decade come up for honest review. It can read as restlessness or quiet rebellion. Trust the pruning instinct; keep what is alive, compost the rest.'],
+            ['The dark of the moon, lived at life scale: a closing phase, and closings are real work. Release, distill, keep vigil. What you refuse to end now delays what wants to begin. The seed of the next thirty years is being chosen in you, quietly.',
+             'Endings run this phase, and they are not losses: they are distillation. Finish things properly; say the goodbyes; travel light. You are becoming the seed, and seeds carry only the essence.']
+          ];
+          var fp9 = APP.chartFP(c), h9 = 0, hi9; for (hi9 = 0; hi9 < fp9.length; hi9++) h9 = (h9 * 31 + fp9.charCodeAt(hi9)) >>> 0;
+          var monY9 = function (d9) { var M9 = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']; return d9 ? (M9[d9.getMonth()] + ' ' + d9.getFullYear()) : ''; };
+          eyebrow('The phase of your life', x, ly, ACC); ly += 30;
+          // the moon of your life, at its exact progressed angle, with a quiet reveal
+          var mR9 = Math.min(w * 0.26, 84), mcx9 = x + w / 2, mcy9 = sY(ly) + mR9 + 14;
+          var rv9 = reduced() ? 1 : cl01((nowT() - (UI.plunT || 0)) / 1100), re9 = eCubic(rv9);
+          p.noStroke(); fillc([238, 232, 216], 20 + 14 * Math.sin(reduced() ? 1 : nowT() * 0.0012)); p.ellipse(mcx9, mcy9, mR9 * 2.9, mR9 * 2.9);
+          drawMoonDisc(mcx9, mcy9, mR9 * re9, PL.elong, 1);
+          // seeded maria: the face of this moon is yours alone
+          if (rv9 > 0.6) { var cs9 = h9, ci9; for (ci9 = 0; ci9 < 7; ci9++) { cs9 = (cs9 * 1664525 + 1013904223) >>> 0; var ca9 = (cs9 % 628) / 100, cs2 = (cs9 >> 8) % 1000 / 1000; var crr9 = mR9 * (0.15 + 0.65 * cs2), crx9 = mcx9 + crr9 * Math.cos(ca9), cry9 = mcy9 + crr9 * Math.sin(ca9), crd9 = mR9 * (0.10 + ((cs9 >> 16) % 100) / 100 * 0.13); if (crr9 + crd9 < mR9 * 0.94) { p.noStroke(); fillc(INK, 16 * cl01((rv9 - 0.6) / 0.4)); p.ellipse(crx9, cry9, crd9 * 2, crd9 * 2); } } }
+          // the 8-phase dial: ticks at each 45 degrees, the pointer at your exact angle
+          var ti9; for (ti9 = 0; ti9 < 8; ti9++) { var ta9 = (-90 + ti9 * 45) * Math.PI / 180, on9 = ti9 === PL.idx; strokec(on9 ? ACC : INK, (on9 ? 235 : 70) * re9); p.strokeWeight(on9 ? 2 : 1); p.line(mcx9 + Math.cos(ta9) * (mR9 + 7), mcy9 + Math.sin(ta9) * (mR9 + 7), mcx9 + Math.cos(ta9) * (mR9 + 14), mcy9 + Math.sin(ta9) * (mR9 + 14)); }
+          var pa9 = (-90 + PL.elong) * Math.PI / 180;
+          p.noStroke(); fillc(ACC, 255 * re9); p.ellipse(mcx9 + Math.cos(pa9) * (mR9 + 11), mcy9 + Math.sin(pa9) * (mR9 + 11), 6, 6);
+          ly += mR9 * 2 + 40;
+          var cyc9 = ['first', 'second', 'third', 'fourth'][PL.cycle - 1] || ('no. ' + PL.cycle);
+          setFont(SANS, 21, INK, p.CENTER, p.TOP); bold(); p.text(PL.name + ' \u00B7 your ' + cyc9 + ' cycle', x + w / 2, sY(ly)); normal(); ly += 30;
+          setFont(MONO, 9, INK, p.CENTER, p.TOP, 150); p.text('PROGRESSED SUN\u2013MOON ANGLE ' + PL.elong.toFixed(1) + '\u00B0', x + w / 2, sY(ly)); ly += 22;
+          ly += paragraph(PLTX9[PL.idx][(h9 + PL.idx) % 2], x, ly, w, 15.5, INK, SERIF, 24) + 10;
+          ly += paragraph('This phase began ' + monY9(PL.startDate) + ' and gives way to the ' + PLN9[(PL.idx + 1) % 8] + ' phase in ' + monY9(PL.endDate) + '.' + (PL.moonHouse ? (' Meanwhile your progressed Moon walks your ' + ordinal(PL.moonHouse) + ' house in ' + DATA.SIGNS[PL.moonSign].name + ': the feelings live in ' + DATA.HOUSES[PL.moonHouse - 1].title.toLowerCase() + ' for these couple of years.') : (' Meanwhile your progressed Moon runs through ' + DATA.SIGNS[PL.moonSign].name + '.')), x, ly, w, 14.5, INK, SERIF, 22) + 10;
+          if (PL.nextNewDate) ly += paragraph('Your next progressed New Moon, the seeding of a whole new thirty-year cycle, arrives ' + monY9(PL.nextNewDate) + ', at age ' + Math.floor(PL.nextNewAge) + '.', x, ly, w, 14.5, INK, SERIF, 22) + 12;
+          setFont(MONO, 8.5, INK, p.LEFT, p.TOP, 130); p.text('AFTER DANE RUDHYAR, THE LUNATION CYCLE (1967)', x, sY(ly)); ly += 13;
+          setFont(MONO, 8.5, INK, p.LEFT, p.TOP, 130); p.text('COMPUTED BY SECONDARY PROGRESSION, NOT COPIED FROM A TABLE', x, sY(ly)); ly += 26;
+        }
+        // ===== the rings: the returns almanac =====
+        flatBtn('\u25CE  The Rings: every cycle of your life, counted', x, ly, w, 44, function () { UI.rings = { t0: nowT() }; UI.ringSel = null; UI.scroll.read = 0; buzz(12); }, false); ly += 58;
         ly += 16; hairline(x, ly, x + w, 40); ly += 22; eyebrow('The year ahead', x, ly, ACC); ly += 24;
         var pf = fc2.profection;
         ly += paragraph('You’re in a ' + DATA.SIGNS[pf.sign].name + ' profection year (age ' + pf.age + '): your ' + ordinal(pf.house) + ' house is lit up, and ' + APP.nameFor(pf.lord) + ' is your time‑lord: the planet steering this year.', x, ly, w, 15.5, INK, SERIF, 24) + 10;
@@ -7373,7 +7642,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       recompute(); UI.selPlanet = 'sun'; UI.popT = nowT(); UI.popFrom = 22; UI.scroll.chart = 0; UI.screen = 'chart'; hideSearchInput();
       if (!APP.STATE.settings.walked) { UI.walk = { i: 0, t0: nowT() }; UI.walkTr = null; UI.walkTheme = null; } // first reveal: walk them through it
     }
-    function recompute() { APP.STATE.chart = APP.compute(APP.STATE.birth, APP.STATE.settings); APP.save(); UI.readCache = null; UI.readSig = null; UI.readTransit = null; UI.forecast = null; UI.promCache = null; UI.arcCache = null; UI.todayCache = null; UI.fmList = null; UI.lifeList = null; UI.calEvents = null; UI.calDay = null; UI.walkTr = null; UI.walkTheme = null; UI.bondCache = null; UI.bondFor = null; if (APP.clearPersonCharts) APP.clearPersonCharts(); UI.askAns = ''; UI.quip = null; UI.quipNext = 0; buildField(); }
+    function recompute() { APP.STATE.chart = APP.compute(APP.STATE.birth, APP.STATE.settings); APP.save(); UI.readCache = null; UI.readSig = null; UI.readTransit = null; UI.forecast = null; UI.promCache = null; UI.arcCache = null; UI.todayCache = null; UI.fmList = null; UI.lifeList = null; UI.calEvents = null; UI.calDay = null; UI.walkTr = null; UI.walkTheme = null; UI.bondCache = null; UI.bondFor = null; UI.plun = null; UI.ringsData = null; UI.ringSel = null; UI.vocW = null; UI.phCache = null; if (APP.clearPersonCharts) APP.clearPersonCharts(); UI.askAns = ''; UI.quip = null; UI.quipNext = 0; buildField(); }
 
     // ---------- share / export a clean chart card (own untainted canvas; the live one holds remote images) ----------
     // share a daily card (clean offscreen canvas) — moon phase + what's live on your chart today
@@ -7700,8 +7969,39 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       setFont(SANS, 16, INK, p.LEFT, p.TOP); bold(); p.text(phaseName(e), x + pad + 60, ty() + 2); normal();
       if (ms) { setFont(SERIF, 13.5, INK, p.LEFT, p.TOP, 220); p.text('Moon in ' + ms.signName, x + pad + 60, ty() + 24); }
       yy += 56;
-      if (ms) { body(ms.voc ? 'Void of course: the Moon makes no more aspects before changing sign. A good window to rest, finish, reflect; a poor one to launch.' : 'About ' + ms.hours + 'h until the Moon leaves ' + ms.signName + '. Its mood still colours the next few hours.', 13.5); }
+      if (ms) {
+        if (!UI.vocW || nowT() - (UI.vocWT || 0) > 900000) { try { UI.vocW = APP.moonVoidWindow(); } catch (eV9) { UI.vocW = null; } UI.vocWT = nowT(); }
+        var VW = UI.vocW, hm9 = function (d9) { return pad2(d9.getHours()) + ':' + pad2(d9.getMinutes()); };
+        var dn9 = function (d9) { var DN9 = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], t9 = new Date(); return (d9.getDate() === t9.getDate() && d9.getMonth() === t9.getMonth()) ? '' : (DN9[d9.getDay()] + ' '); };
+        var an9 = { 0: 'conjunct', 60: 'sextile', 90: 'square', 120: 'trine', 180: 'opposite' };
+        if (VW && VW.voidNow) body('Void of course' + (VW.from ? ' since ' + dn9(VW.from) + hm9(VW.from) : '') + (VW.lastAspect ? ': her last aspect, ' + an9[VW.lastAspect.ang] + ' ' + APP.nameFor(VW.lastAspect.pl) + ', is behind her' : '') + '. She enters ' + DATA.SIGNS[VW.nextSign].name + ' at ' + dn9(VW.until) + hm9(VW.until) + '. Finish, rest, tidy; launch after the ingress.', 13.5);
+        else if (VW) body('Her last aspect before leaving ' + ms.signName + (VW.lastAspect ? ', ' + an9[VW.lastAspect.ang] + ' ' + APP.nameFor(VW.lastAspect.pl) + ',' : '') + ' perfects ' + dn9(VW.from) + hm9(VW.from) + '. She runs void from then until ' + dn9(VW.until) + hm9(VW.until) + ', entering ' + DATA.SIGNS[VW.nextSign].name + ': time anything that must land before the window.', 13.5);
+        else body(ms.voc ? 'Void of course: the Moon makes no more aspects before changing sign. A good window to rest, finish, reflect; a poor one to launch.' : 'About ' + ms.hours + 'h until the Moon leaves ' + ms.signName + '. Its mood still colours the next few hours.', 13.5);
+      }
       rule();
+      // the planetary hour: the classical hour-lords, cut from true sunrise and sunset
+      if (!UI.phCache || new Date().getTime() > (UI.phEnd || 0)) { try { UI.phCache = APP.planetaryHours(APP.STATE.birth.lat, APP.STATE.birth.lon); } catch (eH9) { UI.phCache = null; } UI.phEnd = (UI.phCache && UI.phCache.end) ? UI.phCache.end.getTime() : (new Date().getTime() + 600000); }
+      var PH = UI.phCache;
+      if (PH) {
+        head('The planetary hour');
+        var CH9 = ['saturn', 'jupiter', 'mars', 'sun', 'venus', 'mercury', 'moon'];
+        var HTX9 = { sun: 'visibility, decisions, asking for what you want', moon: 'rest, home, tending, the inner tide', mercury: 'writing, calls, errands, the quick and clever', venus: 'charm, repair, beauty, company', mars: 'the hard task, the workout, the honest confrontation', jupiter: 'asking big, teaching, generosity: luck runs warmer', saturn: 'the long game: structure, endings, discipline' };
+        var hmP = function (d9) { return pad2(d9.getHours()) + ':' + pad2(d9.getMinutes()); };
+        setFont(SANS, 15, INK, p.LEFT, p.TOP); bold(); p.text('Hour of ' + APP.nameFor(PH.ruler), x + pad + 26, ty()); normal();
+        setFont(SANS, 15, ACC, p.LEFT, p.CENTER); p.text(APP.glyphFor(PH.ruler), x + pad + 2, ty() + 9);
+        setFont(MONO, 9.5, INK, p.RIGHT, p.TOP, 170); p.text((hmP(PH.start) + ' \u2013 ' + hmP(PH.end)).toUpperCase(), x + w - pad, ty() + 3); yy += 24;
+        // the day's twelve hours of this half, as a strip; the current one lit
+        var segW9 = (w - pad * 2) / 12, hb9 = PH.isDay ? 0 : 12, cur9 = PH.hourNum - 1 - hb9, si9;
+        for (si9 = 0; si9 < 12; si9++) {
+          var sr9 = CH9[(PH.chaldeanStart + hb9 + si9) % 7], on9 = si9 === cur9, sx9 = x + pad + si9 * segW9;
+          p.noStroke(); if (on9) { fillc(ACC, 235); p.rect(sx9, ty(), segW9 - 2, 22, 4); } else { fillc(INK, 22); p.rect(sx9, ty(), segW9 - 2, 22, 4); }
+          setFont(SANS, 9.5, on9 ? GROUNDS[UI.screen] : INK, p.CENTER, p.CENTER, on9 ? 255 : 150); p.text(APP.glyphFor(sr9), sx9 + segW9 / 2 - 1, ty() + 11);
+        }
+        yy += 30;
+        body('An old timekeeping: the hours between sunrise and sunset (and sunset to sunrise) each have a ruler. This one belongs to ' + APP.nameFor(PH.ruler) + ': ' + HTX9[PH.ruler] + '.', 13);
+        setFont(MONO, 8.5, INK, p.LEFT, p.TOP, 130); p.text(('DAY OF ' + APP.nameFor(PH.dayRuler) + ' \u00B7 ' + (PH.isDay ? 'DAY' : 'NIGHT') + ' HOUR ' + (PH.isDay ? PH.hourNum : PH.hourNum - 12) + '/12 \u00B7 AT ' + ((APP.STATE.birth.place || 'your chart\u2019s place').split(',')[0])).toUpperCase(), x + pad, ty()); yy += 20;
+        rule();
+      }
       // your year (profection)
       if (d.f && d.f.profection) { var pf = d.f.profection; head('Your year'); body(APP.nameFor(pf.lord) + ' rules your year: you’re profected to ' + pf.signName + ' (house ' + pf.house + '). Wherever ' + APP.nameFor(pf.lord) + ' sits and what it touches is unusually loud this year.', 14); }
       // retrogrades now
@@ -7964,7 +8264,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     p.draw = function () {
       // auto-dark-at-night: re-apply the theme when the effective key changes (time or accent)
       var ek = effectiveThemeKey() + '|' + ((APP.STATE.settings && APP.STATE.settings.accent) || 0); if (ek !== UI.appliedThemeKey) { applyTheme(); setBodyBg(GROUNDS[UI.screen] || GROUNDS.chart); }
-      if (UI.screen !== UI.prevScreen) { var wasFirst = !UI.prevScreen; UI.fxT = nowT(); UI.prevScreen = UI.screen; UI.story = null; if (UI.video) closeVideo(); if (UI.screen !== 'chart') { UI.walk = null; UI.pcard = null; UI.reel = null; } if (UI.screen !== 'tarot') UI.tarotRit = null; if (UI.screen !== 'read') UI.lifeWalk = null; if (UI.screen !== 'learn') { UI.tvActive = null; if (UI.learnSearch) { UI.learnSearch = false; try { if (UI.searchInput) UI.searchInput.setAttribute('placeholder', 'Search city or country'); } catch (eP4) {} } } setBodyBg(GROUNDS[UI.screen] || GROUNDS.chart); if (!wasFirst) chime(); }
+      if (UI.screen !== UI.prevScreen) { var wasFirst = !UI.prevScreen; UI.fxT = nowT(); UI.prevScreen = UI.screen; UI.story = null; if (UI.video) closeVideo(); if (UI.screen !== 'chart') { UI.walk = null; UI.pcard = null; UI.reel = null; } if (UI.screen !== 'tarot') UI.tarotRit = null; if (UI.screen !== 'read') { UI.lifeWalk = null; UI.rings = null; } if (UI.screen !== 'learn') { UI.tvActive = null; if (UI.learnSearch) { UI.learnSearch = false; try { if (UI.searchInput) UI.searchInput.setAttribute('placeholder', 'Search city or country'); } catch (eP4) {} } } setBodyBg(GROUNDS[UI.screen] || GROUNDS.chart); if (!wasFirst) chime(); }
       UI.bg = (GROUNDS[UI.screen] || GROUNDS.chart); // HARD block-colour cut between sections
       p.background(UI.bg[0], UI.bg[1], UI.bg[2]);
       drawField(); drawRipples();
@@ -8074,6 +8374,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (k9 === 27) {
         if (UI.pcard) { UI.pcard = null; return false; }
         if (UI.today) { UI.today = false; return false; }
+        if (UI.rings) { UI.rings = null; return false; }
         if (UI.reel) { UI.reel = null; return false; }
         if (UI.story) { UI.story = null; UI.fxT = nowT(); return false; }
         if (UI.gloss) { UI.gloss = null; return false; }

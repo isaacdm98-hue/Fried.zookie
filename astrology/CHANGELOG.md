@@ -1,5 +1,29 @@
 # Changelog
 
+## 1.2.0 — 2026-07-02
+
+Time as architecture: the three great cycle tools, computed, dated, drawn.
+
+- **The Phase of Your Life** (Timing): the progressed lunation cycle after
+  Dane Rudhyar, computed by true secondary progression (searched against the
+  ephemeris, not a mean rate). A moon drawn at your exact progressed
+  Sun–Moon angle with seeded maria, the eight-phase dial, which cycle you
+  are in, when this phase began, when it gives way, and the date and age of
+  your next progressed New Moon.
+- **The Rings** (Timing): the returns almanac as tree rings. Every planet's
+  lap of your chart: cycle fraction live from the ephemeris, completed laps
+  counted, next return bisection-searched to the day. Saturn return with
+  first-return receipts and the mid-lap opposition, Jupiter's twelve-year
+  knock, the 18.6-year nodal compass, the Uranus opposition dated, and the
+  unfinishable rings of Neptune and Pluto told honestly.
+- **The Planetary Hour** (Today): the classical hour-lords cut from true
+  sunrise and sunset (astronomy-engine rise/set search), Chaldean order,
+  the day's twelve hours as a strip with the current hour lit, and what
+  each hour is traditionally for.
+- **Void of course, exact** (Today): no longer a yes/no. The Moon's last
+  perfecting aspect is found and timed, the void window has a start and an
+  end, and the ingress into the next sign is bisected to the minute.
+
 ## 1.1.0 — 2026-07-02
 
 The production-hardening pass: thirty refinements to what was already there.
