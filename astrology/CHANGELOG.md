@@ -1,5 +1,33 @@
 # Changelog
 
+## 1.4.0 — 2026-07-02
+
+The dioramas: silhouettes, skies, and weather. (The living logo is untouched.)
+
+- **The walker**: the life-journey actor is now a filled silhouette with
+  weight: capsule limbs, a chest broader than the waist, small shoes, a tuft
+  of hair the wind owns, and a trailing accent scarf: the one coloured thing
+  the silhouette carries. Rim light where a moon or a dawn strikes it.
+- **Scenes became landscapes**: each chapter is a layered diorama. A gradient
+  sky owned by the mover (Jupiter's golden hour, Saturn's slate evening,
+  Uranus electric, Neptune's deep teal, Pluto's ember dusk), three parallax
+  hill bands, drifting clouds, god rays on the warm skies, foreground grass
+  leaning to the same wind as the scarf.
+- **Sets grew from the land**: the Midheaven's staircase became a summit path
+  with a cairn and a small flag; the Ascendant's doorway became standing
+  stones with light through the gate; the Moon's house became a cottage with
+  one warm window and chimney smoke.
+- **Weather with meaning**: rain falls through the struggle beat of a square;
+  wind curls cross a trine; Pluto's embers rise; Neptune's fog drifts;
+  returns happen under stars.
+- **The cold open is a night hillside**: stars, a rising moon, the walker
+  waiting in rim light. The finale is a dawn: the sun comes up and the walker
+  bows to it, long shadow and all.
+- **Captions became subtitles** on the dark foreground band, always legible;
+  the chapter header reads light over the sky.
+- **App-wide layer**: high thin clouds now cross the zodiac-sky background on
+  every screen, patient as weather.
+
 ## 1.3.0 — 2026-07-02
 
 The company arrives: a jointed actor, sets that mean something, and a human voice.
