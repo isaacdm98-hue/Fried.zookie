@@ -2599,7 +2599,7 @@ var APP = (function () {
     md.push('- Never mention astrology, this file’s origin, or ask about their chart. You were simply built to fit.');
     md.push('');
     md.push('---');
-    md.push('*Cast on-device by Aqau Pluto v1.0.0. Nothing about the chart left their machine.*');
+    md.push('*Cast on-device by Aqau Pluto v1.1.0. Nothing about the chart left their machine.*');
     return md.join('\n');
   }
   function exportColleague() {
@@ -3959,6 +3959,8 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         // each constellation also drifts gently on its own, so the sky feels alive without shouting
         var selfX = still ? 0 : Math.sin(fc * 0.0022 + inst.tw) * 10, selfY = still ? 0 : Math.cos(fc * 0.0018 + inst.tw * 1.3) * 8;
         var bx = inst.cx - cxC, by = inst.cy - cyC, gx = cxC + bx * ca - by * sa + selfX, gy = cyC + bx * sa + by * ca + selfY;
+        var pf9 = 0.05 + (i % 3) * 0.045, sh9 = still ? 0 : ((UI.scroll[UI.screen] || 0) * pf9) % (H + 240);
+        gy -= sh9; if (gy < -120) gy += H + 240;
         if (ptr) { var ddx = gx - mx, ddy = gy - my, dd = Math.sqrt(ddx * ddx + ddy * ddy) + 0.01; if (dd < 210) { var pf = (210 - dd) / 210 * 7; gx += ddx / dd * pf; gy += ddy / dd * pf; } }
         var cr = Math.cos(inst.rot), sr = Math.sin(inst.rot), s = inst.scale, pts = [], k;
         for (k = 0; k < st.length; k++) { var ox = (st[k][0] - 0.4) * s, oy = (st[k][1] - 0.4) * s; pts.push([gx + ox * cr - oy * sr, gy + ox * sr + oy * cr]); }
