@@ -2746,7 +2746,32 @@ var APP = (function () {
     var hs = (ev.np !== 'asc' && ev.np !== 'mc' && c && c.planets[ev.np]) ? c.planets[ev.np].house : null;
     var who = ev.np === 'asc' ? 'rising sign' : ev.np === 'mc' ? 'Midheaven' : nameFor(ev.np);
     var loc = (sgN ? ' in ' + sgN : '') + (hs ? ', ' + ordinal(hs) + ' house' : '');
-    return 'Age ' + Math.round(ev.age) + ' (' + ev.date.getFullYear() + '): ' + nameFor(ev.tp) + ' ' + (LIFE_ACT[ev.ang] || 'contacts') + ' your ' + who + loc + ' — ' + (MOVER_NOUN[ev.tp] || 'a turning point') + ', ' + (LIFE_FEEL[ev.ang] || '') + '. It plays out through ' + targetArea(ev.np, ev.age) + '; the task is to ' + (MOVER_TASK[ev.tp] || 'meet it consciously') + '.';
+    // the story register: the age decides the voice, the aspect decides the plot, the seed decides the sentence
+    var ageN = Math.round(ev.age), seed5 = (c ? chartFP(c) : '') + ev.tp + ev.np + ev.ang + ageN;
+    var stage5 = ageN < 13 ? 'child' : ageN < 20 ? 'teen' : ageN < 30 ? 'young' : ageN < 46 ? 'mid' : ageN < 62 ? 'ripe' : 'elder';
+    var OPEN5 = {
+      child: ['You were ' + ageN + '.', 'At ' + ageN + ', before you had words for it,', 'Somewhere in your ' + ageN + 'th year,'],
+      teen: ['You were ' + ageN + ', and everything already felt loud.', 'At ' + ageN + ',', ageN + '. The self was still wet paint.'],
+      young: ['At ' + ageN + ',', 'You were ' + ageN + ', building at speed.', ageN + ': the years of first real stakes.'],
+      mid: ['At ' + ageN + ',', ageN + '. By now you knew your own patterns,', 'In your ' + ageN + 'th year,'],
+      ripe: ['At ' + ageN + ',', ageN + ': the long middle, where things compound.', 'You were ' + ageN + ','],
+      elder: ['At ' + ageN + ',', ageN + '. Little left to prove,', 'In your ' + ageN + 'th year,']
+    };
+    var PLOT5 = {
+      90: ['{TP} squared your {WHO}{LOC}: a wall where a door used to be. What that year asked was effort, and what the effort built stayed built.',
+           '{TP} pressed square against your {WHO}{LOC}. The friction was not a punishment; it was resistance training for that exact part of you.',
+           'the square from {TP} landed on your {WHO}{LOC}. Something pushed back hard, and pushing back harder is how that season was won.'],
+      180: ['{TP} stood opposite your {WHO}{LOC}: a standoff across the whole sky. The year kept asking one question: how much is theirs, how much is yours.',
+            '{TP} took the far end of the axis from your {WHO}{LOC}, and life arrived through other people until you found the balance point.',
+            'the opposition from {TP} stretched your {WHO}{LOC} like a rope pulled from the other bank. Neither side wins; the tension itself was the teacher.'],
+      0: ['{TP} arrived exactly on your {WHO}{LOC}: not a visit, a merger. Whatever that part of you is, it was rebuilt with new material that year.',
+          '{TP} sat down on your {WHO}{LOC} and stayed. Seasons like that do not pass; they change the architecture.',
+          'the conjunction: {TP} fused with your {WHO}{LOC}, and for a while it was hard to tell which of you was speaking. What emerged was more than either.']
+    };
+    var open5 = vpick(OPEN5[stage5], seed5 + 'o'), plot5 = vpick(PLOT5[ev.ang] || PLOT5[0], seed5 + 'p');
+    plot5 = plot5.replace('{TP}', nameFor(ev.tp)).replace('{WHO}', who).replace('{LOC}', loc);
+    return open5 + ' ' + plot5 + (MOVER_NOUN[ev.tp] ? ' ' + nameFor(ev.tp) + ' is ' + MOVER_NOUN[ev.tp] + '; it always leaves a mark shaped like itself.' : '');
+    // (superseded by the story register above)
   }
 
   // ================= extra information layers =================
@@ -4457,6 +4482,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     // spoken walkthrough: the on-device Web Speech voice reads each act aloud — no network, no AI service
     function speakAct(pre, ct) {
       try {
+        if (typeof window !== 'undefined' && window.AqauVoice && window.AqauVoice.speak) { window.AqauVoice.speak((pre ? pre + ' ' : '') + ct.t + '. ' + ct.x); return; }
         if (typeof speechSynthesis === 'undefined' || typeof SpeechSynthesisUtterance === 'undefined') return;
         speechSynthesis.cancel();
         var u = new SpeechSynthesisUtterance((pre ? pre.replace(/—/g, ',') + ' ' : '') + ct.t + '. ' + ct.x);
@@ -4633,7 +4659,6 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       setFont(SANS, 38, INK, p.LEFT, p.TOP, 90); p.textStyle(p.BOLD); p.text(b.timeKnown ? ' rising' : ' sun', x + tw, sY(ly)); normal(); ly += 48;
       ly += hudStrip(c, b, x, ly, w) + 10;
       ly += todayCardStrip(c, b, x, ly, w) + 14;
-      flatBtn('\u23F5  The Reel \u2014 scrub your whole life', x, ly, w, 44, function () { var age0 = (new Date().getTime() - Date.UTC(b.y, b.mo - 1, b.d)) / (365.2422 * 86400000); UI.reel = { f: Math.max(0.01, Math.min(1, age0 / 90)) }; UI.reelCap = null; buzz(12); }, false); ly += 56;
       // S3 — a one-line daily headline of what the sky is doing to you; tap to open Today
       (function () {
         var trd = walkTr(c), te0 = trd.daily && trd.daily[0];
@@ -4799,6 +4824,20 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     // ---- life-in-chapters timeline: the slow transits & returns across a lifetime ----
     function lifeWalkNext(n) { if (!UI.lifeWalk) return; if (UI.lifeWalk.i >= n - 1) { UI.lifeWalk = null; return; } UI.lifeWalk.i++; UI.lifeWalk.t0 = nowT(); }
     function lifeWalkPrev() { if (UI.lifeWalk && UI.lifeWalk.i > 0) { UI.lifeWalk.i--; UI.lifeWalk.t0 = nowT(); } }
+    // an unspecific person: head, a living spine, two legs, two arms. Everything said with posture.
+    function stageFigure(fx, fy, h, pz, alf) {
+      var hw = h * 0.072, lean = pz.lean || 0, cr = pz.crouch || 0, str = pz.stride || 0, wt = pz.weight || 1;
+      var hipY = fy - h * (0.42 - cr * 0.10), shY = fy - h * (0.78 - cr * 0.16);
+      var shX = fx + lean * h * 0.18, hipX = fx + lean * h * 0.05;
+      var hdX = shX + lean * h * 0.07, hdY = shY - h * 0.125;
+      strokec(INK, 235 * alf); p.strokeWeight(2.4 * wt); p.noFill();
+      p.bezier(hipX, hipY, hipX + lean * h * 0.03, hipY - h * 0.14, shX - lean * h * 0.03, shY + h * 0.10, shX, shY);
+      p.line(hipX, hipY, fx - h * 0.10 - str * h * 0.10, fy); p.line(hipX, hipY, fx + h * 0.10 + str * h * 0.10, fy);
+      var aL = pz.armL == null ? 2.6 : pz.armL, aR = pz.armR == null ? 0.5 : pz.armR;
+      p.line(shX, shY, shX + Math.cos(aL) * h * 0.27, shY + Math.sin(aL) * h * 0.27);
+      p.line(shX, shY, shX + Math.cos(aR) * h * 0.27, shY + Math.sin(aR) * h * 0.27);
+      p.ellipse(hdX, hdY, hw * 2, hw * 2);
+    }
     function drawLifeWalk(c, b) {
       var ev = UI.lifeList || []; if (!ev.length) { UI.lifeWalk = null; return; }
       var x = sx(), w = cw(), top = topY(), vh = viewH(), cx = x + w / 2, i;
@@ -4827,24 +4866,51 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       strokec(INK, 60); p.strokeWeight(1); p.line(cx - r * 1.9, stageY, cx + r * 1.9, stageY);
       strokec(INK, 26); p.line(cx - r * 1.6, stageY + 7, cx + r * 1.6, stageY + 7);
       var scl = still ? 1 : (0.88 + 0.12 * eBack(te)), bob2 = still ? 0 : Math.sin(nowT() * 0.0016) * 2.5;
-      var natK = (e0.np && c.planets[e0.np] && BODYCOL[e0.np]) ? e0.np : null;
-      if (dc) { dc.save(); dc.globalAlpha = alpha; }
-      if (natK && natK !== bodyK) {
-        // a scene in two characters, BLOCKED by the aspect: squares confront, trines fall into step, oppositions hold the far wing
-        var ang4 = e0.ang, stopX = (ang4 === 180) ? (cx - r * 1.45) : (ang4 === 90) ? (cx - r * 1.0) : (cx - r * 0.7);
-        var entE = still ? 1 : (ang4 === 90 ? eBack(cl01(te * 1.25)) : eCubic(te));
-        var nx2 = cx + r * 0.85, vx2 = (x - r * 1.6) + (stopX - (x - r * 1.6)) * entE;
-        var recoil = (ang4 === 90 && !still) ? Math.max(0, 1 - Math.abs(te - 0.82) * 8) * 6 : 0; nx2 += recoil;
-        p.noStroke(); fillc([12, 9, 7], 46 * ee); p.ellipse(nx2, stageY - 2, r * 1.15, r * 0.16); p.ellipse(vx2, stageY - 2, r * 1.15 * scl, r * 0.16);
-        p.push(); p.translate(nx2, cy - drift * 0.3 + r * 0.28); p.scale(0.72); celestialBody(natK, 0, 0, r, nowT()); p.pop();
-        p.push(); p.translate(vx2, cy - drift + bob2 + r * 0.28); p.scale(0.72 * scl); celestialBody(bodyK, 0, 0, r, nowT()); p.pop();
-        // the meeting itself: a thread of light closes between them as the visitor arrives
-        if (te > 0.6) { var mA = cl01((te - 0.6) / 0.4); strokec(ACC, 150 * mA); p.strokeWeight(1.6); p.line(vx2 + r * 0.4, cy + r * 0.28, nx2 - r * 0.4, cy + r * 0.28); }
-        setFont(MONO, 9, ACCTX, p.CENTER, p.TOP, 200 * ee); p.text(APP.nameFor(bodyK).toUpperCase() + '  MEETS  ' + APP.nameFor(natK).toUpperCase(), cx, stageY + 14);
+      // ===== THE FIGURE: an unspecific person acts the chapter. The planet is the event; the figure is you. =====
+      var t2 = still ? 1 : cl01((nowT() - UI.lifeWalk.t0) / 3600);
+      var fh = r * 1.55, fx0 = cx + r * 0.62, plR = r * 0.30, capTxt = '';
+      var pz = { lean: 0, crouch: 0, stride: 0, armL: 2.6, armR: 0.5, weight: 1 }, plX = cx, plY = cy, plScl = 1, plBehind = false, thread = 0;
+      if (e0.isReturn) {
+        // THE RETURN: it circles your whole sky, and finds you changed
+        var orbA = -Math.PI / 2 + t2 * Math.PI * 2;
+        plX = fx0 - r * 0.1 + Math.cos(orbA) * fh * 0.72; plY = (stageY - fh * 0.55) + Math.sin(orbA) * fh * 0.34; plBehind = Math.sin(orbA) < 0;
+        if (t2 < 0.4) { pz.armR = -0.6; }
+        else if (t2 < 0.7) { var sit = eCubic(cl01((t2 - 0.4) / 0.3)); pz.crouch = 0.5 * sit; pz.armL = 2.2; pz.armR = 1.0; }
+        else { var rise = eCubic(cl01((t2 - 0.7) / 0.3)); pz.crouch = 0.5 - 0.55 * rise; pz.weight = 1 + 0.4 * rise; pz.armL = 2.6 - 0.4 * rise; pz.armR = 0.5 - 0.9 * rise; }
+        capTxt = 'THE RETURN: IT CIRCLED YOUR WHOLE SKY, AND FOUND YOU CHANGED';
+      } else if (e0.ang === 90) {
+        // THE SQUARE: it pushed. You pushed back.
+        var press = eBack(cl01(t2 / 0.38)), chest = stageY - fh * 0.62;
+        plX = (x - r * 1.4) + ((fx0 - fh * 0.58) - (x - r * 1.4)) * press; plY = chest;
+        if (t2 < 0.38) { pz.lean = -0.15 * cl01(t2 / 0.38); }
+        else if (t2 < 0.72) { var fight = (t2 - 0.38) / 0.34; pz.lean = -0.3 + 0.75 * eCubic(fight); pz.crouch = 0.3 - 0.15 * fight; pz.armL = Math.PI + 0.45; pz.armR = Math.PI - 0.3; pz.stride = 0.6; }
+        else { var win = eCubic(cl01((t2 - 0.72) / 0.28)); pz.lean = 0.45 - 0.4 * win; pz.crouch = 0.15 - 0.2 * win; pz.weight = 1 + 0.3 * win; pz.armL = Math.PI + 0.45 + (2.6 - Math.PI - 0.45) * win; pz.armR = Math.PI - 0.3 + (0.5 - Math.PI + 0.3) * win; pz.stride = 0.6 * (1 - win); plX -= fh * 0.34 * win; plY -= fh * 0.22 * win; thread = win; }
+        capTxt = 'THE SQUARE: IT PUSHED. YOU PUSHED BACK.';
+      } else if (e0.ang === 180) {
+        // THE OPPOSITION: held from both ends
+        fx0 = cx - r * 0.95; var chest2 = stageY - fh * 0.62;
+        plX = (x + w + r) + ((cx + r * 0.95) - (x + w + r)) * eCubic(cl01(t2 / 0.4)); plY = chest2;
+        var pull = t2 < 0.4 ? 0 : Math.sin(cl01((t2 - 0.4) / 0.6) * Math.PI);
+        pz.lean = -0.32 * pull; pz.armR = 0.15; pz.armL = 2.9; pz.stride = 0.5 * pull; pz.crouch = 0.12 * pull;
+        thread = cl01((t2 - 0.4) / 0.25);
+        capTxt = 'THE OPPOSITION: HELD FROM BOTH ENDS, UNTIL YOU FOUND THE MIDDLE';
       } else {
-        p.noStroke(); fillc([12, 9, 7], 50 * ee); p.ellipse(cx, stageY - 2, r * 1.5 * scl, r * 0.2);
-        p.push(); p.translate(cx, cy - drift + bob2); p.scale(scl); celestialBody(bodyK, 0, 0, r, nowT()); p.pop();
+        // THE CONJUNCTION: it became part of you
+        var drop = eCubic(cl01(t2 / 0.5)), chest3 = stageY - fh * 0.66;
+        plX = fx0 - fh * 0.30; plY = (top - r) + (chest3 - (top - r)) * drop;
+        if (t2 >= 0.5) { var merge = cl01((t2 - 0.5) / 0.5); pz.armL = 2.6 - 1.5 * merge; pz.armR = 0.5 + 1.4 * merge; pz.weight = 1 + 0.5 * merge; pz.crouch = -0.06 * merge;
+          if (dc && !still) { var mg = dc.createRadialGradient(plX, plY, 2, plX, plY, plR * 3.4); mg.addColorStop(0, 'rgba(255,240,205,' + (0.32 * Math.sin(merge * Math.PI)) + ')'); mg.addColorStop(1, 'rgba(255,240,205,0)'); dc.fillStyle = mg; dc.fillRect(plX - plR * 4, plY - plR * 4, plR * 8, plR * 8); } }
+        capTxt = 'THE CONJUNCTION: IT BECAME PART OF YOU';
       }
+      if (dc) { dc.save(); dc.globalAlpha = alpha; }
+      // shadows ground everyone on the boards
+      p.noStroke(); fillc([12, 9, 7], 52 * ee); p.ellipse(fx0, stageY - 2, fh * 0.42, fh * 0.07);
+      if (plY > stageY - fh) { fillc([12, 9, 7], 40 * ee); p.ellipse(plX, stageY - 2, plR * 2.2, plR * 0.4); }
+      if (plBehind) { p.push(); p.translate(plX, plY); p.scale(0.8); celestialBody(bodyK, 0, 0, plR, nowT()); p.pop(); }
+      if (thread > 0) { strokec(ACC, 160 * thread); p.strokeWeight(1.5); p.line(plX + plR * 0.8, plY, fx0 - fh * 0.18, stageY - fh * 0.62); }
+      stageFigure(fx0, stageY, fh, pz, ee);
+      if (!plBehind) { p.push(); p.translate(plX, plY); celestialBody(bodyK, 0, 0, plR, nowT()); p.pop(); }
+      setFont(MONO, 8.5, ACCTX, p.CENTER, p.TOP, 210 * cl01(t2 * 2)); p.text(capTxt, cx, stageY + 14);
       if (dc) dc.restore();
       // the years themselves travel: the age counts across to the new chapter
       if (UI.lifeAgeShown == null) UI.lifeAgeShown = e0.age;
@@ -5027,6 +5093,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       setFont(MONO, 9, GROUNDS[UI.screen], p.LEFT, p.CENTER, 200); p.text('THE BIG TRANSITS THAT SHAPED: AND ARE SHAPING, YOU', x + 16, lbY + 26 + 9);
       setFont(SANS, 20, GROUNDS[UI.screen], p.RIGHT, p.CENTER); p.text('›', x + w - 16, lbY + 26);
       pushHit(x, lbY, w, 52, function () { UI.lifeView = true; UI.scroll.read = 0; UI.popT = nowT(); }); ly += 60;
+      flatBtn('\u23F5  The Reel: scrub the sky across your whole life', x, ly, w, 42, function () { var age0 = (new Date().getTime() - Date.UTC(b.y, b.mo - 1, b.d)) / (365.2422 * 86400000); UI.reel = { f: Math.max(0.01, Math.min(1, age0 / 90)) }; UI.reelCap = null; UI.screen = 'chart'; buzz(12); }, false); ly += 54;
       // open the transit calendar
       var cbY = sY(ly); p.noStroke(); fillc(shade(GROUNDS[UI.screen], -16)); p.rect(x, cbY + 3, w, 46, 11); fillc(GROUNDS[UI.screen]); p.rect(x, cbY, w, 46, 11); p.noFill(); strokec(INK, 170); p.strokeWeight(1.4); p.rect(x, cbY, w, 46, 11);
       (function () { var ix = x + 16, iy = cbY + 23; p.noFill(); strokec(INK, 230); p.strokeWeight(1.3); p.rect(ix, iy - 7, 14, 13, 2); p.line(ix, iy - 3, ix + 14, iy - 3); p.line(ix + 4, iy - 9, ix + 4, iy - 6); p.line(ix + 10, iy - 9, ix + 10, iy - 6); })();
@@ -6947,7 +7014,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       ly += toggleRow('Transit reminders', [['off', 'Off'], ['on', 'On']], st.notify ? 'on' : 'off', ly, function (v) { st.notify = (v === 'on'); APP.save(); if (st.notify) enableNotify(); });
       ly += toggleRow('Haptics', [['on', 'On'], ['off', 'Off']], st.haptics === false ? 'off' : 'on', ly, function (v) { st.haptics = (v === 'on'); APP.save(); if (st.haptics) buzz(14); });
       ly += toggleRow('Narration voice', [['off', 'Off'], ['system', 'System']], st.voice === 'system' ? 'system' : 'off', ly, function (v) { st.voice = v; APP.save(); });
-      ly += paragraph('A proper human voice pack (Kokoro, open source, Apache-2.0) is coming as an optional one-time download of roughly 90MB, kept on-device like everything else. Until it ships, System uses the browser voice, which is plainly robotic; Off is the honest default.', x, ly, w, 13.5, INK, SERIF, 20, 180) + 14;
+      ly += paragraph('Straight answer: the human voice pack is not downloadable yet. The app is wired for it: the moment a voice-pack.js (Kokoro, open source, Apache-2.0, roughly 90MB, kept on-device) sits beside the app, narration uses it automatically. Building and hosting that pack needs a network session; until then System is the browser voice, plainly robotic, and Off is the honest default.', x, ly, w, 13.5, INK, SERIF, 20, 180) + 14;
       ly += paragraph('On: when you open the app on a day a planet lands exactly on your chart, you get one system notification. Where the browser supports it, a daily background check is registered too. Nothing leaves the device.', x, ly, w, 13.5, INK, SERIF, 20, 180) + 14;
       ly += toggleRow('Zodiac', [['tropical', 'Tropical'], ['sidereal', 'Sidereal']], st.zodiac, ly, function (v) { st.zodiac = v; recompute(); });
       ly += toggleRow('House system', [['whole', 'Whole'], ['equal', 'Equal'], ['porphyry', 'Porphyry'], ['placidus', 'Placidus']], st.house, ly, function (v) { st.house = v; recompute(); });
