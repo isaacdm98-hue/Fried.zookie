@@ -644,7 +644,7 @@ var APP = (function () {
       for (ek in mb) if (mb.hasOwnProperty(ek)) { var eb = mkPoint2(ek, rev(mb[ek] - ay), cusps); extras[ek] = eb; }
     }
     // Chiron + asteroids join the aspect grid when shown (Astro.com includes Chiron by default); minor aspects on request
-    var aspects = buildAspects(planets, asc, mc, settings.orbScale, extras, !!settings.minorAspects);
+    var aspects = buildAspects(planets, b.timeKnown ? asc : null, mc, settings.orbScale, extras, !!settings.minorAspects);
     var bal = tally(planets, asc, mc);
     return {
       d: d, planets: planets, points: points, extras: extras, asc: asc, mc: mc, ascBody: ascBody, mcBody: mcBody,
@@ -695,7 +695,7 @@ var APP = (function () {
   function buildAspects(planets, asc, mc, orbScale, extras, useMinor) {
     var pts = [], k;
     for (k in planets) if (planets.hasOwnProperty(k) && k !== 'node') pts.push({ key: k, lon: planets[k].lon });
-    pts.push({ key: 'asc', lon: asc }); pts.push({ key: 'mc', lon: mc });
+    if (asc != null) { pts.push({ key: 'asc', lon: asc }); pts.push({ key: 'mc', lon: mc }); }
     if (extras) for (k in extras) if (extras.hasOwnProperty(k) && extras[k]) pts.push({ key: k, lon: extras[k].lon, minorBody: true });
     var out = [];
     for (var i = 0; i < pts.length; i++) for (var j = i + 1; j < pts.length; j++) {
@@ -759,6 +759,7 @@ var APP = (function () {
   // ---------- built-in fallback composition ----------
   // ---- Local interpretation engine: synthesises the genuine chart, fully offline ----
   var RULERKEY = { Mars: 'mars', Venus: 'venus', Mercury: 'mercury', Moon: 'moon', Sun: 'sun', Pluto: 'pluto', Jupiter: 'jupiter', Saturn: 'saturn', Uranus: 'uranus', Neptune: 'neptune' };
+  function anA(word, cap) { var an = /^[aeiou]/i.test(String(word)); return (cap ? (an ? 'An ' : 'A ') : (an ? 'an ' : 'a ')) + word; }
   function ordinal(n) { var s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
   function elementMix(a, b) {
     if (a === b) return 'they reinforce each other: a concentrated, undiluted version of that element';
@@ -813,7 +814,7 @@ var APP = (function () {
     var tight = [];
     for (var i = 0; i < c.aspects.length && tight.length < 2; i++) { var a = c.aspects[i]; if (!a.minor && a.a !== 'asc' && a.a !== 'mc' && a.b !== 'asc' && a.b !== 'mc') tight.push(a); }
     if (tight.length) {
-      var lines = tight.map(function (a) { return nameFor(a.a) + ' ' + a.asp.key + ' ' + nameFor(a.b) + ' \u2014 ' + aspectText(c, a); });
+      var lines = tight.map(function (a) { var t2 = nameFor(a.a) + ' ' + a.asp.key + ' ' + nameFor(a.b) + ' \u2014 ' + aspectText(c, a); return /[.!?]$/.test(t2) ? t2 : t2 + '.'; });
       var leadT = vpick(['Two threads stand out in how this all wires together.', 'A couple of wires run hot through the whole chart.', 'Two contacts shape how the rest of you connects up.', 'The tightest aspects tell you where the current concentrates.', 'Where the voltage sits: the closest contacts in the chart.', 'Everything above is wiring; here is where it sparks.', 'Two conversations between your planets never stop running.', 'If you listen to the chart, two exchanges carry over the rest.'], seed + 't');
       parts.push(leadT + ' ' + lines.join(' '));
     }
@@ -825,9 +826,9 @@ var APP = (function () {
   function dedupeSentences(parts) {
     var seen = {}, out = [], i, j;
     for (i = 0; i < parts.length; i++) {
-      var sents = ('' + parts[i]).match(/[^.!?]+[.!?]*/g) || [], keep = [];
+      var sents = (('' + parts[i]).replace(/(\d)\.(\d)/g, '$1\u0001$2')).match(/[^.!?]+[.!?]*/g) || [], keep = [];
       for (j = 0; j < sents.length; j++) { var s = sents[j].replace(/^\s+|\s+$/g, ''); if (!s) continue; var k = s.toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').slice(0, 50); if (seen[k] && s.length > 16) continue; seen[k] = 1; keep.push(s); }
-      if (keep.length) out.push(keep.join(' '));
+      if (keep.length) out.push(keep.join(' ').replace(/\u0001/g, '.'));
     }
     return out;
   }
@@ -1900,7 +1901,7 @@ var APP = (function () {
     var su = c.planets.sun, mo = c.planets.moon, asc = (b.timeKnown && c.ascBody) ? c.ascBody : null;
     var dom = domElement(c.elements), dm = domMod(c.modalities);
     out.push({ label: 'At a glance', text:
-      'A ' + su.signName + ' Sun' + (asc ? ', a ' + asc.signName + ' Ascendant' : '') + ' and a ' + mo.signName + ' Moon. The chart leans ' + DATA.ELEMENTS[dom].name.toLowerCase() + ' — ' + DATA.ELEMENTS[dom].high + ' — and meets life by ' + (MODE_VERB[dm] || 'finding its own rhythm') + '.' });
+      anA(su.signName, true) + ' Sun' + (asc ? (', ' + anA(asc.signName) + ' Ascendant') : '') + ' and ' + anA(mo.signName) + ' Moon. The chart leans ' + DATA.ELEMENTS[dom].name.toLowerCase() + ' — ' + DATA.ELEMENTS[dom].high + ' — and meets life by ' + (MODE_VERB[dm] || 'finding its own rhythm') + '.' });
     // 2) WHAT RUNS IT — the single keystone everything answers to
     var pr = prominence(c), top = pr.ranked[0], am = null, fd = null; try { am = almutenChart(c); } catch (e1) {} try { fd = finalDispositors(c); } catch (e2) {}
     var converge = (am && am.tie.length === 1 && am.lead === top && fd && fd.all.length === 1 && fd.lead === top);
@@ -2261,7 +2262,7 @@ var APP = (function () {
       if (fc.zr && fc.zr.l1) h.push(para('Zodiacal Releasing: a ' + fc.zr.l1.signName + ' life-chapter, roughly age ' + Math.round(fc.zr.l1.startAge) + '\u2013' + Math.round(fc.zr.l1.endAge) + ', ruled by ' + nameFor(fc.zr.l1.ruler) + '.'));
       if (fc.progressed) h.push(para('Progressed Sun in ' + DATA.SIGNS[fc.progressed.sunSign].name + '; progressed Moon in ' + DATA.SIGNS[fc.progressed.moonSign].name + '.'));
       if (fc.solarReturn) h.push(para('Next solar return: ' + fc.solarReturn.date.toDateString() + (fc.srChart && fc.srChart.ascBody ? (', rising ' + fc.srChart.ascBody.signName) : '') + '.'));
-      if (fc.eclipses) for (i = 0; i < fc.eclipses.length; i++) { var EC2 = fc.eclipses[i]; h.push(para('A ' + EC2.kind + ' ' + EC2.type + ' eclipse on ' + EC2.date.toDateString() + ' at ' + EC2.deg.toFixed(0) + '\u00B0 ' + DATA.SIGNS[EC2.sign].name + (EC2.house ? (', in the ' + ordinal(EC2.house) + ' house') : '') + '.')); }
+      if (fc.eclipses) for (i = 0; i < fc.eclipses.length; i++) { var EC2 = fc.eclipses[i]; h.push(para(anA(EC2.kind, true) + ' ' + EC2.type + ' eclipse on ' + EC2.date.toDateString() + ' at ' + EC2.deg.toFixed(0) + '\u00B0 ' + DATA.SIGNS[EC2.sign].name + (EC2.house ? (', in the ' + ordinal(EC2.house) + ' house') : '') + '.')); }
       if (fc.upcoming && fc.upcoming.length) { h.push('<h3>Exact transits coming</h3>'); for (i = 0; i < fc.upcoming.length; i++) { var ev2 = fc.upcoming[i]; h.push(para(ev2.date.toDateString() + ' \u2014 ' + nameFor(ev2.tp) + ' ' + ev2.aspKey + ' ' + nameFor(ev2.np) + (ev2.rx ? ' (retrograde pass)' : '') + '.')); } }
     } catch (e4) {}
     h.push('<hr class="rule"><p class="meta">Computed entirely on-device with astronomy-engine (MIT), no AI, no server. Classical material after Ptolemy, Lilly (1647) and Robson (1923), summarised or quoted from the public domain.</p>');
@@ -2704,7 +2705,7 @@ var APP = (function () {
     }
     // dedup (same tp/np/aspect within ~120 days)
     events.sort(function (x, y) { return x.date - y.date; });
-    var out = [], e, o, seenSig = {}; for (e = 0; e < events.length; e++) { var ev = events[e], dup = false; for (o = 0; o < out.length; o++) if (out[o].tp === ev.tp && out[o].np === ev.np && Math.abs(out[o].date - ev.date) < 1100 * 86400000) { dup = true; break; } if (dup) continue; ev.title = lifeTitle(ev); ev.text = lifeText(ev, c); var sig = ev.text.toLowerCase().replace(/age \d+[^:]*:\s*/, '').slice(0, 48); if (seenSig[sig]) continue; seenSig[sig] = 1; out.push(ev); }
+    var out = [], e, o, seenSig = {}; for (e = 0; e < events.length; e++) { var ev = events[e], dup = false; for (o = 0; o < out.length; o++) if (out[o].tp === ev.tp && out[o].np === ev.np && Math.abs(out[o].date - ev.date) < 1100 * 86400000) { dup = true; break; } if (dup) continue; ev.title = lifeTitle(ev); ev.text = lifeText(ev, c); var sig = ev.date.getFullYear() + '|' + ev.text.toLowerCase().replace(/age \d+[^:]*:\s*/, '').slice(0, 48); if (seenSig[sig]) continue; seenSig[sig] = 1; out.push(ev); }
     return out;
   }
   function lifeTitle(ev) {
@@ -3445,7 +3446,7 @@ var APP = (function () {
     composeTransits: composeTransits, transitSentence: transitSentence, composeSignatures: composeSignatures,
     solarReturnChart: solarReturnChart, upcomingEclipses: upcomingEclipses, bestDaysFor: bestDaysFor, electIntents: electIntents,
     progressedTimeline: progressedTimeline, retroSeasons: retroSeasons,
-    exportBook: exportBook, exportBackup: exportBackup, importBackup: importBackup, composeDailyEssay: composeDailyEssay, chartFP: chartFP, weaveNote: weaveNote, termOf: termOf, composeColleague: composeColleague, exportColleague: exportColleague,
+    exportBook: exportBook, exportBackup: exportBackup, importBackup: importBackup, composeDailyEssay: composeDailyEssay, chartFP: chartFP, weaveNote: weaveNote, termOf: termOf, anA: anA, composeColleague: composeColleague, exportColleague: exportColleague,
     addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenOf: almutenOf, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
     saveCurrentChart: saveCurrentChart, deleteSavedChart: deleteSavedChart, activateSavedChart: activateSavedChart, activeChartKey: activeChartKey, chartKey: chartKey, famousMatches: famousMatches, lifeTransits: lifeTransits, upcomingTransits: upcomingTransits, transitMotion: transitMotion, compositeChart: compositeChart,
     nameFor: nameFor, glyphFor: glyphFor, sgAbbr: sgAbbr, pad: pad,
@@ -3761,9 +3762,11 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     }
     // S6/S29 — show the first ~2 sentences, with a tap to expand the rest (keeps readings calm by default)
     function sentences2(str, n) {
-      var parts = String(str).match(/[^.!?]+[.!?]+(\s+|$)/g);
+      // decimals like 0.1° must not read as sentence enders: shield them, split, unshield
+      var shielded = String(str).replace(/(\d)\.(\d)/g, '$1\u0001$2');
+      var parts = shielded.match(/[^.!?]+[.!?]+(\s+|$)/g);
       if (!parts || parts.length <= n) return { head: String(str), more: false };
-      return { head: parts.slice(0, n).join('').trim(), more: true };
+      return { head: parts.slice(0, n).join('').replace(/\u0001/g, '.').trim(), more: true };
     }
     function expandPara(str, x, ly, w, key, sz, lead) {
       if (!UI.readExp) UI.readExp = {};
@@ -4068,8 +4071,8 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     }
     // tapping a body just highlights it (magnify + aspect threads + bloom) and shows its meaning BELOW the
     // wheel — no full-screen takeover. (The cinematic story view stays in the code but is no longer triggered.)
-    function selectPlanet(key) { UI.popFrom = UI.pdia[key] || 22; UI.selPlanet = key; UI.popT = nowT(); }
-    function tapPlanet(key) { UI.popFrom = UI.pdia[key] || 22; UI.selPlanet = key; UI.popT = nowT(); }
+    function selectPlanet(key) { UI.popFrom = UI.pdia[key] || 22; UI.selPlanet = key; UI.popT = nowT(); buzz(10); UI.chartScrollAnim = { t0: nowT(), from: UI.scroll.chart || 0, to: (UI.selMetaLy != null ? Math.max(0, UI.selMetaLy - 84) : null) }; }
+    function tapPlanet(key) { selectPlanet(key); }
 
     // three reels
     function reels(c, b, ly) {
@@ -4082,7 +4085,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         if (it[1]) { setFont(SANS, 22, INK, p.CENTER, p.CENTER); p.text(DATA.SIGNS[it[1].sign].glyph, cxp, cyy); } else { setFont(MONO, 9, INK, p.CENTER, p.CENTER, 120); p.text('--', cxp, cyy); }
         setFont(MONO, 9.5, INK, p.CENTER, p.TOP, 150); p.text(it[0], cxp, cyy + R + 8);
         setFont(SANS, 11, INK, p.CENTER, p.TOP); bold(); p.text(it[1] ? it[1].signName : 'time?', cxp, cyy + R + 21); normal();
-        if (it[1]) (function (kk, ex, ey) { pushHit(ex - R, ey - R, R * 2, R * 2 + 32, function () { selectPlanet(kk); spawnRipple(ex, ey); UI.scroll.chart = 0; }); })(it[2], cxp, cyy);
+        if (it[1]) (function (kk, ex, ey) { pushHit(ex - R, ey - R, R * 2, R * 2 + 32, function () { selectPlanet(kk); spawnRipple(ex, ey); }); })(it[2], cxp, cyy);
       }
       return (R + 6) + R + 40;
     }
@@ -4539,6 +4542,14 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (UI.walk) { drawWalkthrough(c, b); return; }
       if (UI.story) { drawStory(c, b); return; }
       var x = sx(), w = cw(), ly = 18;
+      // the glide: after a planet is chosen, the page travels to its reading (a drag cancels it)
+      if (UI.chartScrollAnim) {
+        var an2 = UI.chartScrollAnim;
+        if (an2.to == null && UI.selMetaLy != null) an2.to = Math.max(0, UI.selMetaLy - 84);
+        if (an2.to != null) { var pA = reduced() ? 1 : cl01((nowT() - an2.t0) / 520); UI.scroll.chart = an2.from + (an2.to - an2.from) * eCubic(pA); if (pA >= 1) UI.chartScrollAnim = null; }
+      }
+      // the chosen body's light washes the page for a breath: the decision is visible before the words are
+      if (UI.selPlanet && !reduced()) { var washA = cl01(1 - (nowT() - UI.popT) / 900); if (washA > 0.01) { var wc2 = BODYCOL[UI.selPlanet]; if (wc2) { p.noStroke(); fillc(wc2, 30 * washA); p.rect(0, 0, W, H); } } }
       eyebrow('Birth chart \u00B7 ' + b.d + '.' + b.mo + '.' + b.y, x, ly); ly += 22;
       var titleSign = b.timeKnown ? c.ascBody.signName : c.planets.sun.signName;
       var gi = cl01(1 - (nowT() - UI.fxT) / 500); // subtle glitch on screen entry
@@ -4567,19 +4578,26 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       // selected reading - animated, ticking degree
       var key = UI.selPlanet, pl = (key === 'asc') ? c.ascBody : c.planets[key];
       if (pl) {
+        UI.selMetaLy = ly; // the glide's destination, recorded every frame
         UI.degShown += (pl.deg - UI.degShown) * 0.18; if (Math.abs(UI.degShown - pl.deg) < 0.05) UI.degShown = pl.deg;
-        var inten = cl01(1 - (nowT() - UI.popT) / 320);
+        var inten = cl01(1 - (nowT() - UI.popT) / 320), tSel = nowT() - UI.popT;
+        var eBk = reduced() ? 1 : (0.6 + 0.4 * eBack(cl01(tSel / 460)));
         hairline(x, ly, x + w, 70); ly += 16;
+        // the body itself presides over its reading: the engraved globe, entering with weight
+        var hR = 26, hx0 = x + hR, hy0 = sY(ly + hR + 2);
+        p.push(); p.translate(hx0, hy0); p.scale(eBk); celestialBody(key === 'asc' ? 'sun' : key, 0, 0, hR, nowT()); p.pop();
         p.textStyle(p.BOLD);
-        glitchText(APP.glyphFor(key), x, sY(ly), 20, SANS, ACC, p.LEFT, p.TOP, inten);
-        glitchText(APP.nameFor(key), x + 28, sY(ly), 19, SANS, INK, p.LEFT, p.TOP, inten); normal();
+        glitchText(APP.nameFor(key) + ' in ' + pl.signName, x + hR * 2 + 16, sY(ly + 4), 21, SERIF, INK, p.LEFT, p.TOP, inten); normal();
         // AN9 \u2014 the degree counts up with a soft glow that fades as it settles
         var ticking = Math.abs(UI.degShown - pl.deg) > 0.05, degStr = UI.degShown.toFixed(1) + '\u00B0 ' + pl.signName + (b.timeKnown ? '  H' + pl.house : '');
         p.textFont(MONO); p.textSize(10.5); var degW = p.textWidth(degStr), glowA = ticking ? 1 : cl01(1 - (nowT() - UI.popT) / 700);
         if (glowA > 0.02 && !reduced()) { var gp = 0.5 + 0.5 * Math.sin(nowT() * 0.012); p.noStroke(); fillc(ACC, 42 * glowA * gp); p.ellipse(x + w - degW / 2, sY(ly) + 9, degW + 20, 22); }
-        setFont(MONO, 10.5, ticking ? ACCTX : INK, p.RIGHT, p.TOP, ticking ? 230 : 150); p.text(degStr, x + w, sY(ly) + 4);
-        ly += 30;
-        ly += paragraph(planetBlurb(c, key), x, ly, w, 16, INK, SERIF, 25) + 24;
+        setFont(MONO, 10.5, ticking ? ACCTX : INK, p.LEFT, p.TOP, ticking ? 230 : 165); p.text(degStr, x + hR * 2 + 16, sY(ly) + 30);
+        ly += hR * 2 + 12;
+        var dcG = p.drawingContext, blurbA = reduced() ? 1 : cl01((tSel - 180) / 420);
+        if (dcG) { dcG.save(); dcG.globalAlpha = blurbA; }
+        ly += paragraph(planetBlurb(c, key), x, ly + (1 - blurbA) * 8, w, 16, INK, SERIF, 25) + 24;
+        if (dcG) dcG.restore();
       }
 
       eyebrow('Placements', x, ly); ly += 24;
@@ -4591,7 +4609,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         setFont(SANS, 17, onx ? ACC : INK, p.LEFT, p.CENTER); p.text(APP.glyphFor(k2), x + 2, sY(ly + rh / 2));
         setFont(SANS, 13, INK, p.LEFT, p.CENTER); bold(); p.text(APP.nameFor(k2), x + 30, sY(ly + rh / 2)); normal();
         setFont(MONO, 11.5, INK, p.RIGHT, p.CENTER, 170); p.text(pp.deg.toFixed(1) + '\u00B0 ' + pp.signName + (b.timeKnown ? '  H' + pp.house : ''), x + w, sY(ly + rh / 2));
-        (function (kk, ay) { pushHit(x, sY(ay), w, rh, function () { selectPlanet(kk); UI.scroll.chart = 0; }); })(k2, ly);
+        (function (kk, ay) { pushHit(x, sY(ay), w, rh, function () { selectPlanet(kk); }); })(k2, ly);
         ly += rh;
       }
       ly += 26;
@@ -4995,7 +5013,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
             var EC = fc2.eclipses[eci];
             var houseTxt = EC.house ? (' It strikes your ' + ordinal(EC.house) + ' house — ' + DATA.HOUSES[EC.house - 1].title.toLowerCase() + '.') : '';
             var onTxt = EC.near ? (' It lands within ' + EC.near.orb.toFixed(1) + '° of your natal ' + APP.nameFor(EC.near.key) + ' — expect this one to be personal.') : '';
-            ly += paragraph(walkCap('a ' + EC.kind + ' ' + EC.type + ' eclipse') + ' on ' + fmtShort(EC.date) + ', at ' + EC.deg.toFixed(0) + '° ' + DATA.SIGNS[EC.sign].name + '.' + houseTxt + onTxt, x, ly, w, 14.5, INK, SERIF, 22) + 8;
+            ly += paragraph(walkCap(APP.anA(EC.kind) + ' ' + EC.type + ' eclipse') + ' on ' + fmtShort(EC.date) + ', at ' + EC.deg.toFixed(0) + '° ' + DATA.SIGNS[EC.sign].name + '.' + houseTxt + onTxt, x, ly, w, 14.5, INK, SERIF, 22) + 8;
           }
           ly += 6;
         }
@@ -5324,9 +5342,10 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       chip('Family', d.rel === 'family', cxp, ly, function () { d.rel = 'family'; }); ly += 44;
       if (d.rel === 'family') { cxp = x; var frs = ['parent', 'child', 'sibling', 'partner']; for (var fi = 0; fi < frs.length; fi++) cxp += chip(frs[fi].charAt(0).toUpperCase() + frs[fi].slice(1), d.famrel === frs[fi], cxp, ly, (function (v) { return function () { d.famrel = v; }; })(frs[fi])) + 8; ly += 44; }
       eyebrow('Date of birth', x, ly); ly += 22;
-      stepper('Day', d.d, 1, 31, x, ly, w3, function (v) { d.d = v; }); stepper('Month', d.mo, 1, 12, x + w3 + g, ly, w3, function (v) { d.mo = v; }); stepper('Year', d.y, 1920, 2025, x + (w3 + g) * 2, ly, w3, function (v) { d.y = v; }); ly += 60;
+      var dim3 = new Date(d.y, d.mo, 0).getDate(); if (d.d > dim3) d.d = dim3;
+      stepper('Day', d.d, 1, dim3, x, ly, w3, function (v) { d.d = v; }); stepper('Month', d.mo, 1, 12, x + w3 + g, ly, w3, function (v) { d.mo = v; }); stepper('Year', d.y, 1920, new Date().getFullYear(), x + (w3 + g) * 2, ly, w3, function (v) { d.y = v; }); ly += 60;
       flatBtn('Year −10', x + (w3 + g) * 2, ly, w3 / 2 - 3, 28, function () { d.y = Math.max(1920, d.y - 10); }, false, true);
-      flatBtn('+10', x + (w3 + g) * 2 + w3 / 2 + 3, ly, w3 / 2 - 3, 28, function () { d.y = Math.min(2025, d.y + 10); }, false, true); ly += 42;
+      flatBtn('+10', x + (w3 + g) * 2 + w3 / 2 + 3, ly, w3 / 2 - 3, 28, function () { d.y = Math.min(new Date().getFullYear(), d.y + 10); }, false, true); ly += 42;
       if (!d.timeKnown) { p.noFill(); strokec(INK, 180); p.strokeWeight(1.4); p.rect(x, sY(ly), 22, 22, 5); }
       else { p.noStroke(); fillc(ACC); p.rect(x, sY(ly), 22, 22, 5); setFont(SANS, 15, GROUNDS[UI.screen], p.CENTER, p.CENTER); p.text('✓', x + 11, sY(ly) + 11); }
       setFont(SANS, 13, INK, p.LEFT, p.CENTER); p.text('I know their birth time', x + 32, sY(ly) + 11); pushHit(x, sY(ly), w, 26, function () { d.timeKnown = !d.timeKnown; }); ly += 36;
@@ -6874,11 +6893,17 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       p.textStyle(p.BOLD); glitchText('Your birth data', x, sY(ly), 30, SANS, INK, p.LEFT, p.TOP, gi); normal(); ly += 36;
       setFont(SERIF, 14, INK, p.LEFT, p.TOP, 200); p.textStyle(p.ITALIC); p.text('Three things and you’re in: when, what time, and where.', x, sY(ly)); p.textStyle(p.NORMAL); ly += 26;
       var g = 10, w3 = (w - g * 2) / 3;
-      stepper('Day', d.d, 1, 31, x, ly, w3, function (v) { d.d = v; }); stepper('Month', d.mo, 1, 12, x + w3 + g, ly, w3, function (v) { d.mo = v; }); stepper('Year', d.y, 1920, 2025, x + (w3 + g) * 2, ly, w3, function (v) { d.y = v; }); ly += 60;
+      var dim3 = new Date(d.y, d.mo, 0).getDate(); if (d.d > dim3) d.d = dim3;
+      stepper('Day', d.d, 1, dim3, x, ly, w3, function (v) { d.d = v; }); stepper('Month', d.mo, 1, 12, x + w3 + g, ly, w3, function (v) { d.mo = v; }); stepper('Year', d.y, 1920, new Date().getFullYear(), x + (w3 + g) * 2, ly, w3, function (v) { d.y = v; }); ly += 60;
       flatBtn('Year \u221210', x + (w3 + g) * 2, ly, w3 / 2 - 3, 28, function () { d.y = Math.max(1920, d.y - 10); }, false, true);
-      flatBtn('+10', x + (w3 + g) * 2 + w3 / 2 + 3, ly, w3 / 2 - 3, 28, function () { d.y = Math.min(2025, d.y + 10); }, false, true); ly += 42;
+      flatBtn('+10', x + (w3 + g) * 2 + w3 / 2 + 3, ly, w3 / 2 - 3, 28, function () { d.y = Math.min(new Date().getFullYear(), d.y + 10); }, false, true); ly += 42;
       var w2 = (w - g) / 2;
-      if (d.timeKnown) { stepper('Hour', d.hour, 0, 23, x, ly, w2, function (v) { d.hour = v; }); stepper('Minute', d.min, 0, 59, x + w2 + g, ly, w2, function (v) { d.min = v; }); ly += 60; }
+      if (d.timeKnown) {
+        stepper('Hour', d.hour, 0, 23, x, ly, w2, function (v) { d.hour = v; }); stepper('Minute', d.min, 0, 59, x + w2 + g, ly, w2, function (v) { d.min = v; }); ly += 60;
+        var qm3 = [0, 15, 30, 45], qi3, bw3 = (w2 - 18) / 4;
+        for (qi3 = 0; qi3 < 4; qi3++) { (function (mv) { flatBtn(':' + (mv < 10 ? '0' : '') + mv, x + w2 + g + (bw3 + 6) * qi3, ly, bw3, 26, function () { d.min = mv; }, false, true); })(qm3[qi3]); }
+        ly += 38;
+      }
       else { eyebrow('Birth time unknown: no houses or rising', x, ly); ly += 26; }
       var tk = d.timeKnown;
       if (!tk) { p.noStroke(); fillc(ACC); p.rect(x, sY(ly), 22, 22, 5); setFont(SANS, 15, GROUNDS[UI.screen], p.CENTER, p.CENTER); p.text('\u2713', x + 11, sY(ly) + 11); }
@@ -7291,7 +7316,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         var EC0 = d.f.eclipses[0], dd0 = Math.round((EC0.date - now) / 86400000);
         if (dd0 >= -2 && dd0 <= 15) {
           head('Eclipse season');
-          body((EC0.type === 'solar' ? 'A ' + EC0.kind + ' solar eclipse' : 'A ' + EC0.kind + ' lunar eclipse') + (dd0 <= 0 ? ' is exact now' : (' lands in ' + dd0 + (dd0 === 1 ? ' day' : ' days'))) + ', at ' + EC0.deg.toFixed(0) + '° ' + DATA.SIGNS[EC0.sign].name + (EC0.house ? (', in your ' + ordinal(EC0.house) + ' house') : '') + '. Eclipses fast-forward the node-axis: expect thresholds, not routine.', 14);
+          body((EC0.type === 'solar' ? APP.anA(EC0.kind, true) + ' solar eclipse' : APP.anA(EC0.kind, true) + ' lunar eclipse') + (dd0 <= 0 ? ' is exact now' : (' lands in ' + dd0 + (dd0 === 1 ? ' day' : ' days'))) + ', at ' + EC0.deg.toFixed(0) + '° ' + DATA.SIGNS[EC0.sign].name + (EC0.house ? (', in your ' + ordinal(EC0.house) + ' house') : '') + '. Eclipses fast-forward the node-axis: expect thresholds, not routine.', 14);
           rule();
         }
       }
@@ -7577,7 +7602,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       // a small, brief celestial wink on screen entry (kept subtle so it doesn't over-stimulate)
       if (!reduced() && s !== 'onboard') { var te = (nowT() - UI.fxT) / 520; if (te >= 0 && te < 1) { var al = (1 - te) * (1 - te); celestialEmblem(W / 2, topY() + viewH() * 0.26, Math.min(W, H) * 0.07 * (0.8 + 0.2 * eCubic(te)), al * 0.4); } }
       // first run: once a chart exists, gently guide the newcomer
-      if (!UI.tour && APP.STATE.chart && APP.STATE.settings && !APP.STATE.settings.toured && s !== 'onboard') startTour();
+      if (!UI.tour && !UI.walk && APP.STATE.chart && APP.STATE.settings && !APP.STATE.settings.toured && s !== 'onboard') startTour();
       drawTour();
       drawTransition();
       clampScroll();
@@ -7601,7 +7626,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (UI.today) { UI.tScroll = (UI.tScrollStart || 0) - dy; if (UI.tScroll < 0) UI.tScroll = 0; return; }
       if (UI.inSlider) { var tt = (x - UI.sliderRect.x) / UI.sliderRect.w; tt = Math.max(0, Math.min(1, tt)); APP.STATE.settings.orbScale = Math.round((0.5 + tt * 1.5) * 10) / 10; recompute(); }
       else if (UI.inCity) { UI.cityScroll = UI.cityScrollStart - dy; if (UI.cityScroll < 0) UI.cityScroll = 0; if (UI.cityScroll > UI.cityBoxMax) UI.cityScroll = UI.cityBoxMax; }
-      else { UI.scroll[UI.screen] = UI.scrollStart - dy; clampScroll(); }
+      else { UI.chartScrollAnim = null; UI.scroll[UI.screen] = UI.scrollStart - dy; clampScroll(); }
     }
     function release(x, y) {
       UI.ptrDown = false;
