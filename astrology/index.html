@@ -1659,7 +1659,7 @@ var APP = (function () {
   function composeCore(c) {
     var sun = c.planets.sun, moon = c.planets.moon, asc = c.ascBody, parts = [], tk = STATE.birth.timeKnown;
     // every beat draws its lead from a seeded variety bank, so no two charts read in the same shape
-    var seed = sun.sign + '|' + Math.floor(sun.deg) + '|' + moon.sign + '|' + Math.floor(moon.deg);
+    var seed = sun.sign + '|' + Math.floor(sun.deg) + '|' + moon.sign + '|' + Math.floor(moon.deg) + '|' + chartFP(c);
     parts.push(vpick(['At the core, ', 'At the centre of it all, ', 'Start with the heart of it: ', 'The engine room first: ', 'Before anything else, ', 'The chart opens on ', 'First, the core — ', 'Everything here orbits one fact: '], seed + 'c') + bodyLine(c, 'sun') + '. ' + DATA.SUN_IN_SIGN[sun.sign]);
     parts.push(vpick(['Underneath that, ', 'Beneath the daylight, ', 'Below the surface, ', 'Behind it, quieter, ', 'Under all of it runs ', 'The night side of you: ', 'Privately, though, ', 'Where no one is watching, '], seed + 'u') + bodyLine(c, 'moon') + '. ' + DATA.MOON_IN_SIGN[moon.sign]);
     if (tk) {
@@ -3110,6 +3110,7 @@ var APP = (function () {
     if (STATE.birth.timeKnown && pl.house) extra += ' It lives in the ' + ordinal(pl.house) + ' house — ' + DATA.HOUSES[pl.house - 1].meaning;
     var dn = degreeNote(pl.deg); if (dn) extra += ' It sits ' + dn + '.';
     if (pl.retro && key !== 'sun' && key !== 'moon') extra += ' Retrograde at birth: turned inward first, reworked before it is shown.';
+    core += weaveNote(c, key);
     return { title: nameFor(key) + ' in ' + pl.signName, meta: pl.deg.toFixed(1) + '\u00B0 ' + pl.signName + (STATE.birth.timeKnown && pl.house ? ' \u00B7 house ' + pl.house : '') + (pl.retro ? ' \u00B7 retrograde' : ''), text: core + extra };
   }
   function exportBook() {
@@ -3296,9 +3297,47 @@ var APP = (function () {
     return { nak: idx, pada: pada, name: NAKSHATRAS[idx][0], gloss: NAKSHATRAS[idx][1], lord: VIM[idx % 9][0], dasha: cur, sub: sub };
   }
   // ===== the day, written: one composed paragraph with an arc — the sky's register, the main event named precisely, the counterpoint, the close =====
+  // the chart fingerprint: every longitude at 0.1° precision, hashed. Two people share it only if they share the whole sky.
+  function chartFP(c) {
+    var s2 = '', k;
+    for (k in c.planets) if (c.planets.hasOwnProperty(k) && c.planets[k] && c.planets[k].lon != null) s2 += Math.round(c.planets[k].lon * 10) + '.';
+    if (c.asc != null) s2 += Math.round(c.asc * 10);
+    var h = 0, i; for (i = 0; i < s2.length; i++) h = (h * 33 + s2.charCodeAt(i)) >>> 0;
+    return '' + h;
+  }
+  // Egyptian bounds (terms): the classical degree-level sub-ruler, after the table Ptolemy reports
+  var TERMS_EGY = [
+    [['Jupiter', 6], ['Venus', 12], ['Mercury', 20], ['Mars', 25], ['Saturn', 30]],
+    [['Venus', 8], ['Mercury', 14], ['Jupiter', 22], ['Saturn', 27], ['Mars', 30]],
+    [['Mercury', 6], ['Jupiter', 12], ['Venus', 17], ['Mars', 24], ['Saturn', 30]],
+    [['Mars', 7], ['Venus', 13], ['Mercury', 19], ['Jupiter', 26], ['Saturn', 30]],
+    [['Jupiter', 6], ['Venus', 11], ['Saturn', 18], ['Mercury', 24], ['Mars', 30]],
+    [['Mercury', 7], ['Venus', 17], ['Jupiter', 21], ['Mars', 28], ['Saturn', 30]],
+    [['Saturn', 6], ['Mercury', 14], ['Jupiter', 21], ['Venus', 28], ['Mars', 30]],
+    [['Mars', 7], ['Venus', 11], ['Mercury', 19], ['Jupiter', 24], ['Saturn', 30]],
+    [['Jupiter', 12], ['Venus', 17], ['Mercury', 21], ['Saturn', 26], ['Mars', 30]],
+    [['Mercury', 7], ['Jupiter', 14], ['Venus', 22], ['Saturn', 26], ['Mars', 30]],
+    [['Mercury', 7], ['Venus', 13], ['Jupiter', 20], ['Mars', 25], ['Saturn', 30]],
+    [['Venus', 12], ['Jupiter', 16], ['Mercury', 19], ['Mars', 28], ['Saturn', 30]]
+  ];
+  function termOf(sign, deg) { var t = TERMS_EGY[sign] || TERMS_EGY[0], i; for (i = 0; i < t.length; i++) if (deg < t[i][1]) return t[i][0]; return t[4][0]; }
+  // the weave: every placement paragraph is tied to its exact degree, its bound-lord, its dispositor and its
+  // tightest aspect at once, all phrased by the full-chart fingerprint. No two charts compose the same sentence.
+  function weaveNote(c, key) {
+    var pl = c.planets[key]; if (!pl || key === 'node') return '';
+    var fp = chartFP(c), bits = [];
+    var term = termOf(pl.sign, pl.deg);
+    bits.push(vpick([' Its exact degree, ' + pl.deg.toFixed(1) + '° ' + pl.signName + ', falls in the bounds of ' + term + ': the old degree-level sub-ruler, a finer signature under the sign.', ' At ' + pl.deg.toFixed(1) + '° it sits in the bounds of ' + term + ', which colours this exact degree and no other.', ' By the Egyptian bounds its degree (' + pl.deg.toFixed(1) + '°) belongs to ' + term + ', a second signature beneath the sign.'], fp + key + 'tm'));
+    var ruler = DATA.SIGNS[pl.sign].ruler, rk = ruler.toLowerCase(), rp = (rk !== key) && c.planets[rk];
+    if (rp) bits.push(vpick([' It answers to ' + ruler + ' in ' + rp.signName + '; its promises are kept, or renegotiated, there.', ' Its dispositor is ' + ruler + ', sitting in ' + rp.signName + ': this placement spends what that one earns.', ' Whatever it starts is banked with ' + ruler + ' in ' + rp.signName + '.'], fp + key + 'dp'));
+    var tight = null, i;
+    for (i = 0; i < c.aspects.length; i++) { var A = c.aspects[i]; if (!A.minor && (A.a === key || A.b === key)) { tight = A; break; } }
+    if (tight) { var other = (tight.a === key) ? tight.b : tight.a; bits.push(vpick([' Its closest conversation is the ' + tight.asp.key + ' to ' + nameFor(other) + ', ' + tight.orb.toFixed(1) + '° from exact.', ' And it never speaks alone: ' + nameFor(other) + ' holds it in a ' + tight.orb.toFixed(1) + '° ' + tight.asp.key + '.', ' The wire that runs hottest from here goes to ' + nameFor(other) + ' (' + tight.asp.key + ', ' + tight.orb.toFixed(1) + '°).'], fp + key + 'wx')); }
+    return bits.join('');
+  }
   function composeDailyEssay(c) {
     var tr = composeTransits(c), sky = skyStatus(), b = STATE.birth;
-    var now = new Date(), seed = (now.getFullYear() * 372 + now.getMonth() * 31 + now.getDate()) + '|' + c.planets.sun.sign, s = [];
+    var now = new Date(), seed = (now.getFullYear() * 372 + now.getMonth() * 31 + now.getDate()) + '|' + chartFP(c), s = [];
     var mo = sky && sky.moon;
     if (mo) {
       var moodMap = { fire: 'quick and combustible', earth: 'slow, practical, appetitive', air: 'talkative and restless', water: 'porous: everyone feels more than they say' };
@@ -4145,7 +4184,7 @@ var APP = (function () {
     composeTransits: composeTransits, transitSentence: transitSentence, composeSignatures: composeSignatures,
     solarReturnChart: solarReturnChart, upcomingEclipses: upcomingEclipses, bestDaysFor: bestDaysFor, electIntents: electIntents,
     progressedTimeline: progressedTimeline, retroSeasons: retroSeasons,
-    exportBook: exportBook, exportBackup: exportBackup, importBackup: importBackup, composeDailyEssay: composeDailyEssay,
+    exportBook: exportBook, exportBackup: exportBackup, importBackup: importBackup, composeDailyEssay: composeDailyEssay, chartFP: chartFP, weaveNote: weaveNote, termOf: termOf,
     addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenOf: almutenOf, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
     saveCurrentChart: saveCurrentChart, deleteSavedChart: deleteSavedChart, activateSavedChart: activateSavedChart, activeChartKey: activeChartKey, chartKey: chartKey, famousMatches: famousMatches, lifeTransits: lifeTransits, upcomingTransits: upcomingTransits, transitMotion: transitMotion, compositeChart: compositeChart,
     nameFor: nameFor, glyphFor: glyphFor, sgAbbr: sgAbbr, pad: pad,
@@ -4846,6 +4885,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var extra = '', dgp = dignityPhrase(key, pl); if (dgp) extra += ' ' + dgp;
       if (key !== 'asc') extra += degreeNote(pl);
       extra += conditionLedger(c, key, pl, b);
+      if (key !== 'asc' && APP.weaveNote) extra += APP.weaveNote(c, key);
       if (b && b.timeKnown && pl.house) extra += ' It lives in your ' + ordinal(pl.house) + ' house — ' + DATA.HOUSES[pl.house - 1].meaning;
       if (pl.retro && key !== 'sun' && key !== 'moon' && key !== 'asc') extra += ' Retrograde at birth, it turns inward first, reworked in private before it’s shown.';
       return core + extra;
