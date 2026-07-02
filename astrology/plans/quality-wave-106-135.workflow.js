@@ -150,3 +150,9 @@ Trust nothing. Full pass:
 Return: suite result, pageerrors found and fixed, what you spot-checked, push confirmation and final commit hash.`, { label: 'verify-and-push', phase: 'Verify', schema: RESULT })
 
 return { editorial: a, daily: b, trust: c, charm: d, memory: e, reach: f, verify: v }
+/* QUEUED — dramatic wave 136-165 (141 shipped as blocking-by-aspect; 137, 148 shipped; 142 vetoed; one unlisted feature shipped).
+   Remaining to build: 136 overture, 138 eclipse rehearsal, 139 lunar chrome, 140 solar-return scene, 143 house backdrops,
+   144 exit-pursued-by-orbit, 145 interval, 146 play-the-wheel, 147 aspect strings, 149 live sky mode, 150 pinch-to-sky,
+   151 dedication page, 152 letterpress lines, 153 marginalia, 154 whisper register, 155 Valens/Ptolemy verified quotes,
+   156 morning seal, 157 year-wheel ceremony, 158 journal ink, 159 anniversary echoes, 160 closing bow, 161 ephemeris page,
+   162 proof gesture, 163 rectification corkboard, 164 watch intermission, 165 one-take demo film. */

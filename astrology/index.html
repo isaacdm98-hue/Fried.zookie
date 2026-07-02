@@ -4555,9 +4555,65 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     }
 
     // ============ SCREENS ============
+    // ===== THE REEL: your whole life on a scrub bar. The sky moves against your chart; exact aspects light as threads. =====
+    function drawReel(c, b) {
+      var x = sx(), w = cw(), top = topY(), vh = viewH(), cx = x + w / 2, cy = top + vh * 0.40, dc = p.drawingContext;
+      var R = Math.min(w * 0.40, vh * 0.22), RAD = Math.PI / 180, asc = b.timeKnown ? c.asc : 0, i, j;
+      p.noStroke(); fillc(shade(GROUNDS.chart, -12)); p.rect(0, 0, W, H);
+      var f = UI.reel.f, ageY = f * 90;
+      var when = new Date(Date.UTC(b.y, b.mo - 1, b.d, 12) + ageY * 365.2422 * 86400000);
+      var dn = EPH.dayNumber(when.getUTCFullYear(), when.getUTCMonth() + 1, when.getUTCDate(), 12);
+      if (UI.reelDn !== dn) { UI.reelPos = EPH.positions(dn); UI.reelDn = dn; }
+      var tp = UI.reelPos, ay = c.ayan || 0;
+      function axp(lon, rr) { return cx + rr * Math.cos((180 + (lon - asc)) * RAD); }
+      function ayp(lon, rr) { return cy - rr * Math.sin((180 + (lon - asc)) * RAD); }
+      miniWheel(c, b, cx, cy, R * 0.66, null, nowT(), null);
+      p.noFill(); strokec(INK, 70); p.strokeWeight(1); p.ellipse(cx, cy, R * 2, R * 2);
+      var order = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto'];
+      var ASPA = [0, 60, 90, 120, 180], ASPN = { 0: 'conjunct', 60: 'sextile', 90: 'square', 120: 'trine', 180: 'opposite' }, cap = null;
+      for (i = 0; i < order.length; i++) {
+        var k = order[i]; if (!tp[k]) continue;
+        var lon = ((tp[k].lon - ay) % 360 + 360) % 360, px = axp(lon, R), py = ayp(lon, R);
+        for (j = 0; j < order.length; j++) {
+          var npv = c.planets[order[j]]; if (!npv) continue;
+          var sep = Math.abs((((lon - npv.lon) % 360) + 540) % 360 - 180), a4;
+          for (a4 = 0; a4 < 5; a4++) {
+            var o4 = Math.abs((180 - sep) - ASPA[a4]) < Math.abs(sep - ASPA[a4]) ? Math.abs(sep - ASPA[a4]) : Math.abs(sep - ASPA[a4]);
+            o4 = Math.abs(sep - ASPA[a4]);
+            if (o4 < 1.3) {
+              strokec(ACC, 165 * (1 - o4 / 1.3)); p.strokeWeight(o4 < 0.5 ? 1.8 : 1);
+              p.line(px, py, axp(npv.lon, R * 0.66 * 0.66), ayp(npv.lon, R * 0.66 * 0.66));
+              if (i >= 5 && (order[j] === 'sun' || order[j] === 'moon') && o4 < 0.8) cap = APP.nameFor(k) + ' ' + ASPN[ASPA[a4]] + ' your ' + APP.nameFor(order[j]);
+            }
+          }
+        }
+        p.noStroke(); fillc(BODYCOL[k] || INK, 245); p.ellipse(px, py, 12, 12);
+        setFont(SANS, 7.5, GROUNDS.chart, p.CENTER, p.CENTER, 235); p.text(APP.glyphFor(k), px, py + 0.5);
+      }
+      if (cap && cap !== UI.reelCap) { UI.reelCap = cap; UI.reelCapT = nowT(); blip(392, 0.18, 0.035); buzz(8); }
+      if (!cap) UI.reelCap = null;
+      setFont(MONO, 10, ACCTX, p.LEFT, p.TOP, 235); p.text('THE REEL \u00B7 YOUR LIFE, SCRUBBABLE', x, top + 12);
+      setFont(MONO, 10, INK, p.RIGHT, p.TOP, 190); p.text(when.getUTCFullYear() + '', x + w - 74, top + 12);
+      if (dc) { dc.save(); dc.font = 'bold 74px Georgia, serif'; dc.textAlign = 'center'; dc.textBaseline = 'alphabetic'; dc.fillStyle = 'rgba(' + INK[0] + ',' + INK[1] + ',' + INK[2] + ',0.92)'; dc.fillText('AGE ' + Math.floor(ageY), cx, top + 72); dc.restore(); }
+      if (UI.reelCap) { var cpA = reduced() ? 1 : (0.65 + 0.35 * Math.sin(nowT() * 0.006)); setFont(SANS, 15, ACC, p.CENTER, p.TOP, 245 * cpA); bold(); p.text(UI.reelCap.toUpperCase(), cx, cy + R + 22); normal(); }
+      else { setFont(MONO, 9.5, INK, p.CENTER, p.TOP, 150); p.text('DRAG THE BAR \u00B7 THREADS LIGHT WHERE THE SKY TOUCHES YOU', cx, cy + R + 24); }
+      // the scrub bar
+      var bx3 = x + 8, bw3 = w - 16, by3 = top + vh - 74;
+      UI.reelBar = { x: bx3, y: by3, w: bw3 };
+      strokec(INK, 70); p.strokeWeight(4); p.line(bx3, by3, bx3 + bw3, by3);
+      strokec(ACC, 235); p.line(bx3, by3, bx3 + bw3 * f, by3);
+      p.noStroke(); fillc(shade(ACC, -30)); p.ellipse(bx3 + bw3 * f, by3 + 2, 26, 26); fillc(ACC); p.ellipse(bx3 + bw3 * f, by3, 26, 26); fillc(GROUNDS.chart); p.ellipse(bx3 + bw3 * f, by3, 7, 7);
+      setFont(MONO, 9, INK, p.LEFT, p.TOP, 160); p.text('BIRTH', bx3, by3 + 18); setFont(MONO, 9, INK, p.RIGHT, p.TOP, 160); p.text('AGE 90', bx3 + bw3, by3 + 18);
+      var nowF = Math.max(0, Math.min(1, ((new Date().getTime() - Date.UTC(b.y, b.mo - 1, b.d)) / (365.2422 * 86400000)) / 90));
+      strokec(INK, 200); p.strokeWeight(1.4); p.line(bx3 + bw3 * nowF, by3 - 12, bx3 + bw3 * nowF, by3 + 12);
+      setFont(MONO, 8, INK, p.CENTER, p.TOP, 170); p.text('NOW', bx3 + bw3 * nowF, by3 - 26);
+      tourBtn('Close', x + w - 76, top + 6, 70, 28, function () { UI.reel = null; }, false);
+      UI.contentH.chart = 0;
+    }
     function drawChart() {
       var c = APP.STATE.chart, b = APP.STATE.birth; if (!c) { UI.screen = 'onboard'; return; }
       if (UI.walk) { drawWalkthrough(c, b); return; }
+      if (UI.reel) { drawReel(c, b); return; }
       if (UI.story) { drawStory(c, b); return; }
       var x = sx(), w = cw(), ly = 18;
       // the glide: after a planet is chosen, the page travels to its reading (a drag cancels it)
@@ -4577,6 +4633,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       setFont(SANS, 38, INK, p.LEFT, p.TOP, 90); p.textStyle(p.BOLD); p.text(b.timeKnown ? ' rising' : ' sun', x + tw, sY(ly)); normal(); ly += 48;
       ly += hudStrip(c, b, x, ly, w) + 10;
       ly += todayCardStrip(c, b, x, ly, w) + 14;
+      flatBtn('\u23F5  The Reel \u2014 scrub your whole life', x, ly, w, 44, function () { var age0 = (new Date().getTime() - Date.UTC(b.y, b.mo - 1, b.d)) / (365.2422 * 86400000); UI.reel = { f: Math.max(0.01, Math.min(1, age0 / 90)) }; UI.reelCap = null; buzz(12); }, false); ly += 56;
       // S3 — a one-line daily headline of what the sky is doing to you; tap to open Today
       (function () {
         var trd = walkTr(c), te0 = trd.daily && trd.daily[0];
@@ -4612,6 +4669,16 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         if (glowA > 0.02 && !reduced()) { var gp = 0.5 + 0.5 * Math.sin(nowT() * 0.012); p.noStroke(); fillc(ACC, 42 * glowA * gp); p.ellipse(x + w - degW / 2, sY(ly) + 9, degW + 20, 22); }
         setFont(MONO, 10.5, ticking ? ACCTX : INK, p.LEFT, p.TOP, ticking ? 230 : 165); p.text(degStr, x + hR * 2 + 16, sY(ly) + 30);
         ly += hR * 2 + 12;
+        if (pl.retro && key !== 'asc' && !reduced()) {
+          // apparent motion, acted out: forward, stall, backward, recover
+          var u5 = (nowT() % 3200) / 3200, pos5 = u5 - 0.22 * Math.sin(2 * Math.PI * u5);
+          var rW5 = Math.min(w, 300), ry5 = sY(ly) + 10;
+          strokec(INK, 70); p.strokeWeight(1); p.line(x, ry5, x + rW5, ry5);
+          p.noStroke(); fillc(ACC, 40); p.rect(x + rW5 * 0.36, ry5 - 5, rW5 * 0.28, 10, 5);
+          fillc(BODYCOL[key] || ACC, 235); p.ellipse(x + rW5 * (0.06 + 0.88 * pos5), ry5, 9, 9);
+          setFont(MONO, 8.5, INK, p.LEFT, p.TOP, 160); p.text('APPARENT MOTION: FORWARD \u00B7 STALL \u00B7 BACKWARD \u00B7 RECOVER', x, ry5 + 10);
+          ly += 34;
+        }
         var dcG = p.drawingContext, blurbA = reduced() ? 1 : cl01((tSel - 180) / 420);
         if (dcG) { dcG.save(); dcG.globalAlpha = blurbA; }
         ly += paragraph(planetBlurb(c, key), x, ly + (1 - blurbA) * 8, w, 16, INK, SERIF, 25) + 24;
@@ -4763,8 +4830,11 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var natK = (e0.np && c.planets[e0.np] && BODYCOL[e0.np]) ? e0.np : null;
       if (dc) { dc.save(); dc.globalAlpha = alpha; }
       if (natK && natK !== bodyK) {
-        // a scene in two characters: your planet stands its ground, the visitor crosses the boards to meet it
-        var nx2 = cx + r * 0.85, vx2 = (x - r * 1.6) + ((cx - r * 0.85) - (x - r * 1.6)) * (still ? 1 : eCubic(te));
+        // a scene in two characters, BLOCKED by the aspect: squares confront, trines fall into step, oppositions hold the far wing
+        var ang4 = e0.ang, stopX = (ang4 === 180) ? (cx - r * 1.45) : (ang4 === 90) ? (cx - r * 1.0) : (cx - r * 0.7);
+        var entE = still ? 1 : (ang4 === 90 ? eBack(cl01(te * 1.25)) : eCubic(te));
+        var nx2 = cx + r * 0.85, vx2 = (x - r * 1.6) + (stopX - (x - r * 1.6)) * entE;
+        var recoil = (ang4 === 90 && !still) ? Math.max(0, 1 - Math.abs(te - 0.82) * 8) * 6 : 0; nx2 += recoil;
         p.noStroke(); fillc([12, 9, 7], 46 * ee); p.ellipse(nx2, stageY - 2, r * 1.15, r * 0.16); p.ellipse(vx2, stageY - 2, r * 1.15 * scl, r * 0.16);
         p.push(); p.translate(nx2, cy - drift * 0.3 + r * 0.28); p.scale(0.72); celestialBody(natK, 0, 0, r, nowT()); p.pop();
         p.push(); p.translate(vx2, cy - drift + bob2 + r * 0.28); p.scale(0.72 * scl); celestialBody(bodyK, 0, 0, r, nowT()); p.pop();
@@ -4910,7 +4980,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       // the reading is a book now: four chapters instead of one endless scroll
       if (!UI.readTab) UI.readTab = 'story';
       var RTABS = [['story', 'Story'], ['wiring', 'Wiring'], ['timing', 'Timing'], ['days', 'Days']], rti0, rtx0 = x;
-      for (rti0 = 0; rti0 < RTABS.length; rti0++) { p.textFont(MONO); p.textSize(11); var rtw = p.textWidth(RTABS[rti0][1].toUpperCase()) + 28; chip(RTABS[rti0][1], UI.readTab === RTABS[rti0][0], rtx0, ly, (function (tk) { return function () { UI.readTab = tk; UI.scroll.read = 0; UI.popT = nowT(); }; })(RTABS[rti0][0])); rtx0 += rtw + 8; }
+      for (rti0 = 0; rti0 < RTABS.length; rti0++) { p.textFont(MONO); p.textSize(11); var rtw = p.textWidth(RTABS[rti0][1].toUpperCase()) + 28; chip(RTABS[rti0][1], UI.readTab === RTABS[rti0][0], rtx0, ly, (function (tk) { return function () { if (UI.readTab !== tk) UI.actT = nowT(); UI.readTab = tk; UI.scroll.read = 0; UI.popT = nowT(); }; })(RTABS[rti0][0])); rtx0 += rtw + 8; }
       ly += 50;
       var rt = UI.readTab;
       if (rt === 'story') {
@@ -5130,6 +5200,16 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       }
 
 
+      // the act title card: a breath of dark and a numeral between chapters
+      if (UI.actT && !reduced()) {
+        var atE = (nowT() - UI.actT) / 620;
+        if (atE < 1) {
+          var atA = atE < 0.25 ? atE / 0.25 : (1 - (atE - 0.25) / 0.75);
+          p.noStroke(); fillc([18, 15, 12], 235 * atA); p.rect(0, topY() - 6, W, viewH() + 40);
+          var ACTN = { story: 'I \u00B7 THE STORY', wiring: 'II \u00B7 THE WIRING', timing: 'III \u00B7 THE TIMING', days: 'IV \u00B7 THE DAYS' };
+          setFont(SERIF, 24, [236, 228, 210], p.CENTER, p.CENTER, 255 * atA); bold(); p.text(ACTN[rt] || '', W / 2, topY() + viewH() * 0.44); normal();
+        } else UI.actT = 0;
+      }
       UI.contentH.read = ly + 8;
     }
     // "Ask your chart" lives in Settings now, so Read stays about you (S7)
@@ -7706,6 +7786,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       UI.tScrollStart = UI.tScroll || 0;
       UI.inCity = ((UI.screen === 'onboard' || (UI.screen === 'people' && UI.padd)) && UI.cityBox && inRect(x, y, UI.cityBox));
       UI.inSlider = (UI.screen === 'settings' && UI.sliderRect && inRect(x, y, { x: UI.sliderRect.x - 16, y: UI.sliderRect.y - 18, w: UI.sliderRect.w + 32, h: 36 }));
+      UI.inReel = (UI.screen === 'chart' && UI.reel && UI.reelBar && inRect(x, y, { x: UI.reelBar.x - 16, y: UI.reelBar.y - 30, w: UI.reelBar.w + 32, h: 60 }));
     }
     function move(x, y) {
       UI.ptrX = x; UI.ptrY = y; UI.ptrMoveT = nowT();
@@ -7713,12 +7794,14 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var dy = y - UI.pressY, dx = x - UI.pressX; if (Math.abs(dy) > 6 || Math.abs(dx) > 6) UI.dragging = true;
       if (UI.video) return; // the embedded player handles its own area
       if (UI.today) { UI.tScroll = (UI.tScrollStart || 0) - dy; if (UI.tScroll < 0) UI.tScroll = 0; return; }
+      if (UI.inReel) { UI.reel.f = Math.max(0.0002, Math.min(1, (x - UI.reelBar.x) / UI.reelBar.w)); return; }
       if (UI.inSlider) { var tt = (x - UI.sliderRect.x) / UI.sliderRect.w; tt = Math.max(0, Math.min(1, tt)); APP.STATE.settings.orbScale = Math.round((0.5 + tt * 1.5) * 10) / 10; recompute(); }
       else if (UI.inCity) { UI.cityScroll = UI.cityScrollStart - dy; if (UI.cityScroll < 0) UI.cityScroll = 0; if (UI.cityScroll > UI.cityBoxMax) UI.cityScroll = UI.cityBoxMax; }
       else { UI.chartScrollAnim = null; UI.scroll[UI.screen] = UI.scrollStart - dy; clampScroll(); }
     }
     function release(x, y) {
       UI.ptrDown = false;
+      if (UI.inReel) { UI.inReel = false; return; }
       if (UI.inSlider) { UI.inSlider = false; return; }
       if (!UI.dragging && (nowT() - UI.pressT) < 500) { spawnRipple(x, y); for (var i = hits.length - 1; i >= 0; i--) if (hits[i].fn && inRect(x, y, hits[i])) { blip(660, 0.12, 0.03); buzz(7); UI.lastHit = { x: hits[i].x, y: hits[i].y, t: nowT() }; hits[i].fn(); break; } }
       else if (!UI.dragging && (nowT() - UI.pressT) >= 500 && (nowT() - UI.pressT) < 5000 && !UI.paraAct) { for (var pi2 = phits.length - 1; pi2 >= 0; pi2--) if (inRect(x, y, phits[pi2])) { UI.paraAct = { text: phits[pi2].text, T: nowT() }; buzz(12); break; } }
