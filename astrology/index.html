@@ -4389,7 +4389,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       p.noFill(); strokec(INK, 40); p.strokeWeight(1); p.ellipse(cx, cy, rr * 2, rr * 2);
       var e2 = cl01((tt - 1150) / 900), snap = tt > 2050;
       if (e2 > 0) {
-        var mx = (x1 + x2) / 2, my = (fy1 + fy2) / 2, bow = snap ? 0 : Math.sin(e2 * Math.PI) * r * 0.34;
+        var mx = (x1 + x2) / 2, my = (fy1 + fy2) / 2, bow = snap ? 0 : Math.sin(e2 * Math.PI) * r * 0.34 * (1 + 0.55 * cl01((tt - 1960) / 90));
         var qx = mx, qy = my + bow, seg = 22, ee = eCubic(e2), j;
         strokec(ACC, 90 + 140 * ee); p.strokeWeight(snap ? 2.6 : 1.8); p.noFill(); p.beginShape();
         for (j = 0; j <= Math.floor(seg * ee); j++) { var u = j / seg, ix = (1 - u) * (1 - u) * x1 + 2 * (1 - u) * u * qx + u * u * x2, iy = (1 - u) * (1 - u) * fy1 + 2 * (1 - u) * u * qy + u * u * fy2; p.vertex(ix, iy); }
@@ -4428,6 +4428,8 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         var px = cx + (ax(pl.lon, r * 0.78) - cx) * pe, py = cy + (ay2(pl.lon, r * 0.78) - cy) * pe;
         p.noStroke(); fillc(BODYCOL[order[i]] || INK, 255); p.ellipse(px, py, 15, 15);
         p.noFill(); strokec(INK, 120); p.strokeWeight(1); p.ellipse(px, py, 15, 15);
+        var rip = (tt - (1070 + i * 150)) / 260;
+        if (rip > 0 && rip < 1) { strokec(BODYCOL[order[i]] || ACC, 160 * (1 - rip)); p.strokeWeight(1.5); p.ellipse(ax(pl.lon, r * 0.78), ay2(pl.lon, r * 0.78), 15 + rip * 26, 15 + rip * 26); }
         setFont(SANS, 9, GROUNDS[UI.screen], p.CENTER, p.CENTER, 235); p.text(APP.glyphFor(order[i]), px, py + 0.5);
       }
       p.noStroke(); fillc(INK); p.ellipse(cx, cy, 5, 5);
@@ -4620,8 +4622,8 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         if (a) hairline(x, ly, x + w, 36);
         setFont(SANS, 14, INK, p.LEFT, p.CENTER); p.text(APP.glyphFor(as.a), x + 2, sY(ly + 16));
         setFont(SANS, 12, qc === 'flow' || qc === 'opportunity' ? ELHUE.air : (qc === 'fusion' ? INK : ACC), p.CENTER, p.CENTER); bold(); p.text(as.asp.glyph, x + 24, sY(ly + 16)); normal();
-        setFont(SANS, 14, INK, p.LEFT, p.CENTER); p.text(APP.glyphFor(as.b), x + 40, sY(ly + 16));
-        setFont(MONO, 10.5, INK, p.LEFT, p.CENTER, 150); p.text(as.asp.key + ' \u00B7 ' + as.orb.toFixed(1) + '\u00B0', x + 60, sY(ly + 16));
+        var gB = APP.glyphFor(as.b); setFont(SANS, gB.length > 1 ? 11 : 14, INK, p.LEFT, p.CENTER); p.text(gB, x + 40, sY(ly + 16));
+        setFont(MONO, 10.5, INK, p.LEFT, p.CENTER, 150); p.text(as.asp.key + ' \u00B7 ' + as.orb.toFixed(1) + '\u00B0', x + (gB.length > 1 ? 72 : 60), sY(ly + 16));
         setFont(MONO, 9.5, INK, p.RIGHT, p.CENTER, 110); p.text(as.asp.quality, x + w, sY(ly + 16));
         ly += 32;
       }
@@ -4723,10 +4725,46 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var ctrlTop = top + vh - (last ? 110 : 64);
       if (!last) { pushHit(x, top + 64, w, ctrlTop - (top + 64), function () { lifeWalkNext(ev.length); }); pushHit(x, top + 64, 72, ctrlTop - (top + 64), function () { lifeWalkPrev(); }); }
       var cy = top + vh * 0.25, r = Math.min(w * 0.30, vh * 0.15), drift = (1 - ee) * 14;
-      var dc = p.drawingContext; if (dc) { dc.save(); dc.globalAlpha = alpha; }
-      celestialBody((e0.tp && BODYCOL[e0.tp]) ? e0.tp : 'saturn', cx, cy - drift, r, nowT());
+      var bodyK = (e0.tp && BODYCOL[e0.tp]) ? e0.tp : 'saturn', dc = p.drawingContext;
+      // a puppet theatre: the chapter's planet performs under a spotlight, grounded on the boards
+      if (!still && BODYCOL[bodyK]) { p.noStroke(); fillc(BODYCOL[bodyK], 24 * cl01(te * 1.2)); p.rect(0, 0, W, H); }
+      var stageY = cy + r * 1.28;
+      if (dc && !still) {
+        // curtain shadow falls in from the wings
+        var cg = dc.createLinearGradient(0, top, 0, top + vh * 0.5); cg.addColorStop(0, 'rgba(10,8,6,0.34)'); cg.addColorStop(1, 'rgba(10,8,6,0)');
+        dc.fillStyle = cg; dc.fillRect(x - 40, top, 60, vh * 0.5); dc.fillRect(x + w - 20, top, 60, vh * 0.5);
+        // the spotlight cone, warm and slightly alive
+        var flick = 0.92 + 0.08 * Math.sin(nowT() * 0.0021);
+        var sg = dc.createRadialGradient(cx, top - 30, 10, cx, cy, r * 3.1);
+        sg.addColorStop(0, 'rgba(255,244,214,' + (0.20 * flick * ee) + ')'); sg.addColorStop(0.55, 'rgba(255,244,214,' + (0.09 * flick * ee) + ')'); sg.addColorStop(1, 'rgba(255,244,214,0)');
+        dc.save(); dc.beginPath(); dc.moveTo(cx - 26, top - 30); dc.lineTo(cx + 26, top - 30); dc.lineTo(cx + r * 2.0, stageY); dc.lineTo(cx - r * 2.0, stageY); dc.closePath(); dc.clip();
+        dc.fillStyle = sg; dc.fillRect(cx - r * 2.2, top - 30, r * 4.4, stageY - top + 40); dc.restore();
+      }
+      // the boards, and the puppet's shadow pooling beneath it
+      strokec(INK, 60); p.strokeWeight(1); p.line(cx - r * 1.9, stageY, cx + r * 1.9, stageY);
+      strokec(INK, 26); p.line(cx - r * 1.6, stageY + 7, cx + r * 1.6, stageY + 7);
+      var scl = still ? 1 : (0.88 + 0.12 * eBack(te)), bob2 = still ? 0 : Math.sin(nowT() * 0.0016) * 2.5;
+      var natK = (e0.np && c.planets[e0.np] && BODYCOL[e0.np]) ? e0.np : null;
+      if (dc) { dc.save(); dc.globalAlpha = alpha; }
+      if (natK && natK !== bodyK) {
+        // a scene in two characters: your planet stands its ground, the visitor crosses the boards to meet it
+        var nx2 = cx + r * 0.85, vx2 = (x - r * 1.6) + ((cx - r * 0.85) - (x - r * 1.6)) * (still ? 1 : eCubic(te));
+        p.noStroke(); fillc([12, 9, 7], 46 * ee); p.ellipse(nx2, stageY - 2, r * 1.15, r * 0.16); p.ellipse(vx2, stageY - 2, r * 1.15 * scl, r * 0.16);
+        p.push(); p.translate(nx2, cy - drift * 0.3 + r * 0.28); p.scale(0.72); celestialBody(natK, 0, 0, r, nowT()); p.pop();
+        p.push(); p.translate(vx2, cy - drift + bob2 + r * 0.28); p.scale(0.72 * scl); celestialBody(bodyK, 0, 0, r, nowT()); p.pop();
+        // the meeting itself: a thread of light closes between them as the visitor arrives
+        if (te > 0.6) { var mA = cl01((te - 0.6) / 0.4); strokec(ACC, 150 * mA); p.strokeWeight(1.6); p.line(vx2 + r * 0.4, cy + r * 0.28, nx2 - r * 0.4, cy + r * 0.28); }
+        setFont(MONO, 9, ACCTX, p.CENTER, p.TOP, 200 * ee); p.text(APP.nameFor(bodyK).toUpperCase() + '  MEETS  ' + APP.nameFor(natK).toUpperCase(), cx, stageY + 14);
+      } else {
+        p.noStroke(); fillc([12, 9, 7], 50 * ee); p.ellipse(cx, stageY - 2, r * 1.5 * scl, r * 0.2);
+        p.push(); p.translate(cx, cy - drift + bob2); p.scale(scl); celestialBody(bodyK, 0, 0, r, nowT()); p.pop();
+      }
       if (dc) dc.restore();
-      setFont(MONO, 12, ACCTX, p.CENTER, p.TOP, 235); p.text('AGE ' + Math.round(e0.age) + '   ·   ' + e0.date.getFullYear(), cx, top + vh * 0.42);
+      // the years themselves travel: the age counts across to the new chapter
+      if (UI.lifeAgeShown == null) UI.lifeAgeShown = e0.age;
+      UI.lifeAgeShown += (e0.age - UI.lifeAgeShown) * 0.12;
+      var ticking3 = Math.abs(UI.lifeAgeShown - e0.age) > 0.3;
+      setFont(MONO, 12, ticking3 ? ACC : ACCTX, p.CENTER, p.TOP, 235); p.text('AGE ' + Math.round(UI.lifeAgeShown) + '   ·   ' + e0.date.getFullYear(), cx, top + vh * 0.42);
       var ty = top + vh * 0.47, slideIn = (1 - ee) * 12;
       var tl = wrapLines2(e0.title || 'A chapter', w - 16, SANS, 25); setFont(SANS, 25, INK, p.CENTER, p.TOP, 255 * alpha); bold(); for (i = 0; i < tl.length; i++) p.text(tl[i], cx, ty + slideIn + i * 31); normal(); ty += tl.length * 31 + 10;
       var bl = wrapLines2(e0.text || '', w - 24, SERIF, 18); setFont(SERIF, 18, INK, p.CENTER, p.TOP, 246 * alpha); strokec(INK, 246 * alpha); p.strokeWeight(0.5); for (i = 0; i < bl.length; i++) p.text(bl[i], cx, ty + slideIn + i * 26); p.noStroke();
@@ -5239,19 +5277,6 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
           p.textStyle(p.BOLD); glitchText(cd2.name, x, sY(ly), 28, SANS, INK, p.LEFT, p.TOP, gi2); normal(); ly += 36;
           var tg = APP.tarotGuide(cd2);
           eyebrow(tg.corr, x, ly, ACC); ly += 26;
-          ly += paragraph(cd2.ess, x, ly, w, 17, INK, SERIF, 26) + 16; hairline(x, ly, x + w, 60); ly += 14;
-          // comprehensive meaning (a companion reference \u2014 pull your cards in real life)
-          setFont(MONO, 9, ELHUE.air, p.LEFT, p.TOP); bold(); p.text('UPRIGHT', x, sY(ly)); normal(); ly += 16;
-          ly += paragraph(tg.upright, x, ly, w, 14.5, INK, SERIF, 21, 235) + 6;
-          ly += paragraph('Keywords:  ' + cd2.up.join('  \u00B7  '), x, ly, w, 11.5, INK, MONO, 17, 175) + 16;
-          setFont(MONO, 9, ACC, p.LEFT, p.TOP); bold(); p.text('REVERSED', x, sY(ly)); normal(); ly += 16;
-          ly += paragraph(tg.reversed, x, ly, w, 14.5, INK, SERIF, 21, 235) + 6;
-          ly += paragraph('Keywords:  ' + cd2.rev.join('  \u00B7  '), x, ly, w, 11.5, INK, MONO, 17, 175) + 16;
-          hairline(x, ly, x + w, 50); ly += 14;
-          setFont(MONO, 9, ELHUE.water, p.LEFT, p.TOP); bold(); p.text('IN LOVE', x, sY(ly)); normal(); ly += 16; ly += paragraph(tg.love, x, ly, w, 14, INK, SERIF, 20, 225) + 12;
-          setFont(MONO, 9, ELHUE.earth, p.LEFT, p.TOP); bold(); p.text('AT WORK', x, sY(ly)); normal(); ly += 16; ly += paragraph(tg.work, x, ly, w, 14, INK, SERIF, 20, 225) + 12;
-          setFont(MONO, 9, ACC, p.LEFT, p.TOP); bold(); p.text('THE INVITATION', x, sY(ly)); normal(); ly += 16; ly += paragraph(tg.advice, x, ly, w, 14, INK, SERIF, 20, 225) + 18;
-
           // ---- the art: flicker through real deck versions of this card ----
           if (UI.cardImgCard !== UI.card) loadCardArt(cd2);
           hairline(x, ly, x + w, 60); ly += 16;
@@ -5274,6 +5299,19 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
             setFont(MONO, 10, INK, p.RIGHT, p.CENTER, 160); p.text(imgs.length + ' scans', x + w, sY(ly + 18)); ly += 48;
           }
           ly += paragraph('Public-domain tarot decks via Wikimedia Commons, filtered to known decks only. Stop the flicker to study one.', x, ly, w, 11, INK, MONO, 16, 160) + 12;
+          ly += paragraph(cd2.ess, x, ly, w, 17, INK, SERIF, 26) + 16; hairline(x, ly, x + w, 60); ly += 14;
+          // comprehensive meaning (a companion reference \u2014 pull your cards in real life)
+          setFont(MONO, 9, ELHUE.air, p.LEFT, p.TOP); bold(); p.text('UPRIGHT', x, sY(ly)); normal(); ly += 16;
+          ly += paragraph(tg.upright, x, ly, w, 14.5, INK, SERIF, 21, 235) + 6;
+          ly += paragraph('Keywords:  ' + cd2.up.join('  \u00B7  '), x, ly, w, 11.5, INK, MONO, 17, 175) + 16;
+          setFont(MONO, 9, ACC, p.LEFT, p.TOP); bold(); p.text('REVERSED', x, sY(ly)); normal(); ly += 16;
+          ly += paragraph(tg.reversed, x, ly, w, 14.5, INK, SERIF, 21, 235) + 6;
+          ly += paragraph('Keywords:  ' + cd2.rev.join('  \u00B7  '), x, ly, w, 11.5, INK, MONO, 17, 175) + 16;
+          hairline(x, ly, x + w, 50); ly += 14;
+          setFont(MONO, 9, ELHUE.water, p.LEFT, p.TOP); bold(); p.text('IN LOVE', x, sY(ly)); normal(); ly += 16; ly += paragraph(tg.love, x, ly, w, 14, INK, SERIF, 20, 225) + 12;
+          setFont(MONO, 9, ELHUE.earth, p.LEFT, p.TOP); bold(); p.text('AT WORK', x, sY(ly)); normal(); ly += 16; ly += paragraph(tg.work, x, ly, w, 14, INK, SERIF, 20, 225) + 12;
+          setFont(MONO, 9, ACC, p.LEFT, p.TOP); bold(); p.text('THE INVITATION', x, sY(ly)); normal(); ly += 16; ly += paragraph(tg.advice, x, ly, w, 14, INK, SERIF, 20, 225) + 18;
+
           UI.contentH.tarot = ly + 10;
         }
       }
@@ -7267,7 +7305,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     function drawTodayPanel() {
       if (!UI.today) return;
       // AN4 — the sheet grows out of the live moon emblem in the top bar
-      var mp = reduced() ? 1 : cl01((nowT() - (UI.todayT0 || 0)) / 440), me = eCubic(mp);
+      var mp = reduced() ? 1 : cl01((nowT() - (UI.todayT0 || 0)) / 440), me = reduced() ? 1 : eBack(mp); if (me > 1.02) me = 1.02;
       p.noStroke(); fillc(INK, 155 * me); p.rect(0, 0, W, H);
       pushHit(0, 0, W, H, function () { UI.today = false; }); // tap the dimmed area to close
       var emx = sx() + 9, emy = (UI.safeTop || 0) + TOPH / 2;
@@ -7355,7 +7393,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var jVis = me > 0.95 && (jbY >= top + 6) && (jbY + jbH <= top + availH - 6);
       positionJournalInput(jk2, x + pad + 6, jbY + 6, w - pad * 2 - 12, jbH - 12, jVis); UI.jDrawn = true;
       yy += jbH + 6;
-      setFont(MONO, 8.5, INK, p.LEFT, p.TOP, 140); p.text('SAVED AS YOU TYPE · OLD NOTES LIVE IN READ → TRANSIT CALENDAR', x + pad, ty()); yy += 22;
+      setFont(MONO, 8.5, INK, p.LEFT, p.TOP, 140); p.text('SAVED AS YOU TYPE · HISTORY IN THE CALENDAR', x + pad, ty()); yy += 22;
       // share today: feed card or 9:16 story
       var sbtX = x + pad, sbtY = ty(), sbtW = Math.floor((w - pad * 2 - 10) / 2), sbtH = 44;
       p.noStroke(); fillc(INK); p.rect(sbtX, sbtY, sbtW, sbtH, 10);
