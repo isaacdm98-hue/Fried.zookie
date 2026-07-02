@@ -1862,6 +1862,11 @@ var APP = (function () {
     if (joys.length) out.push({ label: 'Planets in their joy', text: joys.map(function (j) { return nameFor(j.key) + ' in the ' + ordinal(j.house) + ' (' + j.why + ')'; }).join('; ') + '. In the Hellenistic scheme a planet in its joy works with unusual ease, it is at home in that department of life.' });
     var trad = traditionFor(c);
     if (trad.length) out.push({ label: 'From the tradition, on your chart', lines: trad });
+    var np9 = nextPerformance(c, STATE.birth);
+    if (np9) {
+      var mon9 = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+      out.push({ label: 'The next performance', text: 'An observation no astrologer would sit down and compute: the Sun and Moon will not stand where they stood at your birth again until ' + np9.getUTCDate() + ' ' + mon9[np9.getUTCMonth()] + ' ' + np9.getUTCFullYear() + '. Your opening sky was a limited engagement. It plays encores, but only ' + (np9.getUTCFullYear() - new Date().getFullYear() < 2 ? 'soon, briefly, and never quite the same' : 'every couple of decades, and never quite the same') + '.' });
+    }
     var bc = balanceCoaching(c);
     out.push({ label: 'Where you’re light', text: bc.join(' ') });
     if (!STATE.birth.timeKnown) out.unshift({ label: 'Without a birth time', text: 'This reading runs on a noon chart: your signs, aspects and elemental balance are solid, but the Ascendant, the houses and the time-lord systems stay dark. Even a rough time of day: morning, midday, evening, night. Restores most of it: set one in Settings and the reading will be marked approximate.' });
@@ -2609,6 +2614,30 @@ var APP = (function () {
       var hit = null, i2, now2 = new Date().getTime();
       for (i2 = 0; i2 < fc.upcoming.length; i2++) { var ev2 = fc.upcoming[i2]; if ((ev2.np === best || ev2.tp === best) && ev2.date.getTime() - now2 < 75 * 86400000) { hit = ev2; break; } }
       return { lord: best, systems: why[best], n: votes[best], strike: hit };
+    } catch (e) { return null; }
+  }
+  // an observation only a machine would sit down and make
+  function nextPerformance(c, b) {
+    try {
+      var key9 = 'aqp_next_' + chartFP(c), cached = null;
+      try { cached = JSON.parse(localStorage.getItem(key9) || 'null'); } catch (e0) {}
+      if (cached && cached.t) return cached.t > 0 ? new Date(cached.t) : null;
+      var sunN = c.planets.sun.lon, moonN = c.planets.moon.lon, ay = c.ayan || 0, t0 = new Date(), best = null, yr, d5, hh5;
+      for (yr = 0; yr < 80 && !best; yr++) {
+        for (d5 = -2; d5 <= 2 && !best; d5++) {
+          var dt = new Date(Date.UTC(t0.getUTCFullYear() + yr, b.mo - 1, b.d + d5, 12));
+          if (dt <= t0) continue;
+          var pos = EPH.positions(jsDayNum(dt));
+          if (Math.abs(sdelta(rev(pos.sun.lon - ay), sunN)) < 1.4 && Math.abs(sdelta(rev(pos.moon.lon - ay), moonN)) < 8) {
+            for (hh5 = 0; hh5 < 49 && !best; hh5++) {
+              var dt2 = new Date(dt.getTime() + (hh5 - 24) * 3600000), p2 = EPH.positions(jsDayNum(dt2));
+              if (Math.abs(sdelta(rev(p2.sun.lon - ay), sunN)) < 1.0 && Math.abs(sdelta(rev(p2.moon.lon - ay), moonN)) < 1.0) best = dt2;
+            }
+          }
+        }
+      }
+      try { localStorage.setItem(key9, JSON.stringify({ t: best ? best.getTime() : -1 })); } catch (e1) {}
+      return best;
     } catch (e) { return null; }
   }
   function composeDailyEssay(c) {
@@ -4112,7 +4141,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     }
     // tapping a body just highlights it (magnify + aspect threads + bloom) and shows its meaning BELOW the
     // wheel — no full-screen takeover. (The cinematic story view stays in the code but is no longer triggered.)
-    function selectPlanet(key) { UI.popFrom = UI.pdia[key] || 22; UI.selPlanet = key; UI.popT = nowT(); buzz(10); UI.chartScrollAnim = { t0: nowT(), from: UI.scroll.chart || 0, to: (UI.selMetaLy != null ? Math.max(0, UI.selMetaLy - 84) : null) }; }
+    function selectPlanet(key) { UI.popFrom = UI.pdia[key] || 22; UI.selPlanet = key; UI.popT = nowT(); buzz(10); UI.pcard = key; UI.pcScroll = 0; }
     function tapPlanet(key) { selectPlanet(key); }
 
     // three reels
@@ -4636,10 +4665,49 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       tourBtn('Close', x + w - 76, top + 6, 70, 28, function () { UI.reel = null; }, false);
       UI.contentH.chart = 0;
     }
+    // the reading rises to meet the finger: a sprung sheet over the wheel, nothing forced to scroll
+    function drawPlanetCard(c, b) {
+      if (!UI.pcard) return;
+      var key = UI.pcard, pl = (key === 'asc') ? c.ascBody : c.planets[key]; if (!pl) { UI.pcard = null; return; }
+      var mp = reduced() ? 1 : cl01((nowT() - UI.popT) / 380), me = reduced() ? 1 : eBack(mp); if (me > 1.03) me = 1.03;
+      var sb = UI.safeBottom || 0, shH = Math.round((H - topY()) * 0.60), shY = H - sb - shH * me, x = sx(), w = cw();
+      p.noStroke(); fillc(INK, 120 * mp); p.rect(0, 0, W, H);
+      pushHit(0, 0, W, shY, function () { UI.pcard = null; });
+      var gk = GROUNDS.chart;
+      fillc(shade(gk, -18)); p.rect(x - 8, shY + 4, w + 16, shH + sb, 18);
+      fillc(shade(gk, 6)); p.rect(x - 8, shY, w + 16, shH + sb, 18);
+      p.noFill(); strokec(INK, 70); p.strokeWeight(1); p.rect(x - 8, shY, w + 16, shH + sb, 18);
+      p.noStroke(); fillc(INK, 90); p.rect(x + w / 2 - 20, shY + 8, 40, 4, 2);
+      pushHit(x - 8, shY, w + 16, 26, function () { UI.pcard = null; });
+      var dc = p.drawingContext; if (dc) { dc.save(); dc.beginPath(); dc.rect(x - 8, shY + 18, w + 16, shH + sb - 18); dc.clip(); }
+      var yy = shY + 30 - (UI.pcScroll || 0), hR = 27, tSel = nowT() - UI.popT;
+      var eBk = reduced() ? 1 : (0.6 + 0.4 * eBack(cl01(tSel / 460)));
+      p.push(); p.translate(x + hR + 4, yy + hR + 2); p.scale(eBk); celestialBody(key === 'asc' ? 'sun' : key, 0, 0, hR, nowT()); p.pop();
+      p.textStyle(p.BOLD); setFont(SERIF, 21, INK, p.LEFT, p.TOP); p.text(APP.nameFor(key) + ' in ' + pl.signName, x + hR * 2 + 18, yy + 6); normal();
+      UI.degShown += (pl.deg - UI.degShown) * 0.18;
+      var degStr2 = UI.degShown.toFixed(1) + '° ' + pl.signName + (b.timeKnown && pl.house ? '  H' + pl.house : '') + (pl.retro ? '  ℞' : '');
+      setFont(MONO, 10.5, ACCTX, p.LEFT, p.TOP, 235); p.text(degStr2, x + hR * 2 + 18, yy + 34);
+      var ly2 = yy + hR * 2 + 16 - shY; var lyAbs = shY + ly2;
+      if (pl.retro && key !== 'asc' && !reduced()) {
+        var u5 = (nowT() % 3200) / 3200, pos5 = u5 - 0.22 * Math.sin(2 * Math.PI * u5), rW5 = Math.min(w - 8, 290);
+        strokec(INK, 70); p.strokeWeight(1); p.line(x, lyAbs, x + rW5, lyAbs);
+        p.noStroke(); fillc(ACC, 40); p.rect(x + rW5 * 0.36, lyAbs - 5, rW5 * 0.28, 10, 5);
+        fillc(BODYCOL[key] || ACC, 235); p.ellipse(x + rW5 * (0.06 + 0.88 * pos5), lyAbs, 9, 9);
+        setFont(MONO, 8.5, INK, p.LEFT, p.TOP, 160); p.text('APPARENT MOTION: FORWARD · STALL · BACKWARD · RECOVER', x, lyAbs + 10);
+        lyAbs += 36;
+      }
+      p.textFont(SERIF); p.textSize(15.5); var bl2 = wrapLines(planetBlurb(c, key), w - 8);
+      setFont(SERIF, 15.5, INK, p.LEFT, p.TOP, 242); var bi2; for (bi2 = 0; bi2 < bl2.length; bi2++) p.text(bl2[bi2], x, lyAbs + bi2 * 23);
+      lyAbs += bl2.length * 23 + 24;
+      if (dc) dc.restore();
+      UI.pcMax = Math.max(0, (lyAbs + (UI.pcScroll || 0)) - (H - sb) + 20);
+      UI.pcRect = { x: x - 8, y: shY + 26, w: w + 16, h: shH + sb - 26 };
+    }
     function drawChart() {
       var c = APP.STATE.chart, b = APP.STATE.birth; if (!c) { UI.screen = 'onboard'; return; }
       if (UI.walk) { drawWalkthrough(c, b); return; }
       if (UI.reel) { drawReel(c, b); return; }
+      if (UI.pcard) { /* sheet drawn after content, below */ }
       if (UI.story) { drawStory(c, b); return; }
       var x = sx(), w = cw(), ly = 18;
       // the glide: after a planet is chosen, the page travels to its reading (a drag cancels it)
@@ -4710,6 +4778,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         if (dcG) dcG.restore();
       }
 
+      if (UI.pcard) UI.pcardDraw = true;
       eyebrow('Placements', x, ly); ly += 24;
       var ord = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto', 'node'], rh = 36;
       for (var i = 0; i < ord.length; i++) {
@@ -7689,7 +7758,14 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         var on = UI.screen === tabs[i][1], tx = i * tw, dn = pressing(tx, navY, tw, NAVH + sb), cy2 = navY + NAVH / 2 - 2 + (dn ? 1 : 0);
         if (tabs[i][1] === 'settings') { drawGear(tx + tw / 2, cy2, 9, on ? 255 : (dn ? 185 : 120)); } // a cog, so the menu isn't squashed
         else { setFont(MONO, 11, INK, p.CENTER, p.CENTER, on ? 255 : (dn ? 175 : 105)); if (on) bold(); p.text(tabs[i][0].toUpperCase(), tx + tw / 2, cy2); normal(); }
-        if (on) { p.noStroke(); fillc(ACC); p.ellipse(tx + tw / 2, navY + NAVH - 12, 5, 5); }
+        if (on) {
+          // a small moon orbits the word you are on
+          var oa2 = reduced() ? -0.9 : nowT() * 0.0016, orx = tw * 0.34, ory = 9;
+          var omx = tx + tw / 2 + Math.cos(oa2) * orx, omy = cy2 + Math.sin(oa2) * ory;
+          if (Math.sin(oa2) < 0 || reduced()) { p.noStroke(); fillc(ACC); p.ellipse(omx, omy, 4.5, 4.5); }
+          p.noStroke(); fillc(ACC); p.ellipse(tx + tw / 2, navY + NAVH - 12, 5, 5);
+          if (Math.sin(oa2) >= 0 && !reduced()) { fillc(ACC); p.ellipse(omx, omy, 4.5, 4.5); }
+        }
         pushHit(tx, navY, tw, NAVH + sb, (function (sc) { return function () { UI.screen = sc; }; })(tabs[i][1]));
       }
     }
@@ -7826,9 +7902,11 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (s === 'onboard') drawOnboard(); else { if (!(s === 'people' && UI.padd)) hideSearchInput(); if (s === 'chart') drawChart(); else if (s === 'read') drawRead(); else if (s === 'learn') drawLearn(); else if (s === 'tarot') drawTarot(); else if (s === 'people') drawPeople(); else if (s === 'settings') drawSettings(); }
       if (!UI.mediaDrawn) hideMediaFrame(); // the retro TV/radio iframe only lives on the Watch shelf
       drawQuip();
+      if (s === 'chart' && UI.pcard && APP.STATE.chart) drawPlanetCard(APP.STATE.chart, APP.STATE.birth);
       drawTopbar(); if (s !== 'onboard') drawNav();
       drawTodayPanel();
       drawVideoModal();
+      if (UI.lastHit && !reduced()) { var hg = (nowT() - UI.lastHit.t) / 200; if (hg < 1 && UI.lastHit.w < W * 0.9) { p.noFill(); strokec(ACC, 130 * (1 - hg)); p.strokeWeight(1.5); p.rect(UI.lastHit.x - 5 * hg, UI.lastHit.y - 5 * hg, UI.lastHit.w + 10 * hg, UI.lastHit.h + 10 * hg, 10); } }
       drawHowTour();
       drawGlossPop();
       drawParaAct();
@@ -7854,6 +7932,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       UI.inCity = ((UI.screen === 'onboard' || (UI.screen === 'people' && UI.padd)) && UI.cityBox && inRect(x, y, UI.cityBox));
       UI.inSlider = (UI.screen === 'settings' && UI.sliderRect && inRect(x, y, { x: UI.sliderRect.x - 16, y: UI.sliderRect.y - 18, w: UI.sliderRect.w + 32, h: 36 }));
       UI.inReel = (UI.screen === 'chart' && UI.reel && UI.reelBar && inRect(x, y, { x: UI.reelBar.x - 16, y: UI.reelBar.y - 30, w: UI.reelBar.w + 32, h: 60 }));
+      UI.inPcard = (UI.screen === 'chart' && UI.pcard && UI.pcRect && inRect(x, y, UI.pcRect)); UI.pcStart = UI.pcScroll || 0;
     }
     function move(x, y) {
       UI.ptrX = x; UI.ptrY = y; UI.ptrMoveT = nowT();
@@ -7862,6 +7941,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (UI.video) return; // the embedded player handles its own area
       if (UI.today) { UI.tScroll = (UI.tScrollStart || 0) - dy; if (UI.tScroll < 0) UI.tScroll = 0; return; }
       if (UI.inReel) { UI.reel.f = Math.max(0.0002, Math.min(1, (x - UI.reelBar.x) / UI.reelBar.w)); return; }
+      if (UI.inPcard) { UI.pcScroll = Math.max(0, Math.min(UI.pcMax || 0, UI.pcStart - dy)); return; }
       if (UI.inSlider) { var tt = (x - UI.sliderRect.x) / UI.sliderRect.w; tt = Math.max(0, Math.min(1, tt)); APP.STATE.settings.orbScale = Math.round((0.5 + tt * 1.5) * 10) / 10; recompute(); }
       else if (UI.inCity) { UI.cityScroll = UI.cityScrollStart - dy; if (UI.cityScroll < 0) UI.cityScroll = 0; if (UI.cityScroll > UI.cityBoxMax) UI.cityScroll = UI.cityBoxMax; }
       else { UI.chartScrollAnim = null; UI.scroll[UI.screen] = UI.scrollStart - dy; clampScroll(); }
@@ -7870,7 +7950,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       UI.ptrDown = false;
       if (UI.inReel) { UI.inReel = false; return; }
       if (UI.inSlider) { UI.inSlider = false; return; }
-      if (!UI.dragging && (nowT() - UI.pressT) < 500) { spawnRipple(x, y); for (var i = hits.length - 1; i >= 0; i--) if (hits[i].fn && inRect(x, y, hits[i])) { blip(660, 0.12, 0.03); buzz(7); UI.lastHit = { x: hits[i].x, y: hits[i].y, t: nowT() }; hits[i].fn(); break; } }
+      if (!UI.dragging && (nowT() - UI.pressT) < 500) { spawnRipple(x, y); for (var i = hits.length - 1; i >= 0; i--) if (hits[i].fn && inRect(x, y, hits[i])) { blip(660, 0.12, 0.03); buzz(7); UI.lastHit = { x: hits[i].x, y: hits[i].y, w: hits[i].w, h: hits[i].h, t: nowT() }; hits[i].fn(); break; } }
       else if (!UI.dragging && (nowT() - UI.pressT) >= 500 && (nowT() - UI.pressT) < 5000 && !UI.paraAct) { for (var pi2 = phits.length - 1; pi2 >= 0; pi2--) if (inRect(x, y, phits[pi2])) { UI.paraAct = { text: phits[pi2].text, T: nowT() }; buzz(12); break; } }
       UI.dragging = false; UI.inCity = false;
     }
