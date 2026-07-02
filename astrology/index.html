@@ -673,6 +673,12 @@ var EPH = (function () {
       for (var i = 1; i <= 12; i++) c[i] = rev(base + (i - 1) * 30);
     } else if (system === 'equal') {
       for (var j = 1; j <= 12; j++) c[j] = rev(a.asc + (j - 1) * 30);
+    } else if (system === 'porphyry') { // Porphyry: trisect the ecliptic arcs between the angles — exact by construction
+      var arcA = rev(a.asc - a.mc), arcB = rev(rev(a.mc + 180) - a.asc);
+      c[11] = rev(a.mc + arcA / 3); c[12] = rev(a.mc + 2 * arcA / 3);
+      c[2] = rev(a.asc + arcB / 3); c[3] = rev(a.asc + 2 * arcB / 3);
+      c[4] = rev(a.mc + 180); c[5] = rev(c[11] + 180); c[6] = rev(c[12] + 180);
+      c[7] = rev(a.asc + 180); c[8] = rev(c[2] + 180); c[9] = rev(c[3] + 180);
     } else { // placidus
       c[11] = placCusp(a.ramc, latDeg, a.ecl, 30);
       c[12] = placCusp(a.ramc, latDeg, a.ecl, 60);
@@ -7504,7 +7510,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       ly += toggleRow('Haptics', [['on', 'On'], ['off', 'Off']], st.haptics === false ? 'off' : 'on', ly, function (v) { st.haptics = (v === 'on'); APP.save(); if (st.haptics) buzz(14); });
       ly += paragraph('On: when you open the app on a day a planet lands exactly on your chart, you get one system notification. Where the browser supports it, a daily background check is registered too. Nothing leaves the device.', x, ly, w, 13.5, INK, SERIF, 20, 180) + 14;
       ly += toggleRow('Zodiac', [['tropical', 'Tropical'], ['sidereal', 'Sidereal']], st.zodiac, ly, function (v) { st.zodiac = v; recompute(); });
-      ly += toggleRow('House system', [['whole', 'Whole'], ['equal', 'Equal'], ['placidus', 'Placidus']], st.house, ly, function (v) { st.house = v; recompute(); });
+      ly += toggleRow('House system', [['whole', 'Whole'], ['equal', 'Equal'], ['porphyry', 'Porphyry'], ['placidus', 'Placidus']], st.house, ly, function (v) { st.house = v; recompute(); });
       if (APP.STATE.birth && !APP.STATE.birth.timeKnown) {
         eyebrow('No birth time? Set a rough one', x, ly, ACC); ly += 22;
         ly += paragraph('Without a time, the Ascendant, the houses and the time-lord systems stay dark. Even \u201Croughly morning\u201D restores most of them, the reading is then marked approximate.', x, ly, w, 13.5, INK, SERIF, 20, 190) + 10;

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Aqau Pluto — regression suite</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body{font-family:Menlo,Consolas,monospace;background:#14130f;color:#e8e2d5;padding:24px;font-size:13px}
+h1{font-size:16px} table{border-collapse:collapse;margin-top:12px}
+td,th{padding:4px 12px;border-bottom:1px solid #3a362c;text-align:left}
+.pass{color:#8fce7a}.fail{color:#e66a4e;font-weight:bold}
+#sum{margin-top:14px;font-size:15px}
+p{max-width:640px;line-height:1.5;color:#b8b2a2}
+</style>
+</head>
+<body>
+<h1>Aqau Pluto — ephemeris regression suite</h1>
+<p>Casts the reference chart (16 Apr 1991, 14:30 CET, Berlin 52.52N 13.40E,
+tropical, whole-sign) in a hidden frame and checks every longitude against
+the pinned baseline to 0.02°. Your own saved chart is snapshotted first and
+restored afterwards. If any row fails, an engine change has drifted.</p>
+<div id="sum">running…</div>
+<table id="t"><tr><th>body</th><th>expected °</th><th>got °</th><th>Δ</th><th></th></tr></table>
+<script>
+(function () {
+  var BASE = { sun: 26.0224, moon: 48.9506, mercury: 23.1743, venus: 64.1256, mars: 97.2696, jupiter: 123.9989, saturn: 306.0840, uranus: 283.8130, neptune: 286.7636, pluto: 229.6287, node: 293.0428, asc: 148.8347 };
+  var TOL = 0.02;
+  var KEYS = ['aqau_birth', 'aqau_settings', 'aqau_people', 'aqau_charts'];
+  var saved = {};
+  KEYS.forEach(function (k) { saved[k] = localStorage.getItem(k); });
+  localStorage.setItem('aqau_birth', JSON.stringify({ name: 'REF', y: 1991, mo: 4, d: 16, hour: 14, min: 30, tz: 1, iana: 'Europe/Berlin', lat: 52.52, lon: 13.4, place: 'Berlin', timeKnown: true }));
+  localStorage.setItem('aqau_settings', JSON.stringify({ zodiac: 'tropical', house: 'whole', toured: true, walked: true }));
+  function restore() { KEYS.forEach(function (k) { if (saved[k] == null) localStorage.removeItem(k); else localStorage.setItem(k, saved[k]); }); }
+  var f = document.createElement('iframe');
+  f.src = 'index.html'; f.style.cssText = 'position:fixed;left:-9999px;width:400px;height:800px';
+  document.body.appendChild(f);
+  var tries = 0;
+  var iv = setInterval(function () {
+    tries++;
+    var A = null;
+    try { A = f.contentWindow.APP; } catch (e) {}
+    if (!A || !A.STATE || !A.STATE.chart) {
+      if (tries > 60) { clearInterval(iv); restore(); document.getElementById('sum').textContent = 'FAIL — app did not boot'; }
+      return;
+    }
+    clearInterval(iv);
+    var c = A.STATE.chart, t = document.getElementById('t'), fails = 0, n = 0;
+    for (var k in BASE) {
+      if (!BASE.hasOwnProperty(k)) continue;
+      var got = (k === 'asc') ? c.asc : (c.planets[k] && c.planets[k].lon);
+      var d = (got == null) ? 999 : Math.abs(((got - BASE[k]) % 360 + 540) % 360 - 180);
+      var ok = d <= TOL; if (!ok) fails++; n++;
+      var tr = document.createElement('tr');
+      tr.innerHTML = '<td>' + k + '</td><td>' + BASE[k].toFixed(4) + '</td><td>' + (got == null ? '—' : got.toFixed(4)) + '</td><td>' + d.toFixed(4) + '</td><td class="' + (ok ? 'pass' : 'fail') + '">' + (ok ? 'PASS' : 'FAIL') + '</td>';
+      t.appendChild(tr);
+    }
+    restore();
+    document.getElementById('sum').innerHTML = fails ? '<span class="fail">' + fails + ' / ' + n + ' FAILED — the engine has drifted</span>' : '<span class="pass">ALL ' + n + ' PASS — positions locked to baseline</span>';
+    f.parentNode.removeChild(f);
+  }, 500);
+})();
+</script>
+</body>
+</html>

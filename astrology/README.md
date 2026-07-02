@@ -108,6 +108,25 @@ on-device, no server, no API keys.
   app shortcuts & icon badge, transit journal with sky-pattern insights,
   one-file backup/restore.
 
+## Version
+
+**1.0.0** — see `CHANGELOG.md`. Licensed MIT (`LICENSE`).
+
+## Deploy
+
+It is a static site: drag the folder onto Netlify Drop, or serve it from
+GitHub Pages or any static host. The service worker makes it installable
+and fully offline after the first visit.
+
+## Precision
+
+Positions come from astronomy-engine (MIT): an analytic ephemeris computed
+on-device, accurate to roughly an arcminute — ample for interpretation.
+`test.html` runs a regression suite pinning every planet's longitude for a
+reference chart to 4 decimal places, so engine changes can never drift
+silently. A Swiss Ephemeris (AGPL) precision pack is a planned optional
+add-on; it is deliberately not bundled, to keep the core MIT and small.
+
 ## Engine
 
 Planet / Sun / Moon positions come from **astronomy-engine** (Don Cross,
