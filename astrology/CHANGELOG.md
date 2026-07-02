@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.4.1 — 2026-07-02
+
+- **The walker got friendly**: rebuilt on playful silhouette principles: a
+  big round head (about 2.5 heads tall, the proportion that reads as young
+  and warm), a soft bean body, stubby limbs, mitten hands, big soft feet, a
+  cowlick that flicks in the wind, and a little profile nose when the head
+  turns: the oldest silhouette charm there is. Circles read as warm;
+  the shadow-man is gone.
+
 ## 1.4.0 — 2026-07-02
 
 The dioramas: silhouettes, skies, and weather. (The living logo is untouched.)

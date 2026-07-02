@@ -5131,59 +5131,61 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       return { jx: ax + Math.cos(ja) * l1, jy: ay + Math.sin(ja) * l1, hx: ax + ux * d, hy: ay + uy * d };
     }
     function actorFigure(rig, alf) {
-      // a filled silhouette with weight and a scarf in the wind: characterful, unspecific, alive
+      // a playful silhouette, about two-and-a-half heads tall: big round head, bean body,
+      // stubby limbs, mitten hands, big soft feet, a cowlick, and the scarf. Circles read as warm.
       var h = rig.h, lean = rig.lean || 0, cr = rig.crouch || 0, look = rig.look || 0, col = rig.col || [34, 29, 25];
-      var br = reduced() ? 0 : Math.sin(nowT() * 0.0021 + (rig.ph || 0)) * h * 0.007;
-      var hipX = rig.x + lean * h * 0.05, hipY = rig.y - h * (0.48 - cr * 0.14);
-      var chX = hipX + lean * h * 0.15, chY = hipY - h * 0.27 + cr * h * 0.05 + br;
-      var hdR = h * 0.075, hdX = chX + lean * h * 0.07 + look * h * 0.05, hdY = chY - h * 0.16;
-      var fL = rig.fL || { x: rig.x - h * 0.11, y: rig.y }, fR = rig.fR || { x: rig.x + h * 0.11, y: rig.y };
-      var hL = rig.hL || { x: chX - h * 0.16, y: chY + h * 0.26 }, hR = rig.hR || { x: chX + h * 0.16, y: chY + h * 0.26 };
-      var lg1 = h * 0.27, lg2 = h * 0.25, ar1 = h * 0.165, ar2 = h * 0.155;
+      var br = reduced() ? 0 : Math.sin(nowT() * 0.0021 + (rig.ph || 0)) * h * 0.008;
+      var hipX = rig.x + lean * h * 0.04, hipY = rig.y - h * (0.30 - cr * 0.09);
+      var chX = hipX + lean * h * 0.10, chY = hipY - h * 0.20 + cr * h * 0.04;
+      var hdR = h * 0.155, hdX = chX + lean * h * 0.08 + look * h * 0.05, hdY = chY - h * 0.065 - hdR + br;
+      var fL = rig.fL || { x: rig.x - h * 0.10, y: rig.y }, fR = rig.fR || { x: rig.x + h * 0.10, y: rig.y };
+      var hL = rig.hL || { x: chX - h * 0.17, y: chY + h * 0.16 }, hR = rig.hR || { x: chX + h * 0.17, y: chY + h * 0.16 };
+      var lg1 = h * 0.17, lg2 = h * 0.15, ar1 = h * 0.14, ar2 = h * 0.13;
       var passes = rig.rim ? 2 : 1, pi9;
       for (pi9 = 0; pi9 < passes; pi9++) {
         var rim9 = (passes === 2 && pi9 === 0);
-        var cP = rim9 ? rig.rim : col, aP = rim9 ? 80 * alf : 240 * alf;
+        var cP = rim9 ? rig.rim : col, aP = rim9 ? 80 * alf : 242 * alf;
         var ox9 = rim9 ? (rig.rimOff ? rig.rimOff[0] : -2) : 0, oy9 = rim9 ? (rig.rimOff ? rig.rimOff[1] : -2) : 0;
-        strokec(cP, aP); p.noFill();
-        // legs: tapered capsule limbs (fat round strokes read as flesh, not wire)
+        // stubby legs and big soft feet
         var kL = ik2(hipX, hipY, fL.x, fL.y, lg1, lg2, -1), kR = ik2(hipX, hipY, fR.x, fR.y, lg1, lg2, 1);
-        p.strokeWeight(h * 0.062); p.line(hipX + ox9, hipY + oy9, kL.jx + ox9, kL.jy + oy9);
-        p.strokeWeight(h * 0.046); p.line(kL.jx + ox9, kL.jy + oy9, kL.hx + ox9, kL.hy + oy9);
-        p.strokeWeight(h * 0.062); p.line(hipX + ox9, hipY + oy9, kR.jx + ox9, kR.jy + oy9);
-        p.strokeWeight(h * 0.046); p.line(kR.jx + ox9, kR.jy + oy9, kR.hx + ox9, kR.hy + oy9);
+        strokec(cP, aP); p.noFill();
+        p.strokeWeight(h * 0.075); p.line(hipX + ox9, hipY + oy9, kL.jx + ox9, kL.jy + oy9); p.line(kL.jx + ox9, kL.jy + oy9, kL.hx + ox9, kL.hy + oy9);
+        p.line(hipX + ox9, hipY + oy9, kR.jx + ox9, kR.jy + oy9); p.line(kR.jx + ox9, kR.jy + oy9, kR.hx + ox9, kR.hy + oy9);
         p.noStroke(); fillc(cP, aP);
-        p.ellipse(kL.hx + h * 0.012 + ox9, kL.hy - h * 0.008 + oy9, h * 0.085, h * 0.034);
-        p.ellipse(kR.hx + h * 0.012 + ox9, kR.hy - h * 0.008 + oy9, h * 0.085, h * 0.034);
-        // pelvis and torso as one mass, chest broader than waist
-        p.ellipse(hipX + ox9, hipY + oy9, h * 0.135, h * 0.115);
-        strokec(cP, aP); p.strokeWeight(h * 0.115);
-        p.bezier(hipX + ox9, hipY - h * 0.02 + oy9, hipX + lean * h * 0.04 + ox9, hipY - h * 0.15 + oy9, chX - lean * h * 0.04 + ox9, chY + h * 0.10 + oy9, chX + ox9, chY + h * 0.01 + oy9);
-        p.noStroke(); fillc(cP, aP); p.ellipse(chX + ox9, chY + oy9, h * 0.16, h * 0.14);
-        // arms
-        var eL = ik2(chX - h * 0.045, chY, hL.x, hL.y, ar1, ar2, hL.bend == null ? -1 : hL.bend);
-        var eR = ik2(chX + h * 0.045, chY, hR.x, hR.y, ar1, ar2, hR.bend == null ? 1 : hR.bend);
-        strokec(cP, aP);
-        p.strokeWeight(h * 0.048); p.line(chX - h * 0.045 + ox9, chY + oy9, eL.jx + ox9, eL.jy + oy9);
-        p.strokeWeight(h * 0.038); p.line(eL.jx + ox9, eL.jy + oy9, eL.hx + ox9, eL.hy + oy9);
-        p.strokeWeight(h * 0.048); p.line(chX + h * 0.045 + ox9, chY + oy9, eR.jx + ox9, eR.jy + oy9);
-        p.strokeWeight(h * 0.038); p.line(eR.jx + ox9, eR.jy + oy9, eR.hx + ox9, eR.hy + oy9);
-        p.noStroke(); fillc(cP, aP); p.ellipse(eL.hx + ox9, eL.hy + oy9, h * 0.042, h * 0.042); p.ellipse(eR.hx + ox9, eR.hy + oy9, h * 0.042, h * 0.042);
-        // neck, head, and a small tuft of hair the wind can own
-        strokec(cP, aP); p.strokeWeight(h * 0.05); p.line(chX + ox9, chY - h * 0.03 + oy9, hdX + ox9, hdY + hdR * 0.85 + oy9);
-        p.noStroke(); fillc(cP, aP); p.ellipse(hdX + ox9, hdY + oy9, hdR * 2, hdR * 2.06);
-        var tw9 = reduced() ? 0 : Math.sin(nowT() * 0.005 + (rig.ph || 0)) * h * 0.012;
-        strokec(cP, aP); p.strokeWeight(h * 0.028); p.noFill();
-        p.bezier(hdX - hdR * 0.3 + ox9, hdY - hdR * 0.9 + oy9, hdX - hdR * 0.9 + tw9 + ox9, hdY - hdR * 1.5 + oy9, hdX - hdR * 1.3 + tw9 * 1.5 + ox9, hdY - hdR * 1.2 + oy9, hdX - hdR * 1.45 + tw9 * 2 + ox9, hdY - hdR * 1.05 + oy9);
+        p.ellipse(kL.hx + h * 0.02 + ox9, kL.hy - h * 0.012 + oy9, h * 0.115, h * 0.055);
+        p.ellipse(kR.hx + h * 0.02 + ox9, kR.hy - h * 0.012 + oy9, h * 0.115, h * 0.055);
+        // the bean body: hips wide, chest tucked, one soft mass
+        p.ellipse(hipX + ox9, hipY - h * 0.01 + oy9, h * 0.24, h * 0.21);
+        p.ellipse(chX + ox9, chY + h * 0.02 + oy9, h * 0.20, h * 0.18);
+        strokec(cP, aP); p.strokeWeight(h * 0.17);
+        p.line(hipX + ox9, hipY - h * 0.03 + oy9, chX + ox9, chY + h * 0.03 + oy9);
+        p.noFill();
+        // stubby arms with mitten hands
+        var eL = ik2(chX - h * 0.06, chY, hL.x, hL.y, ar1, ar2, hL.bend == null ? -1 : hL.bend);
+        var eR = ik2(chX + h * 0.06, chY, hR.x, hR.y, ar1, ar2, hR.bend == null ? 1 : hR.bend);
+        strokec(cP, aP); p.strokeWeight(h * 0.06);
+        p.line(chX - h * 0.06 + ox9, chY + oy9, eL.jx + ox9, eL.jy + oy9); p.line(eL.jx + ox9, eL.jy + oy9, eL.hx + ox9, eL.hy + oy9);
+        p.line(chX + h * 0.06 + ox9, chY + oy9, eR.jx + ox9, eR.jy + oy9); p.line(eR.jx + ox9, eR.jy + oy9, eR.hx + ox9, eR.hy + oy9);
+        p.noStroke(); fillc(cP, aP); p.ellipse(eL.hx + ox9, eL.hy + oy9, h * 0.075, h * 0.075); p.ellipse(eR.hx + ox9, eR.hy + oy9, h * 0.075, h * 0.075);
+        // the big round head, sitting right on the shoulders; breath gives it a soft squash
+        var sq9 = 1 + (reduced() ? 0 : Math.sin(nowT() * 0.0021 + (rig.ph || 0)) * 0.015);
+        p.ellipse(hdX + ox9, hdY + oy9, hdR * 2, hdR * 2 * sq9);
+        // a little profile nose when the head turns: the oldest silhouette charm there is
+        if (Math.abs(look) > 0.12) { var nd9 = look > 0 ? 1 : -1; p.ellipse(hdX + nd9 * hdR * 0.94 + ox9, hdY + hdR * 0.10 + oy9, hdR * 0.34, hdR * 0.26); }
+        // hair: one soft bump and a small cowlick flicking in the wind
+        p.ellipse(hdX - hdR * 0.25 + ox9, hdY - hdR * 0.86 + oy9, hdR * 0.9, hdR * 0.55);
+        var tw9 = reduced() ? 0 : Math.sin(nowT() * 0.005 + (rig.ph || 0)) * h * 0.014;
+        strokec(cP, aP); p.strokeWeight(h * 0.035); p.noFill();
+        p.bezier(hdX + hdR * 0.05 + ox9, hdY - hdR * 1.02 + oy9, hdX + hdR * 0.25 + tw9 + ox9, hdY - hdR * 1.45 + oy9, hdX + hdR * 0.65 + tw9 * 1.6 + ox9, hdY - hdR * 1.35 + oy9, hdX + hdR * 0.72 + tw9 * 2 + ox9, hdY - hdR * 1.15 + oy9);
       }
       // the scarf: the one coloured thing the silhouette owns, always in some wind
       if (rig.scarf !== false) {
-        var nx9 = chX - h * 0.02, ny9 = chY - h * 0.055, wind9 = rig.wind == null ? 1 : rig.wind, sPrev = { x: nx9, y: ny9 }, si9;
+        var nx9 = chX - h * 0.03, ny9 = chY - h * 0.045, wind9 = rig.wind == null ? 1 : rig.wind, sPrev = { x: nx9, y: ny9 }, si9;
         for (si9 = 1; si9 <= 4; si9++) {
           var tp9 = nowT() * 0.0042 - si9 * 0.62 + (rig.ph || 0);
           var sxn = nx9 - si9 * h * (0.055 + 0.02 * wind9) * (1 + 0.35 * Math.max(0, lean)) - si9 * si9 * h * 0.004;
-          var syn = ny9 + si9 * h * 0.012 + (reduced() ? 0 : Math.sin(tp9) * h * 0.018 * si9 * 0.45 * wind9);
-          strokec(ACC, (225 - si9 * 34) * alf); p.strokeWeight(h * (0.05 - si9 * 0.008));
+          var syn = ny9 + si9 * h * 0.014 + (reduced() ? 0 : Math.sin(tp9) * h * 0.02 * si9 * 0.45 * wind9);
+          strokec(ACC, (225 - si9 * 34) * alf); p.strokeWeight(h * (0.055 - si9 * 0.009));
           p.line(sPrev.x, sPrev.y, sxn, syn);
           sPrev = { x: sxn, y: syn };
         }
