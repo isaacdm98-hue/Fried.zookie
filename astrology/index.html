@@ -2597,6 +2597,20 @@ var APP = (function () {
       setTimeout(function () { try { URL.revokeObjectURL(url); } catch (er) {} }, 30000);
     } catch (e) {}
   }
+  // ===== where the clocks agree: three independent time-lord systems, cross-checked. A human rarely does this; the engine always does. =====
+  function clockConvergence(c, fc) {
+    try {
+      var votes = {}, why = {}, add = function (k, sysName) { if (!k || !c.planets[k]) return; votes[k] = (votes[k] || 0) + 1; (why[k] = why[k] || []).push(sysName); };
+      if (fc.profection) add(fc.profection.lord, 'the profection year');
+      if (fc.firdaria && fc.firdaria.lord !== 'node' && fc.firdaria.lord !== 'snode') add(fc.firdaria.lord, 'the Firdaria period');
+      if (fc.zr && fc.zr.l1) add(fc.zr.l1.ruler, 'the Zodiacal Releasing chapter');
+      var best = null, k2; for (k2 in votes) if (votes.hasOwnProperty(k2) && votes[k2] >= 2 && (!best || votes[k2] > votes[best])) best = k2;
+      if (!best) return null;
+      var hit = null, i2, now2 = new Date().getTime();
+      for (i2 = 0; i2 < fc.upcoming.length; i2++) { var ev2 = fc.upcoming[i2]; if ((ev2.np === best || ev2.tp === best) && ev2.date.getTime() - now2 < 75 * 86400000) { hit = ev2; break; } }
+      return { lord: best, systems: why[best], n: votes[best], strike: hit };
+    } catch (e) { return null; }
+  }
   function composeDailyEssay(c) {
     var tr = composeTransits(c), sky = skyStatus(), b = STATE.birth;
     var now = new Date(), seed = (now.getFullYear() * 372 + now.getMonth() * 31 + now.getDate()) + '|' + chartFP(c), s = [];
@@ -2630,7 +2644,9 @@ var APP = (function () {
   function composeForecast(c) {
     var b = STATE.birth;
     var srSum = solarReturnSummary(c, b);
-    return { profection: profection(b), monthly: monthlyProfection(b), zr: zodiacalReleasing(c, b), progressed: progressed(c, b), firdaria: firdaria(c, b), jyotisha: jyotisha(c, b), solarReturn: srSum, srChart: solarReturnChart(c, b, srSum), eclipses: upcomingEclipses(c, 2), upcoming: upcomingTransits(c, 8), sky: skyStatus() };
+    var fc0 = { profection: profection(b), monthly: monthlyProfection(b), zr: zodiacalReleasing(c, b), progressed: progressed(c, b), firdaria: firdaria(c, b), jyotisha: jyotisha(c, b), solarReturn: srSum, srChart: solarReturnChart(c, b, srSum), eclipses: upcomingEclipses(c, 2), upcoming: upcomingTransits(c, 8), sky: skyStatus() };
+    fc0.convergence = clockConvergence(c, fc0);
+    return fc0;
   }
 
   // ---- life timeline: the slow, rare outer transits & returns that mark life chapters ----
@@ -4524,7 +4540,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       setFont(MONO, 10, UI.walkAuto ? ACCTX : INK, p.RIGHT, p.TOP, UI.walkAuto ? 255 : 170); p.text(UI.walkAuto ? 'AUTO ■' : 'AUTO ▶', x + w - 76, top + 12);
       pushHit(x + w - 138, top + 2, 66, 30, function () { UI.walkAuto = !UI.walkAuto; UI.walk.t0 = nowT(); audioInit(); });
       setFont(MONO, 10, UI.walkVoice ? ACCTX : INK, p.RIGHT, p.TOP, UI.walkVoice ? 255 : 170); p.text(UI.walkVoice ? 'VOICE ■' : 'VOICE ▶', x + w - 148, top + 12);
-      pushHit(x + w - 212, top + 2, 68, 30, function () { UI.walkVoice = !UI.walkVoice; UI.walkVoiceI = -1; if (!UI.walkVoice) try { speechSynthesis.cancel(); } catch (eV) {} });
+      pushHit(x + w - 212, top + 2, 68, 30, function () { UI.walkVoice = !UI.walkVoice; UI.walkVoiceI = -1; if (UI.walkVoice && APP.STATE.settings && APP.STATE.settings.voice !== 'system') { APP.STATE.settings.voice = 'system'; APP.save(); } if (!UI.walkVoice) try { speechSynthesis.cancel(); } catch (eV) {} });
       if (UI.walkAuto && !last) { var pf = cl01(tt / dur); p.noStroke(); fillc(INK, 40); p.rect(x, top + 36, w, 2); fillc(ACC, 220); p.rect(x, top + 36, w * pf, 2); }
       // the scene dots double as a scrub bar — tap any act to jump straight to it
       var dxw = 13, dsx = cx - (scenes.length * dxw) / 2;
@@ -4997,6 +5013,11 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         ly += paragraph('You’re in a ' + DATA.SIGNS[pf.sign].name + ' profection year (age ' + pf.age + '): your ' + ordinal(pf.house) + ' house is lit up, and ' + APP.nameFor(pf.lord) + ' is your time‑lord: the planet steering this year.', x, ly, w, 15.5, INK, SERIF, 24) + 10;
         if (fc2.monthly && fc2.monthly.sign !== pf.sign) { var mp = fc2.monthly; ly += paragraph('Within that, this month profects to ' + mp.signName + ' (your ' + ordinal(mp.house) + ' house), so ' + APP.nameFor(mp.lord) + ' carries the next few weeks specifically.', x, ly, w, 14.5, INK, SERIF, 22) + 10; }
         if (fc2.zr && fc2.zr.l1) { var z = fc2.zr, zr2 = z.l2 ? (' Inside it you’re in a ' + z.l2.signName + ' sub-chapter (ruled by ' + APP.nameFor(z.l2.ruler) + ').') : ''; ly += paragraph('Zodiacal Releasing from your Lot of Spirit puts you in a ' + z.l1.signName + ' life-chapter (roughly age ' + Math.round(z.l1.startAge) + '–' + Math.round(z.l1.endAge) + '), ruled by ' + APP.nameFor(z.l1.ruler) + ' — the long arc of where your purpose is unfolding.' + zr2, x, ly, w, 14.5, INK, SERIF, 22) + 10; }
+        if (fc2.convergence) {
+          var CV = fc2.convergence;
+          ly += 2; eyebrow('Where the clocks agree', x, ly, ACC); ly += 24;
+          ly += paragraph('Three independent time-lord systems run in this app, and right now ' + (CV.n >= 3 ? 'all three' : 'two of them') + ' point at the same planet: ' + APP.nameFor(CV.lord) + ' rules ' + CV.systems.join(' and ') + '. Independent systems agreeing is the strongest signal timing astrology has. Weight this planet\u2019s themes above everything else this year.' + (CV.strike ? (' And the sky strikes it: ' + APP.nameFor(CV.strike.tp) + ' ' + CV.strike.aspKey + ' your ' + APP.nameFor(CV.strike.np) + ' is exact ' + fmtShort(CV.strike.date) + '. Mark that fortnight.') : ''), x, ly, w, 15, INK, SERIF, 23) + 12;
+        }
         if (fc2.firdaria) {
           var fd = fc2.firdaria, fdName = function (k9) { return k9 === 'node' ? 'North Node' : k9 === 'snode' ? 'South Node' : APP.nameFor(k9); };
           ly += paragraph('By Firdaria: the Persian time-lords, you are in a ' + fdName(fd.lord) + ' period (ages ' + fd.startAge + '–' + (fd.startAge + fd.years) + ')' + (fd.sub ? (', currently in its ' + fdName(fd.sub) + ' sub-chapter') : '') + '. A third clock, agreeing or arguing with the profection above.' + (fd.certain ? '' : ' (Sequence assumes a day birth: set a birth time to be sure.)'), x, ly, w, 14.5, INK, SERIF, 22) + 10;
@@ -5713,7 +5734,30 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       bigthree: function (c, b) { if (b && b.timeKnown && c.ascBody) { var so = signOpts(c.ascBody.sign); return { q: 'Which is YOUR rising sign?', o: so.o, ci: so.ci, why: c.ascBody.signName + ' was climbing the eastern horizon the minute you were born.' }; } return { q: 'The “big three” are…', o: ['Sun, Moon and rising', 'Venus, Mars and Jupiter', 'The three outer planets'], ci: 0, why: 'What you are becoming, what you need, and how you meet the world.' }; },
       moving: function () { return { q: 'A transit is…', o: ['A planet inside your birth chart', 'Today’s sky touching your birth chart', 'An aspect between two houses'], ci: 1, why: 'Your chart is fixed; the sky keeps moving. Where the live sky touches your natal map, that is a transit.' }; }
     };
-    function startLesson() { UI.lesson = { i: 0, beat: 0, t0: nowT() }; UI.scroll.learn = 0; lessonSeen(0); }
+    function startLesson() { UI.lesson = { i: 0, beat: 0, t0: nowT() + (reduced() ? 0 : 2300), lead: nowT() }; UI.scroll.learn = 0; lessonSeen(0); }
+    // the projector moment: the room goes dark, the beam flickers on, the film leader counts down
+    function drawFilmLeader(x, w, top, vh, cx) {
+      var el2 = nowT() - UI.lesson.lead, dc = p.drawingContext;
+      p.noStroke(); fillc([16, 13, 10], 235 * cl01(el2 / 260)); p.rect(0, 0, W, H);
+      var flick = 0.86 + 0.14 * Math.sin(nowT() * 0.031) * Math.sin(nowT() * 0.0117);
+      var cy2 = top + vh * 0.42, R2 = Math.min(w * 0.30, vh * 0.18);
+      if (dc) {
+        var bg2 = dc.createRadialGradient(x + w - 20, top - 40, 8, cx, cy2, R2 * 3.2);
+        bg2.addColorStop(0, 'rgba(255,246,220,' + (0.30 * flick) + ')'); bg2.addColorStop(0.6, 'rgba(255,246,220,' + (0.07 * flick) + ')'); bg2.addColorStop(1, 'rgba(255,246,220,0)');
+        dc.save(); dc.beginPath(); dc.moveTo(x + w - 34, top - 40); dc.lineTo(x + w + 6, top - 40); dc.lineTo(cx + R2 * 1.7, cy2 + R2 * 1.4); dc.lineTo(cx - R2 * 1.7, cy2 + R2 * 1.4); dc.closePath(); dc.clip();
+        dc.fillStyle = bg2; dc.fillRect(0, top - 40, W, vh + 60); dc.restore();
+      }
+      var m3; for (m3 = 0; m3 < 12; m3++) { var mt2 = (nowT() * (0.02 + (m3 % 4) * 0.011) + m3 * 137) % (vh + 60); p.noStroke(); fillc([255, 248, 226], 26 + (m3 * 29) % 40); p.ellipse(cx + Math.sin(m3 * 2.7 + nowT() * 0.0009) * R2 * 1.3, top - 30 + mt2, 2.4, 2.4); }
+      var jit = Math.sin(nowT() * 0.09) > 0.94 ? 1.5 : 0;
+      var num = Math.max(1, 3 - Math.floor(el2 / 700)), sweep = ((el2 % 700) / 700) * Math.PI * 2 - Math.PI / 2;
+      p.noFill(); strokec([236, 228, 208], 200 * flick); p.strokeWeight(2); p.ellipse(cx, cy2 + jit, R2 * 2, R2 * 2); p.ellipse(cx, cy2 + jit, R2 * 1.5, R2 * 1.5);
+      strokec([236, 228, 208], 90); p.strokeWeight(1); p.line(cx - R2 * 1.15, cy2 + jit, cx + R2 * 1.15, cy2 + jit); p.line(cx, cy2 - R2 * 1.15 + jit, cx, cy2 + R2 * 1.15 + jit);
+      strokec([236, 228, 208], 120 * flick); p.strokeWeight(R2 * 0.06); p.line(cx, cy2 + jit, cx + Math.cos(sweep) * R2 * 0.92, cy2 + jit + Math.sin(sweep) * R2 * 0.92);
+      if (dc) { dc.save(); dc.font = 'bold ' + Math.round(R2 * 1.15) + 'px Georgia, serif'; dc.textAlign = 'center'; dc.textBaseline = 'middle'; dc.fillStyle = 'rgba(240,232,212,' + (0.92 * flick).toFixed(3) + ')'; dc.fillText(String(num), cx, cy2 + jit + R2 * 0.04); dc.restore(); }
+      setFont(MONO, 10, [214, 205, 186], p.CENTER, p.TOP, 170 * flick); p.text('A GUIDED JOURNEY THROUGH THE SKY', cx, cy2 + R2 * 1.35);
+      pushHit(0, 0, W, H, function () { UI.lesson.t0 = nowT(); });
+      UI.contentH.learn = 0;
+    }
     function lessonSeen(i) { try { var st = APP.STATE.settings; if (!st) return; st.lseen = st.lseen || {}; if (!st.lseen[i]) { st.lseen[i] = 1; APP.save(); } } catch (e) {} }
     function lqRecord(k, ok) { try { var st = APP.STATE.settings; if (!st) return; st.lq = st.lq || {}; st.lq[k] = ok ? 1 : 0; APP.save(); } catch (e) {} }
     function lessonNext() { if (!UI.lesson) return; if (UI.lesson.i >= LESSON.length - 1) { UI.lesson = null; return; } UI.lesson.i++; UI.lesson.beat = 0; UI.lesson.qa = null; UI.lesson.t0 = nowT(); lessonSeen(UI.lesson.i); }
@@ -6040,6 +6084,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     function drawLesson() {
       var c = APP.STATE.chart, b = APP.STATE.birth;
       var x = sx(), w = cw(), top = topY(), vh = viewH(), cx = x + w / 2, sc = LESSON[UI.lesson.i], last = (UI.lesson.i === LESSON.length - 1), i;
+      if (UI.lesson.lead && nowT() < UI.lesson.t0 - 40 && !reduced()) { drawFilmLeader(x, w, top, vh, cx); return; }
       if (UI.lesson.beat == null) UI.lesson.beat = 0;
       var beats = lessonBeatsFor(sc, c, b), qz = lessonQuizFor(sc, c, b);
       if (UI.lesson.beat > beats.length - (qz ? 0 : 1)) UI.lesson.beat = qz ? beats.length : beats.length - 1;
@@ -6247,44 +6292,43 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     }
     // ===== curated channels: a hand-tuned public-domain programme per chart (items resolved live from the Internet Archive, cached for offline) =====
     var SIGN_FILM = [
-      { q: 'title:(great train robbery) AND mediatype:movies', t: 'The Great Train Robbery (1903)', why: 'Cinema’s first act of pure daring, twelve minutes that invented the action film. Aries energy, from frame one.' },
-      { q: 'title:(the gold rush) chaplin AND mediatype:movies', t: 'The Gold Rush (1925)', why: 'Chaplin turning hunger, gold and stubborn persistence into poetry, the Taurus appetites, on film.' },
-      { q: 'title:(his girl friday) AND mediatype:movies', t: 'His Girl Friday (1940)', why: 'The fastest talking ever filmed: two minds fencing at full speed. Your Mercury-ruled element, played as sport.' },
-      { q: 'title:(the kid) chaplin AND mediatype:movies', t: 'The Kid (1921)', why: 'A foundling, and a home made out of nothing. The Cancer story: family is whoever you decide to protect.' },
-      { q: 'title:(the thief of bagdad) AND mediatype:movies', t: 'The Thief of Bagdad (1924)', why: 'Palaces, spectacle and a hero grinning through the grandest show of the silent era. Leo, in gold leaf.' },
-      { q: 'title:(one week) keaton AND mediatype:movies', t: 'One Week (1920)', why: 'Buster Keaton assembling a build-it-yourself house, precisely, catastrophically, the Virgo comedy of craft meeting chaos.' },
-      { q: 'title:(my man godfrey) AND mediatype:movies', t: 'My Man Godfrey (1936)', why: 'Elegance, wit, and the weighing of love against fairness. A screwball romance with Libra’s scales at its heart.' },
-      { q: 'title:(nosferatu) AND mediatype:movies', t: 'Nosferatu (1922)', why: 'The first great film about what waits in the dark. Scorpio’s home ground: depth, dread and transformation.' },
-      { q: 'title:(the lost world) AND date:[1925-01-01 TO 1926-01-01] AND mediatype:movies', t: 'The Lost World (1925)', why: 'An expedition past the edge of the map, dinosaurs included, the Sagittarian itch for the far horizon.' },
-      { q: 'title:(metropolis) AND mediatype:movies', t: 'Metropolis (1927)', why: 'The towering city, the machinery of ambition, and what it costs, Saturn’s questions, built in art-deco stone.' },
-      { q: 'title:(a trip to the moon) melies OR title:(le voyage dans la lune)', t: 'A Trip to the Moon (1902)', why: 'Méliès firing a rocket into the Moon’s eye in 1902, the future imagined before its time. Aquarius is the patron sign of the strange tomorrow.' },
+      { q: 'title:(great train robbery) AND mediatype:movies', t: 'The Great Train Robbery (1903)', why: 'Cinema’s first act of pure daring, twelve minutes that invented the action film. Aries energy, from frame one.', must: ['train robbery'] },
+      { q: 'title:(the gold rush) chaplin AND mediatype:movies', t: 'The Gold Rush (1925)', why: 'Chaplin turning hunger, gold and stubborn persistence into poetry, the Taurus appetites, on film.', must: ['gold rush'] },
+      { q: 'title:(his girl friday) AND mediatype:movies', t: 'His Girl Friday (1940)', why: 'The fastest talking ever filmed: two minds fencing at full speed. Your Mercury-ruled element, played as sport.', must: ['girl friday'] },
+      { q: 'title:(the kid) chaplin AND mediatype:movies', t: 'The Kid (1921)', why: 'A foundling, and a home made out of nothing. The Cancer story: family is whoever you decide to protect.', must: ['the kid'] },
+      { q: 'title:(the thief of bagdad) AND mediatype:movies', t: 'The Thief of Bagdad (1924)', why: 'Palaces, spectacle and a hero grinning through the grandest show of the silent era. Leo, in gold leaf.', must: ['thief of bagdad'] },
+      { q: 'title:(one week) keaton AND mediatype:movies', t: 'One Week (1920)', why: 'Buster Keaton assembling a build-it-yourself house, precisely, catastrophically, the Virgo comedy of craft meeting chaos.', must: ['one week'] },
+      { q: 'title:(my man godfrey) AND mediatype:movies', t: 'My Man Godfrey (1936)', why: 'Elegance, wit, and the weighing of love against fairness. A screwball romance with Libra’s scales at its heart.', must: ['godfrey'] },
+      { q: 'title:(nosferatu) AND mediatype:movies', t: 'Nosferatu (1922)', why: 'The first great film about what waits in the dark. Scorpio’s home ground: depth, dread and transformation.', must: ['nosferatu'] },
+      { q: 'title:(the lost world) AND date:[1925-01-01 TO 1926-01-01] AND mediatype:movies', t: 'The Lost World (1925)', why: 'An expedition past the edge of the map, dinosaurs included, the Sagittarian itch for the far horizon.', must: ['lost world'] },
+      { q: 'title:(metropolis) AND mediatype:movies', t: 'Metropolis (1927)', why: 'The towering city, the machinery of ambition, and what it costs, Saturn’s questions, built in art-deco stone.', must: ['metropolis'] },
+      { q: 'title:(a trip to the moon) melies OR title:(le voyage dans la lune)', t: 'A Trip to the Moon (1902)', why: 'Méliès firing a rocket into the Moon’s eye in 1902, the future imagined before its time. Aquarius is the patron sign of the strange tomorrow.', must: ['trip to the moon'] },
       { q: 'title:(20,000 leagues under the sea) AND mediatype:movies', t: '20,000 Leagues Under the Sea (1916)', why: 'The first undersea epic: the screen dissolving into the deep, which is where Pisces lives.' }
     ];
     var RULER_FILM = {
-      Sun: { q: 'title:(our mr sun)', why: 'Your chart is ruled by the Sun: and this is the beloved 1956 Bell Science film that explained your ruling star to a generation, with cartoons and awe.' },
-      Moon: { q: 'apollo 11 moon nasa film', why: 'Your ruler is the Moon: here is humanity actually going there. The same light that runs your chart, with bootprints on it.' },
-      Mercury: { q: 'planet mercury nasa mariner', why: 'Mercury rules you: the smallest, fastest planet, first photographed up close by Mariner 10. Speed, in person.' },
-      Venus: { q: 'planet venus nasa mariner film', why: 'Venus rules you: Earth’s veiled bright twin. The first missions to your ruling planet, on film.' },
-      Mars: { q: 'planet mars nasa mariner film', why: 'Mars rules you: and these are the first real looks humanity ever got at your ruling planet: the red world, no longer imagined.' },
-      Jupiter: { q: 'jupiter voyager nasa film', why: 'Jupiter rules you: the giant whose gravity shelters the whole solar system. Voyager’s grand tour past your ruling planet.' },
-      Saturn: { q: 'saturn voyager nasa film', why: 'Saturn rules you: the ringed timekeeper. The missions that turned your ruler from a telescope smudge into a world.' },
-      Uranus: { q: 'uranus voyager nasa', why: 'Uranus rules you: the sideways planet, visited exactly once in all of history. Suitably contrary.' },
-      Neptune: { q: 'neptune voyager nasa', why: 'Neptune rules you: the far blue dream at the edge of the map, seen close only once, in 1989.' },
-      Pluto: { q: 'pluto planet nasa new horizons OR clyde tombaugh', why: 'Pluto rules you: found by a Kansas farm boy comparing photographs, and still the underworld’s quiet king.' }
+      Sun: { q: 'title:(our mr sun)', why: 'Your chart is ruled by the Sun: and this is the beloved 1956 Bell Science film that explained your ruling star to a generation, with cartoons and awe.', must: ['sun'] },
+      Moon: { q: 'apollo 11 moon nasa film', why: 'Your ruler is the Moon: here is humanity actually going there. The same light that runs your chart, with bootprints on it.', must: ['moon','apollo'] },
+      Mercury: { q: 'planet mercury nasa mariner', why: 'Mercury rules you: the smallest, fastest planet, first photographed up close by Mariner 10. Speed, in person.', must: ['mercury'] },
+      Venus: { q: 'planet venus nasa mariner film', why: 'Venus rules you: Earth’s veiled bright twin. The first missions to your ruling planet, on film.', must: ['venus'] },
+      Mars: { q: 'planet mars nasa mariner film', why: 'Mars rules you: and these are the first real looks humanity ever got at your ruling planet: the red world, no longer imagined.', must: ['mars'] },
+      Jupiter: { q: 'jupiter voyager nasa film', why: 'Jupiter rules you: the giant whose gravity shelters the whole solar system. Voyager’s grand tour past your ruling planet.', must: ['jupiter'] },
+      Saturn: { q: 'saturn voyager nasa film', why: 'Saturn rules you: the ringed timekeeper. The missions that turned your ruler from a telescope smudge into a world.', must: ['saturn'] },
+      Uranus: { q: 'uranus voyager nasa', why: 'Uranus rules you: the sideways planet, visited exactly once in all of history. Suitably contrary.', must: ['uranus'] },
+      Neptune: { q: 'neptune voyager nasa', why: 'Neptune rules you: the far blue dream at the edge of the map, seen close only once, in 1989.', must: ['neptune'] },
+      Pluto: { q: 'pluto planet nasa new horizons OR clyde tombaugh', why: 'Pluto rules you: found by a Kansas farm boy comparing photographs, and still the underworld’s quiet king.', must: ['pluto'] }
     };
     var MYTH_Q = ['jason argonauts golden fleece', 'zeus europa OR greek mythology bull', 'castor pollux OR gemini twins mythology', 'hercules hydra OR heracles labours', 'hercules nemean lion OR greek hero film', 'greek goddess harvest OR demeter mythology', 'scales of justice OR goddess justice film', 'orion mythology OR constellation orion film', 'centaur chiron OR greek centaur mythology', 'god pan mythology OR greek gods film', 'ganymede zeus OR greek cupbearer mythology', 'aphrodite eros OR venus goddess mythology'];
     var FILM_SCHOOL = [
-      { k: 'fs1', q: 'title:(our mr sun)', t: 'Our Mr. Sun (1956)', why: 'The Bell Science classic: the star at the middle of every chart, explained with wit and animation.' },
-      { k: 'fs2', q: 'constellations astronomy educational film', t: 'Finding the constellations', why: 'How to actually locate the figures this app keeps naming, in your own night sky.' },
-      { k: 'fs3', q: 'solar eclipse film', t: 'Eclipses, on film', why: 'Eclipses happen exactly at the Moon’s nodes. The same two points in your chart as your North and South Node.' }
+      { k: 'fs1', q: 'title:(our mr sun)', must: ['sun'], t: 'Our Mr. Sun (1956)', why: 'The Bell Science classic: the star at the middle of every chart, explained with wit and animation.' },
+      { k: 'fs2', q: 'constellations astronomy educational film', must: ['constellation','star','astronomy'], t: 'Finding the constellations', why: 'How to actually locate the figures this app keeps naming, in your own night sky.' },
+      { k: 'fs3', q: 'title:(eclipse)', must: ['eclipse'], t: 'Eclipses, on film', why: 'Eclipses happen exactly at the Moon’s nodes. The same two points in your chart as your North and South Node.' }
     ];
     function watchChannels(c, b) {
       var sun = c.planets.sun.sign, S = DATA.SIGNS[sun], ruler = S.ruler, rf = RULER_FILM[ruler] || RULER_FILM.Sun;
       var ch = [];
-      ch.push({ h: 'CH 1 · YOUR SIGN’S PROGRAMME', intro: 'Three picks tuned to ' + S.name + ' — its character, its ruler, its myth. Each one explained.', items: [
-        { k: 'sf' + sun, q: SIGN_FILM[sun].q, t: SIGN_FILM[sun].t, why: SIGN_FILM[sun].why },
-        { k: 'rf' + ruler, q: rf.q, t: 'Your ruler: ' + ruler, why: rf.why },
-        { k: 'mq' + sun, q: MYTH_Q[sun], t: 'The myth: ' + MYTHS[sun].t, why: 'The story the ancients pinned to your stars — ' + MYTHS[sun].t + '. Read the full telling in Learn → Myths.' }
+      ch.push({ h: 'CH 1 · YOUR SIGN’S PROGRAMME', intro: 'Two vetted picks tuned to ' + S.name + ': its character on film, and its ruling planet in the real sky. A result only airs if its title checks out.', items: [
+        { k: 'sf' + sun, q: SIGN_FILM[sun].q, t: SIGN_FILM[sun].t, why: SIGN_FILM[sun].why, must: SIGN_FILM[sun].must },
+        { k: 'rf' + ruler, q: rf.q, t: 'Your ruler: ' + ruler, why: rf.why, must: rf.must }
       ] });
       if (b && b.y) ch.push({ h: 'CH 2 · BORN UNDER THIS SKY', intro: 'What the world was watching in ' + b.y + ', beneath the same sky you arrived under.', items: [
         { k: 'ny' + b.y, q: 'collection:(universal_newsreels) AND date:[' + b.y + '-01-01 TO ' + b.y + '-12-31]', t: 'Newsreels of ' + b.y, why: 'The headlines of your birth year, exactly as people first saw them.' },
@@ -6294,17 +6338,22 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       return ch;
     }
     // resolve one curated slot to a real archive item (memory + localStorage cache, so the guide renders offline)
-    function iaSlot(key, q) {
+    function iaSlot(key, q, must) {
       UI.iaSlot = UI.iaSlot || {};
       if (UI.iaSlot[key] !== undefined) return UI.iaSlot[key];
       var cached = watchCacheGet(key);
       if (cached) { UI.iaSlot[key] = cached; return cached; }
       if (typeof fetch !== 'function' || (typeof navigator !== 'undefined' && navigator.onLine === false)) { UI.iaSlot[key] = false; return false; }
       UI.iaSlot[key] = null;
-      var url = 'https://archive.org/advancedsearch.php?q=' + encodeURIComponent('(' + q + ') AND (mediatype:movies OR mediatype:audio)') + '&fl[]=identifier&fl[]=title&rows=3&sort[]=downloads+desc&output=json';
+      var url = 'https://archive.org/advancedsearch.php?q=' + encodeURIComponent('(' + q + ') AND mediatype:movies') + '&fl[]=identifier&fl[]=title&rows=6&sort[]=downloads+desc&output=json';
       fetch(url).then(function (r) { return r.json(); }).then(function (j) {
-        var docs = (j && j.response && j.response.docs) || [];
-        var hit = docs.length ? { id: docs[0].identifier, t: docs[0].title || docs[0].identifier } : false;
+        var docs = (j && j.response && j.response.docs) || [], hit = false, i2, k2;
+        // the vet: a result only airs if its title actually contains one of the promised words
+        for (i2 = 0; i2 < docs.length && !hit; i2++) {
+          var tl2 = String(docs[i2].title || '').toLowerCase(), ok2 = !must || !must.length;
+          if (must) for (k2 = 0; k2 < must.length; k2++) if (tl2.indexOf(must[k2]) >= 0) { ok2 = true; break; }
+          if (ok2 && docs[i2].identifier) hit = { id: docs[i2].identifier, t: docs[i2].title || docs[i2].identifier };
+        }
         UI.iaSlot[key] = hit; if (hit) watchCachePut(key, hit);
       })['catch'](function () { UI.iaSlot[key] = false; });
       return null;
@@ -6354,7 +6403,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         while (si < ch.items.length) {
           var rowTop = ly, cc, rowWhy = null;
           for (cc = 0; cc < 2 && si < ch.items.length; cc++, si++) {
-            var it = ch.items[si], res = iaSlot(it.k, it.q);
+            var it = ch.items[si], res = iaSlot(it.k, it.q, it.must);
             var fr = tvTile(it, res, x + cc * (cw2 + 12), rowTop, cw2, cardH);
             if (fr) { frameRect = fr; activeIt = res; }
             if (UI.tvActive === it.k) rowWhy = it.why;
@@ -6817,6 +6866,8 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       ly += toggleRow('Sound', [['off', 'Off'], ['on', 'On']], st.sound ? 'on' : 'off', ly, function (v) { st.sound = (v === 'on'); APP.save(); if (st.sound) { audioInit(); chime(); } });
       ly += toggleRow('Transit reminders', [['off', 'Off'], ['on', 'On']], st.notify ? 'on' : 'off', ly, function (v) { st.notify = (v === 'on'); APP.save(); if (st.notify) enableNotify(); });
       ly += toggleRow('Haptics', [['on', 'On'], ['off', 'Off']], st.haptics === false ? 'off' : 'on', ly, function (v) { st.haptics = (v === 'on'); APP.save(); if (st.haptics) buzz(14); });
+      ly += toggleRow('Narration voice', [['off', 'Off'], ['system', 'System']], st.voice === 'system' ? 'system' : 'off', ly, function (v) { st.voice = v; APP.save(); });
+      ly += paragraph('A proper human voice pack (Kokoro, open source, Apache-2.0) is coming as an optional one-time download of roughly 90MB, kept on-device like everything else. Until it ships, System uses the browser voice, which is plainly robotic; Off is the honest default.', x, ly, w, 13.5, INK, SERIF, 20, 180) + 14;
       ly += paragraph('On: when you open the app on a day a planet lands exactly on your chart, you get one system notification. Where the browser supports it, a daily background check is registered too. Nothing leaves the device.', x, ly, w, 13.5, INK, SERIF, 20, 180) + 14;
       ly += toggleRow('Zodiac', [['tropical', 'Tropical'], ['sidereal', 'Sidereal']], st.zodiac, ly, function (v) { st.zodiac = v; recompute(); });
       ly += toggleRow('House system', [['whole', 'Whole'], ['equal', 'Equal'], ['porphyry', 'Porphyry'], ['placidus', 'Placidus']], st.house, ly, function (v) { st.house = v; recompute(); });
