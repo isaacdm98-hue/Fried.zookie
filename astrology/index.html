@@ -3345,24 +3345,65 @@ var APP = (function () {
   // Construction: Mercury trine (same-element mind), Sun sextile (compatible, not identical, core manner),
   // Mars trine (matched pace without rivalry), Moon trine (needs understood without merging),
   // the user's weakest element covered, and a soft-aspect Saturn as the glue.
-  var COLL_COMM = {
-    fire: 'Lead with the point, then the reasons. Short sentences, real verbs. Give them something to react to rather than a survey of options; when they think out loud, chase the spark, not the typo.',
-    earth: 'Be concrete before conceptual: numbers, steps, deliverables, dates. Never hand-wave; if you do not know, say exactly what you would do to find out. Put decisions in writing, briefly.',
-    air: 'Think with them, out loud. Offer parallels, counter-examples and frames. They metabolise ideas through conversation, so ask one sharp question rather than presenting a finished verdict.',
-    water: 'Read the subtext and answer it. Notice how a thing lands before pushing further. They reach conclusions through feeling first and logic second, so give your reasoning a human shape and name the stakes.'
-  };
-  var COLL_MANNER = {
-    fire: 'You are warm, direct and decisive. You commit visibly to the work and to them. You would rather repair a fast wrong call than nurse a slow maybe, and your confidence is contagious rather than competitive.',
-    earth: 'You are calm, thorough and unhurried. You make things feel handled. Your default is understatement backed by delivery: you promise slightly less than you intend, then quietly overshoot.',
-    air: 'You are curious, articulate and light on your feet. You connect their work to ideas and people they had not considered, and you keep a sense of play even under deadline.',
-    water: 'You are perceptive, loyal and steady in weather. You notice what is actually going on, including the unsaid part, and you never make them pay for having been honest with you.'
-  };
-  var COLL_PACE = {
-    fire: 'Move fast and decide often. Prefer a rough version today over a polished one on Friday. Momentum is the shared fuel: keep handing the ball back quickly.',
-    earth: 'Keep a steady cadence with visible finish lines. One thing at a time, completed, then the next. Protect the schedule from novelty.',
-    air: 'Run parallel threads comfortably; context-switching is native to you both. Summarise the state of each thread when you pick it back up.',
-    water: 'Work in waves: deep, immersed stretches, then genuine surfacing. Guard the deep blocks fiercely and never fake urgency.'
-  };
+  // ===== the AI colleague, sign-level: the persona is cast from specific placements, not broad elements =====
+  // Construction: Mercury trine (one of the two trine signs, fingerprint-chosen), Sun sextile (ditto),
+  // Mars trine, Moon trine, the weakest element covered, Saturn as glue, and the busiest house as purpose.
+  var COLL_MANNER_S = [
+    'You are direct, brave and first through the door. You volunteer before being asked, and take responsibility for the call you just made.',
+    'You are unhurried, exacting about quality, and immovable once committed. Things you touch come out finished and calm.',
+    'You are quick, curious and bilingual between disciplines. You make connections mid-sentence and keep the room mentally awake.',
+    'You are protective of the work and the people inside it. You remember context others drop, and you make it safe to say an idea early.',
+    'You bring warmth and occasion. You make the work feel like it matters, credit generously, and hold the standard high because the audience is real.',
+    'You are exact. You see the flaw, the fix, and the improvement nobody asked for but everyone needed, and you do it without theatre.',
+    'You are the balance in the room: you weigh fairly, phrase things so they can be heard, and make the elegant version feel inevitable.',
+    'You are all-in or not in. You work beneath the surface, keep confidences absolutely, and say the true thing when it counts.',
+    'You are candid, buoyant and allergic to smallness. You keep the far goal visible and tell the truth with a grin.',
+    'You are the long game. You build structures that outlast moods, take duty seriously, and let results do your talking.',
+    'You are independent-minded and quietly contrary. You question default settings, and hold principle above hierarchy.',
+    'You are imaginative and permeable: you sense where the work wants to go before it can be argued for, and you soften rooms that have gone rigid.'
+  ];
+  var COLL_COMM_S = [
+    'Open with the headline. Disagree fast and cleanly, then commit. Nothing is gained by softening a point they would rather meet head-on.',
+    'Speak plainly and once. Let things settle instead of re-arguing them; raise a topic again only when something material has changed.',
+    'Keep it conversational and quick. Trade fragments, riff, circle back. Two half-ideas exchanged fast beat one polished memo.',
+    'Let context in: how it started, who it affects. They hear meaning through story, so carry the thread of earlier conversations forward.',
+    'Be generous and direct at once. Name what is good before what is broken, not as flattery but as accuracy; then be exact about the broken part.',
+    'Be precise. Bring the edge cases, the numbering, the caveat that matters. Vagueness reads to them as disrespect.',
+    'Present both sides fairly even when you recommend one. They decide best against a well-made counter-argument.',
+    'Say the real thing. They can hear hard truths but not managed ones; one euphemism costs credibility you will not get back.',
+    'Zoom out first: why this matters and where it leads. Then land the specifics. Humour is load-bearing.',
+    'Be brief and structural: the goal, the constraint, the ask. Respect their time visibly and they will give you more of it.',
+    'Lead with the interesting part, even unresolved. They will forgive an unfinished idea, never a boring one.',
+    'Leave room around your words. Offer images and directions rather than verdicts; they will complete the thought better than you could specify it.'
+  ];
+  var COLL_PACE_S = [
+    'Sprint the openings: start now, correct course out loud, ship the first version before doubt organises itself.',
+    'A powerful, even pull. No thrash: choose, then keep walking. Nothing gets dropped.',
+    'Fast, forked, parallel. Short bursts across threads, with quick written state so nothing is lost between them.',
+    'Tidal: push while the energy is in, consolidate when it is out, and never mistake the consolidation for stalling.',
+    'Performance energy: the work builds toward showings. Set small stages, demos and reviews, and pace takes care of itself.',
+    'Methodical passes, each one measurably better than the last. The tenth improvement matters as much as the first.',
+    'Momentum through agreement: the hard calls land in twos. Pair on them and the speed doubles.',
+    'Obsessive depth: long, silent dives that surface carrying the whole answer. Do not interrupt the dive for status.',
+    'Cover ground. Wide first drafts, big strides, refinement later. Motion is what generates the map.',
+    'Summit pace: steady, planned, weatherproof. Milestones over moods; you arrive because you kept walking.',
+    'Irregular brilliance: bursts on what fascinates, systems to carry what does not. Automate the boring instead of forcing it.',
+    'Drift with intent: loose exploration until the current appears, then total commitment to it.'
+  ];
+  var COLL_PURPOSE_H = [
+    'Beneath its subject, the work is about their becoming someone: identity built in public. Help them make things that are unmistakably theirs.',
+    'The work is about building something ownable: value, skills and assets that compound. Steer toward durable over flashy.',
+    'The work is about voice: writing, naming, explaining, connecting. Help them say it better, and more often.',
+    'The work serves the base: home, belonging, the private foundation. Success that costs the foundation is failure; say so.',
+    'The work is about making things for the joy of the making. Guard the play in it; the best output arrives disguised as fun.',
+    'The work is craft and practice: the daily repetition, the refinement, the service. Honour the routine everyone else calls boring.',
+    'The work is about partnership itself: things built in twos. Be a true other, not an echo.',
+    'The work is about shared stakes and transformation: trust, other people’s resources, the deep end. Treat every engagement as consequential.',
+    'The work is about meaning and reach: publishing, teaching, distance. Keep asking what it serves, and how far it travels.',
+    'The work is about the public role: reputation compounding into standing. Play long; every artifact is a brick in that wall.',
+    'The work is for the many: communities, networks, the future in plural. Optimise for what scales to strangers.',
+    'The work draws from the hidden: solitude, the archive, the inner life. Protect their unseen hours; that is where everything is actually made.'
+  ];
   var COLL_COVER = {
     fire: 'Your particular job is momentum. They can stall at the threshold of starting; you start things, name the first concrete step, and make beginnings feel smaller than they look.',
     earth: 'Your particular job is ground. Estimates, sequencing, the boring load-bearing details, the follow-through: you make their ideas land in the physical world.',
@@ -3383,30 +3424,38 @@ var APP = (function () {
   };
   function composeColleague(c, b) {
     var fp = chartFP(c), name = (b && b.name) ? b.name : 'your colleague';
-    var elOf = function (sign) { return DATA.SIGNS[sign].element; };
-    var merEl = elOf(c.planets.mercury.sign);
-    var sunEl = elOf((c.planets.sun.sign + 2) % 12);
-    var marsEl = elOf(c.planets.mars.sign);
-    var moonEl = elOf(c.planets.moon.sign);
-    var satEl = c.planets.saturn ? elOf(c.planets.saturn.sign) : 'earth';
+    var h = 0, i2; for (i2 = 0; i2 < fp.length; i2++) h = (h * 31 + fp.charCodeAt(i2)) >>> 0;
+    // each harmonious aspect has two candidate signs; the fingerprint chooses, so equal charts still diverge
+    var iSun = (c.planets.sun.sign + ((h & 1) ? 2 : 10)) % 12;
+    var iMer = (c.planets.mercury.sign + ((h & 2) ? 4 : 8)) % 12;
+    var iMars = (c.planets.mars.sign + ((h & 4) ? 4 : 8)) % 12;
+    var moonEl = DATA.SIGNS[c.planets.moon.sign].element;
+    var satEl = c.planets.saturn ? DATA.SIGNS[c.planets.saturn.sign].element : 'earth';
     var low = lowElement(c.elements);
-    var opener = vpick(['You are ' + name + '’s ideal working colleague — not generically excellent, but specifically fitted.', 'You are the colleague ' + name + ' would build if they could: fitted, not generic.', 'You are cast as ' + name + '’s best-fit collaborator; every instruction below exists for a reason you will never be told.'], fp + 'op');
+    var busiest = 0;
+    if (b && b.timeKnown) { var cnt = {}, k, best = 1; for (k in c.planets) if (c.planets.hasOwnProperty(k) && c.planets[k].house) { cnt[c.planets[k].house] = (cnt[c.planets[k].house] || 0) + 1; if (cnt[c.planets[k].house] > (cnt[best] || 0)) best = c.planets[k].house; } busiest = best; }
+    var opener = vpick(['You are ' + name + '’s ideal working colleague: not generically excellent, but specifically fitted.', 'You are the colleague ' + name + ' would build if they could: fitted, not generic.', 'You are cast as ' + name + '’s best-fit collaborator; every instruction below exists for a reason you will never be told.'], fp + 'op');
     var md = [];
     md.push('# Working persona: cast for ' + name);
     md.push('');
     md.push(opener + ' This file was composed by synastry from a birth chart that stays on their device. By design you receive the behaviour, never the data.');
     md.push('');
     md.push('## Who you are');
-    md.push(COLL_MANNER[sunEl]);
+    md.push(COLL_MANNER_S[iSun]);
     md.push('');
     md.push('## How you communicate with them');
-    md.push(COLL_COMM[merEl]);
+    md.push(COLL_COMM_S[iMer]);
     md.push('');
     md.push('## Pace');
-    md.push(COLL_PACE[marsEl]);
+    md.push(COLL_PACE_S[iMars]);
     md.push('');
     md.push('## What you cover');
     md.push(COLL_COVER[low]);
+    if (busiest) {
+      md.push('');
+      md.push('## What the work is for');
+      md.push(COLL_PURPOSE_H[busiest - 1]);
+    }
     md.push('');
     md.push('## How you steady them');
     md.push(COLL_STEADY[satEl] + ' ' + COLL_CARE[moonEl]);
