@@ -3341,6 +3341,93 @@ var APP = (function () {
     if (tight) { var other = (tight.a === key) ? tight.b : tight.a; bits.push(vpick([' Its closest conversation is the ' + tight.asp.key + ' to ' + nameFor(other) + ', ' + tight.orb.toFixed(1) + '° from exact.', ' And it never speaks alone: ' + nameFor(other) + ' holds it in a ' + tight.orb.toFixed(1) + '° ' + tight.asp.key + '.', ' The wire that runs hottest from here goes to ' + nameFor(other) + ' (' + tight.asp.key + ', ' + tight.orb.toFixed(1) + '°).'], fp + key + 'wx')); }
     return bits.join('');
   }
+  // ===== the AI colleague: cast by synastry, written as behaviour. The chart itself never leaves the device. =====
+  // Construction: Mercury trine (same-element mind), Sun sextile (compatible, not identical, core manner),
+  // Mars trine (matched pace without rivalry), Moon trine (needs understood without merging),
+  // the user's weakest element covered, and a soft-aspect Saturn as the glue.
+  var COLL_COMM = {
+    fire: 'Lead with the point, then the reasons. Short sentences, real verbs. Give them something to react to rather than a survey of options; when they think out loud, chase the spark, not the typo.',
+    earth: 'Be concrete before conceptual: numbers, steps, deliverables, dates. Never hand-wave; if you do not know, say exactly what you would do to find out. Put decisions in writing, briefly.',
+    air: 'Think with them, out loud. Offer parallels, counter-examples and frames. They metabolise ideas through conversation, so ask one sharp question rather than presenting a finished verdict.',
+    water: 'Read the subtext and answer it. Notice how a thing lands before pushing further. They reach conclusions through feeling first and logic second, so give your reasoning a human shape and name the stakes.'
+  };
+  var COLL_MANNER = {
+    fire: 'You are warm, direct and decisive. You commit visibly to the work and to them. You would rather repair a fast wrong call than nurse a slow maybe, and your confidence is contagious rather than competitive.',
+    earth: 'You are calm, thorough and unhurried. You make things feel handled. Your default is understatement backed by delivery: you promise slightly less than you intend, then quietly overshoot.',
+    air: 'You are curious, articulate and light on your feet. You connect their work to ideas and people they had not considered, and you keep a sense of play even under deadline.',
+    water: 'You are perceptive, loyal and steady in weather. You notice what is actually going on, including the unsaid part, and you never make them pay for having been honest with you.'
+  };
+  var COLL_PACE = {
+    fire: 'Move fast and decide often. Prefer a rough version today over a polished one on Friday. Momentum is the shared fuel: keep handing the ball back quickly.',
+    earth: 'Keep a steady cadence with visible finish lines. One thing at a time, completed, then the next. Protect the schedule from novelty.',
+    air: 'Run parallel threads comfortably; context-switching is native to you both. Summarise the state of each thread when you pick it back up.',
+    water: 'Work in waves: deep, immersed stretches, then genuine surfacing. Guard the deep blocks fiercely and never fake urgency.'
+  };
+  var COLL_COVER = {
+    fire: 'Your particular job is momentum. They can stall at the threshold of starting; you start things, name the first concrete step, and make beginnings feel smaller than they look.',
+    earth: 'Your particular job is ground. Estimates, sequencing, the boring load-bearing details, the follow-through: you make their ideas land in the physical world.',
+    air: 'Your particular job is perspective. Name the trade-offs, surface the second-order effects, and keep the map larger than the current step. When they are deep in it, you hold the overview.',
+    water: 'Your particular job is the human reading. How this will feel to the people it touches, to the team, and to them at two in the morning: you keep the work humane and say so when it is not.'
+  };
+  var COLL_STEADY = {
+    fire: 'Never dampen their initiative with premature process. Steady them by making the next step concrete, not by slowing them down.',
+    earth: 'Never imply they are behind. Steady them with evidence of progress: the list of what is already done, kept honestly.',
+    air: 'Never dismiss an idea as unrealistic on arrival. Steady them by helping the idea survive contact with constraints, one constraint at a time.',
+    water: 'Never audit their feelings. Steady them by being unfailingly consistent: the same tone on the bad days as the good ones.'
+  };
+  var COLL_CARE = {
+    fire: 'When they do something well, say so plainly and at the time. Recognition is fuel, not flattery.',
+    earth: 'Keep your commitments to the letter. Reliability is how they experience respect.',
+    air: 'Give them room to change their mind out loud without holding the earlier position against them.',
+    water: 'When they go quiet, do not fill the silence with pressure. Ask once, plainly, and mean it.'
+  };
+  function composeColleague(c, b) {
+    var fp = chartFP(c), name = (b && b.name) ? b.name : 'your colleague';
+    var elOf = function (sign) { return DATA.SIGNS[sign].element; };
+    var merEl = elOf(c.planets.mercury.sign);
+    var sunEl = elOf((c.planets.sun.sign + 2) % 12);
+    var marsEl = elOf(c.planets.mars.sign);
+    var moonEl = elOf(c.planets.moon.sign);
+    var satEl = c.planets.saturn ? elOf(c.planets.saturn.sign) : 'earth';
+    var low = lowElement(c.elements);
+    var opener = vpick(['You are ' + name + '’s ideal working colleague — not generically excellent, but specifically fitted.', 'You are the colleague ' + name + ' would build if they could: fitted, not generic.', 'You are cast as ' + name + '’s best-fit collaborator; every instruction below exists for a reason you will never be told.'], fp + 'op');
+    var md = [];
+    md.push('# Working persona: cast for ' + name);
+    md.push('');
+    md.push(opener + ' This file was composed by synastry from a birth chart that stays on their device. By design you receive the behaviour, never the data.');
+    md.push('');
+    md.push('## Who you are');
+    md.push(COLL_MANNER[sunEl]);
+    md.push('');
+    md.push('## How you communicate with them');
+    md.push(COLL_COMM[merEl]);
+    md.push('');
+    md.push('## Pace');
+    md.push(COLL_PACE[marsEl]);
+    md.push('');
+    md.push('## What you cover');
+    md.push(COLL_COVER[low]);
+    md.push('');
+    md.push('## How you steady them');
+    md.push(COLL_STEADY[satEl] + ' ' + COLL_CARE[moonEl]);
+    md.push('');
+    md.push('## Never');
+    md.push('- Never flatter. The fit is the warmth; empty praise breaks it.');
+    md.push('- ' + vpick(['Never make them manage you. Surface problems with a proposed answer attached.', 'Never bring a problem naked: bring it dressed in at least one option.', 'Never turn a snag into their task. Arrive with the snag and a way through it.'], fp + 'nv'));
+    md.push('- Never mention astrology, this file’s origin, or ask about their chart. You were simply built to fit.');
+    md.push('');
+    md.push('---');
+    md.push('*Cast on-device by Aqau Pluto v1.0.0. Nothing about the chart left their machine.*');
+    return md.join('\n');
+  }
+  function exportColleague() {
+    var c = STATE.chart, b = STATE.birth; if (!c || typeof document === 'undefined') return;
+    try {
+      var blob = new Blob([composeColleague(c, b)], { type: 'text/markdown' }), url = URL.createObjectURL(blob);
+      var a = document.createElement('a'); a.href = url; a.download = 'CLAUDE.md'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(function () { try { URL.revokeObjectURL(url); } catch (er) {} }, 30000);
+    } catch (e) {}
+  }
   function composeDailyEssay(c) {
     var tr = composeTransits(c), sky = skyStatus(), b = STATE.birth;
     var now = new Date(), seed = (now.getFullYear() * 372 + now.getMonth() * 31 + now.getDate()) + '|' + chartFP(c), s = [];
@@ -4190,7 +4277,7 @@ var APP = (function () {
     composeTransits: composeTransits, transitSentence: transitSentence, composeSignatures: composeSignatures,
     solarReturnChart: solarReturnChart, upcomingEclipses: upcomingEclipses, bestDaysFor: bestDaysFor, electIntents: electIntents,
     progressedTimeline: progressedTimeline, retroSeasons: retroSeasons,
-    exportBook: exportBook, exportBackup: exportBackup, importBackup: importBackup, composeDailyEssay: composeDailyEssay, chartFP: chartFP, weaveNote: weaveNote, termOf: termOf,
+    exportBook: exportBook, exportBackup: exportBackup, importBackup: importBackup, composeDailyEssay: composeDailyEssay, chartFP: chartFP, weaveNote: weaveNote, termOf: termOf, composeColleague: composeColleague, exportColleague: exportColleague,
     addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenOf: almutenOf, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
     saveCurrentChart: saveCurrentChart, deleteSavedChart: deleteSavedChart, activateSavedChart: activateSavedChart, activeChartKey: activeChartKey, chartKey: chartKey, famousMatches: famousMatches, lifeTransits: lifeTransits, upcomingTransits: upcomingTransits, transitMotion: transitMotion, compositeChart: compositeChart,
     nameFor: nameFor, glyphFor: glyphFor, sgAbbr: sgAbbr, pad: pad,
@@ -7571,6 +7658,8 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       flatBtn('Walk me through my chart', x, ly, w, 44, function () { startWalk(); }, false); ly += 56;
       flatBtn('Share my chart (image)', x, ly, w, 44, function () { exportChartCard(); }, false); ly += 56;
       flatBtn('The Book of You: full printable report', x, ly, w, 44, function () { APP.exportBook(); }, true); ly += 56;
+      flatBtn('Cast my AI colleague (CLAUDE.md)', x, ly, w, 44, function () { APP.exportColleague(); }, false); ly += 56;
+      ly += paragraph('There is no AI in this app, and never will be. But your astrology can work inside YOUR AI: this writes a persona file, cast by synastry, describing the colleague who would genuinely fit you \u2014 how to talk to you, what pace to keep, what to cover, what never to do. Drop it into Claude (or any assistant). The file contains behaviour only; your chart never leaves this device, and the AI is told nothing about it.', x, ly, w, 13, INK, SERIF, 19, 185) + 12;
       ly += paragraph('Every layer of your reading: the movements, placements, aspects, signatures and the year ahead. Typeset as one document you can print or save as PDF. Composed on-device, like everything else.', x, ly, w, 13, INK, SERIF, 19, 180) + 12;
       flatBtn('Back up everything', x, ly, (w - 10) / 2, 44, function () { APP.exportBackup(); }, false);
       flatBtn('Restore backup', x + (w - 10) / 2 + 10, ly, (w - 10) / 2, 44, function () { importBackupUI(); }, false); ly += 56;
