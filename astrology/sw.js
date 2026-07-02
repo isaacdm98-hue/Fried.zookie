@@ -1,7 +1,14 @@
 /* Aqau Pluto service worker - ES5, offline-first single-file PWA */
-var CACHE = 'aqau-pluto-v6';
+var CACHE = 'aqau-pluto-v7';
 var THUMBS = 'aqau-thumbs-v1';
-self.addEventListener('install', function (e) { self.skipWaiting(); });
+var CORE = ['./', 'index.html', 'corpus.js', 'lib-astronomy.js', 'lib-p5.js', 'manifest.webmanifest', 'icon-180.png', 'icon-192.png', 'icon-512.png'];
+self.addEventListener('install', function (e) {
+  // precache the whole app at install, so offline works before every file has been visited
+  e.waitUntil(
+    caches.open(CACHE).then(function (c) { return c.addAll(CORE); })['catch'](function () {})
+      .then(function () { return self.skipWaiting(); })
+  );
+});
 self.addEventListener('activate', function (e) {
   e.waitUntil(
     caches.keys().then(function (keys) {

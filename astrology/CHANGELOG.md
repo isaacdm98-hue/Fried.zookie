@@ -1,5 +1,24 @@
 # Changelog
 
+## 1.2.1 — 2026-07-02
+
+The six-dimension audit: edge charts, offline, people, data, layout, speed.
+
+- **Unknown birth times can no longer break a chart**: a birth stored
+  without an hour is cast for noon, the standard convention, instead of
+  silently failing to compute.
+- **The Rings tell the truth for newborns**: a retrograde re-cross of the
+  natal degree days after birth no longer masquerades as "your first Saturn
+  return, age 0". Laps are reconciled against age; a baby's ring now reads
+  Saturn 2056, Uranus 2110, Pluto 2274.
+- **Offline from the first visit**: the service worker precaches the whole
+  app at install, instead of only remembering pages already seen.
+- Audited clean with zero errors: polar-latitude Placidus (the planetary
+  hour bows out gracefully in polar night), sidereal + Vimshottari, southern
+  hemisphere, age 106, People (bonds, synastry, a no-time parent's colleague
+  file), settings round-trips (sidereal degrees exact, returns
+  zodiac-invariant), 320px layout, and a steady 60fps.
+
 ## 1.2.0 — 2026-07-02
 
 Time as architecture: the three great cycle tools, computed, dated, drawn.

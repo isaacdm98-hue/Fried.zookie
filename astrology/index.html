@@ -594,14 +594,16 @@ var APP = (function () {
     } catch (e) { return null; }
   }
   function utHoursOf(b) {
+    var bh = (b.hour == null ? 12 : b.hour), bm = (b.min == null ? 0 : b.min); // unknown time is cast for noon
     if (!b.manualTz && b.iana) {
-      var off = tzOffsetHours(b.iana, b.y, b.mo, b.d, b.hour, b.min);
-      if (off !== null) return b.hour + b.min / 60 - off;
+      var off = tzOffsetHours(b.iana, b.y, b.mo, b.d, bh, bm);
+      if (off !== null) return bh + bm / 60 - off;
     }
-    return b.hour + b.min / 60 - (b.tz || 0); // manual override (or fallback)
+    return bh + bm / 60 - (b.tz || 0); // manual override (or fallback)
   }
   function offsetOf(b) {
-    if (!b.manualTz && b.iana) { var off = tzOffsetHours(b.iana, b.y, b.mo, b.d, b.hour, b.min); if (off !== null) return off; }
+    var bh = (b.hour == null ? 12 : b.hour), bm = (b.min == null ? 0 : b.min);
+    if (!b.manualTz && b.iana) { var off = tzOffsetHours(b.iana, b.y, b.mo, b.d, bh, bm); if (off !== null) return off; }
     return b.tz || 0;
   }
 
@@ -2846,11 +2848,15 @@ var APP = (function () {
       var k = K[i], np = c.planets[k]; if (!np || !t.tp[k]) continue;
       var period = RETURN_YEARS[k], cur = rev(t.tp[k].lon - ay);
       var f = (k === 'node') ? rev(np.lon - cur) / 360 : rev(cur - np.lon) / 360;
-      var count = Math.max(0, Math.round(age / period - f));
+      var lapN9 = Math.round(age / period - f), count = Math.max(0, lapN9);
+      if (lapN9 < 0) f = 0; // a hair behind the natal degree at the very start of life: the lap has not begun
       var e = { k: k, period: period, frac: f, count: count, next: null, last: null, half: null, estYear: null };
       var stepD = Math.max(0.5, Math.min(120, period * 365.2422 / 140));
       var horizon = Math.min(period * 1.35, 96) * 365.2422;
-      if ((1 - f) * period < 95 && period < 95) e.next = searchLonCross(k, np.lon, ay, nowMs, 1, horizon, stepD);
+      if ((1 - f) * period < 95 && period < 95) {
+        var startMs9 = nowMs + ((lapN9 < 0 || f < 0.08) ? period * 0.5 * 365.2422 * 86400000 : 0); // just past a return (or just born): the wobble re-cross is the old season, not the next
+        e.next = searchLonCross(k, np.lon, ay, startMs9, 1, horizon, stepD);
+      }
       else e.estYear = new Date().getFullYear() + Math.round((1 - f) * period);
       if (count > 0 && period < 95) e.last = searchLonCross(k, np.lon, ay, nowMs, -1, horizon, stepD);
       if (k === 'saturn' || k === 'uranus' || k === 'node') {
