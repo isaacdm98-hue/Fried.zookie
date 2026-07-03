@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.9.2 — 2026-07-03
+- **The warm voice guides the whole way.** The first-run tour and the settings first-visit guide are now narrated card by card, in the downloaded voice or the system one, and go quiet the moment you dismiss them. The promise the voice gate made is kept.
+- **The readings speak.** Read > Story opens with "Read it to me": your four-movement arc and the fuller read, spoken aloud, with a live stop button. The voice hushes if you leave the tab.
+- **Music in the Daily Sky.** The bulletin brings in the same soft ambient pad the intro and life story carry, on your first tap of the day.
+- **One seam mended.** The chart's at-a-glance line no longer stacks two colons; it reads "leans fire: ... It meets life by ..." as intended.
+
 ## 1.9.1 — 2026-07-03
 - **The meeting, staged.** Opening a person in People now opens with the scene itself: your persona and theirs under one dusk, them arriving at their chart's pace, stopping at the distance the synastry sets, the bond thread drawn and the element mix written beneath.
 - **Element worn everywhere.** People rows and family-tree cards carry a small swatch in each persona's light, so a glance tells you who runs fire, earth, air or water.
