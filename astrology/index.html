@@ -518,7 +518,7 @@ var APP = (function () {
   // ---------- state ----------
   var STATE = {
     birth: null, // {name,y,mo,d,hour,min,tz,lat,lon,place,timeKnown}
-    settings: { zodiac: 'tropical', house: 'placidus', orbScale: 1, theme: 'light', textScale: 1, sound: true, accent: 0, autoNight: false, minorBodies: false, minorAspects: false, trueNode: true },
+    settings: { zodiac: 'tropical', house: 'placidus', orbScale: 1, theme: 'light', textScale: 1.15, textMigrated: true, sound: true, accent: 0, autoNight: false, minorBodies: false, minorAspects: false, trueNode: true },
     chart: null, screen: 'chart', chartView: 'dial',
     people: [], // [{id,name,rel,famrel,y,mo,d,hour,min,tz,iana,lat,lon,place,timeKnown}]
     charts: [] // saved birth charts you can switch between (snapshots of `birth`)
@@ -5062,19 +5062,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       }
       normal(); ly += 48;
       ly += hudStrip(c, b, x, ly, w) + 10;
-      ly += todayCardStrip(c, b, x, ly, w) + 14;
-      // S3 — a one-line daily headline of what the sky is doing to you; tap to open Today
-      (function () {
-        var trd = walkTr(c), te0 = trd.daily && trd.daily[0];
-        var dline = te0 ? (APP.nameFor(te0.tp) + ' ' + te0.asp.key + ' your ' + APP.nameFor(te0.np)) : 'a quiet sky: your pattern runs undisturbed';
-        var puls = reduced() ? 1 : (0.6 + 0.4 * Math.sin(nowT() * 0.004));
-        p.noStroke(); fillc(ACC, 255 * puls); p.ellipse(x + 4, sY(ly) + 8, 6, 6);
-        setFont(MONO, 10, ACCTX, p.LEFT, p.TOP, 235); p.text(('Today · ' + dline).toUpperCase(), x + 16, sY(ly) + 3);
-        setFont(MONO, 9, INK, p.RIGHT, p.TOP, 150); p.text('OPEN ›', x + w, sY(ly) + 4);
-        pushHit(x, sY(ly) - 4, w, 26, function () { openToday(); });
-      })();
-      ly += 28;
-
+      // (the Today teaser and headline sat here; the moon button up top is the one door to Today)
       ly += dial(c, b, ly) + 4;
       setFont(MONO, 9.5, INK, p.CENTER, p.TOP, 130); p.text('TAP A BODY: IT LIGHTS ITS THREADS, MEANING BELOW', x + w / 2, sY(ly)); ly += 22;
       ly += reels(c, b, ly) + 14;
@@ -5243,11 +5231,15 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       // just after contact and highest at passing; arms swing opposite with soft elbows.
       var S = h * 0.15, lft = Math.sin(ph), rgt = Math.sin(ph + Math.PI);
       var rise = (1 - Math.cos(2 * ph)) / 2; // 0 at contact, 1 at passing
+      // a lifted foot swings FORWARD through the air (in the direction of travel,
+      // dir9: +1 rightward, -1 leftward) and a planted one travels back under the
+      // body; get this backwards and the whole figure moonwalks
+      var dir9 = arguments.length > 4 && arguments[4] ? arguments[4] : 1;
       return {
-        fL: { x: cx0 - h * 0.015 + Math.cos(ph) * S, y: gy0 - Math.max(0, lft) * h * 0.06 },
-        fR: { x: cx0 + h * 0.015 + Math.cos(ph + Math.PI) * S, y: gy0 - Math.max(0, rgt) * h * 0.06 },
-        hL: { dx: Math.cos(ph + Math.PI) * h * 0.09, dy: h * 0.30 },
-        hR: { dx: Math.cos(ph) * h * 0.09, dy: h * 0.30 },
+        fL: { x: cx0 + (-h * 0.015 - Math.cos(ph) * S) * dir9, y: gy0 - Math.max(0, lft) * h * 0.06 },
+        fR: { x: cx0 + (h * 0.015 - Math.cos(ph + Math.PI) * S) * dir9, y: gy0 - Math.max(0, rgt) * h * 0.06 },
+        hL: { dx: Math.cos(ph) * h * 0.09 * dir9, dy: h * 0.30 },
+        hR: { dx: Math.cos(ph + Math.PI) * h * 0.09 * dir9, dy: h * 0.30 },
         bob: -rise * h * 0.02 + h * 0.01,
         lean: 0.07
       };
@@ -5425,7 +5417,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var fig = { x: fx, y: gy, h: fh, col: [20, 18, 26], rim: ppF.rim, rimOff: [2, -1.6], dir: -1, star: false };
       if (arr9 < 0.985) {
         var phF = ((W + 50) - fx) / (fh * 0.42 / ppF.pace) * Math.PI;
-        var gF = gaitAt(fx, gy, fh, phF);
+        var gF = gaitAt(fx, gy, fh, phF, -1);
         fig.fL = gF.fL; fig.fR = gF.fR; fig.bob = gF.bob; fig.lean = -0.10; fig.look = -0.35;
       } else {
         fig.crouch = ppF.crouch;
@@ -5462,6 +5454,17 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       actorFigure({ x: fx, y: fy, h: h, lean: (pz.lean || 0) * 0.8, crouch: pz.crouch || 0, look: pz.lean ? (pz.lean > 0 ? 0.5 : -0.5) : 0, col: col9 }, alf);
     }
     function lifeWalkHush() { try { if (window.AqauVoice) window.AqauVoice.stop(); } catch (e9) {} try { if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel(); } catch (e8) {} try { padStop(1.2); } catch (e7) {} }
+    // the one way anything in the app speaks. The downloaded voice when it is truly
+    // ready; otherwise the system voice steps in, so choosing a voice always means
+    // hearing one. Silence only when the person asked for silence.
+    function sayLine(txt) {
+      var vs = APP.STATE.settings && APP.STATE.settings.voice;
+      if (!vs || vs === 'off' || !txt) return;
+      try { if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel(); } catch (eS0) {}
+      try { if (window.AqauVoice) window.AqauVoice.stop(); } catch (eS1) {}
+      try { if (vs === 'human' && window.AqauVoice && window.AqauVoice.state === 'ready' && window.AqauVoice.speak(txt)) return; } catch (eS2) {}
+      try { if (typeof speechSynthesis !== 'undefined' && typeof SpeechSynthesisUtterance !== 'undefined') { var u9s = new SpeechSynthesisUtterance(txt); u9s.rate = 0.95; speechSynthesis.speak(u9s); } } catch (eS3) {}
+    }
     function lifeWalkNext(n) { if (!UI.lifeWalk) return; if (UI.lifeWalk.i >= n) { UI.lifeWalk = null; lifeWalkHush(); return; } UI.lifeWalk.i++; UI.lifeWalk.t0 = nowT(); }
     function lifeWalkPrev() { if (UI.lifeWalk && UI.lifeWalk.i > 0) { UI.lifeWalk.i--; UI.lifeWalk.t0 = nowT(); } }
     // what stage the chapter plays on: the natal point names the set
@@ -5555,11 +5558,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var te = cl01((nowT() - UI.lifeWalk.t0) / 560), ee = eCubic(te), alpha = still ? 1 : cl01(te * 1.5);
       if (UI.lwNoteI !== UI.lifeWalk.i) {
         UI.lwNoteI = UI.lifeWalk.i; blip(e0.isReturn ? 523 : e0.ang === 90 ? 196 : e0.ang === 180 ? 262 : e0.ang === 120 ? 440 : 392, 0.22, 0.03);
-        try {
-          var vs9 = APP.STATE.settings && APP.STATE.settings.voice;
-          if (vs9 === 'human' && window.AqauVoice && window.AqauVoice.state === 'ready') window.AqauVoice.speak((e0.title || '') + '. ' + (e0.text || ''));
-          else if (vs9 === 'system' && typeof speechSynthesis !== 'undefined' && typeof SpeechSynthesisUtterance !== 'undefined') { speechSynthesis.cancel(); var u9 = new SpeechSynthesisUtterance((e0.title || '') + '. ' + (e0.text || '')); u9.rate = 0.95; speechSynthesis.speak(u9); }
-        } catch (eN9) {}
+        try { sayLine((e0.title || '') + '. ' + (e0.text || '')); } catch (eN9) {}
       }
       var ctrlTop = top + vh - 64;
       pushHit(x, top + 64, w, ctrlTop - (top + 64), function () { lifeWalkNext(ev.length); }); pushHit(x, top + 64, 72, ctrlTop - (top + 64), function () { lifeWalkPrev(); });
@@ -5678,7 +5677,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
             capTxt = 'THE SQUARE: THE STORM LEANED ON THE HOUSE, AND YOU LEANED BACK';
           } else {
             var carry9 = eCubic(cl01((t2 - 0.15) / 0.5));
-            if (ent < 0.05) { rig.x = fx0 - (fx0 - (doorX9 + fh * 0.16)) * carry9; if (t2 < 0.6) { var g7 = gaitAt(rig.x, gy, fh, nowT() * 0.012); rig.fL = g7.fL; rig.fR = g7.fR; rig.bob = -g7.bob; rig.lean = g7.lean; } rig.hL = { x: rig.x - fh * 0.13, y: gy - fh * 0.52, bend: -1 }; rig.look = -0.5; }
+            if (ent < 0.05) { rig.x = fx0 - (fx0 - (doorX9 + fh * 0.16)) * carry9; if (t2 < 0.6) { var g7 = gaitAt(rig.x, gy, fh, nowT() * 0.012, -1); rig.fL = g7.fL; rig.fR = g7.fR; rig.bob = -g7.bob; rig.lean = g7.lean; } rig.hL = { x: rig.x - fh * 0.13, y: gy - fh * 0.52, bend: -1 }; rig.look = -0.5; }
             var lx9 = rig.x - fh * 0.13, lyy9 = gy - fh * 0.52;
             p.noStroke(); fillc([255, 220, 150], 200); p.ellipse(lx9, lyy9, 9, 9); fillc([255, 220, 150], 60); p.ellipse(lx9, lyy9, 22, 22);
             if (t2 > 0.62) { var into9 = Math.sin(cl01((t2 - 0.62) / 0.38) * Math.PI); p.noStroke(); fillc([255, 214, 140], 110 * into9); p.rect(hoX9 + 3, gy - r * 0.44 + 3, hoW9 - 6, r * 0.44 - 6, 3); }
@@ -5707,7 +5706,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
             capTxt = 'THE SQUARE: THE DOOR STUCK, AND YOU PUT YOUR SHOULDER TO IT';
           } else {
             var wlk7 = eCubic(cl01((t2 - 0.1) / 0.6));
-            if (ent < 0.05) { rig.x = fx0 - (fx0 - gateMid9) * wlk7; if (t2 < 0.7) { var g5 = gaitAt(rig.x, gy, fh, nowT() * 0.013); rig.fL = g5.fL; rig.fR = g5.fR; rig.bob = -g5.bob; rig.lean = -0.08; } rig.look = -0.5; }
+            if (ent < 0.05) { rig.x = fx0 - (fx0 - gateMid9) * wlk7; if (t2 < 0.7) { var g5 = gaitAt(rig.x, gy, fh, nowT() * 0.013, -1); rig.fL = g5.fL; rig.fR = g5.fR; rig.bob = -g5.bob; rig.lean = -0.08; } rig.look = -0.5; }
             capTxt = e0.ang === 120 ? 'THE TRINE: THE DOOR YOU MEET THE WORLD THROUGH STOOD OPEN' : 'THE CONJUNCTION: YOU WALKED THROUGH IT AS SOMEONE NEW';
           }
         }
@@ -5796,7 +5795,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         }
         var wlk9 = eCubic(cl01(t2 / 0.4));
         rig.x = hasTree9 ? (fx0 - (fx0 - (trX + fh * 0.45)) * wlk9) : fx0;
-        if (t2 < 0.4 && ent < 0.05) { var g8 = gaitAt(rig.x, gy, fh, nowT() * 0.014); rig.fL = g8.fL; rig.fR = g8.fR; rig.bob = -g8.bob; rig.lean = g8.lean; }
+        if (t2 < 0.4 && ent < 0.05) { var g8 = gaitAt(rig.x, gy, fh, nowT() * 0.014, -1); rig.fL = g8.fL; rig.fR = g8.fR; rig.bob = -g8.bob; rig.lean = g8.lean; }
         plRad9 = plR * 0.55;
         var palmX9 = rig.x - fh * 0.15, palmY9 = rig.y - fh * 0.74;
         if (t2 >= 0.4 && ent < 0.05) { rig.hL = { x: palmX9, y: palmY9, bend: -1 }; rig.look = -0.55; rig.fL = { x: rig.x - fh * 0.10, y: rig.y }; rig.fR = { x: rig.x + fh * 0.09, y: rig.y }; }
@@ -6120,10 +6119,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
           if (UI.arcCache) for (pi = 0; pi < UI.arcCache.length; pi++) parts.push(UI.arcCache[pi].text);
           if (UI.readCache) for (pi = 0; pi < Math.min(UI.readCache.length, 4); pi++) parts.push(UI.readCache[pi]);
           var sayR = parts.join(' ');
-          try {
-            if (vsR === 'human' && window.AqauVoice && window.AqauVoice.state === 'ready') window.AqauVoice.speak(sayR);
-            else if (typeof speechSynthesis !== 'undefined' && typeof SpeechSynthesisUtterance !== 'undefined') { var uR9 = new SpeechSynthesisUtterance(sayR); uR9.rate = 0.95; speechSynthesis.speak(uR9); }
-          } catch (eR5) {}
+          try { sayLine(sayR); } catch (eR5) {}
         }, listening); ly += 52;
       }
       // lead with the four-movement arc — spine, engine, edge, where it's heading
@@ -6531,29 +6527,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (UI.tarotRit) { drawTarotRitual(); return; }
       eyebrow('Spreads & meanings', x, ly); ly += 22;
       riseText('Tarot', x, sY(ly), 34, SANS, INK, UI.fxT + 120, 30, 255, true); ly += 46;
-      // the card of the day: real public-domain art with a projector's shiver
-      var today9 = new Date(), cdi9 = (today9.getFullYear() * 372 + (today9.getMonth() + 1) * 31 + today9.getDate()) % DATA.TAROT.length, cd9 = DATA.TAROT[cdi9];
-      if (UI.homeArtFor !== cdi9) { UI.homeArtFor = cdi9; UI.homeImg = null; try { var f9 = rwsFile(cd9); if (f9) { var im9 = new Image(); im9.onload = function () { UI.homeImg = im9; }; im9.onerror = function () {}; im9.src = 'https://commons.wikimedia.org/wiki/Special:FilePath/' + encodeURIComponent(f9); } } catch (eH9) {} }
-      var acH = 168, acY = sY(ly), dcA = p.drawingContext;
-      p.noStroke(); fillc(shade(GROUNDS[UI.screen], -22)); p.rect(x, acY + 4, w, acH, 13); fillc([26, 22, 20]); p.rect(x, acY, w, acH, 13);
-      if (dcA) {
-        dcA.save(); dcA.beginPath(); if (dcA.roundRect) dcA.roundRect(x, acY, w, acH, 13); else dcA.rect(x, acY, w, acH); dcA.clip();
-        if (UI.homeImg && (UI.homeImg.naturalWidth || 0) > 0) {
-          var flk = reduced() ? 1 : (0.84 + 0.16 * Math.sin(nowT() * 0.021) * Math.sin(nowT() * 0.0034));
-          var jx9 = reduced() ? 0 : Math.sin(nowT() * 0.05) * 0.8;
-          var iw9 = UI.homeImg.naturalWidth, ih9 = UI.homeImg.naturalHeight, sc9 = Math.max(w / iw9, acH / ih9) * 1.05;
-          dcA.globalAlpha = flk; try { dcA.drawImage(UI.homeImg, x + w / 2 - iw9 * sc9 / 2 + jx9, acY - ih9 * sc9 * 0.12, iw9 * sc9, ih9 * sc9); } catch (eD9) {}
-          dcA.globalAlpha = 1;
-          if (!reduced()) { var gn9; dcA.fillStyle = 'rgba(255,255,255,0.05)'; for (gn9 = 0; gn9 < 12; gn9++) dcA.fillRect(x + ((gn9 * 137 + (nowT() | 0)) % w), acY + ((gn9 * 71 + ((nowT() / 3) | 0)) % acH), 1.6, 1.6); }
-          var vgA = dcA.createLinearGradient(0, acY, 0, acY + acH); vgA.addColorStop(0, 'rgba(16,12,10,0.08)'); vgA.addColorStop(1, 'rgba(16,12,10,0.74)'); dcA.fillStyle = vgA; dcA.fillRect(x, acY, w, acH);
-        } else { tvStatic(x + 4, acY + 4, w - 8, acH - 8, cdi9); }
-        dcA.restore();
-      }
-      setFont(MONO, 8.5, [222, 210, 190], p.LEFT, p.TOP, 210); p.text('CARD OF THE DAY · ART FROM THE PUBLIC DOMAIN', x + 14, acY + acH - 44);
-      setFont(SERIF, 19, [246, 240, 226], p.LEFT, p.TOP); bold(); p.text(cd9.name, x + 14, acY + acH - 30); normal();
-      setFont(MONO, 9, [222, 210, 190], p.RIGHT, p.BOTTOM, 210); p.text('MEANING ›', x + w - 14, acY + acH - 12);
-      (function (idx9) { pushHit(x, acY, w, acH, function () { UI.tarotTab = 'cards'; UI.card = idx9; UI.scroll.tarot = 0; UI.popT = nowT(); }); })(cdi9);
-      ly += acH + 16;
+      // (the card-of-the-day panel sat here; the deck art now lives on each card's own page)
       // guided ritual hero — how to read your OWN cards (the app never draws for you)
       var hh = 70, hy = sY(ly); p.noStroke(); fillc(INK); p.rect(x, hy + 3, w, hh, 13); fillc(shade(INK, 16)); p.rect(x, hy + pressOff(x, hy, w, hh, 3), w, hh, 13);
       var ho = pressOff(x, hy, w, hh, 3);
@@ -6829,7 +6803,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         var gapB = toneB === 'warm' ? 0.62 : toneB === 'spark' ? 1.05 : 0.82;
         var stopB = meX + fhB * gapB, fxB = (x + w + 40) - ((x + w + 40) - stopB) * eaB;
         var figB = { x: fxB, y: gyB, h: fhB, col: [20, 18, 26], rim: pTh.rim, rimOff: [2, -1.4], dir: -1, star: false };
-        if (arrB < 0.985) { var phB = ((x + w + 40) - fxB) / (fhB * 0.42 / pTh.pace) * Math.PI; var gtB = gaitAt(fxB, gyB, fhB, phB); figB.fL = gtB.fL; figB.fR = gtB.fR; figB.bob = gtB.bob; figB.lean = -0.10; figB.look = -0.35; }
+        if (arrB < 0.985) { var phB = ((x + w + 40) - fxB) / (fhB * 0.42 / pTh.pace) * Math.PI; var gtB = gaitAt(fxB, gyB, fhB, phB, -1); figB.fL = gtB.fL; figB.fR = gtB.fR; figB.bob = gtB.bob; figB.lean = -0.10; figB.look = -0.35; }
         else {
           figB.crouch = pTh.crouch;
           if (toneB === 'warm') { figB.look = -0.5; var wvB = still9 ? 0 : Math.sin(nowT() * 0.006) * 2.2; figB.hR = { x: fxB - fhB * 0.28 + wvB, y: gyB - fhB * 0.80, bend: 1 }; }
@@ -7126,7 +7100,6 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var L = UI.lesson; if (!L) return;
       if (fw) {
         if (L.beat < beats.length - 1) { L.beat++; L.t0 = nowT(); }
-        else if (quiz && L.beat < beats.length) { L.beat = beats.length; L.t0 = nowT(); }
         else lessonNext();
       } else {
         if (L.beat > 0) { L.beat--; L.qa = null; L.t0 = nowT(); } else lessonPrev();
@@ -7558,7 +7531,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var stJ = APP.STATE.settings || {}, seenN = 0, starN = 0, jk;
       if (stJ.lseen) for (jk in stJ.lseen) if (stJ.lseen.hasOwnProperty(jk)) seenN++;
       if (stJ.lq) for (jk in stJ.lq) if (stJ.lq.hasOwnProperty(jk) && stJ.lq[jk] === 1) starN++;
-      setFont(MONO, 9.5, GROUNDS[UI.screen], p.LEFT, p.CENTER, 210); p.text(seenN ? (Math.min(seenN, LESSON.length) + '/' + LESSON.length + ' CHAPTERS · ' + starN + ' ★ EARNED: CONTINUE') : 'TAP TO BEGIN: A SHORT ANIMATED LESSON', x + 18, hy + hh / 2 + 11);
+      setFont(MONO, 9.5, GROUNDS[UI.screen], p.LEFT, p.CENTER, 210); p.text(seenN ? (Math.min(seenN, LESSON.length) + '/' + LESSON.length + ' CHAPTERS SEEN: CONTINUE') : 'TAP TO BEGIN: A SHORT ANIMATED LESSON', x + 18, hy + hh / 2 + 11);
       var pulse = reduced() ? 0 : Math.sin(nowT() * 0.004) * 2; setFont(SANS, 22, GROUNDS[UI.screen], p.RIGHT, p.CENTER); p.text('›', x + w - 18 + pulse, hy + hh / 2);
       pushHit(x, hy, w, hh, function () { startLesson(); }); ly += hh + 14;
       // the road so far: the journey drawn as a path your persona is actually walking,
@@ -8366,11 +8339,12 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       // the classic eight-frame run, continuous: contact, down, pass, peak (airborne),
       // forward lean, bent arms pumping opposite the legs
       var S = h * 0.24, lift = h * 0.20;
-      function foot9(off) { var a9 = ph + off; return { x: cx0 + Math.cos(a9) * S + h * 0.02, y: gy0 - Math.max(0, Math.sin(a9)) * lift }; }
+      // as in gaitAt: the airborne foot drives forward, the planted one pushes back
+      function foot9(off) { var a9 = ph + off; return { x: cx0 - Math.cos(a9) * S + h * 0.02, y: gy0 - Math.max(0, Math.sin(a9)) * lift }; }
       var airb = Math.max(0, Math.sin(2 * ph + Math.PI / 2));
       return { fL: foot9(0), fR: foot9(Math.PI), bob: -airb * h * 0.05 + h * 0.02, lean: 0.30,
-        hLdx: Math.cos(ph + Math.PI) * h * 0.13, hLdy: h * 0.14 + Math.sin(ph + Math.PI) * h * 0.03,
-        hRdx: Math.cos(ph) * h * 0.13, hRdy: h * 0.14 + Math.sin(ph) * h * 0.03 };
+        hLdx: Math.cos(ph) * h * 0.13, hLdy: h * 0.14 + Math.sin(ph) * h * 0.03,
+        hRdx: Math.cos(ph + Math.PI) * h * 0.13, hRdy: h * 0.14 + Math.sin(ph + Math.PI) * h * 0.03 };
     }
     // ---- the daily bulletin: when the app opens, today's sky arrives as a short
     // animated news reel, not a list. Your persona walks today's weather scene by
@@ -8400,11 +8374,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         if (dn.i >= 0) {
           var scV = dn.i < n ? dn.scenes[dn.i] : null;
           var say = scV ? (scV.title + '. ' + scV.body) : 'Under the same sky. Weather, not fate.';
-          try {
-            var vsN = APP.STATE.settings && APP.STATE.settings.voice;
-            if (vsN === 'human' && window.AqauVoice && window.AqauVoice.state === 'ready') window.AqauVoice.speak(say);
-            else if (vsN === 'system' && typeof speechSynthesis !== 'undefined' && typeof SpeechSynthesisUtterance !== 'undefined') { speechSynthesis.cancel(); var uN = new SpeechSynthesisUtterance(say); uN.rate = 0.95; speechSynthesis.speak(uN); }
-          } catch (eNV) {}
+          try { sayLine(say); } catch (eNV) {}
         }
       }
       function mixN(c1, c2, t9) { return [c1[0] + (c2[0] - c1[0]) * t9, c1[1] + (c2[1] - c1[1]) * t9, c1[2] + (c2[2] - c1[2]) * t9]; }
@@ -8706,11 +8676,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var gs9 = GS9[UI.setGuide.i], gH9 = 150, gY9 = H - (UI.safeBottom || 0) - NAVH - gH9 - 14;
       if (UI.setGuideSaid !== UI.setGuide.i) {
         UI.setGuideSaid = UI.setGuide.i;
-        try {
-          var vsG = APP.STATE.settings && APP.STATE.settings.voice;
-          if (vsG === 'human' && window.AqauVoice && window.AqauVoice.state === 'ready') { window.AqauVoice.stop(); window.AqauVoice.speak(gs9[0] + '. ' + gs9[1]); }
-          else if (vsG === 'system' && typeof speechSynthesis !== 'undefined' && typeof SpeechSynthesisUtterance !== 'undefined') { speechSynthesis.cancel(); var uG9 = new SpeechSynthesisUtterance(gs9[0] + '. ' + gs9[1]); uG9.rate = 0.95; speechSynthesis.speak(uG9); }
-        } catch (eGS) {}
+        try { sayLine(gs9[0] + '. ' + gs9[1]); } catch (eGS) {}
       }
       p.noStroke(); fillc([12, 10, 8], 120); p.rect(0, 0, W, H); pushHit(0, 0, W, H, function () {});
       var gp9 = reduced() ? 1 : eBack(cl01((nowT() - UI.setGuide.t0) / 420)), gOff9 = (1 - gp9) * 20;
@@ -9433,11 +9399,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       // the warm voice walks the tour with you: each card is spoken as it appears
       if (UI.tourSaid !== UI.tour.step) {
         UI.tourSaid = UI.tour.step;
-        try {
-          var vsT = APP.STATE.settings && APP.STATE.settings.voice;
-          if (vsT === 'human' && window.AqauVoice && window.AqauVoice.state === 'ready') { window.AqauVoice.stop(); window.AqauVoice.speak(step.t); }
-          else if (vsT === 'system' && typeof speechSynthesis !== 'undefined' && typeof SpeechSynthesisUtterance !== 'undefined') { speechSynthesis.cancel(); var uT9 = new SpeechSynthesisUtterance(step.t); uT9.rate = 0.95; speechSynthesis.speak(uT9); }
-        } catch (eTS) {}
+        try { sayLine(step.t); } catch (eTS) {}
       }
       p.noStroke(); fillc([0, 0, 0], 150); p.rect(0, 0, W, H); pushHit(0, 0, W, H, function () {}); // scrim swallows taps
       if (step.tab != null) { var sb = UI.safeBottom || 0, navY = H - NAVH - sb, tw = W / 6, tx = step.tab * tw; p.noFill(); strokec(ACC, 255); p.strokeWeight(2.5); p.rect(tx + 4, navY + 4, tw - 8, NAVH - 8, 8); }
@@ -9457,7 +9419,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       measureInsets(); W = p.windowWidth; H = vpH(); var cnv = p.createCanvas(W, H); var el = cnv.elt;
       el.style.position = 'fixed'; el.style.top = '0'; el.style.left = '0'; el.style.zIndex = '5'; el.style.touchAction = 'none'; el.style.pointerEvents = 'auto'; el.setAttribute('aria-hidden', 'true');
       try { document.documentElement.style.overflow = 'hidden'; document.body.style.overflow = 'hidden'; document.body.style.margin = '0'; document.body.style.touchAction = 'none'; document.body.style.backgroundImage = 'none'; var ap = document.getElementById('app'); if (ap) ap.style.pointerEvents = 'none'; } catch (er) {}
-      p.frameRate(30); p.pixelDensity(Math.min(2, p.displayDensity()));
+      p.frameRate(60); p.pixelDensity(Math.min(2, p.displayDensity()));
       bindInput(el);
       UI.bg = GROUNDS[UI.screen]; UI.prevScreen = UI.screen; UI.fxT = nowT();
       setBodyBg(UI.bg);
@@ -9516,6 +9478,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (!UI.fontApplied) {
         UI.fontApplied = true; try { applyFontPref(); } catch (eFp) {}
         try { var stM = APP.STATE.settings; if (stM && !stM.soundMigrated) { stM.soundMigrated = true; if (stM.sound !== true) stM.sound = true; APP.save(); } } catch (eSM) {}
+        try { var stX = APP.STATE.settings; if (stX && !stX.textMigrated) { stX.textMigrated = true; if (!stX.textScale || stX.textScale === 1) stX.textScale = 1.15; APP.save(); UI.readCache = null; } } catch (eTM) {}
       }
       // the voice fetches itself in the background: once, politely, only when online
       if (!UI.voiceKick && nowT() > 4000) {
@@ -9582,6 +9545,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     function inRect(mx, my, r) { return mx >= r.x && mx <= r.x + r.w && my >= r.y && my <= r.y + r.h; }
     function press(x, y) {
       if (soundOn()) audioInit(); // first gesture unlocks WebAudio
+      if (!UI.voiceUnlocked) { UI.voiceUnlocked = true; try { if (typeof speechSynthesis !== 'undefined' && typeof SpeechSynthesisUtterance !== 'undefined') { var uVU = new SpeechSynthesisUtterance(' '); uVU.volume = 0; speechSynthesis.speak(uVU); } } catch (eVU) {} }
       UI.ptrX = x; UI.ptrY = y; UI.ptrDown = true; UI.ptrMoveT = nowT();
       UI.pressX = x; UI.pressY = y; UI.pressT = nowT(); UI.dragging = false; UI.scrollStart = scrollOf(); UI.cityScrollStart = UI.cityScroll || 0;
       UI.tScrollStart = UI.tScroll || 0;
@@ -9606,7 +9570,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       UI.ptrDown = false;
       if (UI.inReel) { UI.inReel = false; return; }
       if (UI.inSlider) { UI.inSlider = false; return; }
-      if (!UI.dragging && (nowT() - UI.pressT) < 500) { spawnRipple(x, y); for (var i = hits.length - 1; i >= 0; i--) if (hits[i].fn && inRect(x, y, hits[i])) { blip(660, 0.12, 0.03); buzz(7); UI.lastHit = { x: hits[i].x, y: hits[i].y, w: hits[i].w, h: hits[i].h, t: nowT() }; hits[i].fn(); break; } }
+      if (!UI.dragging && (nowT() - UI.pressT) < 500) { spawnRipple(x, y); for (var i = hits.length - 1; i >= 0; i--) if (hits[i].fn && inRect(x, y, hits[i])) { buzz(7); UI.lastHit = { x: hits[i].x, y: hits[i].y, w: hits[i].w, h: hits[i].h, t: nowT() }; hits[i].fn(); break; } }
       else if (!UI.dragging && (nowT() - UI.pressT) >= 500 && (nowT() - UI.pressT) < 5000 && !UI.paraAct) { for (var pi2 = phits.length - 1; pi2 >= 0; pi2--) if (inRect(x, y, phits[pi2])) { UI.paraAct = { text: phits[pi2].text, T: nowT() }; buzz(12); break; } }
       UI.dragging = false; UI.inCity = false;
     }

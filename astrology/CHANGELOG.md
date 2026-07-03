@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.9.3 — 2026-07-03
+- **The walk, finally forward.** The stride had feet swinging backward through the air, which read as moonwalking. Feet now drive forward while lifted and push back while planted, with the cycle direction-aware, so walkers heading left and right both read true.
+- **The chart opens on the wheel.** Both Today teasers are gone from the front screen; the moon button up top is the one door to Today.
+- **Tarot home decluttered.** The card-of-the-day panel is gone; the deck art lives on each card's own meaning page.
+- **Lessons teach, no tests.** The quiz beats are removed from Learn; chapters flow teaching into what it means in your chart, then onward.
+- **Quiet hands.** Taps no longer chirp; touches answer with a small haptic only, and sound is kept for music and scene moments.
+- **A voice that always answers.** Every spoken line now falls back to the system voice whenever the downloaded one is not ready, and speech is unlocked on the first touch, so choosing a voice always means hearing one.
+- **Bigger words, smoother hand.** Reading text steps up to the Large size by default (your explicit choice is respected), and the canvas runs at 60 frames so scrolling stops feeling clunky.
+
 ## 1.9.2 — 2026-07-03
 - **The warm voice guides the whole way.** The first-run tour and the settings first-visit guide are now narrated card by card, in the downloaded voice or the system one, and go quiet the moment you dismiss them. The promise the voice gate made is kept.
 - **The readings speak.** Read > Story opens with "Read it to me": your four-movement arc and the fuller read, spoken aloud, with a live stop button. The voice hushes if you leave the tab.
