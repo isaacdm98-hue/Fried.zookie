@@ -518,7 +518,7 @@ var APP = (function () {
   // ---------- state ----------
   var STATE = {
     birth: null, // {name,y,mo,d,hour,min,tz,lat,lon,place,timeKnown}
-    settings: { zodiac: 'tropical', house: 'placidus', orbScale: 1, theme: 'light', textScale: 1, sound: false, accent: 0, autoNight: false, minorBodies: false, minorAspects: false, trueNode: true },
+    settings: { zodiac: 'tropical', house: 'placidus', orbScale: 1, theme: 'light', textScale: 1, sound: true, accent: 0, autoNight: false, minorBodies: false, minorAspects: false, trueNode: true },
     chart: null, screen: 'chart', chartView: 'dial',
     people: [], // [{id,name,rel,famrel,y,mo,d,hour,min,tz,iana,lat,lon,place,timeKnown}]
     charts: [] // saved birth charts you can switch between (snapshots of `birth`)
@@ -3823,6 +3823,20 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
   // ---- optional, mutable sound (tiny WebAudio synth — no assets, off by default) ----
   var AUDIO = { ctx: null };
   function soundOn() { return !!(APP.STATE.settings && APP.STATE.settings.sound); }
+  var SANS0 = SANS, SERIF0 = SERIF;
+  function applyFontPref() {
+    var dys = !!(APP.STATE.settings && APP.STATE.settings.font === 'dyslexic');
+    if (dys && typeof FontFace !== 'undefined' && !UI.dysLoaded && !UI.dysLoading) {
+      UI.dysLoading = true;
+      try {
+        var f1 = new FontFace('OpenDyslexic', "url(https://cdn.jsdelivr.net/npm/open-dyslexic@1.0.3/woff/OpenDyslexic-Regular.woff)");
+        var f2 = new FontFace('OpenDyslexic', "url(https://cdn.jsdelivr.net/npm/open-dyslexic@1.0.3/woff/OpenDyslexic-Bold.woff)", { weight: 'bold' });
+        f1.load().then(function (ff) { document.fonts.add(ff); return f2.load(); }).then(function (ff2) { document.fonts.add(ff2); UI.dysLoaded = true; UI.dysLoading = false; }, function () { UI.dysLoading = false; });
+      } catch (eF) { UI.dysLoading = false; }
+    }
+    SERIF = dys ? "'OpenDyslexic', " + SERIF0 : SERIF0;
+    SANS = dys ? "'OpenDyslexic', " + SANS0 : SANS0;
+  }
   function audioInit() { if (AUDIO.ctx || typeof window === 'undefined') return; try { var AC = window.AudioContext || window.webkitAudioContext; if (AC) AUDIO.ctx = new AC(); } catch (e) { AUDIO.ctx = null; } if (AUDIO.ctx && AUDIO.ctx.resume) try { AUDIO.ctx.resume(); } catch (e2) {} }
   function blip(freq, dur, vol) {
     if (!soundOn() || !AUDIO.ctx) return;
@@ -3833,6 +3847,39 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     } catch (e) {}
   }
   function chime() { buzz(14); if (!soundOn()) return; blip(523.25, 0.22, 0.035); setTimeout(function () { blip(783.99, 0.26, 0.03); }, 90); }
+  // ===== the ambient pad: a quiet bed of sound that swells under the big moments =====
+  var PAD = null;
+  function padStart(freqs, vol) {
+    if (!soundOn() || reducedMotion()) return;
+    audioInit(); if (!AUDIO.ctx) return;
+    padStop(0.4);
+    try {
+      var ctx = AUDIO.ctx, t = ctx.currentTime, master = ctx.createGain();
+      master.gain.setValueAtTime(0.0001, t);
+      master.gain.linearRampToValueAtTime(vol || 0.028, t + 3.2);
+      var lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 900; lp.Q.value = 0.4;
+      var lfo = ctx.createOscillator(), lfoG = ctx.createGain();
+      lfo.frequency.value = 0.09; lfoG.gain.value = 220; lfo.connect(lfoG); lfoG.connect(lp.frequency); lfo.start(t);
+      lp.connect(master); master.connect(ctx.destination);
+      var oscs = [lfo], i;
+      for (i = 0; i < freqs.length; i++) {
+        var o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = i % 2 ? 'sine' : 'triangle'; o.frequency.value = freqs[i] * (1 + (i % 2 ? 0.0015 : -0.001));
+        g.gain.value = 1 / freqs.length;
+        o.connect(g); g.connect(lp); o.start(t); oscs.push(o);
+      }
+      PAD = { master: master, oscs: oscs };
+    } catch (e) { PAD = null; }
+  }
+  function padStop(fade) {
+    if (!PAD || !AUDIO.ctx) { PAD = null; return; }
+    try {
+      var t = AUDIO.ctx.currentTime, pd = PAD; PAD = null;
+      pd.master.gain.cancelScheduledValues(t); pd.master.gain.setValueAtTime(Math.max(0.0001, pd.master.gain.value), t);
+      pd.master.gain.exponentialRampToValueAtTime(0.0001, t + (fade == null ? 1.6 : fade));
+      setTimeout(function () { var j; for (j = 0; j < pd.oscs.length; j++) { try { pd.oscs[j].stop(); } catch (e2) {} } }, ((fade == null ? 1.6 : fade) + 0.2) * 1000);
+    } catch (e) { PAD = null; }
+  }
   // haptics: tiny physical taps where the interface clicks (off in Settings, and never when reduced-motion is set)
   function buzz(ms) { try { if (navigator.vibrate && APP.STATE.settings && APP.STATE.settings.haptics !== false && !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)) navigator.vibrate(ms); } catch (e) {} }
 
@@ -3955,7 +4002,8 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     function paragraph(str, x, ly, boxW, sz, c, font, lead, a) {
       var fs = (APP.STATE.settings && APP.STATE.settings.textScale) || 1; sz = sz * fs * 1.3; // larger, bolder reading base + dyslexia-friendly scale
       p.textFont(font || SERIF); p.textSize(sz); p.textStyle(p.NORMAL);
-      var lines = wrapLines(str, boxW), lh = (lead ? lead * fs * 1.16 : sz * 1.54); fillc(c, a); p.textAlign(p.LEFT, p.TOP);
+      var dysLh = (APP.STATE.settings && APP.STATE.settings.font === 'dyslexic') ? 1.12 : 1;
+      var lines = wrapLines(str, boxW), lh = (lead ? lead * fs * 1.16 : sz * 1.54) * dysLh; fillc(c, a); p.textAlign(p.LEFT, p.TOP);
       strokec(c, a); p.strokeWeight(0.7); // faux-bold: thicken glyphs for clearer, bolder reading
       for (var i = 0; i < lines.length; i++) p.text(lines[i], x, sY(ly + i * lh));
       p.noStroke();
@@ -4845,6 +4893,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
 
     // ============ SCREENS ============
     // ===== THE REEL: your whole life on a scrub bar. The sky moves against your chart; exact aspects light as threads. =====
+    function still9reel() { return reduced(); }
     function drawReel(c, b) {
       var x = sx(), w = cw(), top = topY(), vh = viewH(), cx = x + w / 2, cy = top + vh * 0.40, dc = p.drawingContext;
       var R = Math.min(w * 0.40, vh * 0.22), RAD = Math.PI / 180, asc = b.timeKnown ? c.asc : 0, i, j;
@@ -4912,11 +4961,26 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       // the scrub bar
       var bx3 = x + 8, bw3 = w - 16, by3 = top + vh - 74;
       UI.reelBar = { x: bx3, y: by3, w: bw3 };
-      var dk9; for (dk9 = 1; dk9 < 9; dk9++) { strokec(INK, 60); p.strokeWeight(1); p.line(bx3 + bw3 * dk9 / 9, by3 - 6, bx3 + bw3 * dk9 / 9, by3 + 6); }
+      var dk9; for (dk9 = 1; dk9 < 9; dk9++) { strokec(INK, dk9 % 3 === 0 ? 110 : 55); p.strokeWeight(1); p.line(bx3 + bw3 * dk9 / 9, by3 - (dk9 % 3 === 0 ? 8 : 5), bx3 + bw3 * dk9 / 9, by3 + (dk9 % 3 === 0 ? 8 : 5)); if (dk9 % 3 === 0) { setFont(MONO, 8, INK, p.CENTER, p.TOP, 150); p.text(String(dk9 * 10), bx3 + bw3 * dk9 / 9, by3 + 12); } }
       strokec(INK, 70); p.strokeWeight(4); p.line(bx3, by3, bx3 + bw3, by3);
       strokec(ACC, 235); p.line(bx3, by3, bx3 + bw3 * f, by3);
-      p.noStroke(); fillc(shade(ACC, -30)); p.ellipse(bx3 + bw3 * f, by3 + 2, 26, 26); fillc(ACC); p.ellipse(bx3 + bw3 * f, by3, 26, 26); fillc(GROUNDS.chart); p.ellipse(bx3 + bw3 * f, by3, 7, 7);
-      setFont(MONO, 9, INK, p.LEFT, p.TOP, 160); p.text('BIRTH', bx3, by3 + 18); setFont(MONO, 9, INK, p.RIGHT, p.TOP, 160); p.text('AGE 90', bx3 + bw3, by3 + 18);
+      // the chapters of the life sit on the bar itself: every slow transit, a coloured stitch
+      if (!UI.lifeList) { try { UI.lifeList = APP.lifeTransits(c, b); } catch (eL8) { UI.lifeList = []; } }
+      var evb9 = UI.lifeList || [], ei9;
+      for (ei9 = 0; ei9 < evb9.length; ei9++) {
+        var ef9 = Math.max(0, Math.min(1, evb9[ei9].age / 90)), eCol9 = evb9[ei9].isReturn ? ACC : (evb9[ei9].ang === 120 ? [116, 160, 96] : evb9[ei9].ang === 90 ? [176, 84, 54] : INK);
+        p.noStroke(); fillc(eCol9, Math.abs(ef9 - f) < 0.012 ? 255 : 170); p.ellipse(bx3 + bw3 * ef9, by3 - 13, Math.abs(ef9 - f) < 0.012 ? 7 : 4.5, Math.abs(ef9 - f) < 0.012 ? 7 : 4.5);
+      }
+      // the nearest chapter names itself as the handle passes
+      var near9 = null, nd9 = 1;
+      for (ei9 = 0; ei9 < evb9.length; ei9++) { var dd9 = Math.abs(evb9[ei9].age / 90 - f); if (dd9 < nd9) { nd9 = dd9; near9 = evb9[ei9]; } }
+      if (near9 && nd9 < 0.03) { setFont(MONO, 8.5, ACCTX, p.CENTER, p.TOP, 235 * (1 - nd9 / 0.03)); p.text((near9.title + ' · AGE ' + Math.round(near9.age)).toUpperCase(), cx, by3 - 40); }
+      // the handle is a little film reel, sprockets and all
+      var hx8 = bx3 + bw3 * f;
+      p.noStroke(); fillc(shade(ACC, -30)); p.ellipse(hx8, by3 + 2, 28, 28); fillc(ACC); p.ellipse(hx8, by3, 28, 28);
+      var sp8; for (sp8 = 0; sp8 < 5; sp8++) { var sa8 = (still9reel() ? 0 : nowT() * 0.001 * (UI.inReel ? 3 : 0.4)) + sp8 * Math.PI * 2 / 5; fillc(GROUNDS.chart, 235); p.ellipse(hx8 + Math.cos(sa8) * 8, by3 + Math.sin(sa8) * 8, 4.5, 4.5); }
+      fillc(GROUNDS.chart); p.ellipse(hx8, by3, 6, 6);
+      setFont(MONO, 9, INK, p.LEFT, p.TOP, 160); p.text('BIRTH', bx3, by3 + 20); setFont(MONO, 9, INK, p.RIGHT, p.TOP, 160); p.text('AGE 90', bx3 + bw3, by3 + 20);
       var nowF = Math.max(0, Math.min(1, ((new Date().getTime() - Date.UTC(b.y, b.mo - 1, b.d)) / (365.2422 * 86400000)) / 90));
       strokec(INK, 200); p.strokeWeight(1.4); p.line(bx3 + bw3 * nowF, by3 - 12, bx3 + bw3 * nowF, by3 + 12);
       setFont(MONO, 8, INK, p.CENTER, p.TOP, 170); p.text('NOW', bx3 + bw3 * nowF, by3 - 26);
@@ -4928,9 +4992,8 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (!UI.pcard) return;
       var key = UI.pcard, pl = (key === 'asc') ? c.ascBody : c.planets[key]; if (!pl) { UI.pcard = null; return; }
       var mp = reduced() ? 1 : cl01((nowT() - UI.popT) / 380), me = reduced() ? 1 : eBack(mp); if (me > 1.03) me = 1.03;
-      var sb = UI.safeBottom || 0, shH = Math.round((H - topY()) * 0.60), shY = H - sb - shH * me, x = sx(), w = cw();
-      p.noStroke(); fillc(INK, 120 * mp); p.rect(0, 0, W, H);
-      pushHit(0, 0, W, shY, function () { UI.pcard = null; });
+      var sb = UI.safeBottom || 0, shH = Math.round((H - topY()) * 0.38), shY = H - sb - shH * me, x = sx(), w = cw();
+      pushHit(0, 0, W, shY, function () { UI.pcard = null; }); // the wheel stays visible and tappable-away above the card
       var gk = GROUNDS.chart;
       fillc(shade(gk, -18)); p.rect(x - 8, shY + 4, w + 16, shH + sb, 18);
       fillc(shade(gk, 6)); p.rect(x - 8, shY, w + 16, shH + sb, 18);
@@ -5160,74 +5223,79 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       return { jx: ax + Math.cos(ja) * l1, jy: ay + Math.sin(ja) * l1, hx: ax + ux * d, hy: ay + uy * d };
     }
     function gaitAt(cx0, gy0, h, ph) {
-      // a believable walk: swing foot lifts and arcs, stance foot holds, arms counter-swing, body bobs
-      var S = h * 0.14, lft = Math.sin(ph), rgt = Math.sin(ph + Math.PI);
+      // the four poses of a real step: contact, down, passing, up. The body is lowest
+      // just after contact and highest at passing; arms swing opposite with soft elbows.
+      var S = h * 0.15, lft = Math.sin(ph), rgt = Math.sin(ph + Math.PI);
+      var rise = (1 - Math.cos(2 * ph)) / 2; // 0 at contact, 1 at passing
       return {
-        fL: { x: cx0 - h * 0.02 + Math.cos(ph) * S, y: gy0 - Math.max(0, lft) * h * 0.055 },
-        fR: { x: cx0 + h * 0.02 + Math.cos(ph + Math.PI) * S, y: gy0 - Math.max(0, rgt) * h * 0.055 },
-        hL: { dx: Math.cos(ph + Math.PI) * h * 0.085, dy: h * 0.20 },
-        hR: { dx: Math.cos(ph) * h * 0.085, dy: h * 0.20 },
-        bob: Math.abs(Math.sin(ph)) * h * 0.014,
-        lean: 0.06
+        fL: { x: cx0 - h * 0.015 + Math.cos(ph) * S, y: gy0 - Math.max(0, lft) * h * 0.06 },
+        fR: { x: cx0 + h * 0.015 + Math.cos(ph + Math.PI) * S, y: gy0 - Math.max(0, rgt) * h * 0.06 },
+        hL: { dx: Math.cos(ph + Math.PI) * h * 0.09, dy: h * 0.30 },
+        hR: { dx: Math.cos(ph) * h * 0.09, dy: h * 0.30 },
+        bob: -rise * h * 0.02 + h * 0.01,
+        lean: 0.07
       };
     }
     function actorFigure(rig, alf) {
-      // a real human silhouette: seven heads tall, weight in the torso, tapered limbs,
-      // heel-and-toe feet. Movement does the talking; nothing else is declared.
+      // a person: six-and-a-half heads, weight settled on one hip when at rest (contrapposto),
+      // elbows and knees never locked, the head balancing it all. Movement does the talking.
       var h = rig.h, lean = rig.lean || 0, cr = rig.crouch || 0, look = rig.look || 0, col = rig.col || [34, 29, 25];
       var br = reduced() ? 0 : Math.sin(nowT() * 0.0021 + (rig.ph || 0)) * h * 0.005;
       var bob9 = rig.bob || 0;
-      var hipY = rig.y - h * (0.53 - cr * 0.14) + bob9, hipX = rig.x + lean * h * 0.03;
-      var chY = hipY - h * (0.30 - cr * 0.04) + br, chX = hipX + lean * h * 0.15;
-      var waY = chY + (hipY - chY) * 0.55, waX = chX + (hipX - chX) * 0.5;
-      var hdR = h * 0.062, hdX = chX + lean * h * 0.075 + look * h * 0.035, hdY = chY - h * 0.115 + Math.abs(lean) * h * 0.008;
-      var fL = rig.fL || { x: rig.x - h * 0.075, y: rig.y }, fR = rig.fR || { x: rig.x + h * 0.075, y: rig.y };
-      var hL = rig.hL || { x: chX - h * 0.115, y: chY + h * 0.33 }, hR = rig.hR || { x: chX + h * 0.115, y: chY + h * 0.33 };
-      var lg1 = h * 0.245, lg2 = h * 0.235, ar1 = h * 0.185, ar2 = h * 0.17;
+      // contrapposto idle: if no pose claims the body, the weight settles to one side
+      var relax9 = (!rig.fL && !rig.fR && !rig.hL && !rig.hR && Math.abs(lean) < 0.12 && cr < 0.1) ? 1 : 0;
+      var side9 = ((rig.ph || 0) % 2 < 1) ? 1 : -1;
+      var hipSh9 = relax9 * side9 * h * 0.022;
+      var hipY = rig.y - h * (0.52 - cr * 0.14) + bob9, hipX = rig.x + lean * h * 0.03 + hipSh9;
+      var chY = hipY - h * (0.29 - cr * 0.04) + br, chX = hipX + lean * h * 0.15 - hipSh9 * 0.9;
+      var waY = chY + (hipY - chY) * 0.56, waX = chX + (hipX - chX) * 0.5;
+      var hdR = h * 0.070, hdX = chX + lean * h * 0.075 + look * h * 0.035 + hipSh9 * 0.2, hdY = chY - h * 0.118 + Math.abs(lean) * h * 0.008;
+      var fL = rig.fL || { x: rig.x - h * (relax9 ? 0.055 : 0.075), y: rig.y };
+      var fR = rig.fR || { x: rig.x + h * (relax9 ? 0.095 : 0.075), y: rig.y };
+      // arms hang with a natural elbow bend, hands beside the thighs
+      var hL = rig.hL || { x: chX - h * 0.105, y: chY + h * 0.315, bend: -1 };
+      var hR = rig.hR || { x: chX + h * 0.105, y: chY + h * 0.315, bend: 1 };
+      var lg1 = h * 0.245, lg2 = h * 0.235, ar1 = h * 0.175, ar2 = h * 0.16;
       var passes = rig.rim ? 2 : 1, pi9;
       for (pi9 = 0; pi9 < passes; pi9++) {
         var rim9 = (passes === 2 && pi9 === 0);
         var cP = rim9 ? rig.rim : col, aP = rim9 ? 80 * alf : 244 * alf;
         var ox9 = rim9 ? (rig.rimOff ? rig.rimOff[0] : -2) : 0, oy9 = rim9 ? (rig.rimOff ? rig.rimOff[1] : -2) : 0;
-        // legs: thigh heavier than calf, knees bend the way knees do
-        var kL = ik2(hipX - h * 0.035, hipY, fL.x, fL.y, lg1, lg2, -1), kR = ik2(hipX + h * 0.035, hipY, fR.x, fR.y, lg1, lg2, 1);
+        var kL = ik2(hipX - h * 0.033, hipY, fL.x, fL.y, lg1, lg2, -1), kR = ik2(hipX + h * 0.033, hipY, fR.x, fR.y, lg1, lg2, 1);
         strokec(cP, aP); p.noFill();
-        p.strokeWeight(h * 0.068); p.line(hipX - h * 0.035 + ox9, hipY + oy9, kL.jx + ox9, kL.jy + oy9);
-        p.strokeWeight(h * 0.048); p.line(kL.jx + ox9, kL.jy + oy9, kL.hx + ox9, kL.hy + oy9);
-        p.strokeWeight(h * 0.068); p.line(hipX + h * 0.035 + ox9, hipY + oy9, kR.jx + ox9, kR.jy + oy9);
-        p.strokeWeight(h * 0.048); p.line(kR.jx + ox9, kR.jy + oy9, kR.hx + ox9, kR.hy + oy9);
-        // heel-and-toe feet
+        p.strokeWeight(h * 0.072); p.line(hipX - h * 0.033 + ox9, hipY + oy9, kL.jx + ox9, kL.jy + oy9);
+        p.strokeWeight(h * 0.05); p.line(kL.jx + ox9, kL.jy + oy9, kL.hx + ox9, kL.hy + oy9);
+        p.strokeWeight(h * 0.072); p.line(hipX + h * 0.033 + ox9, hipY + oy9, kR.jx + ox9, kR.jy + oy9);
+        p.strokeWeight(h * 0.05); p.line(kR.jx + ox9, kR.jy + oy9, kR.hx + ox9, kR.hy + oy9);
         p.noStroke(); fillc(cP, aP);
-        p.ellipse(kL.hx + h * 0.026 + ox9, kL.hy - h * 0.010 + oy9, h * 0.105, h * 0.034);
-        p.ellipse(kR.hx + h * 0.026 + ox9, kR.hy - h * 0.010 + oy9, h * 0.105, h * 0.034);
-        p.ellipse(kL.hx - h * 0.018 + ox9, kL.hy - h * 0.016 + oy9, h * 0.045, h * 0.04);
-        p.ellipse(kR.hx - h * 0.018 + ox9, kR.hy - h * 0.016 + oy9, h * 0.045, h * 0.04);
-        // the torso: shoulders, a waist, hips: one filled human mass
+        p.ellipse(kL.hx + h * 0.027 + ox9, kL.hy - h * 0.010 + oy9, h * 0.10, h * 0.034);
+        p.ellipse(kR.hx + h * 0.027 + ox9, kR.hy - h * 0.010 + oy9, h * 0.10, h * 0.034);
+        p.ellipse(kL.hx - h * 0.016 + ox9, kL.hy - h * 0.015 + oy9, h * 0.042, h * 0.038);
+        p.ellipse(kR.hx - h * 0.016 + ox9, kR.hy - h * 0.015 + oy9, h * 0.042, h * 0.038);
+        // torso: shoulders sloping into the neck, a waist, hips; one soft human mass
         p.noStroke(); fillc(cP, aP);
         p.beginShape();
-        p.vertex(chX - h * 0.095 + ox9, chY - h * 0.015 + oy9);
-        p.bezierVertex(chX - h * 0.105 + ox9, chY + h * 0.06 + oy9, waX - h * 0.062 + ox9, waY + oy9, hipX - h * 0.078 + ox9, hipY - h * 0.02 + oy9);
-        p.bezierVertex(hipX - h * 0.082 + ox9, hipY + h * 0.035 + oy9, hipX + h * 0.082 + ox9, hipY + h * 0.035 + oy9, hipX + h * 0.078 + ox9, hipY - h * 0.02 + oy9);
-        p.bezierVertex(waX + h * 0.062 + ox9, waY + oy9, chX + h * 0.105 + ox9, chY + h * 0.06 + oy9, chX + h * 0.095 + ox9, chY - h * 0.015 + oy9);
-        p.bezierVertex(chX + h * 0.05 + ox9, chY - h * 0.045 + oy9, chX - h * 0.05 + ox9, chY - h * 0.045 + oy9, chX - h * 0.095 + ox9, chY - h * 0.015 + oy9);
+        p.vertex(chX - h * 0.088 + ox9, chY + oy9);
+        p.bezierVertex(chX - h * 0.098 + ox9, chY + h * 0.06 + oy9, waX - h * 0.06 + ox9, waY + oy9, hipX - h * 0.08 + ox9, hipY - h * 0.02 + oy9);
+        p.bezierVertex(hipX - h * 0.086 + ox9, hipY + h * 0.038 + oy9, hipX + h * 0.086 + ox9, hipY + h * 0.038 + oy9, hipX + h * 0.08 + ox9, hipY - h * 0.02 + oy9);
+        p.bezierVertex(waX + h * 0.06 + ox9, waY + oy9, chX + h * 0.098 + ox9, chY + h * 0.06 + oy9, chX + h * 0.088 + ox9, chY + oy9);
+        p.bezierVertex(chX + h * 0.055 + ox9, chY - h * 0.052 + oy9, chX - h * 0.055 + ox9, chY - h * 0.052 + oy9, chX - h * 0.088 + ox9, chY + oy9);
         p.endShape(p.CLOSE);
-        // arms: upper heavier, forearm lighter, small hands
-        var eL = ik2(chX - h * 0.085, chY, hL.x, hL.y, ar1, ar2, hL.bend == null ? -1 : hL.bend);
-        var eR = ik2(chX + h * 0.085, chY, hR.x, hR.y, ar1, ar2, hR.bend == null ? 1 : hR.bend);
+        var eL = ik2(chX - h * 0.078, chY - h * 0.01, hL.x, hL.y, ar1, ar2, hL.bend == null ? -1 : hL.bend);
+        var eR = ik2(chX + h * 0.078, chY - h * 0.01, hR.x, hR.y, ar1, ar2, hR.bend == null ? 1 : hR.bend);
         strokec(cP, aP);
-        p.strokeWeight(h * 0.05); p.line(chX - h * 0.085 + ox9, chY + oy9, eL.jx + ox9, eL.jy + oy9);
-        p.strokeWeight(h * 0.038); p.line(eL.jx + ox9, eL.jy + oy9, eL.hx + ox9, eL.hy + oy9);
-        p.strokeWeight(h * 0.05); p.line(chX + h * 0.085 + ox9, chY + oy9, eR.jx + ox9, eR.jy + oy9);
-        p.strokeWeight(h * 0.038); p.line(eR.jx + ox9, eR.jy + oy9, eR.hx + ox9, eR.hy + oy9);
-        p.noStroke(); fillc(cP, aP); p.ellipse(eL.hx + ox9, eL.hy + oy9, h * 0.036, h * 0.036); p.ellipse(eR.hx + ox9, eR.hy + oy9, h * 0.036, h * 0.036);
-        // neck and head: a human oval, chin implied by the taper
-        strokec(cP, aP); p.strokeWeight(h * 0.032); p.line(chX + ox9, chY - h * 0.028 + oy9, hdX + ox9, hdY + hdR * 0.92 + oy9);
-        p.noStroke(); fillc(cP, aP); p.ellipse(hdX + ox9, hdY + oy9, hdR * 1.66, hdR * 2);
+        p.strokeWeight(h * 0.05); p.line(chX - h * 0.078 + ox9, chY - h * 0.01 + oy9, eL.jx + ox9, eL.jy + oy9);
+        p.strokeWeight(h * 0.037); p.line(eL.jx + ox9, eL.jy + oy9, eL.hx + ox9, eL.hy + oy9);
+        p.strokeWeight(h * 0.05); p.line(chX + h * 0.078 + ox9, chY - h * 0.01 + oy9, eR.jx + ox9, eR.jy + oy9);
+        p.strokeWeight(h * 0.037); p.line(eR.jx + ox9, eR.jy + oy9, eR.hx + ox9, eR.hy + oy9);
+        p.noStroke(); fillc(cP, aP); p.ellipse(eL.hx + ox9, eL.hy + oy9, h * 0.034, h * 0.034); p.ellipse(eR.hx + ox9, eR.hy + oy9, h * 0.034, h * 0.034);
+        // neck flows into the skull; the chin is the taper of the oval
+        strokec(cP, aP); p.strokeWeight(h * 0.035); p.line(chX + ox9, chY - h * 0.035 + oy9, hdX + ox9, hdY + hdR * 0.85 + oy9);
+        p.noStroke(); fillc(cP, aP); p.ellipse(hdX + ox9, hdY + oy9, hdR * 1.62, hdR * 1.96);
       }
-      // their small star keeps above them, twinkling, the way a guide does
       if (rig.star !== false) {
         var stX = hdX + (reduced() ? 0 : Math.sin(nowT() * 0.0016 + (rig.ph || 0)) * h * 0.028);
-        var stY = hdY - hdR * 2.6 + (reduced() ? 0 : Math.cos(nowT() * 0.0013 + (rig.ph || 0)) * h * 0.012);
+        var stY = hdY - hdR * 2.5 + (reduced() ? 0 : Math.cos(nowT() * 0.0013 + (rig.ph || 0)) * h * 0.012);
         var stT = reduced() ? 0.8 : 0.55 + 0.45 * Math.sin(nowT() * 0.005 + (rig.ph || 0) * 2);
         var stR = h * 0.024 * (0.8 + 0.35 * stT);
         p.noStroke(); fillc([255, 244, 200], 70 * stT * alf); p.ellipse(stX, stY, stR * 3.2, stR * 3.2);
@@ -5242,7 +5310,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       dcT.save(); dcT.font = 'bold ' + sz + 'px ' + fnt; dcT.textAlign = 'left'; dcT.textBaseline = 'top';
       var i9, widths9 = [], tw0 = 0;
       for (i9 = 0; i9 < txt.length; i9++) { widths9.push(dcT.measureText(txt.charAt(i9)).width); tw0 += widths9[i9]; }
-      var xr = cxr - tw0 / 2, base9 = (alr == null ? 255 : alr) / 255;
+      var xr = arguments.length > 9 && arguments[9] ? cxr : cxr - tw0 / 2, base9 = (alr == null ? 255 : alr) / 255;
       for (i9 = 0; i9 < txt.length; i9++) {
         var ar9 = reduced() ? 1 : cl01((nowT() - t0r - i9 * (per9 || 24)) / 300), er9 = eCubic(ar9);
         if (er9 > 0.01) { dcT.fillStyle = 'rgba(' + (colr[0] | 0) + ',' + (colr[1] | 0) + ',' + (colr[2] | 0) + ',' + (base9 * er9).toFixed(3) + ')'; dcT.fillText(txt.charAt(i9), xr, yr + (1 - er9) * 9); }
@@ -5254,7 +5322,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     function stageFigure(fx, fy, h, pz, alf, col9) {
       actorFigure({ x: fx, y: fy, h: h, lean: (pz.lean || 0) * 0.8, crouch: pz.crouch || 0, look: pz.lean ? (pz.lean > 0 ? 0.5 : -0.5) : 0, col: col9 }, alf);
     }
-    function lifeWalkHush() { try { if (window.AqauVoice) window.AqauVoice.stop(); } catch (e9) {} try { if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel(); } catch (e8) {} }
+    function lifeWalkHush() { try { if (window.AqauVoice) window.AqauVoice.stop(); } catch (e9) {} try { if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel(); } catch (e8) {} try { padStop(1.2); } catch (e7) {} }
     function lifeWalkNext(n) { if (!UI.lifeWalk) return; if (UI.lifeWalk.i >= n) { UI.lifeWalk = null; lifeWalkHush(); return; } UI.lifeWalk.i++; UI.lifeWalk.t0 = nowT(); }
     function lifeWalkPrev() { if (UI.lifeWalk && UI.lifeWalk.i > 0) { UI.lifeWalk.i--; UI.lifeWalk.t0 = nowT(); } }
     // what stage the chapter plays on: the natal point names the set
@@ -5291,7 +5359,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         setFont(MONO, 11, [238, 232, 216], p.CENTER, p.TOP, 210 * a2); p.text(('IN ' + ev.length + ' CHAPTERS').toUpperCase(), cx, top + vh * 0.50 + 54 + (1 - a2) * 10);
         setFont(MONO, 9, [238, 232, 216], p.CENTER, p.TOP, 140 * a3); p.text('THE SLOW PLANETS ONLY · WEATHER, NOT FATE', cx, top + vh * 0.50 + 76 + (1 - a3) * 10);
         if (a3 > 0.8) { var pls0 = 0.6 + 0.4 * Math.sin(nowT() * 0.004); setFont(MONO, 10, ACC, p.CENTER, p.TOP, 235 * (still ? 1 : pls0)); p.text('TAP TO RAISE THE CURTAIN ›', cx, top + vh - 46); }
-        pushHit(x, top + 40, w, vh - 60, function () { UI.lifeWalk.i = 0; UI.lifeWalk.t0 = nowT(); blip(392, 0.2, 0.03); });
+        pushHit(x, top + 40, w, vh - 60, function () { UI.lifeWalk.i = 0; UI.lifeWalk.t0 = nowT(); blip(392, 0.2, 0.03); try { padStart([130.81, 196, 293.66], 0.018); } catch (eP2) {} });
         tourBtn('Skip', x + w - 66, top + 6, 60, 26, function () { UI.lifeWalk = null; lifeWalkHush(); }, false);
         UI.contentH.read = 0;
         return;
@@ -5803,7 +5871,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (UI.lifeView) { drawLifeTimeline(c, b); return; }
       var x = sx(), w = cw(), ly = 18, gi = cl01(1 - (nowT() - UI.fxT) / 500);
       eyebrow('In plain terms', x, ly); ly += 22;
-      p.textStyle(p.BOLD); glitchText('Read', x, sY(ly), 34, SANS, INK, p.LEFT, p.TOP, gi); normal(); ly += 48;
+      riseText('Read', x, sY(ly), 34, SANS, INK, UI.fxT + 120, 34, 255, true); ly += 48;
       // the reading is a book now: four chapters instead of one endless scroll
       if (!UI.readTab) UI.readTab = 'story';
       var RTABS = [['story', 'Story'], ['wiring', 'Wiring'], ['timing', 'Timing'], ['days', 'Days']], rti0, rtx0 = x;
@@ -6210,7 +6278,30 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var x = sx(), w = cw(), ly = 18, gi = cl01(1 - (nowT() - UI.fxT) / 500);
       if (UI.tarotRit) { drawTarotRitual(); return; }
       eyebrow('Spreads & meanings', x, ly); ly += 22;
-      p.textStyle(p.BOLD); glitchText('Tarot', x, sY(ly), 34, SANS, INK, p.LEFT, p.TOP, gi); normal(); ly += 46;
+      riseText('Tarot', x, sY(ly), 34, SANS, INK, UI.fxT + 120, 30, 255, true); ly += 46;
+      // the card of the day: real public-domain art with a projector's shiver
+      var today9 = new Date(), cdi9 = (today9.getFullYear() * 372 + (today9.getMonth() + 1) * 31 + today9.getDate()) % DATA.TAROT.length, cd9 = DATA.TAROT[cdi9];
+      if (UI.homeArtFor !== cdi9) { UI.homeArtFor = cdi9; UI.homeImg = null; try { var f9 = rwsFile(cd9); if (f9) { var im9 = new Image(); im9.onload = function () { UI.homeImg = im9; }; im9.onerror = function () {}; im9.src = 'https://commons.wikimedia.org/wiki/Special:FilePath/' + encodeURIComponent(f9); } } catch (eH9) {} }
+      var acH = 168, acY = sY(ly), dcA = p.drawingContext;
+      p.noStroke(); fillc(shade(GROUNDS[UI.screen], -22)); p.rect(x, acY + 4, w, acH, 13); fillc([26, 22, 20]); p.rect(x, acY, w, acH, 13);
+      if (dcA) {
+        dcA.save(); dcA.beginPath(); if (dcA.roundRect) dcA.roundRect(x, acY, w, acH, 13); else dcA.rect(x, acY, w, acH); dcA.clip();
+        if (UI.homeImg && (UI.homeImg.naturalWidth || 0) > 0) {
+          var flk = reduced() ? 1 : (0.84 + 0.16 * Math.sin(nowT() * 0.021) * Math.sin(nowT() * 0.0034));
+          var jx9 = reduced() ? 0 : Math.sin(nowT() * 0.05) * 0.8;
+          var iw9 = UI.homeImg.naturalWidth, ih9 = UI.homeImg.naturalHeight, sc9 = Math.max(w / iw9, acH / ih9) * 1.05;
+          dcA.globalAlpha = flk; try { dcA.drawImage(UI.homeImg, x + w / 2 - iw9 * sc9 / 2 + jx9, acY - ih9 * sc9 * 0.12, iw9 * sc9, ih9 * sc9); } catch (eD9) {}
+          dcA.globalAlpha = 1;
+          if (!reduced()) { var gn9; dcA.fillStyle = 'rgba(255,255,255,0.05)'; for (gn9 = 0; gn9 < 12; gn9++) dcA.fillRect(x + ((gn9 * 137 + (nowT() | 0)) % w), acY + ((gn9 * 71 + ((nowT() / 3) | 0)) % acH), 1.6, 1.6); }
+          var vgA = dcA.createLinearGradient(0, acY, 0, acY + acH); vgA.addColorStop(0, 'rgba(16,12,10,0.08)'); vgA.addColorStop(1, 'rgba(16,12,10,0.74)'); dcA.fillStyle = vgA; dcA.fillRect(x, acY, w, acH);
+        } else { tvStatic(x + 4, acY + 4, w - 8, acH - 8, cdi9); }
+        dcA.restore();
+      }
+      setFont(MONO, 8.5, [222, 210, 190], p.LEFT, p.TOP, 210); p.text('CARD OF THE DAY · ART FROM THE PUBLIC DOMAIN', x + 14, acY + acH - 44);
+      setFont(SERIF, 19, [246, 240, 226], p.LEFT, p.TOP); bold(); p.text(cd9.name, x + 14, acY + acH - 30); normal();
+      setFont(MONO, 9, [222, 210, 190], p.RIGHT, p.BOTTOM, 210); p.text('MEANING ›', x + w - 14, acY + acH - 12);
+      (function (idx9) { pushHit(x, acY, w, acH, function () { UI.tarotTab = 'cards'; UI.card = idx9; UI.scroll.tarot = 0; UI.popT = nowT(); }); })(cdi9);
+      ly += acH + 16;
       // guided ritual hero — how to read your OWN cards (the app never draws for you)
       var hh = 70, hy = sY(ly); p.noStroke(); fillc(INK); p.rect(x, hy + 3, w, hh, 13); fillc(shade(INK, 16)); p.rect(x, hy + pressOff(x, hy, w, hh, 3), w, hh, 13);
       var ho = pressOff(x, hy, w, hh, 3);
@@ -6691,7 +6782,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       bigthree: function (c, b) { if (b && b.timeKnown && c.ascBody) { var so = signOpts(c.ascBody.sign); return { q: 'Which is YOUR rising sign?', o: so.o, ci: so.ci, why: c.ascBody.signName + ' was climbing the eastern horizon the minute you were born.' }; } return { q: 'The “big three” are…', o: ['Sun, Moon and rising', 'Venus, Mars and Jupiter', 'The three outer planets'], ci: 0, why: 'What you are becoming, what you need, and how you meet the world.' }; },
       moving: function () { return { q: 'A transit is…', o: ['A planet inside your birth chart', 'Today’s sky touching your birth chart', 'An aspect between two houses'], ci: 1, why: 'Your chart is fixed; the sky keeps moving. Where the live sky touches your natal map, that is a transit.' }; }
     };
-    function startLesson() { var lead9 = !UI.leaderSeen && !reduced(); UI.leaderSeen = true; UI.lesson = { i: 0, beat: 0, t0: nowT() + (lead9 ? 2300 : 0), lead: lead9 ? nowT() : 0 }; UI.scroll.learn = 0; lessonSeen(0); }
+    function startLesson() { UI.lesson = { i: 0, beat: 0, t0: nowT(), lead: 0 }; UI.scroll.learn = 0; lessonSeen(0); }
     // the projector moment: the room goes dark, the beam flickers on, the film leader counts down
     function drawFilmLeader(x, w, top, vh, cx) {
       var el2 = nowT() - UI.lesson.lead, dc = p.drawingContext;
@@ -7041,7 +7132,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     function drawLesson() {
       var c = APP.STATE.chart, b = APP.STATE.birth;
       var x = sx(), w = cw(), top = topY(), vh = viewH(), cx = x + w / 2, sc = LESSON[UI.lesson.i], last = (UI.lesson.i === LESSON.length - 1), i;
-      if (UI.lesson.lead && nowT() < UI.lesson.t0 - 40 && !reduced()) { drawFilmLeader(x, w, top, vh, cx); return; }
+
       if (UI.lesson.beat == null) UI.lesson.beat = 0;
       var beats = lessonBeatsFor(sc, c, b), qz = lessonQuizFor(sc, c, b);
       if (UI.lesson.beat > beats.length - (qz ? 0 : 1)) UI.lesson.beat = qz ? beats.length : beats.length - 1;
@@ -7135,7 +7226,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (UI.lesson) { drawLesson(); return; }
       var x = sx(), w = cw(), ly = 18, gi = cl01(1 - (nowT() - UI.fxT) / 500);
       eyebrow('Learn', x, ly); ly += 22;
-      p.textStyle(p.BOLD); glitchText('The sky, explained', x, sY(ly), 32, SANS, INK, p.LEFT, p.TOP, gi); normal(); ly += 46;
+      riseText('The sky, explained', x, sY(ly), 32, SANS, INK, UI.fxT + 120, 22, 255, true); ly += 46;
       chip(UI.learnSearch ? '✕ Close search' : '⌕ Search everything', !!UI.learnSearch, x, ly, function () {
         UI.learnSearch = !UI.learnSearch; UI.citySearch = '';
         var elS = ensureSearchInput(); if (elS) { elS.value = ''; try { elS.setAttribute('placeholder', UI.learnSearch ? 'A sign, a planet, a term, anything' : 'Search city or country'); } catch (eP3) {} if (UI.learnSearch) setTimeout(function () { try { elS.focus(); } catch (eF) {} }, 60); }
@@ -7267,7 +7358,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       Moon: { q: 'apollo 11 moon nasa film', why: 'Your ruler is the Moon: here is humanity actually going there. The same light that runs your chart, with bootprints on it.', must: ['moon','apollo'] },
       Mercury: { q: 'planet mercury nasa mariner', why: 'Mercury rules you: the smallest, fastest planet, first photographed up close by Mariner 10. Speed, in person.', must: ['mercury'] },
       Venus: { q: 'planet venus nasa mariner film', why: 'Venus rules you: Earth’s veiled bright twin. The first missions to your ruling planet, on film.', must: ['venus'] },
-      Mars: { q: 'planet mars nasa mariner film', why: 'Mars rules you: and these are the first real looks humanity ever got at your ruling planet: the red world, no longer imagined.', must: ['mars'] },
+      Mars: { q: 'planet mars nasa mariner film', why: 'Mars rules you, and these are the first real looks humanity ever got at your ruling planet. The red world, no longer imagined.', must: ['mars'] },
       Jupiter: { q: 'jupiter voyager nasa film', why: 'Jupiter rules you: the giant whose gravity shelters the whole solar system. Voyager’s grand tour past your ruling planet.', must: ['jupiter'] },
       Saturn: { q: 'saturn voyager nasa film', why: 'Saturn rules you: the ringed timekeeper. The missions that turned your ruler from a telescope smudge into a world.', must: ['saturn'] },
       Uranus: { q: 'uranus voyager nasa', why: 'Uranus rules you: the sideways planet, visited exactly once in all of history. Suitably contrary.', must: ['uranus'] },
@@ -7292,6 +7383,9 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         { k: 'py' + b.y, q: 'collection:(prelinger) AND date:[' + b.y + '-01-01 TO ' + b.y + '-12-31]', t: 'Everyday life, ' + b.y, why: 'Ordinary days from your birth year, the texture of the world you joined.' }
       ] });
       ch.push({ h: 'CH 3 · FILM SCHOOL: THE REAL SKY', intro: 'Short public-domain science films: the actual objects behind the chart.', items: FILM_SCHOOL });
+      ch.push({ h: 'CH 4 · THE MYTH CHANNEL', intro: 'Every sign is a story before it is a symbol. This is the tale your constellation carries.', items: [
+        { k: 'my' + sun, q: MYTH_Q[sun], t: 'The myth behind ' + S.name, why: 'Astrology kept these stories in the sky. Knowing the tale is knowing why the sign behaves the way it does.' }
+      ] });
       return ch;
     }
     // resolve one curated slot to a real archive item (memory + localStorage cache, so the guide renders offline)
@@ -7322,11 +7416,12 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var sy0 = sY(rowTop), active = (UI.tvActive === it.k) && res;
       var off = pressOff(cx0, sy0, cw2, cardH, 2), frameRect = null;
       bakeliteBody(cx0, sy0 + off, cw2, cardH);
-      var scrX = cx0 + 12, scrY = sy0 + off + 12, scrW = cw2 - 24, scrH = cw2 - 24;
+      // a big square tube on the left, the control panel on the right
+      var scrS = Math.round(cw2 * 0.68), scrX = cx0 + 14, scrY = sy0 + off + 14, scrW = scrS, scrH = scrS;
+      var pnX = scrX + scrS + 12, pnW = cx0 + cw2 - 14 - pnX;
       if (active) {
         frameRect = { x: scrX + 3, y: scrY + 3, w: scrW - 6, h: scrH - 6 };
-        p.noStroke(); fillc([0, 0, 0]); p.rect(scrX, scrY, scrW, scrH, 6);
-        // the tube warms up: a bright line blooms open before the picture arrives
+        p.noStroke(); fillc([0, 0, 0]); p.rect(scrX, scrY, scrW, scrH, 8);
         if (UI.tvOnK !== it.k) { UI.tvOnK = it.k; UI.tvOnT = nowT(); }
         var onE = reduced() ? 1 : cl01((nowT() - (UI.tvOnT || 0)) / 460);
         if (onE < 1) {
@@ -7334,44 +7429,51 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
           p.noStroke(); fillc([232, 238, 248], 70 + 150 * la2); p.rect(scrX + 2, scrY + scrH / 2 - lh2 / 2, scrW - 4, lh2, 4);
           fillc([255, 255, 255], 210 * (1 - onE)); p.rect(scrX + 2, scrY + scrH / 2 - 1, scrW - 4, 2);
         }
-      }
-      else if (res) {
+      } else if (res) {
         var im = iaThumb(res.id);
         if (im && im !== false && (im.naturalWidth || im.width)) {
           var dc = p.drawingContext, iw = im.naturalWidth || im.width, ih = im.naturalHeight || im.height, scc = Math.max(scrW / iw, scrH / ih), rw = iw * scc, rh2 = ih * scc;
           dc.save(); dc.beginPath(); dc.rect(scrX, scrY, scrW, scrH); dc.clip(); try { dc.drawImage(im, scrX + scrW / 2 - rw / 2, scrY + scrH / 2 - rh2 / 2, rw, rh2); } catch (e) {} dc.restore();
-          p.noStroke(); fillc([0, 0, 0], 120); p.rect(scrX, scrY + scrH - 20, scrW, 20); setFont(MONO, 8, [244, 238, 228], p.CENTER, p.BOTTOM, 235); p.text('TAP TO PLAY', scrX + scrW / 2, scrY + scrH - 6);
+          if (!reduced()) { strokec([0, 0, 0], 45); p.strokeWeight(1); var sl9; for (sl9 = 0; sl9 < scrH; sl9 += 3) p.line(scrX, scrY + sl9, scrX + scrW, scrY + sl9); p.noStroke(); }
+          p.noStroke(); fillc([0, 0, 0], 130); p.rect(scrX, scrY + scrH - 22, scrW, 22); setFont(MONO, 8.5, [244, 238, 228], p.CENTER, p.BOTTOM, 235); p.text('TAP TO PLAY', scrX + scrW / 2, scrY + scrH - 7);
         } else { tvStatic(scrX, scrY, scrW, scrH); setFont(MONO, 9, [214, 214, 224], p.CENTER, p.CENTER, 210); p.text(im === false ? 'NO PREVIEW: TAP TO PLAY' : '…', scrX + scrW / 2, scrY + scrH / 2); }
       } else { tvStatic(scrX, scrY, scrW, scrH, it.k.length + it.k.charCodeAt(0)); setFont(MONO, 9, [214, 214, 224], p.CENTER, p.CENTER, 210); p.text(res === false ? 'OFF AIR: TAP TO RETUNE' : 'TUNING…', scrX + scrW / 2, scrY + scrH / 2); }
-      p.noFill(); strokec([22, 16, 12], 255); p.strokeWeight(4); p.rect(scrX - 2, scrY - 2, scrW + 4, scrH + 4, 7);
-      var tt = it.t; p.textFont(SANS); p.textSize(10.5); while (tt.length > 4 && p.textWidth(tt) > scrW - 2) tt = tt.slice(0, -2);
-      setFont(SANS, 10.5, [240, 230, 216], p.LEFT, p.TOP); p.text(tt + (tt !== it.t ? '…' : ''), scrX, sy0 + off + cardH - 19);
+      // the curved glass: a soft glare across the corner, and a bezel
+      if (!active) { var dcg = p.drawingContext; if (dcg && !reduced()) { dcg.save(); dcg.beginPath(); dcg.rect(scrX, scrY, scrW, scrH); dcg.clip(); var gl = dcg.createRadialGradient(scrX + scrW * 0.22, scrY + scrH * 0.16, 6, scrX + scrW * 0.22, scrY + scrH * 0.16, scrW * 0.75); gl.addColorStop(0, 'rgba(255,255,255,0.13)'); gl.addColorStop(0.4, 'rgba(255,255,255,0.04)'); gl.addColorStop(1, 'rgba(255,255,255,0)'); dcg.fillStyle = gl; dcg.fillRect(scrX, scrY, scrW, scrH); dcg.restore(); } }
+      p.noFill(); strokec([20, 14, 10], 255); p.strokeWeight(5); p.rect(scrX - 2, scrY - 2, scrW + 4, scrH + 4, 10);
+      strokec([132, 96, 68], 120); p.strokeWeight(1); p.rect(scrX - 4, scrY - 4, scrW + 8, scrH + 8, 12);
+      // the control panel: brand, two knobs, a speaker grille
+      setFont(MONO, 7.5, [212, 188, 156], p.CENTER, p.TOP, 210); p.text('AQAU·VISION', pnX + pnW / 2, scrY + 2);
+      tvKnob(pnX + pnW / 2, scrY + scrS * 0.24, Math.min(15, pnW * 0.24), !!active);
+      tvKnob(pnX + pnW / 2, scrY + scrS * 0.46, Math.min(11, pnW * 0.18), false);
+      var gr9; for (gr9 = 0; gr9 < 6; gr9++) { p.noStroke(); fillc([30, 20, 15], 220); p.rect(pnX + 4, scrY + scrS * 0.62 + gr9 * 7, pnW - 8, 3, 1.5); }
+      var tt = it.t; p.textFont(SANS); p.textSize(11.5); while (tt.length > 4 && p.textWidth(tt) > cw2 - 32) tt = tt.slice(0, -2);
+      setFont(SANS, 11.5, [240, 230, 216], p.LEFT, p.TOP); p.text(tt + (tt !== it.t ? '…' : ''), scrX, sy0 + off + cardH - 24);
       (function (key) { pushHit(cx0, sy0, cw2, cardH, function () { if (UI.iaSlot && UI.iaSlot[key] === false) { delete UI.iaSlot[key]; try { var m9 = JSON.parse(localStorage.getItem('aqp_watch') || '{}'); delete m9[key]; localStorage.setItem('aqp_watch', JSON.stringify(m9)); } catch (e9) {} return; } UI.tvActive = (UI.tvActive === key ? null : key); UI.tvMuted = true; }); })(it.k);
       return frameRect;
     }
     function watchShelf(c, b, x, w, ly) {
-      var chs = watchChannels(c, b), cw2 = (w - 12) / 2, cardH = cw2 + 30, frameRect = null, activeIt = null, ci, si;
-      ly += paragraph('Four channels, tuned to your chart. Public-domain film and audio from the Internet Archive, each pick explained. Tap a set to play it right here.', x, ly, w, 14.5, INK, SERIF, 22, 200) + 14;
+      var chs = watchChannels(c, b), cw2 = w, cardH = Math.round(w * 0.68) + 44, frameRect = null, activeIt = null, ci, si;
+      ly += paragraph('Five channels, tuned to your chart. Public-domain film and audio from the Internet Archive, each pick explained. Tap a set to play it right here.', x, ly, w, 14.5, INK, SERIF, 22, 200) + 14;
       for (ci = 0; ci < chs.length; ci++) {
         var ch = chs[ci];
         eyebrow(ch.h, x, ly, ACC); ly += 22;
         ly += paragraph(ch.intro, x, ly, w, 13, INK, SERIF, 19, 190) + 10;
         si = 0;
         while (si < ch.items.length) {
-          var rowTop = ly, cc, rowWhy = null;
-          for (cc = 0; cc < 2 && si < ch.items.length; cc++, si++) {
-            var it = ch.items[si], res = iaSlot(it.k, it.q, it.must);
-            var fr = tvTile(it, res, x + cc * (cw2 + 12), rowTop, cw2, cardH);
-            if (fr) { frameRect = fr; activeIt = res; }
-            if (UI.tvActive === it.k) rowWhy = it.why;
-          }
-          ly = rowTop + cardH + 12;
+          var rowTop = ly, rowWhy = null;
+          var it = ch.items[si], res = iaSlot(it.k, it.q, it.must);
+          var fr = tvTile(it, res, x, rowTop, cw2, cardH);
+          if (fr) { frameRect = fr; activeIt = res; }
+          if (UI.tvActive === it.k) rowWhy = it.why;
+          si++;
+          ly = rowTop + cardH + 14;
           if (rowWhy) { setFont(MONO, 8.5, ACCTX, p.LEFT, p.TOP, 235); p.text('WHY THIS IS YOURS', x, sY(ly)); ly += 16; ly += paragraph(rowWhy, x, ly, w, 13.5, INK, SERIF, 20, 225) + 10; }
         }
         ly += 8;
       }
-      // CH 4 · the open dial — a live search on your sign, for serendipity
-      eyebrow('CH 4 · THE OPEN DIAL', x, ly, ACC); ly += 22;
+      // CH 5 · the open dial — a live search on your sign, for serendipity
+      eyebrow('CH 5 · THE OPEN DIAL', x, ly, ACC); ly += 22;
       var sunNm = DATA.SIGNS[c.planets.sun.sign].name, ascNm = (b.timeKnown && c.ascBody) ? DATA.SIGNS[c.ascBody.sign].name : '';
       ly += paragraph('A live sweep of the archive for your ' + sunNm + ' Sun' + (ascNm && ascNm !== sunNm ? (' and ' + ascNm + ' rising') : '') + ': whatever is out there tonight.', x, ly, w, 13, INK, SERIF, 19, 190) + 10;
       iaSearch(c, b);
@@ -7382,18 +7484,16 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         flatBtn('Try again', x, ly, 160, 42, function () { UI.iaFor = null; }, false); ly += 52;
       } else if (!res2) {
         setFont(MONO, 10, ACCTX, p.LEFT, p.TOP, 210); p.text('TUNING IN TO THE ARCHIVE…', x, sY(ly)); ly += 22;
-        var s0 = sY(ly); bakeliteBody(x, s0, cw2, cardH); bakeliteBody(x + cw2 + 12, s0, cw2, cardH);
-        tvStatic(x + 12, s0 + 12, cw2 - 24, cw2 - 24); tvStatic(x + cw2 + 24, s0 + 12, cw2 - 24, cw2 - 24);
+        var s0 = sY(ly); bakeliteBody(x, s0, cw2, cardH);
+        tvStatic(x + 14, s0 + 14, Math.round(cw2 * 0.68), Math.round(cw2 * 0.68));
         ly += cardH + 14;
       } else {
         var di = 0;
-        while (di < Math.min(res2.length, 6)) {
-          var rowTop2 = ly, cc2;
-          for (cc2 = 0; cc2 < 2 && di < Math.min(res2.length, 6); cc2++, di++) {
-            var dit = res2[di], key2 = 'dial:' + dit.id;
-            var fr2 = tvTile({ k: key2, t: dit.t }, { id: dit.id, t: dit.t }, x + cc2 * (cw2 + 12), rowTop2, cw2, cardH);
-            if (fr2) { frameRect = fr2; activeIt = { id: dit.id, t: dit.t }; }
-          }
+        while (di < Math.min(res2.length, 4)) {
+          var rowTop2 = ly, dit = res2[di], key2 = 'dial:' + dit.id;
+          var fr2 = tvTile({ k: key2, t: dit.t }, { id: dit.id, t: dit.t }, x, rowTop2, cw2, cardH);
+          if (fr2) { frameRect = fr2; activeIt = { id: dit.id, t: dit.t }; }
+          di++;
           ly = rowTop2 + cardH + 14;
         }
       }
@@ -7420,8 +7520,15 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     function setMediaActive(idx) { UI.tvActive = idx; UI.tvMuted = true; }
     function applyTvSound() { try { var mf = UI.mframe; if (mf && mf.contentWindow) mf.contentWindow.postMessage(JSON.stringify({ event: 'command', func: (UI.tvMuted === false ? 'unMute' : 'mute'), args: [] }), '*'); } catch (e) {} }
     function bakeliteBody(x, y, w, h) {
-      p.noStroke(); fillc([38, 26, 19]); p.rect(x, y + 4, w, h, 16); fillc([64, 45, 33]); p.rect(x, y, w, h, 16);
-      p.noFill(); strokec([96, 68, 50], 200); p.strokeWeight(1.3); p.rect(x + 3, y + 3, w - 6, h - 6, 13);
+      // a walnut cabinet with depth: grain, bevel, and two small feet
+      var dc9 = p.drawingContext;
+      p.noStroke(); fillc([24, 16, 12], 190); p.rect(x + 4, y + 8, w - 8, h, 16);
+      fillc([34, 23, 17]); p.rect(x, y + 5, w, h, 16);
+      if (dc9) { var wg = dc9.createLinearGradient(x, y, x, y + h); wg.addColorStop(0, 'rgb(96,66,46)'); wg.addColorStop(0.5, 'rgb(74,51,37)'); wg.addColorStop(1, 'rgb(56,38,28)'); dc9.fillStyle = wg; dc9.beginPath(); if (dc9.roundRect) dc9.roundRect(x, y, w, h, 16); else dc9.rect(x, y, w, h); dc9.fill(); }
+      else { fillc([74, 51, 37]); p.rect(x, y, w, h, 16); }
+      if (!reduced()) { var gi9; strokec([46, 30, 22], 60); p.strokeWeight(1); for (gi9 = 0; gi9 < 5; gi9++) p.line(x + 8, y + 10 + gi9 * (h - 20) / 4 + Math.sin(gi9 * 3.1) * 3, x + w - 8, y + 12 + gi9 * (h - 20) / 4 + Math.sin(gi9 * 1.7) * 3); }
+      p.noFill(); strokec([120, 86, 62], 170); p.strokeWeight(1.4); p.rect(x + 3, y + 3, w - 6, h - 6, 13);
+      p.noStroke(); fillc([24, 16, 12]); p.rect(x + 14, y + h, 16, 6, 3); p.rect(x + w - 30, y + h, 16, 6, 3);
     }
     function tvKnob(cx, cy, r, lit) {
       p.noStroke(); fillc([18, 13, 10]); p.ellipse(cx, cy + 1.5, r * 2 + 2, r * 2 + 2); fillc(lit ? ACC : [78, 58, 46]); p.ellipse(cx, cy, r * 2, r * 2);
@@ -7825,6 +7932,8 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (foldHeader('Reading', 'reading', ly, false)) {
       ly += 50;
       ly += toggleRow('Reading text size', [['1', 'Standard'], ['1.15', 'Large'], ['1.3', 'Larger']], String(st.textScale || 1), ly, function (v) { st.textScale = parseFloat(v); APP.save(); UI.readCache = null; });
+      ly += toggleRow('Reading font', [['std', 'Standard'], ['dyslexic', 'OpenDyslexic']], st.font === 'dyslexic' ? 'dyslexic' : 'std', ly, function (v) { st.font = v; APP.save(); applyFontPref(); UI.readCache = null; });
+      if (st.font === 'dyslexic') ly += paragraph(UI.dysLoaded ? 'OpenDyslexic is loaded and kept on this device. Every reading, lesson and story uses it; lines re-wrap themselves to fit.' : 'OpenDyslexic loads once from a public CDN (about 600KB) and is kept offline after that. Until it lands, the standard font stands in.', x, ly, w, 12.5, INK, SERIF, 19, 180) + 12;
       ly += toggleRow('Sound', [['off', 'Off'], ['on', 'On']], st.sound ? 'on' : 'off', ly, function (v) { st.sound = (v === 'on'); APP.save(); if (st.sound) { audioInit(); chime(); } });
       ly += toggleRow('Transit reminders', [['off', 'Off'], ['on', 'On']], st.notify ? 'on' : 'off', ly, function (v) { st.notify = (v === 'on'); APP.save(); if (st.notify) enableNotify(); });
       ly += toggleRow('Haptics', [['on', 'On'], ['off', 'Off']], st.haptics === false ? 'off' : 'on', ly, function (v) { st.haptics = (v === 'on'); APP.save(); if (st.haptics) buzz(14); });
@@ -7994,8 +8103,67 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (a2i > 0) { p.textStyle(p.ITALIC); setFont(SERIF, 16.5, INK, p.CENTER, p.CENTER, 220 * a2i); p.text('your sky, read straight', cx, gy0 + 136); p.textStyle(p.NORMAL); }
       var a3i = still ? 1 : cl01((e - 5.9) / 0.8);
       if (a3i > 0) { var pli = still ? 1 : 0.6 + 0.4 * Math.sin(nowT() * 0.004); setFont(MONO, 11, ACCTX, p.CENTER, p.CENTER, 255 * a3i * pli); p.text('TAP TO BEGIN', cx, H - (UI.safeBottom || 0) - 56); }
-      pushHit(0, 0, W, H, function () { UI.introDone = true; UI.fxT = nowT(); });
+      pushHit(0, 0, W, H, function () { UI.introDone = true; UI.fxT = nowT(); try { padStart([110, 164.81, 246.94, 329.63], 0.02); } catch (eP) {} });
       if (e > 10) { UI.introDone = true; UI.fxT = nowT(); }
+    }
+    function drawSettingsGuide() {
+      var st = APP.STATE.settings; if (!st || st.setGuided) return;
+      var x = sx(), w = cw();
+      if (!UI.setGuide) UI.setGuide = { i: 0, t0: nowT() };
+      var GS9 = [
+        ['The look', 'Five themes, eight accent colours, and the whole app repaints while you watch. Auto follows the daylight where you are.'],
+        ['The reading', 'Bigger text, the OpenDyslexic font, and the voices: the system one, or the human one you can download once and keep.'],
+        ['Yours alone', 'Everything lives on this device. One-file backup, saved charts to switch between, and nothing that phones home.']
+      ];
+      var gs9 = GS9[UI.setGuide.i], gH9 = 150, gY9 = H - (UI.safeBottom || 0) - NAVH - gH9 - 14;
+      p.noStroke(); fillc([12, 10, 8], 120); p.rect(0, 0, W, H); pushHit(0, 0, W, H, function () {});
+      var gp9 = reduced() ? 1 : eBack(cl01((nowT() - UI.setGuide.t0) / 420)), gOff9 = (1 - gp9) * 20;
+      p.noStroke(); fillc(shade(INK, -20)); p.rect(x, gY9 + 4 + gOff9, w, gH9, 14); fillc(INK); p.rect(x, gY9 + gOff9, w, gH9, 14);
+      riseText(gs9[0], x + 18, gY9 + 14 + gOff9, 20, SERIF, GROUNDS[UI.screen], UI.setGuide.t0 + 200, 24, 255, true);
+      setFont(SERIF, 13.5, GROUNDS[UI.screen], p.LEFT, p.TOP, 225);
+      var gl9 = wrapLines2(gs9[1], w - 36, SERIF, 13.5), gli9;
+      for (gli9 = 0; gli9 < gl9.length; gli9++) p.text(gl9[gli9], x + 18, gY9 + 46 + gOff9 + gli9 * 19);
+      setFont(MONO, 9, GROUNDS[UI.screen], p.LEFT, p.BOTTOM, 160); p.text((UI.setGuide.i + 1) + ' / 3', x + 18, gY9 + gH9 - 12 + gOff9);
+      tourBtn(UI.setGuide.i < 2 ? 'Next' : 'Got it', x + w - 104, gY9 + gH9 - 46 + gOff9, 90, 34, function () {
+        if (UI.setGuide.i < 2) { UI.setGuide.i++; UI.setGuide.t0 = nowT(); }
+        else { st.setGuided = true; APP.save(); UI.setGuide = null; }
+      }, true);
+    }
+    function drawVoiceGate() {
+      if (!UI.vgT) UI.vgT = nowT();
+      var e = (nowT() - UI.vgT) / 1000, cx = W / 2, still = reduced(), dcV = p.drawingContext, x = sx(), w = cw();
+      p.noStroke(); fillc(GROUNDS.chart); p.rect(0, 0, W, H);
+      var gy0 = H * 0.30;
+      if (dcV) { var vg1 = dcV.createLinearGradient(0, 0, 0, gy0 + 36); vg1.addColorStop(0, 'rgba(16,20,40,0.97)'); vg1.addColorStop(1, 'rgba(66,74,106,0.97)'); dcV.fillStyle = vg1; dcV.fillRect(0, 0, W, gy0 + 36); }
+      var si2; for (si2 = 0; si2 < 20; si2++) { var tw2 = still ? 0.8 : 0.55 + 0.45 * Math.sin(nowT() * 0.003 + si2 * 1.7); p.noStroke(); fillc([255, 252, 240], 130 * tw2); p.ellipse(((si2 * 89) % (W - 24)) + 12, ((si2 * 47) % (gy0 - 90)) + 12, 1.8, 1.8); }
+      p.noStroke(); fillc([30, 36, 58], 235); p.rect(-10, gy0 - 12, W + 20, 50);
+      var fh2 = Math.min(H * 0.13, 100);
+      actorFigure({ x: cx, y: gy0 + 14, h: fh2, col: [15, 14, 22], rim: [186, 196, 232], rimOff: [2, -1.6], look: 0.25, ph: 1 }, cl01(e / 0.6));
+      // sound waves ripple gently from where the mouth would be: the offer, drawn
+      if (!still) { var wv9; for (wv9 = 0; wv9 < 3; wv9++) { var wp9 = ((nowT() * 0.0005 + wv9 * 0.33) % 1); p.noFill(); strokec([255, 244, 200], 90 * (1 - wp9)); p.strokeWeight(1.2); p.arc(cx + fh2 * 0.12, gy0 + 14 - fh2 * 0.82, 20 + wp9 * 46, 20 + wp9 * 46, -0.6, 0.6); } }
+      var ly = gy0 + 64;
+      riseText('A voice can come with you', cx, ly, 24, SERIF, INK, UI.vgT + 400, 26); ly += 44;
+      ly += paragraph('This app can speak: the readings, the walkthrough, the story of your life. The human voice is Kokoro, open source, downloaded once (about 90MB) and kept on this device. No words ever leave your phone.', x, ly - topY(), w, 14, INK, SERIF, 21, 220) + 14;
+      var HV = (typeof window !== 'undefined' && window.AqauVoice) ? window.AqauVoice : null;
+      function gateDone() { if (APP.STATE.settings) { APP.STATE.settings.voiceGateDone = true; APP.save(); } UI.voiceGateDone = true; UI.fxT = nowT(); padStop(2.5); }
+      var lyr = ly - topY();
+      if (HV && HV.state === 'loading') {
+        p.noStroke(); fillc(INK, 30); p.rect(x, sY(lyr), w, 10, 5); fillc(ACC); p.rect(x, sY(lyr), Math.max(6, w * (HV.progress || 0)), 10, 5); lyr += 20;
+        ly = lyr; ly += paragraph((HV.status || 'Downloading') + ' \u00B7 ' + Math.round((HV.progress || 0) * 100) + '%. Keep the app open; this happens once.', x, ly, w, 12.5, INK, MONO, 18, 200) + 12;
+        flatBtn('Continue while it downloads \u203A', x, ly, w, 44, function () { if (APP.STATE.settings) { APP.STATE.settings.voice = 'human'; } gateDone(); }, false); ly += 56;
+      } else if (HV && HV.state === 'ready') {
+        if (!UI.vgSpoke) { UI.vgSpoke = true; if (APP.STATE.settings) { APP.STATE.settings.voice = 'human'; APP.save(); } try { HV.speak('Hello. I am the voice of this app, and I stay on this device. Let us set up your chart: the day you were born, the time if you know it, and the place.'); } catch (eS) {} }
+        ly = lyr; ly += paragraph('The voice is here, and it is yours. It will read the walkthrough and your life story aloud whenever you ask.', x, ly, w, 14, INK, SERIF, 21, 220) + 12;
+        flatBtn('Begin, with the voice \u203A', x, ly, w, 48, function () { gateDone(); }, true); ly += 60;
+      } else {
+        ly = lyr;
+        flatBtn('\u2B07  Download the human voice \u00B7 ~90MB, once', x, ly, w, 48, function () { if (HV) HV.load(); }, true); ly += 58;
+        flatBtn('Use the system voice instead', x, ly, w, 44, function () { if (APP.STATE.settings) { APP.STATE.settings.voice = 'system'; APP.save(); } try { if (typeof speechSynthesis !== 'undefined' && typeof SpeechSynthesisUtterance !== 'undefined') { var u0 = new SpeechSynthesisUtterance('Welcome. Let us set up your chart.'); u0.rate = 0.95; speechSynthesis.speak(u0); } } catch (eU) {} gateDone(); }, false); ly += 54;
+        flatBtn('Quietly, thanks', x, ly, w, 40, function () { if (APP.STATE.settings) { APP.STATE.settings.voice = 'off'; APP.save(); } gateDone(); }, false); ly += 52;
+        if (HV && HV.state === 'error') ly += paragraph('Last attempt: ' + HV.status, x, ly, w, 12, INK, MONO, 17, 190) + 8;
+      }
+      setFont(MONO, 9, INK, p.CENTER, p.TOP, 130); p.text('SPOKEN LOCALLY \u00B7 CHANGE ANY TIME IN SETTINGS', cx, H - (UI.safeBottom || 0) - 40);
+      UI.contentH.onboard = 0;
     }
     function drawOnboard() {
       if (!UI.draft) UI.draft = newDraft();
@@ -8740,9 +8908,11 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       // words always come first (the chart stays lively — it's the visual centrepiece).
       if (({ read: 1, learn: 1, settings: 1, people: 1, tarot: 1 })[UI.screen]) { p.noStroke(); p.fill(UI.bg[0], UI.bg[1], UI.bg[2], 158); p.rect(0, topY() - 8, W, H - (topY() - 8)); }
       hits = []; phits = []; p.rectMode(p.CORNER); p.textStyle(p.NORMAL); UI.mediaDrawn = false; UI.jDrawn = false;
+      if (!UI.fontApplied) { UI.fontApplied = true; try { applyFontPref(); } catch (eFp) {} }
       if (UI.screen === 'onboard' && !APP.STATE.birth && !UI.introDone) { drawIntro(); clampScroll(); return; }
+      if (UI.screen === 'onboard' && !APP.STATE.birth && UI.introDone && !UI.voiceGateDone && !(APP.STATE.settings && APP.STATE.settings.voiceGateDone)) { drawVoiceGate(); clampScroll(); return; }
       var s = UI.screen;
-      if (s === 'onboard') drawOnboard(); else { if (!(s === 'people' && UI.padd)) hideSearchInput(); if (s === 'chart') drawChart(); else if (s === 'read') drawRead(); else if (s === 'learn') drawLearn(); else if (s === 'tarot') drawTarot(); else if (s === 'people') drawPeople(); else if (s === 'settings') drawSettings(); }
+      if (s === 'onboard') drawOnboard(); else { if (!(s === 'people' && UI.padd)) hideSearchInput(); if (s === 'chart') drawChart(); else if (s === 'read') drawRead(); else if (s === 'learn') drawLearn(); else if (s === 'tarot') drawTarot(); else if (s === 'people') drawPeople(); else if (s === 'settings') { drawSettings(); drawSettingsGuide(); } }
       if (!UI.mediaDrawn) hideMediaFrame(); // the retro TV/radio iframe only lives on the Watch shelf
       drawQuip();
       if (s === 'chart' && UI.pcard && APP.STATE.chart) drawPlanetCard(APP.STATE.chart, APP.STATE.birth);

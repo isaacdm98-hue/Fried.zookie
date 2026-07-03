@@ -1,5 +1,36 @@
 # Changelog
 
+## 1.7.0 — 2026-07-03
+
+The welcome, the workshop, and the furniture.
+
+- **OpenDyslexic**: a reading-font choice in Settings. Loads once (~600KB),
+  kept offline; every reading re-wraps itself because everything measures.
+  Lines breathe a little wider in it.
+- **The chart is never blocked**: the planet card is a peek sheet now, a
+  third of the screen, with the wheel alive above it. No dimming.
+- **Voice before birth details**: after the cold open, the app offers its
+  voice: download the human one with live progress, take the system one, or
+  go quietly. The moment it is ready it speaks a welcome and walks you into
+  setup. Music: a soft generative pad, swells under the intro and the life
+  story (sound is on by default for new installs; the first tap unlocks it).
+- **The person, again**: contrapposto at rest (weight on one hip, shoulders
+  countering), elbows and knees never locked, a gait with the body lowest at
+  contact and highest at passing. Six and a half heads.
+- **Watch went full furniture**: one large square CRT per row in a walnut
+  cabinet: grain, bevel, feet, brand plate, two working-looking knobs, a
+  speaker grille, glass glare, scanlines over thumbnails, and a new myth
+  channel for your sign. Five channels now, honestly counted.
+- **The Reel scrub is an instrument**: age labels, every life chapter as a
+  coloured stitch on the bar, chapters naming themselves as the handle
+  passes, and a film-reel handle with sprockets that spin while you scrub.
+- **Learn**: the 3-2-1 projector countdown is gone; lessons start clean.
+  Screen titles rise letter by letter: Read, Tarot, The sky explained.
+- **Tarot**: the top of the screen is now the card of the day in flickering
+  public-domain art, with a projector's shiver and grain, tap for meaning.
+- **Settings greets first-timers**: three calm cards explain the three
+  drawers, then get out of the way forever.
+
 ## 1.6.0 — 2026-07-03
 
 A person, doing what the year did.
