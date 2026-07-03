@@ -5393,19 +5393,32 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var M9 = { 'fire-fire': 'fire feeds fire: plenty of heat between you', 'air-fire': 'air fans fire: you spark each other into motion', 'earth-fire': 'earth banks fire: one builds while one burns', 'fire-water': 'fire meets water: steam, feeling and weather', 'air-air': 'air on air: the talk never runs out', 'air-earth': 'wind over stone: ideas meet patience', 'air-water': 'wind over water: moods and ideas stir each other', 'earth-earth': 'earth on earth: steady, slow and solid', 'earth-water': 'water feeds earth: something grows here', 'water-water': 'deep water: you feel everything together' };
       return M9[k9] || 'two different weathers sharing one sky';
     }
+    // synastry tone for a person, computed once per active chart and remembered:
+    // these run inside the draw loop, and old phones deserve their sixty frames
+    function bondSummary(person) {
+      var key = 'x|' + (person.id || person.name || '');
+      try { key = APP.activeChartKey() + '|' + (person.id || person.name || ''); } catch (eK) {}
+      UI.synToneCache = UI.synToneCache || {};
+      if (UI.synToneCache[key]) return UI.synToneCache[key];
+      var res = { tone: 'mixed', fl: 0, fr: 0, sunLine: '', mixLine: '' };
+      try {
+        var pcS = APP.personChart(person);
+        if (pcS && APP.STATE.chart) {
+          var synF = APP.synastry(APP.STATE.chart, pcS), si;
+          for (si = 0; si < Math.min(synF.length, 14); si++) { var qF = synF[si].asp.quality; if (qF === 'flow' || qF === 'opportunity') res.fl++; else if (qF === 'tension' || qF === 'friction') res.fr++; }
+          res.tone = res.fl > res.fr * 1.4 ? 'warm' : res.fr > res.fl * 1.4 ? 'spark' : 'mixed';
+          var meSun9 = DATA.SIGNS[APP.STATE.chart.planets.sun.sign], thSun9 = DATA.SIGNS[pcS.planets.sun.sign];
+          res.sunLine = 'THEIR ' + thSun9.name.toUpperCase() + ' SUN MEETS YOUR ' + meSun9.name.toUpperCase() + ' SUN';
+          res.mixLine = elMix9(meSun9.element, thSun9.element) + ' · ' + res.fl + ' flowing, ' + res.fr + ' challenging';
+        }
+      } catch (eF2) {}
+      UI.synToneCache[key] = res;
+      return res;
+    }
     function friendOnStage(person, meX, gapIdx, gy, fh, arr9, alfF) {
       var pcF = null; try { pcF = APP.personChart(person); } catch (eF1) {}
-      var ppF = personaOf(pcF), tone = 'mixed', fl = 0, fr = 0, sunLine = '', mixLine = '';
-      if (pcF && APP.STATE.chart) {
-        try {
-          var synF = APP.synastry(APP.STATE.chart, pcF), si;
-          for (si = 0; si < Math.min(synF.length, 14); si++) { var qF = synF[si].asp.quality; if (qF === 'flow' || qF === 'opportunity') fl++; else if (qF === 'tension' || qF === 'friction') fr++; }
-          tone = fl > fr * 1.4 ? 'warm' : fr > fl * 1.4 ? 'spark' : 'mixed';
-          var meSun9 = DATA.SIGNS[APP.STATE.chart.planets.sun.sign], thSun9 = DATA.SIGNS[pcF.planets.sun.sign];
-          sunLine = 'THEIR ' + thSun9.name.toUpperCase() + ' SUN MEETS YOUR ' + meSun9.name.toUpperCase() + ' SUN';
-          mixLine = elMix9(meSun9.element, thSun9.element) + ' · ' + fl + ' flowing, ' + fr + ' challenging';
-        } catch (eF2) {}
-      }
+      var ppF = personaOf(pcF), bs9 = bondSummary(person);
+      var tone = bs9.tone, sunLine = bs9.sunLine, mixLine = bs9.mixLine;
       var gap = tone === 'warm' ? 0.55 : tone === 'spark' ? 0.95 : 0.74;
       var stopX = meX + fh * (gap + gapIdx * 0.68);
       var eaF = eCubic(arr9), fx = (W + 50) - ((W + 50) - stopX) * eaF;
@@ -6777,8 +6790,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         var stH = 148, stY = sY(ly), dcB = p.drawingContext, still9 = reduced();
         if (stY > H + 40 || stY + stH < topY() - 40 || !dcB) return;
         var lt9 = (nowT() - UI.bondStageT) / 1000, pMe = myPersona(), pTh = personaOf(ch);
-        var flB = 0, frB = 0, sB; for (sB = 0; sB < Math.min(bond.syn.length, 14); sB++) { var qB = bond.syn[sB].asp.quality; if (qB === 'flow' || qB === 'opportunity') flB++; else if (qB === 'tension' || qB === 'friction') frB++; }
-        var toneB = flB > frB * 1.4 ? 'warm' : frB > flB * 1.4 ? 'spark' : 'mixed';
+        var bsB = bondSummary(person), toneB = bsB.tone, flB = bsB.fl, frB = bsB.fr;
         dcB.save(); dcB.beginPath(); dcB.rect(x, stY, w, stH); dcB.clip();
         var gB = dcB.createLinearGradient(0, stY, 0, stY + stH);
         gB.addColorStop(0, 'rgba(20,24,46,0.97)');
@@ -8826,7 +8838,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       recompute(); UI.selPlanet = 'sun'; UI.popT = nowT(); UI.popFrom = 22; UI.scroll.chart = 0; UI.screen = 'chart'; hideSearchInput();
       if (!APP.STATE.settings.walked) { UI.walk = { i: 0, t0: nowT() }; UI.walkTr = null; UI.walkTheme = null; } // first reveal: walk them through it
     }
-    function recompute() { APP.STATE.chart = APP.compute(APP.STATE.birth, APP.STATE.settings); APP.save(); UI.readCache = null; UI.readSig = null; UI.readTransit = null; UI.forecast = null; UI.promCache = null; UI.arcCache = null; UI.todayCache = null; UI.fmList = null; UI.lifeList = null; UI.calEvents = null; UI.calDay = null; UI.walkTr = null; UI.walkTheme = null; UI.bondCache = null; UI.bondFor = null; UI.plun = null; UI.ringsData = null; UI.ringSel = null; UI.vocW = null; UI.phCache = null; if (APP.clearPersonCharts) APP.clearPersonCharts(); UI.askAns = ''; UI.quip = null; UI.quipNext = 0; buildField(); }
+    function recompute() { APP.STATE.chart = APP.compute(APP.STATE.birth, APP.STATE.settings); APP.save(); UI.readCache = null; UI.readSig = null; UI.readTransit = null; UI.forecast = null; UI.promCache = null; UI.arcCache = null; UI.todayCache = null; UI.fmList = null; UI.lifeList = null; UI.calEvents = null; UI.calDay = null; UI.walkTr = null; UI.walkTheme = null; UI.bondCache = null; UI.bondFor = null; UI.plun = null; UI.ringsData = null; UI.ringSel = null; UI.vocW = null; UI.phCache = null; UI.synToneCache = null; UI.dailyEssay = null; if (APP.clearPersonCharts) APP.clearPersonCharts(); UI.askAns = ''; UI.quip = null; UI.quipNext = 0; buildField(); }
 
     // ---------- share / export a clean chart card (own untainted canvas; the live one holds remote images) ----------
     // share a daily card (clean offscreen canvas) — moon phase + what's live on your chart today
