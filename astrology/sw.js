@@ -1,5 +1,5 @@
 /* Aqau Pluto service worker - ES5, offline-first single-file PWA */
-var CACHE = 'aqau-pluto-v15';
+var CACHE = 'aqau-pluto-v16';
 var THUMBS = 'aqau-thumbs-v1';
 var CORE = ['./', 'index.html', 'corpus.js', 'lib-astronomy.js', 'lib-p5.js', 'voice-pack.js', 'manifest.webmanifest', 'icon-180.png', 'icon-192.png', 'icon-512.png'];
 self.addEventListener('install', function (e) {
@@ -13,7 +13,12 @@ self.addEventListener('activate', function (e) {
   e.waitUntil(
     caches.keys().then(function (keys) {
       return Promise.all(keys.map(function (k) { if (k !== CACHE && k !== THUMBS) return caches['delete'](k); }));
-    }).then(function () { return self.clients.claim(); })
+    }).then(function () { return self.clients.claim(); }).then(function () {
+      // a fresh version takes over: reload open pages once, so nobody is left on the stale shell
+      return self.clients.matchAll({ type: 'window' }).then(function (cs) {
+        cs.forEach(function (c) { try { if (c.navigate && c.url) c.navigate(c.url); } catch (e) {} });
+      });
+    })
   );
 });
 self.addEventListener('fetch', function (e) {
@@ -44,6 +49,10 @@ self.addEventListener('fetch', function (e) {
     );
     return;
   }
+  // the app shell is network-first: an updated deployment shows up on the very next open.
+  // Heavy versioned assets (the vendored libraries, icons) stay cache-first for speed.
+  var FRESH = e.request.mode === 'navigate';
+  try { var up = new URL(e.request.url).pathname; if (/(?:^|\/)(index\.html|corpus\.js|voice-pack\.js|manifest\.webmanifest)$/.test(up) || up === '/' ) FRESH = true; } catch (errF) {}
   e.respondWith(
     caches.open(CACHE).then(function (cache) {
       return cache.match(e.request).then(function (cached) {
@@ -51,7 +60,7 @@ self.addEventListener('fetch', function (e) {
           if (resp && resp.status === 200) cache.put(e.request, resp.clone());
           return resp;
         })['catch'](function () { return cached; });
-        return cached || net;
+        return FRESH ? net.then(function (r) { return r || cached; })['catch'](function () { return cached; }) : (cached || net);
       });
     })
   );
