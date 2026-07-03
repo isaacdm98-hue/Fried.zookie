@@ -8139,67 +8139,165 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       return 15 + h;
     }
     // a brief animated welcome the very first time (skippable) — the app introducing itself
+    function runPose9(cx0, gy0, h, ph) {
+      // the classic eight-frame run, continuous: contact, down, pass, peak (airborne),
+      // forward lean, bent arms pumping opposite the legs
+      var S = h * 0.24, lift = h * 0.20;
+      function foot9(off) { var a9 = ph + off; return { x: cx0 + Math.cos(a9) * S + h * 0.02, y: gy0 - Math.max(0, Math.sin(a9)) * lift }; }
+      var airb = Math.max(0, Math.sin(2 * ph + Math.PI / 2));
+      return { fL: foot9(0), fR: foot9(Math.PI), bob: -airb * h * 0.05 + h * 0.02, lean: 0.30,
+        hLdx: Math.cos(ph + Math.PI) * h * 0.13, hLdy: h * 0.14 + Math.sin(ph + Math.PI) * h * 0.03,
+        hRdx: Math.cos(ph) * h * 0.13, hRdy: h * 0.14 + Math.sin(ph) * h * 0.03 };
+    }
     function drawIntro() {
-      // the cold open of the whole app: a night, a shooting star, a constellation catching
-      // light, and the traveller arriving under their own star. Tap anywhere to begin.
+      // the opening of the app as the opening of a film: one runner, side on,
+      // chasing the Moon and then the Sun through four seasons of planet weather,
+      // arriving at night where the sky gathers itself into the wheel.
       if (!UI.introT) UI.introT = nowT();
       var e = (nowT() - UI.introT) / 1000, cx = W / 2, still = reduced(), dcI = p.drawingContext;
+      var DUR = [7, 7, 7, 7, 14], SPD = [96, 118, 142, 60, 0];
+      var bi = 0, acc = 0, lt = e;
+      while (bi < 4 && lt >= DUR[bi]) { lt -= DUR[bi]; bi++; }
+      if (still) { bi = 4; lt = 6; }
+      // distance travelled: the ground is stride-locked to it
+      var wx = 0, k9;
+      for (k9 = 0; k9 < bi; k9++) wx += SPD[k9] * DUR[k9];
+      wx += SPD[bi] * lt * (bi === 4 ? 0 : 1);
+      if (bi === 3) wx -= SPD[3] * lt * lt / (2 * DUR[3]); // autumn decelerates
+      var gy0 = H * 0.60, rx = W * 0.38, fh0 = Math.min(H * 0.15, 118);
+      // ---- sky: each season owns a palette; boundaries crossfade ----
+      var SKYB = [ [[16, 20, 40], [54, 62, 94]], [[86, 74, 104], [244, 176, 138]], [[110, 160, 196], [244, 226, 168]], [[110, 82, 74], [232, 148, 84]], [[16, 20, 40], [58, 66, 98]] ];
+      function mixC9(c1, c2, t9) { return [c1[0] + (c2[0] - c1[0]) * t9, c1[1] + (c2[1] - c1[1]) * t9, c1[2] + (c2[2] - c1[2]) * t9]; }
+      var xf = (bi < 4 && lt > DUR[bi] - 1.2) ? (lt - (DUR[bi] - 1.2)) / 1.2 : 0;
+      var topC = SKYB[bi][0], botC = SKYB[bi][1];
+      if (xf > 0) { topC = mixC9(topC, SKYB[bi + 1][0], xf); botC = mixC9(botC, SKYB[bi + 1][1], xf); }
       p.noStroke(); fillc(GROUNDS.chart); p.rect(0, 0, W, H);
-      var gy0 = H * 0.62;
-      if (dcI) { var ng = dcI.createLinearGradient(0, 0, 0, gy0 + 40); ng.addColorStop(0, 'rgba(16,20,40,0.97)'); ng.addColorStop(1, 'rgba(54,62,94,0.97)'); dcI.fillStyle = ng; dcI.fillRect(0, 0, W, gy0 + 40); }
-      // stars arrive one by one
-      var si; for (si = 0; si < 34; si++) {
-        var sa = still ? 1 : cl01((e - 0.15 - si * 0.05) / 0.5); if (sa <= 0) continue;
-        var sxx = ((si * 97) % (W - 24)) + 12, syy = ((si * 53) % (gy0 - 130)) + 16;
-        var tw = still ? 0.8 : 0.55 + 0.45 * Math.sin(nowT() * 0.003 + si * 1.7);
-        p.noStroke(); fillc([255, 252, 240], 150 * sa * tw); p.ellipse(sxx, syy, 1.9, 1.9);
+      if (dcI) { var ng = dcI.createLinearGradient(0, 0, 0, gy0 + 40); ng.addColorStop(0, 'rgba(' + (topC[0] | 0) + ',' + (topC[1] | 0) + ',' + (topC[2] | 0) + ',0.97)'); ng.addColorStop(1, 'rgba(' + (botC[0] | 0) + ',' + (botC[1] | 0) + ',' + (botC[2] | 0) + ',0.97)'); dcI.fillStyle = ng; dcI.fillRect(0, 0, W, gy0 + 40); }
+      // stars for the night beats
+      if (bi === 0 || bi === 4) { var si; for (si = 0; si < 30; si++) { var tw = still ? 0.8 : 0.55 + 0.45 * Math.sin(nowT() * 0.003 + si * 1.7); p.noStroke(); fillc([255, 252, 240], (bi === 4 ? 150 : 120) * tw * cl01(lt / 1.5)); p.ellipse(((si * 97) % (W - 24)) + 12, ((si * 53) % (gy0 - 140)) + 14, 1.9, 1.9); } }
+      // ---- the chased lights: the Moon leads the night, the Sun takes the day ----
+      var moonX, moonY, mA = 0;
+      if (bi === 0) { moonX = W * 0.74; moonY = H * (0.20 + 0.10 * eCubic(cl01(lt / 7))); mA = 1; }
+      else if (bi === 1) { moonX = W * (0.74 - 0.5 * eCubic(cl01(lt / 4))); moonY = H * (0.30 + 0.30 * eCubic(cl01(lt / 4))); mA = 1 - eCubic(cl01((lt - 2) / 3)); }
+      else if (bi === 4) { moonX = W * 0.74; moonY = H * 0.20; mA = eCubic(cl01((lt - 2) / 2)); }
+      if (mA > 0.01) { p.noStroke(); fillc([240, 238, 226], 26 * mA); p.ellipse(moonX, moonY, 96, 96); drawMoonDisc(moonX, moonY, 24, 224, mA); }
+      var sunX = null, sunY, sA = 0;
+      if (bi === 1) { sunX = W * 0.80; sunY = H * (0.52 - 0.24 * eCubic(cl01((lt - 1.5) / 5))); sA = cl01((lt - 1.5) / 2); }
+      else if (bi === 2) { sunX = W * 0.72; sunY = H * 0.16; sA = 1; }
+      else if (bi === 3) { sunX = W * (0.72 - 0.4 * eCubic(cl01(lt / 6))); sunY = H * (0.16 + 0.34 * eCubic(cl01(lt / 6))); sA = 1 - 0.4 * eCubic(cl01(lt / 6)); }
+      if (sunX != null && sA > 0.01) { p.noStroke(); fillc([255, 232, 170], 60 * sA); p.ellipse(sunX, sunY, 130, 130); fillc([255, 216, 130], 235 * sA); p.ellipse(sunX, sunY, 40, 40); }
+      // ---- the cast arrives, named: this is how the app introduces its planets ----
+      function cameo9(key9, px9, py9, r9, lbl9, a9) {
+        if (a9 <= 0.01) return;
+        if (dcI) { dcI.save(); dcI.globalAlpha = a9; }
+        p.push(); p.translate(px9, py9); celestialBody(key9, 0, 0, r9, nowT()); p.pop();
+        if (dcI) dcI.restore();
+        setFont(MONO, 8, [250, 246, 232], p.CENTER, p.TOP, 190 * a9); p.text(lbl9, px9, py9 + r9 + 8);
       }
-      // a shooting star crosses, and where it passes a constellation catches light
-      var CON = [[0.28, 0.24], [0.40, 0.18], [0.53, 0.23], [0.64, 0.19], [0.74, 0.27]];
-      var shP = still ? 1 : cl01((e - 1.0) / 1.4);
-      if (shP > 0 && shP < 1 && !still) {
-        var mx = W * (0.08 + shP * 0.78), my = H * (0.10 + shP * 0.15);
-        strokec([255, 250, 235], 200 * Math.sin(shP * Math.PI)); p.strokeWeight(1.6); p.line(mx - 26, my - 9, mx, my);
-        p.noStroke(); fillc([255, 250, 235], 230 * Math.sin(shP * Math.PI)); p.ellipse(mx, my, 3, 3);
+      if (bi === 1) { var ca1 = cl01((lt - 3) / 1.4); cameo9('mercury', W * 0.30, H * 0.15, 8, 'MERCURY', ca1); cameo9('venus', W * 0.48, H * 0.11, 11, 'VENUS', cl01((lt - 3.8) / 1.4)); }
+      if (bi === 2) { cameo9('mars', W * 0.26, H * 0.13, 10, 'MARS', cl01((lt - 2.6) / 1.4)); }
+      if (bi === 3) { cameo9('jupiter', W * 0.30, H * 0.14, 16, 'JUPITER', cl01((lt - 1.6) / 1.4)); cameo9('saturn', W * 0.52, H * 0.10, 13, 'SATURN', cl01((lt - 2.6) / 1.4)); }
+      // ---- ground: two parallax hill bands, scrolling with the runner's distance ----
+      function band9(par9, yb9, amp9, colB9, aB9) {
+        p.noStroke(); fillc(colB9, aB9);
+        p.beginShape(); p.vertex(-20, gy0 + 60); p.vertex(-20, yb9);
+        var hbq; for (hbq = 0; hbq <= 14; hbq++) { var pxq = -20 + (W + 40) * hbq / 14; p.vertex(pxq, yb9 - amp9 * (0.5 + 0.5 * Math.sin((pxq + wx * par9) * 0.012))); }
+        p.vertex(W + 20, gy0 + 60); p.endShape(p.CLOSE);
       }
-      var ci; for (ci = 0; ci < CON.length; ci++) {
-        var ca = still ? 1 : cl01((e - 1.2 - ci * 0.22) / 0.5); if (ca <= 0) continue;
-        var px1 = W * CON[ci][0], py1 = H * CON[ci][1];
-        p.noStroke(); fillc([255, 244, 200], 220 * ca); p.ellipse(px1, py1, 3.4, 3.4);
-        fillc([255, 244, 200], 40 * ca); p.ellipse(px1, py1, 12, 12);
-        if (ci > 0) { var ca2 = still ? 1 : cl01((e - 1.35 - ci * 0.22) / 0.45); if (ca2 > 0) { strokec([255, 244, 200], 90 * ca2); p.strokeWeight(1); p.line(W * CON[ci - 1][0], H * CON[ci - 1][1], px1, py1); } }
+      var farC9 = mixC9(botC, [26, 24, 30], 0.45), nearC9 = mixC9(botC, [22, 20, 26], 0.72);
+      band9(0.35, gy0 - 22, 26, farC9, 235);
+      band9(1.0, gy0 - 4, 12, nearC9, 245);
+      p.noStroke(); fillc(mixC9(nearC9, [14, 13, 16], 0.4), 250); p.rect(-20, gy0 - 2, W + 40, 62);
+      // season props stroll past: a bare tree, a blossom tree, grasses, a shedding tree
+      function tree9(px9, kind9) {
+        if (px9 < -60 || px9 > W + 60) return;
+        strokec([20, 18, 22], 240); p.strokeWeight(5); p.noFill();
+        p.line(px9, gy0 + 2, px9 - 4, gy0 - 54); p.strokeWeight(3);
+        p.line(px9 - 3, gy0 - 34, px9 - 22, gy0 - 56); p.line(px9 - 4, gy0 - 44, px9 + 16, gy0 - 66);
+        p.noStroke();
+        if (kind9 === 1) { fillc([238, 168, 186], 220); p.ellipse(px9 - 22, gy0 - 60, 30, 20); p.ellipse(px9 + 16, gy0 - 70, 34, 22); p.ellipse(px9 - 2, gy0 - 62, 26, 18); }
+        if (kind9 === 3) { fillc([196, 116, 56], 200); p.ellipse(px9 - 20, gy0 - 58, 26, 16); p.ellipse(px9 + 14, gy0 - 68, 28, 18); }
       }
-      // the hills, then the traveller walks in and stops beneath the sky
-      p.noStroke(); fillc([30, 36, 58], 235); p.beginShape(); p.vertex(-20, gy0 + 40); p.vertex(-20, gy0 - 16);
-      var hb; for (hb = 0; hb <= 12; hb++) p.vertex(-20 + (W + 40) * hb / 12, gy0 - 16 - 20 * (0.5 + 0.5 * Math.sin(hb * 1.35 + 1.1)));
-      p.vertex(W + 20, gy0 + 40); p.endShape(p.CLOSE);
-      p.noStroke(); fillc([22, 26, 44], 245); p.rect(-20, gy0 - 2, W + 40, 62);
-      var wk = still ? 1 : eCubic(cl01((e - 1.8) / 1.6));
-      var fx = -40 + (cx + 40) * wk, fh0 = Math.min(H * 0.155, 120);
-      var walking = wk < 0.98 && !still;
-      var rigI = { x: fx, y: gy0, h: fh0, col: [15, 14, 22], rim: [186, 196, 230], rimOff: [2, -1.6], look: walking ? 0.5 : (0.3 + (still ? 0 : Math.sin(nowT() * 0.0012) * 0.1)), star: false };
-      if (walking) { var gI = gaitAt(fx, gy0, fh0, e * 7.5); rigI.fL = gI.fL; rigI.fR = gI.fR; rigI.bob = -gI.bob; rigI.lean = gI.lean; }
-      p.noStroke(); fillc([8, 8, 14], 90); p.ellipse(fx, gy0 + 2, fh0 * 0.42, 7);
-      actorFigure(rigI, cl01((e - 1.6) / 0.6));
-      // their star comes down from the constellation to keep above them
-      var dsc = still ? 1 : eCubic(cl01((e - 3.3) / 1.1));
-      if (dsc > 0) {
-        var sx0 = W * CON[2][0], sy0 = H * CON[2][1];
-        var stx = sx0 + (cx - sx0) * dsc, sty = sy0 + ((gy0 - fh0 - 18) - sy0) * dsc;
-        if (dsc < 1 && !still) { strokec([255, 244, 200], 70); p.strokeWeight(1); p.line(sx0, sy0, stx, sty); }
-        var stT = still ? 0.8 : 0.55 + 0.45 * Math.sin(nowT() * 0.005);
-        p.noStroke(); fillc([255, 244, 200], 80 * stT); p.ellipse(stx, sty, 16, 16);
-        strokec([255, 244, 200], 240 * stT); p.strokeWeight(1.3);
-        p.line(stx - 5, sty, stx + 5, sty); p.line(stx, sty - 5, stx, sty + 5);
+      var TP9 = [180, 560, 980, 1420, 1900, 2350], tp9;
+      for (tp9 = 0; tp9 < TP9.length; tp9++) { var scr9 = TP9[tp9] - wx + W * 0.8; tree9(scr9, bi === 1 ? 1 : bi === 3 ? 3 : 0); }
+      // ---- weather, one kind per season ----
+      if (!still) {
+        var wi9;
+        if (bi === 0) { for (wi9 = 0; wi9 < 34; wi9++) { var snY9 = ((nowT() * (0.03 + (wi9 % 5) * 0.008) + wi9 * 97) % (gy0 + 40)); p.noStroke(); fillc([245, 248, 252], 170); p.ellipse(((wi9 * 61) % W) + Math.sin(nowT() * 0.001 + wi9) * 14, snY9, 2.4, 2.4); } }
+        if (bi === 1 && lt < 3) { var rA9 = 1 - lt / 3; strokec([210, 220, 235], 120 * rA9); p.strokeWeight(1.1); for (wi9 = 0; wi9 < 12; wi9++) { var ry9 = ((nowT() * (0.3 + (wi9 % 4) * 0.06) + wi9 * 173) % (gy0 + 30)); p.line(((wi9 * 97) % W), ry9 - 12, ((wi9 * 97) % W) - 4, ry9); } p.noStroke(); }
+        if (bi === 1 && lt >= 2.2) { for (wi9 = 0; wi9 < 16; wi9++) { var ptx9 = ((wi9 * 83 + nowT() * (0.06 + (wi9 % 3) * 0.02)) % (W + 40)) - 20, pty9 = ((wi9 * 47 + nowT() * 0.04) % (gy0 + 20)); p.noStroke(); fillc([242, 178, 194], 200); p.ellipse(ptx9, pty9, 5, 3.2); } }
+        if (bi === 2) { for (wi9 = 0; wi9 < 3; wi9++) { var hz9 = gy0 - 10 - wi9 * 16; strokec([255, 244, 210], 26); p.strokeWeight(1.4); var hxq; p.noFill(); p.beginShape(); for (hxq = 0; hxq <= 10; hxq++) p.vertex(hxq * W / 10, hz9 + Math.sin(nowT() * 0.004 + hxq * 1.3 + wi9 * 2) * 2.4); p.endShape(); } p.noStroke(); }
+        if (bi === 3) { for (wi9 = 0; wi9 < 18; wi9++) { var lfx9 = W + 20 - ((nowT() * (0.10 + (wi9 % 4) * 0.03) + wi9 * 131) % (W + 60)), lfy9 = ((wi9 * 67) % (gy0 - 30)) + 20 + Math.sin(nowT() * 0.003 + wi9) * 16; p.noStroke(); fillc(wi9 % 2 ? [206, 128, 60] : [176, 100, 48], 220); p.ellipse(lfx9, lfy9, 6.5, 3.5 + 2.5 * Math.abs(Math.sin(nowT() * 0.006 + wi9))); } }
       }
-      // the name arrives letter by letter, then the promise
-      if (e > 4.1 || still) riseText('Aqau Pluto', cx, gy0 + 80, 38, SANS, INK, UI.introT + 4100, 55);
-      var a2i = still ? 1 : cl01((e - 5.1) / 0.8);
-      if (a2i > 0) { p.textStyle(p.ITALIC); setFont(SERIF, 16.5, INK, p.CENTER, p.CENTER, 220 * a2i); p.text('your sky, read straight', cx, gy0 + 136); p.textStyle(p.NORMAL); }
-      var a3i = still ? 1 : cl01((e - 5.9) / 0.8);
-      if (a3i > 0) { var pli = still ? 1 : 0.6 + 0.4 * Math.sin(nowT() * 0.004); setFont(MONO, 11, ACCTX, p.CENTER, p.CENTER, 255 * a3i * pli); p.text('TAP TO BEGIN', cx, H - (UI.safeBottom || 0) - 56); }
-      pushHit(0, 0, W, H, function () { UI.introDone = true; UI.fxT = nowT(); try { padStart([110, 164.81, 246.94, 329.63], 0.02); } catch (eP) {} });
-      if (e > 10) { UI.introDone = true; UI.fxT = nowT(); }
+      // ---- the runner ----
+      var fig9 = { x: rx, y: gy0, h: fh0, col: [15, 14, 22], rim: bi >= 2 && bi <= 3 ? [255, 220, 160] : [186, 196, 232], rimOff: [2, -1.6], look: 0.55, star: false };
+      if (bi < 3) {
+        var ph9 = wx / (fh0 * 0.5) * Math.PI;
+        var rp9 = runPose9(rx, gy0, fh0, ph9);
+        fig9.fL = rp9.fL; fig9.fR = rp9.fR; fig9.bob = rp9.bob; fig9.lean = rp9.lean;
+        fig9.hL = { x: rx + fh0 * 0.02 + rp9.hLdx, y: gy0 - fh0 * 0.66 + rp9.hLdy, bend: -1 };
+        fig9.hR = { x: rx + fh0 * 0.02 + rp9.hRdx, y: gy0 - fh0 * 0.66 + rp9.hRdy, bend: 1 };
+        // summer's emotional beat: a leap, arms open, hanging a breath longer than physics
+        if (bi === 2 && lt > 3.1 && lt < 4.5) {
+          var jt9 = (lt - 3.1) / 1.4, jy9 = Math.sin(Math.min(1, jt9) * Math.PI) * fh0 * 0.42;
+          fig9.y = gy0 - jy9; fig9.bob = 0; fig9.crouch = jt9 < 0.2 ? 0.3 * (1 - jt9 / 0.2) : 0;
+          fig9.fL = { x: rx - fh0 * 0.16, y: fig9.y - jy9 * 0.1 }; fig9.fR = { x: rx + fh0 * 0.26, y: fig9.y - fh0 * 0.06 };
+          fig9.hL = { x: rx - fh0 * 0.30, y: fig9.y - fh0 * 0.86, bend: -1 }; fig9.hR = { x: rx + fh0 * 0.30, y: fig9.y - fh0 * 0.88, bend: 1 };
+          fig9.lean = 0.18;
+        }
+      } else if (bi === 3) {
+        var phw9 = wx / (fh0 * 0.42) * Math.PI;
+        var gw9 = gaitAt(rx, gy0, fh0, phw9);
+        fig9.fL = gw9.fL; fig9.fR = gw9.fR; fig9.bob = gw9.bob; fig9.lean = 0.16; fig9.look = 0.3;
+      } else {
+        // arrival: stand, breathe, look up as the sky gathers into the wheel
+        fig9.look = 0.25 + (still ? 0 : Math.sin(nowT() * 0.0012) * 0.1);
+        var settle9 = eCubic(cl01(lt / 1.2));
+        fig9.lean = 0.16 * (1 - settle9);
+      }
+      p.noStroke(); fillc([8, 8, 14], 90); p.ellipse(fig9.x, gy0 + 2, fh0 * 0.44, 7);
+      actorFigure(fig9, 1);
+      // ---- the final beat: the zodiac gathers, the star descends, the name arrives ----
+      if (bi === 4) {
+        var zg9 = eCubic(cl01((lt - 1.2) / 2.4)), zi9;
+        if (zg9 > 0.01) {
+          for (zi9 = 0; zi9 < 12; zi9++) {
+            var za9 = Math.PI + (zi9 / 11) * Math.PI, zr9 = W * 0.42;
+            var zx9 = cx + Math.cos(za9) * zr9, zy9 = H * 0.34 + Math.sin(za9) * H * 0.22;
+            var zA9 = cl01((zg9 * 14 - zi9) / 2);
+            if (zA9 > 0.01) { setFont(SANS, 13, [255, 244, 200], p.CENTER, p.CENTER, 170 * zA9); p.text(DATA.SIGNS[zi9].glyph, zx9, zy9); }
+          }
+          p.noFill(); strokec([255, 244, 200], 40 * zg9); p.strokeWeight(1);
+          p.arc(cx, H * 0.34, W * 0.84, H * 0.44, Math.PI * 1.02, Math.PI * 1.98);
+        }
+        var dsc9 = still ? 1 : eCubic(cl01((lt - 3.6) / 1.4));
+        if (dsc9 > 0.01) {
+          var sty9 = (H * 0.12) + ((gy0 - fh0 - 20) - H * 0.12) * dsc9;
+          var stT9 = still ? 0.8 : 0.55 + 0.45 * Math.sin(nowT() * 0.005);
+          if (dsc9 < 1 && !still) { strokec([255, 244, 200], 60); p.strokeWeight(1); p.line(cx, H * 0.12, rx, sty9); }
+          p.noStroke(); fillc([255, 244, 200], 80 * stT9); p.ellipse(rx, sty9, 15, 15);
+          strokec([255, 244, 200], 240 * stT9); p.strokeWeight(1.3); p.line(rx - 5, sty9, rx + 5, sty9); p.line(rx, sty9 - 5, rx, sty9 + 5);
+        }
+        if (lt > 5 || still) riseText('Aqau Pluto', cx, gy0 + 82, 38, SANS, INK, UI.introT + (still ? 0 : (28000 + 5000)), 55);
+        var a2i = still ? 1 : cl01((lt - 6.2) / 0.8);
+        if (a2i > 0) { p.textStyle(p.ITALIC); setFont(SERIF, 16.5, INK, p.CENTER, p.CENTER, 220 * a2i); p.text('your sky, read straight', cx, gy0 + 138); p.textStyle(p.NORMAL); }
+        var a3i = still ? 1 : cl01((lt - 7) / 0.8);
+        if (a3i > 0) { var pli = still ? 1 : 0.6 + 0.4 * Math.sin(nowT() * 0.004); setFont(MONO, 11, ACCTX, p.CENTER, p.CENTER, 255 * a3i * pli); p.text('TAP TO BEGIN', cx, H - (UI.safeBottom || 0) - 56); }
+      }
+      // ---- one caption per season: the long emotional line ----
+      var CAPI9 = ['You were born under a moving sky.', 'The planets never stop moving.', 'Astrology reads their weather.', 'Weather. Never fate.', ''];
+      if (bi < 4 && lt > 1.6 && lt < DUR[bi] - 0.6) {
+        var capA9 = Math.min(cl01((lt - 1.6) / 0.9), cl01((DUR[bi] - 0.6 - lt) / 0.9));
+        p.textStyle(p.ITALIC); setFont(SERIF, 17, [246, 242, 232], p.CENTER, p.CENTER, 240 * capA9);
+        p.text(CAPI9[bi], cx, gy0 + 34); p.textStyle(p.NORMAL);
+      }
+      // ---- taps: the first brings the sound in; the second skips ----
+      if (!UI.introSound && bi < 4) { var hintA9 = 0.5 + (still ? 0 : Math.sin(nowT() * 0.003) * 0.25); setFont(MONO, 9, INK, p.CENTER, p.CENTER, 150 * hintA9); p.text('TAP FOR SOUND · TAP TWICE TO SKIP', cx, H - (UI.safeBottom || 0) - 30); }
+      pushHit(0, 0, W, H, function () {
+        if (!UI.introSound) { UI.introSound = true; try { padStart([110, 164.81, 246.94, 329.63], 0.022); } catch (eP) {} return; }
+        UI.introDone = true; UI.fxT = nowT();
+      });
+      if (e > 44) { UI.introDone = true; UI.fxT = nowT(); }
     }
     function drawSettingsGuide() {
       var st = APP.STATE.settings; if (!st || st.setGuided) return;
@@ -9003,7 +9101,10 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       // words always come first (the chart stays lively — it's the visual centrepiece).
       if (({ read: 1, learn: 1, settings: 1, people: 1, tarot: 1 })[UI.screen]) { p.noStroke(); p.fill(UI.bg[0], UI.bg[1], UI.bg[2], 158); p.rect(0, topY() - 8, W, H - (topY() - 8)); }
       hits = []; phits = []; p.rectMode(p.CORNER); p.textStyle(p.NORMAL); UI.mediaDrawn = false; UI.jDrawn = false;
-      if (!UI.fontApplied) { UI.fontApplied = true; try { applyFontPref(); } catch (eFp) {} }
+      if (!UI.fontApplied) {
+        UI.fontApplied = true; try { applyFontPref(); } catch (eFp) {}
+        try { var stM = APP.STATE.settings; if (stM && !stM.soundMigrated) { stM.soundMigrated = true; if (stM.sound !== true) stM.sound = true; APP.save(); } } catch (eSM) {}
+      }
       // the voice fetches itself in the background: once, politely, only when online
       if (!UI.voiceKick && nowT() > 4000) {
         UI.voiceKick = true;
@@ -9015,6 +9116,10 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (!UI.voiceReadyMark && window.AqauVoice && window.AqauVoice.state === 'ready') {
         UI.voiceReadyMark = true;
         try { var st8v = APP.STATE.settings; if (st8v && !st8v.voiceChosen && st8v.voice !== 'system') { st8v.voice = 'human'; APP.save(); } } catch (eVR) {}
+      }
+      if (!UI.voiceFbMark && window.AqauVoice && window.AqauVoice.state === 'error') {
+        UI.voiceFbMark = true;
+        try { var st7f = APP.STATE.settings; if (st7f && !st7f.voiceChosen && (!st7f.voice || st7f.voice === 'off') && !st7f.voiceDeclined) { st7f.voice = 'system'; APP.save(); } } catch (eVF) {}
       }
       if (UI.screen === 'onboard' && !APP.STATE.birth && !UI.introDone) { drawIntro(); clampScroll(); return; }
       if (UI.screen === 'onboard' && !APP.STATE.birth && UI.introDone && !UI.voiceGateDone && !(APP.STATE.settings && APP.STATE.settings.voiceGateDone)) { drawVoiceGate(); clampScroll(); return; }
