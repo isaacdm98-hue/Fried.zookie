@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.9.0 — 2026-07-03
+- **The Daily Sky.** Opening the app now opens today like a front page: an animated bulletin, once per day, that walks your persona through each transit touching your chart right now: the mover owns the sky, the weather means what the aspect means, and the words rise line by line. Ends with everyone you keep, under the same sky.
+- **The persona is your chart.** The silhouette is no longer generic: your dominant element sets its pace, its carriage and the colour of light it walks in. Fire strides and looks up; earth settles and takes its time; air is lifted; water flows.
+- **Friends walk in as their charts.** People you have saved arrive in the intro finale and the daily bulletin as their own personas. The synastry with your chart decides how they behave around you: warm bonds come close and raise a hand, sparky ones keep a respectful gap and glance away.
+- **The bonds made visible.** A thread is drawn between you and each friend: an easy current arcs smooth and gold, friction crackles, a mixed bond stitches a dotted line. A caption cycles through each pairing: whose Sun meets whose, how the elements weather each other, and the flowing/challenging count from real synastry.
+- **The figure, finally human.** True side-profile body with a simple head; both knees bend forward and both elbows back; limbs never open past straight; the far side stands a tone lighter on a recessed hip and shoulder; idle arms counter-swing the legs.
+- **Feet that touch the ground.** The leg solves to the ankle, so a planted sole sits exactly on the ground line; a lifted foot points its toe on push-off and leads with the heel just before landing.
+
 ## 1.8.0 — 2026-07-03
 
 The chase, the stale-shell fix, and scenes that mean something.
