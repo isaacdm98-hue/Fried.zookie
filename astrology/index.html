@@ -806,14 +806,14 @@ var APP = (function () {
     var se = DATA.SIGNS[sun.sign].element, me = DATA.SIGNS[moon.sign].element;
     if (tk) {
       var ae = DATA.SIGNS[asc.sign].element;
-      if (se === me && me === ae) parts.push('Your Sun, Moon and rising all run ' + se + ' \u2014 one pure element, so you are unusually of a piece: what you are, what you feel and how you come across all speak the same language, for better and worse.');
+      if (se === me && me === ae) parts.push('Your Sun, Moon and rising all run ' + se + ', one pure element, so you are unusually of a piece: what you are, what you feel and how you come across all speak the same language, for better and worse.');
       else parts.push('Your Sun runs ' + se + ', your Moon ' + me + ' and your rising ' + ae + '. Where your core (' + se + ') meets your feeling (' + me + '), ' + elementMix(se, me) + '.');
     } else {
       parts.push('Your Sun is ' + se + ' and your Moon is ' + me + '. Where they meet, ' + elementMix(se, me) + '.');
     }
     var dom = domElement(c.elements), low = lowElement(c.elements);
     var leadE = vpick(['The chart leans', 'Your centre of gravity is', 'The weight of you sits in', 'On balance you run', 'The prevailing wind here is', 'Weigh it all and the needle points to', 'Add every placement up and it comes out', 'The chart\u2019s home key is'], seed);
-    parts.push(leadE + ' ' + DATA.ELEMENTS[dom].name.toLowerCase() + ' (' + c.elements[dom] + '%): ' + DATA.ELEMENTS[dom].high + '. It runs light on ' + DATA.ELEMENTS[low].name.toLowerCase() + ' (' + c.elements[low] + '%) \u2014 ' + DATA.ELEMENTS[low].need);
+    parts.push(leadE + ' ' + DATA.ELEMENTS[dom].name.toLowerCase() + ' (' + c.elements[dom] + '%): ' + DATA.ELEMENTS[dom].high + '. It runs light on ' + DATA.ELEMENTS[low].name.toLowerCase() + ' (' + c.elements[low] + '%): ' + DATA.ELEMENTS[low].need);
     var dm = domMod(c.modalities);
     var leadM = vpick(['You mostly work in a', 'You meet life in a', 'Your default gear is', 'You operate in a', 'Given the choice, you move in a', 'Left to yourself, you run in a', 'Your natural tempo is a', 'The chart moves in a'], seed + 'm');
     parts.push(leadM + ' ' + DATA.MODALITIES[dm].name.toLowerCase() + ' way. ' + DATA.MODALITIES[dm].note);
@@ -824,7 +824,7 @@ var APP = (function () {
     var tight = [];
     for (var i = 0; i < c.aspects.length && tight.length < 2; i++) { var a = c.aspects[i]; if (!a.minor && a.a !== 'asc' && a.a !== 'mc' && a.b !== 'asc' && a.b !== 'mc') tight.push(a); }
     if (tight.length) {
-      var lines = tight.map(function (a) { var t2 = nameFor(a.a) + ' ' + a.asp.key + ' ' + nameFor(a.b) + ' \u2014 ' + aspectText(c, a); return /[.!?]$/.test(t2) ? t2 : t2 + '.'; });
+      var lines = tight.map(function (a) { var t2 = nameFor(a.a) + ' ' + a.asp.key + ' ' + nameFor(a.b) + ': ' + aspectText(c, a); return /[.!?]$/.test(t2) ? t2 : t2 + '.'; });
       var leadT = vpick(['Two threads stand out in how this all wires together.', 'A couple of wires run hot through the whole chart.', 'Two contacts shape how the rest of you connects up.', 'The tightest aspects tell you where the current concentrates.', 'Where the voltage sits: the closest contacts in the chart.', 'Everything above is wiring; here is where it sparks.', 'Two conversations between your planets never stop running.', 'If you listen to the chart, two exchanges carry over the rest.'], seed + 't');
       parts.push(leadT + ' ' + lines.join(' '));
     }
@@ -1193,7 +1193,7 @@ var APP = (function () {
     d.appendChild(head);
     if (key !== 'asc' && key !== 'mc') {
       d.appendChild(el('p', { class: 'bd-text', text: capit(DATA.PLANETS[key].fn) + ', expressed through ' + DATA.SIGNS[p.sign].style + '.' }));
-      d.appendChild(el('p', { class: 'bd-sub', text: 'House ' + p.house + ' \u2014 ' + DATA.HOUSES[p.house - 1].title + ': ' + DATA.HOUSES[p.house - 1].meaning }));
+      d.appendChild(el('p', { class: 'bd-sub', text: 'House ' + p.house + ', ' + DATA.HOUSES[p.house - 1].title + ': ' + DATA.HOUSES[p.house - 1].meaning }));
     } else {
       var idx = p.sign;
       d.appendChild(el('p', { class: 'bd-text', text: key === 'asc' ? DATA.RISING_IN_SIGN[idx] : ('Your public face and direction point to ' + DATA.SIGNS[idx].style + '.') }));
@@ -1208,7 +1208,7 @@ var APP = (function () {
     wrap.appendChild(elementRose(c));
     card.appendChild(wrap);
     var dom = domElement(c.elements), low = lowElement(c.elements);
-    card.appendChild(el('p', { class: 'balnote', text: 'Strongest in ' + DATA.ELEMENTS[dom].name.toLowerCase() + ' \u2014 ' + DATA.ELEMENTS[dom].high + '. Lightest in ' + DATA.ELEMENTS[low].name.toLowerCase() + '. ' + DATA.ELEMENTS[low].need }));
+    card.appendChild(el('p', { class: 'balnote', text: 'Strongest in ' + DATA.ELEMENTS[dom].name.toLowerCase() + ': ' + DATA.ELEMENTS[dom].high + '. Lightest in ' + DATA.ELEMENTS[low].name.toLowerCase() + '. ' + DATA.ELEMENTS[low].need }));
     var modbar = el('div', { class: 'modbar' });
     var modColors = { cardinal: '#E5634B', fixed: '#9079D2', mutable: '#7FB7C9' };
     ['cardinal', 'fixed', 'mutable'].forEach(function (m) {
@@ -1706,9 +1706,9 @@ var APP = (function () {
   // orb tightness woven into the sentence — exactness is information, not decoration
   function orbPhrase(as) {
     if (!as || as.orb == null) return '';
-    if (as.orb <= 0.35) return ' \u2014 exact to the degree, one of the defining wirings of the chart';
-    if (as.orb <= 1.2) return ' \u2014 very tight at ' + as.orb.toFixed(1) + '\u00B0, so it runs more or less constantly';
-    if (as.orb >= 5.5) return ' \u2014 a wide contact, more background hum than daily fact';
+    if (as.orb <= 0.35) return ', exact to the degree, one of the defining wirings of the chart';
+    if (as.orb <= 1.2) return ', very tight at ' + as.orb.toFixed(1) + '\u00B0, so it runs more or less constantly';
+    if (as.orb >= 5.5) return ', a wide contact, more background hum than daily fact';
     return '';
   }
   function aspectText(c, as) { return (pairAspectText(as.a, as.b, as.asp.key) || aspectMeaning(c, as)) + orbPhrase(as); }
@@ -2268,7 +2268,7 @@ var APP = (function () {
     function para(t2) { return '<p>' + esc(t2) + '</p>'; }
     var h = [], i, j, name = b.name || 'You';
     var big3 = c.planets.sun.signName + ' Sun \u00B7 ' + c.planets.moon.signName + ' Moon' + (b.timeKnown && c.ascBody ? (' \u00B7 ' + c.ascBody.signName + ' Rising') : '');
-    h.push('<!DOCTYPE html><html><head><meta charset="utf-8"><title>The Book of You \u2014 ' + esc(name) + '</title><meta name="viewport" content="width=device-width, initial-scale=1">');
+    h.push('<!DOCTYPE html><html><head><meta charset="utf-8"><title>The Book of You \u00B7 ' + esc(name) + '</title><meta name="viewport" content="width=device-width, initial-scale=1">');
     h.push('<style>body{font-family:Georgia,serif;color:#221d18;background:#f4efe2;margin:0;padding:0}main{max-width:680px;margin:0 auto;padding:48px 28px}h1{font-size:42px;margin:.2em 0}h2{font-size:24px;margin-top:2.2em;border-bottom:1px solid #b9ad95;padding-bottom:.3em}h3{font-size:17px;margin:1.4em 0 .3em}p{line-height:1.62;font-size:16px;margin:.5em 0}.eyebrow{font-family:Menlo,Consolas,monospace;font-size:11px;letter-spacing:.18em;color:#96431c;text-transform:uppercase}.meta{font-family:Menlo,Consolas,monospace;font-size:11.5px;color:#7d715c}.cover{text-align:center;padding:70px 0 30px}.rule{border:0;border-top:1px solid #cabfa6;margin:2em 0}@media print{body{background:#fff}main{max-width:none;padding:24px}h2{page-break-after:avoid}}</style></head><body><main>');
     h.push('<div class="cover"><div class="eyebrow">Aqau Pluto \u00B7 a complete chart report</div><h1>The Book of ' + esc(name) + '</h1><p class="meta">' + esc('Born ' + b.d + '.' + b.mo + '.' + b.y + (b.timeKnown ? (' at ' + b.hour + ':' + (b.min < 10 ? '0' : '') + b.min) : '') + (b.place ? (' \u00B7 ' + b.place) : '')) + '</p><p><strong>' + esc(big3) + '</strong></p></div>');
     try { var arc = composeArc(c, b); h.push('<h2>I \u00B7 The four movements</h2>'); for (i = 0; i < arc.length; i++) h.push('<h3>' + esc(arc[i].label) + '</h3>' + para(arc[i].text)); } catch (e1) {}
@@ -2286,7 +2286,7 @@ var APP = (function () {
       if (fc.progressed) h.push(para('Progressed Sun in ' + DATA.SIGNS[fc.progressed.sunSign].name + '; progressed Moon in ' + DATA.SIGNS[fc.progressed.moonSign].name + '.'));
       if (fc.solarReturn) h.push(para('Next solar return: ' + fc.solarReturn.date.toDateString() + (fc.srChart && fc.srChart.ascBody ? (', rising ' + fc.srChart.ascBody.signName) : '') + '.'));
       if (fc.eclipses) for (i = 0; i < fc.eclipses.length; i++) { var EC2 = fc.eclipses[i]; h.push(para(anA(EC2.kind, true) + ' ' + EC2.type + ' eclipse on ' + EC2.date.toDateString() + ' at ' + EC2.deg.toFixed(0) + '\u00B0 ' + DATA.SIGNS[EC2.sign].name + (EC2.house ? (', in the ' + ordinal(EC2.house) + ' house') : '') + '.')); }
-      if (fc.upcoming && fc.upcoming.length) { h.push('<h3>Exact transits coming</h3>'); for (i = 0; i < fc.upcoming.length; i++) { var ev2 = fc.upcoming[i]; h.push(para(ev2.date.toDateString() + ' \u2014 ' + nameFor(ev2.tp) + ' ' + ev2.aspKey + ' ' + nameFor(ev2.np) + (ev2.rx ? ' (retrograde pass)' : '') + '.')); } }
+      if (fc.upcoming && fc.upcoming.length) { h.push('<h3>Exact transits coming</h3>'); for (i = 0; i < fc.upcoming.length; i++) { var ev2 = fc.upcoming[i]; h.push(para(ev2.date.toDateString() + ' \u00B7 ' + nameFor(ev2.tp) + ' ' + ev2.aspKey + ' ' + nameFor(ev2.np) + (ev2.rx ? ' (retrograde pass)' : '') + '.')); } }
     } catch (e4) {}
     h.push('<hr class="rule"><p class="meta">Computed entirely on-device with astronomy-engine (MIT), no AI, no server. Classical material after Ptolemy, Valens and Robson (1923), summarised or quoted from the public domain.</p>');
     h.push('</main></body></html>');
@@ -4465,7 +4465,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (d >= 29) out += ' And at 29\u00B0: the anaretic, the sign\u2019s urgent final degree. It acts like it\u2019s running out of time to master ' + pl.signName + ', and pushes the harder for it.';
       else if (d < 1) out += ' At 0\u00B0, the sign\u2019s very first degree, it meets ' + pl.signName + ' completely fresh: all beginnings, none of the sign\u2019s old habits.';
       var dec = Math.min(2, Math.floor(d / 10)), face = DATA.SIGNS[(pl.sign + 4 * dec) % 12].ruler;
-      if (dec > 0) out += ' Sitting in the ' + (dec === 1 ? 'second' : 'third') + ' decan: the ' + face + ' face of ' + pl.signName + ' \u2014 it takes a distinct ' + face + ' shading.';
+      if (dec > 0) out += ' Sitting in the ' + (dec === 1 ? 'second' : 'third') + ' decan: the ' + face + ' face of ' + pl.signName + ', so it takes a distinct ' + face + ' shading.';
       return out;
     }
     function sdelta2(a, b2) { var d = (a - b2) % 360; if (d > 180) d -= 360; if (d < -180) d += 360; return d; }
@@ -5053,8 +5053,14 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var gi = cl01(1 - (nowT() - UI.fxT) / 500); // subtle glitch on screen entry
       p.textStyle(p.BOLD);
       glitchText(titleSign, x, sY(ly), 38, SANS, INK, p.LEFT, p.TOP, gi);
-      p.textFont(SANS); p.textSize(38); var tw = p.textWidth(titleSign);
-      setFont(SANS, 38, INK, p.LEFT, p.TOP, 90); p.textStyle(p.BOLD); p.text(b.timeKnown ? ' rising' : ' sun', x + tw, sY(ly)); normal(); ly += 48;
+      var dcC5 = p.drawingContext;
+      if (dcC5) {
+        dcC5.save(); dcC5.font = 'bold 38px ' + SANS; dcC5.textAlign = 'left'; dcC5.textBaseline = 'top';
+        dcC5.fillStyle = 'rgba(' + (INK[0] | 0) + ',' + (INK[1] | 0) + ',' + (INK[2] | 0) + ',0.35)';
+        dcC5.fillText(b.timeKnown ? ' rising' : ' sun', x + dcC5.measureText(titleSign).width, sY(ly));
+        dcC5.restore();
+      }
+      normal(); ly += 48;
       ly += hudStrip(c, b, x, ly, w) + 10;
       ly += todayCardStrip(c, b, x, ly, w) + 14;
       // S3 — a one-line daily headline of what the sky is doing to you; tap to open Today
@@ -7519,7 +7525,26 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (stJ.lq) for (jk in stJ.lq) if (stJ.lq.hasOwnProperty(jk) && stJ.lq[jk] === 1) starN++;
       setFont(MONO, 9.5, GROUNDS[UI.screen], p.LEFT, p.CENTER, 210); p.text(seenN ? (Math.min(seenN, LESSON.length) + '/' + LESSON.length + ' CHAPTERS · ' + starN + ' ★ EARNED: CONTINUE') : 'TAP TO BEGIN: A SHORT ANIMATED LESSON', x + 18, hy + hh / 2 + 11);
       var pulse = reduced() ? 0 : Math.sin(nowT() * 0.004) * 2; setFont(SANS, 22, GROUNDS[UI.screen], p.RIGHT, p.CENTER); p.text('›', x + w - 18 + pulse, hy + hh / 2);
-      pushHit(x, hy, w, hh, function () { startLesson(); }); ly += hh + 20;
+      pushHit(x, hy, w, hh, function () { startLesson(); }); ly += hh + 14;
+      // the road so far: the journey drawn as a path your persona is actually walking,
+      // one milestone per chapter, a flag waiting at the end
+      (function () {
+        var seenMax = -1, jk2; if (stJ.lseen) for (jk2 in stJ.lseen) if (stJ.lseen.hasOwnProperty(jk2)) { var idx2 = parseInt(jk2, 10); if (idx2 >= 0 && idx2 > seenMax) seenMax = idx2; }
+        var pthH = 56, py9 = sY(ly) + pthH - 16;
+        if (py9 > topY() - 20 && py9 < H + 40) {
+          var prg = Math.min(1, (seenMax + 1) / LESSON.length);
+          var px0 = x + 14, px1 = x + w - 30;
+          strokec(INK, 70); p.strokeWeight(2); p.line(px0, py9, px1, py9);
+          if (prg > 0) { strokec(ACC, 210); p.line(px0, py9, px0 + (px1 - px0) * prg, py9); }
+          var mi2; for (mi2 = 0; mi2 < LESSON.length; mi2++) { var mx2 = px0 + (px1 - px0) * (mi2 + 1) / LESSON.length, on2 = mi2 <= seenMax; p.noStroke(); fillc(on2 ? ACC : INK, on2 ? 235 : 90); p.ellipse(mx2, py9, on2 ? 6 : 4.5, on2 ? 6 : 4.5); }
+          strokec(INK, 170); p.strokeWeight(1.4); p.line(px1 + 10, py9, px1 + 10, py9 - 17);
+          var flw2 = reduced() ? 0 : Math.sin(nowT() * 0.005) * 2;
+          p.noStroke(); fillc(ACC, 225); p.triangle(px1 + 10, py9 - 17, px1 + 10, py9 - 10, px1 + 18 + flw2, py9 - 13.5);
+          var prsL2 = myPersona();
+          actorFigure({ x: px0 + (px1 - px0) * prg, y: py9 - 1, h: 34, col: [30, 26, 24], rim: prsL2.rim, rimOff: [-1.2, -1], look: 0.35, crouch: prsL2.crouch, star: false }, 1);
+        }
+        ly += pthH + 6;
+      })();
       // the curriculum: Learn is levelled — foundations first, then reading a chart, then time & tradition
       var LEVELS = [
         ['Level 1 · Foundations', [['elements', 'Elements'], ['signs', 'Signs'], ['planets', 'Planets']]],
@@ -7997,7 +8022,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         eyebrow('Shadow', x, ly); ly += 18; ly += paragraph(E.low, x, ly, w, 16, INK, SERIF, 24) + 12;
         ly += paragraph(E.need, x, ly, w, 15.5, INK, SERIF, 23, 210) + 16;
         hairline(x, ly, x + w, 60); ly += 14; eyebrow('In your chart', x, ly); ly += 22;
-        var hook = (it === dm.max) ? (c.elements[it] + '% \u2014 this is your dominant element. It leads how you move through the world.') : (it === dm.min) ? (c.elements[it] + '% \u2014 this is your lightest element, the growth edge Silverman would have you cultivate.') : (c.elements[it] + '% \u2014 a supporting current in your makeup.');
+        var hook = (it === dm.max) ? (c.elements[it] + '%: this is your dominant element. It leads how you move through the world.') : (it === dm.min) ? (c.elements[it] + '%: this is your lightest element, the growth edge Silverman would have you cultivate.') : (c.elements[it] + '%: a supporting current in your makeup.');
         ly += paragraph(hook, x, ly, w, 16, INK, SERIF, 24) + 12;
       } else if (cat === 'signs') {
         var S = DATA.SIGNS[it];
@@ -8008,7 +8033,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         eyebrow('Shadow', x, ly); ly += 18; ly += paragraph(DATA.ELEMENTS[S.element].low, x, ly, w, 15, INK, SERIF, 22, 220) + 14;
         hairline(x, ly, x + w, 60); ly += 14; eyebrow('In your chart', x, ly); ly += 22;
         var ps = planetsInSign(c, it);
-        var msg = ps.length ? ('You carry ' + ps.length + (ps.length === 1 ? ' placement' : ' placements') + ' in ' + S.name + ': ' + ps.map(function (k) { return APP.nameFor(k); }).join(', ') + '. This sign is loud in you.') : ('You have no planets in ' + S.name + ' \u2014 you meet this energy through the house it rules in your chart.');
+        var msg = ps.length ? ('You carry ' + ps.length + (ps.length === 1 ? ' placement' : ' placements') + ' in ' + S.name + ': ' + ps.map(function (k) { return APP.nameFor(k); }).join(', ') + '. This sign is loud in you.') : ('You have no planets in ' + S.name + ': you meet this energy through the house it rules in your chart.');
         ly += paragraph(msg, x, ly, w, 16, INK, SERIF, 24) + 12;
       } else if (cat === 'planets') {
         var k = it, pl = c.planets[k];
@@ -8217,7 +8242,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         for (rti = 0; rti < RT.length; rti++) { p.textFont(MONO); p.textSize(11); var rw2 = p.textWidth(RT[rti][0].toUpperCase()) + 28; chip(RT[rti][0], false, rtx, ly, (function (hh) { return function () { var bb = APP.STATE.birth; bb.hour = Math.floor(hh); bb.min = Math.round((hh % 1) * 60); bb.timeKnown = true; bb.timeApprox = true; recompute(); UI.fxT = nowT(); UI.readCache = null; }; })(RT[rti][1])); rtx += rw2 + 8; }
         ly += 48;
       } else if (APP.STATE.birth && APP.STATE.birth.timeApprox) {
-        ly += paragraph('Your birth time is set as approximate (' + pad2(APP.STATE.birth.hour) + ':' + pad2(APP.STATE.birth.min) + ') \u2014 house placements are best-guess. Edit your birth details to set the exact time, or tap another rough slot below.', x, ly, w, 13.5, INK, SERIF, 20, 190) + 8;
+        ly += paragraph('Your birth time is set as approximate (' + pad2(APP.STATE.birth.hour) + ':' + pad2(APP.STATE.birth.min) + '): house placements are best-guess. Edit your birth details to set the exact time, or tap another rough slot below.', x, ly, w, 13.5, INK, SERIF, 20, 190) + 8;
         var RT2 = [['Morning', 7.5], ['Midday', 12.5], ['Evening', 18.5], ['Night', 1.5], ['Unset', -1]], rti2, rtx2 = x;
         for (rti2 = 0; rti2 < RT2.length; rti2++) { p.textFont(MONO); p.textSize(11); var rw3 = p.textWidth(RT2[rti2][0].toUpperCase()) + 28; chip(RT2[rti2][0], false, rtx2, ly, (function (hh) { return function () { var bb = APP.STATE.birth; if (hh < 0) { bb.timeKnown = false; bb.timeApprox = false; } else { bb.hour = Math.floor(hh); bb.min = Math.round((hh % 1) * 60); bb.timeKnown = true; bb.timeApprox = true; } recompute(); UI.fxT = nowT(); UI.readCache = null; }; })(RT2[rti2][1])); rtx2 += rw3 + 8; }
         ly += 48;
@@ -8268,10 +8293,11 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       flatBtn('Edit birth data', x, ly, 170, 44, function () { UI.draft = newDraft(); UI.screen = 'onboard'; }, true);
       flatBtn('Replay tour', x + 182, ly, 150, 44, function () { startTour(); }, false); ly += 56;
       flatBtn('Walk me through my chart', x, ly, w, 44, function () { startWalk(); }, false); ly += 56;
+      flatBtn('Watch the opening again', x, ly, w, 44, function () { UI.introReplay = true; UI.introT = 0; UI.introSound = false; buzz(12); }, false); ly += 56;
       flatBtn('Share my chart (image)', x, ly, w, 44, function () { exportChartCard(); }, false); ly += 56;
       flatBtn('The Book of You: full printable report', x, ly, w, 44, function () { APP.exportBook(); }, true); ly += 56;
       flatBtn('Cast my AI colleague (CLAUDE.md)', x, ly, w, 44, function () { APP.exportColleague(); }, false); ly += 56;
-      ly += paragraph('There is no AI in this app, and never will be. But your astrology can work inside YOUR AI: this writes a persona file, cast by synastry, describing the colleague who would genuinely fit you \u2014 how to talk to you, what pace to keep, what to cover, what never to do. Drop it into Claude (or any assistant). The file contains behaviour only; your chart never leaves this device, and the AI is told nothing about it.', x, ly, w, 13, INK, SERIF, 19, 185) + 12;
+      ly += paragraph('There is no AI in this app, and never will be. But your astrology can work inside YOUR AI: this writes a persona file, cast by synastry, describing the colleague who would genuinely fit you: how to talk to you, what pace to keep, what to cover, what never to do. Drop it into Claude (or any assistant). The file contains behaviour only; your chart never leaves this device, and the AI is told nothing about it.', x, ly, w, 13, INK, SERIF, 19, 185) + 12;
       ly += paragraph('Every layer of your reading: the movements, placements, aspects, signatures and the year ahead. Typeset as one document you can print or save as PDF. Composed on-device, like everything else.', x, ly, w, 13, INK, SERIF, 19, 180) + 12;
       flatBtn('Back up everything', x, ly, (w - 10) / 2, 44, function () { APP.exportBackup(); }, false);
       flatBtn('Restore backup', x + (w - 10) / 2 + 10, ly, (w - 10) / 2, 44, function () { importBackupUI(); }, false); ly += 56;
@@ -8618,11 +8644,15 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       }
       // ---- taps: the first brings the sound in; the second skips ----
       if (!UI.introSound && bi < 4) { var hintA9 = 0.5 + (still ? 0 : Math.sin(nowT() * 0.003) * 0.25); setFont(MONO, 9, INK, p.CENTER, p.CENTER, 150 * hintA9); p.text('TAP FOR SOUND · TAP TWICE TO SKIP', cx, H - (UI.safeBottom || 0) - 30); }
+      function introOver9() {
+        UI.introDone = true; UI.fxT = nowT();
+        if (UI.introReplay) { UI.introReplay = false; UI.introT = 0; UI.screen = 'chart'; try { padStop(1.6); } catch (ePO) {} }
+      }
       pushHit(0, 0, W, H, function () {
         if (!UI.introSound) { UI.introSound = true; try { padStart([110, 164.81, 246.94, 329.63], 0.022); } catch (eP) {} return; }
-        UI.introDone = true; UI.fxT = nowT();
+        introOver9();
       });
-      if (e > 44) { UI.introDone = true; UI.fxT = nowT(); }
+      if (e > 44) introOver9();
     }
     function drawSettingsGuide() {
       var st = APP.STATE.settings; if (!st || st.setGuided) return;
@@ -9446,7 +9476,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         UI.voiceFbMark = true;
         try { var st7f = APP.STATE.settings; if (st7f && !st7f.voiceChosen && (!st7f.voice || st7f.voice === 'off') && !st7f.voiceDeclined) { st7f.voice = 'system'; APP.save(); } } catch (eVF) {}
       }
-      if (UI.screen === 'onboard' && !APP.STATE.birth && !UI.introDone) { drawIntro(); clampScroll(); return; }
+      if ((UI.screen === 'onboard' && !APP.STATE.birth && !UI.introDone) || UI.introReplay) { drawIntro(); clampScroll(); return; }
       if (UI.screen === 'onboard' && !APP.STATE.birth && UI.introDone && !UI.voiceGateDone && !(APP.STATE.settings && APP.STATE.settings.voiceGateDone)) { drawVoiceGate(); clampScroll(); return; }
       // the daily bulletin: once per day, on open, today's sky arrives as a story
       if (!UI.newsChecked && APP.STATE.chart && APP.STATE.settings && APP.STATE.settings.toured) {
