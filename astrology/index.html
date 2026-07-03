@@ -4097,13 +4097,21 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     }
     // chromatic-aberration text (glitch). inten 0..1
     function glitchText(str, x, y, sz, font, col, ha, va, inten) {
-      p.textFont(font); p.textSize(sz); p.textAlign(ha || p.LEFT, va || p.TOP); p.noStroke();
+      // titles draw straight onto the canvas, like riseText, so no stray frame
+      // state can ever shrink them
+      var dcG = p.drawingContext;
+      if (!dcG) { p.textFont(font); p.textSize(sz); p.textAlign(ha || p.LEFT, va || p.TOP); p.noStroke(); fillc(col); p.text(str, x, y); return; }
+      dcG.save();
+      dcG.font = 'bold ' + sz + 'px ' + font;
+      dcG.textAlign = (ha === p.CENTER) ? 'center' : (ha === p.RIGHT) ? 'right' : 'left';
+      dcG.textBaseline = (va === p.CENTER) ? 'middle' : (va === p.BOTTOM) ? 'alphabetic' : 'top';
       if (inten > 0.02) {
         var o = inten * 4 + (Math.random() - 0.5) * inten * 3;
-        p.fill(214, 44, 44, 160 * inten); p.text(str, x - o, y);
-        p.fill(44, 110, 214, 160 * inten); p.text(str, x + o, y);
+        dcG.fillStyle = 'rgba(214,44,44,' + (0.63 * inten).toFixed(3) + ')'; dcG.fillText(str, x - o, y);
+        dcG.fillStyle = 'rgba(44,110,214,' + (0.63 * inten).toFixed(3) + ')'; dcG.fillText(str, x + o, y);
       }
-      fillc(col); p.text(str, x, y);
+      dcG.fillStyle = 'rgba(' + (col[0] | 0) + ',' + (col[1] | 0) + ',' + (col[2] | 0) + ',1)'; dcG.fillText(str, x, y);
+      dcG.restore();
     }
 
     // ---- widgets ----
@@ -6627,6 +6635,10 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         setFont(SANS, 19, ACC, p.LEFT, p.CENTER); p.text(DATA.SIGNS[su.sign].glyph, x + 4, sY(ly + rh / 2));
         setFont(SANS, 15, INK, p.LEFT, p.CENTER); bold(); p.text(pr.name || 'Unnamed', x + 34, sY(ly + rh / 2) - 8); normal();
         setFont(MONO, 9.5, INK, p.LEFT, p.CENTER, 180); p.text((relLabel(pr.rel, pr.famrel) + ' · ' + su.signName + ' sun · ' + mo.signName + ' moon').toUpperCase(), x + 34, sY(ly + rh / 2) + 10);
+        // their element, worn as a small swatch: the same light their persona walks in
+        var prsL = personaOf(ch);
+        p.noStroke(); fillc(prsL.rim, 235); p.ellipse(x + w - 34, sY(ly + rh / 2), 7, 7);
+        setFont(MONO, 7.5, INK, p.RIGHT, p.CENTER, 150); p.text(prsL.el.toUpperCase(), x + w - 44, sY(ly + rh / 2));
         setFont(SANS, 20, INK, p.RIGHT, p.CENTER, 120); p.text('›', x + w, sY(ly + rh / 2));
         (function (id, ay) { pushHit(x, sY(ay), w, rh, function () { UI.viewPerson = id; UI.scroll.people = 0; UI.popT = nowT(); }); })(pr.id, ly);
         ly += rh;
@@ -6720,7 +6732,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     function bondScores(bond, x, w, ly) {
       var sc = bond.scores; if (!sc || !sc.length) return ly;
       if (!UI.synExp) UI.synExp = {};
-      eyebrow('The scoreboard: tap a line for its receipts', x, ly, ACC); ly += 26;
+      eyebrow('The scoreboard: tap for receipts', x, ly, ACC); ly += 26;
       var i, j;
       for (i = 0; i < sc.length; i++) {
         var D = sc[i]; if (D.score == null) continue;
@@ -6752,6 +6764,50 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       eyebrow(relLabel(person.rel, person.famrel) + ' · born ' + person.d + '.' + person.mo + '.' + person.y, x, ly, ACC); ly += 24;
       setFont(MONO, 11, INK, p.LEFT, p.TOP, 200); p.text((su.signName + ' Sun · ' + mo.signName + ' Moon' + (person.timeKnown && ch.ascBody ? ' · ' + ch.ascBody.signName + ' Rising' : '')).toUpperCase(), x, sY(ly)); ly += 28;
       var bond = composeBondCached(person);
+      // ---- the meeting, staged: your persona and theirs under one dusk, the bond
+      // drawn between you the way the synastry actually weighs ----
+      if (UI.bondStageFor !== person.id) { UI.bondStageFor = person.id; UI.bondStageT = nowT(); }
+      (function () {
+        var stH = 148, stY = sY(ly), dcB = p.drawingContext, still9 = reduced();
+        if (stY > H + 40 || stY + stH < topY() - 40 || !dcB) return;
+        var lt9 = (nowT() - UI.bondStageT) / 1000, pMe = myPersona(), pTh = personaOf(ch);
+        var flB = 0, frB = 0, sB; for (sB = 0; sB < Math.min(bond.syn.length, 14); sB++) { var qB = bond.syn[sB].asp.quality; if (qB === 'flow' || qB === 'opportunity') flB++; else if (qB === 'tension' || qB === 'friction') frB++; }
+        var toneB = flB > frB * 1.4 ? 'warm' : frB > flB * 1.4 ? 'spark' : 'mixed';
+        dcB.save(); dcB.beginPath(); dcB.rect(x, stY, w, stH); dcB.clip();
+        var gB = dcB.createLinearGradient(0, stY, 0, stY + stH);
+        gB.addColorStop(0, 'rgba(20,24,46,0.97)');
+        gB.addColorStop(1, 'rgba(' + Math.round(30 + pTh.rim[0] * 0.16) + ',' + Math.round(30 + pTh.rim[1] * 0.14) + ',' + Math.round(48 + pTh.rim[2] * 0.14) + ',0.97)');
+        dcB.fillStyle = gB; dcB.fillRect(x, stY, w, stH);
+        var siB; for (siB = 0; siB < 14; siB++) { var twB = still9 ? 0.8 : 0.55 + 0.45 * Math.sin(nowT() * 0.003 + siB * 1.9); p.noStroke(); fillc([255, 252, 240], 120 * twB); p.ellipse(x + 8 + ((siB * 73) % (w - 16)), stY + 8 + ((siB * 41) % (stH - 74)), 1.6, 1.6); }
+        var gyB = stY + stH - 24, fhB = 74;
+        p.noStroke(); fillc([24, 22, 30], 245); p.rect(x, gyB - 2, w, 26);
+        // you, waiting; your star overhead
+        var meX = x + w * 0.32;
+        p.noStroke(); fillc([8, 8, 14], 90); p.ellipse(meX, gyB + 2, fhB * 0.4, 6);
+        actorFigure({ x: meX, y: gyB, h: fhB, col: [16, 15, 24], rim: pMe.rim, rimOff: [-2, -1.4], look: 0.4, crouch: pMe.crouch }, 1);
+        // them, arriving as their chart arrives, stopping where the bond stops
+        var arrB = still9 ? 1 : cl01((lt9 - 0.4) / 2.2), eaB = eCubic(arrB);
+        var gapB = toneB === 'warm' ? 0.62 : toneB === 'spark' ? 1.05 : 0.82;
+        var stopB = meX + fhB * gapB, fxB = (x + w + 40) - ((x + w + 40) - stopB) * eaB;
+        var figB = { x: fxB, y: gyB, h: fhB, col: [20, 18, 26], rim: pTh.rim, rimOff: [2, -1.4], dir: -1, star: false };
+        if (arrB < 0.985) { var phB = ((x + w + 40) - fxB) / (fhB * 0.42 / pTh.pace) * Math.PI; var gtB = gaitAt(fxB, gyB, fhB, phB); figB.fL = gtB.fL; figB.fR = gtB.fR; figB.bob = gtB.bob; figB.lean = -0.10; figB.look = -0.35; }
+        else {
+          figB.crouch = pTh.crouch;
+          if (toneB === 'warm') { figB.look = -0.5; var wvB = still9 ? 0 : Math.sin(nowT() * 0.006) * 2.2; figB.hR = { x: fxB - fhB * 0.28 + wvB, y: gyB - fhB * 0.80, bend: 1 }; }
+          else if (toneB === 'spark') { figB.look = -0.2 - (still9 ? 0.1 : 0.25 * Math.max(0, Math.sin(nowT() * 0.0011))); figB.lean = -0.03; }
+          else figB.look = -0.25;
+        }
+        p.noStroke(); fillc([8, 8, 14], 80 * arrB); p.ellipse(fxB, gyB + 2, fhB * 0.38, 6);
+        actorFigure(figB, 0.96);
+        if (arrB >= 0.985) bondThread9(meX + fhB * 0.10, gyB - fhB * 0.81, fxB - fhB * 0.10, gyB - fhB * 0.81, toneB, still9 ? 1 : cl01((lt9 - 2.6) / 0.8));
+        var capA9 = 200 * (still9 ? 1 : cl01((lt9 - 2.2) / 0.8));
+        setFont(MONO, 7.5, [250, 246, 232], p.CENTER, p.CENTER, capA9);
+        p.text(elMix9(DATA.SIGNS[APP.STATE.chart.planets.sun.sign].element, DATA.SIGNS[su.sign].element).toUpperCase(), x + w / 2, gyB + 6);
+        setFont(MONO, 7.5, [250, 246, 232], p.CENTER, p.CENTER, capA9 * 0.8);
+        p.text(flB + ' FLOWING · ' + frB + ' CHALLENGING', x + w / 2, gyB + 17);
+        dcB.restore();
+      })();
+      ly += 162;
       ly = bondScores(bond, x, w, ly);
       // ---- relationship wheel: synastry bi-wheel ⟷ composite chart ----
       if (UI.bondWheel == null) UI.bondWheel = 'synastry';
@@ -8136,6 +8192,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (st.font === 'dyslexic') ly += paragraph(UI.dysLoaded ? 'OpenDyslexic is loaded and kept on this device. Every reading, lesson and story uses it; lines re-wrap themselves to fit.' : 'OpenDyslexic loads once from a public CDN (about 600KB) and is kept offline after that. Until it lands, the standard font stands in.', x, ly, w, 12.5, INK, SERIF, 19, 180) + 12;
       ly += toggleRow('Sound', [['off', 'Off'], ['on', 'On']], st.sound ? 'on' : 'off', ly, function (v) { st.sound = (v === 'on'); APP.save(); if (st.sound) { audioInit(); chime(); } });
       ly += toggleRow('Transit reminders', [['off', 'Off'], ['on', 'On']], st.notify ? 'on' : 'off', ly, function (v) { st.notify = (v === 'on'); APP.save(); if (st.notify) enableNotify(); });
+      ly += toggleRow('Daily Sky bulletin', [['on', 'On'], ['off', 'Off']], st.news === false ? 'off' : 'on', ly, function (v) { st.news = (v === 'on'); APP.save(); });
       ly += toggleRow('Haptics', [['on', 'On'], ['off', 'Off']], st.haptics === false ? 'off' : 'on', ly, function (v) { st.haptics = (v === 'on'); APP.save(); if (st.haptics) buzz(14); });
       var hv9 = (typeof window !== 'undefined' && window.AqauVoice) ? window.AqauVoice : null;
       var vOpts9 = [['off', 'Off'], ['system', 'System']]; if (hv9 && hv9.state === 'ready') vOpts9.push(['human', 'Human']);
@@ -8313,6 +8370,8 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         drawMoonDisc(W * 0.74, H * 0.16, 22, 224, ee);
         p.noStroke(); fillc([8, 8, 14], 90 * ee); p.ellipse(cx, gy0 + 2, 52, 8);
         actorFigure({ x: cx, y: gy0, h: Math.min(H * 0.13, 104), col: [16, 15, 24], rim: pers.rim, rimOff: [-2, -1.6], look: 0.35, crouch: pers.crouch, lean: pers.lean * 0.4 }, ee);
+        var nmN = (APP.STATE.birth && APP.STATE.birth.name) ? String(APP.STATE.birth.name).split(' ')[0] : '';
+        if (nmN) { setFont(MONO, 9, ACCTX, p.CENTER, p.TOP, 210 * (still ? 1 : cl01((lt - 0.3) / 0.6))); p.text('THE DAILY SKY · FOR ' + nmN.toUpperCase().slice(0, 14), cx, gy0 + 46); }
         riseText('Your sky, today', cx, gy0 + 64, 30, SERIF, INK, dn.t0 + 500, 30);
         var dN = new Date(), DOWN = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'], MONN = ['JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE', 'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER'];
         var a2N = still ? 1 : cl01((lt - 1.1) / 0.7);
@@ -9394,7 +9453,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         UI.newsChecked = true;
         try {
           var ndN = new Date(), nkN = ndN.getFullYear() + '-' + APP.pad(ndN.getMonth() + 1) + '-' + APP.pad(ndN.getDate());
-          if (APP.STATE.settings.newsDay !== nkN) UI.dailyNews = { i: -1, t0: nowT(), day: nkN, scenes: null };
+          if (APP.STATE.settings.news !== false && APP.STATE.settings.newsDay !== nkN) UI.dailyNews = { i: -1, t0: nowT(), day: nkN, scenes: null };
         } catch (eNC) {}
       }
       if (UI.dailyNews && APP.STATE.chart && UI.screen !== 'onboard') { hideSearchInput(); drawDailyNews(); drawTopbar(); clampScroll(); return; }
