@@ -1,5 +1,26 @@
 # Changelog
 
+## 1.6.0 — 2026-07-03
+
+A person, doing what the year did.
+
+- **A real human silhouette**: seven heads tall, weight in the torso, tapered
+  limbs, heel-and-toe feet, and a believable gait: swing foot lifting, arms
+  counter-swinging, the body bobbing. The scarf is gone.
+- **The chapters act out the reading**: a Jupiter return kneels and plants,
+  and a sprout comes up where the hand touched. A Saturn return builds a
+  wall stone by stone and stands back, hands on hips. A square shoves the
+  planet up a slope, slips once, and crests it in the rain. An opposition is
+  a tug-of-war held until the rope goes quiet. A trine walks to the orchard
+  and the branch bends until the fruit chooses your hand. A conjunction
+  kneels, takes it in, and stands up changed.
+- **The intro is a cold open**: night falls, stars arrive one by one, a
+  shooting star lights a constellation, the traveller walks in with a real
+  gait, their star descends from the constellation to keep above them, and
+  the name rises letter by letter.
+- **Fixed**: animated titles were inheriting stale canvas state and
+  rendering small; they now draw straight onto the canvas at full size.
+
 ## 1.5.2 — 2026-07-03
 
 The voice, made to actually arrive.

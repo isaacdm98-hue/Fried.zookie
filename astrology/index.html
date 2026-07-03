@@ -5159,89 +5159,96 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var a1 = Math.acos(cosA), base = Math.atan2(uy, ux), ja = base + a1 * (bend || 1);
       return { jx: ax + Math.cos(ja) * l1, jy: ay + Math.sin(ja) * l1, hx: ax + ux * d, hy: ay + uy * d };
     }
+    function gaitAt(cx0, gy0, h, ph) {
+      // a believable walk: swing foot lifts and arcs, stance foot holds, arms counter-swing, body bobs
+      var S = h * 0.14, lft = Math.sin(ph), rgt = Math.sin(ph + Math.PI);
+      return {
+        fL: { x: cx0 - h * 0.02 + Math.cos(ph) * S, y: gy0 - Math.max(0, lft) * h * 0.055 },
+        fR: { x: cx0 + h * 0.02 + Math.cos(ph + Math.PI) * S, y: gy0 - Math.max(0, rgt) * h * 0.055 },
+        hL: { dx: Math.cos(ph + Math.PI) * h * 0.085, dy: h * 0.20 },
+        hR: { dx: Math.cos(ph) * h * 0.085, dy: h * 0.20 },
+        bob: Math.abs(Math.sin(ph)) * h * 0.014,
+        lean: 0.06
+      };
+    }
     function actorFigure(rig, alf) {
-      // a mystical, genderless traveller: smooth oval head, a knee-length tunic that sways,
-      // slender legs beneath it, the accent scarf, and a small star that keeps above them.
+      // a real human silhouette: seven heads tall, weight in the torso, tapered limbs,
+      // heel-and-toe feet. Movement does the talking; nothing else is declared.
       var h = rig.h, lean = rig.lean || 0, cr = rig.crouch || 0, look = rig.look || 0, col = rig.col || [34, 29, 25];
-      var br = reduced() ? 0 : Math.sin(nowT() * 0.0021 + (rig.ph || 0)) * h * 0.006;
-      var wind9 = rig.wind == null ? 1 : rig.wind;
-      var hipX = rig.x + lean * h * 0.05, hipY = rig.y - h * (0.44 - cr * 0.12);
-      var chX = hipX + lean * h * 0.13, chY = hipY - h * 0.23 + cr * h * 0.05 + br;
-      var hdR = h * 0.082, hdX = chX + lean * h * 0.06 + look * h * 0.045, hdY = chY - h * 0.145;
-      var fL = rig.fL || { x: rig.x - h * 0.10, y: rig.y }, fR = rig.fR || { x: rig.x + h * 0.10, y: rig.y };
-      var hL = rig.hL || { x: chX - h * 0.16, y: chY + h * 0.24 }, hR = rig.hR || { x: chX + h * 0.16, y: chY + h * 0.24 };
-      var lg1 = h * 0.24, lg2 = h * 0.22, ar1 = h * 0.15, ar2 = h * 0.14;
+      var br = reduced() ? 0 : Math.sin(nowT() * 0.0021 + (rig.ph || 0)) * h * 0.005;
+      var bob9 = rig.bob || 0;
+      var hipY = rig.y - h * (0.53 - cr * 0.14) + bob9, hipX = rig.x + lean * h * 0.03;
+      var chY = hipY - h * (0.30 - cr * 0.04) + br, chX = hipX + lean * h * 0.15;
+      var waY = chY + (hipY - chY) * 0.55, waX = chX + (hipX - chX) * 0.5;
+      var hdR = h * 0.062, hdX = chX + lean * h * 0.075 + look * h * 0.035, hdY = chY - h * 0.115 + Math.abs(lean) * h * 0.008;
+      var fL = rig.fL || { x: rig.x - h * 0.075, y: rig.y }, fR = rig.fR || { x: rig.x + h * 0.075, y: rig.y };
+      var hL = rig.hL || { x: chX - h * 0.115, y: chY + h * 0.33 }, hR = rig.hR || { x: chX + h * 0.115, y: chY + h * 0.33 };
+      var lg1 = h * 0.245, lg2 = h * 0.235, ar1 = h * 0.185, ar2 = h * 0.17;
       var passes = rig.rim ? 2 : 1, pi9;
       for (pi9 = 0; pi9 < passes; pi9++) {
         var rim9 = (passes === 2 && pi9 === 0);
-        var cP = rim9 ? rig.rim : col, aP = rim9 ? 80 * alf : 242 * alf;
+        var cP = rim9 ? rig.rim : col, aP = rim9 ? 80 * alf : 244 * alf;
         var ox9 = rim9 ? (rig.rimOff ? rig.rimOff[0] : -2) : 0, oy9 = rim9 ? (rig.rimOff ? rig.rimOff[1] : -2) : 0;
-        // slender legs, fully drawn: the tunic ends at the knee
-        var kL = ik2(hipX, hipY, fL.x, fL.y, lg1, lg2, -1), kR = ik2(hipX, hipY, fR.x, fR.y, lg1, lg2, 1);
+        // legs: thigh heavier than calf, knees bend the way knees do
+        var kL = ik2(hipX - h * 0.035, hipY, fL.x, fL.y, lg1, lg2, -1), kR = ik2(hipX + h * 0.035, hipY, fR.x, fR.y, lg1, lg2, 1);
         strokec(cP, aP); p.noFill();
-        p.strokeWeight(h * 0.05); p.line(hipX + ox9, hipY + oy9, kL.jx + ox9, kL.jy + oy9); p.line(kL.jx + ox9, kL.jy + oy9, kL.hx + ox9, kL.hy + oy9);
-        p.line(hipX + ox9, hipY + oy9, kR.jx + ox9, kR.jy + oy9); p.line(kR.jx + ox9, kR.jy + oy9, kR.hx + ox9, kR.hy + oy9);
+        p.strokeWeight(h * 0.068); p.line(hipX - h * 0.035 + ox9, hipY + oy9, kL.jx + ox9, kL.jy + oy9);
+        p.strokeWeight(h * 0.048); p.line(kL.jx + ox9, kL.jy + oy9, kL.hx + ox9, kL.hy + oy9);
+        p.strokeWeight(h * 0.068); p.line(hipX + h * 0.035 + ox9, hipY + oy9, kR.jx + ox9, kR.jy + oy9);
+        p.strokeWeight(h * 0.048); p.line(kR.jx + ox9, kR.jy + oy9, kR.hx + ox9, kR.hy + oy9);
+        // heel-and-toe feet
         p.noStroke(); fillc(cP, aP);
-        p.ellipse(kL.hx + h * 0.015 + ox9, kL.hy - h * 0.007 + oy9, h * 0.082, h * 0.033);
-        p.ellipse(kR.hx + h * 0.015 + ox9, kR.hy - h * 0.007 + oy9, h * 0.082, h * 0.033);
-        // the tunic: a soft A-line from the shoulders to just past the knee, hem alive
-        var hemY = (kL.jy + kR.jy) / 2 + h * 0.045, flare = h * 0.125;
-        var sway9 = reduced() ? 0 : Math.sin(nowT() * 0.0031 + (rig.ph || 0)) * h * 0.016 * wind9;
-        var back9 = -lean * h * 0.07 - h * 0.02 * wind9;
+        p.ellipse(kL.hx + h * 0.026 + ox9, kL.hy - h * 0.010 + oy9, h * 0.105, h * 0.034);
+        p.ellipse(kR.hx + h * 0.026 + ox9, kR.hy - h * 0.010 + oy9, h * 0.105, h * 0.034);
+        p.ellipse(kL.hx - h * 0.018 + ox9, kL.hy - h * 0.016 + oy9, h * 0.045, h * 0.04);
+        p.ellipse(kR.hx - h * 0.018 + ox9, kR.hy - h * 0.016 + oy9, h * 0.045, h * 0.04);
+        // the torso: shoulders, a waist, hips: one filled human mass
+        p.noStroke(); fillc(cP, aP);
         p.beginShape();
-        p.vertex(chX - h * 0.07 + ox9, chY - h * 0.03 + oy9);
-        p.bezierVertex(chX - h * 0.085 + ox9, chY + h * 0.13 + oy9, hipX - flare * 0.75 + back9 + sway9 * 0.7 + ox9, hemY - h * 0.12 + oy9, hipX - flare + back9 + sway9 + ox9, hemY + oy9);
-        p.bezierVertex(hipX - flare * 0.3 + sway9 * 0.4 + ox9, hemY + h * 0.018 + oy9, hipX + flare * 0.3 - sway9 * 0.2 + ox9, hemY - h * 0.012 + oy9, hipX + flare * 0.9 - sway9 * 0.4 + ox9, hemY + oy9);
-        p.bezierVertex(hipX + flare * 0.65 + ox9, hemY - h * 0.12 + oy9, chX + h * 0.085 + ox9, chY + h * 0.13 + oy9, chX + h * 0.07 + ox9, chY - h * 0.03 + oy9);
+        p.vertex(chX - h * 0.095 + ox9, chY - h * 0.015 + oy9);
+        p.bezierVertex(chX - h * 0.105 + ox9, chY + h * 0.06 + oy9, waX - h * 0.062 + ox9, waY + oy9, hipX - h * 0.078 + ox9, hipY - h * 0.02 + oy9);
+        p.bezierVertex(hipX - h * 0.082 + ox9, hipY + h * 0.035 + oy9, hipX + h * 0.082 + ox9, hipY + h * 0.035 + oy9, hipX + h * 0.078 + ox9, hipY - h * 0.02 + oy9);
+        p.bezierVertex(waX + h * 0.062 + ox9, waY + oy9, chX + h * 0.105 + ox9, chY + h * 0.06 + oy9, chX + h * 0.095 + ox9, chY - h * 0.015 + oy9);
+        p.bezierVertex(chX + h * 0.05 + ox9, chY - h * 0.045 + oy9, chX - h * 0.05 + ox9, chY - h * 0.045 + oy9, chX - h * 0.095 + ox9, chY - h * 0.015 + oy9);
         p.endShape(p.CLOSE);
-        p.noStroke(); fillc(cP, aP); p.ellipse(chX + ox9, chY + oy9, h * 0.145, h * 0.125);
-        // slender arms, plain sleeves
-        var eL = ik2(chX - h * 0.05, chY, hL.x, hL.y, ar1, ar2, hL.bend == null ? -1 : hL.bend);
-        var eR = ik2(chX + h * 0.05, chY, hR.x, hR.y, ar1, ar2, hR.bend == null ? 1 : hR.bend);
+        // arms: upper heavier, forearm lighter, small hands
+        var eL = ik2(chX - h * 0.085, chY, hL.x, hL.y, ar1, ar2, hL.bend == null ? -1 : hL.bend);
+        var eR = ik2(chX + h * 0.085, chY, hR.x, hR.y, ar1, ar2, hR.bend == null ? 1 : hR.bend);
         strokec(cP, aP);
-        p.strokeWeight(h * 0.046); p.line(chX - h * 0.05 + ox9, chY + oy9, eL.jx + ox9, eL.jy + oy9);
+        p.strokeWeight(h * 0.05); p.line(chX - h * 0.085 + ox9, chY + oy9, eL.jx + ox9, eL.jy + oy9);
         p.strokeWeight(h * 0.038); p.line(eL.jx + ox9, eL.jy + oy9, eL.hx + ox9, eL.hy + oy9);
-        p.strokeWeight(h * 0.046); p.line(chX + h * 0.05 + ox9, chY + oy9, eR.jx + ox9, eR.jy + oy9);
+        p.strokeWeight(h * 0.05); p.line(chX + h * 0.085 + ox9, chY + oy9, eR.jx + ox9, eR.jy + oy9);
         p.strokeWeight(h * 0.038); p.line(eR.jx + ox9, eR.jy + oy9, eR.hx + ox9, eR.hy + oy9);
-        p.noStroke(); fillc(cP, aP); p.ellipse(eL.hx + ox9, eL.hy + oy9, h * 0.042, h * 0.042); p.ellipse(eR.hx + ox9, eR.hy + oy9, h * 0.042, h * 0.042);
-        // neck and the smooth oval head: nothing declared, everything possible
-        strokec(cP, aP); p.strokeWeight(h * 0.036); p.line(chX + ox9, chY - h * 0.02 + oy9, hdX + ox9, hdY + hdR * 0.9 + oy9);
-        p.noStroke(); fillc(cP, aP); p.ellipse(hdX + ox9, hdY + oy9, hdR * 1.72, hdR * 2.02);
+        p.noStroke(); fillc(cP, aP); p.ellipse(eL.hx + ox9, eL.hy + oy9, h * 0.036, h * 0.036); p.ellipse(eR.hx + ox9, eR.hy + oy9, h * 0.036, h * 0.036);
+        // neck and head: a human oval, chin implied by the taper
+        strokec(cP, aP); p.strokeWeight(h * 0.032); p.line(chX + ox9, chY - h * 0.028 + oy9, hdX + ox9, hdY + hdR * 0.92 + oy9);
+        p.noStroke(); fillc(cP, aP); p.ellipse(hdX + ox9, hdY + oy9, hdR * 1.66, hdR * 2);
       }
-      // their small star: it keeps above them, twinkling, the way a guide does
+      // their small star keeps above them, twinkling, the way a guide does
       if (rig.star !== false) {
-        var stX = hdX + (reduced() ? 0 : Math.sin(nowT() * 0.0016 + (rig.ph || 0)) * h * 0.03);
-        var stY = hdY - hdR * 2.1 + (reduced() ? 0 : Math.cos(nowT() * 0.0013 + (rig.ph || 0)) * h * 0.014);
+        var stX = hdX + (reduced() ? 0 : Math.sin(nowT() * 0.0016 + (rig.ph || 0)) * h * 0.028);
+        var stY = hdY - hdR * 2.6 + (reduced() ? 0 : Math.cos(nowT() * 0.0013 + (rig.ph || 0)) * h * 0.012);
         var stT = reduced() ? 0.8 : 0.55 + 0.45 * Math.sin(nowT() * 0.005 + (rig.ph || 0) * 2);
-        var stR = h * 0.028 * (0.8 + 0.35 * stT);
+        var stR = h * 0.024 * (0.8 + 0.35 * stT);
         p.noStroke(); fillc([255, 244, 200], 70 * stT * alf); p.ellipse(stX, stY, stR * 3.2, stR * 3.2);
         strokec([255, 244, 200], 235 * stT * alf); p.strokeWeight(1.2);
         p.line(stX - stR, stY, stX + stR, stY); p.line(stX, stY - stR, stX, stY + stR);
         p.line(stX - stR * 0.5, stY - stR * 0.5, stX + stR * 0.5, stY + stR * 0.5); p.line(stX - stR * 0.5, stY + stR * 0.5, stX + stR * 0.5, stY - stR * 0.5);
       }
-      // the scarf: the one coloured thing they own, always in some wind
-      if (rig.scarf !== false) {
-        var nx9 = chX - h * 0.03, ny9 = chY - h * 0.05, sPrev = { x: nx9, y: ny9 }, si9;
-        for (si9 = 1; si9 <= 4; si9++) {
-          var tp9 = nowT() * 0.0042 - si9 * 0.62 + (rig.ph || 0);
-          var sxn = nx9 - si9 * h * (0.055 + 0.02 * wind9) * (1 + 0.35 * Math.max(0, lean)) - si9 * si9 * h * 0.004;
-          var syn = ny9 + si9 * h * 0.012 + (reduced() ? 0 : Math.sin(tp9) * h * 0.018 * si9 * 0.45 * wind9);
-          strokec(ACC, (225 - si9 * 34) * alf); p.strokeWeight(h * (0.045 - si9 * 0.007));
-          p.line(sPrev.x, sPrev.y, sxn, syn);
-          sPrev = { x: sxn, y: syn };
-        }
-      }
     }
     function riseText(txt, cxr, yr, sz, fnt, colr, t0r, per9, alr) {
-      p.textFont(fnt); p.textSize(sz); p.textStyle(p.BOLD);
-      var tw0 = p.textWidth(txt), xr = cxr - tw0 / 2, i9;
-      p.textAlign(p.LEFT, p.TOP); p.noStroke();
+      // letters rise into place, drawn straight onto the canvas so no frame state can shrink them
+      var dcT = p.drawingContext; if (!dcT) return;
+      dcT.save(); dcT.font = 'bold ' + sz + 'px ' + fnt; dcT.textAlign = 'left'; dcT.textBaseline = 'top';
+      var i9, widths9 = [], tw0 = 0;
+      for (i9 = 0; i9 < txt.length; i9++) { widths9.push(dcT.measureText(txt.charAt(i9)).width); tw0 += widths9[i9]; }
+      var xr = cxr - tw0 / 2, base9 = (alr == null ? 255 : alr) / 255;
       for (i9 = 0; i9 < txt.length; i9++) {
         var ar9 = reduced() ? 1 : cl01((nowT() - t0r - i9 * (per9 || 24)) / 300), er9 = eCubic(ar9);
-        if (er9 > 0.01) { fillc(colr, (alr == null ? 255 : alr) * er9); p.text(txt.charAt(i9), xr, yr + (1 - er9) * 9); }
-        xr += p.textWidth(txt.charAt(i9));
+        if (er9 > 0.01) { dcT.fillStyle = 'rgba(' + (colr[0] | 0) + ',' + (colr[1] | 0) + ',' + (colr[2] | 0) + ',' + (base9 * er9).toFixed(3) + ')'; dcT.fillText(txt.charAt(i9), xr, yr + (1 - er9) * 9); }
+        xr += widths9[i9];
       }
-      p.textStyle(p.NORMAL);
+      dcT.restore();
     }
     // back-compat shim for the title and finale cards
     function stageFigure(fx, fy, h, pz, alf, col9) {
@@ -5405,89 +5412,156 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         if (e0.ang === 90 && t2 > 0.30 && t2 < 0.75) { var rn9, rA9 = Math.sin(cl01((t2 - 0.30) / 0.45) * Math.PI); strokec([210, 220, 232], 110 * rA9); p.strokeWeight(1.1); for (rn9 = 0; rn9 < 14; rn9++) { var ry9 = ((nowT() * (0.28 + (rn9 % 4) * 0.05) + rn9 * 173) % (stageY - top + 60)); var rx9 = x + ((rn9 * 97) % w); p.line(rx9, top + ry9 - 12, rx9 - 4, top + ry9); } }
         if (e0.ang === 120) { var wc9; for (wc9 = 0; wc9 < 2; wc9++) { var wph = ((nowT() * 0.00016 + wc9 * 0.5) % 1), wx9 = x - 40 + wph * (w + 80), wy9 = gy - fh * (0.55 + wc9 * 0.3) + Math.sin(wph * 9) * 10; strokec([255, 252, 240], 90 * Math.sin(wph * Math.PI)); p.strokeWeight(1.3); p.noFill(); p.arc(wx9, wy9, 26, 16, Math.PI * 0.2 + wph * 3, Math.PI * 1.5 + wph * 3); } }
       }
-      // ---- the choreography: aspect is the verb, played by a jointed actor ----
-      var plX = cx, plY = cy, plBehind = false, thread = 0, capTxt = '';
+      // ---- the choreography: what a person would actually be doing, if the year went as the reading says ----
+      var plX = cx, plY = cy, plBehind = false, thread = 0, thrSag9 = 0.5, capTxt = '', plRad9 = plR;
       var rig = { x: fx0, y: gy, h: fh, ph: UI.lifeWalk.i };
-      var chest9 = gy - fh * 0.62;
-      // every actor walks to their mark first
-      var ent = still ? 0 : (1 - eCubic(cl01((nowT() - UI.lifeWalk.t0) / 950)));
-      rig.x -= ent * w * 0.20;
-      if (ent > 0.02) { var stp9 = Math.sin(nowT() * 0.02); rig.fL = { x: rig.x - fh * 0.11 + stp9 * fh * 0.09 * ent, y: gy - Math.max(0, stp9) * 4 * ent }; rig.fR = { x: rig.x + fh * 0.11 - stp9 * fh * 0.09 * ent, y: gy - Math.max(0, -stp9) * 4 * ent }; rig.lean = 0.14 * ent; }
-      if (e0.isReturn) {
+      // every actor walks to their mark with a real gait
+      var ent = still ? 0 : (1 - eCubic(cl01((nowT() - UI.lifeWalk.t0) / 1100)));
+      rig.x -= ent * w * 0.22;
+      if (ent > 0.02) {
+        var g9 = gaitAt(rig.x, gy, fh, nowT() * 0.014);
+        rig.fL = g9.fL; rig.fR = g9.fR; rig.bob = -g9.bob; rig.lean = g9.lean;
+        rig.hL = { x: rig.x - fh * 0.085 + g9.hL.dx, y: gy - fh * 0.50, bend: -1 };
+        rig.hR = { x: rig.x + fh * 0.085 + g9.hR.dx, y: gy - fh * 0.50, bend: 1 };
+      }
+      if (e0.isReturn && e0.tp === 'jupiter') {
+        // PLANTING: kneel, press the seed in, stand back and watch it come up
+        var sm9 = fx0 - fh * 0.34;
+        plX = x + w * 0.84; plY = top + vh * 0.10 + eCubic(cl01(t2 / 0.3)) * (r * 0.35);
+        if (ent < 0.05) {
+          if (t2 < 0.45) { var kn9 = eCubic(cl01((t2 - 0.08) / 0.3)); rig.crouch = 0.8 * kn9; rig.lean = 0.35 * kn9; rig.fL = { x: fx0 - fh * 0.16, y: gy }; rig.fR = { x: fx0 + fh * 0.12, y: gy }; rig.hR = { x: sm9 + fh * 0.05, y: gy - 3 - fh * 0.30 * (1 - kn9), bend: 1 }; rig.hL = { x: fx0 - fh * 0.04, y: gy - fh * 0.34, bend: -1 }; rig.look = -0.55; }
+          else if (t2 < 0.75) { var rise9 = eCubic(cl01((t2 - 0.45) / 0.3)); rig.crouch = 0.8 - 0.82 * rise9; rig.lean = 0.35 - 0.28 * rise9; rig.look = -0.45; }
+          else { rig.hR = { x: fx0 + fh * 0.07, y: rig.y - fh * 0.90, bend: 1 }; rig.look = -0.5; }
+        }
+        var gr9 = cl01((t2 - 0.5) / 0.45), sh9 = fh * 0.30 * eCubic(gr9);
+        if (gr9 > 0.02) {
+          strokec([116, 146, 88], 235 * ee); p.strokeWeight(2); p.noFill();
+          p.bezier(sm9, gy + 2, sm9 - 3, gy - sh9 * 0.5, sm9 + 3 + (still ? 0 : Math.sin(nowT() * 0.003) * 2), gy - sh9 * 0.8, sm9 + (still ? 0 : Math.sin(nowT() * 0.0025) * 3), gy - sh9);
+          var lf9 = cl01((gr9 - 0.4) / 0.5);
+          if (lf9 > 0) { p.noStroke(); fillc([116, 146, 88], 220 * lf9 * ee); p.ellipse(sm9 - 6 * lf9, gy - sh9 * 0.7, 12 * lf9, 5 * lf9); p.ellipse(sm9 + 7 * lf9, gy - sh9 * 0.85, 13 * lf9, 5 * lf9); }
+        }
+        capTxt = 'THE RETURN: YOU PLANTED WHAT THE NEXT TWELVE YEARS WILL GROW';
+      } else if (e0.isReturn && e0.tp === 'saturn') {
+        // BUILDING: three stones, lifted and set, then hands on hips before the wall
+        var wallX = fx0 - fh * 0.46;
+        plX = x + w * 0.82; plY = top + vh * 0.13;
+        var beat9 = Math.min(3, Math.floor(t2 * 3.4)), bt9 = cl01(t2 * 3.4 - beat9);
+        var placed9 = Math.min(3, beat9 + (bt9 > 0.78 ? 1 : 0));
+        var st9i; p.noStroke(); fillc(setInk, 245 * ee);
+        for (st9i = 0; st9i < placed9; st9i++) p.rect(wallX - fh * 0.10, gy - 10 - st9i * 11, fh * 0.22, 10, 3);
+        if (ent < 0.05) {
+          if (beat9 < 3) {
+            if (bt9 < 0.35) { var d9 = eCubic(bt9 / 0.35); rig.crouch = 0.72 * d9; rig.lean = -0.08 * d9; rig.hL = { x: fx0 + fh * 0.08, y: gy - 6 - fh * 0.3 * (1 - d9), bend: -1 }; rig.hR = { x: fx0 + fh * 0.15, y: gy - 5 - fh * 0.3 * (1 - d9), bend: 1 }; rig.look = 0.3; }
+            else if (bt9 < 0.78) { var c9 = eCubic((bt9 - 0.35) / 0.43); rig.crouch = 0.72 - 0.55 * c9; rig.lean = -0.08 + 0.4 * c9; rig.hL = { x: fx0 - fh * (0.02 + 0.3 * c9), y: rig.y - fh * 0.52, bend: -1 }; rig.hR = { x: fx0 + fh * (0.06 - 0.28 * c9), y: rig.y - fh * 0.48, bend: 1 }; rig.look = -0.4;
+              p.noStroke(); fillc(setInk, 245); p.rect(fx0 - fh * (0.02 + 0.3 * c9) - fh * 0.10, rig.y - fh * 0.52 - 5, fh * 0.2, 9, 3); }
+            else { var pl8 = eCubic((bt9 - 0.78) / 0.22); rig.lean = 0.32 - 0.2 * pl8; rig.crouch = 0.10 + 0.25 * (1 - pl8) * 0; rig.hL = { x: wallX + fh * 0.02, y: gy - 14 - beat9 * 11, bend: -1 }; rig.hR = { x: wallX + fh * 0.12, y: gy - 11 - beat9 * 11, bend: 1 }; rig.look = -0.5; }
+          } else { rig.hL = { x: rig.x - fh * 0.10, y: rig.y - fh * 0.55, bend: -1 }; rig.hR = { x: rig.x + fh * 0.10, y: rig.y - fh * 0.55, bend: 1 }; rig.look = -0.5; }
+        }
+        capTxt = 'THE RETURN: YOU BUILT SOMETHING THAT OUTLASTS THE MOOD';
+      } else if (e0.isReturn) {
+        // THE LONG WATCH: it circles the whole sky; you shade your eyes and turn with it
         var orbA = -Math.PI / 2 + t2 * Math.PI * 2;
         plX = fx0 - fh * 0.40 + Math.cos(orbA) * fh * 0.80; plY = (gy - fh * 0.58) + Math.sin(orbA) * fh * 0.47; plBehind = Math.sin(orbA) < 0;
-        if (t2 < 0.4) { }
-        else if (t2 < 0.7) { var sit = eCubic(cl01((t2 - 0.4) / 0.3)); rig.crouch = 0.5 * sit; rig.hL = { x: rig.x - fh * 0.13, y: gy - fh * 0.30 }; rig.hR = { x: rig.x + fh * 0.13, y: gy - fh * 0.30 }; }
-        else { var rise = eCubic(cl01((t2 - 0.7) / 0.3)); rig.crouch = 0.5 - 0.56 * rise; rig.hL = { x: rig.x - fh * (0.13 + 0.12 * rise), y: gy - fh * (0.30 + 0.28 * rise) }; rig.hR = { x: rig.x + fh * (0.13 + 0.12 * rise), y: gy - fh * (0.30 + 0.28 * rise) }; }
+        if (ent < 0.05 && plY < gy - fh * 0.85) { rig.hR = { x: rig.x + fh * 0.07, y: rig.y - fh * 0.90, bend: 1 }; }
         capTxt = 'THE RETURN: IT CIRCLED YOUR WHOLE SKY, AND FOUND YOU CHANGED';
       } else if (e0.ang === 90) {
-        var press = eBack(cl01(t2 / 0.38));
-        plX = (x - r * 1.4) + ((rig.x - fh * 0.52) - (x - r * 1.4)) * press; plY = chest9;
-        if (t2 < 0.38) { rig.lean = -0.16 * cl01(t2 / 0.38); rig.hL = { x: rig.x - fh * 0.30, y: chest9 - fh * 0.02, bend: -1 }; rig.hR = { x: rig.x - fh * 0.24, y: chest9 + fh * 0.10, bend: -1 }; }
-        else if (t2 < 0.72) {
-          var fight = (t2 - 0.38) / 0.34;
-          rig.lean = 0.42 * eCubic(fight); rig.crouch = 0.30 - 0.10 * fight;
-          rig.fL = { x: rig.x - fh * 0.30, y: gy }; rig.fR = { x: rig.x + fh * 0.14, y: gy };
-          rig.hL = { x: plX + plR * 0.85, y: plY - plR * 0.35, bend: -1 }; rig.hR = { x: plX + plR * 0.85, y: plY + plR * 0.45, bend: -1 };
-          var dpi; if (!still) for (dpi = 0; dpi < 3; dpi++) { var dph = ((nowT() * 0.003 + dpi * 0.37) % 1); p.noStroke(); fillc(INK, 38 * (1 - dph)); p.ellipse(rig.x - fh * 0.28 - dph * 10, gy - 3 - dph * 9, 4 + dph * 7, 3 + dph * 4); }
-        } else {
-          var win = eCubic(cl01((t2 - 0.72) / 0.28));
-          plX -= fh * 0.36 * win; plY -= fh * 0.20 * win;
-          rig.lean = 0.42 - 0.38 * win; rig.crouch = 0.20 - 0.22 * win;
-          rig.hL = { x: plX + plR * 0.85, y: plY + plR * 0.2, bend: -1 }; rig.hR = { x: rig.x + fh * 0.16, y: chest9 + fh * (0.30 - 0.06 * win), bend: 1 };
-          thread = win;
-        }
-        capTxt = 'THE SQUARE: IT PUSHED. YOU PUSHED BACK.';
+        // THE BOULDER: pushed up the slope, one slip, then the crest. Rain while you work.
+        strokec(mix9(sky9[1], [30, 26, 24], 0.6), 190 * ee); p.strokeWeight(2);
+        p.line(x - 10, gy + 8, x + w * 0.62, gy - r * 0.34); p.line(x + w * 0.62, gy - r * 0.34, x + w + 10, gy - r * 0.36);
+        var slA9 = ((-r * 0.34 - 8) / (w * 0.62 + 10));
+        var slY9 = function (px9) { return px9 < x + w * 0.62 ? (gy + 8 + (px9 - (x - 10)) * slA9) : gy - r * 0.35; };
+        var prog9 = t2 < 0.45 ? eCubic(t2 / 0.45) * 0.55 : t2 < 0.6 ? 0.55 - eCubic((t2 - 0.45) / 0.15) * 0.12 : 0.43 + eCubic((t2 - 0.6) / 0.4) * 0.57;
+        var bx9 = x + w * 0.14 + prog9 * w * 0.52;
+        plX = bx9; plY = slY9(bx9) - plR * 0.9;
+        var fx9 = bx9 - plR - fh * 0.22, fgy9 = slY9(fx9);
+        rig.x = fx9; rig.y = fgy9;
+        var dig9 = t2 < 0.6 ? 0.5 + 0.3 * Math.sin(cl01(t2 / 0.6) * Math.PI) : 0.5 * (1 - eCubic((t2 - 0.6) / 0.4));
+        rig.lean = t2 < 0.94 ? 0.55 : 0.18; rig.crouch = 0.22 + 0.18 * dig9;
+        rig.fL = { x: fx9 - fh * 0.22, y: slY9(fx9 - fh * 0.22) }; rig.fR = { x: fx9 + fh * 0.03, y: slY9(fx9 + fh * 0.03) };
+        rig.hL = { x: plX - plR * 0.82, y: plY - plR * 0.2, bend: -1 }; rig.hR = { x: plX - plR * 0.76, y: plY + plR * 0.4, bend: -1 };
+        rig.look = -0.2;
+        if (t2 >= 0.94) { rig.hR = { x: rig.x + fh * 0.08, y: rig.y - fh * 0.90, bend: 1 }; rig.hL = { x: rig.x - fh * 0.10, y: rig.y - fh * 0.55, bend: -1 }; rig.look = 0.4; }
+        capTxt = 'THE SQUARE: YOU PUSHED IT UPHILL, AND THE HILL GAVE IN';
       } else if (e0.ang === 180) {
-        fx0 = cx - r * 0.95; rig.x = fx0 - ent * w * 0.12;
-        plX = (x + w + r) + ((cx + r * 0.95) - (x + w + r)) * eCubic(cl01(t2 / 0.4)); plY = chest9;
-        var pull = t2 < 0.4 ? 0 : Math.sin(cl01((t2 - 0.4) / 0.6) * Math.PI);
-        rig.lean = -0.30 * pull; rig.crouch = 0.10 * pull;
-        rig.fL = { x: rig.x - fh * (0.11 + 0.14 * pull), y: gy }; rig.fR = { x: rig.x + fh * (0.11 + 0.10 * pull), y: gy };
-        rig.hR = { x: rig.x + fh * 0.34 - pull * fh * 0.04, y: chest9 + fh * 0.04, bend: 1 };
-        rig.hL = { x: rig.x - fh * (0.20 + 0.06 * pull), y: chest9 + fh * 0.18, bend: -1 };
-        thread = cl01((t2 - 0.4) / 0.25);
-        capTxt = 'THE OPPOSITION: HELD FROM BOTH ENDS, UNTIL YOU FOUND THE MIDDLE';
+        // THE TUG-OF-WAR: yanked a step, heels dug, held until the rope went quiet
+        fx0 = cx - r * 0.75; rig.x = fx0 - ent * w * 0.12;
+        plX = (x + w + r) + ((cx + r * 1.0) - (x + w + r)) * eCubic(cl01(t2 / 0.3)); plY = rig.y - fh * 0.62;
+        var yank9 = (t2 > 0.3 && t2 < 0.42) ? Math.sin((t2 - 0.3) / 0.12 * Math.PI) : 0;
+        var pull9 = t2 < 0.42 ? 0 : Math.sin(cl01((t2 - 0.42) / 0.58) * Math.PI);
+        rig.x += yank9 * fh * 0.10;
+        if (ent < 0.05) {
+          rig.lean = 0.2 * yank9 - 0.36 * pull9; rig.crouch = 0.16 * pull9;
+          rig.fL = { x: rig.x - fh * 0.04 + pull9 * fh * 0.15, y: rig.y }; rig.fR = { x: rig.x + fh * 0.15 + pull9 * fh * 0.08, y: rig.y };
+          rig.hR = { x: rig.x + fh * 0.30, y: rig.y - fh * 0.62, bend: 1 }; rig.hL = { x: rig.x + fh * 0.21, y: rig.y - fh * 0.57, bend: -1 };
+          rig.look = 0.55;
+        }
+        thread = cl01((t2 - 0.28) / 0.18); thrSag9 = 0.15 + 0.75 * (1 - pull9);
+        capTxt = 'THE OPPOSITION: YOU HELD YOUR END UNTIL THE ROPE WENT QUIET';
       } else if (e0.ang === 120) {
-        var glide = eCubic(cl01(t2 / 0.55));
-        var sxT = x - r, syT = top + vh * 0.08, exT = rig.x - fh * 0.22, eyT = gy - fh * 0.98;
-        plX = sxT + (exT - sxT) * glide; plY = syT + (eyT - syT) * glide - Math.sin(glide * Math.PI) * r * 0.55;
-        if (t2 >= 0.35) {
-          var open9 = eCubic(cl01((t2 - 0.35) / 0.4));
-          rig.hL = { x: rig.x - fh * (0.10 + 0.13 * open9), y: gy - fh * (0.60 + 0.32 * open9), bend: -1 };
-          rig.hR = { x: rig.x + fh * 0.19, y: chest9 + fh * (0.26 - 0.10 * open9), bend: 1 };
-          rig.crouch = -0.05 * open9;
-          rig.fL = { x: rig.x - fh * 0.13, y: gy - open9 * 3 }; // the heel lifts: the catch is light
+        // THE ORCHARD: walk to the tree, the branch dips, the fruit chooses your hand
+        var trX = cx - r * 1.02, canY = gy - fh * 0.95, hasTree9 = (setK === 'self' || setK === 'sun');
+        var dip9 = t2 > 0.42 ? eCubic(cl01((t2 - 0.42) / 0.22)) * fh * 0.05 : 0;
+        if (hasTree9) {
+          strokec(setInk, 235 * ee); p.strokeWeight(3); p.noFill();
+          p.bezier(trX, gy + 2, trX - 4, gy - fh * 0.4, trX + 6, gy - fh * 0.65, trX + fh * 0.06, canY + fh * 0.12);
+          p.noStroke(); fillc(setInk, 215 * ee);
+          p.ellipse(trX + fh * 0.05, canY + dip9, fh * 0.5, fh * 0.3); p.ellipse(trX - fh * 0.12, canY + fh * 0.10 + dip9 * 0.6, fh * 0.36, fh * 0.22); p.ellipse(trX + fh * 0.22, canY + fh * 0.08 + dip9, fh * 0.4, fh * 0.24);
         }
-        if (t2 > 0.75 && !still) plY += Math.sin(nowT() * 0.002) * 3;
-        thread = cl01((t2 - 0.6) / 0.3) * 0.7;
-        capTxt = 'THE TRINE: IT ARRIVED LIKE WEATHER YOU WERE BUILT FOR';
-      } else {
-        var drop = eCubic(cl01(t2 / 0.5)), chest3 = gy - fh * 0.70;
-        plX = rig.x - fh * 0.02; plY = (top - r) + (chest3 - (top - r)) * drop;
-        if (t2 < 0.5) { rig.crouch = 0.15 * drop; rig.hL = { x: rig.x - fh * 0.16, y: chest9 + fh * 0.06, bend: -1 }; rig.hR = { x: rig.x + fh * 0.16, y: chest9 + fh * 0.06, bend: 1 }; }
+        var wlk9 = eCubic(cl01(t2 / 0.4));
+        rig.x = hasTree9 ? (fx0 - (fx0 - (trX + fh * 0.45)) * wlk9) : fx0;
+        if (t2 < 0.4 && ent < 0.05) { var g8 = gaitAt(rig.x, gy, fh, nowT() * 0.014); rig.fL = g8.fL; rig.fR = g8.fR; rig.bob = -g8.bob; rig.lean = g8.lean; }
+        plRad9 = plR * 0.55;
+        var palmX9 = rig.x - fh * 0.15, palmY9 = rig.y - fh * 0.74;
+        if (t2 >= 0.4 && ent < 0.05) { rig.hL = { x: palmX9, y: palmY9, bend: -1 }; rig.look = -0.55; rig.fL = { x: rig.x - fh * 0.10, y: rig.y }; rig.fR = { x: rig.x + fh * 0.09, y: rig.y }; }
+        if (t2 < 0.64) { plX = hasTree9 ? trX + fh * 0.08 : rig.x - fh * 0.15; plY = hasTree9 ? canY + fh * 0.10 + dip9 : top + vh * 0.08 + eCubic(cl01(t2 / 0.5)) * r * 0.3; }
         else {
-          var merge = cl01((t2 - 0.5) / 0.5);
-          rig.crouch = 0.15 - 0.23 * merge;
-          rig.hL = { x: rig.x - fh * (0.16 + 0.14 * merge), y: chest9 - fh * 0.14 * merge, bend: -1 };
-          rig.hR = { x: rig.x + fh * (0.16 + 0.14 * merge), y: chest9 - fh * 0.14 * merge, bend: 1 };
-          plY = chest3 + fh * 0.06 * merge; plX = rig.x;
-          if (dc && !still) { var mg = dc.createRadialGradient(plX, plY, 2, plX, plY, plR * 3.4); mg.addColorStop(0, 'rgba(255,240,205,' + (0.32 * Math.sin(merge * Math.PI)) + ')'); mg.addColorStop(1, 'rgba(255,240,205,0)'); dc.fillStyle = mg; dc.fillRect(plX - plR * 4, plY - plR * 4, plR * 8, plR * 8); }
-          if (!still && merge > 0.2) { var ryi; strokec([255, 240, 205], 55 * Math.sin(merge * Math.PI)); p.strokeWeight(1); for (ryi = 0; ryi < 6; ryi++) { var ra = nowT() * 0.0004 + ryi * Math.PI / 3; p.line(plX + Math.cos(ra) * plR * 1.3, plY + Math.sin(ra) * plR * 1.3, plX + Math.cos(ra) * plR * 2.4, plY + Math.sin(ra) * plR * 2.4); } }
+          var drop9 = eCubic(cl01((t2 - 0.64) / 0.14));
+          var srcX9 = hasTree9 ? trX + fh * 0.08 : rig.x - fh * 0.15, srcY9 = hasTree9 ? canY + fh * 0.10 : top + vh * 0.08 + r * 0.3;
+          plX = srcX9 + (palmX9 - srcX9) * drop9; plY = srcY9 + (palmY9 - srcY9) * drop9 * drop9;
+          if (t2 > 0.8 && ent < 0.05) {
+            var give9 = Math.sin(cl01((t2 - 0.8) / 0.1) * Math.PI); rig.crouch = 0.08 * give9;
+            var hold9 = eCubic(cl01((t2 - 0.84) / 0.16));
+            rig.hL = { x: rig.x - fh * (0.15 - 0.06 * hold9), y: rig.y - fh * (0.74 - 0.12 * hold9), bend: -1 };
+            rig.hR = { x: rig.x + fh * 0.02, y: rig.y - fh * 0.58, bend: 1 };
+            plX = rig.x - fh * (0.15 - 0.06 * hold9); plY = rig.y - fh * (0.74 - 0.12 * hold9);
+            rig.look = -0.2;
+          }
         }
-        capTxt = 'THE CONJUNCTION: IT BECAME PART OF YOU';
+        capTxt = 'THE TRINE: THE BRANCH BENT, AND THE FRUIT CHOSE YOUR HAND';
+      } else {
+        // THE RECEIVING: kneel, take it into your hands, stand up changed
+        var drop = eCubic(cl01(t2 / 0.4));
+        plX = rig.x - fh * 0.02; plY = (top - r) + ((rig.y - fh * 0.70) - (top - r)) * drop;
+        if (ent < 0.05) {
+          if (t2 < 0.4) { var kn8 = eCubic(cl01(t2 / 0.3)); rig.crouch = 0.35 * kn8; rig.fL = { x: rig.x - fh * 0.15, y: rig.y }; rig.fR = { x: rig.x + fh * 0.10, y: rig.y }; rig.hL = { x: rig.x - fh * 0.09, y: rig.y - fh * 0.62, bend: -1 }; rig.hR = { x: rig.x + fh * 0.07, y: rig.y - fh * 0.60, bend: 1 }; rig.look = -0.25; }
+          else if (t2 < 0.7) { var mg8 = eCubic((t2 - 0.4) / 0.3); plY = rig.y - fh * 0.70 + mg8 * fh * 0.05; rig.crouch = 0.35 - 0.12 * mg8; rig.hL = { x: plX - plR * 0.55, y: plY + plR * 0.45, bend: -1 }; rig.hR = { x: plX + plR * 0.55, y: plY + plR * 0.45, bend: 1 }; rig.look = -0.3; }
+          else {
+            var tall8 = eCubic((t2 - 0.7) / 0.3);
+            rig.crouch = 0.23 - 0.29 * tall8; plRad9 = plR * (1 - 0.72 * tall8);
+            plX = rig.x - fh * 0.01; plY = rig.y - fh * (0.65 + 0.05 * tall8);
+            rig.hL = { x: rig.x - fh * (0.06 + 0.05 * tall8), y: rig.y - fh * (0.62 - 0.08 * tall8), bend: -1 };
+            rig.hR = { x: rig.x + fh * (0.05 + 0.06 * tall8), y: rig.y - fh * (0.60 - 0.10 * tall8), bend: 1 };
+            if (dc && !still) { var mg = dc.createRadialGradient(plX, plY, 2, plX, plY, plR * 3); mg.addColorStop(0, 'rgba(255,240,205,' + (0.30 * Math.sin(tall8 * Math.PI)) + ')'); mg.addColorStop(1, 'rgba(255,240,205,0)'); dc.fillStyle = mg; dc.fillRect(plX - plR * 4, plY - plR * 4, plR * 8, plR * 8); }
+          }
+        }
+        capTxt = 'THE CONJUNCTION: YOU TOOK IT IN, AND STOOD DIFFERENTLY';
       }
       var capSub = (LW_SETCAP[setK] || '').replace(' \u00B7 ', '');
       if (t2 >= 1 && !still) { plX += Math.sin(nowT() * 0.0011) * 3; plY += Math.cos(nowT() * 0.0008) * 2; }
       // the actor watches the planet: the head follows the event
       if (rig.look == null) rig.look = Math.max(-0.6, Math.min(0.6, (plX - rig.x) / (fh * 1.6)));
       if (dc) { dc.save(); dc.globalAlpha = alpha; }
-      p.noStroke(); fillc([12, 9, 7], 52 * ee); p.ellipse(rig.x, gy - 2, fh * 0.42, fh * 0.07);
-      if (plY > gy - fh && plY < gy + 40) { fillc([12, 9, 7], 40 * ee); p.ellipse(plX, gy - 2, plR * 2.2, plR * 0.4); }
-      if (plBehind) { p.push(); p.translate(plX, plY); p.scale(0.8); celestialBody(bodyK, 0, 0, plR, nowT()); p.pop(); }
-      if (thread > 0) { var hx9 = rig.x + (e0.ang === 180 ? fh * 0.34 : e0.ang === 120 ? -fh * 0.23 : fh * 0.0), hy9 = e0.ang === 120 ? gy - fh * 0.92 : chest9 + fh * 0.04, sag9 = fh * 0.10 * (1 - thread * 0.5) + (still ? 0 : Math.sin(nowT() * 0.006) * 2.5); strokec(ACC, 160 * thread); p.strokeWeight(1.5); p.noFill(); p.bezier(plX, plY + plR * 0.6, (plX + hx9) / 2, (plY + hy9) / 2 + sag9, (plX + hx9) / 2, (plY + hy9) / 2 + sag9, hx9, hy9); }
+      p.noStroke(); fillc([12, 9, 7], 52 * ee); p.ellipse(rig.x, rig.y - 2, fh * 0.42, fh * 0.07);
+      if (plY > rig.y - fh && plY < rig.y + 40) { fillc([12, 9, 7], 40 * ee); p.ellipse(plX, rig.y - 2, plRad9 * 2.2, plRad9 * 0.4); }
+      if (plBehind) { p.push(); p.translate(plX, plY); p.scale(0.8); celestialBody(bodyK, 0, 0, plRad9, nowT()); p.pop(); }
+      if (thread > 0) {
+        var hx9 = rig.x + fh * 0.30, hy9 = rig.y - fh * 0.62;
+        var sag9 = fh * 0.16 * thrSag9 + (still ? 0 : Math.sin(nowT() * 0.006) * 2.5 * thrSag9);
+        strokec(setInk, 200 * thread); p.strokeWeight(1.6); p.noFill();
+        p.bezier(plX - plRad9 * 0.7, plY, (plX + hx9) / 2, (plY + hy9) / 2 + sag9, (plX + hx9) / 2, (plY + hy9) / 2 + sag9, hx9, hy9);
+      }
       actorFigure(rig, ee);
-      if (!plBehind) { p.push(); p.translate(plX, plY); celestialBody(bodyK, 0, 0, plR, nowT()); p.pop(); }
+      if (!plBehind) { p.push(); p.translate(plX, plY); celestialBody(bodyK, 0, 0, plRad9, nowT()); p.pop(); }
       // a soft iris of air around the scene
       if (dc && !still) { var vg = dc.createRadialGradient(cx, gy - fh * 0.5, r * 1.7, cx, gy - fh * 0.5, r * 3.6); vg.addColorStop(0, 'rgba(10,8,7,0)'); vg.addColorStop(1, 'rgba(10,8,7,0.20)'); dc.fillStyle = vg; dc.fillRect(0, top - 10, W, horizonY - top + 30); }
       if (!still) { var mi9; for (mi9 = 0; mi9 < 10; mi9++) { var myc9 = ((nowT() * (0.00003 + (mi9 % 3) * 0.00002) + mi9 * 0.137) % 1); var mxx9 = cx + Math.sin(nowT() * 0.0004 + mi9 * 2.4) * r * (0.45 + (mi9 % 4) * 0.3); var myy9 = top + 34 + myc9 * (stageY - top - 40); p.noStroke(); fillc([255, 244, 214], 26 * Math.sin(myc9 * Math.PI) * ee); p.ellipse(mxx9, myy9, 2.2, 2.2); } }
@@ -7862,18 +7936,66 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     }
     // a brief animated welcome the very first time (skippable) — the app introducing itself
     function drawIntro() {
+      // the cold open of the whole app: a night, a shooting star, a constellation catching
+      // light, and the traveller arriving under their own star. Tap anywhere to begin.
       if (!UI.introT) UI.introT = nowT();
-      var e = (nowT() - UI.introT) / 1000, cx = W / 2, cy = topY() + viewH() * 0.40;
-      var gr = Math.min(W, H) * 0.16 * eCubic(cl01(e / 1.1));
-      celestialEmblem(cx, cy, Math.max(2, gr), cl01(e / 0.8));
-      var a1 = cl01((e - 0.5) / 0.8);
-      setFont(SANS, 40, INK, p.CENTER, p.CENTER, 255 * a1); bold(); p.text('Aqau Pluto', cx, cy + gr + 64); normal();
-      var a2 = cl01((e - 1.1) / 0.9);
-      p.textStyle(p.ITALIC); setFont(SERIF, 17, INK, p.CENTER, p.CENTER, 220 * a2); p.textStyle(p.ITALIC); p.text('your sky, read straight', cx, cy + gr + 100); p.textStyle(p.NORMAL);
-      var a3 = cl01((e - 1.9) / 0.8);
-      if (a3 > 0) { setFont(MONO, 11, ACCTX, p.CENTER, p.CENTER, 255 * a3); p.text('TAP TO BEGIN', cx, H - (UI.safeBottom || 0) - 64); }
+      var e = (nowT() - UI.introT) / 1000, cx = W / 2, still = reduced(), dcI = p.drawingContext;
+      p.noStroke(); fillc(GROUNDS.chart); p.rect(0, 0, W, H);
+      var gy0 = H * 0.62;
+      if (dcI) { var ng = dcI.createLinearGradient(0, 0, 0, gy0 + 40); ng.addColorStop(0, 'rgba(16,20,40,0.97)'); ng.addColorStop(1, 'rgba(54,62,94,0.97)'); dcI.fillStyle = ng; dcI.fillRect(0, 0, W, gy0 + 40); }
+      // stars arrive one by one
+      var si; for (si = 0; si < 34; si++) {
+        var sa = still ? 1 : cl01((e - 0.15 - si * 0.05) / 0.5); if (sa <= 0) continue;
+        var sxx = ((si * 97) % (W - 24)) + 12, syy = ((si * 53) % (gy0 - 130)) + 16;
+        var tw = still ? 0.8 : 0.55 + 0.45 * Math.sin(nowT() * 0.003 + si * 1.7);
+        p.noStroke(); fillc([255, 252, 240], 150 * sa * tw); p.ellipse(sxx, syy, 1.9, 1.9);
+      }
+      // a shooting star crosses, and where it passes a constellation catches light
+      var CON = [[0.28, 0.24], [0.40, 0.18], [0.53, 0.23], [0.64, 0.19], [0.74, 0.27]];
+      var shP = still ? 1 : cl01((e - 1.0) / 1.4);
+      if (shP > 0 && shP < 1 && !still) {
+        var mx = W * (0.08 + shP * 0.78), my = H * (0.10 + shP * 0.15);
+        strokec([255, 250, 235], 200 * Math.sin(shP * Math.PI)); p.strokeWeight(1.6); p.line(mx - 26, my - 9, mx, my);
+        p.noStroke(); fillc([255, 250, 235], 230 * Math.sin(shP * Math.PI)); p.ellipse(mx, my, 3, 3);
+      }
+      var ci; for (ci = 0; ci < CON.length; ci++) {
+        var ca = still ? 1 : cl01((e - 1.2 - ci * 0.22) / 0.5); if (ca <= 0) continue;
+        var px1 = W * CON[ci][0], py1 = H * CON[ci][1];
+        p.noStroke(); fillc([255, 244, 200], 220 * ca); p.ellipse(px1, py1, 3.4, 3.4);
+        fillc([255, 244, 200], 40 * ca); p.ellipse(px1, py1, 12, 12);
+        if (ci > 0) { var ca2 = still ? 1 : cl01((e - 1.35 - ci * 0.22) / 0.45); if (ca2 > 0) { strokec([255, 244, 200], 90 * ca2); p.strokeWeight(1); p.line(W * CON[ci - 1][0], H * CON[ci - 1][1], px1, py1); } }
+      }
+      // the hills, then the traveller walks in and stops beneath the sky
+      p.noStroke(); fillc([30, 36, 58], 235); p.beginShape(); p.vertex(-20, gy0 + 40); p.vertex(-20, gy0 - 16);
+      var hb; for (hb = 0; hb <= 12; hb++) p.vertex(-20 + (W + 40) * hb / 12, gy0 - 16 - 20 * (0.5 + 0.5 * Math.sin(hb * 1.35 + 1.1)));
+      p.vertex(W + 20, gy0 + 40); p.endShape(p.CLOSE);
+      p.noStroke(); fillc([22, 26, 44], 245); p.rect(-20, gy0 - 2, W + 40, 62);
+      var wk = still ? 1 : eCubic(cl01((e - 1.8) / 1.6));
+      var fx = -40 + (cx + 40) * wk, fh0 = Math.min(H * 0.155, 120);
+      var walking = wk < 0.98 && !still;
+      var rigI = { x: fx, y: gy0, h: fh0, col: [15, 14, 22], rim: [186, 196, 230], rimOff: [2, -1.6], look: walking ? 0.5 : (0.3 + (still ? 0 : Math.sin(nowT() * 0.0012) * 0.1)), star: false };
+      if (walking) { var gI = gaitAt(fx, gy0, fh0, e * 7.5); rigI.fL = gI.fL; rigI.fR = gI.fR; rigI.bob = -gI.bob; rigI.lean = gI.lean; }
+      p.noStroke(); fillc([8, 8, 14], 90); p.ellipse(fx, gy0 + 2, fh0 * 0.42, 7);
+      actorFigure(rigI, cl01((e - 1.6) / 0.6));
+      // their star comes down from the constellation to keep above them
+      var dsc = still ? 1 : eCubic(cl01((e - 3.3) / 1.1));
+      if (dsc > 0) {
+        var sx0 = W * CON[2][0], sy0 = H * CON[2][1];
+        var stx = sx0 + (cx - sx0) * dsc, sty = sy0 + ((gy0 - fh0 - 18) - sy0) * dsc;
+        if (dsc < 1 && !still) { strokec([255, 244, 200], 70); p.strokeWeight(1); p.line(sx0, sy0, stx, sty); }
+        var stT = still ? 0.8 : 0.55 + 0.45 * Math.sin(nowT() * 0.005);
+        p.noStroke(); fillc([255, 244, 200], 80 * stT); p.ellipse(stx, sty, 16, 16);
+        strokec([255, 244, 200], 240 * stT); p.strokeWeight(1.3);
+        p.line(stx - 5, sty, stx + 5, sty); p.line(stx, sty - 5, stx, sty + 5);
+      }
+      // the name arrives letter by letter, then the promise
+      if (e > 4.1 || still) riseText('Aqau Pluto', cx, gy0 + 80, 38, SANS, INK, UI.introT + 4100, 55);
+      var a2i = still ? 1 : cl01((e - 5.1) / 0.8);
+      if (a2i > 0) { p.textStyle(p.ITALIC); setFont(SERIF, 16.5, INK, p.CENTER, p.CENTER, 220 * a2i); p.text('your sky, read straight', cx, gy0 + 136); p.textStyle(p.NORMAL); }
+      var a3i = still ? 1 : cl01((e - 5.9) / 0.8);
+      if (a3i > 0) { var pli = still ? 1 : 0.6 + 0.4 * Math.sin(nowT() * 0.004); setFont(MONO, 11, ACCTX, p.CENTER, p.CENTER, 255 * a3i * pli); p.text('TAP TO BEGIN', cx, H - (UI.safeBottom || 0) - 56); }
       pushHit(0, 0, W, H, function () { UI.introDone = true; UI.fxT = nowT(); });
-      if (e > 5) { UI.introDone = true; UI.fxT = nowT(); }
+      if (e > 10) { UI.introDone = true; UI.fxT = nowT(); }
     }
     function drawOnboard() {
       if (!UI.draft) UI.draft = newDraft();
