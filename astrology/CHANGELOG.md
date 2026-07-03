@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.9.1 — 2026-07-03
+- **The meeting, staged.** Opening a person in People now opens with the scene itself: your persona and theirs under one dusk, them arriving at their chart's pace, stopping at the distance the synastry sets, the bond thread drawn and the element mix written beneath.
+- **Element worn everywhere.** People rows and family-tree cards carry a small swatch in each persona's light, so a glance tells you who runs fire, earth, air or water.
+- **The Daily Sky, tunable.** It greets you by name, can be replayed from Read > Days, and can be turned off in Settings > Reading.
+- **Watch the opening again.** Settings > Data replays the seasonal chase, now with your chart persona and your people arriving in the finale.
+- **The Learn road.** The guided journey is drawn as a path your persona stands on, one milestone per chapter, a flag at the end.
+- **Titles fixed for good.** Every big title (People, Settings, person names, the chart header and its rising/sun suffix) now draws straight onto the canvas, immune to the state bug that could shrink them.
+- **Text and speed.** Sixteen escaped em-dashes in composed readings rewritten into the app's real voice; synastry summaries are computed once per chart instead of every frame.
+
 ## 1.9.0 — 2026-07-03
 - **The Daily Sky.** Opening the app now opens today like a front page: an animated bulletin, once per day, that walks your persona through each transit touching your chart right now: the mover owns the sky, the weather means what the aspect means, and the words rise line by line. Ends with everyone you keep, under the same sky.
 - **The persona is your chart.** The silhouette is no longer generic: your dominant element sets its pace, its carriage and the colour of light it walks in. Fire strides and looks up; earth settles and takes its time; air is lifted; water flows.

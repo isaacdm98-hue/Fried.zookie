@@ -6874,9 +6874,11 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       UI.contentH.people = ly;
     }
 
-    function treeCard(title, sub, cx, cy, cwd, chh, accent, onTap) {
+    function treeCard(title, sub, cx, cy, cwd, chh, accent, onTap, rimCol) {
       var yy = sY(cy); p.noStroke(); fillc(accent ? shade(INK, -30) : shade(GROUNDS[UI.screen], -12)); p.rect(cx, yy + 3, cwd, chh, 8); fillc(accent ? INK : GROUNDS[UI.screen]); p.rect(cx, yy, cwd, chh, 8);
       if (!accent) { p.noFill(); strokec(INK, 160); p.strokeWeight(1.3); p.rect(cx, yy, cwd, chh, 8); }
+      // the persona's element, worn as a small light in the card's corner
+      if (rimCol) { p.noStroke(); fillc(rimCol, 235); p.ellipse(cx + cwd - 11, yy + 11, 6, 6); }
       setFont(SANS, 14, accent ? GROUNDS[UI.screen] : INK, p.CENTER, p.CENTER); bold(); p.text(title, cx + cwd / 2, yy + chh / 2 - 7); normal();
       setFont(MONO, 8.5, accent ? GROUNDS[UI.screen] : INK, p.CENTER, p.CENTER, 210); p.text(sub, cx + cwd / 2, yy + chh / 2 + 10);
       if (onTap) pushHit(cx, yy, cwd, chh, onTap);
@@ -6885,7 +6887,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (!list.length) return;
       setFont(MONO, 9, INK, p.CENTER, p.TOP, 150); p.text(label, x + w / 2, sY(y - 16));
       var n = list.length, cwd = Math.min(140, (w - (n - 1) * 12) / n), totalW = n * cwd + (n - 1) * 12, startX = x + (w - totalW) / 2;
-      for (var i = 0; i < n; i++) { var pr = list[i], ch = APP.personChart(pr), cx = startX + i * (cwd + 12); treeCard(pr.name || 'Unnamed', DATA.SIGNS[ch.planets.sun.sign].name.toUpperCase(), cx, y, cwd, chh, false, (function (id) { return function () { UI.familyTree = false; UI.viewPerson = id; UI.scroll.people = 0; UI.popT = nowT(); }; })(pr.id)); }
+      for (var i = 0; i < n; i++) { var pr = list[i], ch = APP.personChart(pr), cx = startX + i * (cwd + 12); treeCard(pr.name || 'Unnamed', DATA.SIGNS[ch.planets.sun.sign].name.toUpperCase(), cx, y, cwd, chh, false, (function (id) { return function () { UI.familyTree = false; UI.viewPerson = id; UI.scroll.people = 0; UI.popT = nowT(); }; })(pr.id), personaOf(ch).rim); }
     }
     function drawFamilyTree() {
       var x = sx(), w = cw(), ly = 18, gi = cl01(1 - (nowT() - UI.fxT) / 500), midX = x + w / 2, chh = 56;
@@ -6899,10 +6901,10 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var mySun = DATA.SIGNS[APP.STATE.chart.planets.sun.sign].name.toUpperCase(), youCwd = 130;
       if (fam.partner.length) {
         var gap = 16, tot = youCwd * 2 + gap, sx0 = x + (w - tot) / 2, pc = APP.personChart(fam.partner[0]);
-        treeCard('You', mySun, sx0, youY, youCwd, chh, true, null);
-        treeCard(fam.partner[0].name || 'Partner', DATA.SIGNS[pc.planets.sun.sign].name.toUpperCase(), sx0 + youCwd + gap, youY, youCwd, chh, false, (function (id) { return function () { UI.familyTree = false; UI.viewPerson = id; UI.scroll.people = 0; }; })(fam.partner[0].id));
+        treeCard('You', mySun, sx0, youY, youCwd, chh, true, null, myPersona().rim);
+        treeCard(fam.partner[0].name || 'Partner', DATA.SIGNS[pc.planets.sun.sign].name.toUpperCase(), sx0 + youCwd + gap, youY, youCwd, chh, false, (function (id) { return function () { UI.familyTree = false; UI.viewPerson = id; UI.scroll.people = 0; }; })(fam.partner[0].id), personaOf(pc).rim);
         strokec(INK, 120); p.strokeWeight(1.4); p.line(sx0 + youCwd, sY(youY + chh / 2), sx0 + youCwd + gap, sY(youY + chh / 2));
-      } else { treeCard('You', mySun, midX - youCwd / 2, youY, youCwd, chh, true, null); }
+      } else { treeCard('You', mySun, midX - youCwd / 2, youY, youCwd, chh, true, null, myPersona().rim); }
       var kidsY = youY + chh + 56;
       if (fam.child.length) { strokec(INK, 120); p.strokeWeight(1.4); p.line(midX, sY(youY + chh), midX, sY(kidsY)); drawTreeRow(fam.child, x, kidsY, w, 'CHILDREN', chh); }
       var sibY = kidsY + (fam.child.length ? chh + 50 : 6);
