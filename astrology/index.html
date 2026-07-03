@@ -1924,7 +1924,7 @@ var APP = (function () {
     var su = c.planets.sun, mo = c.planets.moon, asc = (b.timeKnown && c.ascBody) ? c.ascBody : null;
     var dom = domElement(c.elements), dm = domMod(c.modalities);
     out.push({ label: 'At a glance', text:
-      anA(su.signName, true) + ' Sun' + (asc ? (', ' + anA(asc.signName) + ' Ascendant') : '') + ' and ' + anA(mo.signName) + ' Moon. The chart leans ' + DATA.ELEMENTS[dom].name.toLowerCase() + ': ' + DATA.ELEMENTS[dom].high + ': and meets life by ' + (MODE_VERB[dm] || 'finding its own rhythm') + '.' });
+      anA(su.signName, true) + ' Sun' + (asc ? (', ' + anA(asc.signName) + ' Ascendant') : '') + ' and ' + anA(mo.signName) + ' Moon. The chart leans ' + DATA.ELEMENTS[dom].name.toLowerCase() + ': ' + DATA.ELEMENTS[dom].high + '. It meets life by ' + (MODE_VERB[dm] || 'finding its own rhythm') + '.' });
     // 2) WHAT RUNS IT — the single keystone everything answers to
     var pr = prominence(c), top = pr.ranked[0], am = null, fd = null; try { am = almutenChart(c); } catch (e1) {} try { fd = finalDispositors(c); } catch (e2) {}
     var converge = (am && am.tie.length === 1 && am.lead === top && fd && fd.all.length === 1 && fd.lead === top);
@@ -6105,6 +6105,27 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       ly += 50;
       var rt = UI.readTab;
       if (rt === 'story') {
+      // the promise the voice gate makes, kept here: the reading itself, spoken
+      var vsR = APP.STATE.settings && APP.STATE.settings.voice;
+      if (vsR === 'human' || vsR === 'system') {
+        var listening = false;
+        try { listening = !!((window.AqauVoice && window.AqauVoice.playing) || (typeof speechSynthesis !== 'undefined' && speechSynthesis.speaking)); } catch (eLq) {}
+        flatBtn(listening ? '◼  Stop the voice' : '▸  Read it to me', x, ly, w, 40, function () {
+          try { if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel(); } catch (eR1) {}
+          try { if (window.AqauVoice) window.AqauVoice.stop(); } catch (eR2) {}
+          if (listening) return;
+          if (!UI.arcCache) { try { UI.arcCache = APP.composeArc(c, b); } catch (eR3) { UI.arcCache = null; } }
+          if (!UI.readCache) { try { UI.readCache = APP.composeCore(c); } catch (eR4) { UI.readCache = []; } }
+          var parts = [], pi;
+          if (UI.arcCache) for (pi = 0; pi < UI.arcCache.length; pi++) parts.push(UI.arcCache[pi].text);
+          if (UI.readCache) for (pi = 0; pi < Math.min(UI.readCache.length, 4); pi++) parts.push(UI.readCache[pi]);
+          var sayR = parts.join(' ');
+          try {
+            if (vsR === 'human' && window.AqauVoice && window.AqauVoice.state === 'ready') window.AqauVoice.speak(sayR);
+            else if (typeof speechSynthesis !== 'undefined' && typeof SpeechSynthesisUtterance !== 'undefined') { var uR9 = new SpeechSynthesisUtterance(sayR); uR9.rate = 0.95; speechSynthesis.speak(uR9); }
+          } catch (eR5) {}
+        }, listening); ly += 52;
+      }
       // lead with the four-movement arc — spine, engine, edge, where it's heading
       if (!UI.arcCache) { try { UI.arcCache = APP.composeArc(c, b); } catch (ea) { UI.arcCache = null; } }
       if (UI.arcCache && UI.arcCache.length) {
@@ -8501,7 +8522,12 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var dotsN = n + 2, diN;
       for (diN = 0; diN < dotsN; diN++) { var onN = (dn.i + 1) === diN; p.noStroke(); fillc(onN ? ACC : INK, onN ? 235 : 90); p.ellipse(cx + (diN - (dotsN - 1) / 2) * 16, H - (UI.safeBottom || 0) - 36, onN ? 7 : 5, onN ? 7 : 5); }
       if (dn.i >= 0 && dn.i < n) { var plE = still ? 1 : 0.6 + 0.4 * Math.sin(nowT() * 0.004); setFont(MONO, 9.5, ACC, p.CENTER, p.TOP, 220 * plE); p.text('TAP TO CONTINUE ›', cx, H - (UI.safeBottom || 0) - 64); }
-      pushHit(0, topY() + 36, W, H - topY() - 36 - (UI.safeBottom || 0) - 110, function () { if (dn.i >= n) newsEnd(); else { dn.i++; dn.t0 = nowT(); } });
+      pushHit(0, topY() + 36, W, H - topY() - 36 - (UI.safeBottom || 0) - 110, function () {
+        if (dn.i >= n) { newsEnd(); return; }
+        // the first tap of the day brings the music in with the first story
+        if (dn.i === -1) { try { padStart([146.83, 220, 329.63], 0.016); } catch (ePN) {} }
+        dn.i++; dn.t0 = nowT();
+      });
       tourBtn('Skip', x + w - 66, topY() + 6, 60, 26, function () { newsEnd(); }, false);
     }
     function drawIntro() {
@@ -8678,6 +8704,14 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         ['Yours alone', 'Everything lives on this device. One-file backup, saved charts to switch between, and nothing that phones home.']
       ];
       var gs9 = GS9[UI.setGuide.i], gH9 = 150, gY9 = H - (UI.safeBottom || 0) - NAVH - gH9 - 14;
+      if (UI.setGuideSaid !== UI.setGuide.i) {
+        UI.setGuideSaid = UI.setGuide.i;
+        try {
+          var vsG = APP.STATE.settings && APP.STATE.settings.voice;
+          if (vsG === 'human' && window.AqauVoice && window.AqauVoice.state === 'ready') { window.AqauVoice.stop(); window.AqauVoice.speak(gs9[0] + '. ' + gs9[1]); }
+          else if (vsG === 'system' && typeof speechSynthesis !== 'undefined' && typeof SpeechSynthesisUtterance !== 'undefined') { speechSynthesis.cancel(); var uG9 = new SpeechSynthesisUtterance(gs9[0] + '. ' + gs9[1]); uG9.rate = 0.95; speechSynthesis.speak(uG9); }
+        } catch (eGS) {}
+      }
       p.noStroke(); fillc([12, 10, 8], 120); p.rect(0, 0, W, H); pushHit(0, 0, W, H, function () {});
       var gp9 = reduced() ? 1 : eBack(cl01((nowT() - UI.setGuide.t0) / 420)), gOff9 = (1 - gp9) * 20;
       p.noStroke(); fillc(shade(INK, -20)); p.rect(x, gY9 + 4 + gOff9, w, gH9, 14); fillc(INK); p.rect(x, gY9 + gOff9, w, gH9, 14);
@@ -8688,7 +8722,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       setFont(MONO, 9, GROUNDS[UI.screen], p.LEFT, p.BOTTOM, 160); p.text((UI.setGuide.i + 1) + ' / 3', x + 18, gY9 + gH9 - 12 + gOff9);
       tourBtn(UI.setGuide.i < 2 ? 'Next' : 'Got it', x + w - 104, gY9 + gH9 - 46 + gOff9, 90, 34, function () {
         if (UI.setGuide.i < 2) { UI.setGuide.i++; UI.setGuide.t0 = nowT(); }
-        else { st.setGuided = true; APP.save(); UI.setGuide = null; }
+        else { st.setGuided = true; APP.save(); UI.setGuide = null; UI.setGuideSaid = null; try { if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel(); } catch (eG1) {} try { if (window.AqauVoice) window.AqauVoice.stop(); } catch (eG2) {} }
       }, true);
     }
     function drawVoiceGate() {
@@ -9367,7 +9401,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       { tab: 5, t: 'SETTINGS: themes, bigger text, save & switch charts, share your chart as an image, and tune the zodiac and houses. That’s the tour: enjoy exploring.' }
     ];
     function startTour() { UI.tour = { step: 0 }; UI.screen = 'chart'; }
-    function endTour() { UI.tour = null; if (APP.STATE.settings) { APP.STATE.settings.toured = true; APP.save(); } }
+    function endTour() { UI.tour = null; UI.tourSaid = null; try { if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel(); } catch (eT1) {} try { if (window.AqauVoice) window.AqauVoice.stop(); } catch (eT2) {} if (APP.STATE.settings) { APP.STATE.settings.toured = true; APP.save(); } }
     function tourBtn(label, bx, by, bw, bh, fn, primary) {
       var off = pressOff(bx, by, bw, bh, 3);
       p.noStroke(); fillc(primary ? INK : GROUNDS.chart); p.rect(bx, by + off, bw, bh, 7);
@@ -9396,6 +9430,15 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     function drawTour() {
       if (!UI.tour) return;
       var step = TOUR[UI.tour.step]; if (!step) { endTour(); return; }
+      // the warm voice walks the tour with you: each card is spoken as it appears
+      if (UI.tourSaid !== UI.tour.step) {
+        UI.tourSaid = UI.tour.step;
+        try {
+          var vsT = APP.STATE.settings && APP.STATE.settings.voice;
+          if (vsT === 'human' && window.AqauVoice && window.AqauVoice.state === 'ready') { window.AqauVoice.stop(); window.AqauVoice.speak(step.t); }
+          else if (vsT === 'system' && typeof speechSynthesis !== 'undefined' && typeof SpeechSynthesisUtterance !== 'undefined') { speechSynthesis.cancel(); var uT9 = new SpeechSynthesisUtterance(step.t); uT9.rate = 0.95; speechSynthesis.speak(uT9); }
+        } catch (eTS) {}
+      }
       p.noStroke(); fillc([0, 0, 0], 150); p.rect(0, 0, W, H); pushHit(0, 0, W, H, function () {}); // scrim swallows taps
       if (step.tab != null) { var sb = UI.safeBottom || 0, navY = H - NAVH - sb, tw = W / 6, tx = step.tab * tw; p.noFill(); strokec(ACC, 255); p.strokeWeight(2.5); p.rect(tx + 4, navY + 4, tw - 8, NAVH - 8, 8); }
       var x = sx(), w = cw(), cardH = 172, cy = H - NAVH - (UI.safeBottom || 0) - cardH - 22;
@@ -9462,7 +9505,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     p.draw = function () {
       // auto-dark-at-night: re-apply the theme when the effective key changes (time or accent)
       var ek = effectiveThemeKey() + '|' + ((APP.STATE.settings && APP.STATE.settings.accent) || 0); if (ek !== UI.appliedThemeKey) { applyTheme(); setBodyBg(GROUNDS[UI.screen] || GROUNDS.chart); }
-      if (UI.screen !== UI.prevScreen) { var wasFirst = !UI.prevScreen; UI.fxT = nowT(); UI.prevScreen = UI.screen; UI.story = null; if (UI.video) closeVideo(); if (UI.screen !== 'chart') { UI.walk = null; UI.pcard = null; UI.reel = null; } if (UI.screen !== 'tarot') UI.tarotRit = null; if (UI.screen !== 'read') { if (UI.lifeWalk) lifeWalkHush(); UI.lifeWalk = null; UI.rings = null; } if (UI.screen !== 'learn') { UI.tvActive = null; if (UI.learnSearch) { UI.learnSearch = false; try { if (UI.searchInput) UI.searchInput.setAttribute('placeholder', 'Search city or country'); } catch (eP4) {} } } setBodyBg(GROUNDS[UI.screen] || GROUNDS.chart); if (!wasFirst) chime(); }
+      if (UI.screen !== UI.prevScreen) { var wasFirst = !UI.prevScreen; UI.fxT = nowT(); UI.prevScreen = UI.screen; UI.story = null; if (UI.video) closeVideo(); if (UI.screen !== 'chart') { UI.walk = null; UI.pcard = null; UI.reel = null; } if (UI.screen !== 'tarot') UI.tarotRit = null; if (UI.screen !== 'read') { lifeWalkHush(); UI.lifeWalk = null; UI.rings = null; } if (UI.screen !== 'learn') { UI.tvActive = null; if (UI.learnSearch) { UI.learnSearch = false; try { if (UI.searchInput) UI.searchInput.setAttribute('placeholder', 'Search city or country'); } catch (eP4) {} } } setBodyBg(GROUNDS[UI.screen] || GROUNDS.chart); if (!wasFirst) chime(); }
       UI.bg = (GROUNDS[UI.screen] || GROUNDS.chart); // HARD block-colour cut between sections
       p.background(UI.bg[0], UI.bg[1], UI.bg[2]);
       drawField(); drawRipples();
