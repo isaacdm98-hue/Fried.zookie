@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.5.2 — 2026-07-03
+
+The voice, made to actually arrive.
+
+- **Two mirrors, not one**: the Kokoro loader tries jsDelivr's bundle and
+  falls back to esm.sh, on a major-version range instead of a pinned file.
+- **Playback that cannot be muted by autoplay rules**: speech now plays
+  through WebAudio straight from the raw samples; the audio context is
+  unlocked by the download tap itself.
+- **"Hear a line"**: a test button right in Settings the moment the voice is
+  ready, so you never have to wonder.
+- **The life story speaks**: with a voice chosen, every chapter of the Life
+  Walk reads itself aloud: Human uses Kokoro; System works today with no
+  download at all. Closing or skipping the walk silences it everywhere.
+
 ## 1.5.1 — 2026-07-03
 
 - **The traveller, not the monk**: the mystic wears a knee-length tunic that
