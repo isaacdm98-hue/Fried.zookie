@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.5.1 — 2026-07-03
+
+- **The traveller, not the monk**: the mystic wears a knee-length tunic that
+  sways as cloth, with slender legs fully drawn beneath it. Genderless,
+  starlit, and no longer mistakable for anyone's space wizard.
+- **Engine: perfection, timed**: applying transits are now bisected to their
+  exact moment. The Moon's contacts name the day and the minute; slower
+  movers name the date: "Still applying: exact 6 Jul; it builds until then."
+- **Text audit, round two**: the opening/opening repetition in opportunity
+  transits, list-tilts carrying second colons, and the bond headline's
+  nested colon all fixed at their template sources.
+
 ## 1.5.0 — 2026-07-02
 
 The mystic, the diagrams, and a cleaner tongue.
