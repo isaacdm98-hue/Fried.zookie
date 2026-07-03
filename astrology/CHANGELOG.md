@@ -1,5 +1,31 @@
 # Changelog
 
+## 1.8.0 — 2026-07-03
+
+The chase, the stale-shell fix, and scenes that mean something.
+
+- **The new intro is a film opening**: one runner, side on, chasing the Moon
+  through winter snow, the rising Sun through spring rain and blossom, a
+  summer leap held a breath longer than physics, an autumn walk into
+  streaming leaves, and a final night where the zodiac gathers into an arc,
+  their star descends, and the name arrives. Mercury, Venus, Mars, Jupiter
+  and Saturn appear by name: the cast, introduced. Eight-pose run cycle,
+  stride-locked ground, film-subtitle captions. First tap starts the music;
+  second tap skips.
+- **Updates actually arrive**: the service worker is network-first for the
+  app shell and force-reloads open pages once when a new version takes
+  over. The old cache-first worker was why new features kept not appearing.
+- **Sound, audible**: old installs saved under the silent default migrate
+  once to sound-on; if the human voice cannot arrive, the system voice
+  steps in so narration never silently fails. The voice downloads itself.
+- **Domain-symbolic scenes**: a Sun contact is your own fire shielded from
+  the wind; the Moon, a storm leaning on the house (or light carried home);
+  the Midheaven, a flag held at the summit; the Ascendant, a stuck door
+  shouldered open. The planet hangs small in the sky as the weather source.
+- **The figure is flesh**: tapered filled limbs, real hands, heel-toe feet;
+  chapter text arrives line by line; tarot meanings lead with that card's
+  flickering real-deck art; the AUTO swatch labels itself legibly.
+
 ## 1.7.0 — 2026-07-03
 
 The welcome, the workshop, and the furniture.
