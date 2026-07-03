@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.9.4 — 2026-07-03
+- **The walk is animated, not computed.** The stride now comes from an authored pose sheet, eight hand-set keys per foot per cycle, the way an animator draws it: heel strikes toe-up, the sole rolls flat, the heel peels at push-off, the toe trails through the lift, and the shin snaps through to reach heel-first for the next step. The run gets the same treatment, with a real flight moment. In-betweens flow through a smooth periodic curve, so the motion settles into each step instead of gliding like a machine.
+- **The head rides level.** Real heads barely bob; the body moves beneath them. Half the walk bob is now absorbed before it reaches the head.
+- **The figure belongs to the paper.** Every cold blue-black silhouette is re-inked in the warm near-black of the app's type, and a faint paper veil now lies over the scene skies in the intro, the life story and the Daily Sky, so the animated world and the printed world read as one thing.
+
 ## 1.9.3 — 2026-07-03
 - **The walk, finally forward.** The stride had feet swinging backward through the air, which read as moonwalking. Feet now drive forward while lifted and push back while planted, with the cycle direction-aware, so walkers heading left and right both read true.
 - **The chart opens on the wheel.** Both Today teasers are gone from the front screen; the moon button up top is the one door to Today.
