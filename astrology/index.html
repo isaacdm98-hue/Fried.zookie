@@ -6115,6 +6115,11 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         eyebrow('Today, written out', x, ly, ACC); ly += 24;
         ly += expandPara(UI.dailyEssay, x, ly, w, 'dessay', 16.5, 26) + 18;
       }
+      // watch today acted out again: the same bulletin that greets the day
+      flatBtn('▸  Watch today as a scene', x, ly, w, 42, function () {
+        var ndR = new Date(), nkR = ndR.getFullYear() + '-' + APP.pad(ndR.getMonth() + 1) + '-' + APP.pad(ndR.getDate());
+        UI.dailyNews = { i: -1, t0: nowT(), day: nkR, scenes: null }; UI.newsNoteI = -9; buzz(12);
+      }, false); ly += 54;
       // then the journeys: life-in-chapters timeline
       var lbY = sY(ly); p.noStroke(); fillc(INK); p.rect(x, lbY + 3, w, 52, 11); fillc(shade(INK, 16)); p.rect(x, lbY, w, 52, 11);
       setFont(SANS, 15, GROUNDS[UI.screen], p.LEFT, p.CENTER); bold(); p.text('✦  Your life in chapters', x + 16, lbY + 26 - 8); normal();
@@ -8397,7 +8402,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var dotsN = n + 2, diN;
       for (diN = 0; diN < dotsN; diN++) { var onN = (dn.i + 1) === diN; p.noStroke(); fillc(onN ? ACC : INK, onN ? 235 : 90); p.ellipse(cx + (diN - (dotsN - 1) / 2) * 16, H - (UI.safeBottom || 0) - 36, onN ? 7 : 5, onN ? 7 : 5); }
       if (dn.i >= 0 && dn.i < n) { var plE = still ? 1 : 0.6 + 0.4 * Math.sin(nowT() * 0.004); setFont(MONO, 9.5, ACC, p.CENTER, p.TOP, 220 * plE); p.text('TAP TO CONTINUE ›', cx, H - (UI.safeBottom || 0) - 64); }
-      pushHit(0, 0, W, H - (UI.safeBottom || 0) - 110, function () { if (dn.i >= n) newsEnd(); else { dn.i++; dn.t0 = nowT(); } });
+      pushHit(0, topY() + 36, W, H - topY() - 36 - (UI.safeBottom || 0) - 110, function () { if (dn.i >= n) newsEnd(); else { dn.i++; dn.t0 = nowT(); } });
       tourBtn('Skip', x + w - 66, topY() + 6, 60, 26, function () { newsEnd(); }, false);
     }
     function drawIntro() {
@@ -9492,6 +9497,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (typeof document !== 'undefined' && document.activeElement && (document.activeElement.tagName === 'TEXTAREA' || document.activeElement.tagName === 'INPUT')) return true;
       var k9 = p.keyCode;
       if (k9 === 27) {
+        if (UI.dailyNews) { try { if (APP.STATE.settings) { APP.STATE.settings.newsDay = UI.dailyNews.day; APP.save(); } } catch (eDN) {} UI.dailyNews = null; UI.fxT = nowT(); lifeWalkHush(); return false; }
         if (UI.pcard) { UI.pcard = null; return false; }
         if (UI.today) { UI.today = false; return false; }
         if (UI.rings) { UI.rings = null; return false; }
