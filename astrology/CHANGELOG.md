@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.0.0 — 2026-07-04
+- **The compass is home.** The wheel is the app's front door, and it now tells today as well as forever: every live planet rides the rim at its true degree, quiet ones as small ink dots, the ones touching your chart glowing and threaded to the natal point they touch. One word for the day sits beneath. Tap any of it and Today opens.
+- **One scene, everywhere.** Every story in the app: the life chapters and the Daily Sky, now plays in a single language: your silhouette walking (or running, for returns) beneath the REAL sky of that moment, every planet at its true ecliptic degree among the stars, the mover glowing, your natal point ringed, the aspect drawn as a thread of light. The old theatrical sets are gone; the sky itself is the set.
+- **Four doors.** Navigation slims to Home, Read, People and More (Learn, Tarot and Settings live inside More). The tour walks the new doors.
+- **Less, everywhere.** The fuller read waits behind "Go deeper"; the day's transit tables behind "The numbers"; Chapters, Reel and Calendar share one calm row; Learn opens on just the journey and its road, with the library behind one door; the Watch section is retired; the intro tightens to about half a minute.
+
 ## 1.9.5 — 2026-07-04
 - **The wheel, named.** Every zodiac sign is now written out in full, curved along the inside of the ring (upright in the lower half), so the chart reads without knowing a single glyph. The glyphs stay outside as ornament.
 - **A slimmer front page.** The coordinates/element HUD is gone from above the wheel, and the tap hint is four words. The chart screen is now: your rising, the wheel, the big three, the reading.

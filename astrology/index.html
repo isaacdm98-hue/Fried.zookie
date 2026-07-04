@@ -3742,13 +3742,13 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
   var ACCTX = [150, 48, 14];   // darker accent reserved for small label TEXT (WCAG contrast)
   var GROUNDS = {
     onboard: [230, 222, 204], chart: [230, 222, 204],
-    read: [170, 181, 160], tarot: [206, 188, 168], settings: [200, 202, 199], learn: [158, 170, 184], people: [196, 178, 186]
+    read: [170, 181, 160], tarot: [206, 188, 168], settings: [200, 202, 199], more: [200, 202, 199], learn: [158, 170, 184], people: [196, 178, 186]
   };
   var THEMES = {
-    light: { ink: [26, 23, 20], acc: [210, 82, 28], acctx: [150, 48, 14], g: { onboard: [230, 222, 204], chart: [230, 222, 204], read: [170, 181, 160], tarot: [206, 188, 168], settings: [200, 202, 199], learn: [158, 170, 184], people: [196, 178, 186] } },
-    dark: { ink: [232, 226, 213], acc: [235, 110, 58], acctx: [240, 138, 92], g: { onboard: [20, 19, 25], chart: [20, 19, 25], read: [17, 24, 20], tarot: [27, 20, 17], settings: [22, 22, 27], learn: [15, 19, 29], people: [25, 18, 25] } },
-    paper: { ink: [58, 44, 28], acc: [150, 60, 20], acctx: [120, 48, 14], g: { onboard: [235, 225, 199], chart: [235, 225, 199], read: [226, 216, 188], tarot: [232, 219, 194], settings: [228, 221, 202], learn: [221, 213, 192], people: [231, 218, 198] } },
-    night: { ink: [214, 223, 240], acc: [126, 152, 232], acctx: [150, 174, 244], g: { onboard: [12, 15, 27], chart: [12, 15, 27], read: [11, 17, 26], tarot: [18, 15, 28], settings: [13, 15, 30], learn: [10, 15, 30], people: [17, 13, 28] } }
+    light: { ink: [26, 23, 20], acc: [210, 82, 28], acctx: [150, 48, 14], g: { onboard: [230, 222, 204], chart: [230, 222, 204], read: [170, 181, 160], tarot: [206, 188, 168], settings: [200, 202, 199], more: [200, 202, 199], learn: [158, 170, 184], people: [196, 178, 186] } },
+    dark: { ink: [232, 226, 213], acc: [235, 110, 58], acctx: [240, 138, 92], g: { onboard: [20, 19, 25], chart: [20, 19, 25], read: [17, 24, 20], tarot: [27, 20, 17], settings: [22, 22, 27], more: [22, 22, 27], learn: [15, 19, 29], people: [25, 18, 25] } },
+    paper: { ink: [58, 44, 28], acc: [150, 60, 20], acctx: [120, 48, 14], g: { onboard: [235, 225, 199], chart: [235, 225, 199], read: [226, 216, 188], tarot: [232, 219, 194], settings: [228, 221, 202], more: [228, 221, 202], learn: [221, 213, 192], people: [231, 218, 198] } },
+    night: { ink: [214, 223, 240], acc: [126, 152, 232], acctx: [150, 174, 244], g: { onboard: [12, 15, 27], chart: [12, 15, 27], read: [11, 17, 26], tarot: [18, 15, 28], settings: [13, 15, 30], more: [13, 15, 30], learn: [10, 15, 30], people: [17, 13, 28] } }
   };
   // custom accent palette (index 0 = the theme's own accent)
   var ACCENTS = [null, [210, 82, 28], [196, 64, 92], [120, 150, 86], [78, 120, 200], [150, 96, 196], [44, 160, 150]];
@@ -4391,19 +4391,32 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       for (var d1 = 0; d1 < pos.length; d1++) { if (pos[d1].key === UI.selPlanet) continue; drawPlanet(pos[d1], false, t); }
       for (var d2 = 0; d2 < pos.length; d2++) { if (pos[d2].key === UI.selPlanet) drawPlanet(pos[d2], true, t); }
 
-      // AN3 / S3 — today's real-sky transits drawn on the rim, threaded to the natal points they touch (the daily check-in)
+      // ---- the compass is also a clock: the WHOLE live sky rides the rim.
+      // Quiet planets sit as small ink dots at today's real degrees; the ones
+      // touching your chart glow in their aspect's colour and thread inward to
+      // the natal point they touch. Tap any of them to open Today. ----
       if (rv > 0.95 && !UI.walk) {
-        var trd = walkTr(c), tay = (trd.ctx && trd.ctx.ay) || 0, tdi;
+        var trd = walkTr(c), tay = (trd.ctx && trd.ctx.ay) || 0, tdi, tkey;
         if (trd.ctx && trd.ctx.tp) {
-          for (tdi = 0; tdi < Math.min(trd.daily.length, 5); tdi++) {
-            var tev = trd.daily[tdi], srcp = trd.ctx.tp[tev.tp]; if (!srcp) continue;
-            var natal = posMap[tev.np]; if (!natal) continue;
-            var tlon = ((srcp.lon - tay) % 360 + 360) % 360, orx = ax(tlon, R * 1.04), ory = ay(tlon, R * 1.04);
-            var tq = tev.asp.quality, tcol = (tq === 'flow' || tq === 'opportunity') ? ELHUE.air : (tq === 'fusion' ? INK : ACC);
-            var puls = 0.55 + 0.45 * Math.sin(t * 0.004 + tdi * 1.3);
-            strokec(tcol, 60 * puls); p.strokeWeight(1); p.line(orx, ory, natal.x, natal.y);
-            p.noStroke(); fillc(tcol, 210); p.ellipse(orx, ory, 13, 13);
-            setFont(SANS, 7.5, GROUNDS[UI.screen], p.CENTER, p.CENTER); p.text(APP.glyphFor(tev.tp), orx, ory + 0.5);
+          var activeBy = {}, TORDER = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto'];
+          for (tdi = 0; tdi < trd.daily.length; tdi++) if (!activeBy[trd.daily[tdi].tp]) activeBy[trd.daily[tdi].tp] = trd.daily[tdi];
+          for (tdi = 0; tdi < TORDER.length; tdi++) {
+            tkey = TORDER[tdi]; var srcp = trd.ctx.tp[tkey]; if (!srcp) continue;
+            var tlon = ((srcp.lon - tay) % 360 + 360) % 360;
+            var tev = activeBy[tkey];
+            var orx = ax(tlon, R * 1.045), ory = ay(tlon, R * 1.045);
+            if (tev && posMap[tev.np]) {
+              var natal = posMap[tev.np];
+              var tq = tev.asp.quality, tcol = (tq === 'flow' || tq === 'opportunity') ? ELHUE.air : (tq === 'fusion' ? INK : ACC);
+              var puls = 0.55 + 0.45 * Math.sin(t * 0.004 + tdi * 1.3);
+              strokec(tcol, 60 * puls); p.strokeWeight(1); p.line(orx, ory, natal.x, natal.y);
+              p.noStroke(); fillc(tcol, 215); p.ellipse(orx, ory, 13, 13);
+              setFont(SANS, 7.5, GROUNDS[UI.screen], p.CENTER, p.CENTER); p.text(APP.glyphFor(tkey), orx, ory + 0.5);
+            } else {
+              p.noStroke(); fillc(INK, 130 * er); p.ellipse(orx, ory, 9, 9);
+              setFont(SANS, 6, GROUNDS[UI.screen], p.CENTER, p.CENTER, 240); p.text(APP.glyphFor(tkey), orx, ory + 0.5);
+            }
+            (function (ex, ey) { pushHit(ex - 12, ey - 12, 24, 24, function () { openToday(); }); })(orx, ory);
           }
         }
       }
@@ -5079,6 +5092,16 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       ly += 2;
       // (the Today teaser and headline sat here; the moon button up top is the one door to Today)
       ly += dial(c, b, ly) + 4;
+      // one word for the day, under the compass; tap it and Today opens
+      (function () {
+        var trd9 = walkTr(c), t09 = trd9.daily && trd9.daily[0];
+        var THEME9 = { sun: 'Visibility', moon: 'Feelings', mercury: 'Conversations', venus: 'Sweetness', mars: 'Drive', jupiter: 'Growth', saturn: 'Structure', uranus: 'Surprises', neptune: 'Dreams', pluto: 'Depth' };
+        var word9 = t09 ? (THEME9[t09.tp] || 'Weather') : 'Stillness';
+        p.textStyle(p.ITALIC); setFont(SERIF, 17, INK, p.CENTER, p.TOP, 235); p.text('\u201C' + word9 + '\u201D', x + w / 2, sY(ly)); p.textStyle(p.NORMAL);
+        setFont(MONO, 8.5, ACCTX, p.CENTER, p.TOP, 200); p.text('TODAY \u203A', x + w / 2, sY(ly) + 24);
+        pushHit(x, sY(ly) - 4, w, 42, function () { openToday(); });
+      })();
+      ly += 48;
       setFont(MONO, 9.5, INK, p.CENTER, p.TOP, 130); p.text('TAP A PLANET TO READ IT', x + w / 2, sY(ly)); ly += 22;
       ly += reels(c, b, ly) + 14;
 
@@ -5592,313 +5615,24 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       }
       var ctrlTop = top + vh - 64;
       pushHit(x, top + 64, w, ctrlTop - (top + 64), function () { lifeWalkNext(ev.length); }); pushHit(x, top + 64, 72, ctrlTop - (top + 64), function () { lifeWalkPrev(); });
-      var cy = top + vh * 0.25, r = Math.min(w * 0.30, vh * 0.15);
+      // ---- one scene, everywhere: you walk beneath the real sky of that year ----
+      var stageBot9 = top + Math.round(vh * 0.50), stageY = stageBot9 - 64;
       var bodyK = (e0.tp && BODYCOL[e0.tp]) ? e0.tp : 'saturn', dc = p.drawingContext;
-      var stageY = cy + r * 1.28, setK = lwStaging(e0);
       var t3 = (nowT() - UI.lifeWalk.t0) / 5000, t2 = still ? 1 : cl01(t3);
-      var te2 = cl01((nowT() - UI.lifeWalk.t0) / 560), ee = eCubic(te2);
-      var cam9 = still ? 1 : 1 + 0.045 * cl01((nowT() - UI.lifeWalk.t0) / 9200);
-      var shk9 = (e0.ang === 90 && !still && t2 > 0.36 && t2 < 0.52) ? Math.sin(nowT() * 0.09) * 2.4 * (1 - (t2 - 0.36) / 0.16) : 0;
-      p.push(); p.translate(cx + shk9, stageY - r * 0.6); p.scale(cam9); p.translate(-cx, -(stageY - r * 0.6));
-      // ---- the world: a sky the mover owns, hills in layers, weather that means something ----
-      var SKY9 = { jupiter: [[236, 178, 106], [250, 226, 182]], saturn: [[92, 100, 118], [184, 176, 166]], uranus: [[74, 114, 134], [182, 218, 210]], neptune: [[56, 76, 106], [148, 178, 188]], pluto: [[52, 42, 58], [192, 114, 82]] };
-      var sky9 = SKY9[bodyK] || SKY9.saturn, horizonY = stageY + 26;
-      function mix9(c1, c2, t9) { return [c1[0] + (c2[0] - c1[0]) * t9, c1[1] + (c2[1] - c1[1]) * t9, c1[2] + (c2[2] - c1[2]) * t9]; }
-      if (dc) { var skg = dc.createLinearGradient(0, top - 20, 0, horizonY); skg.addColorStop(0, 'rgba(' + (sky9[0][0] | 0) + ',' + (sky9[0][1] | 0) + ',' + (sky9[0][2] | 0) + ',' + (0.96 * ee) + ')'); skg.addColorStop(1, 'rgba(' + (sky9[1][0] | 0) + ',' + (sky9[1][1] | 0) + ',' + (sky9[1][2] | 0) + ',' + (0.96 * ee) + ')'); dc.fillStyle = skg; dc.fillRect(-20, top - 20, W + 40, horizonY - top + 40); p.noStroke(); fillc([238, 228, 206], 13); p.rect(-20, top - 20, W + 40, horizonY - top + 40); }
-      // drifting clouds, unhurried
-      if (!still) { var cl9; for (cl9 = 0; cl9 < 3; cl9++) { var cwd9 = r * (0.9 + cl9 * 0.4), cxx9 = ((nowT() * (0.004 + cl9 * 0.002) + cl9 * 300) % (W + cwd9 * 2)) - cwd9, cyy9 = top + 26 + cl9 * 34; p.noStroke(); fillc([255, 252, 244], (26 - cl9 * 5) * ee); p.ellipse(cxx9, cyy9, cwd9, cwd9 * 0.30); p.ellipse(cxx9 - cwd9 * 0.3, cyy9 + 6, cwd9 * 0.55, cwd9 * 0.22); p.ellipse(cxx9 + cwd9 * 0.32, cyy9 + 7, cwd9 * 0.62, cwd9 * 0.24); } }
-      // god rays for the warm skies
-      if (dc && !still && (bodyK === 'jupiter' || setK === 'sun')) { var gr9; dc.save(); for (gr9 = 0; gr9 < 3; gr9++) { var rg9 = dc.createLinearGradient(cx - w * 0.5, top, cx + w * 0.2, stageY); rg9.addColorStop(0, 'rgba(255,244,208,' + (0.10 * ee) + ')'); rg9.addColorStop(1, 'rgba(255,244,208,0)'); dc.fillStyle = rg9; dc.beginPath(); var rx0 = cx - w * 0.45 + gr9 * w * 0.24, rsw = w * 0.06; dc.moveTo(rx0, top - 10); dc.lineTo(rx0 + rsw, top - 10); dc.lineTo(rx0 + rsw + w * 0.18, horizonY); dc.lineTo(rx0 + w * 0.18, horizonY); dc.closePath(); dc.fill(); } dc.restore(); }
-      // three hill bands, each darker as it nears the actor
-      function hills9(yb, amp, ph9, t9, a9) {
-        var hc = mix9(sky9[1], [32, 28, 26], t9); p.noStroke(); fillc(hc, a9 * ee);
-        p.beginShape(); p.vertex(-20, horizonY + 34); p.vertex(-20, yb);
-        var hxq; for (hxq = 0; hxq <= 12; hxq++) { var pxq = -20 + (W + 40) * hxq / 12; p.vertex(pxq, yb - amp * (0.5 + 0.5 * Math.sin(hxq * 1.35 + ph9))); }
-        p.vertex(W + 20, yb); p.vertex(W + 20, horizonY + 34); p.endShape(p.CLOSE);
-      }
-      hills9(stageY - r * 0.72, r * 0.34, 1.3 + UI.lifeWalk.i, 0.22, 210);
-      hills9(stageY - r * 0.28, r * 0.26, 4.1 + UI.lifeWalk.i * 1.7, 0.42, 230);
-      hills9(stageY + 4, r * 0.13, 2.2 + UI.lifeWalk.i * 0.6, 0.62, 245);
-      // ---- the set, grown from the land ----
-      var fh = r * 1.55, fx0 = cx + r * 0.62, gy = stageY, plR = r * 0.30;
-      var domain9 = (!e0.isReturn && e0.ang !== 180 && (setK === 'sun' || setK === 'moon' || setK === 'mc' || setK === 'asc'));
-      var lwWind9 = (domain9 && e0.ang === 90 && t2 < 0.75) ? 2.8 : 1; // a square blows a real wind through the set
-      var lwGate9 = (setK === 'asc' && domain9) ? (e0.ang === 90 ? eCubic(cl01((t2 - 0.25) / 0.55)) : eCubic(cl01(t2 / 0.35))) : 1; // how far the door stands open
-      var setInk = mix9(sky9[1], [26, 22, 20], 0.78);
-      if (setK === 'mc') {
-        // the summit: a path winds up to a cairn and a small flag in the wind
-        var smX = fx0 - fh * 0.02, smY = gy - 2;
-        strokec(mix9(sky9[1], [30, 26, 24], 0.5), 150 * ee); p.strokeWeight(2); p.noFill();
-        p.bezier(x + w * 0.06, gy + 4, cx - r * 0.7, gy - r * 0.10, cx - r * 0.1, gy + 6, smX - fh * 0.28, gy);
-        p.noStroke(); fillc(setInk, 235 * ee);
-        p.ellipse(smX + fh * 0.30, smY - 4, 13, 9); p.ellipse(smX + fh * 0.33, smY - 11, 10, 7); p.ellipse(smX + fh * 0.31, smY - 17, 7, 5);
-        strokec(setInk, 235 * ee); p.strokeWeight(1.6); p.line(smX + fh * 0.31, smY - 20, smX + fh * 0.31, smY - 40);
-        var flw9 = reduced() ? 0 : Math.sin(nowT() * (0.006 * lwWind9 * lwWind9)) * 3 * lwWind9; p.noStroke(); fillc(ACC, 220 * ee);
-        p.triangle(smX + fh * 0.31, smY - 40, smX + fh * 0.31, smY - 32, smX + fh * 0.31 + 14 + flw9, smY - 36);
-      } else if (setK === 'asc') {
-        // a standing gate on the ridge, the light coming through it
-        var dwX = cx - r * 1.05, dwW = r * 0.72, dwH = fh * 1.15, dwT = gy - dwH;
-        if (dc && !still) { var dg = dc.createLinearGradient(dwX, 0, dwX + dwW * 1.6, 0); dg.addColorStop(0, 'rgba(255,243,210,' + (0.22 * ee * (0.15 + 0.85 * lwGate9)) + ')'); dg.addColorStop(1, 'rgba(255,243,210,0)'); dc.fillStyle = dg; dc.beginPath(); dc.moveTo(dwX + dwW * 0.1, gy); dc.lineTo(dwX + dwW * 0.28, dwT + 8); dc.lineTo(dwX + dwW * 1.7, gy); dc.closePath(); dc.fill(); }
-        if (lwGate9 < 0.98) { p.noStroke(); fillc([20, 16, 14], 235 * ee); var doorW9 = dwW * 0.42 * (1 - lwGate9 * 0.9); p.beginShape(); p.vertex(dwX + dwW * 0.30, gy); p.vertex(dwX + dwW * 0.30, dwT + 12); p.vertex(dwX + dwW * 0.30 + doorW9, dwT + 16 + lwGate9 * 10); p.vertex(dwX + dwW * 0.30 + doorW9, gy); p.endShape(p.CLOSE); }
-        p.noStroke(); fillc(setInk, 235 * ee);
-        p.beginShape(); p.vertex(dwX, gy); p.vertex(dwX + dwW * 0.14, dwT + 6); p.vertex(dwX + dwW * 0.30, dwT + 6); p.vertex(dwX + dwW * 0.26, gy); p.endShape(p.CLOSE);
-        p.beginShape(); p.vertex(dwX + dwW * 0.72, gy); p.vertex(dwX + dwW * 0.70, dwT + 6); p.vertex(dwX + dwW * 0.86, dwT + 6); p.vertex(dwX + dwW, gy); p.endShape(p.CLOSE);
-        p.rect(dwX - dwW * 0.06, dwT - 8, dwW * 1.12, 12, 3);
-      } else if (setK === 'moon') {
-        // the cottage: one warm window, and smoke curling from the chimney
-        var hoX = x + r * 0.42, hoY = gy + 2, hoW = r * 0.62, hoH = r * 0.44;
-        p.noStroke(); fillc(setInk, 240 * ee);
-        p.rect(hoX, hoY - hoH, hoW, hoH, 2);
-        p.triangle(hoX - 6, hoY - hoH, hoX + hoW / 2, hoY - hoH - r * 0.26, hoX + hoW + 6, hoY - hoH);
-        p.rect(hoX + hoW * 0.68, hoY - hoH - r * 0.22, hoW * 0.12, r * 0.16);
-        var wGlow = still ? 0.8 : 0.62 + 0.38 * Math.sin(nowT() * 0.0018);
-        fillc([255, 214, 140], 200 * wGlow * ee); p.rect(hoX + hoW * 0.2, hoY - hoH * 0.58, hoW * 0.2, hoH * 0.3, 2);
-        if (!still) { var sm9; for (sm9 = 0; sm9 < 4; sm9++) { var smc = ((nowT() * 0.00006 + sm9 * 0.25) % 1); p.noStroke(); fillc([235, 232, 224], 60 * (1 - smc) * ee); p.ellipse(hoX + hoW * 0.74 + Math.sin(smc * 5 + sm9) * 6, hoY - hoH - r * 0.24 - smc * r * 0.5, 4 + smc * 10, 4 + smc * 8); } }
-      } else if (e0.isReturn) {
-        p.noFill(); strokec(mix9(sky9[0], [255, 255, 255], 0.4), 60 * ee); p.strokeWeight(1); p.ellipse(fx0 - fh * 0.40, gy - fh * 0.58, fh * 1.6, fh * 0.94);
-        if (!still) { var st9; for (st9 = 0; st9 < 14; st9++) { var stt = 0.5 + 0.5 * Math.sin(nowT() * 0.003 + st9 * 1.9); p.noStroke(); fillc([255, 252, 240], 90 * stt * ee); p.ellipse(x + ((st9 * 79) % w), top + 14 + ((st9 * 53) % (r * 1.1)), 1.8, 1.8); } }
-      }
-      // foreground grass, leaning to the same wind as the scarf
-      if (!still) { var gb9; for (gb9 = 0; gb9 < 9; gb9++) { var gbx = x + w * (0.04 + gb9 * 0.115), gsw = Math.sin(nowT() * 0.0035 + gb9 * 1.3) * 3.2; strokec(mix9(sky9[1], [30, 26, 24], 0.7), 130 * ee); p.strokeWeight(1.4); p.noFill(); p.bezier(gbx, gy + 6, gbx, gy - 4, gbx + gsw * 0.5, gy - 8, gbx + gsw, gy - 13 - (gb9 % 3) * 3); } }
-      // ---- weather with meaning ----
-      if (!still) {
-        if (e0.tp === 'neptune' && dc) { var fi9; for (fi9 = 0; fi9 < 3; fi9++) { var fyv = gy - fh * (0.12 + fi9 * 0.3), fxv = cx + Math.sin(nowT() * 0.00012 + fi9 * 2.1) * r * 1.1; p.noStroke(); fillc([225, 230, 236], 22 * ee); p.rect(fxv - r * 1.5, fyv - 8, r * 3, 16, 8); } }
-        if (e0.tp === 'pluto') { var em9; for (em9 = 0; em9 < 5; em9++) { var eyc = ((nowT() * (0.00005 + (em9 % 2) * 0.00003) + em9 * 0.19) % 1); p.noStroke(); fillc([226, 118, 66], 90 * (1 - eyc) * ee); p.ellipse(cx + Math.sin(em9 * 2.3) * r * 1.2 + Math.sin(nowT() * 0.001 + em9) * 6, gy - 6 - eyc * fh * 0.9, 2.6, 2.6); } }
-        if (e0.ang === 90 && (setK === 'moon' || setK === 'asc' || setK === 'self') && t2 > 0.30 && t2 < 0.75) { var rn9, rA9 = Math.sin(cl01((t2 - 0.30) / 0.45) * Math.PI); strokec([210, 220, 232], 110 * rA9); p.strokeWeight(1.1); for (rn9 = 0; rn9 < 14; rn9++) { var ry9 = ((nowT() * (0.28 + (rn9 % 4) * 0.05) + rn9 * 173) % (stageY - top + 60)); var rx9 = x + ((rn9 * 97) % w); p.line(rx9, top + ry9 - 12, rx9 - 4, top + ry9); } }
-        if (e0.ang === 120) { var wc9; for (wc9 = 0; wc9 < 2; wc9++) { var wph = ((nowT() * 0.00016 + wc9 * 0.5) % 1), wx9 = x - 40 + wph * (w + 80), wy9 = gy - fh * (0.55 + wc9 * 0.3) + Math.sin(wph * 9) * 10; strokec([255, 252, 240], 90 * Math.sin(wph * Math.PI)); p.strokeWeight(1.3); p.noFill(); p.arc(wx9, wy9, 26, 16, Math.PI * 0.2 + wph * 3, Math.PI * 1.5 + wph * 3); } }
-      }
-      // ---- the choreography: what a person would actually be doing, if the year went as the reading says ----
-      var plX = cx, plY = cy, plBehind = false, thread = 0, thrSag9 = 0.5, capTxt = '', plRad9 = plR;
       var pers9 = myPersona();
-      var rig = { x: fx0, y: gy, h: fh, ph: UI.lifeWalk.i, rim: pers9.rim, rimOff: [-2, -1.6] };
-      // every actor walks to their mark with a real gait
-      var ent = still ? 0 : (1 - eCubic(cl01((nowT() - UI.lifeWalk.t0) / 1100)));
-      rig.x -= ent * w * 0.22;
-      if (ent > 0.02) {
-        var g9 = gaitAt(rig.x, gy, fh, nowT() * 0.014);
-        rig.fL = g9.fL; rig.fR = g9.fR; rig.bob = -g9.bob; rig.lean = g9.lean;
-        rig.hL = { x: rig.x - fh * 0.085 + g9.hL.dx, y: gy - fh * 0.50, bend: -1 };
-        rig.hR = { x: rig.x + fh * 0.085 + g9.hR.dx, y: gy - fh * 0.50, bend: 1 };
+      if (!UI.lwSky || UI.lwSky.i !== UI.lifeWalk.i) {
+        var tpY9 = null;
+        try { var sd9 = e0.date; tpY9 = EPH.positions(EPH.dayNumber(sd9.getUTCFullYear(), sd9.getUTCMonth() + 1, sd9.getUTCDate(), 12)); } catch (eSK9) {}
+        UI.lwSky = { i: UI.lifeWalk.i, tp: tpY9 };
       }
-      if (domain9) {
-        // the planet is the weather's source, small in its sky; the scene is yours
-        plRad9 = plR * 0.6; plX = x + w * 0.84; plY = top + vh * 0.11 + (still ? 0 : Math.sin(nowT() * 0.0012) * 4);
-        if (lwWind9 > 1 && !still) { var wl9; strokec([232, 236, 242], 80); p.strokeWeight(1.2); for (wl9 = 0; wl9 < 10; wl9++) { var wy9 = top + 34 + ((wl9 * 61) % (stageY - top - 70)); var wx9 = x + ((nowT() * (0.25 + (wl9 % 3) * 0.08) + wl9 * 173) % (w + 80)) - 40; p.line(wx9, wy9, wx9 - 26, wy9 + 3); } p.noStroke(); }
-        if (setK === 'sun') {
-          var fireX9 = fx0 - fh * 0.44, fsc9;
-          if (e0.ang === 90) fsc9 = t2 < 0.15 ? 0.9 : t2 < 0.75 ? 0.34 + (still ? 0 : 0.08 * Math.sin(nowT() * 0.012)) : 0.4 + eCubic(cl01((t2 - 0.75) / 0.25)) * 0.9;
-          else if (e0.ang === 120) fsc9 = 0.25 + eCubic(cl01((t2 - 0.2) / 0.6)) * 1.05;
-          else fsc9 = 0.6 + eCubic(cl01((t2 - 0.55) / 0.4)) * 0.75;
-          flame9(fireX9, gy - 2, fh, fsc9);
-          if (ent < 0.05) {
-            if (e0.ang === 90 && t2 < 0.75) { rig.crouch = 0.55; rig.lean = 0.28; rig.fL = { x: fx0 - fh * 0.16, y: gy }; rig.fR = { x: fx0 + fh * 0.08, y: gy }; rig.hL = { x: fireX9 + fh * 0.15, y: gy - fh * 0.24, bend: -1 }; rig.hR = { x: fireX9 + fh * 0.18, y: gy - fh * 0.12, bend: 1 }; rig.look = -0.55; }
-            else if (e0.ang === 90) { var up9 = eCubic((t2 - 0.75) / 0.25); rig.crouch = 0.55 - 0.58 * up9; rig.lean = 0.28 - 0.26 * up9; rig.look = -0.4; }
-            else if (e0.ang === 120) { rig.crouch = 0.5; rig.fL = { x: fx0 - fh * 0.14, y: gy }; rig.fR = { x: fx0 + fh * 0.10, y: gy }; rig.hL = { x: fireX9 + fh * 0.18, y: gy - fh * 0.32, bend: -1 }; rig.hR = { x: fireX9 + fh * 0.22, y: gy - fh * 0.27, bend: 1 }; rig.look = -0.55; }
-            else { var fd9 = cl01((t2 - 0.3) / 0.35); rig.crouch = 0.4 * Math.sin(Math.min(1, fd9) * Math.PI); rig.hR = { x: fireX9 + fh * 0.12, y: gy - fh * (0.42 - 0.28 * fd9), bend: 1 }; rig.look = -0.55; }
-          }
-          capTxt = e0.ang === 90 ? 'THE SQUARE: THE WIND CAME FOR YOUR FIRE, AND YOU SHIELDED IT' : e0.ang === 120 ? 'THE TRINE: THE FIRE ROSE ON ITS OWN; YOU ONLY HAD TO STAY NEAR' : 'THE CONJUNCTION: NEW FUEL IN AN OLD FIRE';
-        } else if (setK === 'moon') {
-          var hoX9 = x + r * 0.42, hoW9 = r * 0.62, doorX9 = hoX9 + hoW9 + 2;
-          if (e0.ang === 90) {
-            if (ent < 0.05) {
-              if (t2 < 0.78) { rig.x = doorX9 + fh * 0.20; rig.lean = -0.42; rig.crouch = 0.18; rig.fL = { x: rig.x - fh * 0.06, y: gy }; rig.fR = { x: rig.x + fh * 0.22, y: gy }; rig.hL = { x: doorX9 + 2, y: gy - fh * 0.52, bend: -1 }; rig.hR = { x: doorX9 + 2, y: gy - fh * 0.36, bend: -1 }; rig.look = -0.6; }
-              else { var eas9 = eCubic((t2 - 0.78) / 0.22); rig.x = doorX9 + fh * 0.22; rig.lean = -0.42 + 0.4 * eas9; rig.crouch = 0.18 - 0.16 * eas9; rig.look = -0.5; }
-            }
-            capTxt = 'THE SQUARE: THE STORM LEANED ON THE HOUSE, AND YOU LEANED BACK';
-          } else {
-            var carry9 = eCubic(cl01((t2 - 0.15) / 0.5));
-            if (ent < 0.05) { rig.x = fx0 - (fx0 - (doorX9 + fh * 0.16)) * carry9; if (t2 < 0.6) { var g7 = gaitAt(rig.x, gy, fh, nowT() * 0.012, -1); rig.fL = g7.fL; rig.fR = g7.fR; rig.bob = -g7.bob; rig.lean = g7.lean; } rig.hL = { x: rig.x - fh * 0.13, y: gy - fh * 0.52, bend: -1 }; rig.look = -0.5; }
-            var lx9 = rig.x - fh * 0.13, lyy9 = gy - fh * 0.52;
-            p.noStroke(); fillc([255, 220, 150], 200); p.ellipse(lx9, lyy9, 9, 9); fillc([255, 220, 150], 60); p.ellipse(lx9, lyy9, 22, 22);
-            if (t2 > 0.62) { var into9 = Math.sin(cl01((t2 - 0.62) / 0.38) * Math.PI); p.noStroke(); fillc([255, 214, 140], 110 * into9); p.rect(hoX9 + 3, gy - r * 0.44 + 3, hoW9 - 6, r * 0.44 - 6, 3); }
-            capTxt = e0.ang === 120 ? 'THE TRINE: LIGHT CAME EASY TO THE HOUSE OF FEELING' : 'THE CONJUNCTION: YOU CARRIED IT HOME, AND HOME GOT BRIGHTER';
-          }
-        } else if (setK === 'mc') {
-          var poleX9 = fx0 - fh * 0.02 + fh * 0.31;
-          if (e0.ang === 90) {
-            if (ent < 0.05) {
-              if (t2 < 0.78) { rig.x = poleX9 - fh * 0.16; rig.lean = 0.3; rig.crouch = 0.22; rig.fL = { x: rig.x - fh * 0.18, y: gy }; rig.fR = { x: rig.x + fh * 0.04, y: gy }; rig.hL = { x: poleX9 - 2, y: gy - fh * 0.5, bend: -1 }; rig.hR = { x: poleX9 - 2, y: gy - fh * 0.34, bend: -1 }; rig.look = -0.3; }
-              else { var st7 = eCubic((t2 - 0.78) / 0.22); rig.x = poleX9 - fh * 0.18; rig.lean = 0.3 - 0.26 * st7; rig.crouch = 0.22 - 0.2 * st7; rig.hR = { x: rig.x + fh * 0.08, y: gy - fh * 0.9, bend: 1 }; rig.look = -0.4; }
-            }
-            capTxt = 'THE SQUARE: THE WIND TRIED THE FLAG, AND YOU HELD THE POLE';
-          } else {
-            var clm9 = eCubic(cl01(t2 / 0.55));
-            if (ent < 0.05) { rig.x = (x + w * 0.14) + ((poleX9 - fh * 0.2) - (x + w * 0.14)) * clm9; if (t2 < 0.55) { var g6 = gaitAt(rig.x, gy, fh, nowT() * 0.013); rig.fL = g6.fL; rig.fR = g6.fR; rig.bob = -g6.bob; rig.lean = 0.12; } else { var pt7 = eCubic(cl01((t2 - 0.55) / 0.3)); rig.hR = { x: poleX9 - 2, y: gy - fh * (0.4 + 0.35 * pt7), bend: 1 }; rig.look = -0.45; } }
-            capTxt = e0.ang === 120 ? 'THE TRINE: THE CLIMB CARRIED ITSELF; THE FLAG WENT UP EASY' : 'THE CONJUNCTION: A NEW FLAG OVER THE PUBLIC LIFE';
-          }
-        } else {
-          var dwX9 = cx - r * 1.05, dwW9 = r * 0.72, gateMid9 = dwX9 + dwW9 * 0.5;
-          if (e0.ang === 90) {
-            if (ent < 0.05) {
-              if (t2 < 0.8) { rig.x = dwX9 + dwW9 * 0.30 + fh * 0.22; rig.lean = -0.5; rig.crouch = 0.2; rig.fL = { x: rig.x + fh * 0.02, y: gy }; rig.fR = { x: rig.x + fh * 0.26, y: gy }; rig.hL = { x: dwX9 + dwW9 * 0.30 + 4, y: gy - fh * 0.5, bend: -1 }; rig.hR = { x: dwX9 + dwW9 * 0.30 + 4, y: gy - fh * 0.34, bend: -1 }; rig.look = -0.6; }
-              else { var thr7 = eCubic((t2 - 0.8) / 0.2); rig.x = gateMid9 + fh * 0.1; rig.lean = -0.5 + 0.55 * thr7; rig.crouch = 0.2 - 0.18 * thr7; rig.look = -0.2; }
-            }
-            capTxt = 'THE SQUARE: THE DOOR STUCK, AND YOU PUT YOUR SHOULDER TO IT';
-          } else {
-            var wlk7 = eCubic(cl01((t2 - 0.1) / 0.6));
-            if (ent < 0.05) { rig.x = fx0 - (fx0 - gateMid9) * wlk7; if (t2 < 0.7) { var g5 = gaitAt(rig.x, gy, fh, nowT() * 0.013, -1); rig.fL = g5.fL; rig.fR = g5.fR; rig.bob = -g5.bob; rig.lean = -0.08; } rig.look = -0.5; }
-            capTxt = e0.ang === 120 ? 'THE TRINE: THE DOOR YOU MEET THE WORLD THROUGH STOOD OPEN' : 'THE CONJUNCTION: YOU WALKED THROUGH IT AS SOMEONE NEW';
-          }
-        }
-      } else if (e0.isReturn && e0.tp === 'jupiter') {
-        // PLANTING: kneel, press the seed in, stand back and watch it come up
-        var sm9 = fx0 - fh * 0.34;
-        plX = x + w * 0.84; plY = top + vh * 0.10 + eCubic(cl01(t2 / 0.3)) * (r * 0.35);
-        if (ent < 0.05) {
-          if (t2 < 0.45) { var kn9 = eCubic(cl01((t2 - 0.08) / 0.3)); rig.crouch = 0.8 * kn9; rig.lean = 0.35 * kn9; rig.fL = { x: fx0 - fh * 0.16, y: gy }; rig.fR = { x: fx0 + fh * 0.12, y: gy }; rig.hR = { x: sm9 + fh * 0.05, y: gy - 3 - fh * 0.30 * (1 - kn9), bend: 1 }; rig.hL = { x: fx0 - fh * 0.04, y: gy - fh * 0.34, bend: -1 }; rig.look = -0.55; }
-          else if (t2 < 0.75) { var rise9 = eCubic(cl01((t2 - 0.45) / 0.3)); rig.crouch = 0.8 - 0.82 * rise9; rig.lean = 0.35 - 0.28 * rise9; rig.look = -0.45; }
-          else { rig.hR = { x: fx0 + fh * 0.07, y: rig.y - fh * 0.90, bend: 1 }; rig.look = -0.5; }
-        }
-        var gr9 = cl01((t2 - 0.5) / 0.45), sh9 = fh * 0.30 * eCubic(gr9);
-        if (gr9 > 0.02) {
-          strokec([116, 146, 88], 235 * ee); p.strokeWeight(2); p.noFill();
-          p.bezier(sm9, gy + 2, sm9 - 3, gy - sh9 * 0.5, sm9 + 3 + (still ? 0 : Math.sin(nowT() * 0.003) * 2), gy - sh9 * 0.8, sm9 + (still ? 0 : Math.sin(nowT() * 0.0025) * 3), gy - sh9);
-          var lf9 = cl01((gr9 - 0.4) / 0.5);
-          if (lf9 > 0) { p.noStroke(); fillc([116, 146, 88], 220 * lf9 * ee); p.ellipse(sm9 - 6 * lf9, gy - sh9 * 0.7, 12 * lf9, 5 * lf9); p.ellipse(sm9 + 7 * lf9, gy - sh9 * 0.85, 13 * lf9, 5 * lf9); }
-        }
-        capTxt = 'THE RETURN: YOU PLANTED WHAT THE NEXT TWELVE YEARS WILL GROW';
-      } else if (e0.isReturn && e0.tp === 'saturn') {
-        // BUILDING: three stones, lifted and set, then hands on hips before the wall
-        var wallX = fx0 - fh * 0.46;
-        plX = x + w * 0.82; plY = top + vh * 0.13;
-        var beat9 = Math.min(3, Math.floor(t2 * 3.4)), bt9 = cl01(t2 * 3.4 - beat9);
-        var placed9 = Math.min(3, beat9 + (bt9 > 0.78 ? 1 : 0));
-        var st9i; p.noStroke(); fillc(setInk, 245 * ee);
-        for (st9i = 0; st9i < placed9; st9i++) p.rect(wallX - fh * 0.10, gy - 10 - st9i * 11, fh * 0.22, 10, 3);
-        if (ent < 0.05) {
-          if (beat9 < 3) {
-            if (bt9 < 0.35) { var d9 = eCubic(bt9 / 0.35); rig.crouch = 0.72 * d9; rig.lean = -0.08 * d9; rig.hL = { x: fx0 + fh * 0.08, y: gy - 6 - fh * 0.3 * (1 - d9), bend: -1 }; rig.hR = { x: fx0 + fh * 0.15, y: gy - 5 - fh * 0.3 * (1 - d9), bend: 1 }; rig.look = 0.3; }
-            else if (bt9 < 0.78) { var c9 = eCubic((bt9 - 0.35) / 0.43); rig.crouch = 0.72 - 0.55 * c9; rig.lean = -0.08 + 0.4 * c9; rig.hL = { x: fx0 - fh * (0.02 + 0.3 * c9), y: rig.y - fh * 0.52, bend: -1 }; rig.hR = { x: fx0 + fh * (0.06 - 0.28 * c9), y: rig.y - fh * 0.48, bend: 1 }; rig.look = -0.4;
-              p.noStroke(); fillc(setInk, 245); p.rect(fx0 - fh * (0.02 + 0.3 * c9) - fh * 0.10, rig.y - fh * 0.52 - 5, fh * 0.2, 9, 3); }
-            else { var pl8 = eCubic((bt9 - 0.78) / 0.22); rig.lean = 0.32 - 0.2 * pl8; rig.crouch = 0.10 + 0.25 * (1 - pl8) * 0; rig.hL = { x: wallX + fh * 0.02, y: gy - 14 - beat9 * 11, bend: -1 }; rig.hR = { x: wallX + fh * 0.12, y: gy - 11 - beat9 * 11, bend: 1 }; rig.look = -0.5; }
-          } else { rig.hL = { x: rig.x - fh * 0.10, y: rig.y - fh * 0.55, bend: -1 }; rig.hR = { x: rig.x + fh * 0.10, y: rig.y - fh * 0.55, bend: 1 }; rig.look = -0.5; }
-        }
-        capTxt = 'THE RETURN: YOU BUILT SOMETHING THAT OUTLASTS THE MOOD';
-      } else if (e0.isReturn) {
-        // THE LONG WATCH: it circles the whole sky; you shade your eyes and turn with it
-        var orbA = -Math.PI / 2 + t2 * Math.PI * 2;
-        plX = fx0 - fh * 0.40 + Math.cos(orbA) * fh * 0.80; plY = (gy - fh * 0.58) + Math.sin(orbA) * fh * 0.47; plBehind = Math.sin(orbA) < 0;
-        if (ent < 0.05 && plY < gy - fh * 0.85) { rig.hR = { x: rig.x + fh * 0.07, y: rig.y - fh * 0.90, bend: 1 }; }
-        capTxt = 'THE RETURN: IT CIRCLED YOUR WHOLE SKY, AND FOUND YOU CHANGED';
-      } else if (e0.ang === 90) {
-        // THE BOULDER: pushed up the slope, one slip, then the crest. Rain while you work.
-        strokec(mix9(sky9[1], [30, 26, 24], 0.6), 190 * ee); p.strokeWeight(2);
-        p.line(x - 10, gy + 8, x + w * 0.62, gy - r * 0.34); p.line(x + w * 0.62, gy - r * 0.34, x + w + 10, gy - r * 0.36);
-        var slA9 = ((-r * 0.34 - 8) / (w * 0.62 + 10));
-        var slY9 = function (px9) { return px9 < x + w * 0.62 ? (gy + 8 + (px9 - (x - 10)) * slA9) : gy - r * 0.35; };
-        var prog9 = t2 < 0.45 ? eCubic(t2 / 0.45) * 0.55 : t2 < 0.6 ? 0.55 - eCubic((t2 - 0.45) / 0.15) * 0.12 : 0.43 + eCubic((t2 - 0.6) / 0.4) * 0.57;
-        var bx9 = x + w * 0.14 + prog9 * w * 0.52;
-        plX = bx9; plY = slY9(bx9) - plR * 0.9;
-        var fx9 = bx9 - plR - fh * 0.22, fgy9 = slY9(fx9);
-        rig.x = fx9; rig.y = fgy9;
-        var dig9 = t2 < 0.6 ? 0.5 + 0.3 * Math.sin(cl01(t2 / 0.6) * Math.PI) : 0.5 * (1 - eCubic((t2 - 0.6) / 0.4));
-        rig.lean = t2 < 0.94 ? 0.55 : 0.18; rig.crouch = 0.22 + 0.18 * dig9;
-        rig.fL = { x: fx9 - fh * 0.22, y: slY9(fx9 - fh * 0.22) }; rig.fR = { x: fx9 + fh * 0.03, y: slY9(fx9 + fh * 0.03) };
-        rig.hL = { x: plX - plR * 0.82, y: plY - plR * 0.2, bend: -1 }; rig.hR = { x: plX - plR * 0.76, y: plY + plR * 0.4, bend: -1 };
-        rig.look = -0.2;
-        if (t2 >= 0.94) { rig.hR = { x: rig.x + fh * 0.08, y: rig.y - fh * 0.90, bend: 1 }; rig.hL = { x: rig.x - fh * 0.10, y: rig.y - fh * 0.55, bend: -1 }; rig.look = 0.4; }
-        capTxt = 'THE SQUARE: YOU PUSHED IT UPHILL, AND THE HILL GAVE IN';
-      } else if (e0.ang === 180) {
-        // THE TUG-OF-WAR: yanked a step, heels dug, held until the rope went quiet
-        fx0 = cx - r * 0.75; rig.x = fx0 - ent * w * 0.12;
-        plX = (x + w + r) + ((cx + r * 1.0) - (x + w + r)) * eCubic(cl01(t2 / 0.3)); plY = rig.y - fh * 0.62;
-        var yank9 = (t2 > 0.3 && t2 < 0.42) ? Math.sin((t2 - 0.3) / 0.12 * Math.PI) : 0;
-        var pull9 = t2 < 0.42 ? 0 : Math.sin(cl01((t2 - 0.42) / 0.58) * Math.PI);
-        rig.x += yank9 * fh * 0.10;
-        if (ent < 0.05) {
-          rig.lean = 0.2 * yank9 - 0.36 * pull9; rig.crouch = 0.16 * pull9;
-          rig.fL = { x: rig.x - fh * 0.04 + pull9 * fh * 0.15, y: rig.y }; rig.fR = { x: rig.x + fh * 0.15 + pull9 * fh * 0.08, y: rig.y };
-          rig.hR = { x: rig.x + fh * 0.30, y: rig.y - fh * 0.62, bend: 1 }; rig.hL = { x: rig.x + fh * 0.21, y: rig.y - fh * 0.57, bend: -1 };
-          rig.look = 0.55;
-        }
-        thread = cl01((t2 - 0.28) / 0.18); thrSag9 = 0.15 + 0.75 * (1 - pull9);
-        capTxt = 'THE OPPOSITION: YOU HELD YOUR END UNTIL THE ROPE WENT QUIET';
-      } else if (e0.ang === 120) {
-        // THE ORCHARD: walk to the tree, the branch dips, the fruit chooses your hand
-        var trX = cx - r * 1.02, canY = gy - fh * 0.95, hasTree9 = (setK === 'self' || setK === 'sun');
-        var dip9 = t2 > 0.42 ? eCubic(cl01((t2 - 0.42) / 0.22)) * fh * 0.05 : 0;
-        if (hasTree9) {
-          strokec(setInk, 235 * ee); p.strokeWeight(3); p.noFill();
-          p.bezier(trX, gy + 2, trX - 4, gy - fh * 0.4, trX + 6, gy - fh * 0.65, trX + fh * 0.06, canY + fh * 0.12);
-          p.noStroke(); fillc(setInk, 215 * ee);
-          p.ellipse(trX + fh * 0.05, canY + dip9, fh * 0.5, fh * 0.3); p.ellipse(trX - fh * 0.12, canY + fh * 0.10 + dip9 * 0.6, fh * 0.36, fh * 0.22); p.ellipse(trX + fh * 0.22, canY + fh * 0.08 + dip9, fh * 0.4, fh * 0.24);
-        }
-        var wlk9 = eCubic(cl01(t2 / 0.4));
-        rig.x = hasTree9 ? (fx0 - (fx0 - (trX + fh * 0.45)) * wlk9) : fx0;
-        if (t2 < 0.4 && ent < 0.05) { var g8 = gaitAt(rig.x, gy, fh, nowT() * 0.014, -1); rig.fL = g8.fL; rig.fR = g8.fR; rig.bob = -g8.bob; rig.lean = g8.lean; }
-        plRad9 = plR * 0.55;
-        var palmX9 = rig.x - fh * 0.15, palmY9 = rig.y - fh * 0.74;
-        if (t2 >= 0.4 && ent < 0.05) { rig.hL = { x: palmX9, y: palmY9, bend: -1 }; rig.look = -0.55; rig.fL = { x: rig.x - fh * 0.10, y: rig.y }; rig.fR = { x: rig.x + fh * 0.09, y: rig.y }; }
-        if (t2 < 0.64) { plX = hasTree9 ? trX + fh * 0.08 : rig.x - fh * 0.15; plY = hasTree9 ? canY + fh * 0.10 + dip9 : top + vh * 0.08 + eCubic(cl01(t2 / 0.5)) * r * 0.3; }
-        else {
-          var drop9 = eCubic(cl01((t2 - 0.64) / 0.14));
-          var srcX9 = hasTree9 ? trX + fh * 0.08 : rig.x - fh * 0.15, srcY9 = hasTree9 ? canY + fh * 0.10 : top + vh * 0.08 + r * 0.3;
-          plX = srcX9 + (palmX9 - srcX9) * drop9; plY = srcY9 + (palmY9 - srcY9) * drop9 * drop9;
-          if (t2 > 0.8 && ent < 0.05) {
-            var give9 = Math.sin(cl01((t2 - 0.8) / 0.1) * Math.PI); rig.crouch = 0.08 * give9;
-            var hold9 = eCubic(cl01((t2 - 0.84) / 0.16));
-            rig.hL = { x: rig.x - fh * (0.15 - 0.06 * hold9), y: rig.y - fh * (0.74 - 0.12 * hold9), bend: -1 };
-            rig.hR = { x: rig.x + fh * 0.02, y: rig.y - fh * 0.58, bend: 1 };
-            plX = rig.x - fh * (0.15 - 0.06 * hold9); plY = rig.y - fh * (0.74 - 0.12 * hold9);
-            rig.look = -0.2;
-          }
-        }
-        capTxt = 'THE TRINE: THE BRANCH BENT, AND THE FRUIT CHOSE YOUR HAND';
-      } else {
-        // THE RECEIVING: kneel, take it into your hands, stand up changed
-        var drop = eCubic(cl01(t2 / 0.4));
-        plX = rig.x - fh * 0.02; plY = (top - r) + ((rig.y - fh * 0.70) - (top - r)) * drop;
-        if (ent < 0.05) {
-          if (t2 < 0.4) { var kn8 = eCubic(cl01(t2 / 0.3)); rig.crouch = 0.35 * kn8; rig.fL = { x: rig.x - fh * 0.15, y: rig.y }; rig.fR = { x: rig.x + fh * 0.10, y: rig.y }; rig.hL = { x: rig.x - fh * 0.09, y: rig.y - fh * 0.62, bend: -1 }; rig.hR = { x: rig.x + fh * 0.07, y: rig.y - fh * 0.60, bend: 1 }; rig.look = -0.25; }
-          else if (t2 < 0.7) { var mg8 = eCubic((t2 - 0.4) / 0.3); plY = rig.y - fh * 0.70 + mg8 * fh * 0.05; rig.crouch = 0.35 - 0.12 * mg8; rig.hL = { x: plX - plR * 0.55, y: plY + plR * 0.45, bend: -1 }; rig.hR = { x: plX + plR * 0.55, y: plY + plR * 0.45, bend: 1 }; rig.look = -0.3; }
-          else {
-            var tall8 = eCubic((t2 - 0.7) / 0.3);
-            rig.crouch = 0.23 - 0.29 * tall8; plRad9 = plR * (1 - 0.72 * tall8);
-            plX = rig.x - fh * 0.01; plY = rig.y - fh * (0.65 + 0.05 * tall8);
-            rig.hL = { x: rig.x - fh * (0.06 + 0.05 * tall8), y: rig.y - fh * (0.62 - 0.08 * tall8), bend: -1 };
-            rig.hR = { x: rig.x + fh * (0.05 + 0.06 * tall8), y: rig.y - fh * (0.60 - 0.10 * tall8), bend: 1 };
-            if (dc && !still) { var mg = dc.createRadialGradient(plX, plY, 2, plX, plY, plR * 3); mg.addColorStop(0, 'rgba(255,240,205,' + (0.30 * Math.sin(tall8 * Math.PI)) + ')'); mg.addColorStop(1, 'rgba(255,240,205,0)'); dc.fillStyle = mg; dc.fillRect(plX - plR * 4, plY - plR * 4, plR * 8, plR * 8); }
-          }
-        }
-        capTxt = 'THE CONJUNCTION: YOU TOOK IT IN, AND STOOD DIFFERENTLY';
-      }
-      var capSub = (LW_SETCAP[setK] || '').replace(' \u00B7 ', '');
-      if (t2 >= 1 && !still) { plX += Math.sin(nowT() * 0.0011) * 3; plY += Math.cos(nowT() * 0.0008) * 2; }
-      // the actor watches the planet: the head follows the event
-      if (rig.look == null) rig.look = Math.max(-0.6, Math.min(0.6, (plX - rig.x) / (fh * 1.6)));
-      if (dc) { dc.save(); dc.globalAlpha = alpha; }
-      p.noStroke(); fillc([12, 9, 7], 52 * ee); p.ellipse(rig.x, rig.y - 2, fh * 0.42, fh * 0.07);
-      if (plY > rig.y - fh && plY < rig.y + 40) { fillc([12, 9, 7], 40 * ee); p.ellipse(plX, rig.y - 2, plRad9 * 2.2, plRad9 * 0.4); }
-      if (plBehind) { p.push(); p.translate(plX, plY); p.scale(0.8); celestialBody(bodyK, 0, 0, plRad9, nowT()); p.pop(); }
-      if (thread > 0) {
-        var hx9 = rig.x + fh * 0.30, hy9 = rig.y - fh * 0.62;
-        var sag9 = fh * 0.16 * thrSag9 + (still ? 0 : Math.sin(nowT() * 0.006) * 2.5 * thrSag9);
-        strokec(setInk, 200 * thread); p.strokeWeight(1.6); p.noFill();
-        p.bezier(plX - plRad9 * 0.7, plY, (plX + hx9) / 2, (plY + hy9) / 2 + sag9, (plX + hx9) / 2, (plY + hy9) / 2 + sag9, hx9, hy9);
-      }
-      actorFigure(rig, ee);
-      if (!plBehind) { p.push(); p.translate(plX, plY); celestialBody(bodyK, 0, 0, plRad9, nowT()); p.pop(); }
-      // a soft iris of air around the scene
-      if (dc && !still) { var vg = dc.createRadialGradient(cx, gy - fh * 0.5, r * 1.7, cx, gy - fh * 0.5, r * 3.6); vg.addColorStop(0, 'rgba(10,8,7,0)'); vg.addColorStop(1, 'rgba(10,8,7,0.20)'); dc.fillStyle = vg; dc.fillRect(0, top - 10, W, horizonY - top + 30); }
-      if (!still) { var mi9; for (mi9 = 0; mi9 < 10; mi9++) { var myc9 = ((nowT() * (0.00003 + (mi9 % 3) * 0.00002) + mi9 * 0.137) % 1); var mxx9 = cx + Math.sin(nowT() * 0.0004 + mi9 * 2.4) * r * (0.45 + (mi9 % 4) * 0.3); var myy9 = top + 34 + myc9 * (stageY - top - 40); p.noStroke(); fillc([255, 244, 214], 26 * Math.sin(myc9 * Math.PI) * ee); p.ellipse(mxx9, myy9, 2.2, 2.2); } }
-      if (dc) dc.restore();
-      p.pop();
-      (function () {
-        var dR = 27, dX = x + 42, dY = top + 132, chalk = [250, 246, 232];
-        var ang9 = e0.isReturn ? 360 : (e0.ang || 0);
-        var sw9 = still ? 1 : eCubic(cl01((nowT() - UI.lifeWalk.t0 - 700) / 1900));
-        if (sw9 <= 0.01) return;
-        p.noFill(); strokec(chalk, 80 * sw9); p.strokeWeight(1); p.ellipse(dX, dY, dR * 2, dR * 2);
-        p.noStroke(); fillc(chalk, 235 * sw9); p.ellipse(dX, dY - dR, 5, 5);
-        setFont(MONO, 7, chalk, p.CENTER, p.TOP, 220 * sw9); p.text(('YOUR ' + (e0.np === 'asc' ? 'ASC' : e0.np === 'mc' ? 'MC' : APP.nameFor(e0.np))).toUpperCase(), dX, dY - dR - 12);
-        var curA = -Math.PI / 2 + (ang9 * Math.PI / 180) * sw9;
-        strokec(ACC, 210 * sw9); p.strokeWeight(1.6); p.noFill();
-        if (ang9 > 0) p.arc(dX, dY, dR * 1.18, dR * 1.18, -Math.PI / 2, curA + 0.001);
-        var mx9 = dX + Math.cos(curA) * dR, my9 = dY + Math.sin(curA) * dR;
-        p.noStroke(); fillc(BODYCOL[bodyK] || ACC, 245 * sw9); p.ellipse(mx9, my9, 7, 7);
-        setFont(MONO, 7, chalk, p.CENTER, p.TOP, 220 * sw9); p.text(APP.nameFor(e0.tp).toUpperCase(), dX, dY + dR + 6);
-        setFont(MONO, 9, ACC, p.CENTER, p.CENTER, 245 * sw9); p.text(Math.round(ang9 * sw9) + '\u00B0', dX, dY);
-      })();
+      var natLon9 = null;
+      try { natLon9 = (e0.np === 'asc') ? c.asc : (e0.np === 'mc') ? (c.mc != null ? c.mc : (c.cusps ? c.cusps[10] : null)) : (c.planets[e0.np] ? c.planets[e0.np].lon : null); } catch (eNL9) {}
+      var qual9 = (e0.isReturn || e0.ang === 0) ? 'fusion' : (e0.ang === 90 || e0.ang === 180) ? 'tension' : 'flow';
+      var aspG9 = e0.isReturn ? '\u27F2' : e0.ang === 0 ? '\u260C' : e0.ang === 60 ? '\u26B9' : e0.ang === 90 ? '\u25A1' : e0.ang === 120 ? '\u25B3' : e0.ang === 180 ? '\u260D' : '';
+      if (UI.lwSky.tp) skyWalkScene9({ top: top + 40, bot: stageBot9, band: 64, tp: UI.lwSky.tp, ay: c.ayan || 0, mover: bodyK, natalKey: e0.np, natalLon: natLon9, quality: qual9, aspGlyph: aspG9, run: !!e0.isReturn, t0: UI.lifeWalk.t0, alf: alpha, pers: pers9 });
+      var capTxt = e0.isReturn ? 'THE RETURN: THE CYCLE COMES ALL THE WAY HOME' : e0.ang === 0 ? 'THE CONJUNCTION: TWO VOICES SING ONE NOTE' : e0.ang === 60 ? 'THE SEXTILE: A DOOR OPENS IF YOU PUSH IT' : e0.ang === 90 ? 'THE SQUARE: YOU WALK INTO THE WIND' : e0.ang === 120 ? 'THE TRINE: THE ROAD GOES WITH YOU' : 'THE OPPOSITION: YOU HOLD BOTH ENDS OF THE ROPE';
+      var capSub = 'THE SKY OF ' + e0.date.getFullYear() + ' \u00B7 EVERY PLANET WHERE IT TRULY STOOD';
+      // (the chalk aspect inset sat here; the sky now draws the aspect itself)
       var capFs9 = 8.5, capL1 = capTxt, capL2 = null; p.textFont(MONO); p.textSize(capFs9);
       if (p.textWidth(capTxt) > w - 12) { capFs9 = 7.5; p.textSize(capFs9); }
       if (p.textWidth(capTxt) > w - 16) { var ci9 = capTxt.indexOf(': '); if (ci9 > 0) { capL1 = capTxt.slice(0, ci9 + 1); capL2 = capTxt.slice(ci9 + 2); capFs9 = 8.5; } }
@@ -6163,11 +5897,14 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         }
         ly += 8;
       }
-      // the fuller read — who you are, in depth (the arc above is the summary; this is the detail)
-      if (!UI.readCache) UI.readCache = APP.composeCore(c);
-      ly += 10; hairline(x, ly, x + w, 40); ly += 22; eyebrow('The fuller read', x, ly, ACC); ly += 24;
-      for (var i = 0; i < UI.readCache.length; i++) ly += expandPara(UI.readCache[i], x, ly, w, 'core' + i, 17, 27) + 10;
-      ly += 14;
+      // the fuller read waits behind one door; the arc above is the whole story in brief
+      ly += 10;
+      flatBtn(UI.deepRead ? '\u2715  Close the fuller read' : '\u25B8  Go deeper', x, ly, w, 44, function () { UI.deepRead = !UI.deepRead; }, false); ly += 56;
+      if (UI.deepRead) {
+        if (!UI.readCache) UI.readCache = APP.composeCore(c);
+        for (var i = 0; i < UI.readCache.length; i++) ly += expandPara(UI.readCache[i], x, ly, w, 'core' + i, 17, 27) + 10;
+        ly += 14;
+      }
       // a quick visual of the heaviest three — ranked by the prominence engine (no prose; the arc already explained why)
       if (!UI.promCache) { try { UI.promCache = APP.prominence(c); } catch (epr) { UI.promCache = null; } }
       if (UI.promCache) {
@@ -6194,25 +5931,31 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         var ndR = new Date(), nkR = ndR.getFullYear() + '-' + APP.pad(ndR.getMonth() + 1) + '-' + APP.pad(ndR.getDate());
         UI.dailyNews = { i: -1, t0: nowT(), day: nkR, scenes: null }; UI.newsNoteI = -9; buzz(12);
       }, false); ly += 54;
-      // then the journeys: life-in-chapters timeline
-      var lbY = sY(ly); p.noStroke(); fillc(INK); p.rect(x, lbY + 3, w, 52, 11); fillc(shade(INK, 16)); p.rect(x, lbY, w, 52, 11);
-      setFont(SANS, 15, GROUNDS[UI.screen], p.LEFT, p.CENTER); bold(); p.text('✦  Your life in chapters', x + 16, lbY + 26 - 8); normal();
-      setFont(MONO, 9, GROUNDS[UI.screen], p.LEFT, p.CENTER, 200); p.text('THE BIG TRANSITS THAT SHAPED: AND ARE SHAPING, YOU', x + 16, lbY + 26 + 9);
-      setFont(SANS, 20, GROUNDS[UI.screen], p.RIGHT, p.CENTER); p.text('›', x + w - 16, lbY + 26);
-      pushHit(x, lbY, w, 52, function () { UI.lifeView = true; UI.scroll.read = 0; UI.popT = nowT(); }); ly += 60;
-      flatBtn('\u23F5  The Reel: scrub the sky across your whole life', x, ly, w, 42, function () { var age0 = (new Date().getTime() - Date.UTC(b.y, b.mo - 1, b.d)) / (365.2422 * 86400000); UI.reel = { f: Math.max(0.01, Math.min(1, age0 / 90)) }; UI.reelCap = null; UI.screen = 'chart'; buzz(12); }, false); ly += 54;
-      // open the transit calendar
-      var cbY = sY(ly); p.noStroke(); fillc(shade(GROUNDS[UI.screen], -16)); p.rect(x, cbY + 3, w, 46, 11); fillc(GROUNDS[UI.screen]); p.rect(x, cbY, w, 46, 11); p.noFill(); strokec(INK, 170); p.strokeWeight(1.4); p.rect(x, cbY, w, 46, 11);
-      (function () { var ix = x + 16, iy = cbY + 23; p.noFill(); strokec(INK, 230); p.strokeWeight(1.3); p.rect(ix, iy - 7, 14, 13, 2); p.line(ix, iy - 3, ix + 14, iy - 3); p.line(ix + 4, iy - 9, ix + 4, iy - 6); p.line(ix + 10, iy - 9, ix + 10, iy - 6); })();
-      setFont(SANS, 14, INK, p.LEFT, p.CENTER); bold(); p.text('Transit calendar', x + 38, cbY + 23); normal();
-      setFont(SANS, 18, INK, p.RIGHT, p.CENTER, 150); p.text('›', x + w - 16, cbY + 23);
-      pushHit(x, cbY, w, 46, function () { UI.calView = true; UI.calDay = null; UI.scroll.read = 0; UI.popT = nowT(); }); ly += 60;
+      // the three journeys, one calm row: chapters, the reel, the calendar
+      (function () {
+        var g3 = 10, cw3 = (w - g3 * 2) / 3, ch3 = 66, jy = sY(ly), J3 = [
+          ['\u2726', 'Chapters', function () { UI.lifeView = true; UI.scroll.read = 0; UI.popT = nowT(); }],
+          ['\u23F5', 'The Reel', function () { var age0 = (new Date().getTime() - Date.UTC(b.y, b.mo - 1, b.d)) / (365.2422 * 86400000); UI.reel = { f: Math.max(0.01, Math.min(1, age0 / 90)) }; UI.reelCap = null; UI.screen = 'chart'; buzz(12); }],
+          ['\u25A6', 'Calendar', function () { UI.calView = true; UI.calDay = null; UI.scroll.read = 0; UI.popT = nowT(); }]
+        ], j3;
+        for (j3 = 0; j3 < 3; j3++) {
+          var jx = x + j3 * (cw3 + g3);
+          p.noStroke(); fillc(INK); p.rect(jx, jy + 3, cw3, ch3, 11); fillc(shade(INK, 16)); p.rect(jx, jy, cw3, ch3, 11);
+          setFont(SANS, 15, GROUNDS[UI.screen], p.CENTER, p.CENTER); p.text(J3[j3][0], jx + cw3 / 2, jy + 22);
+          setFont(MONO, 9, GROUNDS[UI.screen], p.CENTER, p.CENTER, 220); p.text(J3[j3][1].toUpperCase(), jx + cw3 / 2, jy + 44);
+          pushHit(jx, jy, cw3, ch3, J3[j3][2]);
+        }
+      })();
+      ly += 78;
 
       // ---- daily + time aspects: what the moving sky is doing to your chart now ----
       if (!UI.readTransit || nowT() - UI.readTransitT > 60000) { try { UI.readTransit = APP.composeTransits(c); } catch (e) { UI.readTransit = null; } UI.readTransitT = nowT(); }
       var tr = UI.readTransit;
       if (tr) {
-        ly += 14; eyebrow('Live on your chart: today', x, ly, ACC); ly += 24;
+        ly += 14;
+        flatBtn(UI.dayNums ? '\u2715  Close the numbers' : '\u25B8  The numbers: every contact, timed', x, ly, w, 42, function () { UI.dayNums = !UI.dayNums; }, false); ly += 54;
+        if (UI.dayNums) {
+        eyebrow('Live on your chart: today', x, ly, ACC); ly += 24;
         if (!tr.daily.length) {
           ly += paragraph('No close daily transits right now, a quiet stretch. The pattern above is running undisturbed.', x, ly, w, 14.5, INK, SERIF, 22, 210) + 10;
         } else {
@@ -6228,6 +5971,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
           for (var mti = 0; mti < Math.min(tr.timed.length, 4); mti++) { if (mti) hairline(x, ly - 4, x + w, 36); ly += transitRow(tr.timed[mti], true, x, w, ly) + 4; }
           ly += 10;
           ly += expandPara('The Moon is the fast hand of the clock, these shift within hours. As of ' + stamp + ': ' + tr.timed.slice(0, 2).map(APP.transitSentence).join(' '), x, ly, w, 'thour', 15.5, 24) + 14;
+        }
         }
       }
 
@@ -7588,11 +7332,12 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         ['Level 1 · Foundations', [['elements', 'Elements'], ['signs', 'Signs'], ['planets', 'Planets']]],
         ['Level 2 · Reading a chart', [['houses', 'Houses'], ['aspects', 'Aspects'], ['howto', 'How to']]],
         ['Level 3 · Time & tradition', [['history', 'History'], ['myths', 'Myths'], ['glossary', 'Glossary']]],
-        ['Yours', [['famous', 'Like you'], ['watch', 'Watch']]]
+        ['Yours', [['famous', 'Like you']]]
       ];
+      flatBtn(UI.learnBrowse ? '\u2715  Close the library' : '\u25B8  Browse everything', x, ly, w, 44, function () { UI.learnBrowse = !UI.learnBrowse; UI.scroll.learn = 0; }, false); ly += 56;
+      if (!UI.learnBrowse) { UI.contentH.learn = ly + 24; return; }
       var li2, cxp, cyp = ly, ci;
       for (li2 = 0; li2 < LEVELS.length; li2++) {
-        eyebrow(LEVELS[li2][0], x, cyp, ACC); cyp += 28;
         var cats = LEVELS[li2][1]; cxp = x;
         for (ci = 0; ci < cats.length; ci++) { p.textFont(MONO); p.textSize(11); var ww = p.textWidth(cats[ci][1].toUpperCase()) + 28; if (cxp + ww > x + w) { cxp = x; cyp += 40; } chip(cats[ci][1], UI.learnCat === cats[ci][0], cxp, cyp, (function (cc) { return function () { UI.learnCat = cc; UI.learnItem = null; UI.scroll.learn = 0; UI.popT = nowT(); }; })(cats[ci][0])); cxp += ww + 8; }
         cyp += 46;
@@ -8398,6 +8143,93 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       return out;
     }
     var NEWS_SKY = { sun: [[238, 186, 110], [255, 236, 190]], moon: [[36, 44, 72], [142, 158, 192]], mercury: [[96, 128, 158], [214, 226, 232]], venus: [[196, 128, 144], [250, 214, 198]], mars: [[132, 58, 48], [238, 146, 92]], jupiter: [[236, 178, 106], [250, 226, 182]], saturn: [[92, 100, 118], [184, 176, 166]], uranus: [[74, 114, 134], [182, 218, 210]], neptune: [[56, 76, 106], [148, 178, 188]], pluto: [[52, 42, 58], [192, 114, 82]] };
+    // ---- THE scene: one language for every story in the app. A side-on figure
+    // walks (or runs, for the big arrivals) a ground line beneath the REAL sky of
+    // that moment: every planet placed at its true ecliptic degree along a band of
+    // stars, the mover glowing at centre, your natal point ringed, and the aspect
+    // drawn as a thread of light between them. Simple, true, the same everywhere. ----
+    function skyWalkScene9(o) {
+      var still = reduced(), dcW9 = p.drawingContext;
+      var topS = o.top, botS = o.bot, band9 = o.band || 24, gy = botS - band9, cxS = W / 2;
+      var ee = o.alf == null ? 1 : o.alf;
+      var pal = NEWS_SKY[o.mover] || [[92, 100, 118], [184, 176, 166]];
+      if (dcW9) { var gS = dcW9.createLinearGradient(0, topS, 0, gy); gS.addColorStop(0, 'rgba(' + (pal[0][0] | 0) + ',' + (pal[0][1] | 0) + ',' + (pal[0][2] | 0) + ',' + (0.96 * ee) + ')'); gS.addColorStop(1, 'rgba(' + (pal[1][0] | 0) + ',' + (pal[1][1] | 0) + ',' + (pal[1][2] | 0) + ',' + (0.96 * ee) + ')'); dcW9.fillStyle = gS; dcW9.fillRect(0, topS, W, gy - topS); }
+      p.noStroke(); fillc([238, 228, 206], 13); p.rect(0, topS, W, gy - topS);
+      var si9; for (si9 = 0; si9 < 26; si9++) { var tw9 = still ? 0.8 : 0.55 + 0.45 * Math.sin(nowT() * 0.003 + si9 * 1.7); p.noStroke(); fillc([255, 252, 240], 110 * tw9 * ee); p.ellipse(8 + ((si9 * 79) % (W - 16)), topS + 8 + ((si9 * 47) % (gy - topS - 60)), 1.7, 1.7); }
+      // the ecliptic laid across the sky, centred on the mover
+      var ay9 = o.ay || 0;
+      function zl9(k) { var pp9 = o.tp && o.tp[k]; return (pp9 && pp9.lon != null) ? ((pp9.lon - ay9) % 360 + 360) % 360 : null; }
+      var mLon = o.mover ? zl9(o.mover) : null; if (mLon == null) mLon = zl9('moon'); if (mLon == null) mLon = 0;
+      var bandY = topS + (gy - topS) * 0.30;
+      function bxS(lon) { var d9 = ((lon - mLon + 540) % 360) - 180; return cxS + d9 / 360 * W * 1.7; }
+      function byS(lon) { var d9 = ((lon - mLon + 540) % 360) - 180; return bandY + Math.pow(Math.abs(d9) / 180, 2) * 30; }
+      var zz9; for (zz9 = 0; zz9 < 12; zz9++) {
+        var tnx9 = bxS(zz9 * 30 + 15);
+        if (tnx9 > -34 && tnx9 < W + 34) { setFont(MONO, 6.5, [252, 246, 232], p.CENTER, p.CENTER, 66 * ee); p.text(DATA.SIGNS[zz9].name.toUpperCase(), tnx9, byS(zz9 * 30 + 15) - 15); }
+        var tkx9 = bxS(zz9 * 30);
+        if (tkx9 > -10 && tkx9 < W + 10) { strokec([252, 246, 232], 44 * ee); p.strokeWeight(1); p.line(tkx9, byS(zz9 * 30) - 4, tkx9, byS(zz9 * 30) + 4); p.noStroke(); }
+      }
+      var PB9 = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto'], pb9;
+      for (pb9 = 0; pb9 < PB9.length; pb9++) {
+        var k9 = PB9[pb9]; if (k9 === o.mover) continue;
+        var ln9 = zl9(k9); if (ln9 == null) continue;
+        var ppx9 = bxS(ln9); if (ppx9 < -20 || ppx9 > W + 20) continue;
+        var ppy9 = byS(ln9);
+        p.noStroke(); fillc([252, 246, 232], 150 * ee); p.ellipse(ppx9, ppy9, 3.4, 3.4);
+        setFont(SANS, 9, [252, 246, 232], p.CENTER, p.CENTER, 120 * ee); p.text(APP.glyphFor(k9), ppx9, ppy9 - 10);
+      }
+      // the mover, glowing, named
+      var mvx9 = bxS(mLon), mvy9 = byS(mLon);
+      if (o.mover) {
+        p.noStroke(); fillc([255, 244, 214], 28 * ee); p.ellipse(mvx9, mvy9, 76, 76);
+        p.push(); p.translate(mvx9, mvy9); celestialBody(o.mover, 0, 0, o.mover === 'sun' ? 18 : 13, nowT()); p.pop();
+        setFont(MONO, 7.5, [252, 246, 232], p.CENTER, p.TOP, 215 * ee); p.text(APP.nameFor(o.mover).toUpperCase(), mvx9, mvy9 + 20);
+      }
+      // your natal point in the same sky, and the aspect drawn between
+      if (o.natalLon != null) {
+        var nlon9 = ((o.natalLon) % 360 + 360) % 360;
+        var nx9 = bxS(nlon9), ny9 = byS(nlon9);
+        if (nx9 > 14 && nx9 < W - 14) {
+          p.noFill(); strokec(ACC, 225 * ee); p.strokeWeight(1.4); p.ellipse(nx9, ny9, 16, 16);
+          setFont(SANS, 9, [252, 246, 232], p.CENTER, p.CENTER, 240 * ee); p.text(o.natalKey === 'asc' ? '\u2191' : o.natalKey === 'mc' ? '\u25B4' : APP.glyphFor(o.natalKey), nx9, ny9);
+          var nlUp9 = (o.mover && Math.abs(nx9 - mvx9) < 46);
+          setFont(MONO, 7, [255, 216, 170], p.CENTER, nlUp9 ? p.BOTTOM : p.TOP, 215 * ee); p.text(('YOUR ' + (o.natalKey === 'asc' ? 'RISING' : o.natalKey === 'mc' ? 'MIDHEAVEN' : APP.nameFor(o.natalKey))).toUpperCase(), nx9, nlUp9 ? ny9 - 12 : ny9 + 12);
+          var thA9 = still ? 1 : cl01((nowT() - o.t0 - 900) / 900);
+          if (thA9 > 0.01 && o.mover) {
+            var tc9 = (o.quality === 'flow') ? ELHUE.air : (o.quality === 'fusion') ? [255, 232, 180] : ACC;
+            strokec(tc9, 150 * thA9 * ee); p.strokeWeight(1.3); p.noFill();
+            var mmx9 = (mvx9 + nx9) / 2, mmy9 = Math.min(mvy9, ny9) - 14 - (still ? 0 : Math.sin(nowT() * 0.0016) * 3);
+            p.bezier(mvx9, mvy9 + 12, mmx9, mmy9 + 26, mmx9, mmy9 + 26, nx9, ny9 - 10);
+            if (o.aspGlyph) { setFont(SANS, 11, tc9, p.CENTER, p.CENTER, 235 * thA9 * ee); p.text(o.aspGlyph, mmx9, mmy9 + 20); }
+            p.noStroke();
+          }
+        }
+      }
+      // weather that means what the aspect means
+      if (!still) {
+        var wi9;
+        if (o.quality === 'tension') { strokec([235, 240, 248], 90 * ee); p.strokeWeight(1.1); for (wi9 = 0; wi9 < 12; wi9++) { var ry9 = topS + ((nowT() * (0.26 + (wi9 % 4) * 0.05) + wi9 * 173) % (gy - topS)); p.line(((wi9 * 89) % W), ry9 - 10, ((wi9 * 89) % W) - 5, ry9); } p.noStroke(); }
+        else if (o.quality === 'flow') { for (wi9 = 0; wi9 < 3; wi9++) { var cyW9 = topS + 26 + wi9 * 32, cxW9 = ((nowT() * (0.045 + wi9 * 0.012) + wi9 * 300) % (W + 200)) - 100; strokec([255, 250, 236], 55 * ee); p.strokeWeight(1.2); p.noFill(); p.bezier(cxW9 - 55, cyW9, cxW9 - 18, cyW9 - 9, cxW9 + 18, cyW9 + 7, cxW9 + 55, cyW9 - 4); p.noStroke(); } }
+        else if (dcW9 && o.mover) { var lg9 = dcW9.createLinearGradient(mvx9, mvy9, mvx9, gy); lg9.addColorStop(0, 'rgba(255,240,200,' + (0.16 * ee) + ')'); lg9.addColorStop(1, 'rgba(255,240,200,0)'); dcW9.fillStyle = lg9; dcW9.beginPath(); dcW9.moveTo(mvx9 - 20, mvy9); dcW9.lineTo(mvx9 + 20, mvy9); dcW9.lineTo(mvx9 + 62, gy); dcW9.lineTo(mvx9 - 62, gy); dcW9.closePath(); dcW9.fill(); }
+      }
+      // ground, streaming past under the stride
+      p.noStroke(); fillc([30, 26, 24], 246); p.rect(0, gy - 2, W, botS - gy + 2);
+      var prs9 = o.pers || myPersona();
+      var spd9 = (o.run ? 0.16 : 0.09) * prs9.pace, dsh9;
+      strokec([250, 246, 232], 50); p.strokeWeight(1.4);
+      for (dsh9 = 0; dsh9 < 7; dsh9++) { var dxW9 = W - ((nowT() * spd9 + dsh9 * 97) % (W + 60)) + 30; p.line(dxW9, gy + 9 + (dsh9 % 3) * 5, dxW9 - 11, gy + 9 + (dsh9 % 3) * 5); }
+      p.noStroke();
+      // and you, walking it (or running to meet a return)
+      var fh9 = Math.min((gy - topS) * 0.44, 96), wkX9 = W * 0.44;
+      var ph9 = nowT() * (o.run ? 0.017 : 0.0125) * prs9.pace;
+      var fig9 = { x: wkX9, y: gy, h: fh9, col: [38, 30, 24], rim: prs9.rim, rimOff: [-2, -1.4], crouch: prs9.crouch, look: 0.3 };
+      var g9s = o.run ? runPose9(wkX9, gy, fh9, ph9) : gaitAt(wkX9, gy, fh9, ph9);
+      fig9.fL = g9s.fL; fig9.fR = g9s.fR; fig9.bob = g9s.bob;
+      fig9.lean = o.run ? 0.26 : (o.quality === 'tension' ? 0.15 : 0.06 + prs9.lean * 0.4);
+      if (o.run) { fig9.hL = { x: wkX9 + fh9 * 0.02 + g9s.hLdx, y: gy - fh9 * 0.66 + g9s.hLdy }; fig9.hR = { x: wkX9 + fh9 * 0.02 + g9s.hRdx, y: gy - fh9 * 0.66 + g9s.hRdy }; }
+      p.noStroke(); fillc([8, 8, 14], 90 * ee); p.ellipse(wkX9, gy + 2, fh9 * 0.42, 7);
+      actorFigure(fig9, ee);
+    }
     function drawDailyNews() {
       var dn = UI.dailyNews, c = APP.STATE.chart, still = reduced(), dcN = p.drawingContext;
       if (!dn.scenes) dn.scenes = newsScenes(c);
@@ -8448,43 +8280,13 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         setFont(MONO, 9, INK, p.CENTER, p.TOP, 140 * a3N); p.text('COMPUTED ON THIS DEVICE · JUST NOW', cx, gy0 + 128);
         if (a3N > 0.6) { var plsN = still ? 1 : 0.6 + 0.4 * Math.sin(nowT() * 0.004); setFont(MONO, 10, ACC, p.CENTER, p.TOP, 235 * plsN); p.text('TAP TO READ TODAY ›', cx, H - (UI.safeBottom || 0) - 64); }
       } else if (dn.i < n) {
-        // ---- one story: the mover owns the sky; you walk its weather ----
+        // ---- one story: the same scene language as everywhere; today's real sky ----
         var sc = dn.scenes[dn.i];
-        var palN = sc.quiet ? [[18, 22, 44], [66, 74, 106]] : (NEWS_SKY[sc.tp] || NEWS_SKY.saturn);
-        var good = (sc.q === 'flow' || sc.q === 'opportunity'), hot = (sc.q === 'fusion');
-        skyN(palN, ee); if (sc.quiet) starsN(ee);
-        // the mover, named, holding the high corner of the page
-        var mvX = W * 0.72, mvY = H * 0.15;
-        if (!sc.quiet) {
-          p.noStroke(); fillc([255, 244, 214], 30 * ee); p.ellipse(mvX, mvY, 92, 92);
-          p.push(); p.translate(mvX, mvY); celestialBody(sc.tp, 0, 0, sc.tp === 'sun' ? 22 : 15, nowT()); p.pop();
-          setFont(MONO, 8, [250, 246, 232], p.CENTER, p.TOP, 200 * ee); p.text(APP.nameFor(sc.tp).toUpperCase(), mvX, mvY + 30);
-        } else drawMoonDisc(mvX, mvY, 20, 224, ee);
-        // a charged day pours its light straight down onto you
-        if (hot && dcN && !still) { var lgN = dcN.createLinearGradient(mvX, mvY, cx, gy0); lgN.addColorStop(0, 'rgba(255,240,200,' + (0.22 * ee) + ')'); lgN.addColorStop(1, 'rgba(255,240,200,0)'); dcN.fillStyle = lgN; dcN.beginPath(); dcN.moveTo(mvX - 26, mvY); dcN.lineTo(mvX + 26, mvY); dcN.lineTo(cx + 66, gy0); dcN.lineTo(cx - 66, gy0); dcN.closePath(); dcN.fill(); }
-        groundN(palN);
-        // weather that means what the aspect means
-        if (!still && !hot) {
-          var wiN;
-          if (good) { for (wiN = 0; wiN < 3; wiN++) { var cyN = H * 0.22 + wiN * 44, cxN = ((nowT() * (0.05 + wiN * 0.012) + wiN * 300) % (W + 200)) - 100; strokec([255, 250, 236], 60); p.strokeWeight(1.3); p.noFill(); p.bezier(cxN - 60, cyN, cxN - 20, cyN - 10, cxN + 20, cyN + 8, cxN + 60, cyN - 4); p.noStroke(); } }
-          else { strokec(mixN(palN[0], [235, 240, 248], 0.7), 110); p.strokeWeight(1.2); for (wiN = 0; wiN < 14; wiN++) { var ryN = ((nowT() * (0.28 + (wiN % 4) * 0.05) + wiN * 173) % (gy0 + 24)); p.line(((wiN * 89) % W), ryN - 11, ((wiN * 89) % W) - 5, ryN); } p.noStroke(); }
-        }
-        // you, mid-scene: easy stride on an open day, braced on a hard one, still under a spotlight
-        var fhN = Math.min(H * 0.125, 100), wkX = cx - w * 0.06;
-        var figN = { x: wkX, y: gy0, h: fhN, col: [40, 31, 25], rim: pers.rim, rimOff: [-2, -1.6], crouch: pers.crouch };
-        if (hot) { figN.look = 0.55; figN.lean = 0.05; }
-        else {
-          var phN = nowT() * 0.0135 * pers.pace * (good ? 1 : 0.8);
-          var gN2 = gaitAt(wkX, gy0, fhN, phN);
-          figN.fL = gN2.fL; figN.fR = gN2.fR; figN.bob = gN2.bob;
-          figN.lean = good ? 0.05 + pers.lean * 0.5 : 0.17; figN.look = good ? pers.look * 0.8 : -0.05;
-          // the ground streams past, stride-locked, so the walk reads as a journey
-          var dshN, spdN = nowT() * 0.09 * pers.pace; strokec([250, 246, 232], 60); p.strokeWeight(1.5);
-          for (dshN = 0; dshN < 7; dshN++) { var dxN = W - ((spdN + dshN * 97) % (W + 60)) + 30; p.line(dxN, gy0 + 16 + (dshN % 3) * 7, dxN - 12, gy0 + 16 + (dshN % 3) * 7); }
-          p.noStroke();
-        }
-        p.noStroke(); fillc([8, 8, 14], 90 * ee); p.ellipse(wkX, gy0 + 2, fhN * 0.42, 7);
-        actorFigure(figN, ee);
+        var trN9 = walkTr(c), tpN9 = trN9 && trN9.ctx ? trN9.ctx.tp : null, ayN9 = (trN9 && trN9.ctx && trN9.ctx.ay) || 0;
+        var qualN9 = sc.quiet ? 'flow' : ((sc.q === 'flow' || sc.q === 'opportunity') ? 'flow' : sc.q === 'fusion' ? 'fusion' : 'tension');
+        var natLonN9 = null;
+        if (!sc.quiet) { try { natLonN9 = (sc.np === 'asc') ? c.asc : (sc.np === 'mc') ? (c.mc != null ? c.mc : (c.cusps ? c.cusps[10] : null)) : (c.planets[sc.np] ? c.planets[sc.np].lon : null); } catch (eNN9) {} }
+        if (tpN9) skyWalkScene9({ top: topY() - 24, bot: gy0 + 40, band: 42, tp: tpN9, ay: ayN9, mover: sc.quiet ? null : sc.tp, natalKey: sc.np, natalLon: natLonN9, quality: qualN9, t0: dn.t0, alf: ee, pers: pers });
         // the words, set like a front page below the fold
         setFont(MONO, 9, ACCTX, p.CENTER, p.TOP, 220 * ee); p.text('TODAY · STORY ' + (dn.i + 1) + ' OF ' + n, cx, gy0 + 54);
         riseText(sc.title, cx, gy0 + 72, 21, SERIF, INK, dn.t0 + 420, 18);
@@ -8543,7 +8345,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       // arriving at night where the sky gathers itself into the wheel.
       if (!UI.introT) UI.introT = nowT();
       var e = (nowT() - UI.introT) / 1000, cx = W / 2, still = reduced(), dcI = p.drawingContext;
-      var DUR = [7, 7, 7, 7, 14], SPD = [96, 118, 142, 60, 0];
+      var DUR = [5, 5, 5, 5, 11], SPD = [96, 118, 142, 60, 0];
       var bi = 0, acc = 0, lt = e;
       while (bi < 4 && lt >= DUR[bi]) { lt -= DUR[bi]; bi++; }
       if (still) { bi = 4; lt = 6; }
@@ -8676,7 +8478,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
             if (arr9 > 0) friendOnStage(ppl9[fi9], rx, fi9, gy0, fh0 * 0.8, arr9, 0.94);
           }
         }
-        if (lt > 5 || still) riseText('Aqau Pluto', cx, gy0 + 82, 38, SANS, INK, UI.introT + (still ? 0 : (28000 + 5000)), 55);
+        if (lt > 5 || still) riseText('Aqau Pluto', cx, gy0 + 82, 38, SANS, INK, UI.introT + (still ? 0 : (20000 + 5000)), 55);
         var a2i = still ? 1 : cl01((lt - 6.2) / 0.8);
         if (a2i > 0) { p.textStyle(p.ITALIC); setFont(SERIF, 16.5, INK, p.CENTER, p.CENTER, 220 * a2i); p.text('your sky, read straight', cx, gy0 + 138); p.textStyle(p.NORMAL); }
         var a3i = still ? 1 : cl01((lt - 7) / 0.8);
@@ -8699,7 +8501,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         if (!UI.introSound) { UI.introSound = true; try { padStart([110, 164.81, 246.94, 329.63], 0.022); } catch (eP) {} return; }
         introOver9();
       });
-      if (e > 44) introOver9();
+      if (e > 33) introOver9();
     }
     function drawSettingsGuide() {
       var st = APP.STATE.settings; if (!st || st.setGuided) return;
@@ -9356,15 +9158,37 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       setFont(MONO, 11, INK, p.RIGHT, p.CENTER, 150); p.text(pad2(dt.getHours()) + sep + pad2(dt.getMinutes()) + sep + pad2(dt.getSeconds()), sx() + cw(), cy + 0.5);
       strokec(INK, 40); p.strokeWeight(1); p.line(0, th, W, th);
     }
+    function drawMore() {
+      var x = sx(), w = cw(), ly = 18, gi = cl01(1 - (nowT() - UI.fxT) / 500);
+      eyebrow('Everything else', x, ly); ly += 22;
+      p.textStyle(p.BOLD); glitchText('More', x, sY(ly), 34, SANS, INK, p.LEFT, p.TOP, gi); normal(); ly += 50;
+      var ROWS9 = [
+        ['Learn', 'THE SKY, FROM ZERO', 'learn'],
+        ['Tarot', 'SPREADS AND MEANINGS', 'tarot'],
+        ['Settings', 'LOOK, VOICE, YOUR DATA', 'settings']
+      ], mi9;
+      for (mi9 = 0; mi9 < ROWS9.length; mi9++) {
+        var ry9 = sY(ly), rh9 = 74;
+        p.noStroke(); fillc(shade(GROUNDS[UI.screen], -16)); p.rect(x, ry9 + 3, w, rh9, 13); fillc(shade(GROUNDS[UI.screen], -5)); p.rect(x, ry9, w, rh9, 13);
+        p.noFill(); strokec(INK, 120); p.strokeWeight(1.3); p.rect(x, ry9, w, rh9, 13);
+        setFont(SANS, 18, INK, p.LEFT, p.CENTER); bold(); p.text(ROWS9[mi9][0], x + 18, ry9 + rh9 / 2 - 10); normal();
+        setFont(MONO, 9, INK, p.LEFT, p.CENTER, 180); p.text(ROWS9[mi9][1], x + 18, ry9 + rh9 / 2 + 11);
+        setFont(SANS, 20, INK, p.RIGHT, p.CENTER, 140); p.text('›', x + w - 16, ry9 + rh9 / 2);
+        (function (scr9) { pushHit(x, ry9, w, rh9, function () { UI.screen = scr9; UI.fxT = nowT(); }); })(ROWS9[mi9][2]);
+        ly += rh9 + 14;
+      }
+      UI.contentH.more = ly + 20;
+    }
     function drawNav() {
-      var tabs = [['Chart', 'chart'], ['Read', 'read'], ['Learn', 'learn'], ['Tarot', 'tarot'], ['People', 'people'], ['Settings', 'settings']];
+      var tabs = [['Home', 'chart'], ['Read', 'read'], ['People', 'people'], ['More', 'more']];
+      var MOREKIDS = { learn: 1, tarot: 1, settings: 1, more: 1 };
       var sb = UI.safeBottom || 0, navY = H - NAVH - sb, tw = W / tabs.length;
       p.noStroke(); fillc(UI.bg); p.rect(0, navY, W, NAVH + sb);
       strokec(INK, 40); p.strokeWeight(1); p.line(0, navY, W, navY);
       for (var i = 0; i < tabs.length; i++) {
-        var on = UI.screen === tabs[i][1], tx = i * tw, dn = pressing(tx, navY, tw, NAVH + sb), cy2 = navY + NAVH / 2 - 2 + (dn ? 1 : 0);
-        if (tabs[i][1] === 'settings') { drawGear(tx + tw / 2, cy2, 9, on ? 255 : (dn ? 185 : 120)); } // a cog, so the menu isn't squashed
-        else { setFont(MONO, 11, INK, p.CENTER, p.CENTER, on ? 255 : (dn ? 175 : 105)); if (on) bold(); p.text(tabs[i][0].toUpperCase(), tx + tw / 2, cy2); normal(); }
+        var on = UI.screen === tabs[i][1] || (tabs[i][1] === 'more' && MOREKIDS[UI.screen]);
+        var tx = i * tw, dn = pressing(tx, navY, tw, NAVH + sb), cy2 = navY + NAVH / 2 - 2 + (dn ? 1 : 0);
+        setFont(MONO, 11, INK, p.CENTER, p.CENTER, on ? 255 : (dn ? 175 : 105)); if (on) bold(); p.text(tabs[i][0].toUpperCase(), tx + tw / 2, cy2); normal();
         if (on) {
           // a small moon orbits the word you are on
           var oa2 = reduced() ? -0.9 : nowT() * 0.0016, orx = tw * 0.34, ory = 9;
@@ -9395,13 +9219,12 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     // The whole app is one canvas, so DOM tour libs (Shepherd/Intro/Driver) can't attach —
     // this is a small native coachmark sequence that points at the nav and explains each area.
     var TOUR = [
-      { t: 'Welcome. This is your chart, read straight. Real astronomy, plain language, all on your device. Here’s a 20-second tour.' },
-      { tab: 0, t: 'CHART: your birth wheel. Tap any planet and it magnifies, with what it means for you.' },
-      { tab: 1, t: 'READ: your chart in plain words: what’s live today and this very hour, and the patterns that make you you.' },
-      { tab: 3, t: 'TAROT: spreads to lay yourself, every card’s meaning, and the card art from public-domain decks worldwide.' },
-      { tab: 4, t: 'PEOPLE: add a friend, a date, or family by their birthday to compare charts, and see a family tree.' },
-      { t: 'TAP THE MOON top-left, on any screen, for Today. The live sky on your chart: moon phase, what’s retrograde, and what’s moving now.' },
-      { tab: 5, t: 'SETTINGS: themes, bigger text, save & switch charts, share your chart as an image, and tune the zodiac and houses. That’s the tour: enjoy exploring.' }
+      { t: 'Welcome. This is your chart, read straight. Real astronomy, plain language, all on your device.' },
+      { tab: 0, t: 'HOME: your birth wheel, with today’s sky riding the rim. Tap any planet to read it.' },
+      { tab: 1, t: 'READ: your chart in plain words: the story of you, the timing, and each day.' },
+      { tab: 2, t: 'PEOPLE: add a friend or family by their birthday, and see how your charts meet.' },
+      { t: 'TAP THE MOON top-left, on any screen, for Today: the live sky on your chart right now.' },
+      { tab: 3, t: 'MORE holds Learn, Tarot and Settings. That’s the tour: enjoy exploring.' }
     ];
     function startTour() { UI.tour = { step: 0 }; UI.screen = 'chart'; }
     function endTour() { UI.tour = null; UI.tourSaid = null; try { if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel(); } catch (eT1) {} try { if (window.AqauVoice) window.AqauVoice.stop(); } catch (eT2) {} if (APP.STATE.settings) { APP.STATE.settings.toured = true; APP.save(); } }
@@ -9545,7 +9368,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       }
       if (UI.dailyNews && APP.STATE.chart && UI.screen !== 'onboard') { hideSearchInput(); drawDailyNews(); drawTopbar(); clampScroll(); return; }
       var s = UI.screen;
-      if (s === 'onboard') drawOnboard(); else { if (!(s === 'people' && UI.padd)) hideSearchInput(); if (s === 'chart') drawChart(); else if (s === 'read') drawRead(); else if (s === 'learn') drawLearn(); else if (s === 'tarot') drawTarot(); else if (s === 'people') drawPeople(); else if (s === 'settings') { drawSettings(); drawSettingsGuide(); } }
+      if (s === 'onboard') drawOnboard(); else { if (!(s === 'people' && UI.padd)) hideSearchInput(); if (s === 'chart') drawChart(); else if (s === 'read') drawRead(); else if (s === 'more') drawMore(); else if (s === 'learn') drawLearn(); else if (s === 'tarot') drawTarot(); else if (s === 'people') drawPeople(); else if (s === 'settings') { drawSettings(); drawSettingsGuide(); } }
       if (!UI.mediaDrawn) hideMediaFrame(); // the retro TV/radio iframe only lives on the Watch shelf
       drawQuip();
       if (s === 'chart' && UI.pcard && APP.STATE.chart) drawPlanetCard(APP.STATE.chart, APP.STATE.birth);
