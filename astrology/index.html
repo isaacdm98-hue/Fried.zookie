@@ -865,6 +865,24 @@ var APP = (function () {
     }
   };
   function microFor(kind, signName) { return (MICRO[kind] && MICRO[kind][signName]) || ''; }
+  function capT(t9) { return t9 ? t9.charAt(0).toUpperCase() + t9.slice(1) : ''; }
+  // every tell that applies to one placement, in order of spookiness
+  function tellsFor(c, key) {
+    var T9 = DATA.TELLS || {}, out = [], pl = (key === 'asc') ? c.ascBody : c.planets[key];
+    if (!pl) return out;
+    var mk9 = (key === 'asc') ? 'rising' : key;
+    var sg9 = (MICRO[mk9] && MICRO[mk9][pl.signName]) || (T9.sign2 && T9.sign2[key] && T9.sign2[key][pl.signName]) || '';
+    if (sg9) out.push(sg9);
+    if (key !== 'asc' && pl.house && T9.house && T9.house[key] && T9.house[key][pl.house]) out.push(T9.house[key][pl.house]);
+    var dgB9 = dignityOf(key, pl.signName);
+    var dgK9 = dgB9 === 'Domicile' ? 'dom' : dgB9 === 'Exaltation' ? 'exa' : dgB9 === 'Detriment' ? 'det' : dgB9 === 'Fall' ? 'fal' : null;
+    if (dgK9 && T9.dignity && T9.dignity[key] && T9.dignity[key][dgK9]) out.push(T9.dignity[key][dgK9]);
+    if (pl.retro && T9.retro && T9.retro[key]) out.push(T9.retro[key]);
+    var dgD9 = Math.floor(pl.deg != null ? pl.deg : (pl.lon % 30));
+    if (dgD9 === 29 && T9.degree && T9.degree.ana[key]) out.push(T9.degree.ana[key]);
+    if (dgD9 === 0 && T9.degree && T9.degree.zero[key]) out.push(T9.degree.zero[key]);
+    return out;
+  }
   function composeCore(c) {
     var sun = c.planets.sun, moon = c.planets.moon, asc = c.ascBody, parts = [], tk = STATE.birth.timeKnown;
     // every beat draws its lead from a seeded variety bank, so no two charts read in the same shape
@@ -1484,7 +1502,15 @@ var APP = (function () {
         else sctA = sc9.day ? ' Mars runs hot in a day chart like yours: burn it as exercise before it becomes an argument.' : ' In your night chart Mars fights cleaner: the drive is usable if you aim it early.';
       }
     } catch (eSct) {}
-    var tail = eco + ' In daily life: ' + practicalDomain(t.np) + '; ' + practicalTilt(t.asp.quality, seed) + '.' + sctA;
+    var seas9 = '';
+    try {
+      var TT9 = DATA.TELLS && DATA.TELLS.transit;
+      if (TT9 && TT9[t.tp + '-' + t.np]) {
+        var sf9 = (t.asp.quality === 'flow' || t.asp.quality === 'opportunity') ? 'soft' : 'hard';
+        if (TT9[t.tp + '-' + t.np][sf9]) seas9 = ' ' + capT(TT9[t.tp + '-' + t.np][sf9]) + '.';
+      }
+    } catch (eTT9) {}
+    var tail = eco + ' In daily life: ' + practicalDomain(t.np) + '; ' + practicalTilt(t.asp.quality, seed) + '.' + seas9 + sctA;
     if (t.applying === true && t.exact) {
       var ex9 = t.exact, now9 = new Date(), sameDay9 = ex9.getDate() === now9.getDate() && ex9.getMonth() === now9.getMonth();
       var DN9 = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -1823,6 +1849,16 @@ var APP = (function () {
   }
   function aspectText(c, as) {
     var body9 = (pairAspectText(as.a, as.b, as.asp.key) || aspectMeaning(c, as)) + orbPhrase(as);
+    if (!/[.!?]$/.test(body9)) body9 += '.';
+    try {
+      var TA9 = DATA.TELLS && DATA.TELLS.aspect, PO9 = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto'];
+      var ia9 = PO9.indexOf(as.a), ib9 = PO9.indexOf(as.b);
+      if (TA9 && ia9 >= 0 && ib9 >= 0) {
+        var pk9 = ia9 < ib9 ? (as.a + '-' + as.b) : (as.b + '-' + as.a);
+        var fam9 = as.asp.quality === 'fusion' ? 'fuse' : (as.asp.quality === 'flow' || as.asp.quality === 'opportunity') ? 'soft' : 'hard';
+        if (TA9[pk9] && TA9[pk9][fam9]) body9 += ' The tell: ' + TA9[pk9][fam9] + '.';
+      }
+    } catch (eAT9) {}
     // the stage it plays on: both houses named, when the birth time gives us houses
     try {
       var hA9 = c.planets[as.a] && c.planets[as.a].house, hB9 = c.planets[as.b] && c.planets[as.b].house;
@@ -3420,6 +3456,25 @@ var APP = (function () {
       if (!tp[key]) return; var lon = rev(tp[key].lon - ay), sign = Math.floor(lon / 30);
       parts.push(nameFor(key) + ' ' + degStr(lon - sign * 30) + ' ' + DATA.SIGNS[sign].name);
     });
+    // the deeper strata: birth phase, the node, the element blend, the calling, the crowd
+    try {
+      var T9c = DATA.TELLS || {};
+      var ph9c = Math.floor(rev(moon.lon - sun.lon) / 45);
+      if (T9c.phase && T9c.phase[ph9c]) parts.push('One more layer: ' + T9c.phase[ph9c] + '.');
+      var nd9c = c.planets.node;
+      if (nd9c && T9c.node) {
+        var ndTxt9 = 'Your North Node: ' + (T9c.node.sign[nd9c.signName] || '');
+        if (tk && nd9c.house && T9c.node.house[nd9c.house]) ndTxt9 += ' In the ' + ordinal(nd9c.house) + ' house, ' + T9c.node.house[nd9c.house] + '.';
+        parts.push(ndTxt9);
+      }
+      if (T9c.blend && T9c.blend[se + '-' + me]) parts.push('The blend of you: ' + T9c.blend[se + '-' + me] + '.');
+      if (tk && c.mc != null && T9c.mc) { var mcS9 = DATA.SIGNS[Math.floor(rev(c.mc) / 30)]; if (mcS9 && T9c.mc[mcS9.name]) parts.push('At the top of your chart, ' + mcS9.name + ': ' + T9c.mc[mcS9.name] + '.'); }
+      if (tk && T9c.stellium) {
+        var hc9 = {}, kk9, best9 = 0, bh9 = 0;
+        for (kk9 in c.planets) if (c.planets.hasOwnProperty(kk9) && c.planets[kk9].house) { hc9[c.planets[kk9].house] = (hc9[c.planets[kk9].house] || 0) + 1; if (hc9[c.planets[kk9].house] > best9) { best9 = hc9[c.planets[kk9].house]; bh9 = c.planets[kk9].house; } }
+        if (best9 >= 3 && T9c.stellium[bh9]) parts.push(capT(T9c.stellium[bh9]) + '.');
+      }
+    } catch (eDL9) {}
     return parts.join(', ');
   }
   function fmtDate(dt) { var mo = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']; return dt.getDate() + ' ' + mo[dt.getMonth()] + ' ' + dt.getFullYear(); }
@@ -3834,7 +3889,7 @@ var APP = (function () {
     solarReturnChart: solarReturnChart, upcomingEclipses: upcomingEclipses, bestDaysFor: bestDaysFor, electIntents: electIntents,
     progressedTimeline: progressedTimeline, retroSeasons: retroSeasons,
     exportBook: exportBook, exportBackup: exportBackup, importBackup: importBackup, composeDailyEssay: composeDailyEssay, chartFP: chartFP, weaveNote: weaveNote, termOf: termOf, anA: anA, composeColleague: composeColleague, exportColleague: exportColleague,
-    microFor: microFor, addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenOf: almutenOf, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, returnsAlmanac: returnsAlmanac, progressedLunation: progressedLunation, planetaryHours: planetaryHours, moonVoidWindow: moonVoidWindow, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
+    microFor: microFor, tellsFor: tellsFor, addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenOf: almutenOf, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, returnsAlmanac: returnsAlmanac, progressedLunation: progressedLunation, planetaryHours: planetaryHours, moonVoidWindow: moonVoidWindow, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
     saveCurrentChart: saveCurrentChart, deleteSavedChart: deleteSavedChart, activateSavedChart: activateSavedChart, activeChartKey: activeChartKey, chartKey: chartKey, famousMatches: famousMatches, lifeTransits: lifeTransits, upcomingTransits: upcomingTransits, transitMotion: transitMotion, compositeChart: compositeChart,
     nameFor: nameFor, glyphFor: glyphFor, sgAbbr: sgAbbr, pad: pad,
     domElement: domElement, lowElement: lowElement, domMod: domMod, tzOffsetHours: tzOffsetHours
@@ -3994,13 +4049,13 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     try {
       var ctx = AUDIO.ctx, t = ctx.currentTime, master = ctx.createGain();
       master.gain.setValueAtTime(0.0001, t);
-      master.gain.linearRampToValueAtTime(vol || 0.028, t + 4.5);
+      master.gain.linearRampToValueAtTime(vol || 0.028, t + 7);
       var lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 820; lp.Q.value = 0.4;
       var lfo = ctx.createOscillator(), lfoG = ctx.createGain();
       lfo.frequency.value = 0.06; lfoG.gain.value = 260; lfo.connect(lfoG); lfoG.connect(lp.frequency); lfo.start(t);
       // the halo: a feedback delay turns the whisper into a room
-      var dly = ctx.createDelay(1.2); dly.delayTime.value = 0.52;
-      var fb = ctx.createGain(); fb.gain.value = 0.42;
+      var dly = ctx.createDelay(1.2); dly.delayTime.value = 0.61;
+      var fb = ctx.createGain(); fb.gain.value = 0.5;
       var wet = ctx.createGain(); wet.gain.value = 0.55;
       lp.connect(master); lp.connect(dly); dly.connect(fb); fb.connect(dly); dly.connect(wet); wet.connect(master);
       master.connect(ctx.destination);
@@ -4778,13 +4833,16 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (dnote) ly += paragraph(dnote, x, ly, w, 13.5, INK, SERIF, 20, 210 * ca) + 4;
       ly += 8;
       ly += paragraph(planetBlurb(c, key), x, ly, w, 16.5, INK, SERIF, 26, 255 * ca) + 16;
-      // the tell: the small behaviour that gives this placement away in a room
+      // the tells: every giveaway this placement carries: sign, house, dignity,
+      // retrograde, edge degrees. This is where the chart gets personal.
       (function () {
-        var mk9 = (key === 'asc') ? 'rising' : key;
-        var tell9 = APP.microFor ? APP.microFor(mk9, pl.signName) : '';
-        if (tell9) {
-          eyebrow('The tell', x, ly, ACC); ly += 20;
-          ly += paragraph('In a room, this is the giveaway: ' + tell9 + '.', x, ly, w, 15.5, INK, SERIF, 24, 245 * ca) + 14;
+        var tl9 = (APP.tellsFor ? APP.tellsFor(c, key) : []), ti9;
+        if (tl9.length) {
+          eyebrow(tl9.length > 1 ? 'The tells' : 'The tell', x, ly, ACC); ly += 20;
+          for (ti9 = 0; ti9 < Math.min(tl9.length, 4); ti9++) {
+            ly += paragraph((ti9 === 0 ? 'In a room, the giveaway: ' : '\u2726 ') + tl9[ti9] + '.', x, ly, w, 15.5, INK, SERIF, 24, 245 * ca) + 10;
+          }
+          ly += 8;
         }
       })();
       var asps = storyAspects(c, key);
@@ -6027,7 +6085,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       riseText('Read', x, sY(ly), 34, SANS, INK, UI.fxT + 120, 34, 255, true); ly += 48;
       // the reading is a book now: four chapters instead of one endless scroll
       if (!UI.readTab) UI.readTab = 'story';
-      var RTABS = [['story', 'Story'], ['wiring', 'Wiring'], ['timing', 'Timing'], ['days', 'Days']], rti0, rtx0 = x;
+      var RTABS = [['story', 'You'], ['wiring', 'Patterns'], ['timing', 'Seasons'], ['days', 'Today']], rti0, rtx0 = x;
       for (rti0 = 0; rti0 < RTABS.length; rti0++) { p.textFont(MONO); p.textSize(11); var rtw = p.textWidth(RTABS[rti0][1].toUpperCase()) + 28; chip(RTABS[rti0][1], UI.readTab === RTABS[rti0][0], rtx0, ly, (function (tk) { return function () { if (UI.readTab !== tk) UI.actT = nowT(); UI.readTab = tk; UI.scroll.read = 0; UI.popT = nowT(); }; })(RTABS[rti0][0])); rtx0 += rtw + 8; }
       ly += 50;
       var rt = UI.readTab;
@@ -9668,6 +9726,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     function inRect(mx, my, r) { return mx >= r.x && mx <= r.x + r.w && my >= r.y && my <= r.y + r.h; }
     function press(x, y) {
       if (soundOn()) audioInit(); // first gesture unlocks WebAudio
+      try { if (AUDIO.ctx && AUDIO.ctx.state === 'suspended') AUDIO.ctx.resume(); } catch (eRz9) {}
       UI.ptrX = x; UI.ptrY = y; UI.ptrDown = true; UI.ptrMoveT = nowT();
       UI.pressX = x; UI.pressY = y; UI.pressT = nowT(); UI.dragging = false; UI.scrollStart = scrollOf(); UI.cityScrollStart = UI.cityScroll || 0;
       UI.tScrollStart = UI.tScroll || 0;

@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.6.0 — 2026-07-04
+- **Six hundred more tells, all wired.** The corpus grows by ~580 chart-specific lines: every planet through every house, Sun/Jupiter/Saturn through every sign, all forty-five aspect pairs in three moods, one hundred season-tells for the slow transits, the nodes by sign and house, the eight birth phases, twenty-eight dignities, natal retrogrades, the razor degrees (0 and 29), stelliums by house, the sixteen Sun-Moon element blends, and the Midheaven callings. Nothing sits in a drawer: planet pages now stack every tell that placement carries; aspect lines carry their pair's tell and their house stage; transit sentences carry the season's tell; and the core reading gains its deepest strata: birth phase, node path, element blend, calling, and the crowded house.
+- **Plain words.** The Read tabs become You, Patterns, Seasons, Today.
+- **Sound that works, Eno-style.** The audio context now resumes on every touch (the silent-after-backgrounding bug on phones), and the pad breathes slower: seven-second swells, a longer lusher delay halo.
+
 ## 2.5.0 — 2026-07-04
 - **The tells.** Sixty new lines of behaviour-level writing, one for every Moon, Mercury, Venus and Mars sign and every rising sign: not traits but giveaways ("you redraft the text message four times, then send something close to the first version"; "strangers apologise to you when they bump into someone else"). Your Moon's tell and your rising's tell are woven into the core reading, and every planet's page now ends on THE TELL: the small thing that gives the placement away in a room.
 - **The walker enters.** Every scene now begins with the figure walking in from offscreen and settling into frame, leaning slightly into the arrival, instead of appearing mid-stage.
