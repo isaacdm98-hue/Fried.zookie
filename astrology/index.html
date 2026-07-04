@@ -967,6 +967,15 @@ var APP = (function () {
     } else {
       parts.push('Your Sun is ' + se + ' and your Moon is ' + me + '. Where they meet, ' + elementMix(se, me) + '.');
     }
+    // the archetypes: the figures under the signs, spoken into three modern rooms
+    try {
+      var ARc = DATA.ARCH, sAc = ARc && ARc.sign[sun.signName], mAc = ARc && ARc.sign[moon.signName];
+      var rAc = (tk && ARc) ? ARc.sign[asc.signName] : null;
+      if (sAc && mAc) {
+        var loN9 = function (n9) { return n9.replace('The ', 'the '); };
+        parts.push('In the older language of the craft you read as ' + sAc.n + ' with ' + loN9(mAc.n) + '\u2019s heart' + (rAc ? ', arriving through ' + loN9(rAc.n) + '\u2019s door' : '') + ': ' + sAc.core + '. The same figure walks into any world. In the boardroom: ' + sAc.work + '. Barefoot in the field: ' + mAc.play + '. And by candlelight, if you keep one: ' + (rAc || mAc).rite + '.');
+      }
+    } catch (eArc9) {}
     var dom = domElement(c.elements), low = lowElement(c.elements);
     var leadE = vpick(['The chart leans', 'Your centre of gravity is', 'The weight of you sits in', 'On balance you run', 'The prevailing wind here is', 'Weigh it all and the needle points to', 'Add every placement up and it comes out', 'The chart\u2019s home key is'], seed);
     parts.push(leadE + ' ' + DATA.ELEMENTS[dom].name.toLowerCase() + ' (' + c.elements[dom] + '%): ' + DATA.ELEMENTS[dom].high + '. It runs light on ' + DATA.ELEMENTS[low].name.toLowerCase() + ' (' + c.elements[low] + '%): ' + DATA.ELEMENTS[low].need);
@@ -2074,6 +2083,19 @@ var APP = (function () {
   function composeSignatures(c) {
     var out = [], th = composeThemes(c), ti;
     for (ti = 0; ti < th.length; ti++) out.push({ label: ti === 0 ? 'The throughline' : 'Also running through you', text: th[ti] });
+    try {
+      var AR9 = DATA.ARCH;
+      if (AR9) {
+        var sunA9 = AR9.sign[c.planets.sun.signName], moonA9 = AR9.sign[c.planets.moon.signName], arL9 = [];
+        if (sunA9) arL9.push('Your Sun: ' + sunA9.n + '. ' + capit(sunA9.core) + '.');
+        if (moonA9) arL9.push('Your Moon: ' + moonA9.n + '. ' + capit(moonA9.core) + '.');
+        var risA9 = (STATE.birth.timeKnown && c.ascBody) ? AR9.sign[c.ascBody.signName] : null;
+        if (risA9) arL9.push('Your rising: ' + risA9.n + ': the door you answer the world through.');
+        try { var prA9 = prominence(c), topA9 = prA9.ranked[0]; if (topA9 && AR9.planet[topA9]) arL9.push('The keystone planet: ' + AR9.planet[topA9].n + ': ' + AR9.planet[topA9].line + '.'); } catch (ePA9) {}
+        if (sunA9 && moonA9) arL9.push('One figure, three rooms. At work: ' + sunA9.work + '. Off duty: ' + moonA9.play + '. As a practice: ' + (risA9 || moonA9).rite + '.');
+        if (arL9.length) out.push({ label: 'The archetypes: after Greene, Rudhyar and the myths', lines: arL9 });
+      }
+    } catch (eAR9) {}
     var lp = lunarPhase(c);
     out.push({ label: 'Lunar phase at birth', text: 'You were born on the ' + lp.name + ': ' + lp.text });
     var sh = chartShape(c); if (sh) out.push({ label: 'Chart shape', text: sh.text });
@@ -4939,6 +4961,12 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
           ly += 8;
         }
       })();
+      try {
+        var ARs9 = DATA.ARCH;
+        if (ARs9 && key !== 'asc' && pl && ARs9.planet[key] && ARs9.sign[pl.signName]) {
+          ly += paragraph('In the older language: ' + ARs9.planet[key].n + ' wearing ' + ARs9.sign[pl.signName].n.replace('The ', 'the ') + '\u2019s colours.', x, ly, w, 13.5, INK, SERIF, 21, 200 * ca) + 12;
+        }
+      } catch (eASt9) {}
       var asps = storyAspects(c, key);
       if (asps.length) {
         eyebrow('How it connects', x, ly, ACC); ly += 24;
@@ -5614,7 +5642,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         fR: { x: cx0 + cy8(WK_X, uR) * h * dir9, y: gy0 - Math.max(0, cy8(WK_Y, uR)) * h, tilt: cy8(WK_T, uR) },
         hL: { dx: -cy8(WK_X, ua) * 0.62 * h * dir9, dy: h * 0.30 - Math.abs(cy8(WK_X, ua)) * h * 0.06 },
         hR: { dx: -cy8(WK_X, uaR) * 0.62 * h * dir9, dy: h * 0.30 - Math.abs(cy8(WK_X, uaR)) * h * 0.06 },
-        bob: cy8(WK_B, u) * h,
+        bob: (cy8(WK_B, u) - Math.exp(-(u % 0.5) / 0.05) * 0.011) * h,
         lean: 0.07 + cy8(WK_B, u) * 1.6
       };
     }
@@ -5625,6 +5653,8 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var dir = rig.dir != null ? rig.dir : (look < -0.05 ? -1 : 1), lm = Math.abs(look);
       var br = reduced() ? 0 : Math.sin(nowT() * 0.0021 + (rig.ph || 0)) * h * 0.005;
       var bob9 = rig.bob || 0;
+      // a standing body is never still: weight pools into one hip, then the other
+      if (!rig.fL && !rig.fR && !reduced()) { var idl9 = rig.ph != null ? rig.ph : rig.x * 0.13; bob9 += Math.sin(nowT() * 0.0008 + idl9) * h * 0.004; lean += Math.sin(nowT() * 0.00058 + idl9) * 0.018; }
       var hipY = rig.y - h * (0.52 - cr * 0.14) + bob9, hipX = rig.x + lean * h * 0.03;
       var chY = hipY - h * (0.29 - cr * 0.04) + br, chX = hipX + lean * h * 0.15 * dir;
       var hdR = h * 0.075, hdX = chX + (lean * h * 0.06 + lm * h * 0.02) * dir, hdY = chY - h * 0.10 - bob9 * 0.5;
@@ -8342,19 +8372,9 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (st.font === 'dyslexic') ly += paragraph(UI.dysLoaded ? 'OpenDyslexic is loaded and kept on this device. Every reading, lesson and story uses it; lines re-wrap themselves to fit.' : 'OpenDyslexic loads once from a public CDN (about 600KB) and is kept offline after that. Until it lands, the standard font stands in.', x, ly, w, 12.5, INK, SERIF, 19, 180) + 12;
       ly += toggleRow('Sound', [['off', 'Off'], ['on', 'On']], st.sound ? 'on' : 'off', ly, function (v) { st.sound = (v === 'on'); APP.save(); if (st.sound) { audioInit(); chime(); } });
       ly += toggleRow('Transit reminders', [['off', 'Off'], ['on', 'On']], st.notify ? 'on' : 'off', ly, function (v) { st.notify = (v === 'on'); APP.save(); if (st.notify) enableNotify(); });
+      ly += paragraph('On: when you open the app on a day a planet lands exactly on your chart, you get one system notification. Where the browser supports it, a daily background check is registered too. Nothing leaves the device.', x, ly, w, 13.5, INK, SERIF, 20, 180) + 14;
       ly += toggleRow('Daily Sky bulletin', [['on', 'On'], ['off', 'Off']], st.news === false ? 'off' : 'on', ly, function (v) { st.news = (v === 'on'); APP.save(); });
       ly += toggleRow('Haptics', [['on', 'On'], ['off', 'Off']], st.haptics === false ? 'off' : 'on', ly, function (v) { st.haptics = (v === 'on'); APP.save(); if (st.haptics) buzz(14); });
-      if (hv9 && hv9.state === 'ready') {
-        flatBtn('\u25B8  Hear a line', x, ly, 150, 38, function () { try { hv9.speak('Hello. I am the voice of your chart, kept entirely on this device.'); } catch (eS9) {} }, true); ly += 50;
-        ly += paragraph('The human voice is on this device now: Kokoro, open source (Apache-2.0), spoken locally. No words leave the phone. Choose Human above and the walkthrough and your life story read themselves aloud.', x, ly, w, 13, INK, SERIF, 19, 190) + 14;
-      } else if (hv9 && hv9.state === 'loading') {
-        p.noStroke(); fillc(INK, 30); p.rect(x, sY(ly), w, 8, 4); fillc(ACC); p.rect(x, sY(ly), Math.max(4, w * (hv9.progress || 0)), 8, 4); ly += 18;
-        ly += paragraph((hv9.status || 'Downloading') + ' \u00B7 ' + Math.round((hv9.progress || 0) * 100) + '%. Keep the app open. It is cached on-device; after this it works offline.', x, ly, w, 12, INK, MONO, 17, 190) + 12;
-      } else {
-        flatBtn('Download the human voice \u00B7 ~90MB, once', x, ly, w, 42, function () { if (hv9) hv9.load(); }, true); ly += 54;
-        ly += paragraph('Kokoro, an open Apache-2.0 voice, fetched once from a public CDN and kept on this device. It reads the walkthrough like a person, not a robot. Network needed for the first download only.' + (hv9 && hv9.state === 'error' ? ' Last attempt: ' + hv9.status : (hv9 ? '' : ' (This browser cannot run it; System remains available.)')), x, ly, w, 12.5, INK, SERIF, 19, 180) + 14;
-      }
-      ly += paragraph('On: when you open the app on a day a planet lands exactly on your chart, you get one system notification. Where the browser supports it, a daily background check is registered too. Nothing leaves the device.', x, ly, w, 13.5, INK, SERIF, 20, 180) + 14;
       ly += toggleRow('Zodiac', [['tropical', 'Tropical'], ['sidereal', 'Sidereal']], st.zodiac, ly, function (v) { st.zodiac = v; recompute(); });
       ly += toggleRow('House system', [['whole', 'Whole'], ['equal', 'Equal'], ['porphyry', 'Porphyry'], ['placidus', 'Placidus']], st.house, ly, function (v) { st.house = v; recompute(); });
       if (APP.STATE.birth && !APP.STATE.birth.timeKnown) {
@@ -8413,7 +8433,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       else if (!charts.length) { ly += 4; }
       ly += 8;
       flatBtn('Edit birth data', x, ly, 170, 44, function () { UI.draft = newDraft(); UI.screen = 'onboard'; }, true);
-      flatBtn('Replay tour', x + 182, ly, 150, 44, function () { startTour(); }, false); ly += 56;
+      flatBtn('Replay the walk', x + 182, ly, 170, 44, function () { startTour(); }, false); ly += 56;
       flatBtn('Walk me through my chart', x, ly, w, 44, function () { startWalk(); }, false); ly += 56;
       flatBtn('Watch the opening again', x, ly, w, 44, function () { UI.introReplay = true; UI.introT = 0; UI.introSound = false; buzz(12); }, false); ly += 56;
       flatBtn('Share my chart (image)', x, ly, w, 44, function () { exportChartCard(); }, false); ly += 56;
@@ -8513,6 +8533,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var pal = NEWS_SKY[o.mover] || [[92, 100, 118], [184, 176, 166]];
       var camT9 = still ? 0 : eCubic(cl01((nowT() - o.t0) / 12000));
       p.push(); p.translate(cxS, gy); p.scale(1 + 0.05 * camT9); p.translate(-cxS, -gy);
+      if (!still) p.translate(Math.sin(nowT() * 0.00021) * 2.2, Math.cos(nowT() * 0.00017) * 1.6);
       if (dcW9) { var gS = dcW9.createLinearGradient(0, topS, 0, gy); gS.addColorStop(0, 'rgba(' + (pal[0][0] | 0) + ',' + (pal[0][1] | 0) + ',' + (pal[0][2] | 0) + ',' + (0.96 * ee) + ')'); gS.addColorStop(1, 'rgba(' + (pal[1][0] | 0) + ',' + (pal[1][1] | 0) + ',' + (pal[1][2] | 0) + ',' + (0.96 * ee) + ')'); dcW9.fillStyle = gS; dcW9.fillRect(0, topS, W, gy - topS); }
       p.noStroke(); fillc([238, 228, 206], 13); p.rect(0, topS, W, gy - topS);
       var sdr9 = o.ph != null ? o.ph * 3.2 : (still ? 0 : nowT() * 0.0016);
@@ -8537,7 +8558,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
           var shx1 = shx0 + 90, shy1 = shy0 + 34;
           var hd9 = shP9, tl9 = Math.max(0, shP9 - 0.22);
           strokec([255, 250, 235], 200 * (1 - shP9) * ee); p.strokeWeight(1.4);
-          p.line(shx0 + (shx1 - shx0) * tl9, shy0 + (shy1 - shy0) * tl9, shx0 + (shx1 - shx0) * hd9, shy0 + (shy1 - shy0) * hd9);
+          p.line(shx0 + (shx1 - shx0) * tl9, shy0 + (shy1 - shy0) * tl9 + tl9 * tl9 * 26, shx0 + (shx1 - shx0) * hd9, shy0 + (shy1 - shy0) * hd9 + hd9 * hd9 * 26);
           p.noStroke();
         }
         var bdC9 = Math.floor(nowT() / 21000);
@@ -8650,14 +8671,29 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var entS9 = (o.ph == null && o.moving !== false && !still) ? eCubic(cl01((nowT() - o.t0) / 2400)) : 1;
       var wkX9 = -70 + (W * 0.44 + 70) * entS9;
       var ph9 = o.ph != null ? o.ph : nowT() * (o.run ? 0.017 : 0.0125) * prs9.pace;
-      var fig9 = { x: wkX9, y: gy, h: fh9, col: [38, 30, 24], rim: prs9.rim, rimOff: [-2, -1.4], crouch: prs9.crouch + (o.crouchAdd || 0), look: 0.3 };
+      var lk9 = still ? 0.3 : 0.3 + 0.09 * Math.sin(nowT() * 0.00047) + 0.16 * (cl01((nowT() - o.t0 - 1400) / 700) - cl01((nowT() - o.t0 - 4300) / 900));
+      var fig9 = { x: wkX9, y: gy, h: fh9, col: [38, 30, 24], rim: prs9.rim, rimOff: [-2, -1.4], crouch: prs9.crouch + (o.crouchAdd || 0), look: lk9 };
       if (o.moving !== false) {
         var g9s = o.run ? runPose9(wkX9, gy, fh9, ph9) : gaitAt(wkX9, gy, fh9, ph9);
         fig9.fL = g9s.fL; fig9.fR = g9s.fR; fig9.bob = g9s.bob;
         fig9.lean = (o.run ? 0.26 : (o.quality === 'tension' ? 0.15 : 0.06 + prs9.lean * 0.4)) + (1 - entS9) * 0.05;
         if (o.run) { fig9.hL = { x: wkX9 + fh9 * 0.02 + g9s.hLdx, y: gy - fh9 * 0.66 + g9s.hLdy }; fig9.hR = { x: wkX9 + fh9 * 0.02 + g9s.hRdx, y: gy - fh9 * 0.66 + g9s.hRdy }; }
-      } else { fig9.look = 0.4; }
+      } else {
+        // standing is not stillness: the gaze wanders the sky, the weight settles and resettles
+        fig9.look = still ? 0.4 : 0.36 + 0.13 * Math.sin(nowT() * 0.00037);
+        if (!still) { fig9.bob = Math.sin(nowT() * 0.0009) * fh9 * 0.006; fig9.lean = 0.03 + Math.sin(nowT() * 0.00063) * 0.028; }
+      }
       p.noStroke(); fillc([8, 8, 14], 90 * ee); p.ellipse(wkX9, gy + 2, fh9 * 0.42, 7);
+      if (!still && o.moving !== false && entS9 > 0.9) {
+        var uD9 = ph9 / (Math.PI * 2); uD9 -= Math.floor(uD9);
+        var eD9 = uD9 % 0.5, aD9 = 1 - eD9 / 0.26;
+        if (aD9 > 0) {
+          var pxD9 = wkX9 + fh9 * 0.15 - eD9 * 96, prD9 = 3 + eD9 * 34;
+          p.noStroke(); fillc([232, 224, 202], 24 * aD9 * ee);
+          p.ellipse(pxD9, gy - 2, prD9, prD9 * 0.32);
+          p.ellipse(pxD9 - prD9 * 0.4, gy - 3.5, prD9 * 0.5, prD9 * 0.2);
+        }
+      }
       actorFigure(fig9, ee);
       // low mist drifting past in the foreground: the nearest layer moves fastest
       if (!still) { var mi9x; for (mi9x = 0; mi9x < 2; mi9x++) { var mBase9 = o.ph != null ? o.ph * (26 + mi9x * 14) : nowT() * (0.016 + mi9x * 0.011); var mx9m = W - ((((mBase9 + mi9x * 500) % (W + 340)) + (W + 340)) % (W + 340)) + 170; p.noStroke(); fillc([242, 236, 222], (12 - mi9x * 4) * ee); p.ellipse(mx9m, gy - 4 - mi9x * 9, 280, 22); p.ellipse(mx9m - 130, gy - 1 - mi9x * 7, 200, 16); } }
@@ -8965,42 +9001,6 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         if (UI.setGuide.i < 2) { UI.setGuide.i++; UI.setGuide.t0 = nowT(); }
         else { st.setGuided = true; APP.save(); UI.setGuide = null; UI.setGuideSaid = null; try { if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel(); } catch (eG1) {} try { if (window.AqauVoice) window.AqauVoice.stop(); } catch (eG2) {} }
       }, true);
-    }
-    function drawVoiceGate() {
-      if (!UI.vgT) { UI.vgT = nowT(); try { if (window.AqauVoice && window.AqauVoice.state === 'idle') window.AqauVoice.load(); } catch (eGL) {} }
-      var e = (nowT() - UI.vgT) / 1000, cx = W / 2, still = reduced(), dcV = p.drawingContext, x = sx(), w = cw();
-      p.noStroke(); fillc(GROUNDS.chart); p.rect(0, 0, W, H);
-      var gy0 = H * 0.30;
-      if (dcV) { var vg1 = dcV.createLinearGradient(0, 0, 0, gy0 + 36); vg1.addColorStop(0, 'rgba(16,20,40,0.97)'); vg1.addColorStop(1, 'rgba(66,74,106,0.97)'); dcV.fillStyle = vg1; dcV.fillRect(0, 0, W, gy0 + 36); }
-      var si2; for (si2 = 0; si2 < 20; si2++) { var tw2 = still ? 0.8 : 0.55 + 0.45 * Math.sin(nowT() * 0.003 + si2 * 1.7); p.noStroke(); fillc([255, 252, 240], 130 * tw2); p.ellipse(((si2 * 89) % (W - 24)) + 12, ((si2 * 47) % (gy0 - 90)) + 12, 1.8, 1.8); }
-      p.noStroke(); fillc([30, 36, 58], 235); p.rect(-10, gy0 - 12, W + 20, 50);
-      var fh2 = Math.min(H * 0.13, 100);
-      actorFigure({ x: cx, y: gy0 + 14, h: fh2, col: [38, 30, 24], rim: [186, 196, 232], rimOff: [2, -1.6], look: 0.25, ph: 1 }, cl01(e / 0.6));
-      // sound waves ripple gently from where the mouth would be: the offer, drawn
-      if (!still) { var wv9; for (wv9 = 0; wv9 < 3; wv9++) { var wp9 = ((nowT() * 0.0005 + wv9 * 0.33) % 1); p.noFill(); strokec([255, 244, 200], 90 * (1 - wp9)); p.strokeWeight(1.2); p.arc(cx + fh2 * 0.12, gy0 + 14 - fh2 * 0.82, 20 + wp9 * 46, 20 + wp9 * 46, -0.6, 0.6); } }
-      var ly = gy0 + 64;
-      riseText('A voice can come with you', cx, ly, 24, SERIF, INK, UI.vgT + 400, 26); ly += 44;
-      ly += paragraph('This app can speak: the readings, the walkthrough, the story of your life. The human voice is Kokoro, open source, downloaded once (about 90MB) and kept on this device. No words ever leave your phone.', x, ly - topY(), w, 14, INK, SERIF, 21, 220) + 14;
-      var HV = (typeof window !== 'undefined' && window.AqauVoice) ? window.AqauVoice : null;
-      function gateDone() { if (APP.STATE.settings) { APP.STATE.settings.voiceGateDone = true; APP.save(); } UI.voiceGateDone = true; UI.fxT = nowT(); padStop(2.5); }
-      var lyr = ly - topY();
-      if (HV && HV.state === 'loading') {
-        p.noStroke(); fillc(INK, 30); p.rect(x, sY(lyr), w, 10, 5); fillc(ACC); p.rect(x, sY(lyr), Math.max(6, w * (HV.progress || 0)), 10, 5); lyr += 20;
-        ly = lyr; ly += paragraph((HV.status || 'Downloading') + ' \u00B7 ' + Math.round((HV.progress || 0) * 100) + '%. Keep the app open; this happens once.', x, ly, w, 12.5, INK, MONO, 18, 200) + 12;
-        flatBtn('Continue while it downloads \u203A', x, ly, w, 44, function () { if (APP.STATE.settings) { APP.STATE.settings.voice = 'human'; } gateDone(); }, false); ly += 56;
-      } else if (HV && HV.state === 'ready') {
-        if (!UI.vgSpoke) { UI.vgSpoke = true; if (APP.STATE.settings) { APP.STATE.settings.voice = 'human'; APP.save(); } try { HV.speak('Hello. I am the voice of this app, and I stay on this device. Let us set up your chart: the day you were born, the time if you know it, and the place.'); } catch (eS) {} }
-        ly = lyr; ly += paragraph('The voice is here, and it is yours. It will read the walkthrough and your life story aloud whenever you ask.', x, ly, w, 14, INK, SERIF, 21, 220) + 12;
-        flatBtn('Begin, with the voice \u203A', x, ly, w, 48, function () { gateDone(); }, true); ly += 60;
-      } else {
-        ly = lyr;
-        flatBtn('\u2B07  Download the human voice \u00B7 ~90MB, once', x, ly, w, 48, function () { if (HV) HV.load(); }, true); ly += 58;
-        flatBtn('Use the system voice instead', x, ly, w, 44, function () { if (APP.STATE.settings) { APP.STATE.settings.voice = 'system'; APP.STATE.settings.voiceChosen = true; APP.save(); } try { if (typeof speechSynthesis !== 'undefined' && typeof SpeechSynthesisUtterance !== 'undefined') { var u0 = new SpeechSynthesisUtterance('Welcome. Let us set up your chart.'); u0.rate = 0.95; speechSynthesis.speak(u0); } } catch (eU) {} gateDone(); }, false); ly += 54;
-        flatBtn('Quietly, thanks', x, ly, w, 40, function () { if (APP.STATE.settings) { APP.STATE.settings.voice = 'off'; APP.STATE.settings.voiceChosen = true; APP.STATE.settings.voiceDeclined = true; APP.save(); } gateDone(); }, false); ly += 52;
-        if (HV && HV.state === 'error') ly += paragraph('Last attempt: ' + HV.status, x, ly, w, 12, INK, MONO, 17, 190) + 8;
-      }
-      setFont(MONO, 9, INK, p.CENTER, p.TOP, 130); p.text('SPOKEN LOCALLY \u00B7 CHANGE ANY TIME IN SETTINGS', cx, H - (UI.safeBottom || 0) - 40);
-      UI.contentH.onboard = 0;
     }
     function drawOnboard() {
       if (!UI.draft) UI.draft = newDraft();
@@ -9649,16 +9649,23 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     // ---------- first-run tour (a gentle, game-style guide; drawn on the canvas) ----------
     // The whole app is one canvas, so DOM tour libs (Shepherd/Intro/Driver) can't attach —
     // this is a small native coachmark sequence that points at the nav and explains each area.
-    var TOUR = [
-      { t: 'Welcome. This is your chart, read straight. Real astronomy, plain language, all on your device.' },
-      { tab: 0, t: 'HOME: your birth wheel, with today’s sky riding the rim. Tap any planet to read it.' },
-      { tab: 1, t: 'READ: your chart in plain words: the story of you, the timing, and each day.' },
-      { tab: 2, t: 'PEOPLE: add a friend or family by their birthday, and see how your charts meet.' },
-      { t: 'TAP THE MOON top-left, on any screen, for Today: the live sky on your chart right now.' },
-      { tab: 3, t: 'MORE holds Learn, Tarot and Settings. That’s the tour: enjoy exploring.' }
-    ];
-    function startTour() { UI.tour = { step: 0 }; UI.screen = 'chart'; }
-    function endTour() { UI.tour = null; UI.tourSaid = null; try { if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel(); } catch (eT1) {} try { if (window.AqauVoice) window.AqauVoice.stop(); } catch (eT2) {} if (APP.STATE.settings) { APP.STATE.settings.toured = true; APP.save(); } }
+    // ---------- the welcome walk: a curated, plain-words first journey ----------
+    // Five pages in the app's own scene language. No coachmarks, no jargon: the sky,
+    // your Sun, your Moon, what a transit is, and where the four doors lead.
+    function tourSlides(c) {
+      var sunSg = c.planets.sun.signName, moonSg = c.planets.moon.signName, tSun = '', tMoon = '';
+      function cap(t9) { return t9 ? t9.charAt(0).toUpperCase() + t9.slice(1) : ''; }
+      try { tSun = (APP.tellsFor(c, 'sun')[0] || ''); tMoon = (APP.tellsFor(c, 'moon')[0] || ''); } catch (eTS9) {}
+      return [
+        { k: 'sky', title: 'This is your sky', body: 'The minute you were born, every planet stood at an exact degree of one great wheel. This app keeps that sky. Everything in it is computed on your phone, written in plain words, and nothing you type ever leaves the device.' },
+        { k: 'sun', title: 'Your Sun is in ' + sunSg, body: 'The Sun is the engine: the part of you that is being built all life long. Yours runs ' + sunSg + '.' + (tSun ? ' ' + cap(tSun) + '.' : '') },
+        { k: 'moon', title: 'Your Moon is in ' + moonSg, body: 'The Moon is the weather inside: how you feel, refuel and reach for comfort. Yours lives in ' + moonSg + '.' + (tMoon ? ' ' + cap(tMoon) + '.' : '') },
+        { k: 'weather', title: 'Weather, not fate', body: 'The planets never stopped moving. When one crosses a degree that matters in your chart, that is a transit: a season with a name and an end date, never a verdict. The wheel on Home shows today riding its rim.' },
+        { k: 'doors', title: 'Where everything lives', body: '' }
+      ];
+    }
+    function startTour() { UI.tour = { step: 0, t0: nowT() }; UI.screen = 'chart'; UI.scroll.chart = 0; }
+    function endTour() { UI.tour = null; try { padStop(1.6); } catch (eT9) {} if (APP.STATE.settings) { APP.STATE.settings.toured = true; APP.save(); } UI.fxT = nowT(); }
     function tourBtn(label, bx, by, bw, bh, fn, primary) {
       var off = pressOff(bx, by, bw, bh, 3);
       p.noStroke(); fillc(primary ? INK : GROUNDS.chart); p.rect(bx, by + off, bw, bh, 7);
@@ -9686,22 +9693,58 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     }
     function drawTour() {
       if (!UI.tour) return;
-      var step = TOUR[UI.tour.step]; if (!step) { endTour(); return; }
-      // the warm voice walks the tour with you: each card is spoken as it appears
-      if (UI.tourSaid !== UI.tour.step) {
-        UI.tourSaid = UI.tour.step;
-        try { sayLine(step.t); } catch (eTS) {}
+      var c = APP.STATE.chart; if (!c) { endTour(); return; }
+      var tr = UI.tour, still = reduced(), cx = W / 2, x = sx(), w = cw(), sb = UI.safeBottom || 0;
+      if (!tr.s) tr.s = tourSlides(c);
+      var N9 = tr.s.length, sl = tr.s[tr.step]; if (!sl) { endTour(); return; }
+      var lt = (nowT() - tr.t0) / 1000, ee = still ? 1 : eCubic(cl01(lt / 0.7));
+      var pers = myPersona(), gy0 = Math.round(H * 0.44);
+      p.noStroke(); fillc(GROUNDS.chart); p.rect(0, 0, W, H);
+      pushHit(0, 0, W, H, function () {}); // the walk owns the screen: nothing leaks through
+      var trW = walkTr(c), tp9 = trW && trW.ctx ? trW.ctx.tp : null, ay9 = (trW && trW.ctx && trW.ctx.ay) || 0;
+      // every page is a scene: the same sky language as the rest of the app
+      var o9 = { top: 14, bot: gy0 + 40, band: 42, tp: tp9, ay: ay9, t0: tr.t0, alf: ee, pers: pers, quality: 'flow', mover: null, moving: false };
+      if (sl.k === 'sun') { o9.mover = 'sun'; o9.natalKey = 'sun'; o9.natalLon = c.planets.sun.lon; o9.moving = true; }
+      else if (sl.k === 'moon') { o9.mover = 'moon'; o9.natalKey = 'moon'; o9.natalLon = c.planets.moon.lon; o9.moving = true; }
+      else if (sl.k === 'weather') {
+        var tt9 = null; try { tt9 = (trW && trW.timed && trW.timed[0]) || (trW && trW.daily && trW.daily[0]) || null; } catch (eW9) {}
+        o9.mover = (tt9 && tt9.tp) ? tt9.tp : 'jupiter'; o9.moving = true;
+        if (tt9 && tt9.asp) o9.quality = (tt9.asp.quality === 'flow' || tt9.asp.quality === 'opportunity') ? 'flow' : tt9.asp.quality === 'fusion' ? 'fusion' : 'tension';
+        if (tt9 && tt9.np && c.planets[tt9.np]) { o9.natalKey = tt9.np; o9.natalLon = c.planets[tt9.np].lon; o9.aspGlyph = tt9.asp ? tt9.asp.glyph : null; }
       }
-      p.noStroke(); fillc([0, 0, 0], 150); p.rect(0, 0, W, H); pushHit(0, 0, W, H, function () {}); // scrim swallows taps
-      if (step.tab != null) { var sb = UI.safeBottom || 0, navY = H - NAVH - sb, tw = W / 6, tx = step.tab * tw; p.noFill(); strokec(ACC, 255); p.strokeWeight(2.5); p.rect(tx + 4, navY + 4, tw - 8, NAVH - 8, 8); }
-      var x = sx(), w = cw(), cardH = 172, cy = H - NAVH - (UI.safeBottom || 0) - cardH - 22;
-      p.noStroke(); fillc(GROUNDS.chart); p.rect(x, cy, w, cardH, 12); p.noFill(); strokec(INK, 210); p.strokeWeight(1.5); p.rect(x, cy, w, cardH, 12);
-      setFont(MONO, 9, ACCTX, p.LEFT, p.TOP, 220); p.text('TOUR · ' + (UI.tour.step + 1) + ' / ' + TOUR.length, x + 16, cy + 14);
-      var lines = wrapLines(step.t, w - 32); setFont(SERIF, 16, INK, p.LEFT, p.TOP);
-      for (var i = 0; i < lines.length; i++) p.text(lines[i], x + 16, cy + 36 + i * 23);
-      var by = cy + cardH - 46, bh = 34, last = (UI.tour.step >= TOUR.length - 1);
-      tourBtn('Skip', x + 16, by, 84, bh, function () { endTour(); }, false);
-      tourBtn(last ? 'Done' : 'Next', x + w - 116, by, 100, bh, function () { if (last) endTour(); else UI.tour.step++; }, true);
+      skyWalkScene9(o9);
+      setFont(MONO, 9, ACCTX, p.CENTER, p.TOP, 220 * ee); p.text('THE WELCOME WALK \u00B7 ' + (tr.step + 1) + ' OF ' + N9, cx, gy0 + 54);
+      riseText(sl.title, cx, gy0 + 72, 24, SERIF, INK, tr.t0 + 420, 22);
+      if (sl.body) {
+        var bl9 = wrapLines2(sl.body, Math.min(w - 20, 460), SERIF, 15), li9;
+        for (li9 = 0; li9 < bl9.length; li9++) {
+          var la9 = still ? 1 : cl01((nowT() - tr.t0 - 900 - li9 * 380) / 380);
+          if (la9 > 0.01) { setFont(SERIF, 15, INK, p.CENTER, p.TOP, 235 * la9); p.text(bl9[li9], cx, gy0 + 116 + li9 * 23 + (1 - eCubic(la9)) * 8); }
+        }
+      }
+      if (sl.k === 'doors') {
+        var DR9 = [['HOME', 'your wheel, with today on its rim'], ['READ', 'you, your patterns, your seasons, today'], ['PEOPLE', 'the charts you love, beside yours'], ['MORE', 'lessons, the deck, the dials']];
+        var dy9 = gy0 + 118, di9, dx9 = x + Math.max(10, (w - 360) / 2);
+        for (di9 = 0; di9 < 4; di9++) {
+          var da9 = still ? 1 : cl01((nowT() - tr.t0 - 700 - di9 * 280) / 380);
+          if (da9 > 0.01) {
+            setFont(MONO, 10, ACCTX, p.LEFT, p.TOP, 235 * da9); bold(); p.text(DR9[di9][0], dx9, dy9 + (1 - eCubic(da9)) * 8); normal();
+            setFont(SERIF, 14.5, INK, p.LEFT, p.TOP, 235 * da9); p.text(DR9[di9][1], dx9 + 74, dy9 - 1 + (1 - eCubic(da9)) * 8);
+            dy9 += 34;
+          }
+        }
+        tourBtn('Begin \u203A', cx - 70, H - sb - 64, 140, 42, function () { endTour(); }, true);
+      } else {
+        var pl9 = still ? 1 : 0.6 + 0.4 * Math.sin(nowT() * 0.004);
+        setFont(MONO, 9.5, ACC, p.CENTER, p.TOP, 220 * pl9); p.text('TAP TO CONTINUE \u203A', cx, H - sb - 64);
+      }
+      if (sl.k !== 'doors') { var di2; for (di2 = 0; di2 < N9; di2++) { var on9 = tr.step === di2; p.noStroke(); fillc(on9 ? ACC : INK, on9 ? 235 : 90); p.ellipse(cx + (di2 - (N9 - 1) / 2) * 16, H - sb - 36, on9 ? 7 : 5, on9 ? 7 : 5); } }
+      pushHit(0, 40, W, H - 40 - sb - 100, function () {
+        if (!tr.pad) { tr.pad = 1; try { padStart([146.83, 220, 329.63], 0.014); } catch (eP9) {} }
+        if (tr.step >= N9 - 1) return;
+        tr.step++; tr.t0 = nowT();
+      });
+      tourBtn('Skip', x + w - 66, 12, 60, 26, function () { endTour(); }, false);
     }
 
     // ---------- lifecycle ----------
