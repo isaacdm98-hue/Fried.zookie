@@ -4322,11 +4322,25 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (!still && rv > 0.96) { for (var s2 = 0; s2 < 26; s2++) { strokec(ACC, 30 - s2 * 1.1); p.strokeWeight(1); p.line(cx, cy, ax(sw - s2 * 1.4, R * 0.8), ay(sw - s2 * 1.4, R * 0.8)); } }
       // outer ring — inks itself clockwise from the top during the reveal
       p.noFill(); strokec(INK, 220); p.strokeWeight(1.6); p.arc(cx, cy, R * 2, R * 2, -Math.PI / 2, -Math.PI / 2 + 2 * Math.PI * (er < 0.999 ? er : 1));
-      // zodiac
+      // zodiac: the glyph outside, and the sign NAMED in full, curved along the
+      // inside of the ring, so the wheel reads without a glossary
+      function arcWord9(txt, midA, r9, al9) {
+        var per9 = 6.8 / r9, n9 = txt.length, flip9 = Math.sin(midA) < -0.001, ci9;
+        for (ci9 = 0; ci9 < n9; ci9++) {
+          var off9 = (ci9 - (n9 - 1) / 2) * per9;
+          var a9 = flip9 ? midA + off9 : midA - off9;
+          p.push(); p.translate(cx + r9 * Math.cos(a9), cy - r9 * Math.sin(a9));
+          p.rotate((Math.PI / 2 - a9) + (flip9 ? Math.PI : 0));
+          setFont(MONO, 7.5, INK, p.CENTER, p.CENTER, al9);
+          p.text(txt.charAt(ci9), 0, 0);
+          p.pop();
+        }
+      }
       for (var z = 0; z < 12; z++) {
         var card = (z % 3 === 0); strokec(INK, (card ? 200 : 90) * er); p.strokeWeight(card ? 1.4 : 1);
         p.line(ax(z * 30, R), ay(z * 30, R), ax(z * 30, R - (card ? 12 : 6)), ay(z * 30, R - (card ? 12 : 6)));
         setFont(SANS, 12, INK, p.CENTER, p.CENTER, 150 * er); p.text(DATA.SIGNS[z].glyph, ax(z * 30 + 15, R + 15), ay(z * 30 + 15, R + 15));
+        arcWord9(DATA.SIGNS[z].name.toUpperCase(), (180 + (z * 30 + 15 - ascLon)) * Math.PI / 180, R - 22, 120 * er);
       }
       if (b.timeKnown) {
         for (var hh = 1; hh <= 12; hh++) { var ang = (hh === 1 || hh === 4 || hh === 7 || hh === 10); strokec(INK, (ang ? 70 : 30) * er); p.strokeWeight(ang ? 1.2 : 0.7); p.line(ax(c.cusps[hh], R * 0.3), ay(c.cusps[hh], R * 0.3), ax(c.cusps[hh], R * 0.82), ay(c.cusps[hh], R * 0.82)); }
@@ -5061,10 +5075,11 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         dcC5.restore();
       }
       normal(); ly += 48;
-      ly += hudStrip(c, b, x, ly, w) + 10;
+      // (the coordinates/element HUD sat here; the wheel speaks for itself now)
+      ly += 2;
       // (the Today teaser and headline sat here; the moon button up top is the one door to Today)
       ly += dial(c, b, ly) + 4;
-      setFont(MONO, 9.5, INK, p.CENTER, p.TOP, 130); p.text('TAP A BODY: IT LIGHTS ITS THREADS, MEANING BELOW', x + w / 2, sY(ly)); ly += 22;
+      setFont(MONO, 9.5, INK, p.CENTER, p.TOP, 130); p.text('TAP A PLANET TO READ IT', x + w / 2, sY(ly)); ly += 22;
       ly += reels(c, b, ly) + 14;
 
       // selected reading - animated, ticking degree

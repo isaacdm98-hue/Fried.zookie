@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.9.5 — 2026-07-04
+- **The wheel, named.** Every zodiac sign is now written out in full, curved along the inside of the ring (upright in the lower half), so the chart reads without knowing a single glyph. The glyphs stay outside as ornament.
+- **A slimmer front page.** The coordinates/element HUD is gone from above the wheel, and the tap hint is four words. The chart screen is now: your rising, the wheel, the big three, the reading.
+
 ## 1.9.4 — 2026-07-03
 - **The walk is animated, not computed.** The stride now comes from an authored pose sheet, eight hand-set keys per foot per cycle, the way an animator draws it: heel strikes toe-up, the sole rolls flat, the heel peels at push-off, the toe trails through the lift, and the shin snaps through to reach heel-first for the next step. The run gets the same treatment, with a real flight moment. In-betweens flow through a smooth periodic curve, so the motion settles into each step instead of gliding like a machine.
 - **The head rides level.** Real heads barely bob; the body moves beneath them. Half the walk bob is now absorbed before it reaches the head.
