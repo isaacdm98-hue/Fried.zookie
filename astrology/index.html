@@ -3824,6 +3824,20 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
   var AUDIO = { ctx: null };
   function soundOn() { return !!(APP.STATE.settings && APP.STATE.settings.sound); }
   var SANS0 = SANS, SERIF0 = SERIF;
+  function loadBrandFonts() {
+    if (UI.brandLoading || UI.brandLoaded || typeof FontFace === 'undefined') return;
+    UI.brandLoading = true;
+    try {
+      var FB = [
+        new FontFace('Fraunces', "url(https://cdn.jsdelivr.net/npm/@fontsource/fraunces@5.0.9/files/fraunces-latin-400-normal.woff2)", { weight: '400' }),
+        new FontFace('Fraunces', "url(https://cdn.jsdelivr.net/npm/@fontsource/fraunces@5.0.9/files/fraunces-latin-600-normal.woff2)", { weight: '700' }),
+        new FontFace('Space Grotesk', "url(https://cdn.jsdelivr.net/npm/@fontsource/space-grotesk@5.0.17/files/space-grotesk-latin-500-normal.woff2)", { weight: '400' }),
+        new FontFace('Space Grotesk', "url(https://cdn.jsdelivr.net/npm/@fontsource/space-grotesk@5.0.17/files/space-grotesk-latin-700-normal.woff2)", { weight: '700' })
+      ], done = 0, li;
+      function one(ff) { ff.load().then(function (l9) { try { document.fonts.add(l9); } catch (eA) {} done++; if (done >= 3) { UI.brandLoaded = true; applyFontPref(); } }, function () {}); }
+      for (li = 0; li < FB.length; li++) one(FB[li]);
+    } catch (eF9) { UI.brandLoading = false; }
+  }
   function applyFontPref() {
     var dys = !!(APP.STATE.settings && APP.STATE.settings.font === 'dyslexic');
     if (dys && typeof FontFace !== 'undefined' && !UI.dysLoaded && !UI.dysLoading) {
@@ -3834,8 +3848,10 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         f1.load().then(function (ff) { document.fonts.add(ff); return f2.load(); }).then(function (ff2) { document.fonts.add(ff2); UI.dysLoaded = true; UI.dysLoading = false; }, function () { UI.dysLoading = false; });
       } catch (eF) { UI.dysLoading = false; }
     }
-    SERIF = dys ? "'OpenDyslexic', " + SERIF0 : SERIF0;
-    SANS = dys ? "'OpenDyslexic', " + SANS0 : SANS0;
+    var serifB9 = UI.brandLoaded ? "'Fraunces', " + SERIF0 : SERIF0;
+    var sansB9 = UI.brandLoaded ? "'Space Grotesk', " + SANS0 : SANS0;
+    SERIF = dys ? "'OpenDyslexic', " + serifB9 : serifB9;
+    SANS = dys ? "'OpenDyslexic', " + sansB9 : sansB9;
   }
   function audioInit() { if (AUDIO.ctx || typeof window === 'undefined') return; try { var AC = window.AudioContext || window.webkitAudioContext; if (AC) AUDIO.ctx = new AC(); } catch (e) { AUDIO.ctx = null; } if (AUDIO.ctx && AUDIO.ctx.resume) try { AUDIO.ctx.resume(); } catch (e2) {} }
   function blip(freq, dur, vol) {
@@ -4965,8 +4981,8 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       setFont(MONO, 10, INK, p.RIGHT, p.TOP, 190); p.text(MON9[when.getUTCMonth()] + ' ' + when.getUTCFullYear(), x + w - 74, top + 12);
       if (dc) {
         // the age is an odometer: each digit rests solid, then rolls over in the last stretch before its wrap
-        dc.save(); dc.font = 'bold 72px Georgia, serif'; dc.textAlign = 'center'; dc.textBaseline = 'alphabetic';
-        var age9 = Math.floor(ageY), digs9 = String(age9).length, dw9 = 44, oy9 = top + 74;
+        dc.save(); dc.font = 'bold 72px ' + SERIF; dc.textAlign = 'center'; dc.textBaseline = 'alphabetic';
+        var age9 = Math.floor(ageY), digs9 = String(age9).length, dw9 = Math.ceil(dc.measureText('8').width) + 10, oy9 = top + 74;
         var gw9 = 146 + 22 + digs9 * dw9, lx9 = cx - 18 - gw9 / 2;
         dc.fillStyle = 'rgba(' + INK[0] + ',' + INK[1] + ',' + INK[2] + ',0.92)';
         dc.fillText('AGE', lx9 + 73, oy9);
@@ -6828,7 +6844,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       p.noFill(); strokec([236, 228, 208], 200 * flick); p.strokeWeight(2); p.ellipse(cx, cy2 + jit, R2 * 2, R2 * 2); p.ellipse(cx, cy2 + jit, R2 * 1.5, R2 * 1.5);
       strokec([236, 228, 208], 90); p.strokeWeight(1); p.line(cx - R2 * 1.15, cy2 + jit, cx + R2 * 1.15, cy2 + jit); p.line(cx, cy2 - R2 * 1.15 + jit, cx, cy2 + R2 * 1.15 + jit);
       strokec([236, 228, 208], 120 * flick); p.strokeWeight(R2 * 0.06); p.line(cx, cy2 + jit, cx + Math.cos(sweep) * R2 * 0.92, cy2 + jit + Math.sin(sweep) * R2 * 0.92);
-      if (dc) { dc.save(); dc.font = 'bold ' + Math.round(R2 * 1.15) + 'px Georgia, serif'; dc.textAlign = 'center'; dc.textBaseline = 'middle'; dc.fillStyle = 'rgba(240,232,212,' + (0.92 * flick).toFixed(3) + ')'; dc.fillText(String(num), cx, cy2 + jit + R2 * 0.04); dc.restore(); }
+      if (dc) { dc.save(); dc.font = 'bold ' + Math.round(R2 * 1.15) + 'px ' + SERIF; dc.textAlign = 'center'; dc.textBaseline = 'middle'; dc.fillStyle = 'rgba(240,232,212,' + (0.92 * flick).toFixed(3) + ')'; dc.fillText(String(num), cx, cy2 + jit + R2 * 0.04); dc.restore(); }
       setFont(MONO, 10, [214, 205, 186], p.CENTER, p.TOP, 170 * flick); p.text('A GUIDED JOURNEY THROUGH THE SKY', cx, cy2 + R2 * 1.35);
       pushHit(0, 0, W, H, function () { UI.lesson.t0 = nowT(); });
       UI.contentH.learn = 0;
@@ -9262,17 +9278,18 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
           p.noStroke(); fillc(ACC); p.ellipse(dx9, navY + NAVH - 12, 5 + str9, 5);
           if (Math.sin(oa2) >= 0 && !reduced()) { fillc(ACC); p.ellipse(omx, omy, 4.5, 4.5); }
         }
-        pushHit(tx, navY, tw, NAVH + sb, (function (sc) { return function () { if (UI.screen !== sc) { for (var n9 = 0; n9 < tabs.length; n9++) if (tabs[n9][1] === UI.screen) { UI.navFrom = n9; UI.navT = nowT(); break; } } UI.screen = sc; }; })(tabs[i][1]));
+        pushHit(tx, navY, tw, NAVH + sb, (function (sc, ti) { return function () { var cf9 = 0, n9; for (n9 = 0; n9 < tabs.length; n9++) if (tabs[n9][1] === UI.screen || (tabs[n9][1] === 'more' && MOREKIDS[UI.screen])) cf9 = n9; if (UI.screen !== sc) { UI.navFrom = cf9; UI.navT = nowT(); UI.transDir = ti >= cf9 ? 1 : -1; } UI.screen = sc; }; })(tabs[i][1], i));
       }
     }
     // a slow, graceful cross-fade on screen change — the new screen rises from its own ground colour
     function drawTransition() {
       var prog = cl01((nowT() - UI.fxT) / 440); if (prog >= 1) return;
       // bold colour-block wipe: full-height band sweeps across, fully covering at midpoint (the original, loved transition)
-      var band = -W + prog * 2 * W;
+      var dirT9 = UI.transDir || 1;
+      var band = dirT9 > 0 ? (-W + prog * 2 * W) : (W - prog * 2 * W);
       p.noStroke();
       fillc(INK); p.rect(band, 0, W, H);
-      fillc(ACC); p.rect(band + W - 7, 0, 7, H);
+      fillc(ACC); if (dirT9 > 0) p.rect(band + W - 7, 0, 7, H); else p.rect(band, 0, 7, H);
       fillc(ACC); p.rect(band, 0, 4, H);
       if (prog < 0.7) { var i; for (i = 0; i < 4; i++) { var yy = Math.random() * H; fillc(GROUNDS[UI.screen]); p.rect(band + W - 7, yy, 12 + Math.random() * 30, 2 + Math.random() * 3); } }
     }
@@ -9398,7 +9415,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (({ read: 1, learn: 1, settings: 1, people: 1, tarot: 1 })[UI.screen]) { p.noStroke(); p.fill(UI.bg[0], UI.bg[1], UI.bg[2], 158); p.rect(0, topY() - 8, W, H - (topY() - 8)); }
       hits = []; phits = []; p.rectMode(p.CORNER); p.textStyle(p.NORMAL); UI.mediaDrawn = false; UI.jDrawn = false;
       if (!UI.fontApplied) {
-        UI.fontApplied = true; try { applyFontPref(); } catch (eFp) {}
+        UI.fontApplied = true; try { applyFontPref(); } catch (eFp) {} try { loadBrandFonts(); } catch (eFb) {}
         try { var stM = APP.STATE.settings; if (stM && !stM.soundMigrated) { stM.soundMigrated = true; if (stM.sound !== true) stM.sound = true; APP.save(); } } catch (eSM) {}
         try { var stX = APP.STATE.settings; if (stX && !stX.textMigrated) { stX.textMigrated = true; if (!stX.textScale || stX.textScale === 1) stX.textScale = 1.15; APP.save(); UI.readCache = null; } } catch (eTM) {}
         try { var stG = APP.STATE.settings; if (stG && !stG.geoMigrated) { stG.geoMigrated = true; stG.geocodeOnline = true; APP.save(); } } catch (eGM) {}
@@ -9473,7 +9490,25 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       else if (UI.inCity) { UI.cityScroll = UI.cityScrollStart - dy; if (UI.cityScroll < 0) UI.cityScroll = 0; if (UI.cityScroll > UI.cityBoxMax) UI.cityScroll = UI.cityBoxMax; }
       else { UI.chartScrollAnim = null; var nv9 = UI.scrollStart - dy, mx9 = Math.max(0, (UI.contentH[UI.screen] || 0) - viewH()); if (!reduced()) { if (nv9 < 0) nv9 *= 0.35; else if (nv9 > mx9) nv9 = mx9 + (nv9 - mx9) * 0.35; } UI.scroll[UI.screen] = nv9; if (reduced()) clampScroll(); UI.scrollT = nowT(); }
     }
+    function navSwipe9(dx9) {
+      var TB9 = ['chart', 'read', 'people', 'more'], cur9 = UI.screen;
+      if (cur9 === 'learn' || cur9 === 'tarot' || cur9 === 'settings') cur9 = 'more';
+      var ti9 = -1, i9; for (i9 = 0; i9 < 4; i9++) if (TB9[i9] === cur9) ti9 = i9;
+      if (ti9 < 0) return false;
+      var nx9 = ti9 + (dx9 < 0 ? 1 : -1);
+      if (nx9 < 0 || nx9 > 3) return false;
+      UI.transDir = dx9 < 0 ? 1 : -1; UI.screen = TB9[nx9]; buzz(8); return true;
+    }
     function release(x, y) {
+      // a horizontal swipe slides between the four doors, wipe following the hand
+      if (UI.pressX != null) {
+        var swx9 = x - UI.pressX, swy9 = y - UI.pressY;
+        if (Math.abs(swx9) > 72 && Math.abs(swx9) > 2.2 * Math.abs(swy9) &&
+            !UI.inReel && !UI.inSlider && !UI.inCity && UI.screen !== 'onboard' &&
+            !UI.today && !UI.pcard && !UI.reel && !UI.lesson && !UI.dailyNews && !UI.lifeWalk && !UI.walk && !UI.rings && !UI.story && !UI.tour && !UI.howtour && !UI.setGuide && !UI.video && !UI.lifeView && !UI.calView && !UI.viewPerson && !UI.padd && !UI.familyTree && !UI.learnSearch && !UI.tarotRit) {
+          if (navSwipe9(swx9)) { UI.ptrDown = false; UI.dragging = false; return; }
+        }
+      }
       UI.ptrDown = false;
       if (UI.inReel) { UI.inReel = false; return; }
       if (UI.inSlider) { UI.inSlider = false; return; }

@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.3.0 — 2026-07-04
+- **The app gets its own face.** Fraunces, a warm and genuinely characterful old-style serif, carries every reading and title; Space Grotesk carries the interface. Both load once (about 100KB together), stay cached forever, and fall back gracefully to the old stacks offline, composing cleanly with the OpenDyslexic preference.
+- **The last squash found.** The Reel's giant AGE digits sat on a fixed 44px grid whatever the font's real width; the grid now measures the actual digits.
+- **Swipe between the doors.** A horizontal swipe slides Home, Read, People and More past each other, and the beloved colour-block wipe now follows your hand: swipe left and it sweeps left, tap a tab to the right and it sweeps right, its accent edge always leading.
+
 ## 2.2.2 — 2026-07-04
 - **Real constellations in the sky.** Every story scene now carries the twelve zodiac constellations, each simplified from its true star pattern: the Hyades V and the Pleiades in Taurus, the Sickle of Leo, the Scorpion's hook around Antares, the Teapot of Sagittarius, the twin lines of Gemini crowned by Castor and Pollux, and the rest. Their lines draw themselves in star by star, and the constellation the mover stands in wakes brighter: a presence in the sky, not a label under it.
 - **Planets with character.** The background planets stop being identical dots: each glows in its own colour and size, Saturn wears its ring, the Moon its crescent, alpha stars their halos.
