@@ -792,16 +792,89 @@ var APP = (function () {
     return nameFor(key) + ' in ' + p.signName + (STATE.birth.timeKnown ? ' (house ' + p.house + ', ' + DATA.HOUSES[p.house - 1].title + ')' : '');
   }
   function domMod(m) { var b = 'cardinal', k; for (k in m) if (m[k] > m[b]) b = k; return b; }
+  var MICRO = {
+    moon: {
+      Aries: 'you feel the feeling before the room admits it exists, and you say so first',
+      Taurus: 'when your day breaks, you fix it with food, a shower, or the same three songs, and it works',
+      Gemini: 'you do not know what you feel until you have said it out loud to someone, twice',
+      Cancer: 'you remember exactly who was kind to you in 2014, and exactly who was not',
+      Leo: 'being left off the group photo stings more than you will ever, ever admit',
+      Virgo: 'when you are anxious you clean something, and everyone near you knows the signs',
+      Libra: 'you say "whatever you prefer" while privately holding a strong, fully formed preference',
+      Scorpio: 'you test people in small ways they never notice, and file the results forever',
+      Sagittarius: 'your cure for a heavy week is distance: a drive, a flight, any horizon at all',
+      Capricorn: 'you answer "how are you" with a status report on your tasks, not your heart',
+      Aquarius: 'you can be warmest in a crowd and quietest with the person closest to you',
+      Pisces: 'you absorb the mood of whoever you sat next to, and carry it home by accident'
+    },
+    mercury: {
+      Aries: 'you finish other people\u2019s sentences, usually correctly, always too soon',
+      Taurus: 'you are slow to answer and impossible to budge afterwards, and you are usually right',
+      Gemini: 'you have four tabs of half-written messages open in your head at all times',
+      Cancer: 'you remember the tone of what was said long after everyone forgot the words',
+      Leo: 'you tell a story better the third time, and you know it, and you tell it a third time',
+      Virgo: 'you redraft the text message four times, then send something close to the first version',
+      Libra: 'you argue both sides so well that people forget to ask which one you actually hold',
+      Scorpio: 'you ask one quiet question that shows you already knew the answer',
+      Sagittarius: 'you answer the question people should have asked instead of the one they did',
+      Capricorn: 'you say in one dry sentence what took the meeting an hour to avoid saying',
+      Aquarius: 'your best ideas arrive sideways, in the shower, and are ten years early',
+      Pisces: 'you lose the thread mid-sentence because a better, stranger thread appeared'
+    },
+    venus: {
+      Aries: 'you know within one coffee whether it is a yes, and no amount of advice changes it',
+      Taurus: 'your love language is the good chair, the good meal, and not having to leave the house',
+      Gemini: 'you fall for the conversation first; the rest of the person arrives later',
+      Cancer: 'you feed people you love and worry about them on the way home',
+      Leo: 'you want the grand gesture and pretend you would settle for less; you would not',
+      Virgo: 'you show love by fixing something small they had stopped noticing was broken',
+      Libra: 'you cannot fully relax in a room where two people you love are quietly at odds',
+      Scorpio: 'half-interest offends you: it is everything, honestly, or you would rather nothing',
+      Sagittarius: 'you love hardest the people who never try to shrink your calendar',
+      Capricorn: 'you flirt by being useful, and commit the way other people sign contracts',
+      Aquarius: 'you need the friendship inside the romance or the romance quietly starves',
+      Pisces: 'you fall for who someone could be, and you are more often right than the cynics say'
+    },
+    mars: {
+      Aries: 'your anger is a match: instant, bright, and honestly ash within the hour',
+      Taurus: 'you cannot be rushed, and pushing you only pours concrete on the spot where you stand',
+      Gemini: 'you win arguments with footnotes, and can be talked out of anything except talking',
+      Cancer: 'you fight sideways: silence first, the real sentence three days later in the kitchen',
+      Leo: 'disrespect moves you faster than danger ever could',
+      Virgo: 'your temper comes out as editing: of plans, of drafts, of other people\u2019s methods',
+      Libra: 'you go to war only for fairness, and you bring receipts, minutes and a seating plan',
+      Scorpio: 'you never raise your voice; you lower the temperature, and the room feels it',
+      Sagittarius: 'your fight-or-flight has a third setting: book something and be gone by Friday',
+      Capricorn: 'your revenge is a five-year plan executed politely and on schedule',
+      Aquarius: 'you dig in hardest when someone says "that is just how it is done"',
+      Pisces: 'you dodge the fight for weeks, then end it with one sentence nobody saw coming'
+    },
+    rising: {
+      Aries: 'you walk into rooms like a decision has already been made',
+      Taurus: 'strangers trust you with directions, dogs, and their unlocked phone',
+      Gemini: 'people tell you their life story in queues; you have that face',
+      Cancer: 'new people either want to protect you or want you to mother them, within minutes',
+      Leo: 'you get remembered by name at places you visited once',
+      Virgo: 'people assume you know the plan; when there is no plan, they assume you have one anyway',
+      Libra: 'strangers apologise to you when they bump into someone else',
+      Scorpio: 'people confess things to you unprompted, then wonder aloud why they did that',
+      Sagittarius: 'you read as the person who knows a shortcut, and you usually do',
+      Capricorn: 'people take you for more senior than you are, and give you the bill accordingly',
+      Aquarius: 'you get described as "hard to explain" by people who clearly enjoyed trying',
+      Pisces: 'lost tourists, stray cats and sad friends all find you without a map'
+    }
+  };
+  function microFor(kind, signName) { return (MICRO[kind] && MICRO[kind][signName]) || ''; }
   function composeCore(c) {
     var sun = c.planets.sun, moon = c.planets.moon, asc = c.ascBody, parts = [], tk = STATE.birth.timeKnown;
     // every beat draws its lead from a seeded variety bank, so no two charts read in the same shape
     var seed = sun.sign + '|' + Math.floor(sun.deg) + '|' + moon.sign + '|' + Math.floor(moon.deg) + '|' + chartFP(c);
     parts.push(vpick(['At the core, ', 'At the centre of it all, ', 'Start with the heart of it: ', 'The engine room first: ', 'Before anything else, ', 'The chart opens on ', 'First, the core: ', 'Everything here orbits one fact: '], seed + 'c') + bodyLine(c, 'sun') + '. ' + DATA.SUN_IN_SIGN[sun.sign]);
-    parts.push(vpick(['Underneath that, ', 'Beneath the daylight, ', 'Below the surface, ', 'Behind it, quieter, ', 'Under all of it runs ', 'The night side of you: ', 'Privately, though, ', 'Where no one is watching, '], seed + 'u') + bodyLine(c, 'moon') + '. ' + DATA.MOON_IN_SIGN[moon.sign]);
+    parts.push(vpick(['Underneath that, ', 'Beneath the daylight, ', 'Below the surface, ', 'Behind it, quieter, ', 'Under all of it runs ', 'The night side of you: ', 'Privately, though, ', 'Where no one is watching, '], seed + 'u') + bodyLine(c, 'moon') + '. ' + DATA.MOON_IN_SIGN[moon.sign] + ' The tell: ' + microFor('moon', moon.signName) + '.');
     if (tk) {
       var rn = DATA.SIGNS[asc.sign].ruler, rp = c.planets[RULERKEY[rn]];
       var rulerTxt = rp ? (' The ruler of your rising, ' + rn + ', sits in ' + rp.signName + ' in the ' + ordinal(rp.house) + ' house: that is where a lot of your energy actually goes.') : '';
-      parts.push(vpick(['On the surface, ', 'At the front door, ', 'The face you lead with: ', 'First impression: ', 'The opening scene is ', 'Meeting you, people first find '], seed + 'r') + asc.signName + ' rising. ' + DATA.RISING_IN_SIGN[asc.sign] + rulerTxt);
+      parts.push(vpick(['On the surface, ', 'At the front door, ', 'The face you lead with: ', 'First impression: ', 'The opening scene is ', 'Meeting you, people first find '], seed + 'r') + asc.signName + ' rising. ' + DATA.RISING_IN_SIGN[asc.sign] + ' In practice: ' + microFor('rising', asc.signName) + '.' + rulerTxt);
     }
     var se = DATA.SIGNS[sun.sign].element, me = DATA.SIGNS[moon.sign].element;
     if (tk) {
@@ -3761,7 +3834,7 @@ var APP = (function () {
     solarReturnChart: solarReturnChart, upcomingEclipses: upcomingEclipses, bestDaysFor: bestDaysFor, electIntents: electIntents,
     progressedTimeline: progressedTimeline, retroSeasons: retroSeasons,
     exportBook: exportBook, exportBackup: exportBackup, importBackup: importBackup, composeDailyEssay: composeDailyEssay, chartFP: chartFP, weaveNote: weaveNote, termOf: termOf, anA: anA, composeColleague: composeColleague, exportColleague: exportColleague,
-    addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenOf: almutenOf, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, returnsAlmanac: returnsAlmanac, progressedLunation: progressedLunation, planetaryHours: planetaryHours, moonVoidWindow: moonVoidWindow, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
+    microFor: microFor, addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenOf: almutenOf, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, returnsAlmanac: returnsAlmanac, progressedLunation: progressedLunation, planetaryHours: planetaryHours, moonVoidWindow: moonVoidWindow, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
     saveCurrentChart: saveCurrentChart, deleteSavedChart: deleteSavedChart, activateSavedChart: activateSavedChart, activeChartKey: activeChartKey, chartKey: chartKey, famousMatches: famousMatches, lifeTransits: lifeTransits, upcomingTransits: upcomingTransits, transitMotion: transitMotion, compositeChart: compositeChart,
     nameFor: nameFor, glyphFor: glyphFor, sgAbbr: sgAbbr, pad: pad,
     domElement: domElement, lowElement: lowElement, domMod: domMod, tzOffsetHours: tzOffsetHours
@@ -4705,6 +4778,15 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (dnote) ly += paragraph(dnote, x, ly, w, 13.5, INK, SERIF, 20, 210 * ca) + 4;
       ly += 8;
       ly += paragraph(planetBlurb(c, key), x, ly, w, 16.5, INK, SERIF, 26, 255 * ca) + 16;
+      // the tell: the small behaviour that gives this placement away in a room
+      (function () {
+        var mk9 = (key === 'asc') ? 'rising' : key;
+        var tell9 = APP.microFor ? APP.microFor(mk9, pl.signName) : '';
+        if (tell9) {
+          eyebrow('The tell', x, ly, ACC); ly += 20;
+          ly += paragraph('In a room, this is the giveaway: ' + tell9 + '.', x, ly, w, 15.5, INK, SERIF, 24, 245 * ca) + 14;
+        }
+      })();
       var asps = storyAspects(c, key);
       if (asps.length) {
         eyebrow('How it connects', x, ly, ACC); ly += 24;
@@ -8409,13 +8491,16 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       for (dsh9 = 0; dsh9 < 7; dsh9++) { var dxW9 = W - (((dBase9 + dsh9 * 97) % (W + 60)) + (W + 60)) % (W + 60) + 30; p.line(dxW9, gy + 9 + (dsh9 % 3) * 5, dxW9 - 11, gy + 9 + (dsh9 % 3) * 5); }
       p.noStroke();
       // and you, walking it (or running to meet a return, or standing to look)
-      var fh9 = Math.min((gy - topS) * 0.44, 96) * (o.hMul || 1), wkX9 = W * 0.44;
+      var fh9 = Math.min((gy - topS) * 0.44, 96) * (o.hMul || 1);
+      // the walker ENTERS: in from the left over the first breaths, then holds the frame
+      var entS9 = (o.ph == null && o.moving !== false && !still) ? eCubic(cl01((nowT() - o.t0) / 2400)) : 1;
+      var wkX9 = -70 + (W * 0.44 + 70) * entS9;
       var ph9 = o.ph != null ? o.ph : nowT() * (o.run ? 0.017 : 0.0125) * prs9.pace;
       var fig9 = { x: wkX9, y: gy, h: fh9, col: [38, 30, 24], rim: prs9.rim, rimOff: [-2, -1.4], crouch: prs9.crouch + (o.crouchAdd || 0), look: 0.3 };
       if (o.moving !== false) {
         var g9s = o.run ? runPose9(wkX9, gy, fh9, ph9) : gaitAt(wkX9, gy, fh9, ph9);
         fig9.fL = g9s.fL; fig9.fR = g9s.fR; fig9.bob = g9s.bob;
-        fig9.lean = o.run ? 0.26 : (o.quality === 'tension' ? 0.15 : 0.06 + prs9.lean * 0.4);
+        fig9.lean = (o.run ? 0.26 : (o.quality === 'tension' ? 0.15 : 0.06 + prs9.lean * 0.4)) + (1 - entS9) * 0.05;
         if (o.run) { fig9.hL = { x: wkX9 + fh9 * 0.02 + g9s.hLdx, y: gy - fh9 * 0.66 + g9s.hLdy }; fig9.hR = { x: wkX9 + fh9 * 0.02 + g9s.hRdx, y: gy - fh9 * 0.66 + g9s.hRdy }; }
       } else { fig9.look = 0.4; }
       p.noStroke(); fillc([8, 8, 14], 90 * ee); p.ellipse(wkX9, gy + 2, fh9 * 0.42, 7);

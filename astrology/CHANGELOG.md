@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.5.0 — 2026-07-04
+- **The tells.** Sixty new lines of behaviour-level writing, one for every Moon, Mercury, Venus and Mars sign and every rising sign: not traits but giveaways ("you redraft the text message four times, then send something close to the first version"; "strangers apologise to you when they bump into someone else"). Your Moon's tell and your rising's tell are woven into the core reading, and every planet's page now ends on THE TELL: the small thing that gives the placement away in a room.
+- **The walker enters.** Every scene now begins with the figure walking in from offscreen and settling into frame, leaning slightly into the arrival, instead of appearing mid-stage.
+
 ## 2.4.1 — 2026-07-04
 - **The words gain three layers.** Every transit sentence now weighs, in order: the mover's own condition in the sky it is crossing (a Saturn at home in Aquarius speaks differently from a Saturn far from home in Cancer); the natal wire it lands on ("your natal Venus sextile Jupiter runs easy in you, and leaning on it softens this", or "your natal square has trained you for exactly this pressure, so trust the old skills"); and sect: Saturn and Mars behave differently in a day chart and a night one, and the sentence says so.
 - **Natal aspects name their stage.** With a birth time, each aspect line now says which two houses it plays between: the arena, not just the wiring.
