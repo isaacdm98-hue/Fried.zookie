@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.1.0 — 2026-07-04
+- **Lessons happen at a pond.** Every journey diagram now stands over still water: the idea reflected below the waterline, shimmer drifting across it, and the water answering your touch with ripples. The words arrive one line at a time and rest gently on the surface; finishing a chapter sends a small star sailing down to its dot on the road.
+- **Elbows, finally right.** Leftover mirrored elbow bends from the old front-view figure (the intro runner's pumping arms, the leap, the friends' greeting wave) are corrected: in profile, elbows bend backward along the direction of travel.
+- **The walk breathes.** The torso now sways subtly with the stride instead of riding welded upright, timed to the same authored curve as the body's rise and fall.
+- **Squashed type fixed.** Long sign names around the wheel (Sagittarius, Capricorn) filled their whole thirty-degree segment and collided with their neighbours; each name is now capped at twenty-four degrees of arc.
+
 ## 2.0.1 — 2026-07-04
 - **Learn is the journey now.** The encyclopedia shell is gone: Learn opens on the guided journey through your own chart, the road you are walking, one door to charts like yours, and search. Every reference page (signs, houses, glossary, history, myths) still exists, but answers to search instead of shouting from a menu.
 - **The transit chapter teaches with the real sky.** When the journey reaches "The sky keeps turning," the abstract diagram gives way to the app's one scene language: today's actual sky, the strongest transit threaded to your natal point, you walking beneath it.

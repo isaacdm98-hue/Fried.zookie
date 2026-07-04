@@ -4325,7 +4325,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       // zodiac: the glyph outside, and the sign NAMED in full, curved along the
       // inside of the ring, so the wheel reads without a glossary
       function arcWord9(txt, midA, r9, al9) {
-        var per9 = 6.8 / r9, n9 = txt.length, flip9 = Math.sin(midA) < -0.001, ci9;
+        var n9 = txt.length, per9 = Math.min(6.8 / r9, (24 * Math.PI / 180) / Math.max(1, n9)), flip9 = Math.sin(midA) < -0.001, ci9;
         for (ci9 = 0; ci9 < n9; ci9++) {
           var off9 = (ci9 - (n9 - 1) / 2) * per9;
           var a9 = flip9 ? midA + off9 : midA - off9;
@@ -5290,7 +5290,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         hL: { dx: -cy8(WK_X, ua) * 0.62 * h * dir9, dy: h * 0.30 - Math.abs(cy8(WK_X, ua)) * h * 0.06 },
         hR: { dx: -cy8(WK_X, uaR) * 0.62 * h * dir9, dy: h * 0.30 - Math.abs(cy8(WK_X, uaR)) * h * 0.06 },
         bob: cy8(WK_B, u) * h,
-        lean: 0.07
+        lean: 0.07 + cy8(WK_B, u) * 1.6
       };
     }
     function actorFigure(rig, alf) {
@@ -5474,7 +5474,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         fig.fL = gF.fL; fig.fR = gF.fR; fig.bob = gF.bob; fig.lean = -0.10; fig.look = -0.35;
       } else {
         fig.crouch = ppF.crouch;
-        if (tone === 'warm') { fig.look = -0.5; var wvF = reduced() ? 0 : Math.sin(nowT() * 0.006 + gapIdx) * 2.5; fig.hR = { x: fx - fh * 0.28 + wvF, y: gy - fh * 0.80, bend: 1 }; }
+        if (tone === 'warm') { fig.look = -0.5; var wvF = reduced() ? 0 : Math.sin(nowT() * 0.006 + gapIdx) * 2.5; fig.hR = { x: fx - fh * 0.28 + wvF, y: gy - fh * 0.80, bend: -1 }; }
         else if (tone === 'spark') { fig.look = -0.2 - (reduced() ? 0.1 : 0.25 * Math.max(0, Math.sin(nowT() * 0.0011 + gapIdx * 2))); fig.lean = -0.03; }
         else fig.look = -0.2 + ppF.look * 0.4;
       }
@@ -6580,7 +6580,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         if (arrB < 0.985) { var phB = ((x + w + 40) - fxB) / (fhB * 0.42 / pTh.pace) * Math.PI; var gtB = gaitAt(fxB, gyB, fhB, phB, -1); figB.fL = gtB.fL; figB.fR = gtB.fR; figB.bob = gtB.bob; figB.lean = -0.10; figB.look = -0.35; }
         else {
           figB.crouch = pTh.crouch;
-          if (toneB === 'warm') { figB.look = -0.5; var wvB = still9 ? 0 : Math.sin(nowT() * 0.006) * 2.2; figB.hR = { x: fxB - fhB * 0.28 + wvB, y: gyB - fhB * 0.80, bend: 1 }; }
+          if (toneB === 'warm') { figB.look = -0.5; var wvB = still9 ? 0 : Math.sin(nowT() * 0.006) * 2.2; figB.hR = { x: fxB - fhB * 0.28 + wvB, y: gyB - fhB * 0.80, bend: -1 }; }
           else if (toneB === 'spark') { figB.look = -0.2 - (still9 ? 0.1 : 0.25 * Math.max(0, Math.sin(nowT() * 0.0011))); figB.lean = -0.03; }
           else figB.look = -0.25;
         }
@@ -6853,7 +6853,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     }
     function lessonSeen(i) { try { var st = APP.STATE.settings; if (!st) return; st.lseen = st.lseen || {}; if (!st.lseen[i]) { st.lseen[i] = 1; APP.save(); } } catch (e) {} }
     function lqRecord(k, ok) { try { var st = APP.STATE.settings; if (!st) return; st.lq = st.lq || {}; st.lq[k] = ok ? 1 : 0; APP.save(); } catch (e) {} }
-    function lessonNext() { if (!UI.lesson) return; if (UI.lesson.i >= LESSON.length - 1) { UI.lesson = null; return; } UI.lesson.i++; UI.lesson.beat = 0; UI.lesson.qa = null; UI.lesson.t0 = nowT(); lessonSeen(UI.lesson.i); }
+    function lessonNext() { if (!UI.lesson) return; UI.lessonStarT = nowT(); blip(659, 0.18, 0.03); if (UI.lesson.i >= LESSON.length - 1) { UI.lesson = null; return; } UI.lesson.i++; UI.lesson.beat = 0; UI.lesson.qa = null; UI.lesson.t0 = nowT(); lessonSeen(UI.lesson.i); }
     function lessonPrev() { if (UI.lesson && UI.lesson.i > 0) { UI.lesson.i--; UI.lesson.beat = 0; UI.lesson.qa = null; UI.lesson.t0 = nowT(); } }
     function lessonBeatsFor(sc, c, b) {
       UI.lbCache = UI.lbCache || {};
@@ -7208,6 +7208,22 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       }
       if (!liveScene9) { p.push(); p.translate(cx, sceneCY - drift); p.scale(cam); drawScene(sc.k, 0, 0, sceneR, still ? nowT() : elapsed + 400); p.pop(); }
       if (dc) dc.restore();
+      // ---- the pond: the idea reflected in still water; tap the water and it answers ----
+      if (!inQuiz && !liveScene9 && dc) {
+        var pondY = sceneCY + sceneR * 0.98, pondH = Math.max(44, Math.round(vh * 0.085));
+        dc.save(); dc.beginPath(); dc.rect(x - 6, pondY, w + 12, pondH); dc.clip();
+        dc.globalAlpha = 0.15 * alpha;
+        p.push(); p.translate(cx, pondY + (pondY - (sceneCY - drift)) * 0.72); p.scale(cam, -cam * 0.72); drawScene(sc.k, 0, 0, sceneR, still ? nowT() : elapsed + 400); p.pop();
+        dc.globalAlpha = 1;
+        // shimmer: slow light lines drifting across the reflection
+        if (!still) { var sh9i; for (sh9i = 0; sh9i < 4; sh9i++) { var shy9 = pondY + 6 + ((sh9i * 37 + nowT() * 0.008) % (pondH - 10)); strokec(GROUNDS[UI.screen], 70); p.strokeWeight(1.6); p.line(x + ((sh9i * 131) % 40), shy9, x + w - ((sh9i * 87) % 52), shy9); p.noStroke(); } }
+        // ripples where the water was touched
+        if (UI.pondRips) { var rp9i; for (rp9i = UI.pondRips.length - 1; rp9i >= 0; rp9i--) { var rp9o = UI.pondRips[rp9i], rt9 = (nowT() - rp9o.t) / 1100; if (rt9 >= 1) { UI.pondRips.splice(rp9i, 1); continue; } p.noFill(); strokec(INK, 120 * (1 - rt9)); p.strokeWeight(1.2); p.ellipse(rp9o.x, rp9o.y, rt9 * 90, rt9 * 26); if (rt9 > 0.18) p.ellipse(rp9o.x, rp9o.y, (rt9 - 0.18) * 90, (rt9 - 0.18) * 26); } p.noStroke(); }
+        dc.restore();
+        // waterline
+        strokec(INK, 60 * alpha); p.strokeWeight(1); p.line(x + 8, pondY, x + w - 8, pondY); p.noStroke();
+        (function (pY9, pH9) { pushHit(x, pY9, w, pH9, function (hx9, hy9) { UI.pondRips = UI.pondRips || []; if (UI.pondRips.length < 6) UI.pondRips.push({ x: UI.pressX || cx, y: Math.max(pY9 + 6, Math.min(pY9 + pH9 - 4, UI.pressY || (pY9 + pH9 / 2))), t: nowT() }); buzz(6); }); })(pondY, pondH);
+      }
       var ty = top + vh * (inQuiz ? 0.285 : 0.52), slideIn = (1 - e) * 14;
       p.textFont(SANS); p.textSize(28); var tl = wrapLines(sc.t, w - 24); setFont(SANS, 28, INK, p.CENTER, p.TOP, 255 * (inQuiz ? 1 : alpha)); bold(); for (i = 0; i < tl.length; i++) p.text(tl[i], cx, ty + i * 33); normal(); ty += tl.length * 33 + 10;
       if (inQuiz) {
@@ -7231,7 +7247,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
           tourBtn(last ? 'Finish ›' : 'Continue ›', cx - 74, ty, 148, 42, function () { lessonNext(); }, true); ty += 50;
         }
       } else {
-        p.textFont(SERIF); p.textSize(18); var bl = wrapLines(btxt, w - 30); setFont(SERIF, 18, INK, p.CENTER, p.TOP, 235 * alpha); for (i = 0; i < bl.length; i++) p.text(bl[i], cx, ty + slideIn + i * 27); ty += bl.length * 27 + 22;
+        p.textFont(SERIF); p.textSize(18); var bl = wrapLines(btxt, w - 30); setFont(SERIF, 18, INK, p.CENTER, p.TOP, 235 * alpha); for (i = 0; i < bl.length; i++) { var lb9 = still ? 0 : Math.sin(nowT() * 0.0012 + i * 1.7) * 1.6; var lw9 = still ? 1 : cl01((elapsed - 350 - i * 300) / 420); if (lw9 > 0.01) { setFont(SERIF, 18, INK, p.CENTER, p.TOP, 235 * alpha * lw9); p.text(bl[i], cx, ty + slideIn + i * 27 + lb9 + (1 - eCubic(lw9)) * 8); } } ty += bl.length * 27 + 22;
       }
       // top bar: chapter · beat label + a film-style progress bar across the chapter's beats
       var nb = beats.length + (qz ? 1 : 0);
@@ -7244,6 +7260,14 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         var on2 = (i === UI.lesson.i), star = lqm[LESSON[i].k] === 1;
         p.noStroke(); fillc(on2 ? ACC : (star ? ACC : INK), on2 ? 255 : (star ? 140 : 80)); p.ellipse(dsx + i * dxw + dxw / 2, top + vh - 16, on2 ? 7 : 5, on2 ? 7 : 5);
         (function (idx) { pushHit(dsx + idx * dxw, top + vh - 29, dxw, 26, function () { UI.lesson.i = idx; UI.lesson.beat = 0; UI.lesson.qa = null; UI.lesson.t0 = nowT(); lessonSeen(idx); }); })(i);
+      }
+      // a chapter earned: a small star sails down to its dot on the road
+      if (UI.lessonStarT && nowT() - UI.lessonStarT < 700 && !still) {
+        var stT9 = eCubic(cl01((nowT() - UI.lessonStarT) / 700));
+        var sfx9 = cx + (dsx + UI.lesson.i * dxw + dxw / 2 - cx) * stT9;
+        var sfy9 = (top + vh * 0.42) + ((top + vh - 16) - (top + vh * 0.42)) * stT9 - Math.sin(stT9 * Math.PI) * 60;
+        strokec(ACC, 235 * (1 - stT9 * 0.3)); p.strokeWeight(1.4);
+        p.line(sfx9 - 5, sfy9, sfx9 + 5, sfy9); p.line(sfx9, sfy9 - 5, sfx9, sfy9 + 5); p.noStroke();
       }
       if (last && !qz && UI.lesson.beat >= beats.length - 1) { tourBtn('Read my chart ›', cx - 152, top + vh - 96, 148, 42, function () { UI.lesson = null; UI.screen = 'chart'; }, true); tourBtn('Explore Learn', cx + 6, top + vh - 96, 148, 42, function () { UI.lesson = null; }, false); }
       else if (!inQuiz) { setFont(MONO, 10, INK, p.CENTER, p.TOP, 150 * alpha); p.text(auto ? 'PLAYING · TAP TO SKIP AHEAD' : 'TAP TO CONTINUE  ›', cx, top + vh - 42); }
@@ -8432,14 +8456,14 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         var ph9 = wx / (fh0 * 0.5) * Math.PI;
         var rp9 = runPose9(rx, gy0, fh0, ph9);
         fig9.fL = rp9.fL; fig9.fR = rp9.fR; fig9.bob = rp9.bob; fig9.lean = rp9.lean;
-        fig9.hL = { x: rx + fh0 * 0.02 + rp9.hLdx, y: gy0 - fh0 * 0.66 + rp9.hLdy, bend: -1 };
+        fig9.hL = { x: rx + fh0 * 0.02 + rp9.hLdx, y: gy0 - fh0 * 0.66 + rp9.hLdy, bend: 1 };
         fig9.hR = { x: rx + fh0 * 0.02 + rp9.hRdx, y: gy0 - fh0 * 0.66 + rp9.hRdy, bend: 1 };
         // summer's emotional beat: a leap, arms open, hanging a breath longer than physics
         if (bi === 2 && lt > 3.1 && lt < 4.5) {
           var jt9 = (lt - 3.1) / 1.4, jy9 = Math.sin(Math.min(1, jt9) * Math.PI) * fh0 * 0.42;
           fig9.y = gy0 - jy9; fig9.bob = 0; fig9.crouch = jt9 < 0.2 ? 0.3 * (1 - jt9 / 0.2) : 0;
           fig9.fL = { x: rx - fh0 * 0.16, y: fig9.y - jy9 * 0.1 }; fig9.fR = { x: rx + fh0 * 0.26, y: fig9.y - fh0 * 0.06 };
-          fig9.hL = { x: rx - fh0 * 0.30, y: fig9.y - fh0 * 0.86, bend: -1 }; fig9.hR = { x: rx + fh0 * 0.30, y: fig9.y - fh0 * 0.88, bend: 1 };
+          fig9.hL = { x: rx - fh0 * 0.30, y: fig9.y - fh0 * 0.86, bend: 1 }; fig9.hR = { x: rx + fh0 * 0.30, y: fig9.y - fh0 * 0.88, bend: 1 };
           fig9.lean = 0.18;
         }
       } else if (bi === 3) {
