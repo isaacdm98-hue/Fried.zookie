@@ -3807,7 +3807,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
   var UI = {
     screen: (APP.STATE.birth ? 'chart' : 'onboard'), prevScreen: '',
     scroll: {}, contentH: {}, selPlanet: 'sun', prevSel: 'sun',
-    tarotTab: 'spreads', spread: 1, card: null, tarotDealtSpread: -1, tarotDealT: 0, learnCat: null, learnItem: null,
+    tarotTab: null, spread: 1, card: null, tarotDealtSpread: -1, tarotDealT: 0, learnCat: null, learnItem: null,
     askTopic: null, askAns: '', readCache: null, draft: null,
     viewPerson: null, padd: null, familyTree: false, bondCache: null, bondFor: null, bondT: 0,
     cityScroll: 0, bg: null,
@@ -5998,6 +5998,9 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         if (rt === 'timing') {
         // ===== the phase of your life: the progressed lunation cycle, after Rudhyar =====
         if (!UI.plun) { try { UI.plun = APP.progressedLunation(c, b); UI.plunT = nowT(); } catch (eL9) { UI.plun = false; } }
+        if (UI.plun && UI.plun.name) {
+          ly += paragraph('The headline: you are in the ' + UI.plun.name + ' phase of your own thirty-year cycle. Everything below is the machinery behind that one sentence.', x, ly, w, 15.5, INK, SERIF, 23, 235) + 16;
+        }
         if (UI.plun) {
           var PL = UI.plun, PLN9 = ['New', 'Crescent', 'First Quarter', 'Gibbous', 'Full', 'Disseminating', 'Last Quarter', 'Balsamic'];
           var PLTX9 = [
@@ -6309,7 +6312,13 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       setFont(MONO, 9.5, GROUNDS[UI.screen], p.LEFT, p.CENTER, 210); p.text('A GUIDED RITUAL: IN YOUR OWN HANDS', x + 18, hy + ho + hh / 2 + 11);
       var pulse = reduced() ? 0 : Math.sin(nowT() * 0.004) * 2; setFont(SANS, 22, GROUNDS[UI.screen], p.RIGHT, p.CENTER); p.text('›', x + w - 18 + pulse, hy + ho + hh / 2);
       pushHit(x, hy, w, hh, function () { startTarotRitual(); }); ly += hh + 18;
-      var cxp = x; cxp += chip('Spreads', UI.tarotTab === 'spreads', cxp, ly, function () { UI.tarotTab = 'spreads'; }) + 8;
+      if (!UI.tarotTab) {
+        flatBtn('\u25A4  Spreads to lay yourself', x, ly, w, 46, function () { UI.tarotTab = 'spreads'; UI.scroll.tarot = 0; }, false); ly += 56;
+        flatBtn('\u2726  Card meanings: all 78, with the art', x, ly, w, 46, function () { UI.tarotTab = 'cards'; UI.scroll.tarot = 0; }, false); ly += 56;
+        UI.contentH.tarot = ly + 24; return;
+      }
+      var cxp = x; cxp += chip('\u2715', false, cxp, ly, function () { UI.tarotTab = null; UI.card = null; UI.scroll.tarot = 0; }) + 8;
+      cxp += chip('Spreads', UI.tarotTab === 'spreads', cxp, ly, function () { UI.tarotTab = 'spreads'; }) + 8;
       chip('Card meanings', UI.tarotTab === 'cards', cxp, ly, function () { UI.tarotTab = 'cards'; }); ly += 48;
       if (UI.tarotTab === 'spreads') {
         cxp = x; var cyp = ly;
@@ -6596,6 +6605,8 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       })();
       ly += 162;
       ly = bondScores(bond, x, w, ly);
+      flatBtn(UI.bondFull ? '\u2715  Close the full reading' : '\u25B8  The full reading: wheels, the year, every contact', x, ly, w, 46, function () { UI.bondFull = !UI.bondFull; }, false); ly += 58;
+      if (UI.bondFull) {
       // ---- relationship wheel: synastry bi-wheel ⟷ composite chart ----
       if (UI.bondWheel == null) UI.bondWheel = 'synastry';
       var cxp = x; cxp += chip('Synastry', UI.bondWheel === 'synastry', cxp, ly, function () { UI.bondWheel = 'synastry'; }) + 8;
@@ -6638,6 +6649,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         ly += 30;
       }
       ly += 22;
+      }
       var armed9 = UI.delArm === person.id && (nowT() - (UI.delArmT || 0)) < 3200;
       flatBtn(armed9 ? 'Tap again to remove' : 'Remove ' + (person.name || 'person'), x, ly, w, 40, function () { if (UI.delArm === person.id && (nowT() - (UI.delArmT || 0)) < 3200) { APP.removePerson(person.id); UI.viewPerson = null; UI.bondFor = null; UI.delArm = null; } else { UI.delArm = person.id; UI.delArmT = nowT(); buzz(14); } }, armed9); ly += 56;
       UI.contentH.people = ly;

@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.1.1 — 2026-07-04
+- **Tarot is two doors.** Spreads and card meanings wait behind their own buttons; the screen opens on nothing but the ritual and those two choices.
+- **Timing leads with the headline.** One sentence tells you where you are in your thirty-year cycle before any machinery appears.
+- **The bond page opens on the meeting.** Stage and scoreboard first; the bi-wheel, the year together and every contact wait behind one door.
+
 ## 2.1.0 — 2026-07-04
 - **Lessons happen at a pond.** Every journey diagram now stands over still water: the idea reflected below the waterline, shimmer drifting across it, and the water answering your touch with ripples. The words arrive one line at a time and rest gently on the surface; finishing a chapter sends a small star sailing down to its dot on the road.
 - **Elbows, finally right.** Leftover mirrored elbow bends from the old front-view figure (the intro runner's pumping arms, the leap, the friends' greeting wave) are corrected: in profile, elbows bend backward along the direction of travel.
