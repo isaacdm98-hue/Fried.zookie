@@ -1,7 +1,7 @@
 /* Aqau Pluto service worker - ES5, offline-first single-file PWA */
-var CACHE = 'aqau-pluto-v27';
+var CACHE = 'aqau-pluto-v28';
 var THUMBS = 'aqau-thumbs-v1';
-var CORE = ['./', 'index.html', 'corpus.js', 'lib-astronomy.js', 'lib-p5.js', 'voice-pack.js', 'manifest.webmanifest', 'icon-180.png', 'icon-192.png', 'icon-512.png'];
+var CORE = ['./', 'index.html', 'corpus.js', 'lib-astronomy.js', 'lib-p5.js', 'manifest.webmanifest', 'icon-180.png', 'icon-192.png', 'icon-512.png'];
 self.addEventListener('install', function (e) {
   // precache the whole app at install, so offline works before every file has been visited
   e.waitUntil(
@@ -52,7 +52,7 @@ self.addEventListener('fetch', function (e) {
   // the app shell is network-first: an updated deployment shows up on the very next open.
   // Heavy versioned assets (the vendored libraries, icons) stay cache-first for speed.
   var FRESH = e.request.mode === 'navigate';
-  try { var up = new URL(e.request.url).pathname; if (/(?:^|\/)(index\.html|corpus\.js|voice-pack\.js|manifest\.webmanifest)$/.test(up) || up === '/' ) FRESH = true; } catch (errF) {}
+  try { var up = new URL(e.request.url).pathname; if (/(?:^|\/)(index\.html|corpus\.js|manifest\.webmanifest)$/.test(up) || up === '/' ) FRESH = true; } catch (errF) {}
   e.respondWith(
     caches.open(CACHE).then(function (cache) {
       return cache.match(e.request).then(function (cached) {

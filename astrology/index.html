@@ -518,7 +518,7 @@ var APP = (function () {
   // ---------- state ----------
   var STATE = {
     birth: null, // {name,y,mo,d,hour,min,tz,lat,lon,place,timeKnown}
-    settings: { zodiac: 'tropical', house: 'placidus', orbScale: 1, theme: 'light', textScale: 1.15, textMigrated: true, sound: true, accent: 0, autoNight: false, minorBodies: false, minorAspects: false, trueNode: true },
+    settings: { zodiac: 'tropical', house: 'placidus', orbScale: 1, theme: 'light', textScale: 1.15, textMigrated: true, sound: true, geocodeOnline: true, accent: 0, autoNight: false, minorBodies: false, minorAspects: false, trueNode: true },
     chart: null, screen: 'chart', chartView: 'dial',
     people: [], // [{id,name,rel,famrel,y,mo,d,hour,min,tz,iana,lat,lon,place,timeKnown}]
     charts: [] // saved birth charts you can switch between (snapshots of `birth`)
@@ -3839,6 +3839,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
   }
   function audioInit() { if (AUDIO.ctx || typeof window === 'undefined') return; try { var AC = window.AudioContext || window.webkitAudioContext; if (AC) AUDIO.ctx = new AC(); } catch (e) { AUDIO.ctx = null; } if (AUDIO.ctx && AUDIO.ctx.resume) try { AUDIO.ctx.resume(); } catch (e2) {} }
   function blip(freq, dur, vol) {
+    return; // retired: sound in this app is ambience, not feedback
     if (!soundOn() || !AUDIO.ctx) return;
     try { var t = AUDIO.ctx.currentTime, o = AUDIO.ctx.createOscillator(), g = AUDIO.ctx.createGain();
       o.type = 'sine'; o.frequency.value = freq;
@@ -4864,7 +4865,6 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       // the act's light: wash the stage in this scene's own ground
       if (stg.tint) { p.noStroke(); fillc(stg.tint, stg.ta * cl01(te * 1.2)); p.rect(0, 0, W, H); }
       var ct = walkContent(c, b, sc), pre = walkPre(c, b, sc);
-      if (UI.walkVoice && UI.walkVoiceI !== UI.walk.i) { UI.walkVoiceI = UI.walk.i; speakAct(pre, ct); }
       // video mode: each act runs to the length of what it has to say, then hands over
       var dur = 3400 + Math.min(40, ('' + ct.x).split(' ').length) * 230 + (pre ? 500 : 0);
       if (UI.walkAuto && !last && tt > dur && !still) { walkNext(scenes.length); return; }
@@ -4909,10 +4909,6 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       ty += bl.length * 27;
       setFont(MONO, 10, ACCTX, p.LEFT, p.TOP, 220); p.text('YOUR CHART · ' + (UI.walk.i + 1) + ' / ' + scenes.length, x, top + 12);
       // film controls: auto-play toggle + a per-act progress bar
-      setFont(MONO, 10, UI.walkAuto ? ACCTX : INK, p.RIGHT, p.TOP, UI.walkAuto ? 255 : 170); p.text(UI.walkAuto ? 'AUTO ■' : 'AUTO ▶', x + w - 76, top + 12);
-      pushHit(x + w - 138, top + 2, 66, 30, function () { UI.walkAuto = !UI.walkAuto; UI.walk.t0 = nowT(); audioInit(); });
-      setFont(MONO, 10, UI.walkVoice ? ACCTX : INK, p.RIGHT, p.TOP, UI.walkVoice ? 255 : 170); p.text(UI.walkVoice ? 'VOICE ■' : 'VOICE ▶', x + w - 148, top + 12);
-      pushHit(x + w - 212, top + 2, 68, 30, function () { UI.walkVoice = !UI.walkVoice; UI.walkVoiceI = -1; if (UI.walkVoice && APP.STATE.settings && APP.STATE.settings.voice !== 'system') { APP.STATE.settings.voice = 'system'; APP.save(); } if (!UI.walkVoice) try { speechSynthesis.cancel(); } catch (eV) {} });
       if (UI.walkAuto && !last) { var pf = cl01(tt / dur); p.noStroke(); fillc(INK, 40); p.rect(x, top + 36, w, 2); fillc(ACC, 220); p.rect(x, top + 36, w * pf, 2); }
       // the scene dots double as a scrub bar — tap any act to jump straight to it
       var dxw = 13, dsx = cx - (scenes.length * dxw) / 2;
@@ -5510,14 +5506,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     // the one way anything in the app speaks. The downloaded voice when it is truly
     // ready; otherwise the system voice steps in, so choosing a voice always means
     // hearing one. Silence only when the person asked for silence.
-    function sayLine(txt) {
-      var vs = APP.STATE.settings && APP.STATE.settings.voice;
-      if (!vs || vs === 'off' || !txt) return;
-      try { if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel(); } catch (eS0) {}
-      try { if (window.AqauVoice) window.AqauVoice.stop(); } catch (eS1) {}
-      try { if (vs === 'human' && window.AqauVoice && window.AqauVoice.state === 'ready' && window.AqauVoice.speak(txt)) return; } catch (eS2) {}
-      try { if (typeof speechSynthesis !== 'undefined' && typeof SpeechSynthesisUtterance !== 'undefined') { var u9s = new SpeechSynthesisUtterance(txt); u9s.rate = 0.95; speechSynthesis.speak(u9s); } } catch (eS3) {}
-    }
+    function sayLine(txt) { /* the voice is retired: the scenes and the words carry it */ }
     function lifeWalkNext(n) { if (!UI.lifeWalk) return; if (UI.lifeWalk.i >= n) { UI.lifeWalk = null; lifeWalkHush(); return; } UI.lifeWalk.i++; UI.lifeWalk.t0 = nowT(); }
     function lifeWalkPrev() { if (UI.lifeWalk && UI.lifeWalk.i > 0) { UI.lifeWalk.i--; UI.lifeWalk.t0 = nowT(); } }
     // what stage the chapter plays on: the natal point names the set
@@ -5631,7 +5620,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var aspG9 = e0.isReturn ? '\u27F2' : e0.ang === 0 ? '\u260C' : e0.ang === 60 ? '\u26B9' : e0.ang === 90 ? '\u25A1' : e0.ang === 120 ? '\u25B3' : e0.ang === 180 ? '\u260D' : '';
       if (UI.lwSky.tp) skyWalkScene9({ top: top + 40, bot: stageBot9, band: 64, tp: UI.lwSky.tp, ay: c.ayan || 0, mover: bodyK, natalKey: e0.np, natalLon: natLon9, quality: qual9, aspGlyph: aspG9, run: !!e0.isReturn, t0: UI.lifeWalk.t0, alf: alpha, pers: pers9 });
       var capTxt = e0.isReturn ? 'THE RETURN: THE CYCLE COMES ALL THE WAY HOME' : e0.ang === 0 ? 'THE CONJUNCTION: TWO VOICES SING ONE NOTE' : e0.ang === 60 ? 'THE SEXTILE: A DOOR OPENS IF YOU PUSH IT' : e0.ang === 90 ? 'THE SQUARE: YOU WALK INTO THE WIND' : e0.ang === 120 ? 'THE TRINE: THE ROAD GOES WITH YOU' : 'THE OPPOSITION: YOU HOLD BOTH ENDS OF THE ROPE';
-      var capSub = 'THE SKY OF ' + e0.date.getFullYear() + ' \u00B7 EVERY PLANET WHERE IT TRULY STOOD';
+      var capSub = UI.lifeWalk.i === 0 ? ('THE SKY OF ' + e0.date.getFullYear() + ' \u00B7 EVERY PLANET WHERE IT TRULY STOOD') : ('THE SKY OF ' + e0.date.getFullYear());
       // (the chalk aspect inset sat here; the sky now draws the aspect itself)
       var capFs9 = 8.5, capL1 = capTxt, capL2 = null; p.textFont(MONO); p.textSize(capFs9);
       if (p.textWidth(capTxt) > w - 12) { capFs9 = 7.5; p.textSize(capFs9); }
@@ -5868,24 +5857,6 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       ly += 50;
       var rt = UI.readTab;
       if (rt === 'story') {
-      // the promise the voice gate makes, kept here: the reading itself, spoken
-      var vsR = APP.STATE.settings && APP.STATE.settings.voice;
-      if (vsR === 'human' || vsR === 'system') {
-        var listening = false;
-        try { listening = !!((window.AqauVoice && window.AqauVoice.playing) || (typeof speechSynthesis !== 'undefined' && speechSynthesis.speaking)); } catch (eLq) {}
-        flatBtn(listening ? '◼  Stop the voice' : '▸  Read it to me', x, ly, w, 40, function () {
-          try { if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel(); } catch (eR1) {}
-          try { if (window.AqauVoice) window.AqauVoice.stop(); } catch (eR2) {}
-          if (listening) return;
-          if (!UI.arcCache) { try { UI.arcCache = APP.composeArc(c, b); } catch (eR3) { UI.arcCache = null; } }
-          if (!UI.readCache) { try { UI.readCache = APP.composeCore(c); } catch (eR4) { UI.readCache = []; } }
-          var parts = [], pi;
-          if (UI.arcCache) for (pi = 0; pi < UI.arcCache.length; pi++) parts.push(UI.arcCache[pi].text);
-          if (UI.readCache) for (pi = 0; pi < Math.min(UI.readCache.length, 4); pi++) parts.push(UI.readCache[pi]);
-          var sayR = parts.join(' ');
-          try { sayLine(sayR); } catch (eR5) {}
-        }, listening); ly += 52;
-      }
       // lead with the four-movement arc — spine, engine, edge, where it's heading
       if (!UI.arcCache) { try { UI.arcCache = APP.composeArc(c, b); } catch (ea) { UI.arcCache = null; } }
       if (UI.arcCache && UI.arcCache.length) {
@@ -5929,7 +5900,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       // watch today acted out again: the same bulletin that greets the day
       flatBtn('▸  Watch today as a scene', x, ly, w, 42, function () {
         var ndR = new Date(), nkR = ndR.getFullYear() + '-' + APP.pad(ndR.getMonth() + 1) + '-' + APP.pad(ndR.getDate());
-        UI.dailyNews = { i: -1, t0: nowT(), day: nkR, scenes: null }; UI.newsNoteI = -9; buzz(12);
+        UI.dailyNews = { i: 0, t0: nowT(), day: nkR, scenes: null }; UI.newsNoteI = -9; buzz(12);
       }, false); ly += 54;
       // the three journeys, one calm row: chapters, the reel, the calendar
       (function () {
@@ -6839,7 +6810,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       bigthree: function (c, b) { if (b && b.timeKnown && c.ascBody) { var so = signOpts(c.ascBody.sign); return { q: 'Which is YOUR rising sign?', o: so.o, ci: so.ci, why: c.ascBody.signName + ' was climbing the eastern horizon the minute you were born.' }; } return { q: 'The “big three” are…', o: ['Sun, Moon and rising', 'Venus, Mars and Jupiter', 'The three outer planets'], ci: 0, why: 'What you are becoming, what you need, and how you meet the world.' }; },
       moving: function () { return { q: 'A transit is…', o: ['A planet inside your birth chart', 'Today’s sky touching your birth chart', 'An aspect between two houses'], ci: 1, why: 'Your chart is fixed; the sky keeps moving. Where the live sky touches your natal map, that is a transit.' }; }
     };
-    function startLesson() { UI.lesson = { i: 0, beat: 0, t0: nowT(), lead: 0 }; UI.scroll.learn = 0; lessonSeen(0); }
+    function startLesson() { try { audioInit(); padStart([174.61, 220, 329.63], 0.011); } catch (eLP) {} UI.lesson = { i: 0, beat: 0, t0: nowT(), lead: 0 }; UI.scroll.learn = 0; lessonSeen(0); }
     // the projector moment: the room goes dark, the beam flickers on, the film leader counts down
     function drawFilmLeader(x, w, top, vh, cx) {
       var el2 = nowT() - UI.lesson.lead, dc = p.drawingContext;
@@ -6865,7 +6836,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     }
     function lessonSeen(i) { try { var st = APP.STATE.settings; if (!st) return; st.lseen = st.lseen || {}; if (!st.lseen[i]) { st.lseen[i] = 1; APP.save(); } } catch (e) {} }
     function lqRecord(k, ok) { try { var st = APP.STATE.settings; if (!st) return; st.lq = st.lq || {}; st.lq[k] = ok ? 1 : 0; APP.save(); } catch (e) {} }
-    function lessonNext() { if (!UI.lesson) return; UI.lessonStarT = nowT(); blip(659, 0.18, 0.03); if (UI.lesson.i >= LESSON.length - 1) { UI.lesson = null; return; } UI.lesson.i++; UI.lesson.beat = 0; UI.lesson.qa = null; UI.lesson.t0 = nowT(); lessonSeen(UI.lesson.i); }
+    function lessonNext() { if (!UI.lesson) return; UI.lessonStarT = nowT(); if (UI.lesson.i >= LESSON.length - 1) { UI.lesson = null; try { padStop(1.6); } catch (eLT) {} return; } UI.lesson.i++; UI.lesson.beat = 0; UI.lesson.qa = null; UI.lesson.t0 = nowT(); lessonSeen(UI.lesson.i); }
     function lessonPrev() { if (UI.lesson && UI.lesson.i > 0) { UI.lesson.i--; UI.lesson.beat = 0; UI.lesson.qa = null; UI.lesson.t0 = nowT(); } }
     function lessonBeatsFor(sc, c, b) {
       UI.lbCache = UI.lbCache || {};
@@ -7281,10 +7252,10 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         strokec(ACC, 235 * (1 - stT9 * 0.3)); p.strokeWeight(1.4);
         p.line(sfx9 - 5, sfy9, sfx9 + 5, sfy9); p.line(sfx9, sfy9 - 5, sfx9, sfy9 + 5); p.noStroke();
       }
-      if (last && !qz && UI.lesson.beat >= beats.length - 1) { tourBtn('Read my chart ›', cx - 152, top + vh - 96, 148, 42, function () { UI.lesson = null; UI.screen = 'chart'; }, true); tourBtn('Explore Learn', cx + 6, top + vh - 96, 148, 42, function () { UI.lesson = null; }, false); }
+      if (last && !qz && UI.lesson.beat >= beats.length - 1) { tourBtn('Read my chart ›', cx - 152, top + vh - 96, 148, 42, function () { UI.lesson = null; UI.screen = 'chart'; try { padStop(1.6); } catch (eLQ) {} }, true); tourBtn('Explore Learn', cx + 6, top + vh - 96, 148, 42, function () { UI.lesson = null; try { padStop(1.6); } catch (eLR) {} }, false); }
       else if (!inQuiz) { setFont(MONO, 10, INK, p.CENTER, p.TOP, 150 * alpha); p.text(auto ? 'PLAYING · TAP TO SKIP AHEAD' : 'TAP TO CONTINUE  ›', cx, top + vh - 42); }
       iconBtn(auto ? 'pause' : 'play', x + w - 138, top + 42, 60, 26, function () { UI.lesson.auto = !(UI.lesson.auto !== false); if (UI.lesson.auto) UI.lesson.t0 = nowT(); });
-      tourBtn('Skip', x + w - 70, top + 42, 64, 26, function () { UI.lesson = null; }, false);
+      tourBtn('Skip', x + w - 70, top + 42, 64, 26, function () { UI.lesson = null; try { padStop(1.6); } catch (eLS) {} }, false);
       UI.contentH.learn = 0;
     }
 
@@ -8044,9 +8015,6 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       ly += toggleRow('Transit reminders', [['off', 'Off'], ['on', 'On']], st.notify ? 'on' : 'off', ly, function (v) { st.notify = (v === 'on'); APP.save(); if (st.notify) enableNotify(); });
       ly += toggleRow('Daily Sky bulletin', [['on', 'On'], ['off', 'Off']], st.news === false ? 'off' : 'on', ly, function (v) { st.news = (v === 'on'); APP.save(); });
       ly += toggleRow('Haptics', [['on', 'On'], ['off', 'Off']], st.haptics === false ? 'off' : 'on', ly, function (v) { st.haptics = (v === 'on'); APP.save(); if (st.haptics) buzz(14); });
-      var hv9 = (typeof window !== 'undefined' && window.AqauVoice) ? window.AqauVoice : null;
-      var vOpts9 = [['off', 'Off'], ['system', 'System']]; if (hv9 && hv9.state === 'ready') vOpts9.push(['human', 'Human']);
-      ly += toggleRow('Narration voice', vOpts9, (st.voice === 'human' && hv9 && hv9.state === 'ready') ? 'human' : (st.voice === 'system' ? 'system' : 'off'), ly, function (v) { st.voice = v; APP.save(); });
       if (hv9 && hv9.state === 'ready') {
         flatBtn('\u25B8  Hear a line', x, ly, 150, 38, function () { try { hv9.speak('Hello. I am the voice of your chart, kept entirely on this device.'); } catch (eS9) {} }, true); ly += 50;
         ly += paragraph('The human voice is on this device now: Kokoro, open source (Apache-2.0), spoken locally. No words leave the phone. Choose Human above and the walkthrough and your life story read themselves aloud.', x, ly, w, 13, INK, SERIF, 19, 190) + 14;
@@ -8179,7 +8147,8 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var list = (tr && tr.daily) ? tr.daily.slice(0, 3) : [], i;
       for (i = 0; i < list.length; i++) {
         var t = list[i];
-        out.push({ tp: t.tp, np: t.np, q: t.asp.quality, title: APP.nameFor(t.tp) + ' ' + t.asp.key + ' your ' + APP.nameFor(t.np), body: APP.transitSentence(t) });
+        var full9 = String(APP.transitSentence(t)), sen9 = full9.match(/[^.!?]+[.!?]+/g);
+        out.push({ tp: t.tp, np: t.np, q: t.asp.quality, title: APP.nameFor(t.tp) + ' ' + t.asp.key + ' your ' + APP.nameFor(t.np), body: sen9 ? sen9.slice(0, 2).join(' ').replace(/^\s+/, '') : full9 });
       }
       if (!out.length) out.push({ quiet: true, q: 'flow', title: 'A quiet sky', body: 'No close transits to your planets today. Your pattern runs undisturbed, and the day is simply yours to write.' });
       return out;
@@ -8205,27 +8174,29 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var bandY = topS + (gy - topS) * 0.30;
       function bxS(lon) { var d9 = ((lon - mLon + 540) % 360) - 180; return cxS + d9 / 360 * W * 1.7; }
       function byS(lon) { var d9 = ((lon - mLon + 540) % 360) - 180; return bandY + Math.pow(Math.abs(d9) / 180, 2) * 30; }
-      var zz9; for (zz9 = 0; zz9 < 12; zz9++) {
-        var tnx9 = bxS(zz9 * 30 + 15);
-        if (tnx9 > -34 && tnx9 < W + 34) { setFont(MONO, 6.5, [252, 246, 232], p.CENTER, p.CENTER, 66 * ee); p.text(DATA.SIGNS[zz9].name.toUpperCase(), tnx9, byS(zz9 * 30 + 15) - 15); }
-        var tkx9 = bxS(zz9 * 30);
-        if (tkx9 > -10 && tkx9 < W + 10) { strokec([252, 246, 232], 44 * ee); p.strokeWeight(1); p.line(tkx9, byS(zz9 * 30) - 4, tkx9, byS(zz9 * 30) + 4); p.noStroke(); }
-      }
+      // high cloud drifting: the air the scene breathes. No sign labels, no ticks:
+      // a cut-scene, not a diagram
+      if (!still) { var clS9; for (clS9 = 0; clS9 < 2; clS9++) { var cwS9 = W * (0.5 + clS9 * 0.3), cxxS9 = ((nowT() * (0.004 + clS9 * 0.003) + clS9 * 500) % (W + cwS9 * 2)) - cwS9, cyyS9 = topS + 24 + clS9 * 40; p.noStroke(); fillc([255, 252, 244], (16 - clS9 * 5) * ee); p.ellipse(cxxS9, cyyS9, cwS9, cwS9 * 0.22); p.ellipse(cxxS9 + cwS9 * 0.3, cyyS9 + 8, cwS9 * 0.6, cwS9 * 0.18); } }
+      // the other planets: unlabelled bodies of light, where they truly are
       var PB9 = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto'], pb9;
       for (pb9 = 0; pb9 < PB9.length; pb9++) {
         var k9 = PB9[pb9]; if (k9 === o.mover) continue;
         var ln9 = zl9(k9); if (ln9 == null) continue;
         var ppx9 = bxS(ln9); if (ppx9 < -20 || ppx9 > W + 20) continue;
         var ppy9 = byS(ln9);
-        p.noStroke(); fillc([252, 246, 232], 150 * ee); p.ellipse(ppx9, ppy9, 3.4, 3.4);
-        setFont(SANS, 9, [252, 246, 232], p.CENTER, p.CENTER, 120 * ee); p.text(APP.glyphFor(k9), ppx9, ppy9 - 10);
+        var twp9 = still ? 0.8 : 0.6 + 0.4 * Math.sin(nowT() * 0.0021 + pb9 * 2.3);
+        p.noStroke(); fillc([255, 248, 224], 34 * twp9 * ee); p.ellipse(ppx9, ppy9, 15, 15);
+        fillc([252, 246, 232], 190 * twp9 * ee); p.ellipse(ppx9, ppy9, 3.6, 3.6);
       }
-      // the mover, glowing, named
+      // the mover: a breathing body of light; its name appears once, then lets go
       var mvx9 = bxS(mLon), mvy9 = byS(mLon);
       if (o.mover) {
-        p.noStroke(); fillc([255, 244, 214], 28 * ee); p.ellipse(mvx9, mvy9, 76, 76);
-        p.push(); p.translate(mvx9, mvy9); celestialBody(o.mover, 0, 0, o.mover === 'sun' ? 18 : 13, nowT()); p.pop();
-        setFont(MONO, 7.5, [252, 246, 232], p.CENTER, p.TOP, 215 * ee); p.text(APP.nameFor(o.mover).toUpperCase(), mvx9, mvy9 + 20);
+        var brS9 = still ? 1 : 1 + 0.06 * Math.sin(nowT() * 0.0016);
+        p.noStroke(); fillc([255, 244, 214], 20 * ee); p.ellipse(mvx9, mvy9, 120 * brS9, 120 * brS9);
+        fillc([255, 244, 214], 32 * ee); p.ellipse(mvx9, mvy9, 72 * brS9, 72 * brS9);
+        p.push(); p.translate(mvx9, mvy9); celestialBody(o.mover, 0, 0, o.mover === 'sun' ? 20 : 15, nowT()); p.pop();
+        var nmA9 = still ? 0.6 : Math.min(cl01((nowT() - o.t0 - 600) / 700), cl01((3400 - (nowT() - o.t0)) / 700));
+        if (nmA9 > 0.01) { setFont(MONO, 7.5, [252, 246, 232], p.CENTER, p.TOP, 215 * ee * nmA9); p.text(APP.nameFor(o.mover).toUpperCase(), mvx9, mvy9 + 22); }
       }
       // your natal point in the same sky, and the aspect drawn between
       if (o.natalLon != null) {
@@ -8235,7 +8206,8 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
           p.noFill(); strokec(ACC, 225 * ee); p.strokeWeight(1.4); p.ellipse(nx9, ny9, 16, 16);
           setFont(SANS, 9, [252, 246, 232], p.CENTER, p.CENTER, 240 * ee); p.text(o.natalKey === 'asc' ? '\u2191' : o.natalKey === 'mc' ? '\u25B4' : APP.glyphFor(o.natalKey), nx9, ny9);
           var nlUp9 = (o.mover && Math.abs(nx9 - mvx9) < 46);
-          setFont(MONO, 7, [255, 216, 170], p.CENTER, nlUp9 ? p.BOTTOM : p.TOP, 215 * ee); p.text(('YOUR ' + (o.natalKey === 'asc' ? 'RISING' : o.natalKey === 'mc' ? 'MIDHEAVEN' : APP.nameFor(o.natalKey))).toUpperCase(), nx9, nlUp9 ? ny9 - 12 : ny9 + 12);
+          var nlA9 = still ? 0.7 : Math.min(cl01((nowT() - o.t0 - 1200) / 700), cl01((5200 - (nowT() - o.t0)) / 900));
+          if (nlA9 > 0.01) { setFont(MONO, 7, [255, 216, 170], p.CENTER, nlUp9 ? p.BOTTOM : p.TOP, 225 * ee * nlA9); p.text(('YOUR ' + (o.natalKey === 'asc' ? 'RISING' : o.natalKey === 'mc' ? 'MIDHEAVEN' : APP.nameFor(o.natalKey))).toUpperCase(), nx9, nlUp9 ? ny9 - 12 : ny9 + 12); }
           var thA9 = still ? 1 : cl01((nowT() - o.t0 - 900) / 900);
           if (thA9 > 0.01 && o.mover) {
             var tc9 = (o.quality === 'flow') ? ELHUE.air : (o.quality === 'fusion') ? [255, 232, 180] : ACC;
@@ -8271,6 +8243,9 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (o.run) { fig9.hL = { x: wkX9 + fh9 * 0.02 + g9s.hLdx, y: gy - fh9 * 0.66 + g9s.hLdy }; fig9.hR = { x: wkX9 + fh9 * 0.02 + g9s.hRdx, y: gy - fh9 * 0.66 + g9s.hRdy }; }
       p.noStroke(); fillc([8, 8, 14], 90 * ee); p.ellipse(wkX9, gy + 2, fh9 * 0.42, 7);
       actorFigure(fig9, ee);
+      // the frame: an iris of air at the edges and letterbox bars, like a cut-scene
+      if (dcW9 && !still) { var vgS9 = dcW9.createRadialGradient(cxS, (topS + gy) / 2, (gy - topS) * 0.55, cxS, (topS + gy) / 2, (gy - topS) * 1.15); vgS9.addColorStop(0, 'rgba(10,8,7,0)'); vgS9.addColorStop(1, 'rgba(10,8,7,0.22)'); dcW9.fillStyle = vgS9; dcW9.fillRect(0, topS, W, gy - topS); }
+      p.noStroke(); fillc([16, 13, 11], 235 * ee); p.rect(0, topS, W, 8); p.rect(0, botS - 6, W, 6);
     }
     function drawDailyNews() {
       var dn = UI.dailyNews, c = APP.STATE.chart, still = reduced(), dcN = p.drawingContext;
@@ -8370,13 +8345,13 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         tourBtn('Begin the day', cx - 70, H - (UI.safeBottom || 0) - 96, 140, 42, function () { newsEnd(); }, true);
       }
       // dots that mark where you are in the paper
-      var dotsN = n + 2, diN;
-      for (diN = 0; diN < dotsN; diN++) { var onN = (dn.i + 1) === diN; p.noStroke(); fillc(onN ? ACC : INK, onN ? 235 : 90); p.ellipse(cx + (diN - (dotsN - 1) / 2) * 16, H - (UI.safeBottom || 0) - 36, onN ? 7 : 5, onN ? 7 : 5); }
+      var dotsN = n + 1, diN;
+      for (diN = 0; diN < dotsN; diN++) { var onN = dn.i === diN; p.noStroke(); fillc(onN ? ACC : INK, onN ? 235 : 90); p.ellipse(cx + (diN - (dotsN - 1) / 2) * 16, H - (UI.safeBottom || 0) - 36, onN ? 7 : 5, onN ? 7 : 5); }
       if (dn.i >= 0 && dn.i < n) { var plE = still ? 1 : 0.6 + 0.4 * Math.sin(nowT() * 0.004); setFont(MONO, 9.5, ACC, p.CENTER, p.TOP, 220 * plE); p.text('TAP TO CONTINUE ›', cx, H - (UI.safeBottom || 0) - 64); }
       pushHit(0, topY() + 36, W, H - topY() - 36 - (UI.safeBottom || 0) - 110, function () {
         if (dn.i >= n) { newsEnd(); return; }
-        // the first tap of the day brings the music in with the first story
-        if (dn.i === -1) { try { padStart([146.83, 220, 329.63], 0.016); } catch (ePN) {} }
+        // the first tap of the day brings the music in
+        if (!dn.pad) { dn.pad = 1; try { padStart([146.83, 220, 329.63], 0.016); } catch (ePN) {} }
         dn.i++; dn.t0 = nowT();
       });
       tourBtn('Skip', x + w - 66, topY() + 6, 60, 26, function () { newsEnd(); }, false);
@@ -8551,7 +8526,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (!UI.setGuide) UI.setGuide = { i: 0, t0: nowT() };
       var GS9 = [
         ['The look', 'Five themes, eight accent colours, and the whole app repaints while you watch. Auto follows the daylight where you are.'],
-        ['The reading', 'Bigger text, the OpenDyslexic font, and the voices: the system one, or the human one you can download once and keep.'],
+        ['The reading', 'Bigger text, the OpenDyslexic font, and a voice that reads the app aloud whenever you ask.'],
         ['Yours alone', 'Everything lives on this device. One-file backup, saved charts to switch between, and nothing that phones home.']
       ];
       var gs9 = GS9[UI.setGuide.i], gH9 = 150, gY9 = H - (UI.safeBottom || 0) - NAVH - gH9 - 14;
@@ -8617,14 +8592,9 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var g = 10, w3 = (w - g * 2) / 3;
       var dim3 = new Date(d.y, d.mo, 0).getDate(); if (d.d > dim3) d.d = dim3;
       stepper('Day', d.d, 1, dim3, x, ly, w3, function (v) { d.d = v; }); stepper('Month', d.mo, 1, 12, x + w3 + g, ly, w3, function (v) { d.mo = v; }); stepper('Year', d.y, 1920, new Date().getFullYear(), x + (w3 + g) * 2, ly, w3, function (v) { d.y = v; }); ly += 60;
-      flatBtn('Year \u221210', x + (w3 + g) * 2, ly, w3 / 2 - 3, 28, function () { d.y = Math.max(1920, d.y - 10); }, false, true);
-      flatBtn('+10', x + (w3 + g) * 2 + w3 / 2 + 3, ly, w3 / 2 - 3, 28, function () { d.y = Math.min(new Date().getFullYear(), d.y + 10); }, false, true); ly += 42;
       var w2 = (w - g) / 2;
       if (d.timeKnown) {
         stepper('Hour', d.hour, 0, 23, x, ly, w2, function (v) { d.hour = v; }); stepper('Minute', d.min, 0, 59, x + w2 + g, ly, w2, function (v) { d.min = v; }); ly += 60;
-        var qm3 = [0, 15, 30, 45], qi3, bw3 = (w2 - 18) / 4;
-        for (qi3 = 0; qi3 < 4; qi3++) { (function (mv) { flatBtn(':' + (mv < 10 ? '0' : '') + mv, x + w2 + g + (bw3 + 6) * qi3, ly, bw3, 26, function () { d.min = mv; }, false, true); })(qm3[qi3]); }
-        ly += 38;
       }
       else { eyebrow('Birth time unknown: no houses or rising', x, ly); ly += 26; }
       var tk = d.timeKnown;
@@ -9381,31 +9351,17 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         UI.fontApplied = true; try { applyFontPref(); } catch (eFp) {}
         try { var stM = APP.STATE.settings; if (stM && !stM.soundMigrated) { stM.soundMigrated = true; if (stM.sound !== true) stM.sound = true; APP.save(); } } catch (eSM) {}
         try { var stX = APP.STATE.settings; if (stX && !stX.textMigrated) { stX.textMigrated = true; if (!stX.textScale || stX.textScale === 1) stX.textScale = 1.15; APP.save(); UI.readCache = null; } } catch (eTM) {}
+        try { var stG = APP.STATE.settings; if (stG && !stG.geoMigrated) { stG.geoMigrated = true; stG.geocodeOnline = true; APP.save(); } } catch (eGM) {}
       }
       // the voice fetches itself in the background: once, politely, only when online
-      if (!UI.voiceKick && nowT() > 4000) {
-        UI.voiceKick = true;
-        try {
-          var st9v = APP.STATE.settings;
-          if (st9v && !st9v.voiceDeclined && window.AqauVoice && window.AqauVoice.state === 'idle' && (typeof navigator === 'undefined' || navigator.onLine !== false)) window.AqauVoice.load();
-        } catch (eVK) {}
-      }
-      if (!UI.voiceReadyMark && window.AqauVoice && window.AqauVoice.state === 'ready') {
-        UI.voiceReadyMark = true;
-        try { var st8v = APP.STATE.settings; if (st8v && !st8v.voiceChosen && st8v.voice !== 'system') { st8v.voice = 'human'; APP.save(); } } catch (eVR) {}
-      }
-      if (!UI.voiceFbMark && window.AqauVoice && window.AqauVoice.state === 'error') {
-        UI.voiceFbMark = true;
-        try { var st7f = APP.STATE.settings; if (st7f && !st7f.voiceChosen && (!st7f.voice || st7f.voice === 'off') && !st7f.voiceDeclined) { st7f.voice = 'system'; APP.save(); } } catch (eVF) {}
-      }
+      // (the downloadable voice is gone; the system voice ships with the OS and simply works)
       if ((UI.screen === 'onboard' && !APP.STATE.birth && !UI.introDone) || UI.introReplay) { drawIntro(); clampScroll(); return; }
-      if (UI.screen === 'onboard' && !APP.STATE.birth && UI.introDone && !UI.voiceGateDone && !(APP.STATE.settings && APP.STATE.settings.voiceGateDone)) { drawVoiceGate(); clampScroll(); return; }
       // the daily bulletin: once per day, on open, today's sky arrives as a story
       if (!UI.newsChecked && APP.STATE.chart && APP.STATE.settings && APP.STATE.settings.toured) {
         UI.newsChecked = true;
         try {
           var ndN = new Date(), nkN = ndN.getFullYear() + '-' + APP.pad(ndN.getMonth() + 1) + '-' + APP.pad(ndN.getDate());
-          if (APP.STATE.settings.news !== false && APP.STATE.settings.newsDay !== nkN) UI.dailyNews = { i: -1, t0: nowT(), day: nkN, scenes: null };
+          if (APP.STATE.settings.news !== false && APP.STATE.settings.newsDay !== nkN) UI.dailyNews = { i: 0, t0: nowT(), day: nkN, scenes: null };
         } catch (eNC) {}
       }
       if (UI.dailyNews && APP.STATE.chart && UI.screen !== 'onboard') { hideSearchInput(); drawDailyNews(); drawTopbar(); clampScroll(); return; }
@@ -9447,7 +9403,6 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     function inRect(mx, my, r) { return mx >= r.x && mx <= r.x + r.w && my >= r.y && my <= r.y + r.h; }
     function press(x, y) {
       if (soundOn()) audioInit(); // first gesture unlocks WebAudio
-      if (!UI.voiceUnlocked) { UI.voiceUnlocked = true; try { if (typeof speechSynthesis !== 'undefined' && typeof SpeechSynthesisUtterance !== 'undefined') { var uVU = new SpeechSynthesisUtterance(' '); uVU.volume = 0; speechSynthesis.speak(uVU); } } catch (eVU) {} }
       UI.ptrX = x; UI.ptrY = y; UI.ptrDown = true; UI.ptrMoveT = nowT();
       UI.pressX = x; UI.pressY = y; UI.pressT = nowT(); UI.dragging = false; UI.scrollStart = scrollOf(); UI.cityScrollStart = UI.cityScroll || 0;
       UI.tScrollStart = UI.tScroll || 0;
@@ -9540,7 +9495,6 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
 })();
 
 </script>
-<script src="voice-pack.js"></script>
 <script>if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js')['catch'](function(){});});}</script>
 </body>
 </html>

@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.2.0 — 2026-07-04
+- **Cut-scenes, not diagrams.** The story scenes lose their sign labels, tick marks and planet glyphs. Planets are unlabelled bodies of light where they truly stand; the mover breathes and its name appears once, then lets go; high cloud drifts through; an iris of air and letterbox bars frame it like film.
+- **The voice is retired.** It never earned its keep, so it is gone entirely: no downloads, no narration buttons, no settings row. The scenes and the words carry the app.
+- **Sound is ambience only.** Every tap-chirp and chime is silenced. What remains is the soft pad under the intro, the life story, the Daily Sky and now the lessons, fading in and out with the scene.
+- **The Daily Sky opens on the story.** No masthead card, and each story says its piece in two sentences.
+- **Simpler beginnings.** The birth form is three questions: when, what time, where, and the place search reaches the whole world by default (switch it off in Settings for fully offline).
+
 ## 2.1.1 — 2026-07-04
 - **Tarot is two doors.** Spreads and card meanings wait behind their own buttons; the screen opens on nothing but the ritual and those two choices.
 - **Timing leads with the headline.** One sentence tells you where you are in your thirty-year cycle before any machinery appears.
