@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.4.1 — 2026-07-04
+- **The words gain three layers.** Every transit sentence now weighs, in order: the mover's own condition in the sky it is crossing (a Saturn at home in Aquarius speaks differently from a Saturn far from home in Cancer); the natal wire it lands on ("your natal Venus sextile Jupiter runs easy in you, and leaning on it softens this", or "your natal square has trained you for exactly this pressure, so trust the old skills"); and sect: Saturn and Mars behave differently in a day chart and a night one, and the sentence says so.
+- **Natal aspects name their stage.** With a birth time, each aspect line now says which two houses it plays between: the arena, not just the wiring.
+- **The lineage, named.** Settings now states where the words come from: dignities after Ptolemy and Lilly (quotes marked with sources), phases after Rudhyar, time-lords after Valens, and the plain-language synthesis written for this app. No line is generated; every sentence is composed from the computed chart.
+
 ## 2.4.0 — 2026-07-04
 - **The camera moves.** Every scene now pushes slowly toward the walker over its life, stars drift in parallax against the stride, low mist slides past in the foreground, and the mover casts a pool of its own light on the ground. Letterbox and iris hold the frame.
 - **Serendipity.** Every so often a star lets go and falls; every so often a small flight of birds crosses the sky on a breeze. Never on schedule, never demanded, the way a sky should be.

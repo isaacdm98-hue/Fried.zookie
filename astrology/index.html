@@ -1371,10 +1371,47 @@ var APP = (function () {
       mc: 'status, ambition and how you show up as a pair'
     })[key] || 'day-to-day life together';
   }
-  function transitSentence(t) {
+  function transitSentence(t, cc) {
     var seed = t.tp + t.np + t.asp.key;
-    var base = 'Transiting ' + nameFor(t.tp) + ' is ' + aspVerb(t.asp) + ' your natal ' + nameFor(t.np) + ', ' + aspTone(t.asp, seed);
-    var tail = ' In daily life: ' + practicalDomain(t.np) + '; ' + practicalTilt(t.asp.quality, seed) + '.';
+    var c9 = cc || STATE.chart;
+    // layer one: the mover's own condition in the sky it is crossing
+    var dgA = '';
+    if (t.tsign != null) {
+      var dg9 = dignityOf(t.tp, DATA.SIGNS[t.tsign].name);
+      if (dg9 === 'Domicile') dgA = ', moving through its own ' + DATA.SIGNS[t.tsign].name + ' and at full strength,';
+      else if (dg9 === 'Exaltation') dgA = ', exalted in ' + DATA.SIGNS[t.tsign].name + ' and at its best,';
+      else if (dg9 === 'Fall' || dg9 === 'Detriment') dgA = ', far from home in ' + DATA.SIGNS[t.tsign].name + ' and working sideways,';
+    }
+    var base = 'Transiting ' + nameFor(t.tp) + dgA + ' is ' + aspVerb(t.asp) + ' your natal ' + nameFor(t.np) + ', ' + aspTone(t.asp, seed);
+    // layer two: which natal wire this lands on, and what that means for how it will feel
+    var eco = '';
+    if (c9 && c9.aspects) {
+      var bestE = null, ei9;
+      for (ei9 = 0; ei9 < c9.aspects.length; ei9++) {
+        var aE = c9.aspects[ei9];
+        if ((aE.a === t.np || aE.b === t.np) && aE.orb < 2.6 && (!bestE || aE.orb < bestE.orb)) bestE = aE;
+      }
+      if (bestE) {
+        var othE = bestE.a === t.np ? bestE.b : bestE.a;
+        var natHard = !(bestE.asp.quality === 'flow' || bestE.asp.quality === 'opportunity' || bestE.asp.quality === 'fusion');
+        var trHard = !(t.asp.quality === 'flow' || t.asp.quality === 'opportunity');
+        var wire = 'your natal ' + nameFor(t.np) + ' ' + bestE.asp.key + ' ' + nameFor(othE);
+        if (trHard && natHard) eco = ' It lands on a wire you already own: ' + wire + ' has trained you for exactly this pressure, so trust the old skills.';
+        else if (trHard && !natHard) eco = ' The counterweight is built in: ' + wire + ' runs easy in you, and leaning on it softens this.';
+        else if (!trHard && natHard) eco = ' Better still, it oils a joint that usually grinds: ' + wire + ' gets a holiday while this lasts.';
+        else eco = ' It doubles a current that already runs smooth in you: ' + wire + '.';
+      }
+    }
+    // layer three: sect: the same planet behaves differently in a day chart and a night one
+    var sctA = '';
+    try {
+      var sc9 = c9 ? sect(c9) : null;
+      if (sc9 && (t.tp === 'saturn' || t.tp === 'mars') && !(t.asp.quality === 'flow' || t.asp.quality === 'opportunity')) {
+        if (t.tp === 'saturn') sctA = sc9.day ? ' In your day chart Saturn is the firmer, fairer teacher: structure will actually help here.' : ' In a night chart like yours Saturn runs colder: pad the schedule, not the feelings.';
+        else sctA = sc9.day ? ' Mars runs hot in a day chart like yours: burn it as exercise before it becomes an argument.' : ' In your night chart Mars fights cleaner: the drive is usable if you aim it early.';
+      }
+    } catch (eSct) {}
+    var tail = eco + ' In daily life: ' + practicalDomain(t.np) + '; ' + practicalTilt(t.asp.quality, seed) + '.' + sctA;
     if (t.applying === true && t.exact) {
       var ex9 = t.exact, now9 = new Date(), sameDay9 = ex9.getDate() === now9.getDate() && ex9.getMonth() === now9.getMonth();
       var DN9 = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -1711,7 +1748,18 @@ var APP = (function () {
     if (as.orb >= 5.5) return ', a wide contact, more background hum than daily fact';
     return '';
   }
-  function aspectText(c, as) { return (pairAspectText(as.a, as.b, as.asp.key) || aspectMeaning(c, as)) + orbPhrase(as); }
+  function aspectText(c, as) {
+    var body9 = (pairAspectText(as.a, as.b, as.asp.key) || aspectMeaning(c, as)) + orbPhrase(as);
+    // the stage it plays on: both houses named, when the birth time gives us houses
+    try {
+      var hA9 = c.planets[as.a] && c.planets[as.a].house, hB9 = c.planets[as.b] && c.planets[as.b].house;
+      if (hA9 && hB9 && DATA.HOUSES[hA9 - 1] && DATA.HOUSES[hB9 - 1]) {
+        if (hA9 === hB9) body9 += ' It plays out inside one arena: your ' + ordinal(hA9) + ' house of ' + DATA.HOUSES[hA9 - 1].title.toLowerCase() + '.';
+        else body9 += ' The stage: your ' + ordinal(hA9) + ' house of ' + DATA.HOUSES[hA9 - 1].title.toLowerCase() + ' against your ' + ordinal(hB9) + ' of ' + DATA.HOUSES[hB9 - 1].title.toLowerCase() + '.';
+      }
+    } catch (eHx) {}
+    return body9;
+  }
 
   // integrative synthesis: the repeated themes a human astrologer would read across the whole chart
   function composeThemes(c) {
@@ -2048,7 +2096,7 @@ var APP = (function () {
     var comp = compositeChart(cMe, cThem), ctext = compositeText(comp); if (ctext) blocks.push({ label: 'Your composite: the relationship itself', text: ctext });
     var shared = sharedTransits(cMe, cThem); if (shared.length) blocks.push({ label: 'Live between you: today', text: shared.slice(0, 2).join(' ') });
     var trT = composeTransits(cThem);
-    if (trT.daily.length) blocks.push({ label: 'Live for them: today', text: 'What the sky is doing to ' + (person.name || 'them') + ' now: ' + trT.daily.slice(0, 2).map(transitSentence).join(' ') });
+    if (trT.daily.length) blocks.push({ label: 'Live for them: today', text: 'What the sky is doing to ' + (person.name || 'them') + ' now: ' + trT.daily.slice(0, 2).map(function (tS9) { return transitSentence(tS9, cThem); }).join(' ') });
     // the relationship's own forecast: transits to the composite chart over the year ahead
     var year = []; try { year = upcomingTransits({ planets: comp.planets, ayan: cMe.ayan || 0 }, 8, 16); } catch (e) { year = []; }
     return { blocks: blocks, syn: syn, comp: comp, cMe: cMe, cThem: cThem, year: year, scores: synScores(syn) };
@@ -3284,7 +3332,7 @@ var APP = (function () {
                 }
               }
             } catch (eA9) {}
-            out.push({ tp: tk, np: nk, asp: asp, orb: diff, applying: applying, exact: exactDate });
+            out.push({ tp: tk, np: nk, asp: asp, orb: diff, applying: applying, exact: exactDate, tsign: Math.floor(tlon / 30) });
             break;
           }
         }
@@ -8142,7 +8190,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       ly += paragraph('Backup writes one file with your birth data, settings, people, saved charts, journal and Watch guide. Restore reads it back on any device, your data never touches a server.', x, ly, w, 13, INK, SERIF, 19, 180) + 12;
       if (APP.STATE.chart) { ly += 8; ly = drawAskBlock(APP.STATE.chart, x, ly, w) + 8; }
       eyebrow('On-device engine: free, private, offline', x, ly); ly += 24;
-      ly += paragraph('Aqau Pluto computes a genuine ephemeris on-device with astronomy-engine (MIT), accurate to about one arcsecond against NOVAS/JPL, and reads it in plain, behavioural language. The whole interface is drawn and animated live in p5.', x, ly, w, 14, INK, SERIF, 21, 170) + 24;
+      ly += paragraph('Where the words come from: dignities and receptions after Ptolemy and William Lilly (quoted lines are marked with their source), the life phases after Dane Rudhyar, profections and time-lords after Vettius Valens, and the plain-language synthesis written for this app in a practical, psychological voice. No line is generated; every sentence is composed from your computed chart. Aqau Pluto computes a genuine ephemeris on-device with astronomy-engine (MIT), accurate to about one arcsecond against NOVAS/JPL, and reads it in plain, behavioural language. The whole interface is drawn and animated live in p5.', x, ly, w, 14, INK, SERIF, 21, 170) + 24;
       UI.contentH.settings = ly;
     }
 
