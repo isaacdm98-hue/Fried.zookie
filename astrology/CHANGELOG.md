@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.4.0 — 2026-07-04
+- **The camera moves.** Every scene now pushes slowly toward the walker over its life, stars drift in parallax against the stride, low mist slides past in the foreground, and the mover casts a pool of its own light on the ground. Letterbox and iris hold the frame.
+- **Serendipity.** Every so often a star lets go and falls; every so often a small flight of birds crosses the sky on a breeze. Never on schedule, never demanded, the way a sky should be.
+- **Ethereal music.** The pad grows a feedback-delay halo, a shadow voice a fifth below, chords that breathe between voicings every so often, and rare high shimmer notes that fall like single stars and take six seconds to fade. Still a whisper.
+- **Spacing trued.** The Reel's giant AGE clears its header row, the month moved beside the title, and lesson titles sit below the pond instead of in it.
+
 ## 2.3.0 — 2026-07-04
 - **The app gets its own face.** Fraunces, a warm and genuinely characterful old-style serif, carries every reading and title; Space Grotesk carries the interface. Both load once (about 100KB together), stay cached forever, and fall back gracefully to the old stacks offline, composing cleanly with the OpenDyslexic preference.
 - **The last squash found.** The Reel's giant AGE digits sat on a fixed 44px grid whatever the font's real width; the grid now measures the actual digits.

@@ -3873,23 +3873,53 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     try {
       var ctx = AUDIO.ctx, t = ctx.currentTime, master = ctx.createGain();
       master.gain.setValueAtTime(0.0001, t);
-      master.gain.linearRampToValueAtTime(vol || 0.028, t + 3.2);
-      var lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 900; lp.Q.value = 0.4;
+      master.gain.linearRampToValueAtTime(vol || 0.028, t + 4.5);
+      var lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 820; lp.Q.value = 0.4;
       var lfo = ctx.createOscillator(), lfoG = ctx.createGain();
-      lfo.frequency.value = 0.09; lfoG.gain.value = 220; lfo.connect(lfoG); lfoG.connect(lp.frequency); lfo.start(t);
-      lp.connect(master); master.connect(ctx.destination);
-      var oscs = [lfo], i;
+      lfo.frequency.value = 0.06; lfoG.gain.value = 260; lfo.connect(lfoG); lfoG.connect(lp.frequency); lfo.start(t);
+      // the halo: a feedback delay turns the whisper into a room
+      var dly = ctx.createDelay(1.2); dly.delayTime.value = 0.52;
+      var fb = ctx.createGain(); fb.gain.value = 0.42;
+      var wet = ctx.createGain(); wet.gain.value = 0.55;
+      lp.connect(master); lp.connect(dly); dly.connect(fb); fb.connect(dly); dly.connect(wet); wet.connect(master);
+      master.connect(ctx.destination);
+      var oscs = [lfo], gains = [], i;
       for (i = 0; i < freqs.length; i++) {
         var o = ctx.createOscillator(), g = ctx.createGain();
-        o.type = i % 2 ? 'sine' : 'triangle'; o.frequency.value = freqs[i] * (1 + (i % 2 ? 0.0015 : -0.001));
-        g.gain.value = 1 / freqs.length;
-        o.connect(g); g.connect(lp); o.start(t); oscs.push(o);
+        o.type = 'sine'; o.frequency.value = freqs[i] * (1 + (i % 2 ? 0.0016 : -0.0011));
+        g.gain.value = 0.85 / freqs.length;
+        o.connect(g); g.connect(lp); o.start(t); oscs.push(o); gains.push(g);
+        // a shadow voice a fifth below the lowest, barely there, for depth
+        if (i === 0) { var oS = ctx.createOscillator(), gS = ctx.createGain(); oS.type = 'sine'; oS.frequency.value = freqs[0] * 2 / 3; gS.gain.value = 0.35 / freqs.length; oS.connect(gS); gS.connect(lp); oS.start(t); oscs.push(oS); }
       }
-      PAD = { master: master, oscs: oscs };
+      // the chords breathe: every ~18s the voices drift to a neighbouring voicing and back
+      var vt = ctx.createOscillator(), vtG = ctx.createGain();
+      vt.frequency.value = 0.028; vtG.gain.value = 2.4; vt.connect(vtG);
+      for (i = 1; i < oscs.length && i <= freqs.length; i++) { try { vtG.connect(oscs[i].frequency); } catch (eV) {} }
+      vt.start(t); oscs.push(vt);
+      // shimmer: a high star-note falls every little while, long and soft
+      var shimN = 0, shimT = null;
+      function shim() {
+        if (!PAD || PAD.master !== master) return;
+        try {
+          var t2 = ctx.currentTime, so = ctx.createOscillator(), sg = ctx.createGain();
+          var base9 = freqs[(shimN * 2 + 1) % freqs.length] * (shimN % 3 === 2 ? 3 : 4);
+          so.type = 'sine'; so.frequency.value = base9;
+          sg.gain.setValueAtTime(0.0001, t2);
+          sg.gain.linearRampToValueAtTime((vol || 0.028) * 0.5, t2 + 0.9);
+          sg.gain.exponentialRampToValueAtTime(0.0001, t2 + 6.5);
+          so.connect(sg); sg.connect(dly); sg.connect(master); so.start(t2); so.stop(t2 + 7);
+          shimN++;
+        } catch (eSh) {}
+        shimT = setTimeout(shim, 9000 + (shimN % 4) * 4200);
+      }
+      shimT = setTimeout(shim, 5200);
+      PAD = { master: master, oscs: oscs, shimT: function () { if (shimT) clearTimeout(shimT); } };
     } catch (e) { PAD = null; }
   }
   function padStop(fade) {
     if (!PAD || !AUDIO.ctx) { PAD = null; return; }
+    try { if (PAD.shimT) PAD.shimT(); } catch (eST) {}
     try {
       var t = AUDIO.ctx.currentTime, pd = PAD; PAD = null;
       pd.master.gain.cancelScheduledValues(t); pd.master.gain.setValueAtTime(Math.max(0.0001, pd.master.gain.value), t);
@@ -4973,16 +5003,16 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var moving9 = (nowT() - (UI.reelMoveT || 0)) < 320;
       var hMul9 = 0.55 + 0.45 * Math.min(1, ageY / 18);
       var crA9 = Math.max(0, (ageY - 62) / 28) * 0.12;
-      skyWalkScene9({ top: top + 108, bot: top + vh - 128, band: 34, tp: tp, ay: ay, mover: mvR9, natalKey: capNp, natalLon: natR9, quality: 'flow', t0: UI.reelCapT || nowT() - 9000, alf: 1, ph: f * 260, moving: moving9, hMul: hMul9, crouchAdd: crA9 });
+      skyWalkScene9({ top: top + 118, bot: top + vh - 128, band: 34, tp: tp, ay: ay, mover: mvR9, natalKey: capNp, natalLon: natR9, quality: 'flow', t0: UI.reelCapT || nowT() - 9000, alf: 1, ph: f * 260, moving: moving9, hMul: hMul9, crouchAdd: crA9 });
       if (cap && cap !== UI.reelCap) { UI.reelCap = cap; UI.reelCapT = nowT(); blip(392, 0.18, 0.035); buzz(8); }
       if (!cap) UI.reelCap = null;
       setFont(MONO, 10, ACCTX, p.LEFT, p.TOP, 235); p.text('YOUR LIFE', x, top + 12);
       var MON9 = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
-      setFont(MONO, 10, INK, p.RIGHT, p.TOP, 190); p.text(MON9[when.getUTCMonth()] + ' ' + when.getUTCFullYear(), x + w - 74, top + 12);
+      setFont(MONO, 10, INK, p.LEFT, p.TOP, 190); p.text(MON9[when.getUTCMonth()] + ' ' + when.getUTCFullYear(), x + 92, top + 12);
       if (dc) {
         // the age is an odometer: each digit rests solid, then rolls over in the last stretch before its wrap
         dc.save(); dc.font = 'bold 72px ' + SERIF; dc.textAlign = 'center'; dc.textBaseline = 'alphabetic';
-        var age9 = Math.floor(ageY), digs9 = String(age9).length, dw9 = Math.ceil(dc.measureText('8').width) + 10, oy9 = top + 74;
+        var age9 = Math.floor(ageY), digs9 = String(age9).length, dw9 = Math.ceil(dc.measureText('8').width) + 10, oy9 = top + 100;
         var gw9 = 146 + 22 + digs9 * dw9, lx9 = cx - 18 - gw9 / 2;
         dc.fillStyle = 'rgba(' + INK[0] + ',' + INK[1] + ',' + INK[2] + ',0.92)';
         dc.fillText('AGE', lx9 + 73, oy9);
@@ -7222,7 +7252,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         strokec(INK, 60 * alpha); p.strokeWeight(1); p.line(x + 8, pondY, x + w - 8, pondY); p.noStroke();
         (function (pY9, pH9) { pushHit(x, pY9, w, pH9, function (hx9, hy9) { UI.pondRips = UI.pondRips || []; if (UI.pondRips.length < 6) UI.pondRips.push({ x: UI.pressX || cx, y: Math.max(pY9 + 6, Math.min(pY9 + pH9 - 4, UI.pressY || (pY9 + pH9 / 2))), t: nowT() }); buzz(6); }); })(pondY, pondH);
       }
-      var ty = top + vh * (inQuiz ? 0.285 : 0.52), slideIn = (1 - e) * 14;
+      var ty = inQuiz ? (top + vh * 0.285) : Math.max(top + vh * 0.52, sceneCY + sceneR * 0.98 + Math.max(44, Math.round(vh * 0.085)) + 14), slideIn = (1 - e) * 14;
       p.textFont(SANS); p.textSize(28); var tl = wrapLines(sc.t, w - 24); setFont(SANS, 28, INK, p.CENTER, p.TOP, 255 * (inQuiz ? 1 : alpha)); bold(); for (i = 0; i < tl.length; i++) p.text(tl[i], cx, ty + i * 33); normal(); ty += tl.length * 33 + 10;
       if (inQuiz) {
         // the recall beat — one question, answered (where possible) by your own sky
@@ -8197,9 +8227,12 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var topS = o.top, botS = o.bot, band9 = o.band || 24, gy = botS - band9, cxS = W / 2;
       var ee = o.alf == null ? 1 : o.alf;
       var pal = NEWS_SKY[o.mover] || [[92, 100, 118], [184, 176, 166]];
+      var camT9 = still ? 0 : eCubic(cl01((nowT() - o.t0) / 12000));
+      p.push(); p.translate(cxS, gy); p.scale(1 + 0.05 * camT9); p.translate(-cxS, -gy);
       if (dcW9) { var gS = dcW9.createLinearGradient(0, topS, 0, gy); gS.addColorStop(0, 'rgba(' + (pal[0][0] | 0) + ',' + (pal[0][1] | 0) + ',' + (pal[0][2] | 0) + ',' + (0.96 * ee) + ')'); gS.addColorStop(1, 'rgba(' + (pal[1][0] | 0) + ',' + (pal[1][1] | 0) + ',' + (pal[1][2] | 0) + ',' + (0.96 * ee) + ')'); dcW9.fillStyle = gS; dcW9.fillRect(0, topS, W, gy - topS); }
       p.noStroke(); fillc([238, 228, 206], 13); p.rect(0, topS, W, gy - topS);
-      var si9; for (si9 = 0; si9 < 26; si9++) { var tw9 = still ? 0.8 : 0.55 + 0.45 * Math.sin(nowT() * 0.003 + si9 * 1.7); p.noStroke(); fillc([255, 252, 240], 110 * tw9 * ee); p.ellipse(8 + ((si9 * 79) % (W - 16)), topS + 8 + ((si9 * 47) % (gy - topS - 60)), 1.7, 1.7); }
+      var sdr9 = o.ph != null ? o.ph * 3.2 : (still ? 0 : nowT() * 0.0016);
+      var si9; for (si9 = 0; si9 < 26; si9++) { var tw9 = still ? 0.8 : 0.55 + 0.45 * Math.sin(nowT() * 0.003 + si9 * 1.7); var stx9 = 8 + ((((si9 * 79) - sdr9 * (0.5 + (si9 % 3) * 0.35)) % (W - 16)) + (W - 16)) % (W - 16); p.noStroke(); fillc([255, 252, 240], 110 * tw9 * ee); p.ellipse(stx9, topS + 8 + ((si9 * 47) % (gy - topS - 60)), 1.7, 1.7); }
       // the ecliptic laid across the sky, centred on the mover
       var ay9 = o.ay || 0;
       function zl9(k) { var pp9 = o.tp && o.tp[k]; return (pp9 && pp9.lon != null) ? ((pp9.lon - ay9) % 360 + 360) % 360 : null; }
@@ -8210,6 +8243,34 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       // high cloud drifting: the air the scene breathes. No sign labels, no ticks:
       // a cut-scene, not a diagram
       if (!still) { var clS9; for (clS9 = 0; clS9 < 2; clS9++) { var cwS9 = W * (0.5 + clS9 * 0.3), cxxS9 = ((nowT() * (0.004 + clS9 * 0.003) + clS9 * 500) % (W + cwS9 * 2)) - cwS9, cyyS9 = topS + 24 + clS9 * 40; p.noStroke(); fillc([255, 252, 244], (16 - clS9 * 5) * ee); p.ellipse(cxxS9, cyyS9, cwS9, cwS9 * 0.22); p.ellipse(cxxS9 + cwS9 * 0.3, cyyS9 + 8, cwS9 * 0.6, cwS9 * 0.18); } }
+      // serendipity: every so often a star lets go and falls; every so often a
+      // small flight of birds crosses, riding a noise-driven breeze
+      if (!still) {
+        var shC9 = Math.floor(nowT() / 13000);
+        var shP9 = (nowT() % 13000) / 900;
+        if (shP9 < 1 && (shC9 % 2 === 0)) {
+          var shx0 = ((shC9 * 173) % (W * 0.7)) + W * 0.15, shy0 = topS + 20 + ((shC9 * 97) % 60);
+          var shx1 = shx0 + 90, shy1 = shy0 + 34;
+          var hd9 = shP9, tl9 = Math.max(0, shP9 - 0.22);
+          strokec([255, 250, 235], 200 * (1 - shP9) * ee); p.strokeWeight(1.4);
+          p.line(shx0 + (shx1 - shx0) * tl9, shy0 + (shy1 - shy0) * tl9, shx0 + (shx1 - shx0) * hd9, shy0 + (shy1 - shy0) * hd9);
+          p.noStroke();
+        }
+        var bdC9 = Math.floor(nowT() / 21000);
+        if (bdC9 % 3 === 1) {
+          var bdP9 = (nowT() % 21000) / 21000, bdi9;
+          var bdy0 = topS + 40 + ((bdC9 * 61) % 50);
+          for (bdi9 = 0; bdi9 < 4; bdi9++) {
+            var bx9 = W + 40 - bdP9 * (W + 120) - bdi9 * 17 - (bdi9 % 2) * 9;
+            if (bx9 < -20 || bx9 > W + 20) continue;
+            var by9 = bdy0 + Math.sin(nowT() * 0.004 + bdi9 * 1.4) * 4 + bdi9 * 3.5;
+            var fl9b = Math.sin(nowT() * 0.02 + bdi9 * 2.2) * 2.6;
+            strokec([44, 36, 30], 170 * ee); p.strokeWeight(1.2);
+            p.line(bx9 - 4, by9 - fl9b, bx9, by9); p.line(bx9, by9, bx9 + 4, by9 - fl9b);
+            p.noStroke();
+          }
+        }
+      }
       // the constellations, where they truly stand: each sign's figure formed from
       // its own stars, lines drawing themselves in; the mover's constellation wakes
       // brighter, a presence in the sky rather than a label under it
@@ -8261,6 +8322,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         p.push(); p.translate(mvx9, mvy9); celestialBody(o.mover, 0, 0, o.mover === 'sun' ? 20 : 15, nowT()); p.pop();
         var nmA9 = still ? 0.6 : Math.min(cl01((nowT() - o.t0 - 600) / 700), cl01((3400 - (nowT() - o.t0)) / 700));
         if (nmA9 > 0.01) { setFont(MONO, 7.5, [252, 246, 232], p.CENTER, p.TOP, 215 * ee * nmA9); p.text(APP.nameFor(o.mover).toUpperCase(), mvx9, mvy9 + 22); }
+        if (dcW9 && !still) { var pgl9 = dcW9.createRadialGradient(mvx9, gy, 6, mvx9, gy, 110); pgl9.addColorStop(0, 'rgba(255,240,204,' + (0.10 * ee) + ')'); pgl9.addColorStop(1, 'rgba(255,240,204,0)'); dcW9.fillStyle = pgl9; dcW9.fillRect(mvx9 - 110, gy - 26, 220, 28); }
       }
       // your natal point in the same sky, and the aspect drawn between
       if (o.natalLon != null) {
@@ -8310,6 +8372,9 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       } else { fig9.look = 0.4; }
       p.noStroke(); fillc([8, 8, 14], 90 * ee); p.ellipse(wkX9, gy + 2, fh9 * 0.42, 7);
       actorFigure(fig9, ee);
+      // low mist drifting past in the foreground: the nearest layer moves fastest
+      if (!still) { var mi9x; for (mi9x = 0; mi9x < 2; mi9x++) { var mBase9 = o.ph != null ? o.ph * (26 + mi9x * 14) : nowT() * (0.016 + mi9x * 0.011); var mx9m = W - ((((mBase9 + mi9x * 500) % (W + 340)) + (W + 340)) % (W + 340)) + 170; p.noStroke(); fillc([242, 236, 222], (12 - mi9x * 4) * ee); p.ellipse(mx9m, gy - 4 - mi9x * 9, 280, 22); p.ellipse(mx9m - 130, gy - 1 - mi9x * 7, 200, 16); } }
+      p.pop();
       // the frame: an iris of air at the edges and letterbox bars, like a cut-scene
       if (dcW9 && !still) { var vgS9 = dcW9.createRadialGradient(cxS, (topS + gy) / 2, (gy - topS) * 0.55, cxS, (topS + gy) / 2, (gy - topS) * 1.15); vgS9.addColorStop(0, 'rgba(10,8,7,0)'); vgS9.addColorStop(1, 'rgba(10,8,7,0.22)'); dcW9.fillStyle = vgS9; dcW9.fillRect(0, topS, W, gy - topS); }
       p.noStroke(); fillc([16, 13, 11], 235 * ee); p.rect(0, topS, W, 8); p.rect(0, botS - 6, W, 6);
