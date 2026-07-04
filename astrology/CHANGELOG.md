@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.2.2 — 2026-07-04
+- **Real constellations in the sky.** Every story scene now carries the twelve zodiac constellations, each simplified from its true star pattern: the Hyades V and the Pleiades in Taurus, the Sickle of Leo, the Scorpion's hook around Antares, the Teapot of Sagittarius, the twin lines of Gemini crowned by Castor and Pollux, and the rest. Their lines draw themselves in star by star, and the constellation the mover stands in wakes brighter: a presence in the sky, not a label under it.
+- **Planets with character.** The background planets stop being identical dots: each glows in its own colour and size, Saturn wears its ring, the Moon its crescent, alpha stars their halos.
+
 ## 2.2.1 — 2026-07-04
 - **The Reel walks.** The scrubbing bi-wheel is gone. Dragging the bar now walks your figure through the sky of that very day: the years stream underfoot, the body is small in childhood and stoops a little past sixty, and when an exact transit lands the scene centres it, threads it to your natal point and names it. Let go, and you stand and look up.
 - **No more over-explaining.** "Search anywhere online", the geocoding essay on the birth form, "drag the bar" instructions, "read the full page in Read" and their kin are gone. The app shows; it does not narrate its own interface.

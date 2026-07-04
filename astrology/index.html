@@ -8153,6 +8153,24 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       return out;
     }
     var NEWS_SKY = { sun: [[238, 186, 110], [255, 236, 190]], moon: [[36, 44, 72], [142, 158, 192]], mercury: [[96, 128, 158], [214, 226, 232]], venus: [[196, 128, 144], [250, 214, 198]], mars: [[132, 58, 48], [238, 146, 92]], jupiter: [[236, 178, 106], [250, 226, 182]], saturn: [[92, 100, 118], [184, 176, 166]], uranus: [[74, 114, 134], [182, 218, 210]], neptune: [[56, 76, 106], [148, 178, 188]], pluto: [[52, 42, 58], [192, 114, 82]] };
+    // the twelve zodiac constellations, simplified from their true star patterns.
+    // s: stars (x along the ecliptic, y up) · l: the lines that join them ·
+    // b: the alpha star (Hamal, Aldebaran, Pollux, Regulus, Spica, Antares...) ·
+    // cl: a star that is really a cluster (the Pleiades, the Beehive)
+    var ZCON = [
+      { s: [[-0.7, -0.2], [-0.1, 0.1], [0.5, 0.35], [0.72, 0.22]], l: [[0, 1], [1, 2], [2, 3]], b: 2 },
+      { s: [[-0.35, 0.1], [0, -0.35], [0.3, 0], [0.85, 0.5], [0.5, 0.65], [-0.7, 0.55]], l: [[0, 1], [1, 2], [2, 3], [0, 4]], b: 2, cl: 5 },
+      { s: [[-0.35, 0.65], [-0.45, 0.1], [-0.5, -0.45], [0.3, 0.7], [0.2, 0.1], [0.1, -0.5]], l: [[0, 1], [1, 2], [3, 4], [4, 5], [1, 4]], b: 3 },
+      { s: [[0, 0.1], [-0.35, -0.3], [0.35, -0.25], [0, 0.55]], l: [[0, 1], [0, 2], [0, 3]], b: 1, cl: 0 },
+      { s: [[0.55, -0.3], [0.5, 0.1], [0.3, 0.35], [0.05, 0.45], [-0.1, 0.28], [-0.02, 0.08], [-0.45, 0.15], [-0.72, 0.3], [-0.78, -0.05]], l: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [1, 6], [6, 7], [7, 8], [8, 6]], b: 0 },
+      { s: [[0.1, -0.55], [0, -0.1], [-0.3, 0.3], [-0.6, 0.5], [0.3, 0.35], [0.6, 0.55]], l: [[0, 1], [1, 2], [2, 3], [1, 4], [4, 5]], b: 0 },
+      { s: [[-0.4, -0.3], [0, 0.5], [0.45, -0.2], [0.15, -0.48]], l: [[0, 1], [1, 2], [2, 0], [2, 3]], b: 1 },
+      { s: [[0.7, 0.5], [0.55, 0.28], [0.45, 0.02], [0.28, -0.16], [0.02, -0.34], [-0.22, -0.5], [-0.46, -0.44], [-0.6, -0.18], [-0.5, 0.05]], l: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 7], [7, 8]], b: 3 },
+      { s: [[-0.5, 0.15], [-0.2, 0.4], [0.15, 0.35], [0.35, 0.05], [0.2, -0.28], [-0.15, -0.32], [-0.42, -0.1], [0.62, 0.32]], l: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 0], [2, 7]], b: 4 },
+      { s: [[-0.7, 0.3], [0, -0.35], [0.7, 0.35], [0.2, 0.1], [-0.3, 0.05]], l: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 0]], b: 2 },
+      { s: [[-0.6, 0.3], [-0.32, 0.45], [-0.05, 0.3], [0.22, 0.45], [0.5, 0.25], [0.3, -0.15], [0.1, -0.45]], l: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6]], b: 0 },
+      { s: [[-0.75, 0.15], [-0.6, 0.3], [-0.45, 0.15], [-0.6, 0], [0.15, -0.3], [0.45, 0.45], [0.65, 0.55], [0.7, 0.3]], l: [[0, 1], [1, 2], [2, 3], [3, 0], [3, 4], [4, 7], [5, 6], [6, 7], [7, 5]], b: 4 }
+    ];
     // ---- THE scene: one language for every story in the app. A side-on figure
     // walks (or runs, for the big arrivals) a ground line beneath the REAL sky of
     // that moment: every planet placed at its true ecliptic degree along a band of
@@ -8176,6 +8194,32 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       // high cloud drifting: the air the scene breathes. No sign labels, no ticks:
       // a cut-scene, not a diagram
       if (!still) { var clS9; for (clS9 = 0; clS9 < 2; clS9++) { var cwS9 = W * (0.5 + clS9 * 0.3), cxxS9 = ((nowT() * (0.004 + clS9 * 0.003) + clS9 * 500) % (W + cwS9 * 2)) - cwS9, cyyS9 = topS + 24 + clS9 * 40; p.noStroke(); fillc([255, 252, 244], (16 - clS9 * 5) * ee); p.ellipse(cxxS9, cyyS9, cwS9, cwS9 * 0.22); p.ellipse(cxxS9 + cwS9 * 0.3, cyyS9 + 8, cwS9 * 0.6, cwS9 * 0.18); } }
+      // the constellations, where they truly stand: each sign's figure formed from
+      // its own stars, lines drawing themselves in; the mover's constellation wakes
+      // brighter, a presence in the sky rather than a label under it
+      var moverSign9 = Math.floor(((mLon % 360) + 360) % 360 / 30), zc9;
+      for (zc9 = 0; zc9 < 12; zc9++) {
+        var ccx9 = bxS(zc9 * 30 + 15); if (ccx9 < -70 || ccx9 > W + 70) continue;
+        var ccy9 = byS(zc9 * 30 + 15) - 6;
+        var CZ9 = ZCON[zc9], hot9 = (zc9 === moverSign9);
+        var sxSc9 = 26, sySc9 = 24;
+        var drw9 = still ? 1 : cl01((nowT() - o.t0 - 500) / 1800);
+        var li9; for (li9 = 0; li9 < CZ9.l.length; li9++) {
+          var lp9 = cl01(drw9 * CZ9.l.length - li9); if (lp9 <= 0) continue;
+          var A9 = CZ9.s[CZ9.l[li9][0]], B9 = CZ9.s[CZ9.l[li9][1]];
+          strokec([252, 246, 232], (hot9 ? 78 : 32) * ee * lp9); p.strokeWeight(hot9 ? 1.1 : 0.8);
+          p.line(ccx9 + A9[0] * sxSc9, ccy9 - A9[1] * sySc9, ccx9 + (A9[0] + (B9[0] - A9[0]) * lp9) * sxSc9, ccy9 - (A9[1] + (B9[1] - A9[1]) * lp9) * sySc9);
+        }
+        p.noStroke();
+        var st9; for (st9 = 0; st9 < CZ9.s.length; st9++) {
+          var tws9 = still ? 0.8 : 0.55 + 0.45 * Math.sin(nowT() * 0.0024 + zc9 * 3 + st9 * 1.9);
+          var big9 = (st9 === CZ9.b), spx9 = ccx9 + CZ9.s[st9][0] * sxSc9, spy9 = ccy9 - CZ9.s[st9][1] * sySc9;
+          fillc([255, 250, 236], (hot9 ? 210 : 120) * tws9 * ee);
+          p.ellipse(spx9, spy9, big9 ? 3.4 : 2, big9 ? 3.4 : 2);
+          if (big9) { fillc([255, 250, 236], (hot9 ? 64 : 28) * ee); p.ellipse(spx9, spy9, 10, 10); }
+          if (st9 === CZ9.cl) { var cd9; for (cd9 = 0; cd9 < 4; cd9++) { fillc([255, 250, 236], 90 * tws9 * ee); p.ellipse(spx9 + Math.cos(cd9 * 1.9) * 4, spy9 + Math.sin(cd9 * 2.3) * 3.4, 1.2, 1.2); } }
+        }
+      }
       // the other planets: unlabelled bodies of light, where they truly are
       var PB9 = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto'], pb9;
       for (pb9 = 0; pb9 < PB9.length; pb9++) {
@@ -8183,9 +8227,14 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         var ln9 = zl9(k9); if (ln9 == null) continue;
         var ppx9 = bxS(ln9); if (ppx9 < -20 || ppx9 > W + 20) continue;
         var ppy9 = byS(ln9);
-        var twp9 = still ? 0.8 : 0.6 + 0.4 * Math.sin(nowT() * 0.0021 + pb9 * 2.3);
-        p.noStroke(); fillc([255, 248, 224], 34 * twp9 * ee); p.ellipse(ppx9, ppy9, 15, 15);
-        fillc([252, 246, 232], 190 * twp9 * ee); p.ellipse(ppx9, ppy9, 3.6, 3.6);
+        var twp9 = still ? 0.85 : 0.7 + 0.3 * Math.sin(nowT() * 0.0021 + pb9 * 2.3);
+        var bcol9 = BODYCOL[k9] || [240, 234, 220];
+        var brt9 = [Math.min(255, bcol9[0] + 110), Math.min(255, bcol9[1] + 110), Math.min(255, bcol9[2] + 110)];
+        var prd9 = (k9 === 'sun') ? 6.5 : (k9 === 'jupiter') ? 5.4 : (k9 === 'moon' || k9 === 'venus') ? 4.8 : (k9 === 'saturn') ? 4.4 : 3.6;
+        p.noStroke(); fillc(brt9, 36 * twp9 * ee); p.ellipse(ppx9, ppy9, prd9 * 4.2, prd9 * 4.2);
+        fillc(brt9, 225 * twp9 * ee); p.ellipse(ppx9, ppy9, prd9, prd9);
+        if (k9 === 'saturn') { p.noFill(); strokec(brt9, 170 * twp9 * ee); p.strokeWeight(0.9); p.push(); p.translate(ppx9, ppy9); p.rotate(-0.42); p.ellipse(0, 0, prd9 * 2.4, prd9 * 0.9); p.pop(); p.noStroke(); }
+        if (k9 === 'moon') { fillc(pal[0], 200 * ee); p.ellipse(ppx9 + prd9 * 0.34, ppy9 - prd9 * 0.16, prd9 * 0.9, prd9 * 0.9); }
       }
       // the mover: a breathing body of light; its name appears once, then lets go
       var mvx9 = bxS(mLon), mvy9 = byS(mLon);
