@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.2.1 — 2026-07-04
+- **The Reel walks.** The scrubbing bi-wheel is gone. Dragging the bar now walks your figure through the sky of that very day: the years stream underfoot, the body is small in childhood and stoops a little past sixty, and when an exact transit lands the scene centres it, threads it to your natal point and names it. Let go, and you stand and look up.
+- **No more over-explaining.** "Search anywhere online", the geocoding essay on the birth form, "drag the bar" instructions, "read the full page in Read" and their kin are gone. The app shows; it does not narrate its own interface.
+
 ## 2.2.0 — 2026-07-04
 - **Cut-scenes, not diagrams.** The story scenes lose their sign labels, tick marks and planet glyphs. Planets are unlabelled bodies of light where they truly stand; the mover breathes and its name appears once, then lets go; high cloud drifts through; an iris of air and letterbox bars frame it like film.
 - **The voice is retired.** It never earned its keep, so it is gone entirely: no downloads, no narration buttons, no settings row. The scenes and the words carry the app.

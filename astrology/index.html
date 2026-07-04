@@ -4936,32 +4936,31 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var tp = UI.reelPos, ay = c.ayan || 0;
       function axp(lon, rr) { return cx + rr * Math.cos((180 + (lon - asc)) * RAD); }
       function ayp(lon, rr) { return cy - rr * Math.sin((180 + (lon - asc)) * RAD); }
-      miniWheel(c, b, cx, cy, R * 0.66, null, nowT(), null);
-      p.noFill(); strokec(INK, 70); p.strokeWeight(1); p.ellipse(cx, cy, R * 2, R * 2);
+      // the sky of that day, and you walking through it: scrub, and the years stream past.
+      // The exact aspects still name themselves, and when one lands the scene centres it.
       var order = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto'];
-      var ASPA = [0, 60, 90, 120, 180], ASPN = { 0: 'conjunct', 60: 'sextile', 90: 'square', 120: 'trine', 180: 'opposite' }, cap = null;
+      var ASPA = [0, 60, 90, 120, 180], ASPN = { 0: 'conjunct', 60: 'sextile', 90: 'square', 120: 'trine', 180: 'opposite' }, cap = null, capK = null, capNp = null;
       for (i = 0; i < order.length; i++) {
         var k = order[i]; if (!tp[k]) continue;
-        var lon = ((tp[k].lon - ay) % 360 + 360) % 360, px = axp(lon, R), py = ayp(lon, R);
+        var lon = ((tp[k].lon - ay) % 360 + 360) % 360;
         for (j = 0; j < order.length; j++) {
           var npv = c.planets[order[j]]; if (!npv) continue;
           var sep = Math.abs((((lon - npv.lon) % 360) + 540) % 360 - 180), a4;
           for (a4 = 0; a4 < 5; a4++) {
-            var o4 = Math.abs((180 - sep) - ASPA[a4]) < Math.abs(sep - ASPA[a4]) ? Math.abs(sep - ASPA[a4]) : Math.abs(sep - ASPA[a4]);
-            o4 = Math.abs(sep - ASPA[a4]);
-            if (o4 < 1.3) {
-              strokec(ACC, 165 * (1 - o4 / 1.3)); p.strokeWeight(o4 < 0.5 ? 1.8 : 1);
-              p.line(px, py, axp(npv.lon, R * 0.66 * 0.66), ayp(npv.lon, R * 0.66 * 0.66));
-              if (i >= 5 && (order[j] === 'sun' || order[j] === 'moon') && o4 < 0.8) cap = APP.nameFor(k) + ' ' + ASPN[ASPA[a4]] + ' your ' + APP.nameFor(order[j]);
-            }
+            var o4 = Math.abs(sep - ASPA[a4]);
+            if (o4 < 0.8 && i >= 5 && (order[j] === 'sun' || order[j] === 'moon')) { cap = APP.nameFor(k) + ' ' + ASPN[ASPA[a4]] + ' your ' + APP.nameFor(order[j]); capK = k; capNp = order[j]; }
           }
         }
-        p.noStroke(); fillc(BODYCOL[k] || INK, 245); p.ellipse(px, py, 12, 12);
-        setFont(SANS, 7.5, GROUNDS.chart, p.CENTER, p.CENTER, 235); p.text(APP.glyphFor(k), px, py + 0.5);
       }
+      var mvR9 = capK || 'sun', natR9 = capNp ? (c.planets[capNp] ? c.planets[capNp].lon : null) : null;
+      if (UI.reelPrevF !== f) { UI.reelMoveT = nowT(); UI.reelPrevF = f; }
+      var moving9 = (nowT() - (UI.reelMoveT || 0)) < 320;
+      var hMul9 = 0.55 + 0.45 * Math.min(1, ageY / 18);
+      var crA9 = Math.max(0, (ageY - 62) / 28) * 0.12;
+      skyWalkScene9({ top: top + 108, bot: top + vh - 128, band: 34, tp: tp, ay: ay, mover: mvR9, natalKey: capNp, natalLon: natR9, quality: 'flow', t0: UI.reelCapT || nowT() - 9000, alf: 1, ph: f * 260, moving: moving9, hMul: hMul9, crouchAdd: crA9 });
       if (cap && cap !== UI.reelCap) { UI.reelCap = cap; UI.reelCapT = nowT(); blip(392, 0.18, 0.035); buzz(8); }
       if (!cap) UI.reelCap = null;
-      setFont(MONO, 10, ACCTX, p.LEFT, p.TOP, 235); p.text('THE REEL \u00B7 YOUR LIFE, SCRUBBABLE', x, top + 12);
+      setFont(MONO, 10, ACCTX, p.LEFT, p.TOP, 235); p.text('YOUR LIFE', x, top + 12);
       var MON9 = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
       setFont(MONO, 10, INK, p.RIGHT, p.TOP, 190); p.text(MON9[when.getUTCMonth()] + ' ' + when.getUTCFullYear(), x + w - 74, top + 12);
       if (dc) {
@@ -4987,8 +4986,8 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         }
         dc.restore();
       }
-      if (UI.reelCap) { var cpA = reduced() ? 1 : (0.65 + 0.35 * Math.sin(nowT() * 0.006)); setFont(SANS, 15, ACC, p.CENTER, p.TOP, 245 * cpA); bold(); p.text(UI.reelCap.toUpperCase(), cx, cy + R + 22); normal(); }
-      else { setFont(MONO, 9.5, INK, p.CENTER, p.TOP, 150); p.text('DRAG THE BAR \u00B7 THREADS LIGHT WHERE THE SKY TOUCHES YOU', cx, cy + R + 24); }
+      if (UI.reelCap) { var cpA = reduced() ? 1 : (0.65 + 0.35 * Math.sin(nowT() * 0.006)); setFont(SANS, 15, ACC, p.CENTER, p.TOP, 245 * cpA); bold(); p.text(UI.reelCap.toUpperCase(), cx, top + vh - 118); normal(); }
+
       // the scrub bar
       var bx3 = x + 8, bw3 = w - 16, by3 = top + vh - 74;
       UI.reelBar = { x: bx3, y: by3, w: bw3 };
@@ -5556,7 +5555,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         var a1 = still ? 1 : cl01((tt0 - 1.1) / 0.7), a2 = still ? 1 : cl01((tt0 - 1.6) / 0.7), a3 = still ? 1 : cl01((tt0 - 2.1) / 0.7);
         setFont(SERIF, 40, [238, 232, 216], p.CENTER, p.TOP, 255 * a1); bold(); p.text('Your life', cx, top + vh * 0.50 + (1 - a1) * 10); normal();
         setFont(MONO, 11, [238, 232, 216], p.CENTER, p.TOP, 210 * a2); p.text(('IN ' + ev.length + ' CHAPTERS').toUpperCase(), cx, top + vh * 0.50 + 54 + (1 - a2) * 10);
-        setFont(MONO, 9, [238, 232, 216], p.CENTER, p.TOP, 140 * a3); p.text('THE SLOW PLANETS ONLY · WEATHER, NOT FATE', cx, top + vh * 0.50 + 76 + (1 - a3) * 10);
+        setFont(MONO, 9, [238, 232, 216], p.CENTER, p.TOP, 140 * a3); p.text('WEATHER, NOT FATE', cx, top + vh * 0.50 + 76 + (1 - a3) * 10);
         if (a3 > 0.8) { var pls0 = 0.6 + 0.4 * Math.sin(nowT() * 0.004); setFont(MONO, 10, ACC, p.CENTER, p.TOP, 235 * (still ? 1 : pls0)); p.text('TAP TO RAISE THE CURTAIN ›', cx, top + vh - 46); }
         pushHit(x, top + 40, w, vh - 60, function () { UI.lifeWalk.i = 0; UI.lifeWalk.t0 = nowT(); blip(392, 0.2, 0.03); try { padStart([130.81, 196, 293.66], 0.018); } catch (eP2) {} });
         tourBtn('Skip', x + w - 66, top + 6, 60, 26, function () { UI.lifeWalk = null; lifeWalkHush(); }, false);
@@ -6500,7 +6499,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     function bondScores(bond, x, w, ly) {
       var sc = bond.scores; if (!sc || !sc.length) return ly;
       if (!UI.synExp) UI.synExp = {};
-      eyebrow('The scoreboard: tap for receipts', x, ly, ACC); ly += 26;
+      eyebrow('The scoreboard', x, ly, ACC); ly += 26;
       var i, j;
       for (i = 0; i < sc.length; i++) {
         var D = sc[i]; if (D.score == null) continue;
@@ -7253,7 +7252,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         p.line(sfx9 - 5, sfy9, sfx9 + 5, sfy9); p.line(sfx9, sfy9 - 5, sfx9, sfy9 + 5); p.noStroke();
       }
       if (last && !qz && UI.lesson.beat >= beats.length - 1) { tourBtn('Read my chart ›', cx - 152, top + vh - 96, 148, 42, function () { UI.lesson = null; UI.screen = 'chart'; try { padStop(1.6); } catch (eLQ) {} }, true); tourBtn('Explore Learn', cx + 6, top + vh - 96, 148, 42, function () { UI.lesson = null; try { padStop(1.6); } catch (eLR) {} }, false); }
-      else if (!inQuiz) { setFont(MONO, 10, INK, p.CENTER, p.TOP, 150 * alpha); p.text(auto ? 'PLAYING · TAP TO SKIP AHEAD' : 'TAP TO CONTINUE  ›', cx, top + vh - 42); }
+      else if (!inQuiz) { setFont(MONO, 10, INK, p.CENTER, p.TOP, 150 * alpha); p.text(auto ? 'TAP TO SKIP  ›' : 'TAP TO CONTINUE  ›', cx, top + vh - 42); }
       iconBtn(auto ? 'pause' : 'play', x + w - 138, top + 42, 60, 26, function () { UI.lesson.auto = !(UI.lesson.auto !== false); if (UI.lesson.auto) UI.lesson.t0 = nowT(); });
       tourBtn('Skip', x + w - 70, top + 42, 64, 26, function () { UI.lesson = null; try { padStop(1.6); } catch (eLS) {} }, false);
       UI.contentH.learn = 0;
@@ -8230,17 +8229,20 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       p.noStroke(); fillc([30, 26, 24], 246); p.rect(0, gy - 2, W, botS - gy + 2);
       var prs9 = o.pers || myPersona();
       var spd9 = (o.run ? 0.16 : 0.09) * prs9.pace, dsh9;
+      var dBase9 = o.ph != null ? (o.ph * 42) : (nowT() * spd9);
       strokec([250, 246, 232], 50); p.strokeWeight(1.4);
-      for (dsh9 = 0; dsh9 < 7; dsh9++) { var dxW9 = W - ((nowT() * spd9 + dsh9 * 97) % (W + 60)) + 30; p.line(dxW9, gy + 9 + (dsh9 % 3) * 5, dxW9 - 11, gy + 9 + (dsh9 % 3) * 5); }
+      for (dsh9 = 0; dsh9 < 7; dsh9++) { var dxW9 = W - (((dBase9 + dsh9 * 97) % (W + 60)) + (W + 60)) % (W + 60) + 30; p.line(dxW9, gy + 9 + (dsh9 % 3) * 5, dxW9 - 11, gy + 9 + (dsh9 % 3) * 5); }
       p.noStroke();
-      // and you, walking it (or running to meet a return)
-      var fh9 = Math.min((gy - topS) * 0.44, 96), wkX9 = W * 0.44;
-      var ph9 = nowT() * (o.run ? 0.017 : 0.0125) * prs9.pace;
-      var fig9 = { x: wkX9, y: gy, h: fh9, col: [38, 30, 24], rim: prs9.rim, rimOff: [-2, -1.4], crouch: prs9.crouch, look: 0.3 };
-      var g9s = o.run ? runPose9(wkX9, gy, fh9, ph9) : gaitAt(wkX9, gy, fh9, ph9);
-      fig9.fL = g9s.fL; fig9.fR = g9s.fR; fig9.bob = g9s.bob;
-      fig9.lean = o.run ? 0.26 : (o.quality === 'tension' ? 0.15 : 0.06 + prs9.lean * 0.4);
-      if (o.run) { fig9.hL = { x: wkX9 + fh9 * 0.02 + g9s.hLdx, y: gy - fh9 * 0.66 + g9s.hLdy }; fig9.hR = { x: wkX9 + fh9 * 0.02 + g9s.hRdx, y: gy - fh9 * 0.66 + g9s.hRdy }; }
+      // and you, walking it (or running to meet a return, or standing to look)
+      var fh9 = Math.min((gy - topS) * 0.44, 96) * (o.hMul || 1), wkX9 = W * 0.44;
+      var ph9 = o.ph != null ? o.ph : nowT() * (o.run ? 0.017 : 0.0125) * prs9.pace;
+      var fig9 = { x: wkX9, y: gy, h: fh9, col: [38, 30, 24], rim: prs9.rim, rimOff: [-2, -1.4], crouch: prs9.crouch + (o.crouchAdd || 0), look: 0.3 };
+      if (o.moving !== false) {
+        var g9s = o.run ? runPose9(wkX9, gy, fh9, ph9) : gaitAt(wkX9, gy, fh9, ph9);
+        fig9.fL = g9s.fL; fig9.fR = g9s.fR; fig9.bob = g9s.bob;
+        fig9.lean = o.run ? 0.26 : (o.quality === 'tension' ? 0.15 : 0.06 + prs9.lean * 0.4);
+        if (o.run) { fig9.hL = { x: wkX9 + fh9 * 0.02 + g9s.hLdx, y: gy - fh9 * 0.66 + g9s.hLdy }; fig9.hR = { x: wkX9 + fh9 * 0.02 + g9s.hRdx, y: gy - fh9 * 0.66 + g9s.hRdy }; }
+      } else { fig9.look = 0.4; }
       p.noStroke(); fillc([8, 8, 14], 90 * ee); p.ellipse(wkX9, gy + 2, fh9 * 0.42, 7);
       actorFigure(fig9, ee);
       // the frame: an iris of air at the edges and letterbox bars, like a cut-scene
@@ -8331,7 +8333,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         var a2E = still ? 1 : cl01((lt - 1.2) / 0.7);
         setFont(SERIF, 14.5, INK, p.CENTER, p.TOP, 225 * a2E);
         p.text(shownN ? 'Their weather is moving too. Compare notes in People.' : 'Add the people you love in People, and they will walk in here.', cx, gy0 + 102);
-        setFont(MONO, 9, INK, p.CENTER, p.TOP, 150 * a2E); p.text('WEATHER, NOT FATE · READ THE FULL PAGE IN READ', cx, gy0 + 128);
+        setFont(MONO, 9, INK, p.CENTER, p.TOP, 150 * a2E); p.text('WEATHER, NOT FATE', cx, gy0 + 128);
         // each bond explained in turn: whose sun meets whose, and how the elements weather it
         if (infosN.length) {
           var rotN = Math.floor(nowT() / 3600) % infosN.length, infR = infosN[rotN];
@@ -8602,7 +8604,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       else { p.noFill(); strokec(INK, 180); p.strokeWeight(1.4); p.rect(x, sY(ly), 22, 22, 5); }
       setFont(SANS, 13, INK, p.LEFT, p.CENTER); p.text('I don\u2019t know my birth time', x + 32, sY(ly) + 11); pushHit(x, sY(ly), w, 26, function () { d.timeKnown = !d.timeKnown; }); ly += 38;
       var online = !!(APP.STATE.settings && APP.STATE.settings.geocodeOnline);
-      eyebrow(online ? 'Birth place: search anywhere online' : 'Birth place', x, ly); ly += 24;
+      eyebrow('Birth place', x, ly); ly += 24;
       var selName = d.geo ? d.geo.place : (d.cityIdx >= 0 ? (DATA.CITIES[d.cityIdx][0] + ', ' + DATA.CITIES[d.cityIdx][1]) : 'None selected: search below');
       var hasSel = !!(d.geo || d.cityIdx >= 0);
       setFont(MONO, 11, hasSel ? ACC : INK, p.LEFT, p.TOP, hasSel ? 255 : 140); p.text(selName.toUpperCase(), x, sY(ly)); ly += 22;
@@ -8622,7 +8624,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         if (qq.length >= 3 && qq !== UI.geoQ && !UI.geoLoading && nowT() - (UI.geoTypedAt || 0) > 700) geoSearch(qq);
         var grh = 38, gres = UI.geoResults || [];
         if (UI.geoLoading) { setFont(MONO, 11, INK, p.CENTER, p.CENTER, 160); p.text('SEARCHING\u2026', x + w / 2, boxY + boxH / 2); }
-        else if (qq.length < 3) { setFont(MONO, 10.5, INK, p.CENTER, p.CENTER, 140); p.text('TYPE A PLACE: CITY, TOWN OR COUNTRY', x + w / 2, boxY + boxH / 2); }
+        else if (qq.length < 3) { setFont(MONO, 10.5, INK, p.CENTER, p.CENTER, 140); p.text('TYPE A PLACE', x + w / 2, boxY + boxH / 2); }
         else if (UI.geoErr) { setFont(MONO, 10.5, INK, p.CENTER, p.CENTER, 150); p.text(UI.geoErr.toUpperCase(), x + w / 2, boxY + boxH / 2); }
         else if (!gres.length) { setFont(MONO, 10.5, INK, p.CENTER, p.CENTER, 140); p.text('NO PLACES FOUND', x + w / 2, boxY + boxH / 2); }
         else for (var gi = 0; gi < gres.length; gi++) {
@@ -8634,7 +8636,6 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         }
         if (p.drawingContext) p.drawingContext.restore();
         UI.cityBox = { x: x, y: boxY, w: w, h: boxH }; UI.cityBoxMax = 0; ly += boxH + 8;
-        setFont(MONO, 8.5, INK, p.LEFT, p.TOP, 130); ly += paragraph('Free, keyless lookups (OpenStreetMap + open\u2011meteo). One request after you pause typing, nothing else leaves your device. Turn off in Settings for fully offline.', x, ly, w, 11, INK, MONO, 15, 130) + 10;
       } else {
         var q = (UI.citySearch || '').toLowerCase().replace(/^\s+|\s+$/g, ''), filtered = [];
         if (!q) { for (var fi0 = 0; fi0 < DATA.CITIES.length; fi0++) filtered.push(fi0); }
