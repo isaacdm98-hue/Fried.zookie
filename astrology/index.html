@@ -3807,7 +3807,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
   var UI = {
     screen: (APP.STATE.birth ? 'chart' : 'onboard'), prevScreen: '',
     scroll: {}, contentH: {}, selPlanet: 'sun', prevSel: 'sun',
-    tarotTab: 'spreads', spread: 1, card: null, tarotDealtSpread: -1, tarotDealT: 0, learnCat: 'elements', learnItem: null,
+    tarotTab: 'spreads', spread: 1, card: null, tarotDealtSpread: -1, tarotDealT: 0, learnCat: null, learnItem: null,
     askTopic: null, askAns: '', readCache: null, draft: null,
     viewPerson: null, padd: null, familyTree: false, bondCache: null, bondFor: null, bondT: 0,
     cityScroll: 0, bg: null,
@@ -7194,8 +7194,19 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (!inQuiz) { pushHit(x, top + 60, w, vh - 150, function () { lessonStep(true, beats, qz); }); pushHit(x, top + 60, 72, vh - 150, function () { lessonStep(false, beats, qz); }); }
       var sceneCY = top + vh * (inQuiz ? 0.155 : 0.30), sceneR = Math.min(w * 0.40, vh * 0.21) * (inQuiz ? 0.55 : 1), drift = (1 - e) * 18;
       var dc = p.drawingContext; if (dc) { dc.save(); dc.globalAlpha = inQuiz ? 1 : alpha; }
-      // each beat restarts the scene clock, so the diagram replays and advances with the teaching
-      p.push(); p.translate(cx, sceneCY - drift); p.scale(cam); drawScene(sc.k, 0, 0, sceneR, still ? nowT() : elapsed + 400); p.pop();
+      // each beat restarts the scene clock, so the diagram replays and advances with the teaching.
+      // The transits chapter teaches with the REAL sky: today, in the app's one scene language.
+      var liveScene9 = (sc.k === 'moving' && !inQuiz && APP.STATE.chart);
+      if (liveScene9) {
+        var trL9 = walkTr(APP.STATE.chart), tpL9 = trL9 && trL9.ctx ? trL9.ctx.tp : null;
+        if (tpL9) {
+          var t0L9 = trL9.daily && trL9.daily[0], natLL9 = null, cL9 = APP.STATE.chart;
+          try { if (t0L9) natLL9 = (t0L9.np === 'asc') ? cL9.asc : (t0L9.np === 'mc') ? (cL9.mc != null ? cL9.mc : (cL9.cusps ? cL9.cusps[10] : null)) : (cL9.planets[t0L9.np] ? cL9.planets[t0L9.np].lon : null); } catch (eLL9) {}
+          var qL9 = t0L9 ? ((t0L9.asp.quality === 'flow' || t0L9.asp.quality === 'opportunity') ? 'flow' : t0L9.asp.quality === 'fusion' ? 'fusion' : 'tension') : 'flow';
+          skyWalkScene9({ top: top + 44, bot: sceneCY + sceneR + 26, band: 34, tp: tpL9, ay: (trL9.ctx && trL9.ctx.ay) || 0, mover: t0L9 ? t0L9.tp : null, natalKey: t0L9 ? t0L9.np : null, natalLon: natLL9, quality: qL9, t0: UI.lesson.t0, alf: inQuiz ? 1 : alpha });
+        } else liveScene9 = false;
+      }
+      if (!liveScene9) { p.push(); p.translate(cx, sceneCY - drift); p.scale(cam); drawScene(sc.k, 0, 0, sceneR, still ? nowT() : elapsed + 400); p.pop(); }
       if (dc) dc.restore();
       var ty = top + vh * (inQuiz ? 0.285 : 0.52), slideIn = (1 - e) * 14;
       p.textFont(SANS); p.textSize(28); var tl = wrapLines(sc.t, w - 24); setFont(SANS, 28, INK, p.CENTER, p.TOP, 255 * (inQuiz ? 1 : alpha)); bold(); for (i = 0; i < tl.length; i++) p.text(tl[i], cx, ty + i * 33); normal(); ty += tl.length * 33 + 10;
@@ -7334,15 +7345,10 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         ['Level 3 · Time & tradition', [['history', 'History'], ['myths', 'Myths'], ['glossary', 'Glossary']]],
         ['Yours', [['famous', 'Like you']]]
       ];
-      flatBtn(UI.learnBrowse ? '\u2715  Close the library' : '\u25B8  Browse everything', x, ly, w, 44, function () { UI.learnBrowse = !UI.learnBrowse; UI.scroll.learn = 0; }, false); ly += 56;
-      if (!UI.learnBrowse) { UI.contentH.learn = ly + 24; return; }
-      var li2, cxp, cyp = ly, ci;
-      for (li2 = 0; li2 < LEVELS.length; li2++) {
-        var cats = LEVELS[li2][1]; cxp = x;
-        for (ci = 0; ci < cats.length; ci++) { p.textFont(MONO); p.textSize(11); var ww = p.textWidth(cats[ci][1].toUpperCase()) + 28; if (cxp + ww > x + w) { cxp = x; cyp += 40; } chip(cats[ci][1], UI.learnCat === cats[ci][0], cxp, cyp, (function (cc) { return function () { UI.learnCat = cc; UI.learnItem = null; UI.scroll.learn = 0; UI.popT = nowT(); }; })(cats[ci][0])); cxp += ww + 8; }
-        cyp += 46;
-      }
-      ly = cyp + 4;
+      // one personal door; everything else in the library answers to search only
+      flatBtn('\u2726  Charts like yours', x, ly, w, 44, function () { UI.learnCat = 'famous'; UI.learnItem = null; UI.scroll.learn = 0; UI.popT = nowT(); }, false); ly += 56;
+      if (!UI.learnCat) { UI.contentH.learn = ly + 24; return; }
+      chip('\u2715 Close', false, x, ly, function () { UI.learnCat = null; UI.learnItem = null; UI.scroll.learn = 0; }); ly += 48;
       // a gentle fade-in each time the category or item changes — a small storytelling beat
       var lfx = Math.max(UI.fxT, UI.popT || 0), le = reduced() ? 1 : eCubic(cl01((nowT() - lfx) / 380));
       var ldc = p.drawingContext; if (ldc) { ldc.save(); ldc.globalAlpha = 0.12 + 0.88 * le; }

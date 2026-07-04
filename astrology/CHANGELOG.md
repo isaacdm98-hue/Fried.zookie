@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.0.1 — 2026-07-04
+- **Learn is the journey now.** The encyclopedia shell is gone: Learn opens on the guided journey through your own chart, the road you are walking, one door to charts like yours, and search. Every reference page (signs, houses, glossary, history, myths) still exists, but answers to search instead of shouting from a menu.
+- **The transit chapter teaches with the real sky.** When the journey reaches "The sky keeps turning," the abstract diagram gives way to the app's one scene language: today's actual sky, the strongest transit threaded to your natal point, you walking beneath it.
+
 ## 2.0.0 — 2026-07-04
 - **The compass is home.** The wheel is the app's front door, and it now tells today as well as forever: every live planet rides the rim at its true degree, quiet ones as small ink dots, the ones touching your chart glowing and threaded to the natal point they touch. One word for the day sits beneath. Tap any of it and Today opens.
 - **One scene, everywhere.** Every story in the app: the life chapters and the Daily Sky, now plays in a single language: your silhouette walking (or running, for returns) beneath the REAL sky of that moment, every planet at its true ecliptic degree among the stars, the mover glowing, your natal point ringed, the aspect drawn as a thread of light. The old theatrical sets are gone; the sky itself is the set.
