@@ -627,6 +627,7 @@ var APP = (function () {
       else retro = sdelta(rawLon, rawNext) < 0; // true node can briefly station/turn direct; mean node is always retrograde
       planets[key] = makeBody(key, lon);
       planets[key].retro = retro;
+      planets[key].spd = sdelta(rawLon, rawNext); // daily motion at birth, signed: feeds applying/separating
     }
     var asc = rev(hz.asc - ay), mc = rev(hz.mc - ay);
     var cusps = [];
@@ -704,16 +705,28 @@ var APP = (function () {
   }
   function buildAspects(planets, asc, mc, orbScale, extras, useMinor) {
     var pts = [], k;
-    for (k in planets) if (planets.hasOwnProperty(k) && k !== 'node') pts.push({ key: k, lon: planets[k].lon });
-    if (asc != null) { pts.push({ key: 'asc', lon: asc }); pts.push({ key: 'mc', lon: mc }); }
-    if (extras) for (k in extras) if (extras.hasOwnProperty(k) && extras[k]) pts.push({ key: k, lon: extras[k].lon, minorBody: true });
+    for (k in planets) if (planets.hasOwnProperty(k) && k !== 'node') pts.push({ key: k, lon: planets[k].lon, spd: planets[k].spd || 0 });
+    if (asc != null) { pts.push({ key: 'asc', lon: asc, spd: 0 }); pts.push({ key: 'mc', lon: mc, spd: 0 }); }
+    if (extras) for (k in extras) if (extras.hasOwnProperty(k) && extras[k]) pts.push({ key: k, lon: extras[k].lon, spd: 0, minorBody: true });
     var out = [];
     for (var i = 0; i < pts.length; i++) for (var j = i + 1; j < pts.length; j++) {
       if (pts[i].minorBody && pts[j].minorBody) continue; // skip asteroid-to-asteroid noise
       var sep = Math.abs(sdelta(pts[i].lon, pts[j].lon)), matched = false;
+      var lum = (pts[i].key === 'sun' || pts[i].key === 'moon' || pts[j].key === 'sun' || pts[j].key === 'moon');
       for (var a = 0; a < DATA.ASPECTS.length; a++) {
         var asp = DATA.ASPECTS[a], diff = Math.abs(sep - asp.angle);
-        if (diff <= asp.orb * orbScale) { out.push({ a: pts[i].key, b: pts[j].key, asp: asp, orb: diff }); matched = true; break; }
+        // classical moiety: the luminaries cast a wider net than the rest
+        if (diff <= (asp.orb + (lum ? 1.5 : 0)) * orbScale) {
+          var rec = { a: pts[i].key, b: pts[j].key, asp: asp, orb: diff };
+          if (pts[i].spd || pts[j].spd) {
+            // where does one more day of birth-speed motion take the pair: toward exact (applying) or away (separating)?
+            var d2 = Math.abs(Math.abs(sdelta(rev(pts[i].lon + pts[i].spd), rev(pts[j].lon + pts[j].spd))) - asp.angle);
+            rec.applying = d2 < diff - 1e-6;
+          }
+          var sd9 = Math.abs(Math.floor(pts[i].lon / 30) - Math.floor(pts[j].lon / 30)); if (sd9 > 6) sd9 = 12 - sd9;
+          rec.oos = sd9 !== Math.round(asp.angle / 30); // dissociate: the degrees agree, the signs do not
+          out.push(rec); matched = true; break;
+        }
       }
       if (!matched && useMinor) {
         for (var m = 0; m < DATA.MINOR_ASPECTS.length; m++) {
@@ -883,12 +896,64 @@ var APP = (function () {
     if (dgD9 === 0 && T9.degree && T9.degree.zero[key]) out.push(T9.degree.zero[key]);
     return out;
   }
+  // the Moon's first perfected aspect after birth: a classical natal technique almost no software runs.
+  // Scans hour by hour from the birth minute to the Moon's next ingress; needs a known birth time.
+  var NMN_CACHE = {};
+  function natalMoonNext(c, b) {
+    if (!b || !b.timeKnown) return null;
+    var ck = [b.y, b.mo, b.d, b.hour, b.min, b.lat, b.lon, c.zodiac].join('|');
+    if (NMN_CACHE.hasOwnProperty(ck)) return NMN_CACHE[ck];
+    var res = null;
+    try {
+      var d0 = EPH.dayNumber(b.y, b.mo, b.d, utHoursOf(b)), ay = c.ayan || 0;
+      var m0 = rev(EPH.positions(d0).moon.lon - ay), bound = ((Math.floor(m0 / 30) + 1) * 30) % 360;
+      var pl9 = ['sun', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto'], ang9 = [0, 60, 90, 120, 180];
+      function offs(d9) {
+        var pos = EPH.positions(d9), mo = rev(pos.moon.lon - ay), o = [], i, a, z;
+        for (i = 0; i < pl9.length; i++) { if (!pos[pl9[i]]) continue; var plon = rev(pos[pl9[i]].lon - ay);
+          for (a = 0; a < ang9.length; a++) for (z = -1; z <= 1; z += 2) { if (ang9[a] === 0 && z === 1) continue; o.push({ pl: pl9[i], ang: ang9[a], d: sdelta(rev(plon + z * ang9[a]), mo) }); } }
+        o.push({ pl: '_ingress', ang: 0, d: sdelta(bound, mo) });
+        return o;
+      }
+      var prev = offs(d0), h, first = null, ingress = null;
+      for (h = 1; h <= 84 && !first && !ingress; h++) {
+        var dH = d0 + h / 24, cur = offs(dH), i, best = null;
+        for (i = 0; i < cur.length; i++) {
+          var a1 = prev[i].d, a2 = cur[i].d;
+          if (((a1 <= 0 && a2 >= 0) || (a1 >= 0 && a2 <= 0)) && Math.abs(a1) < 8 && Math.abs(a2) < 8) {
+            var lo = dH - 1 / 24, hi = dH, loNeg = a1 <= 0, it, ii = i;
+            for (it = 0; it < 16; it++) { var mid = (lo + hi) / 2, dm = offs(mid)[ii].d; if ((dm <= 0) === loNeg) lo = mid; else hi = mid; }
+            var w9 = (lo + hi) / 2;
+            if (!best || w9 < best.when) best = { when: w9, pl: cur[i].pl, ang: cur[i].ang };
+          }
+        }
+        if (best) { if (best.pl === '_ingress') ingress = best; else first = best; }
+        prev = cur;
+      }
+      if (first) res = { voidBirth: false, pl: first.pl, ang: first.ang, hours: (first.when - d0) * 24 };
+      else if (ingress) res = { voidBirth: true };
+    } catch (eNM9) { res = null; }
+    NMN_CACHE[ck] = res;
+    return res;
+  }
   function composeCore(c) {
     var sun = c.planets.sun, moon = c.planets.moon, asc = c.ascBody, parts = [], tk = STATE.birth.timeKnown;
     // every beat draws its lead from a seeded variety bank, so no two charts read in the same shape
     var seed = sun.sign + '|' + Math.floor(sun.deg) + '|' + moon.sign + '|' + Math.floor(moon.deg) + '|' + chartFP(c);
     parts.push(vpick(['At the core, ', 'At the centre of it all, ', 'Start with the heart of it: ', 'The engine room first: ', 'Before anything else, ', 'The chart opens on ', 'First, the core: ', 'Everything here orbits one fact: '], seed + 'c') + bodyLine(c, 'sun') + '. ' + DATA.SUN_IN_SIGN[sun.sign]);
     parts.push(vpick(['Underneath that, ', 'Beneath the daylight, ', 'Below the surface, ', 'Behind it, quieter, ', 'Under all of it runs ', 'The night side of you: ', 'Privately, though, ', 'Where no one is watching, '], seed + 'u') + bodyLine(c, 'moon') + '. ' + DATA.MOON_IN_SIGN[moon.sign] + ' The tell: ' + microFor('moon', moon.signName) + '.');
+    // the Moon's first application: the emotional reflex rehearsed before anything else
+    try {
+      var nmn = natalMoonNext(c, STATE.birth);
+      if (nmn && nmn.voidBirth) parts.push('A detail most software never checks: you were born on a void-of-course Moon. It perfected nothing before leaving ' + moon.signName + '. The old books read that as a life the script holds loosely: events push you around less than they push most people, and what you begin carries more choice in it than fate.');
+      else if (nmn && c.planets[nmn.pl]) {
+        var angN9 = { 0: 'conjunction', 60: 'sextile', 90: 'square', 120: 'trine', 180: 'opposition' }[nmn.ang];
+        var flav9 = (nmn.ang === 90 || nmn.ang === 180) ? 'so the first thing your feelings rehearsed was meeting a demand: work first, comfort after' : (nmn.ang === 0) ? 'so your moods learned early to fuse with the strongest thing in the room' : 'so your first instinct under feeling is to reach for an ally';
+        var hrR9 = Math.round(nmn.hours);
+        var whn9 = nmn.hours < 1 ? 'within the hour you were born' : hrR9 === 1 ? 'about an hour after you arrived' : ('about ' + hrR9 + ' hours after you arrived');
+        parts.push('A detail most software never checks: ' + whn9 + ', the Moon\u2019s first move was ' + (nmn.ang === 180 ? 'an ' : 'a ') + angN9 + ' to ' + nameFor(nmn.pl) + ', ' + flav9 + '. Astrologers call this the Moon\u2019s first application: the first deal your inner life ever closed, and a reflex that still fires first.');
+      }
+    } catch (eNmc9) {}
     if (tk) {
       var rn = DATA.SIGNS[asc.sign].ruler, rp = c.planets[RULERKEY[rn]];
       var rulerTxt = rp ? (' The ruler of your rising, ' + rn + ', sits in ' + rp.signName + ' in the ' + ordinal(rp.house) + ' house: that is where a lot of your energy actually goes.') : '';
@@ -1840,6 +1905,18 @@ var APP = (function () {
   function aspClass(k) { return (k === 'conjunction') ? 'conj' : (k === 'trine' || k === 'sextile') ? 'soft' : 'hard'; }
   function pairAspectText(a, b, aspKey) { var e = PAIRLIB[[a, b].sort().join('|')]; if (e) { var t = e[aspClass(aspKey)]; if (t) return t; } return null; }
   // orb tightness woven into the sentence — exactness is information, not decoration
+  // reception on an aspect: a planet standing in the other's domicile or exaltation has a host there
+  function receptionOf(c, aK, bK) {
+    var pa = c.planets[aK], pb = c.planets[bK];
+    if (!pa || !pb) return null;
+    var dA = DIGNITY[aK], dB = DIGNITY[bK];
+    var aGuest = !!(dB && (dB.dom.indexOf(pa.signName) >= 0 || dB.exa === pa.signName));
+    var bGuest = !!(dA && (dA.dom.indexOf(pb.signName) >= 0 || dA.exa === pb.signName));
+    if (aGuest && bGuest) return { kind: 'mutual' };
+    if (aGuest) return { kind: 'single', guest: aK, host: bK };
+    if (bGuest) return { kind: 'single', guest: bK, host: aK };
+    return null;
+  }
   function orbPhrase(as) {
     if (!as || as.orb == null) return '';
     if (as.orb <= 0.35) return ', exact to the degree, one of the defining wirings of the chart';
@@ -1848,7 +1925,9 @@ var APP = (function () {
     return '';
   }
   function aspectText(c, as) {
-    var body9 = (pairAspectText(as.a, as.b, as.asp.key) || aspectMeaning(c, as)) + orbPhrase(as);
+    var base9 = pairAspectText(as.a, as.b, as.asp.key) || aspectMeaning(c, as), op9 = orbPhrase(as);
+    if (op9 && /\.$/.test(base9)) base9 = base9.slice(0, -1); // the orb clause continues the sentence
+    var body9 = base9 + op9;
     if (!/[.!?]$/.test(body9)) body9 += '.';
     try {
       var TA9 = DATA.TELLS && DATA.TELLS.aspect, PO9 = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto'];
@@ -1859,6 +1938,15 @@ var APP = (function () {
         if (TA9[pk9] && TA9[pk9][fam9]) body9 += ' The tell: ' + TA9[pk9][fam9] + '.';
       }
     } catch (eAT9) {}
+    // the fine print a working astrologer checks: reception, then direction of motion at birth, then sign geometry
+    try {
+      var rc9 = receptionOf(c, as.a, as.b), hardQ9 = (as.asp.quality === 'tension' || as.asp.quality === 'friction');
+      if (rc9 && rc9.kind === 'mutual') body9 += ' And they host each other: each sits in a sign the other rules or is exalted in, a mutual reception. ' + (hardQ9 ? 'That softens the grind: both hold a key to the other\u2019s door, so this argument repairs itself faster than it breaks.' : 'That deepens the ease: each one keeps the other\u2019s promises.');
+      else if (rc9) body9 += ' Note that ' + nameFor(rc9.guest) + ' stands in ' + nameFor(rc9.host) + '\u2019s territory here, so ' + nameFor(rc9.host) + ' receives it like a host' + (hardQ9 ? ': even this friction has somewhere warm to stay.' : ': the ease flows one way first, from host to guest.');
+    } catch (eRcp9) {}
+    if (as.applying === true) body9 += ' It was still tightening at the minute you were born, an applying aspect: this one grows louder with age.';
+    else if (as.applying === false && as.orb > 1) body9 += ' It was already easing apart at birth, a separating aspect: familiar early, more memory than pressure.';
+    if (as.oos) body9 += ' One caveat: it is out of sign, the degrees agree but the signs do not, so it fires in flashes rather than running as a steady hum.';
     // the stage it plays on: both houses named, when the birth time gives us houses
     try {
       var hA9 = c.planets[as.a] && c.planets[as.a].house, hB9 = c.planets[as.b] && c.planets[as.b].house;
@@ -1995,6 +2083,12 @@ var APP = (function () {
       for (i2 = 0; i2 < dn.length; i2++) { var phrase = nameFor(dn[i2].key) + ' ' + (dn[i2].dignity === 'Domicile' ? 'at home in' : dn[i2].dignity === 'Exaltation' ? 'exalted in' : dn[i2].dignity === 'Detriment' ? 'in detriment in' : 'in fall in') + ' ' + dn[i2].sign; if (dn[i2].dignity === 'Domicile' || dn[i2].dignity === 'Exaltation') strong.push(phrase); else weak.push(phrase); }
       out.push({ label: 'Essential dignity', text: (strong.length ? ('Working with the grain: ' + strong.join('; ') + '. ') : '') + (weak.length ? ('Working against it (which can build real character): ' + weak.join('; ') + '.') : '') });
     }
+    var mrc9 = [], TP9 = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn'], ai9, bi9;
+    for (ai9 = 0; ai9 < TP9.length; ai9++) for (bi9 = ai9 + 1; bi9 < TP9.length; bi9++) {
+      var mr9 = receptionOf(c, TP9[ai9], TP9[bi9]);
+      if (mr9 && mr9.kind === 'mutual') mrc9.push(nameFor(TP9[ai9]) + ' in ' + c.planets[TP9[ai9]].signName + ' and ' + nameFor(TP9[bi9]) + ' in ' + c.planets[TP9[bi9]].signName + ': each stands in a sign the other rules or is exalted in, so they keep each other\u2019s promises. Strength in one place can be spent in the other.');
+    }
+    if (mrc9.length) out.push({ label: 'Mutual reception', lines: mrc9 });
     var pats = aspectPatterns(c);
     if (pats.length) { for (var i = 0; i < Math.min(pats.length, 4); i++) out.push({ label: pats[i].type, text: patternText(pats[i]) }); }
     else out.push({ label: 'Aspect patterns', text: 'No tight major aspect patterns: your planets tend to work as individuals rather than locking into one big geometric configuration.' });
@@ -3884,7 +3978,7 @@ var APP = (function () {
   return {
     boot: boot, _compute: computeChart, _state: STATE, _data: function () { return DATA; },
     STATE: STATE, save: save, load: load, compute: computeChart,
-    composeCore: composeCore, localAsk: localAsk, chartText: chartText,
+    composeCore: composeCore, localAsk: localAsk, chartText: chartText, aspectText: aspectText,
     composeTransits: composeTransits, transitSentence: transitSentence, composeSignatures: composeSignatures,
     solarReturnChart: solarReturnChart, upcomingEclipses: upcomingEclipses, bestDaysFor: bestDaysFor, electIntents: electIntents,
     progressedTimeline: progressedTimeline, retroSeasons: retroSeasons,
@@ -4800,7 +4894,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     function dignityBadge(key, signName) { return APP.dignityOf ? APP.dignityOf(key, signName) : ''; }
     function openStory(key) { UI.story = { key: key, t0: nowT() }; UI.selPlanet = key; UI.scroll.chart = 0; }
     function closeStory() { UI.story = null; UI.fxT = nowT(); }
-    function storyAspects(c, key) { var out = [], i; for (i = 0; i < c.aspects.length; i++) { var a = c.aspects[i]; if (a.a === key || a.b === key) out.push({ other: (a.a === key) ? a.b : a.a, asp: a.asp, orb: a.orb }); } return out.slice(0, 4); }
+    function storyAspects(c, key) { var out = [], i; for (i = 0; i < c.aspects.length; i++) { var a = c.aspects[i]; if (a.a === key || a.b === key) out.push({ other: (a.a === key) ? a.b : a.a, asp: a.asp, orb: a.orb, ref: a }); } return out.slice(0, 4); }
     function drawStory(c, b) {
       var key = UI.story.key, pl = (key === 'asc') ? c.ascBody : c.planets[key]; if (!pl) { closeStory(); return; }
       var x = sx(), w = cw(), still = reduced(), te = cl01((nowT() - UI.story.t0) / 600), e = eCubic(te), cx = x + w / 2, ly = 20;
@@ -4852,12 +4946,14 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
           var a = asps[i], qc = a.asp.quality; if (i) hairline(x, ly, x + w, 32);
           setFont(SANS, 13, (qc === 'flow' || qc === 'opportunity') ? ELHUE.air : (qc === 'fusion' ? INK : ACC), p.LEFT, p.CENTER, 255 * ca); bold(); p.text(a.asp.glyph, x + 2, sY(ly + 16)); normal();
           setFont(SANS, 13.5, INK, p.LEFT, p.CENTER, 255 * ca); p.text(APP.nameFor(a.other), x + 24, sY(ly + 16));
-          setFont(MONO, 10, INK, p.RIGHT, p.CENTER, 160 * ca); p.text(a.asp.key + ' · ' + a.orb.toFixed(1) + '°', x + w, sY(ly + 16));
+          var mot9 = a.ref && a.ref.applying === true ? ' · applying' : (a.ref && a.ref.applying === false ? ' · separating' : '');
+          setFont(MONO, 10, INK, p.RIGHT, p.CENTER, 160 * ca); p.text(a.asp.key + ' · ' + a.orb.toFixed(1) + '°' + mot9, x + w, sY(ly + 16));
           ly += 30;
         }
         ly += 8;
+        var full9 = null; try { full9 = APP.aspectText ? APP.aspectText(c, asps[0].ref) : null; } catch (eFA9) {}
         var pa = APP.pairAspectText ? APP.pairAspectText(key, asps[0].other, asps[0].asp.key) : null;
-        var synth = pa ? (cap(APP.nameFor(key)) + ' ' + asps[0].asp.key + ' ' + APP.nameFor(asps[0].other) + ': ' + pa + '.') : (cap(APP.nameFor(key)) + ' and ' + APP.nameFor(asps[0].other) + ' are ' + asps[0].asp.phrase + '.');
+        var synth = full9 ? (cap(APP.nameFor(key)) + ' ' + asps[0].asp.key + ' ' + APP.nameFor(asps[0].other) + ': ' + full9) : pa ? (cap(APP.nameFor(key)) + ' ' + asps[0].asp.key + ' ' + APP.nameFor(asps[0].other) + ': ' + pa + '.') : (cap(APP.nameFor(key)) + ' and ' + APP.nameFor(asps[0].other) + ' are ' + asps[0].asp.phrase + '.');
         ly += paragraph(synth, x, ly, w, 14.5, INK, SERIF, 22, 220 * ca) + 10;
       }
       setFont(MONO, 9, INK, p.CENTER, p.TOP, 120 * ca); p.text('TAP BACK TO RETURN TO YOUR WHEEL', cx, sY(ly)); ly += 26;

@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.7.0 — 2026-07-04
+- **The fine print a working astrologer checks.** Five upgrades that professional readers would fault the app for missing, all computed from the real ephemeris:
+  - **Applying and separating.** Every planet now carries its true daily motion at birth, and every natal aspect knows which way it was moving: an aspect still tightening at the minute of birth ("applying: this one grows louder with age") reads differently from one already easing apart. The planet pages show the astrologer's shorthand next to each orb; the prose says it in plain words.
+  - **The luminary moiety.** The Sun and Moon now cast the classically wider net: aspects involving a luminary get 1.5° more orb, the way working astrologers actually weigh them.
+  - **Out-of-sign aspects named.** When the degrees agree but the signs do not (a "dissociate" aspect), the line now carries the caveat: it fires in flashes rather than running as a steady hum.
+  - **Reception.** When one planet in a contact stands in a sign the other rules or is exalted in, the line says who hosts whom, and hard aspects held in reception are read as softened ("even this friction has somewhere warm to stay"). Full mutual receptions get their own named block under Patterns.
+  - **The Moon's first application.** A classical natal technique almost no software runs: the app scans hour by hour from the birth minute and names the Moon's first perfected aspect: the first deal the inner life ever closed ("about an hour after you arrived, the Moon's first move was an opposition to Pluto"). Born void-of-course gets its own honest paragraph.
+- **A seam sanded.** Aspect lines no longer stumble over "…what you idealise., very tight" where the corpus period met the orb clause.
+- **The planet story page's key aspect goes full depth.** The synthesis line under "How it connects" now uses the complete layered read (pair tell, reception, motion, sign geometry, house stage) instead of the bare corpus line.
+
 ## 2.6.0 — 2026-07-04
 - **Six hundred more tells, all wired.** The corpus grows by ~580 chart-specific lines: every planet through every house, Sun/Jupiter/Saturn through every sign, all forty-five aspect pairs in three moods, one hundred season-tells for the slow transits, the nodes by sign and house, the eight birth phases, twenty-eight dignities, natal retrogrades, the razor degrees (0 and 29), stelliums by house, the sixteen Sun-Moon element blends, and the Midheaven callings. Nothing sits in a drawer: planet pages now stack every tell that placement carries; aspect lines carry their pair's tell and their house stage; transit sentences carry the season's tell; and the core reading gains its deepest strata: birth phase, node path, element blend, calling, and the crowded house.
 - **Plain words.** The Read tabs become You, Patterns, Seasons, Today.
