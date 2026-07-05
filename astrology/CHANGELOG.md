@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.9.0 — 2026-07-05
+- **Synastry grows its missing floor: the house overlays.** The heart of relationship astrology, finally read: where their planets land in YOUR houses ("Their Sun lands in your 12th house: they reach the part of you that never quite makes it into words") with twelve authored rooms, and where your Sun, Moon and Venus land in theirs. The classic reason a person feels like home, or like weather.
+- **Reception crosses charts.** Every synastry contact now checks who hosts whom across the two charts: mutual reception ("even the hard days here have somewhere to land") and one-way hosting ("you hold the door on this one") join the contact lines. Verified against the real ephemeris: a Mars-in-Cancer / Jupiter-in-Scorpio pair correctly reads as mixed mutual reception.
+- **Bonds open with their figures.** "The Warrior meets the Sovereign." The archetypes walk into the People pages.
+- **The prenatal lunation.** The classical seal before birth, computed by scanning back from the birth minute: New Moon (the seed: "life keeps planting fresh starts there") or Full Moon (the harvest), with its exact degree, sign and house, under Patterns.
+- **Cazimi days, called by name.** When Mercury or Venus sits in the heart of the Sun today, the daily essay says so: "the old astrologers' lucky hour stretched across a day. Say the thing, sign the thing."
+- **Glossary keeps pace.** Out-of-sign aspects and house overlays join the Learn glossary.
+
 ## 2.8.0 — 2026-07-04
 - **The archetypes.** Every chart now names its figures, in the language the working literature actually uses (after Liz Greene's The Astrology of Fate, Dane Rudhyar, and the myths the signs are named for): your Sun's figure, your Moon's heart, the door your rising answers through, and the keystone planet's seat ("The Warrior with the Builder's heart, arriving through the Sovereign's door"). And every archetype is applied to the real modern world three ways at once: the boardroom, the open field, and the candlelit table, so the same chart speaks to a CEO, a wanderer and a witch. Woven into the core reading, a named block under Patterns, and every planet page ("The Timekeeper wearing the Builder's colours").
 - **The welcome walk.** The old coachmark tour is gone. In its place: five cinematic pages in the app's own scene language, written for someone who has never read a chart: your sky, your Sun (with its tell), your Moon (with its tell), what a transit actually is ("a season with a name and an end date, never a verdict"), and where the four doors lead. Replayable from Settings.

@@ -898,6 +898,40 @@ var APP = (function () {
   }
   // the Moon's first perfected aspect after birth: a classical natal technique almost no software runs.
   // Scans hour by hour from the birth minute to the Moon's next ingress; needs a known birth time.
+  // the lunation BEFORE birth: New or Full, the classical prenatal syzygy. Scans back
+  // from the birth minute, hour by hour, to the last time Sun and Moon squared accounts.
+  var PSZ_CACHE = {};
+  function prenatalSyzygy(c, b) {
+    if (!b) return null;
+    var ck = [b.y, b.mo, b.d, b.hour, b.min, c.zodiac].join('|');
+    if (PSZ_CACHE.hasOwnProperty(ck)) return PSZ_CACHE[ck];
+    var res = null;
+    try {
+      var d0 = EPH.dayNumber(b.y, b.mo, b.d, utHoursOf(b)), ay = c.ayan || 0;
+      function elo9(d9) { var pos9 = EPH.positions(d9); return rev(pos9.moon.lon - pos9.sun.lon); }
+      var prev9 = elo9(d0), h9;
+      for (h9 = 1; h9 <= 16 * 24; h9++) {
+        var dE9 = d0 - h9 / 24, cur9 = elo9(dE9);
+        var hitNew9 = (cur9 > 300 && prev9 < 60);            // wrapped down through 0 going back
+        var hitFull9 = (cur9 < 180 && prev9 >= 180 && (prev9 - cur9) < 30); // slipped back below 180
+        if (hitNew9 || hitFull9) {
+          var lo9 = dE9, hi9 = dE9 + 1 / 24, it9;
+          for (it9 = 0; it9 < 18; it9++) {
+            var mid9 = (lo9 + hi9) / 2, ge9 = elo9(mid9);
+            var g9 = hitNew9 ? (((ge9 + 180) % 360) - 180) : (ge9 - 180);
+            if (g9 < 0) lo9 = mid9; else hi9 = mid9;
+          }
+          var dX9 = (lo9 + hi9) / 2, posX9 = EPH.positions(dX9);
+          var lonX9 = hitNew9 ? rev(posX9.sun.lon - ay) : rev(posX9.moon.lon - ay);
+          res = { type: hitNew9 ? 'new' : 'full', lon: lonX9, daysBefore: d0 - dX9 };
+          break;
+        }
+        prev9 = cur9;
+      }
+    } catch (ePS9) { res = null; }
+    PSZ_CACHE[ck] = res;
+    return res;
+  }
   var NMN_CACHE = {};
   function natalMoonNext(c, b) {
     if (!b || !b.timeKnown) return null;
@@ -2098,6 +2132,16 @@ var APP = (function () {
     } catch (eAR9) {}
     var lp = lunarPhase(c);
     out.push({ label: 'Lunar phase at birth', text: 'You were born on the ' + lp.name + ': ' + lp.text });
+    try {
+      var psz9 = prenatalSyzygy(c, STATE.birth);
+      if (psz9) {
+        var pszSg9 = DATA.SIGNS[Math.floor(psz9.lon / 30)], pszDg9 = Math.floor(psz9.lon % 30);
+        var pszH9 = (STATE.birth.timeKnown && c.cusps) ? EPH.houseOf(psz9.lon, c.cusps) : null;
+        out.push({ label: 'The prenatal lunation: the seal before birth', text: psz9.type === 'new'
+          ? 'You were born on a waxing tide: the last lunation before your birth was a New Moon at ' + pszDg9 + '\u00B0 ' + pszSg9.name + (pszH9 ? ', in what became your ' + ordinal(pszH9) + ' house' : '') + '. The old doctrine reads that degree as your seed: life keeps planting fresh starts there, and you do your best work beginning things and trusting them to grow past what you can see.'
+          : 'You were born on a waning tide: the last lunation before your birth was a Full Moon at ' + pszDg9 + '\u00B0 ' + pszSg9.name + (pszH9 ? ', in what became your ' + ordinal(pszH9) + ' house' : '') + '. The old doctrine reads that degree as your harvest: things come to light around you, and you do your best work finishing, revealing and handing on, rather than seeding.' });
+      }
+    } catch (ePz9) {}
     var sh = chartShape(c); if (sh) out.push({ label: 'Chart shape', text: sh.text });
     var dn = dignityNotes(c);
     if (dn.length) {
@@ -2253,21 +2297,33 @@ var APP = (function () {
     for (i = 0; i < PATKEYS.length; i++) { var mk = PATKEYS[i]; if (!cMe.planets[mk]) continue;
       for (j = 0; j < PATKEYS.length; j++) { var tk = PATKEYS[j]; if (!cThem.planets[tk]) continue;
         var m = relAspect(angSep(cMe.planets[mk].lon, cThem.planets[tk].lon));
-        if (m) out.push({ mine: mk, theirs: tk, asp: m.asp, orb: m.orb });
+        if (m) {
+          var it9 = { mine: mk, theirs: tk, asp: m.asp, orb: m.orb };
+          try {
+            var dM9 = DIGNITY[mk], dT9 = DIGNITY[tk];
+            var meG9 = !!(dT9 && (dT9.dom.indexOf(cMe.planets[mk].signName) >= 0 || dT9.exa === cMe.planets[mk].signName));
+            var thG9 = !!(dM9 && (dM9.dom.indexOf(cThem.planets[tk].signName) >= 0 || dM9.exa === cThem.planets[tk].signName));
+            it9.rec = (meG9 && thG9) ? 'mutual' : meG9 ? 'mine-guest' : thG9 ? 'theirs-guest' : null;
+          } catch (eSR9) {}
+          out.push(it9);
+        }
       }
     }
     out.sort(function (x, y) { return x.orb - y.orb; });
     return out;
   }
   function synLine(s) {
-    return 'Their ' + nameFor(s.theirs) + ' ' + s.asp.key + ' your ' + nameFor(s.mine) + ': their ' + shortFn(s.theirs) + ' ' + aspVerb(s.asp) + ' your ' + shortFn(s.mine) + ', ' + aspTone(s.asp) + '. In practice it shows up around ' + relDomain(s.mine) + '.';
+    var recT9 = s.rec === 'mutual' ? ' And you host each other: each planet stands in a sign the other rules or is exalted in, so even the hard days here have somewhere to land.' : s.rec === 'theirs-guest' ? ' Their ' + nameFor(s.theirs) + ' stands in your ' + nameFor(s.mine) + '\u2019s territory: you hold the door on this one.' : s.rec === 'mine-guest' ? ' Your ' + nameFor(s.mine) + ' stands in their ' + nameFor(s.theirs) + '\u2019s territory: they hold the door.' : '';
+    return 'Their ' + nameFor(s.theirs) + ' ' + s.asp.key + ' your ' + nameFor(s.mine) + ': their ' + shortFn(s.theirs) + ' ' + aspVerb(s.asp) + ' your ' + shortFn(s.mine) + ', ' + aspTone(s.asp) + '. In practice it shows up around ' + relDomain(s.mine) + '.' + recT9;
   }
   function bondHeadline(cMe, cThem, syn) {
     var flow = 0, fric = 0, i;
     for (i = 0; i < syn.length; i++) { var q = syn[i].asp.quality; if (q === 'flow' || q === 'opportunity') flow++; else if (q === 'tension' || q === 'friction') fric++; }
     var meSun = DATA.SIGNS[cMe.planets.sun.sign], themSun = DATA.SIGNS[cThem.planets.sun.sign];
     var tone = flow > fric * 1.4 ? 'an easy, supportive current runs between you' : fric > flow * 1.4 ? 'there’s real friction here: the kind that grows you or grates, depending how you handle it' : 'a genuine mix of ease and friction, a bond with texture';
-    return 'Your ' + meSun.name + ' Sun meets their ' + themSun.name + ' Sun: ' + elementMix(meSun.element, themSun.element) + '. Across both charts, ' + tone + ' (' + flow + ' flowing, ' + fric + ' challenging contacts).';
+    var archT9 = '';
+    try { var mA9 = DATA.ARCH && DATA.ARCH.sign[meSun.name], tA9 = DATA.ARCH && DATA.ARCH.sign[themSun.name]; if (mA9 && tA9) archT9 = mA9.n + ' meets ' + tA9.n.replace('The ', 'the ') + '. '; } catch (eBA9) {}
+    return archT9 + 'Your ' + meSun.name + ' Sun meets their ' + themSun.name + ' Sun: ' + elementMix(meSun.element, themSun.element) + '. Across both charts, ' + tone + ' (' + flow + ' flowing, ' + fric + ' challenging contacts).';
   }
   // a transit in today's sky touching BOTH charts at once
   function sharedTransits(cMe, cThem) {
@@ -2318,6 +2374,42 @@ var APP = (function () {
     var cMe = STATE.chart, cThem = personChart(person), syn = synastry(cMe, cThem), blocks = [];
     blocks.push({ label: 'Between you', text: bondHeadline(cMe, cThem, syn) });
     var top = syn.slice(0, 5).map(synLine); if (top.length) blocks.push({ label: 'Strongest contacts', lines: top });
+    // the house overlays: their planets land in the rooms of YOUR life. The classic
+    // reason someone feels like home, or like weather.
+    try {
+      var OVT9 = {
+        1: 'they change how you carry yourself; you are more visible, more yourself or more performed, around them',
+        2: 'they show up in questions of money, worth and what you keep; they make you weigh what you own and what owns you',
+        3: 'they live in your daily talk: errands, messages, the neighbourhood of your mind; conversation is the bloodstream here',
+        4: 'they get past the front door, into the private rooms; family-feeling, for better and worse',
+        5: 'they pull you toward play, romance and making things; around them you create more and perform less',
+        6: 'they enter the workshop: routines, work, health, the daily grind; this bond lives or dies by the everyday',
+        7: 'they read as partner material to your chart: the mirror seat, where your own missing pieces sit down',
+        8: 'they touch the deep accounts: trust, merging, what is shared and what it costs; nothing here stays shallow',
+        9: 'they stretch your map: belief, travel, the bigger picture; around them your world is literally larger',
+        10: 'they are tangled in your ambitions and your public name; they change what you aim at, or how visibly you aim',
+        11: 'they widen your future: friends, plans, the long hope; a bond that works best pointed at something ahead',
+        12: 'they reach the part of you that never quite makes it into words: tender, dreamlike, occasionally confusing'
+      };
+      if (STATE.birth && STATE.birth.timeKnown && cMe.cusps) {
+        var ovL9 = [], ovK9 = ['sun', 'moon', 'venus', 'mars', 'saturn'], oi9;
+        for (oi9 = 0; oi9 < ovK9.length && ovL9.length < 4; oi9++) {
+          var op9 = cThem.planets[ovK9[oi9]]; if (!op9) continue;
+          var oh9 = EPH.houseOf(op9.lon, cMe.cusps);
+          if (oh9 && OVT9[oh9]) ovL9.push('Their ' + nameFor(ovK9[oi9]) + ' lands in your ' + ordinal(oh9) + ' house: ' + OVT9[oh9] + '.');
+        }
+        if (ovL9.length) blocks.push({ label: 'Where they land in your life', lines: ovL9 });
+      }
+      if (person.timeKnown && cThem.cusps) {
+        var rvL9 = [], rvK9 = ['sun', 'moon', 'venus'], ri9;
+        for (ri9 = 0; ri9 < rvK9.length; ri9++) {
+          var rp9 = cMe.planets[rvK9[ri9]]; if (!rp9) continue;
+          var rh9 = EPH.houseOf(rp9.lon, cThem.cusps);
+          if (rh9 && DATA.HOUSES[rh9 - 1]) rvL9.push('Your ' + nameFor(rvK9[ri9]) + ' lands in their ' + ordinal(rh9) + ' house of ' + DATA.HOUSES[rh9 - 1].title.toLowerCase() + ': that is the room of their life you walk into.');
+        }
+        if (rvL9.length) blocks.push({ label: 'Where you land in theirs', lines: rvL9 });
+      }
+    } catch (eOV9) {}
     var comp = compositeChart(cMe, cThem), ctext = compositeText(comp); if (ctext) blocks.push({ label: 'Your composite: the relationship itself', text: ctext });
     var shared = sharedTransits(cMe, cThem); if (shared.length) blocks.push({ label: 'Live between you: today', text: shared.slice(0, 2).join(' ') });
     var trT = composeTransits(cThem);
@@ -2938,6 +3030,16 @@ var APP = (function () {
     if (mo) {
       var moodMap = { fire: 'quick and combustible', earth: 'slow, practical, appetitive', air: 'talkative and restless', water: 'porous: everyone feels more than they say' };
       s.push(vpick(['The Moon runs through ' + mo.signName + ' today, so the common weather is ', 'Today’s undertone is the ' + mo.signName + ' Moon: the shared mood runs ', 'Start with the Moon in ' + mo.signName + ': the room everyone is standing in today is '], seed + 'a') + moodMap[DATA.SIGNS[mo.sign].element] + (mo.voc ? '. It runs void of course for a stretch. Decisions made in that window tend to need remaking, so sign nothing you can sign tomorrow.' : '.'));
+      try {
+        var tpz9 = tr && tr.ctx && tr.ctx.tp;
+        if (tpz9 && tpz9.sun) {
+          var czk9 = ['mercury', 'venus'], czi9;
+          for (czi9 = 0; czi9 < czk9.length; czi9++) {
+            var czp9 = tpz9[czk9[czi9]]; if (!czp9) continue;
+            if (Math.abs(sdelta(tpz9.sun.lon, czp9.lon)) <= 0.283) s.push(nameFor(czk9[czi9]) + ' sits in the heart of the Sun today: cazimi, the old astrologers\u2019 lucky hour stretched across a day. ' + (czk9[czi9] === 'mercury' ? 'Words, decisions and paperwork carry rare authority: say the thing, sign the thing.' : 'Affection and taste sit enthroned: ask, choose, make the gesture.'));
+          }
+        }
+      } catch (eCz9) {}
     }
     var d0 = tr.daily[0];
     if (d0) {
@@ -7090,6 +7192,8 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       { t: 'Applying vs separating', d: 'An aspect is applying when the faster planet is still moving toward exact (strengthening) and separating once it has passed (fading).' },
       { t: 'Cazimi / combust', d: 'A planet within ~0.3° of the Sun is cazimi (“in the heart”. Empowered); a little further out it is combust (burned up, weakened).' },
       { t: 'Mutual reception', d: 'Two planets each sitting in the sign the other rules. A helpful exchange, like guests in each other’s homes.' },
+      { t: 'Out of sign', d: 'Two planets at the right distance in degrees, but not in the signs that usually make that aspect. Real, but it fires in flashes and is easy to miss.' },
+      { t: 'House overlays', d: 'In synastry, someone else\u2019s planet falls into one of YOUR houses: their energy moves into that room of your life. The classic reason a person feels like home, or like weather.' },
       { t: 'Stellium', d: 'Three or more planets bunched in one sign or house. A powerful concentration that dominates the chart.' },
       { t: 'Chart ruler', d: 'The planet that rules your rising sign, a kind of captain for the whole chart. Needs a birth time.' },
       { t: 'Out of bounds', d: 'A planet (often the Moon) beyond the Sun’s declination range, it acts unusually, off the leash.' },
