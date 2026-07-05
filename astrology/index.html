@@ -6867,7 +6867,8 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         // their element, worn as a small swatch: the same light their persona walks in
         var prsL = personaOf(ch);
         p.noStroke(); fillc(prsL.rim, 235); p.ellipse(x + w - 34, sY(ly + rh / 2), 7, 7);
-        setFont(MONO, 7.5, INK, p.RIGHT, p.CENTER, 150); p.text(prsL.el.toUpperCase(), x + w - 44, sY(ly + rh / 2));
+        var figN9 = (DATA.ARCH && DATA.ARCH.sign[su.signName]) ? DATA.ARCH.sign[su.signName].n : prsL.el;
+        setFont(MONO, 7.5, INK, p.RIGHT, p.CENTER, 150); p.text(figN9.toUpperCase(), x + w - 44, sY(ly + rh / 2));
         setFont(SANS, 20, INK, p.RIGHT, p.CENTER, 120); p.text('›', x + w, sY(ly + rh / 2));
         (function (id, ay) { pushHit(x, sY(ay), w, rh, function () { UI.viewPerson = id; UI.scroll.people = 0; UI.popT = nowT(); }); })(pr.id, ly);
         ly += rh;

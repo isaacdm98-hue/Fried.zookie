@@ -3,7 +3,7 @@
 ## 2.9.0 — 2026-07-05
 - **Synastry grows its missing floor: the house overlays.** The heart of relationship astrology, finally read: where their planets land in YOUR houses ("Their Sun lands in your 12th house: they reach the part of you that never quite makes it into words") with twelve authored rooms, and where your Sun, Moon and Venus land in theirs. The classic reason a person feels like home, or like weather.
 - **Reception crosses charts.** Every synastry contact now checks who hosts whom across the two charts: mutual reception ("even the hard days here have somewhere to land") and one-way hosting ("you hold the door on this one") join the contact lines. Verified against the real ephemeris: a Mars-in-Cancer / Jupiter-in-Scorpio pair correctly reads as mixed mutual reception.
-- **Bonds open with their figures.** "The Warrior meets the Sovereign." The archetypes walk into the People pages.
+- **Bonds open with their figures.** "The Warrior meets the Sovereign." The archetypes walk into the People pages, and every card in the People list names its person's figure.
 - **The prenatal lunation.** The classical seal before birth, computed by scanning back from the birth minute: New Moon (the seed: "life keeps planting fresh starts there") or Full Moon (the harvest), with its exact degree, sign and house, under Patterns.
 - **Cazimi days, called by name.** When Mercury or Venus sits in the heart of the Sun today, the daily essay says so: "the old astrologers' lucky hour stretched across a day. Say the thing, sign the thing."
 - **Glossary keeps pace.** Out-of-sign aspects and house overlays join the Learn glossary.
