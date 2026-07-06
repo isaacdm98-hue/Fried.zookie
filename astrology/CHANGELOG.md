@@ -1,5 +1,16 @@
 # Changelog
 
+## 3.1.0 — 2026-07-05
+- **Thirty streamlines, one pass.** A production-polish sweep across every screen:
+  - **Home.** The colourful element bar is back under the title: fire, earth, air and water as proportional coloured segments with their percentages, one tap from Patterns. The day-word names its actual transit ("Uranus sextile your Jupiter") so "Surprises" is never cryptic. A missing birth time shows one tappable line straight to the fix. The selected planet links to its full story; a second tap on any placement row dives in; every placement wears its element as a small coloured dot; aspect rows are tappable, exact aspects are called out ("● exact"), and a "+N more in Patterns" line replaces silent truncation. The tap-a-planet hint retires itself after your first story. Houses read as "7th house", not "H7". The Chiron footnote only shows when Chiron is actually off.
+  - **Stories.** Flip planet to planet with ‹ › right on the page; a real back button at the foot; and closing a story returns you to the exact scroll you left, not the top.
+  - **Read.** Remembers your last tab across sessions and your place within each tab. The nav shows a quiet dot on READ while today's paper is unread.
+  - **People.** The bond page can be left from the bottom too.
+  - **Learn.** Finished lessons wear their check mark in the index.
+  - **Settings.** Turning sound on answers in sound (a two-second swell). Text size shows a live preview line. The house systems get one honest explaining line.
+  - **The paper.** Tapping the left edge steps back a story; the rest advances.
+  - **Under the hood.** One watcher invalidates every reading cache the moment the active chart changes (switching saved charts previously left stale readings behind), and three more streamlines turned out to already exist: the pad respects the sound toggle everywhere, adding a person opens their bond immediately, and the opening film only ever plays before onboarding.
+
 ## 3.0.0 — 2026-07-05
 - **The curated edition.** The release that gathers it all: the archetype engine (Greene, Rudhyar and the myths, applied to boardroom, field and altar), the welcome walk, house overlays and cross-chart reception in synastry, the prenatal lunation, applying/separating and out-of-sign natal aspects with luminary orbs, cazimi days, the Moon's first application, and gravity in every figure.
 - **A new lesson: Guests and hosts.** Reception taught in the pond format, with the deeper beat covering mutual reception and applying vs separating, a recall check, and the landing beat found in your own chart ("your Mercury stands in Sun's territory, so Sun hosts it").
