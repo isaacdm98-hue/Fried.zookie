@@ -979,25 +979,25 @@ var APP = (function () {
     try {
       var suL9 = c.planets.sun.lon;
       var cz9 = ['mercury', 'venus', 'mars'];
-      for (i = 0; i < cz9.length; i++) { var cp9 = c.planets[cz9[i]]; if (cp9) { var dz9 = Math.abs(sdelta(suL9, cp9.lon)); if (dz9 <= 0.283) cands.push({ w: 97, s: 'Here is the rare thing: your ' + nameFor(cz9[i]) + ' rides in the exact heart of your Sun, within a sixth of a degree. The old astrologers called this cazimi, "in the chariot of the king," and read it as a planet not burned but enthroned. Fewer than one chart in fifty carries it. In you, ' + shortFn(cz9[i]) + ' is fused to your very identity and speaks with borrowed authority.' }); } }
+      for (i = 0; i < cz9.length; i++) { var cp9 = c.planets[cz9[i]]; if (cp9) { var dz9 = Math.abs(sdelta(suL9, cp9.lon)); if (dz9 <= 0.283) cands.push({ w: 97, s: 'Your ' + nameFor(cz9[i]) + ' rides in the exact heart of your Sun, within a sixth of a degree \u2014 cazimi, "in the chariot of the king." What it means for you: ' + shortFn(cz9[i]) + ' is not a separate part of you to be managed. It is fused to your identity and moves with your full authority. When it acts, that is not a side of you talking, it is you.' }); } }
     } catch (e1) {}
     // 2. an aspect exact to under a third of a degree — a locked wire
     try {
       var a0 = c.aspects && c.aspects[0];
-      if (a0 && a0.orb <= 0.5 && a0.a !== 'asc' && a0.a !== 'mc' && a0.b !== 'asc' && a0.b !== 'mc') cands.push({ w: 80 - a0.orb * 40, s: 'The defining wire of your chart is almost impossibly exact: ' + nameFor(a0.a) + ' ' + a0.asp.key + ' ' + nameFor(a0.b) + ', locked to within ' + a0.orb.toFixed(2) + ' of one degree. Aspects this tight are rare and they never go quiet; this one runs in you like a note held down for a lifetime. Your ' + shortFn(a0.a) + ' and your ' + shortFn(a0.b) + ' are effectively one instrument.' });
+      if (a0 && a0.orb <= 0.5 && a0.a !== 'asc' && a0.a !== 'mc' && a0.b !== 'asc' && a0.b !== 'mc') cands.push({ w: 80 - a0.orb * 40, s: 'The load-bearing join in your chart is ' + nameFor(a0.a) + ' ' + a0.asp.key + ' ' + nameFor(a0.b) + ', exact to within ' + a0.orb.toFixed(2) + ' of a degree. Held that close, these two never operate apart in you: your ' + shortFn(a0.a) + ' and your ' + shortFn(a0.b) + ' are one instrument, and most of what you do routes through that single join. Learn it and you have the key to the whole chart.' });
     } catch (e2) {}
     // 3. a stellium: three or more planets crowded in one sign
     try {
       var sc9 = {}, best9 = 0, bsg9 = -1;
       for (k = 0; k < PC9.length; k++) { var sp9 = c.planets[PC9[k]]; if (!sp9) continue; sc9[sp9.sign] = (sc9[sp9.sign] || 0) + 1; if (sc9[sp9.sign] > best9) { best9 = sc9[sp9.sign]; bsg9 = sp9.sign; } }
-      if (best9 >= 3 && bsg9 >= 0) cands.push({ w: 62 + best9 * 6, s: 'You carry a stellium: ' + best9 + ' planets crowded into ' + DATA.SIGNS[bsg9].name + ', all pulling in one direction. Most charts spread their weight around the wheel; yours concentrates it, which is why ' + DATA.SIGNS[bsg9].name + ' themes do not feel like one part of you so much as the whole gravity of you.' });
+      if (best9 >= 3 && bsg9 >= 0) cands.push({ w: 62 + best9 * 6, s: best9 + ' of your planets gather in ' + DATA.SIGNS[bsg9].name + ' \u2014 a stellium. What it means for you: ' + DATA.SIGNS[bsg9].name + '\u2019s way of moving is not one room of your life, it is the gravity the rest of you orbits. You do not visit this theme; you live inside it, and the people close to you learned that early.' });
     } catch (e3) {}
     // 4. a singleton: exactly one planet in an entire element, which then runs the show for that element
     try {
       var ec9 = { fire: [], earth: [], air: [], water: [] };
       for (k = 0; k < PC9.length; k++) { var ep9 = c.planets[PC9[k]]; if (ep9) ec9[DATA.SIGNS[ep9.sign].element].push(PC9[k]); }
       var elN9 = ['fire', 'earth', 'air', 'water'];
-      for (i = 0; i < 4; i++) if (ec9[elN9[i]].length === 1) { var sk9 = ec9[elN9[i]][0]; cands.push({ w: 58, s: 'A quiet rarity: your ' + nameFor(sk9) + ' is the only planet you own in ' + elN9[i] + '. A lone voice in a whole element becomes strangely loud, over-worked and over-relied-on. When you reach for ' + elN9[i] + ' (' + ({ fire: 'drive, courage, heat', earth: 'the practical and the tangible', air: 'ideas and perspective', water: 'feeling and depth' })[elN9[i]] + '), it is always ' + shortFn(sk9) + ' doing the lifting.' }); }
+      for (i = 0; i < 4; i++) if (ec9[elN9[i]].length === 1) { var sk9 = ec9[elN9[i]][0]; cands.push({ w: 58, s: 'Your ' + nameFor(sk9) + ' is the only planet you own in ' + elN9[i] + '. What that does to you: every time life asks for ' + ({ fire: 'drive, courage or heat', earth: 'the practical and the tangible', air: 'ideas or perspective', water: 'feeling or depth' })[elN9[i]] + ', it is always ' + shortFn(sk9) + ' answering the call \u2014 over-worked, over-trusted, and the first place you feel stretched.' }); }
     } catch (e4) {}
     // 5. a planet on a critical degree (0 or 29)
     try {
@@ -3103,6 +3103,44 @@ var APP = (function () {
     var out = [], si; for (si = 0; si < s.length; si++) if (s[si]) out.push(s[si]);
     return out.join(' ');
   }
+  function oddPredictions(c, b) {
+    var evs = [];
+    try { evs = upcomingTransits(c, 11, 18); } catch (eOp0) { return []; }
+    var MON9 = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], DOW9 = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], SLOW9 = { jupiter: 1, saturn: 1, uranus: 1, neptune: 1, pluto: 1 };
+    var PUSH9 = {
+      mars: { feel: 'a stretch of heat and hurry', good: 'starting the thing you have been circling for months, or finally having the conversation you have been ducking', risk: 'saying it a size too sharp, rushing a decision, and the small accidents that come with haste' },
+      jupiter: { feel: 'a run of room, nerve and open doors', good: 'asking for more than feels polite, saying yes to the larger version, betting on your own growth', risk: 'over-promising and then having to grow into a size you named too fast' },
+      saturn: { feel: 'a season of weight, tests and hard edges', good: 'committing for real, cutting the dead weight you have been dragging, doing the unglamorous work that actually lasts', risk: 'reading a slow no as a permanent one, and quietly carrying more than is yours to carry' },
+      uranus: { feel: 'a jolt and a live-wire itch to break the pattern', good: 'changing the thing you have plainly outgrown before it breaks on its own terms', risk: 'detonating something stable for a reason that will not hold up in a month' },
+      neptune: { feel: 'a soft, foggy, longing sort of spell', good: 'art, rest, devotion, and letting one hard edge in you actually dissolve', risk: 'wishful thinking, being quietly fooled, and mistaking a strong mood for a fact' },
+      pluto: { feel: 'a slow underground pressure that will not lift on command', good: 'letting something finish so a truer version of it can be born', risk: 'power struggles, and gripping white-knuckled onto what is already leaving' }
+    };
+    var QV9 = { fusion: 'lands right on top of', flow: 'flows kindly into', opportunity: 'opens a small door onto', tension: 'pulls hard against', friction: 'grinds against' };
+    function ruled9(nk) {
+      if (b && b.timeKnown && c.cusps) {
+        var hs = [], hi; for (hi = 1; hi <= 12; hi++) { var cs = Math.floor((((c.cusps[hi] % 360) + 360) % 360) / 30); if (DATA.SIGNS[cs] && RULERKEY[DATA.SIGNS[cs].ruler] === nk) hs.push(hi); }
+        if (hs.length) return hs.slice(0, 2).map(function (h) { return DATA.HOUSES[h - 1].title.toLowerCase(); }).join(' and ');
+      }
+      return null;
+    }
+    var out = [], i;
+    for (i = 0; i < evs.length && out.length < 7; i++) {
+      var ev = evs[i], pu = PUSH9[ev.tp]; if (!pu) continue;
+      var np = c.planets[ev.np]; if (!np) continue;
+      var d = ev.date, dstr = DOW9[d.getDay()] + ' ' + d.getDate() + ' ' + MON9[d.getMonth()] + (d.getFullYear() !== (new Date()).getFullYear() ? ' ' + d.getFullYear() : '');
+      var q = QV9[ev.quality] || 'meets';
+      var dom = ruled9(ev.np), where = (np.house && b && b.timeKnown) ? (', which sits in your ' + ordinal(np.house) + ' house') : '';
+      var rules = dom ? (' and rules the part of your life about ' + dom) : '';
+      var lead = 'Around ' + dstr + ', ' + nameFor(ev.tp) + ' ' + q + ' your ' + nameFor(ev.np) + where + rules + '.';
+      var body = 'Expect ' + pu.feel + ' there. It is good for ' + pu.good + '. Watch for ' + pu.risk + '.';
+      var win;
+      if (ev.multi && ev.passes && ev.passes.length > 1) win = ' This one comes in ' + ev.passes.length + ' passes (' + ev.passes.map(function (pz) { return pz.date.getDate() + ' ' + MON9[pz.date.getMonth()]; }).join(', ') + '), so it is a long chapter, not a single day.';
+      else if (SLOW9[ev.tp]) win = ' It builds for weeks either side, so read the date as the peak, not the whole of it.';
+      else win = ' Sharpest for about three days around then.';
+      out.push({ date: d, text: lead + ' ' + body + win, quality: ev.quality, tp: ev.tp });
+    }
+    return out;
+  }
   function composeForecast(c) {
     var b = STATE.birth;
     var srSum = solarReturnSummary(c, b);
@@ -4144,7 +4182,7 @@ var APP = (function () {
     STATE: STATE, save: save, load: load, compute: computeChart,
     composeCore: composeCore, localAsk: localAsk, chartText: chartText, aspectText: aspectText,
     composeTransits: composeTransits, transitSentence: transitSentence, composeSignatures: composeSignatures,
-    solarReturnChart: solarReturnChart, upcomingEclipses: upcomingEclipses, bestDaysFor: bestDaysFor, electIntents: electIntents,
+    solarReturnChart: solarReturnChart, upcomingEclipses: upcomingEclipses, bestDaysFor: bestDaysFor, electIntents: electIntents, oddPredictions: oddPredictions,
     progressedTimeline: progressedTimeline, retroSeasons: retroSeasons,
     exportBook: exportBook, exportBackup: exportBackup, importBackup: importBackup, composeDailyEssay: composeDailyEssay, chartFP: chartFP, weaveNote: weaveNote, termOf: termOf, anA: anA, composeColleague: composeColleague, exportColleague: exportColleague,
     microFor: microFor, tellsFor: tellsFor, receptionOf: receptionOf, chartSignature: chartSignature, addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenOf: almutenOf, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, returnsAlmanac: returnsAlmanac, progressedLunation: progressedLunation, planetaryHours: planetaryHours, moonVoidWindow: moonVoidWindow, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
@@ -6468,7 +6506,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       // the hook: the single rarest, most specific true thing about this exact chart
       if (UI.sigCache === undefined) { try { UI.sigCache = APP.chartSignature(c); } catch (eSc9) { UI.sigCache = null; } }
       if (UI.sigCache) {
-        eyebrow('The rarest thing about your chart', x, ly, ACC); ly += 22;
+        eyebrow('What is most specifically you', x, ly, ACC); ly += 22;
         var sgA9 = reduced() ? 1 : cl01((nowT() - (UI.actT || UI.fxT)) / 600);
         var fsg9 = (APP.STATE.settings && APP.STATE.settings.textScale) || 1, ssz9 = 17 * fsg9;
         var sgL9 = wrapLines2(UI.sigCache, w - 16, SERIF, ssz9), sgi9, sgh9 = ssz9 * 1.5;
@@ -6591,6 +6629,19 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var fc2 = UI.forecast;
       if (fc2) {
         if (rt === 'timing') {
+        // oddly specific, dated, and computed straight from where the planets will actually be
+        if (UI.oddPred === undefined) { try { UI.oddPred = APP.oddPredictions(c, b); } catch (eOp9) { UI.oddPred = []; } }
+        if (UI.oddPred && UI.oddPred.length) {
+          eyebrow('What is coming, to the day', x, ly, ACC); ly += 22;
+          ly += paragraph('Read straight off where the real planets will be. Each date is the day that contact is exact on your chart.', x, ly, w, 13, INK, SERIF, 19, 185) + 12;
+          var op9; for (op9 = 0; op9 < Math.min(UI.oddPred.length, 5); op9++) {
+            var opv = UI.oddPred[op9]; if (op9) { hairline(x, ly, x + w, 30); ly += 8; }
+            var qc9 = opv.quality;
+            p.noStroke(); fillc((qc9 === 'flow' || qc9 === 'opportunity') ? ELHUE.air : (qc9 === 'fusion' ? ACC : INK), 220); p.ellipse(x + 4, sY(ly) + 9, 7, 7);
+            ly += paragraph(opv.text, x + 18, ly, w - 18, 15.5, INK, SERIF, 24) + 12;
+          }
+          ly += 8; hairline(x, ly, x + w, 40); ly += 24;
+        }
         // ===== the phase of your life: the progressed lunation cycle, after Rudhyar =====
         if (!UI.plun) { try { UI.plun = APP.progressedLunation(c, b); UI.plunT = nowT(); } catch (eL9) { UI.plun = false; } }
         if (UI.plun && UI.plun.name) {
@@ -10117,7 +10168,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       } catch (e) {}
     }
     // battery: stop the draw loop entirely while the tab/app is hidden
-    try { document.addEventListener('visibilitychange', function () { try { if (document.hidden) p.noLoop(); else { var d9 = new Date(), k9 = d9.getFullYear() * 10000 + (d9.getMonth() + 1) * 100 + d9.getDate(); if (UI.dayKey && UI.dayKey !== k9) { UI.todayCache = null; UI.calEvents = null; UI.walkTr = null; UI.fmList = null; UI.readCache = null; } UI.dayKey = k9; p.loop(); } } catch (e2) {} }); } catch (e3) {}
+    try { document.addEventListener('visibilitychange', function () { try { if (document.hidden) p.noLoop(); else { var d9 = new Date(), k9 = d9.getFullYear() * 10000 + (d9.getMonth() + 1) * 100 + d9.getDate(); if (UI.dayKey && UI.dayKey !== k9) { UI.todayCache = null; UI.calEvents = null; UI.walkTr = null; UI.fmList = null; UI.readCache = null; UI.oddPred = undefined; } UI.dayKey = k9; p.loop(); } } catch (e2) {} }); } catch (e3) {}
     p.draw = function () {
       // auto-dark-at-night: re-apply the theme when the effective key changes (time or accent)
       var ek = effectiveThemeKey() + '|' + ((APP.STATE.settings && APP.STATE.settings.accent) || 0); if (ek !== UI.appliedThemeKey) { applyTheme(); setBodyBg(GROUNDS[UI.screen] || GROUNDS.chart); }
@@ -10125,7 +10176,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       try {
         var ckW9 = APP.activeChartKey ? (APP.activeChartKey() + '|' + (APP.STATE.settings ? APP.STATE.settings.house + APP.STATE.settings.zodiac : '')) : '';
         if (UI.ckW !== ckW9) {
-          if (UI.ckW != null) { UI.readSig = null; UI.walkTr = null; UI.walkTheme = null; UI.plun = null; UI.forecast = null; UI.readCache = null; UI.todayCache = null; UI.calEvents = null; UI.fmList = null; UI.lbCache = null; UI.lqzCache = null; UI.lwSky = null; UI.progTL = null; UI.retroS = null; UI.sigCache = undefined; UI.arcCache = null; UI.promCache = null; }
+          if (UI.ckW != null) { UI.readSig = null; UI.walkTr = null; UI.walkTheme = null; UI.plun = null; UI.forecast = null; UI.readCache = null; UI.todayCache = null; UI.calEvents = null; UI.fmList = null; UI.lbCache = null; UI.lqzCache = null; UI.lwSky = null; UI.progTL = null; UI.retroS = null; UI.sigCache = undefined; UI.arcCache = null; UI.promCache = null; UI.oddPred = undefined; }
           UI.ckW = ckW9;
         }
       } catch (eCk9) {}
