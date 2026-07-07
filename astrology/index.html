@@ -4929,7 +4929,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
 
       // structural rings (near-static; structure, not decoration)
       p.noFill();
-      for (var g = 1; g <= 15; g++) { var rr = (g / 16) * R * 0.82; strokec(INK, 16 * er); p.strokeWeight(1); p.ellipse(cx, cy, rr * 2, rr * 2); }
+      for (var g = 1; g <= 4; g++) { var rr = (g / 4.4) * R * 0.82; strokec(INK, 13 * er); p.strokeWeight(1); p.ellipse(cx, cy, rr * 2, rr * 2); }
       // SWEEP that reads out the chart: a beam rotating once ~12s, highlighting each planet it crosses (after the reveal settles)
       var sw = (fc * 0.5) % 360;
       if (!still && rv > 0.96) { for (var s2 = 0; s2 < 26; s2++) { strokec(ACC, 30 - s2 * 1.1); p.strokeWeight(1); p.line(cx, cy, ax(sw - s2 * 1.4, R * 0.8), ay(sw - s2 * 1.4, R * 0.8)); } }
@@ -5019,23 +5019,28 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         if (trd.ctx && trd.ctx.tp) {
           var activeBy = {}, TORDER = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto'];
           for (tdi = 0; tdi < trd.daily.length; tdi++) if (!activeBy[trd.daily[tdi].tp]) activeBy[trd.daily[tdi].tp] = trd.daily[tdi];
+          // a faint outer track the live sky rides on, well clear of the zodiac names and glyphs
+          var RIM9 = R * 1.19;
+          p.noFill(); strokec(INK, 22 * er); p.strokeWeight(1); p.ellipse(cx, cy, RIM9 * 2, RIM9 * 2);
           for (tdi = 0; tdi < TORDER.length; tdi++) {
             tkey = TORDER[tdi]; var srcp = trd.ctx.tp[tkey]; if (!srcp) continue;
             var tlon = ((srcp.lon - tay) % 360 + 360) % 360;
             var tev = activeBy[tkey];
-            var orx = ax(tlon, R * 1.045), ory = ay(tlon, R * 1.045);
+            var orx = ax(tlon, RIM9), ory = ay(tlon, RIM9);
             if (tev && posMap[tev.np]) {
+              // this planet is actually touching the chart today: glow it, thread it in
               var natal = posMap[tev.np];
               var tq = tev.asp.quality, tcol = (tq === 'flow' || tq === 'opportunity') ? ELHUE.air : (tq === 'fusion' ? INK : ACC);
               var puls = 0.55 + 0.45 * Math.sin(t * 0.004 + tdi * 1.3);
-              strokec(tcol, 60 * puls); p.strokeWeight(1); p.line(orx, ory, natal.x, natal.y);
-              p.noStroke(); fillc(tcol, 215); p.ellipse(orx, ory, 13, 13);
+              strokec(tcol, 55 * puls); p.strokeWeight(1); p.line(ax(tlon, R), ay(tlon, R), natal.x, natal.y);
+              p.noStroke(); fillc(tcol, 60 * puls); p.ellipse(orx, ory, 20, 20);
+              fillc(tcol, 225); p.ellipse(orx, ory, 13, 13);
               setFont(SANS, 7.5, GROUNDS[UI.screen], p.CENTER, p.CENTER); p.text(APP.glyphFor(tkey), orx, ory + 0.5);
+              (function (ex, ey) { pushHit(ex - 13, ey - 13, 26, 26, function () { openToday(); }); })(orx, ory);
             } else {
-              p.noStroke(); fillc(INK, 130 * er); p.ellipse(orx, ory, 9, 9);
-              setFont(SANS, 6, GROUNDS[UI.screen], p.CENTER, p.CENTER, 240); p.text(APP.glyphFor(tkey), orx, ory + 0.5);
+              // the quiet rest of the sky: a small unobtrusive tick, present but silent
+              p.noStroke(); fillc(INK, 70 * er); p.ellipse(orx, ory, 3, 3);
             }
-            (function (ex, ey) { pushHit(ex - 12, ey - 12, 24, 24, function () { openToday(); }); })(orx, ory);
           }
         }
       }
@@ -5086,11 +5091,14 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var items = [['SUN', c.planets.sun, 'sun'], ['MOON', c.planets.moon, 'moon'], ['RISING', b.timeKnown ? c.ascBody : null, 'asc']];
       for (var i = 0; i < 3; i++) {
         var cxp = x + gap * i + gap / 2, it = items[i], cyy = sY(cyTop), on = (UI.selPlanet === it[2]);
-        p.noFill(); strokec(on ? ACC : INK, on ? 255 : 200); p.strokeWeight(on ? 2 : 1.5); p.ellipse(cxp, cyy, R * 2, R * 2);
-        for (var k = 0; k < 3; k++) { var a = k / 3 * p.TWO_PI - Math.PI / 2 + (reduced() ? 0 : p.frameCount * 0.01); p.noStroke(); fillc(INK, 90); p.ellipse(cxp + R * 0.5 * Math.cos(a), cyy + R * 0.5 * Math.sin(a), 4, 4); }
-        if (it[1]) { setFont(SANS, 22, INK, p.CENTER, p.CENTER); p.text(DATA.SIGNS[it[1].sign].glyph, cxp, cyy); } else { setFont(MONO, 9, INK, p.CENTER, p.CENTER, 120); p.text('--', cxp, cyy); }
-        setFont(MONO, 9.5, INK, p.CENTER, p.TOP, 150); p.text(it[0], cxp, cyy + R + 8);
-        setFont(SANS, 11, INK, p.CENTER, p.TOP); bold(); p.text(it[1] ? it[1].signName : 'time?', cxp, cyy + R + 21); normal();
+        // a fine degree mark on the ring where this body actually sits in its sign
+        if (it[1]) { var degA9 = -Math.PI / 2 + (it[1].deg / 30) * p.TWO_PI; strokec(on ? ACC : INK, on ? 220 : 150); p.strokeWeight(on ? 2 : 1.4); p.line(cxp + Math.cos(degA9) * (R - 4), cyy + Math.sin(degA9) * (R - 4), cxp + Math.cos(degA9) * (R + 2), cyy + Math.sin(degA9) * (R + 2)); }
+        p.noFill(); strokec(on ? ACC : INK, on ? 255 : 175); p.strokeWeight(on ? 2 : 1.3); p.ellipse(cxp, cyy, R * 2, R * 2);
+        if (it[2] === 'sun' || it[2] === 'moon') { celestialBody(it[2], cxp, cyy, R * 0.82, nowT()); }
+        else if (it[1]) { p.push(); p.translate(cxp, cyy); if (!reduced()) p.rotate(Math.sin(nowT() * 0.0004) * 0.06); setFont(SANS, 24, on ? ACC : INK, p.CENTER, p.CENTER); p.text(DATA.SIGNS[it[1].sign].glyph, 0, 1); p.pop(); }
+        else { setFont(SANS, 12, INK, p.CENTER, p.CENTER, 120); p.text('?', cxp, cyy); }
+        setFont(SANS, 9, INK, p.CENTER, p.TOP, 150); p.text(it[0], cxp, cyy + R + 9);
+        setFont(SANS, 11.5, INK, p.CENTER, p.TOP); bold(); p.text(it[1] ? it[1].signName : 'add time', cxp, cyy + R + 22); normal();
         if (it[1]) (function (kk, ex, ey) { pushHit(ex - R, ey - R, R * 2, R * 2 + 32, function () { selectPlanet(kk); spawnRipple(ex, ey); }); })(it[2], cxp, cyy);
       }
       return (R + 6) + R + 40;
@@ -10066,7 +10074,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var ROWS9 = [
         ['Learn', 'THE SKY, FROM ZERO', 'learn'],
         ['Tarot', 'SPREADS AND MEANINGS', 'tarot'],
-        ['Settings', 'LOOK, VOICE, YOUR DATA', 'settings']
+        ['Settings', 'LOOK, SOUND, YOUR DATA', 'settings']
       ], mi9;
       for (mi9 = 0; mi9 < ROWS9.length; mi9++) {
         var ry9 = sY(ly), rh9 = 74;

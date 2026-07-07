@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.6.0 — 2026-07-06
+- **The wheel breathes.** The Home chart was doing too much at once. The live sky now rides a faint track set well outside the zodiac names and glyphs, so nothing collides: only the planets actually touching your chart today glow, pulse and thread inward, while the quiet rest of the sky becomes a small unobtrusive tick. The busy fifteen-ring interior drops to four calm rings.
+- **The Sun, Moon and rising, made real.** The three little dials under the wheel stop being flat glyphs ringed by filler dots. The Sun now renders as its true glowing body and the Moon as its cratered orb (the same craft as the hero), the rising as a clean, gently-listing sign, and a single fine mark on each ring shows the exact degree the body sits at in its sign.
+- **A stale label swept.** The More screen's Settings card no longer advertises "voice", which the app retired several versions ago; it reads "look, sound, your data".
+
 ## 3.5.0 — 2026-07-06
 - **Every planet reading now opens on you, not on your sign.** A new weave engine leads each placement with a line that fuses three specific things: what the planet is, how its sign makes it operate, and the real house arena it lives in — then draws the consequence. "Your Sun, your core self, works fast and first, with little patience for permission (Aries), and it lives in the part of your life about travel, study and meaning (9th house). So when it comes to travel, study and meaning, you go first and figure it out on the move." The generic sign paragraph becomes elaboration underneath. Because the sign×house×planet trio is rarely identical between two people, no two charts open the same way. This runs through the wheel tap, the planet story pages, and the walkthrough.
 - **The chart stops being a list.** A cross-synthesis reads the placement pairs that classically matter — head vs heart (Mercury/Moon), desire vs pursuit (Venus/Mars), pride vs fear (Sun/Saturn), thinking vs doing (Mercury/Mars) — naming both real signs, how their elements get on, and what the tension or agreement means in practice. Woven into the core reading.
