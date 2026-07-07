@@ -3103,6 +3103,54 @@ var APP = (function () {
     var out = [], si; for (si = 0; si < s.length; si++) if (s[si]) out.push(s[si]);
     return out.join(' ');
   }
+  // what each house concretely governs, and the events it tends to bring when activated
+  var HOUSE_LIFE = [
+    { th: 'your body, your name and fresh starts', ev: 'a fresh start you put your own name on, a change to your look or health, or simply being put front and centre', doL: 'you rebuild how you show up: a new look, a health push, a project in your own name, and a year of being seen rather than hidden' },
+    { th: 'money, what you own and what you are worth', ev: 'a real shift in income, a significant purchase or sale, or a hard rethink of what you are paid and what you are worth', doL: 'you move money and redraw what you value: a raise fought for, a big buy or sale, savings built or a debt faced, and your sense of self-worth up for renegotiation' },
+    { th: 'talk, siblings, learning and the daily near', ev: 'a wave of admin, messages, a course, a device or car, or news arriving through a sibling or neighbour', doL: 'you write, learn, commute and negotiate the small stuff: a course, a lot of paperwork, a new phone or car, sharper words, and sibling or neighbourhood matters' },
+    { th: 'home, family, roots and property', ev: 'a move, a renovation, a property decision, or a family matter that pulls you back home', doL: 'you tend the base: a move or renovation, a property bought or sold, a parent or family thing that needs you, and a pull to cocoon and put down roots' },
+    { th: 'romance, children, creativity and play', ev: 'a romance, a creative project going public, news about children, or a genuine return of play', doL: 'you create and court: a love affair or a lot of dating, a creative thing that ships, matters of children, and permission to actually enjoy yourself' },
+    { th: 'work, routine, health and service', ev: 'a job change, a health regimen begun in earnest, a full overhaul of your daily routine, or a pet', doL: 'you rebuild the daily machine: a new job or role, a health or fitness regime, a routine torn up and rebuilt, and a year where the unglamorous work matters most' },
+    { th: 'partnership, contracts and one-to-one', ev: 'a relationship formalising or ending, a business partnership, or a contract signed or dissolved', doL: 'you pair off and negotiate: a relationship that commits or breaks, a business partner, a contract or legal matter, and a year lived largely one-to-one' },
+    { th: 'shared money, intimacy and transformation', ev: 'a matter of shared money, debt, tax or inheritance, an intimacy that deepens fast, or an ending that transforms you', doL: 'you go deep and entangled: joint finances, a loan or inheritance or tax reckoning, real intimacy, therapy, and at least one ending that remakes you' },
+    { th: 'travel, study, meaning and the foreign', ev: 'a long trip, a course or degree, a publication, or a real shift in what you believe', doL: 'you widen the map: travel far, study or teach, publish or put ideas out, and let your worldview genuinely change' },
+    { th: 'career, status and the public eye', ev: 'a promotion, a public step up, a title, or a decisive move in your career and reputation', doL: 'you climb and get seen: a promotion or pivot, a public role, dealings with authority, and a year your reputation is written' },
+    { th: 'friends, groups, networks and hopes', ev: 'a new circle or community, a group project, a long-held goal suddenly finding traction, or gains from your work', doL: 'you gather your people and aim high: new friends and networks, a group or cause, a big goal getting real traction, and rewards arriving through the collective' },
+    { th: 'solitude, endings and the hidden', ev: 'a retreat or withdrawal, a hidden matter surfacing, a time in an institution, or a long chapter quietly completed', doL: 'you retreat and complete: rest and withdrawal, spiritual practice, something hidden coming to light, work behind the scenes, and the quiet closing of a long chapter' }
+  ];
+  function housesRuled9(c, key) {
+    if (!STATE.birth.timeKnown || !c.cusps) return null;
+    var hs = [], hi; for (hi = 1; hi <= 12; hi++) { var cs = Math.floor((((c.cusps[hi] % 360) + 360) % 360) / 30); if (DATA.SIGNS[cs] && RULERKEY[DATA.SIGNS[cs].ruler] === key) hs.push(hi); }
+    if (!hs.length) return null;
+    return hs.slice(0, 2).map(function (h) { return 'your ' + ordinal(h) + ' house of ' + HOUSE_LIFE[h - 1].th; }).join(' and ');
+  }
+  // the profection year, read in full: the house lit, what you are likely to do, where the
+  // year-lord sits, its condition, and the exact dates the sky strikes it
+  function composeProfectionYear(c, b) {
+    if (!b) return null;
+    var pf; try { pf = profection(b); } catch (ePY0) { return null; }
+    if (!pf) return null;
+    var lord = pf.lord, lp = c.planets[lord], HL = HOUSE_LIFE[pf.house - 1], parts = [];
+    var lordNm = (lord === 'moon' || lord === 'sun') ? ('the ' + nameFor(lord)) : nameFor(lord);
+    parts.push('You are in a ' + pf.signName + ' profection year (age ' + pf.age + '). Every birthday the spotlight steps one house forward; this year it lands on your ' + ordinal(pf.house) + ' house of ' + HL.th + ', and hands the whole year to ' + lordNm + ', the ruler of ' + pf.signName + ' and your lord of the year.');
+    parts.push('What a ' + pf.signName + ' year tends to have you doing: ' + HL.doL + '.');
+    if (lp) {
+      var ruled = housesRuled9(c, lord);
+      parts.push('Now follow the year-lord, because it decides where all of that actually happens. Your ' + nameFor(lord) + ' sits in your ' + ordinal(lp.house) + ' house of ' + HOUSE_LIFE[lp.house - 1].th + (ruled ? ', and it also rules ' + ruled : '') + '. So the ' + ordinal(pf.house) + '-house story keeps getting worked out through ' + HOUSE_LIFE[lp.house - 1].th + ': that is the room this year is really lived in.');
+      var dg = dignityOf(lord, lp.signName);
+      if (dg === 'Domicile' || dg === 'Exaltation') parts.push('Your year-lord is strong this year (' + (dg === 'Domicile' ? 'at home in its own sign' : 'exalted') + '), so the year has real backing under it: when you push, it tends to give.');
+      else if (dg === 'Detriment' || dg === 'Fall') parts.push('Your year-lord is working uphill this year (' + (dg === 'Fall' ? 'in fall' : 'in detriment') + '), so the wins are earned the hard way, and the growth is in the earning.');
+      if (lp.retro) parts.push('It is retrograde in your chart, so this year pays out on revisiting and redoing rather than launching cold: the second attempt is the one that lands.');
+    }
+    var hinges = [];
+    try { var evs = upcomingTransits(c, 12, 26); for (var i = 0; i < evs.length; i++) if (evs[i].np === lord) hinges.push(evs[i]); } catch (ePY1) {}
+    if (hinges.length) {
+      var MONp9 = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], nowY9 = (new Date()).getFullYear();
+      var hs = hinges.slice(0, 4).map(function (h9) { return nameFor(h9.tp) + ' ' + h9.aspKey + ' (' + h9.date.getDate() + ' ' + MONp9[h9.date.getMonth()] + (h9.date.getFullYear() !== nowY9 ? ' ' + h9.date.getFullYear() : '') + ')'; });
+      parts.push('And here are the hinge dates, the days the moving sky actually strikes your year-lord: ' + hs.join(', ') + '. Contacts to the lord of the year count double. Treat those windows as the year turning on its axis, not ordinary weather.');
+    }
+    return { pf: pf, parts: parts };
+  }
   function oddPredictions(c, b) {
     var evs = [];
     try { evs = upcomingTransits(c, 11, 18); } catch (eOp0) { return []; }
@@ -3123,19 +3171,27 @@ var APP = (function () {
       }
       return null;
     }
+    function ruledHouse9(nk) {
+      if (b && b.timeKnown && c.cusps) { var hi; for (hi = 1; hi <= 12; hi++) { var cs = Math.floor((((c.cusps[hi] % 360) + 360) % 360) / 30); if (DATA.SIGNS[cs] && RULERKEY[DATA.SIGNS[cs].ruler] === nk) return hi; } }
+      return null;
+    }
     var out = [], i;
     for (i = 0; i < evs.length && out.length < 7; i++) {
       var ev = evs[i], pu = PUSH9[ev.tp]; if (!pu) continue;
       var np = c.planets[ev.np]; if (!np) continue;
       var d = ev.date, dstr = DOW9[d.getDay()] + ' ' + d.getDate() + ' ' + MON9[d.getMonth()] + (d.getFullYear() !== (new Date()).getFullYear() ? ' ' + d.getFullYear() : '');
       var q = QV9[ev.quality] || 'meets';
-      var dom = ruled9(ev.np), where = (np.house && b && b.timeKnown) ? (', which sits in your ' + ordinal(np.house) + ' house') : '';
-      var rules = dom ? (' and rules the part of your life about ' + dom) : '';
+      // the concrete event: the house this natal planet RULES is the life-area that moves;
+      // fall back to the house it sits in, then to its natural domain
+      var rH9 = ruledHouse9(ev.np), evtH9 = rH9 || (b && b.timeKnown ? np.house : 0);
+      var where = (np.house && b && b.timeKnown) ? (', which sits in your ' + ordinal(np.house) + ' house') : '';
+      var rules = (rH9 && HOUSE_LIFE[rH9 - 1]) ? (' and rules your ' + ordinal(rH9) + ' house of ' + HOUSE_LIFE[rH9 - 1].th) : '';
       var lead = 'Around ' + dstr + ', ' + nameFor(ev.tp) + ' ' + q + ' your ' + nameFor(ev.np) + where + rules + '.';
-      var body = 'Expect ' + pu.feel + ' there. It is good for ' + pu.good + '. Watch for ' + pu.risk + '.';
+      var evt = (evtH9 && HOUSE_LIFE[evtH9 - 1]) ? ('This is the classic timing for ' + HOUSE_LIFE[evtH9 - 1].ev + '.') : ('This tends to stir ' + practicalDomain(ev.np) + '.');
+      var body = evt + ' It is good for ' + pu.good + '; watch for ' + pu.risk + '.';
       var win;
-      if (ev.multi && ev.passes && ev.passes.length > 1) win = ' This one comes in ' + ev.passes.length + ' passes (' + ev.passes.map(function (pz) { return pz.date.getDate() + ' ' + MON9[pz.date.getMonth()]; }).join(', ') + '), so it is a long chapter, not a single day.';
-      else if (SLOW9[ev.tp]) win = ' It builds for weeks either side, so read the date as the peak, not the whole of it.';
+      if (ev.multi && ev.passes && ev.passes.length > 1) win = ' It comes in ' + ev.passes.length + ' passes (' + ev.passes.map(function (pz) { return pz.date.getDate() + ' ' + MON9[pz.date.getMonth()]; }).join(', ') + '), so it is a long chapter, not a single day.';
+      else if (SLOW9[ev.tp]) win = ' It builds for weeks either side, so read the date as the peak.';
       else win = ' Sharpest for about three days around then.';
       out.push({ date: d, text: lead + ' ' + body + win, quality: ev.quality, tp: ev.tp });
     }
@@ -4182,7 +4238,7 @@ var APP = (function () {
     STATE: STATE, save: save, load: load, compute: computeChart,
     composeCore: composeCore, localAsk: localAsk, chartText: chartText, aspectText: aspectText,
     composeTransits: composeTransits, transitSentence: transitSentence, composeSignatures: composeSignatures,
-    solarReturnChart: solarReturnChart, upcomingEclipses: upcomingEclipses, bestDaysFor: bestDaysFor, electIntents: electIntents, oddPredictions: oddPredictions,
+    solarReturnChart: solarReturnChart, upcomingEclipses: upcomingEclipses, bestDaysFor: bestDaysFor, electIntents: electIntents, oddPredictions: oddPredictions, composeProfectionYear: composeProfectionYear,
     progressedTimeline: progressedTimeline, retroSeasons: retroSeasons,
     exportBook: exportBook, exportBackup: exportBackup, importBackup: importBackup, composeDailyEssay: composeDailyEssay, chartFP: chartFP, weaveNote: weaveNote, termOf: termOf, anA: anA, composeColleague: composeColleague, exportColleague: exportColleague,
     microFor: microFor, tellsFor: tellsFor, receptionOf: receptionOf, chartSignature: chartSignature, addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenOf: almutenOf, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, returnsAlmanac: returnsAlmanac, progressedLunation: progressedLunation, planetaryHours: planetaryHours, moonVoidWindow: moonVoidWindow, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
@@ -6695,7 +6751,12 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         flatBtn('\u25CE  The Rings: every cycle of your life, counted', x, ly, w, 44, function () { UI.rings = { t0: nowT() }; UI.ringSel = null; UI.scroll.read = 0; buzz(12); }, false); ly += 58;
         ly += 16; hairline(x, ly, x + w, 40); ly += 22; eyebrow('The year ahead', x, ly, ACC); ly += 24;
         var pf = fc2.profection;
-        ly += paragraph('You’re in a ' + DATA.SIGNS[pf.sign].name + ' profection year (age ' + pf.age + '): your ' + ordinal(pf.house) + ' house is lit up, and ' + APP.nameFor(pf.lord) + ' is your time‑lord: the planet steering this year.', x, ly, w, 15.5, INK, SERIF, 24) + 10;
+        if (UI.profYear === undefined) { try { UI.profYear = APP.composeProfectionYear(c, b); } catch (ePY9) { UI.profYear = null; } }
+        if (UI.profYear && UI.profYear.parts) {
+          for (var py9 = 0; py9 < UI.profYear.parts.length; py9++) ly += paragraph(UI.profYear.parts[py9], x, ly, w, 15.5, INK, SERIF, 24) + 10;
+        } else {
+          ly += paragraph('You’re in a ' + DATA.SIGNS[pf.sign].name + ' profection year (age ' + pf.age + '): your ' + ordinal(pf.house) + ' house is lit up, and ' + APP.nameFor(pf.lord) + ' is your time‑lord: the planet steering this year.', x, ly, w, 15.5, INK, SERIF, 24) + 10;
+        }
         if (fc2.monthly && fc2.monthly.sign !== pf.sign) { var mp = fc2.monthly; ly += paragraph('Within that, this month profects to ' + mp.signName + ' (your ' + ordinal(mp.house) + ' house), so ' + APP.nameFor(mp.lord) + ' carries the next few weeks specifically.', x, ly, w, 14.5, INK, SERIF, 22) + 10; }
         if (fc2.zr && fc2.zr.l1) { var z = fc2.zr, zr2 = z.l2 ? (' Inside it you’re in a ' + z.l2.signName + ' sub-chapter (ruled by ' + APP.nameFor(z.l2.ruler) + ').') : ''; ly += paragraph('Zodiacal Releasing from your Lot of Spirit puts you in a ' + z.l1.signName + ' life-chapter (roughly age ' + Math.round(z.l1.startAge) + '–' + Math.round(z.l1.endAge) + '), ruled by ' + APP.nameFor(z.l1.ruler) + ': the long arc of where your purpose is unfolding.' + zr2, x, ly, w, 14.5, INK, SERIF, 22) + 10; }
         if (fc2.convergence) {
@@ -10168,7 +10229,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       } catch (e) {}
     }
     // battery: stop the draw loop entirely while the tab/app is hidden
-    try { document.addEventListener('visibilitychange', function () { try { if (document.hidden) p.noLoop(); else { var d9 = new Date(), k9 = d9.getFullYear() * 10000 + (d9.getMonth() + 1) * 100 + d9.getDate(); if (UI.dayKey && UI.dayKey !== k9) { UI.todayCache = null; UI.calEvents = null; UI.walkTr = null; UI.fmList = null; UI.readCache = null; UI.oddPred = undefined; } UI.dayKey = k9; p.loop(); } } catch (e2) {} }); } catch (e3) {}
+    try { document.addEventListener('visibilitychange', function () { try { if (document.hidden) p.noLoop(); else { var d9 = new Date(), k9 = d9.getFullYear() * 10000 + (d9.getMonth() + 1) * 100 + d9.getDate(); if (UI.dayKey && UI.dayKey !== k9) { UI.todayCache = null; UI.calEvents = null; UI.walkTr = null; UI.fmList = null; UI.readCache = null; UI.oddPred = undefined; UI.profYear = undefined; } UI.dayKey = k9; p.loop(); } } catch (e2) {} }); } catch (e3) {}
     p.draw = function () {
       // auto-dark-at-night: re-apply the theme when the effective key changes (time or accent)
       var ek = effectiveThemeKey() + '|' + ((APP.STATE.settings && APP.STATE.settings.accent) || 0); if (ek !== UI.appliedThemeKey) { applyTheme(); setBodyBg(GROUNDS[UI.screen] || GROUNDS.chart); }
@@ -10176,7 +10237,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       try {
         var ckW9 = APP.activeChartKey ? (APP.activeChartKey() + '|' + (APP.STATE.settings ? APP.STATE.settings.house + APP.STATE.settings.zodiac : '')) : '';
         if (UI.ckW !== ckW9) {
-          if (UI.ckW != null) { UI.readSig = null; UI.walkTr = null; UI.walkTheme = null; UI.plun = null; UI.forecast = null; UI.readCache = null; UI.todayCache = null; UI.calEvents = null; UI.fmList = null; UI.lbCache = null; UI.lqzCache = null; UI.lwSky = null; UI.progTL = null; UI.retroS = null; UI.sigCache = undefined; UI.arcCache = null; UI.promCache = null; UI.oddPred = undefined; }
+          if (UI.ckW != null) { UI.readSig = null; UI.walkTr = null; UI.walkTheme = null; UI.plun = null; UI.forecast = null; UI.readCache = null; UI.todayCache = null; UI.calEvents = null; UI.fmList = null; UI.lbCache = null; UI.lqzCache = null; UI.lwSky = null; UI.progTL = null; UI.retroS = null; UI.sigCache = undefined; UI.arcCache = null; UI.promCache = null; UI.oddPred = undefined; UI.profYear = undefined; }
           UI.ckW = ckW9;
         }
       } catch (eCk9) {}
