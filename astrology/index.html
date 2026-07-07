@@ -1009,6 +1009,23 @@ var APP = (function () {
     cands.sort(function (a, b) { return b.w - a.w; });
     return cands[0].s;
   }
+  function crossSynthesis(c) {
+    var out = [], pairs = [
+      { a: 'mercury', b: 'moon', t: 'how you think and how you feel', sub: 'Head and heart', end: 'Either way, you are most yourself when your head narrates what your gut already knew.' },
+      { a: 'venus', b: 'mars', t: 'what draws you and how you chase it', sub: 'Desire and pursuit', end: 'Either way, your love life makes the most sense on the days the thing you want and the way you go after it finally point the same direction.' },
+      { a: 'sun', b: 'saturn', t: 'who you are and where you fear you fall short', sub: 'Your pride and your fear', end: 'Either way, the places you privately feel "not enough" are exactly where you end up building the most solid thing.' },
+      { a: 'mercury', b: 'mars', t: 'how you think and how you act', sub: 'Thinking and doing', end: 'Either way, the gap between deciding and doing is where you get either sharp or reckless.' }
+    ], i;
+    function agree(ea, eb) { return ea === eb; }
+    function friendly(ea, eb) { return (ea === 'fire' && eb === 'air') || (ea === 'air' && eb === 'fire') || (ea === 'earth' && eb === 'water') || (ea === 'water' && eb === 'earth'); }
+    for (i = 0; i < pairs.length && out.length < 2; i++) {
+      var P = pairs[i], pa = c.planets[P.a], pb = c.planets[P.b]; if (!pa || !pb) continue;
+      var ea = DATA.SIGNS[pa.sign].element, eb = DATA.SIGNS[pb.sign].element;
+      var rel = agree(ea, eb) ? 'pull in the same direction, for better and worse' : friendly(ea, eb) ? 'get on and quietly feed each other' : 'want different things and have to be reconciled in you';
+      out.push('On ' + P.t + ': your ' + nameFor(P.a) + ' in ' + pa.signName + ' works ' + SIGN_MANNER[pa.sign] + ', while your ' + nameFor(P.b) + ' in ' + pb.signName + ' works ' + SIGN_MANNER[pb.sign] + '. ' + P.sub + ' ' + rel + '. ' + P.end);
+    }
+    return out;
+  }
   function composeCore(c) {
     var sun = c.planets.sun, moon = c.planets.moon, asc = c.ascBody, parts = [], tk = STATE.birth.timeKnown;
     try { var sig9 = chartSignature(c); if (sig9) parts.push(sig9); } catch (eSg9) {}
@@ -1047,9 +1064,11 @@ var APP = (function () {
       var rAc = (tk && ARc) ? ARc.sign[asc.signName] : null;
       if (sAc && mAc) {
         var loN9 = function (n9) { return n9.replace('The ', 'the '); };
-        parts.push('In the older language of the craft you read as ' + sAc.n + ' with ' + loN9(mAc.n) + '\u2019s heart' + (rAc ? ', arriving through ' + loN9(rAc.n) + '\u2019s door' : '') + ': ' + sAc.core + '. The same figure walks into any world. In the boardroom: ' + sAc.work + '. Barefoot in the field: ' + mAc.play + '. And by candlelight, if you keep one: ' + (rAc || mAc).rite + '.');
+        parts.push('In the older language of the craft you read as ' + sAc.n + ' with ' + loN9(mAc.n) + '’s heart' + (rAc ? ', arriving through ' + loN9(rAc.n) + '’s door' : '') + ': ' + sAc.core + '. The same figure walks into any world. In the boardroom: ' + sAc.work + '. Barefoot in the field: ' + mAc.play + '. And by candlelight, if you keep one: ' + (rAc || mAc).rite + '.');
       }
     } catch (eArc9) {}
+    // the cross-synthesis: specific pairs read together, not as a list
+    try { var xs9 = crossSynthesis(c), xi9; for (xi9 = 0; xi9 < xs9.length; xi9++) parts.push(xs9[xi9]); } catch (eXs9) {}
     var dom = domElement(c.elements), low = lowElement(c.elements);
     var leadE = vpick(['The chart leans', 'Your centre of gravity is', 'The weight of you sits in', 'On balance you run', 'The prevailing wind here is', 'Weigh it all and the needle points to', 'Add every placement up and it comes out', 'The chart\u2019s home key is'], seed);
     parts.push(leadE + ' ' + DATA.ELEMENTS[dom].name.toLowerCase() + ' (' + c.elements[dom] + '%): ' + DATA.ELEMENTS[dom].high + '. It runs light on ' + DATA.ELEMENTS[low].name.toLowerCase() + ' (' + c.elements[low] + '%): ' + DATA.ELEMENTS[low].need);
@@ -3126,6 +3145,24 @@ var APP = (function () {
   }
   // the profection year, read in full: the house lit, what you are likely to do, where the
   // year-lord sits, its condition, and the exact dates the sky strikes it
+  // how each sign makes a planet operate, and the move it reaches for
+  var SIGN_MANNER = ['fast and first, with little patience for permission', 'slowly and immovably, on its own clock', 'quickly and in twos, always wanting the other option', 'by feel and protectively, guarding what it loves', 'warmly and out loud, needing to be seen', 'precisely and usefully, refining as it goes', 'through other people, weighing everything for fairness', 'all-or-nothing and in depth, nothing left on the surface', 'expansively and on principle, always aiming past the fence', 'seriously and for the long game, building to last', 'unconventionally and from a step back, on its own terms', 'softly and by imagination, with the edges dissolved'];
+  var SIGN_MOVE = ['go first and figure it out on the move', 'take your time and refuse to be rushed', 'keep your options open and talk it through', 'lead with care and protect what matters', 'do it wholeheartedly, and want it seen', 'get the details right before anyone else notices', 'weigh both sides and look for the graceful, fair move', 'go all in or not at all', 'aim big and trust it works out', 'play the long game and build something that lasts', 'do it your own way, on principle', 'go by feel and let the edges blur'];
+  // the bespoke opener: function + sign-manner + house-arena, then the specific consequence
+  function signHouseWeave(c, key) {
+    if (key === 'asc' || key === 'mc' || key === 'node') return '';
+    var pl = c.planets[key]; if (!pl) return '';
+    var fn = SHORTFN[key] || nameFor(key), man = SIGN_MANNER[pl.sign], mov = SIGN_MOVE[pl.sign];
+    var lead = 'Your ' + nameFor(key) + ', your ' + fn + ', works ' + man + ' (' + pl.signName + ')';
+    var tk = STATE.birth.timeKnown;
+    if (tk && pl.house && HOUSE_LIFE[pl.house - 1]) {
+      var arena = HOUSE_LIFE[pl.house - 1].th;
+      lead += ', and it lives in the part of your life about ' + arena + ' (' + ordinal(pl.house) + ' house). So when it comes to ' + arena + ', you ' + mov + '.';
+    } else {
+      lead += '. So you ' + mov + '.';
+    }
+    return lead;
+  }
   function composeProfectionYear(c, b) {
     if (!b) return null;
     var pf; try { pf = profection(b); } catch (ePY0) { return null; }
@@ -4238,7 +4275,7 @@ var APP = (function () {
     STATE: STATE, save: save, load: load, compute: computeChart,
     composeCore: composeCore, localAsk: localAsk, chartText: chartText, aspectText: aspectText,
     composeTransits: composeTransits, transitSentence: transitSentence, composeSignatures: composeSignatures,
-    solarReturnChart: solarReturnChart, upcomingEclipses: upcomingEclipses, bestDaysFor: bestDaysFor, electIntents: electIntents, oddPredictions: oddPredictions, composeProfectionYear: composeProfectionYear,
+    solarReturnChart: solarReturnChart, upcomingEclipses: upcomingEclipses, bestDaysFor: bestDaysFor, electIntents: electIntents, oddPredictions: oddPredictions, composeProfectionYear: composeProfectionYear, signHouseWeave: signHouseWeave,
     progressedTimeline: progressedTimeline, retroSeasons: retroSeasons,
     exportBook: exportBook, exportBackup: exportBackup, importBackup: importBackup, composeDailyEssay: composeDailyEssay, chartFP: chartFP, weaveNote: weaveNote, termOf: termOf, anA: anA, composeColleague: composeColleague, exportColleague: exportColleague,
     microFor: microFor, tellsFor: tellsFor, receptionOf: receptionOf, chartSignature: chartSignature, addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenOf: almutenOf, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, returnsAlmanac: returnsAlmanac, progressedLunation: progressedLunation, planetaryHours: planetaryHours, moonVoidWindow: moonVoidWindow, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
@@ -5112,13 +5149,15 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       else if (key === 'asc') core = DATA.RISING_IN_SIGN[pl.sign];
       else if (DATA.PLANET_SIGN_TEXT[key]) core = APP.nameFor(key) + ' in ' + pl.signName + ': ' + DATA.PLANET_SIGN_TEXT[key][pl.sign];
       else { var pdesc = DATA.PLANETS[key] ? DATA.PLANETS[key].fn : 'this drive'; core = APP.nameFor(key) + ' carries ' + pdesc + ', and in ' + pl.signName + ' it moves through ' + DATA.SIGNS[pl.sign].style + '.'; }
+      var lead9 = (APP.signHouseWeave ? APP.signHouseWeave(c, key) : '');
       var extra = '', dgp = dignityPhrase(key, pl); if (dgp) extra += ' ' + dgp;
       if (key !== 'asc') extra += degreeNote(pl);
       extra += conditionLedger(c, key, pl, b);
       if (key !== 'asc' && APP.weaveNote) extra += APP.weaveNote(c, key);
-      if (b && b.timeKnown && pl.house) extra += ' It lives in your ' + ordinal(pl.house) + ' house: ' + DATA.HOUSES[pl.house - 1].meaning;
+      // the weave already names the house arena; only add the fuller house meaning when there was no weave
+      if (!lead9 && b && b.timeKnown && pl.house) extra += ' It lives in your ' + ordinal(pl.house) + ' house: ' + DATA.HOUSES[pl.house - 1].meaning;
       if (pl.retro && key !== 'sun' && key !== 'moon' && key !== 'asc') extra += ' Retrograde at birth, it turns inward first, reworked in private before it’s shown.';
-      return core + extra;
+      return (lead9 ? lead9 + ' ' : '') + core + extra;
     }
     function planetBlurb(c, key) { return delineate(c, key, APP.STATE.birth); }
 
