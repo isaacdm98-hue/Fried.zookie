@@ -2011,3 +2011,61 @@ DATA.QUIRK.saturn = [
   'you hold people at a slight distance to stay safe, and you fear losing yourself inside belonging',
   'you doubt your own boundaries, you carry guilt that was never yours, and you fear the world is too sharp for how soft you actually are'
 ];
+
+// ===== chart-exact concrete tells: aspects you actually hold, and where Mars & Venus live (by house) =====
+DATA.ASPECT_TELL = {
+  'sun-moon': 'you were raised between two different rooms and learned to translate between them, and "what do you actually want?" is a hard question for you',
+  'sun-saturn': 'you feel you have to earn the right to rest, you were the serious kid, and praise somehow never fully lands',
+  'sun-uranus': 'you cannot stand being boxed in, you will leave a good thing for a free one, and you are the odd one out slightly on purpose',
+  'sun-neptune': 'you are not always sure who you are, you dissolve into whatever you love, and you idealise people then feel quietly let down',
+  'sun-pluto': 'you would rather control it than trust it, you have rebuilt yourself at least once, and people sense a depth you do not show',
+  'moon-mars': 'you snap first and feel bad after, and your feelings arrive as action before you have named them',
+  'moon-saturn': 'you say "I am fine" as a complete sentence, you downplay it when you are struggling, and you learned young not to be a burden',
+  'moon-uranus': 'you need to be able to leave, you go cool exactly when things get close, and you feel things on a delay',
+  'moon-neptune': 'you soak up the whole room and cannot always tell whose mood is whose, and you cry at things you cannot explain',
+  'moon-pluto': 'you scan people for what they are really feeling, you keep one door locked, and "who told you that?" is a genuine question for you',
+  'mercury-mars': 'you win the argument then feel bad about it, you interrupt, and you are typing in all caps in your head',
+  'mercury-saturn': 'you go quiet rather than say the half-formed thing, you reread the text you sent, and you assume you are behind',
+  'mercury-uranus': 'you jump three steps and cannot show the working, and you space out mid-sentence with the answer already found',
+  'mercury-neptune': 'you say things sideways and land truer, you forget names instantly, and you write it down so it stops drifting',
+  'mercury-pluto': 'you cannot let a mystery go, you read the subtext everyone else missed, and you keep what you know',
+  'venus-mars': 'you know within a minute if you are attracted, and you chase hard then go cold the moment it gets easy',
+  'venus-saturn': 'you assume affection has to be earned, you pick people slightly unavailable, and a compliment makes you suspicious',
+  'venus-uranus': 'you fall fast and need space in the same week, and you are drawn to exactly the people who cannot fully give it back',
+  'venus-neptune': 'you fall for the potential, you forgive far too fast, and you have stayed for who someone could be',
+  'venus-pluto': 'you do not do casual, you have googled an ex at 2am, and love rearranges you or it is not love',
+  'mars-saturn': 'you push then stop, you will not start until you are sure, and your anger goes cold rather than hot',
+  'mars-uranus': 'you act on the impulse before you have decided, and you do your best work under sudden pressure',
+  'mars-neptune': 'your energy comes and goes for no clear reason, and you fight hardest for something bigger than yourself',
+  'mars-pluto': 'you go all the way or not at all, you do not forget a slight, and you would rather win quietly than loudly'
+};
+DATA.QUIRK_HOUSE = {
+  mars: [
+  'you move fast and take up space, and you have been told you seem angrier than you actually are',
+  'you spend impulsively then feel it, and you get quietly territorial about your own stuff',
+  'you argue in the group chat, you drive a little aggressively, and you fire off the text before you have cooled down',
+  'your temper comes out at home first, you slam a drawer, and you fight hardest for your family',
+  'you play to win even at board games, you flirt like it is a sport, and your hobbies get competitive fast',
+  'you power through the to-do list, you get short with people who are inefficient, and you overdo it at the gym',
+  'you pick fiery partners, you need a worthy opponent, and you sometimes pick the fight to get closer',
+  'you go all in on what you want, you are private about money, and your intensity spooks people a little',
+  'you argue about beliefs, you book the trip on impulse, and you get righteous about the truth',
+  'you have opinions about how your boss runs things, you are competitive about your work, and you push to be the one in charge',
+  'you are the one who organises the group, you go to bat for the cause, and you cut people off cleanly when they cross you',
+  'your anger goes underground, you work best behind the scenes, and you do not always know what you are angry about'
+  ],
+  venus: [
+  'you care how you look walking out the door, and people find you easy to like on sight',
+  'you spend on beauty and comfort, and genuinely nice things settle your whole nervous system',
+  'you flirt through banter, and a really good conversation is basically foreplay for you',
+  'you show love by feeding people and nesting, and home has to feel pretty before you can rest',
+  'you love the chase and the romance of it all, and you are a generous, playful flirt',
+  'you show love through small useful acts, and you have fallen for someone you work near',
+  'you would rather be paired than single, you play peacemaker, and you have stayed too long to avoid the breakup',
+  'you love intensely and privately, you merge finances fast, and casual was never really your thing',
+  'you fall for people from elsewhere or from a totally different world, and love feels like an adventure to you',
+  'you are drawn to status or to people you admire, and your relationships end up a little public',
+  'love often begins as friendship for you, and you are drawn to your community and the people in it',
+  'you love quietly and sometimes secretly, and you fall for people you cannot quite fully have'
+  ]
+};

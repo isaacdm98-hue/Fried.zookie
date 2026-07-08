@@ -1146,6 +1146,26 @@ var APP = (function () {
       var rbase = Q.rising[c.ascBody.sign], rlr = RULERKEY[DATA.SIGNS[c.ascBody.sign].ruler];
       if (rbase) { var rmod = (rlr && QM.rising) ? modFor(rlr, QM.rising) : ''; out.push('And on first meeting you, ' + rbase + (rmod ? '. ' + capMod9(rmod) : '') + '.'); }
     }
+    // where your drive and your love actually live — the house, not just the sign (your exact chart)
+    var QH = DATA.QUIRK_HOUSE || {};
+    if (tk && c.planets.mars && c.planets.mars.house && QH.mars) out.push('Out in the world, ' + QH.mars[c.planets.mars.house - 1] + '.');
+    if (tk && c.planets.venus && c.planets.venus.house && QH.venus) out.push('In love, specifically, ' + QH.venus[c.planets.venus.house - 1] + '.');
+    // the two tightest hard aspects your chart actually holds, as concrete behaviour (Moon square Saturn → "I'm fine")
+    var AT = DATA.ASPECT_TELL;
+    if (AT) {
+      var PSET = { sun: 1, moon: 1, mercury: 1, venus: 1, mars: 1, jupiter: 1, saturn: 1 }, PORD = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto'], acc = [], ci;
+      for (ci = 0; ci < c.aspects.length; ci++) {
+        var A = c.aspects[ci]; if (A.minor) continue;
+        var q = A.asp.quality; if (q !== 'fusion' && q !== 'tension' && q !== 'friction') continue;
+        if (!PSET[A.a] && !PSET[A.b]) continue;
+        var ia = PORD.indexOf(A.a), ib = PORD.indexOf(A.b); if (ia < 0 || ib < 0) continue;
+        var key = ia < ib ? (A.a + '-' + A.b) : (A.b + '-' + A.a);
+        if (AT[key]) acc.push({ orb: A.orb, t: AT[key] });
+      }
+      acc.sort(function (u, v) { return u.orb - v.orb; });
+      var ATLEAD = ['And this one is oddly close to the bone: ', 'And, honestly: '], ax;
+      for (ax = 0; ax < Math.min(2, acc.length); ax++) out.push(ATLEAD[ax] + acc[ax].t + '.');
+    }
     return out;
   }
   // interests & passions: what this person is actually drawn to do, scored from the
