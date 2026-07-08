@@ -1149,3 +1149,174 @@ DATA.QUIRK = {
     'you seem gentle, dreamy and hard to pin down, people project onto you, and strangers, stray cats and sad friends all find you without a map'
   ]
 };
+
+// Combinatorial shading for the oddly-specific lines: each planet's quirk is coloured by
+// its tightest aspect (to a social/outer planet) or its retrograde, so the same sign reads
+// differently on different charts. sign(12) x modifier(7) x five bodies => the output is
+// effectively unique per chart.
+DATA.QUIRK_MOD = {
+  venus: { saturn: 'though you are quietly frugal about it and hate feeling overcharged', jupiter: 'and you always over-order, then happily finish it', mars: 'and you eat faster than everyone else at the table', uranus: 'and your taste swerves somewhere nobody quite expects', neptune: 'and what you fancy changes completely with your mood', pluto: 'and when a flavour gets you, you go all the way in on it', retro: 'and you keep circling back to the same handful of orders' },
+  moon: { saturn: 'and you soothe yourself by getting something done more than by being comforted', jupiter: 'and you comfort yourself in slightly-too-large portions', mars: 'and you have to move or do something with your hands before you can settle', uranus: 'and your moods change channels faster than anyone can follow', neptune: 'and you soak up the room so completely you lose track of what is yours', pluto: 'and you feel things at a depth you rarely let anyone actually see', retro: 'and old feelings resurface long after you thought they were filed away' },
+  mars: { saturn: 'though there is a governor on it: you burn slow and you finish', jupiter: 'and once you commit you go big, sometimes bigger than the plan', uranus: 'and it fires without warning, even to you', neptune: 'and it runs on mood and meaning rather than on orders', pluto: 'and underneath the surface there is a second, far deeper tank', retro: 'and you would rather redo a thing properly than push a new one out' },
+  mercury: { saturn: 'and you doubt it, edit it, then turn out to have been right', jupiter: 'and you genuinely cannot tell a short version of anything', mars: 'and your words carry an edge you did not always mean to send', uranus: 'and your best thoughts arrive sideways and a beat too early', neptune: 'and you think in images, so the literal version comes out second', pluto: 'and you cannot un-see the subtext once you have caught it', retro: 'and you rehearse conversations, both before and long after' },
+  rising: { saturn: 'though people also clock a seriousness it takes them a while to get past', jupiter: 'and you seem luckier and more expansive than you feel inside', mars: 'and there is a directness people feel off you before you speak', uranus: 'and something about you reads as slightly unplaceable', neptune: 'and you are strangely easy for people to project onto', pluto: 'and people sense there is a great deal you are not showing' }
+};
+
+// ===== 130+ oddly-specific placement reads: the "a rising Gemini often means..." library.
+// Position-indexed so any chart pulls its own specific set. Signs 0..11, houses 1..12.
+DATA.SPOOKY = {
+  rising: [
+    'your life keeps handing you situations where you have to go first, act alone, or start over, whether you asked to or not',
+    'you build slowly and hate losing what you have built; big change arrives only after you have resisted it for a long time',
+    'you live several lives at once and get bored fast; your story has more chapters and more restarts than most people you know',
+    'you carry home with you, you protect fiercely, and your family story is a bigger character in your life than you let on',
+    'you were meant to be seen; life keeps putting you in front of people, and you shrink in any role that asks you to be invisible',
+    'you are here to be useful and to get it right; you spot the flaw first, and you are hardest on yourself by a distance',
+    'you become yourself through other people; you meet who you are in the mirror of relationships, and being alone teaches you the most',
+    'you go through real deaths and rebirths; nothing in your life stays surface-level for long, and people feel the depth before you speak',
+    'you need room and meaning; your life bends toward travel, teaching or belief, and a cage of any kind slowly kills you',
+    'you matured early and carried weight young; your life is a long climb that pays off later than everyone else\u2019s and lasts longer',
+    'you never quite fit the mould and you stopped trying; your life takes an unconventional shape and your people are chosen, not given',
+    'the boundary between you and the world is thin; you absorb everything, drift between roles, and find yourself through art, spirit or service'
+  ],
+  moonSign: [
+    'you feel fast and hot, you get over things quicker than people expect, and you need a physical outlet or the heat turns inward',
+    'you need security you can touch; you settle through the body and the familiar, and you do not release people or grudges easily',
+    'you process by talking, you need mental stimulation to feel okay, and your feelings shift the moment you put them into words',
+    'your moods run deep and tidal, you remember every emotional detail, and you feel safest when you are the one doing the caring',
+    'you need to feel special to someone; your feelings are generous and a little dramatic, and you sulk visibly when you feel unseen',
+    'you handle feelings by fixing and tidying, you worry as a form of love, and you rarely feel you have done quite enough',
+    'your peace depends on the room being harmonious; you struggle to sit with conflict, and you know yourself best through a partner',
+    'you feel everything at maximum, you do not do casual, and you quietly test people before you trust them with the real you',
+    'you need freedom to feel safe, you cheer yourself up by planning an escape, and you go cold the second someone fences you in',
+    'you learned young to need less and cope alone; you self-soothe by achieving, and letting yourself be looked after is the hard lesson',
+    'you need space to feel close, you watch your own feelings from a step back, and you care most about the group, the cause, the friends',
+    'you feel the whole room, you cannot always tell your feelings from other people\u2019s, and you need solitude and water to find yourself again'
+  ],
+  moonHouse: [
+    'you wear your feelings on the surface; people read your mood instantly, and your sense of self rises and falls with how you feel',
+    'you feel safe when money and home comforts are steady; you soothe yourself materially, and you hold on to what is yours',
+    'you settle by talking it out; siblings and daily conversations shape your inner weather more than you realise',
+    'home and family are the emotional centre of your whole life; you are deeply private, and where you live matters enormously to you',
+    'you feel most yourself creating, performing or in love; you need play and attention, and children loom large in your emotional life',
+    'you process feelings through routine, work and the body; a tidy day steadies you, and your health tracks your mood closely',
+    'you find emotional home in one-to-one bonds; you need a significant other to feel settled, and single stretches are where you grow',
+    'you bond intensely or not at all; you are drawn to depth, crisis and other people\u2019s secrets, and trust is slow and tested',
+    'you feel free and safe on the move; travel, study or belief is your comfort, and staying still too long makes you low',
+    'your emotional life is tangled with your public role; you need to feel you are getting somewhere, and a parent looms large',
+    'your friends are your family; you feel safest inside a group or a cause, and your hopes for the future are a real anchor',
+    'you need solitude to reset, you feel things you cannot name, and you carry an emotional inheritance older than this life'
+  ],
+  venusSign: [
+    'you fall fast and hard, you chase what you want, and you cool the moment it becomes too easy or too available',
+    'you love slowly, loyally and physically; you show love through comfort and touch, and you are almost impossible to win back once done',
+    'you need to be talked to and made to laugh; wit turns you on more than looks, and you flirt even when you do not mean to',
+    'you love by caring and being cared for; you are tender and a little guarded, and food, home and safety are how you say I love you',
+    'you love with your whole chest and need to be adored back; you are generous, loyal and a bit high-maintenance about attention',
+    'you show love through small useful acts, you notice everything, and you struggle to believe you are lovable exactly as you are',
+    'you are in love with love, you need partnership to feel whole, and beauty, fairness and being wanted matter enormously to you',
+    'you love all the way in or not at all; you need depth and loyalty, and jealousy is a language you have to keep an eye on',
+    'you need a lover who is also a co-adventurer; freedom is non-negotiable, and you fall for people who make your world bigger',
+    'you take love seriously and slowly; you show it through reliability, and you are far warmer underneath than your surface lets on',
+    'you need friendship first and space always; you love the unusual, resist the script, and prize independence inside closeness',
+    'you love with no edges and you idealise; you are drawn to rescue or be rescued, and the work is loving the real person, not the dream'
+  ],
+  venusHouse: [
+    'you have natural charm and people are drawn to your look; you soften a room simply by walking into it',
+    'you value comfort, quality and beautiful things you can keep; you attract money through charm, and your taste and your worth are linked',
+    'you charm through words, you love learning and local beauty, and a sibling or neighbour plays a sweet role in your life',
+    'you make your home beautiful and love from within it; your heart lives at home, and you need a nest to feel at ease',
+    'romance, creativity and play are central to you; you love being in love, you make beautiful things, and you flirt with life itself',
+    'you show love through service and craft, you find beauty in the well-made, and you can genuinely meet a partner through work',
+    'partnership is where your heart truly lives; you are made for one-to-one, and you attract partners who mirror your own charm back',
+    'you love deeply and privately, you are drawn to intensity, and money often reaches you through others or through partnership',
+    'you fall for the foreign, the wise or the far-away; travel turns you on, and your great loves often come from elsewhere',
+    'your charm is part of your public role; you attract opportunity through likeability, and love and career keep getting tangled',
+    'love often begins as friendship for you; you are drawn to your community, and your hopes for the future include the right person',
+    'you love secretly and tenderly, sometimes at a cost; you are drawn to the hidden or unavailable, and compassion is your deepest love'
+  ],
+  marsSign: [
+    'you act on impulse and ask questions later; you are brave and impatient, and you would rather do the wrong thing than nothing',
+    'you are slow to anger and impossible to move once set; you work with steady, stubborn force and you finish what you start',
+    'your energy is mental and scattered; you fight with words, start ten things, and lose interest unless it stays interesting',
+    'you act to protect and go sideways rather than head-on; your anger shows up as moods, withdrawal, or fierce defence of your people',
+    'you act with pride and flair and need your effort seen; your anger is loud, brief and dramatic rather than cold',
+    'you drive through precision and hard work; you criticise when you are angry, and you wear yourself out chasing the right detail',
+    'you struggle to act alone and avoid open conflict; your anger leaks out as tension until it finally, reasonably, erupts',
+    'you act with controlled, relentless force; you do not forget, you strike when ready, and your will is the strongest thing about you',
+    'you act on belief and enthusiasm and fight for the cause; you are blunt to the point of tactless when your principles are touched',
+    'you act with discipline and patience and channel anger into achievement; you are the one still standing when everyone else burned out',
+    'you act on principle and rebellion, your anger goes cold and detached, and you fight for the idea more than for yourself',
+    'your drive runs on feeling and inspiration; you dodge direct confrontation, and anger turns into escape, art or quiet resentment'
+  ],
+  marsHouse: [
+    'you come at life head-first; you are physically direct, quick to act, and people feel your energy the second you arrive',
+    'you put real drive into earning and fight for security; you are competitive about money and you defend what is yours',
+    'you have a sharp, quick, combative mind; you argue for sport, you drive fast, and your words can cut before you mean them to',
+    'your drive is rooted at home; there is heat in the family story, and you put fierce energy into your base and its people',
+    'you go after romance, creativity and pleasure hard; you are competitive at play and you pour real force into what you make',
+    'you are a workhorse; you put relentless energy into the daily grind and your health, and inefficiency makes you irritable',
+    'your energy comes alive with a partner or an opponent; you attract fiery relationships and you fight and make up with equal heat',
+    'you have deep, driving intensity around sex, power and shared money; you go all in, and crisis brings out your real strength',
+    'you chase meaning, travel and truth with a crusader\u2019s energy; you fight for what you believe and you need a cause to aim at',
+    'you are visibly ambitious; you go hard for status and career, and you clash with any authority you do not respect',
+    'you put your fight into groups, causes and the future; you mobilise the friends, and you battle for what should be',
+    'your drive is hidden and indirect, sometimes turned against yourself; you fight best behind the scenes and for others'
+  ],
+  mercurySign: [
+    'you think fast and speak first; you are blunt and decisive, and you would rather be wrong quickly than right slowly',
+    'you think slowly and thoroughly; once decided you will not be moved, and you say less but you mean all of it',
+    'your mind never stops; you are curious, quick and a little scattered, and you know a little about almost everything',
+    'you think with your feelings; you remember by emotion, take words to heart, and your intuition is smarter than your logic',
+    'you think in headlines and speak with warmth; you are persuasive, proud of your ideas, and you hate being corrected',
+    'you have a precise, error-catching mind; you notice every mistake, you overthink, and you are usually right about the small stuff',
+    'you think in comparisons and weigh every side; you are diplomatic, a little indecisive, and you can argue any position well',
+    'your mind digs beneath the surface; you are perceptive and a touch suspicious, and you research obsessively before committing',
+    'you think big-picture and say it bluntly; you love ideas and philosophy, and details bore you into skipping them',
+    'you think structurally and strategically; you are serious and realistic, and you do not speak until you can back it up',
+    'you think in systems and sudden leaps; you are original and contrarian, and you reach the answer by a route no one else took',
+    'you think in images and impressions; you are imaginative and hazy on facts, and you say the true thing sideways'
+  ],
+  sunHouse: [
+    'you are here to become fully yourself; identity is the whole project, and people know exactly who you are the moment you arrive',
+    'you build identity through what you make, earn and value; self-worth is the lifelong lesson, and security runs deep for you',
+    'you shine through your voice, ideas and curiosity; you are a communicator, and a sibling or your local world shaped who you are',
+    'your real self lives at home and in private; your identity is rooted in family, and you come into your own later, from the inside out',
+    'you are here to create, perform and love out loud; self-expression is oxygen, and you shine most when you are making something',
+    'you find yourself through work, service and craft; you shine in the doing and the details, and being useful is core to who you are',
+    'you become yourself through others; partnership is your arena, and you meet your identity in the mirror of your relationships',
+    'you are here to transform; your identity is forged through crisis, intimacy and rebirth, and you are never the same person for long',
+    'you shine through meaning, travel and teaching; you are here to widen your world, and a big belief or a far place made you who you are',
+    'you are built for the public world; career and reputation are central to your identity, and you are meant to be visible and to lead',
+    'you find yourself in groups, causes and the future; your identity is bound up with your people and your hopes, not just yourself',
+    'your truest self is the hidden one; you shine behind the scenes, through spirit, art or service, and you spend a life meeting the unseen you'
+  ],
+  saturnHouse: [
+    'you took yourself seriously young and may have felt awkward in your own skin; self-acceptance is the long, real lesson',
+    'money and self-worth are where you feel the pressure; you fear scarcity, you build slowly, and security comes late but lasts',
+    'you doubted your own mind or voice early; you learned to speak carefully, and you become an authority through years of quiet work',
+    'the home or family carried weight and limitation; you build your own foundations the hard way, and belonging is the long lesson',
+    'you hold back on play, romance or creativity, fearing you are not good enough to make or to love; this loosens beautifully with age',
+    'you carry the weight of duty and health; you overwork, you fear being useless, and mastering the daily grind is your teacher',
+    'commitment is serious and a little frightening for you; your partnerships teach through testing, and the right one deepens later',
+    'you fear loss of control, debt or dependence; intimacy and shared money are where you grow up, and you master what most people avoid',
+    'you were sceptical of easy belief; you build your worldview the hard way, and you become the teacher you once needed',
+    'the world is where you feel the pressure to prove yourself; career comes slow and heavy, and you reach real authority later and keep it',
+    'friendship and belonging did not come easily; you are careful with your people, and you build a chosen circle slowly and for keeps',
+    'you carry a private, hard-to-name fear; you do your deepest work unseen, and you make peace with what you cannot control'
+  ],
+  jupiterHouse: [
+    'doors tend to open through simply being yourself; you have natural optimism, and people give you the benefit of the doubt',
+    'money and resources tend to find you; you have a knack for earning and a generous relationship with what you own',
+    'your luck runs through words, learning and connections; you pick things up fast, and a sibling or neighbour brings real good fortune',
+    'home and family are a source of luck and growth; you may have a big-hearted home life, and you flourish from a secure base',
+    'romance, creativity and children are where life is generous to you; you have a lucky, joyful streak in love and in making things',
+    'you grow through work and service; the daily grind is oddly lucky for you, and you find opportunity in being useful',
+    'partnership brings your biggest luck; the right people expand your life, and collaboration or marriage lifts you',
+    'you gain through other people\u2019s resources: inheritance, investment, partnership money; you grow through depth and transformation',
+    'you are the classic lucky traveller and learner; foreign places, higher study and big beliefs are where your life expands most',
+    'career and public life are where fortune favours you; you rise through visibility, and opportunity arrives through your reputation',
+    'your friends, networks and causes bring you luck; your hopes tend to come true through the group, and community lifts you',
+    'your luck is quiet and behind the scenes; you grow through solitude, spirit and compassion, and unseen help arrives when you need it'
+  ]
+};

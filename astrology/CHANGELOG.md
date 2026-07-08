@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.10.0 — 2026-07-06
+- **A placement library, read onto your chart.** A new corpus of 132 oddly-specific "a rising Gemini often means…" insights, covering the rising sign, the Moon, Venus, Mars and Mercury by sign, and the Moon, Venus, Mars, Sun, Saturn and Jupiter by house. Every chart pulls its own set (eleven for a full chart) under "Read closely, your placements say," and they rotate day to day so the reading keeps giving. This is installment one toward the full five hundred.
+- **The oddly-specific lines now combine, so no two charts read alike.** Each life-detail is shaded by the driving planet's tightest aspect (or its retrograde): the same Venus in Gemini reads "you always over-order" on a chart where Venus meets Jupiter, and something else entirely where Venus meets Saturn or Pluto. Sign times aspect times five bodies makes the output effectively unique per chart, not a shared template.
+
 ## 3.9.0 — 2026-07-06
 - **Oddly specific, about your actual life.** The You tab now opens on the "how did it know" layer instead of a definition. Concrete life-details drawn from your real placements: at the table ("you get menu envy and text someone about what to get"), at home ("a specific spot on the sofa, a blanket you are territorial about"), your pace and temper, how your mind runs, and how you land on first meeting. Sixty written variants, sign by sign per body.
 - **What you are drawn to.** A new engine scores your placements for what you actually love doing and says it plainly: "you play an instrument, or you badly want to — music reaches you deeper than it reaches most"; "long walks are how you actually think"; "you have an eye — photography, film or drawing keeps pulling at you". Then it reads the live sky for the current pull: "lately, something has been pulling you toward making things beautiful — that is transiting Uranus waking up your Venus." The guitar-and-long-walks layer a real astrologer reaches for.

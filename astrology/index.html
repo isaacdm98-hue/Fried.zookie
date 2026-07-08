@@ -975,14 +975,38 @@ var APP = (function () {
   // the oddly-specific layer: concrete life-details the chart implies (taste, home,
   // pace, mind, first impression). No hedging, no app-talk: things about their actual life.
   function lifeQuirks(c) {
-    var Q = DATA.QUIRK; if (!Q) return [];
+    var Q = DATA.QUIRK, QM = DATA.QUIRK_MOD || {}; if (!Q) return [];
     var out = [], tk = STATE.birth.timeKnown;
-    function add(lead, body) { if (body) out.push(lead + body + '.'); }
-    if (c.planets.venus && Q.venus) add('At the table, ', Q.venus[c.planets.venus.sign]);
-    if (c.planets.moon && Q.moon) add('At home, ', Q.moon[c.planets.moon.sign]);
-    if (c.planets.mars && Q.mars) add('For pace and temper, ', Q.mars[c.planets.mars.sign]);
-    if (c.planets.mercury && Q.mercury) add('In how your mind runs, ', Q.mercury[c.planets.mercury.sign]);
-    if (tk && c.ascBody && Q.rising) add('And on first meeting you, ', Q.rising[c.ascBody.sign]);
+    // the shading: the driving planet's tightest aspect to a social/outer body (or its
+    // retrograde) colours the line, so the same sign reads differently chart to chart
+    var MODP = ['pluto', 'neptune', 'uranus', 'saturn', 'jupiter', 'mars'];
+    function capMod9(m9) { m9 = m9.replace(/^(and|though) /, ''); return m9.charAt(0).toUpperCase() + m9.slice(1); }
+    function modFor(drive, table) {
+      var M = table || {}, best = null, bestOrb = 99, i;
+      for (i = 0; i < c.aspects.length; i++) {
+        var A = c.aspects[i]; if (A.minor) continue;
+        var other = (A.a === drive) ? A.b : (A.b === drive) ? A.a : null;
+        if (!other || other === drive || MODP.indexOf(other) < 0) continue;
+        if (M[other] && A.orb < bestOrb) { bestOrb = A.orb; best = M[other]; }
+      }
+      if (best) return best;
+      var pl = c.planets[drive]; if (pl && pl.retro && M.retro) return M.retro;
+      return '';
+    }
+    function add(lead, drive, base) {
+      if (!base) return;
+      var mod = modFor(drive, QM[drive] || {});
+      out.push(lead + base + (mod ? '. ' + capMod9(mod) : '') + '.');
+    }
+    if (c.planets.venus && Q.venus) add('At the table, ', 'venus', Q.venus[c.planets.venus.sign]);
+    if (c.planets.moon && Q.moon) add('At home, ', 'moon', Q.moon[c.planets.moon.sign]);
+    if (c.planets.mars && Q.mars) add('For pace and temper, ', 'mars', Q.mars[c.planets.mars.sign]);
+    if (c.planets.mercury && Q.mercury) add('In how your mind runs, ', 'mercury', Q.mercury[c.planets.mercury.sign]);
+    // the rising takes no aspect itself, so it is shaded by its ruling planet's tightest aspect
+    if (tk && c.ascBody && Q.rising) {
+      var rbase = Q.rising[c.ascBody.sign], rlr = RULERKEY[DATA.SIGNS[c.ascBody.sign].ruler];
+      if (rbase) { var rmod = (rlr && QM.rising) ? modFor(rlr, QM.rising) : ''; out.push('And on first meeting you, ' + rbase + (rmod ? '. ' + capMod9(rmod) : '') + '.'); }
+    }
     return out;
   }
   // interests & passions: what this person is actually drawn to do, scored from the
@@ -1041,6 +1065,21 @@ var APP = (function () {
       if (best) return 'And lately, something has been pulling you toward ' + PULL[best.e.np] + '. That is transiting ' + nameFor(best.e.tp) + ' waking up your ' + nameFor(best.e.np) + ' — a genuine new thread, worth following.';
     } catch (ePl9) {}
     return null;
+  }
+  // the placement library, read onto this exact chart: every "a rising Gemini often
+  // means..." line that applies, collected. Sign lines for everyone; house lines with a time.
+  function spookyReads(c) {
+    var S = DATA.SPOOKY; if (!S) return [];
+    var tk = STATE.birth.timeKnown, P = c.planets, out = [];
+    function sgn(k, tbl) { if (P[k] && S[tbl] && S[tbl][P[k].sign]) out.push(S[tbl][P[k].sign]); }
+    function hse(k, tbl) { if (tk && P[k] && P[k].house && S[tbl] && S[tbl][P[k].house - 1]) out.push(S[tbl][P[k].house - 1]); }
+    if (tk && c.ascBody && S.rising) out.push(S.rising[c.ascBody.sign]);
+    sgn('moon', 'moonSign'); hse('moon', 'moonHouse');
+    sgn('venus', 'venusSign'); hse('venus', 'venusHouse');
+    sgn('mars', 'marsSign'); hse('mars', 'marsHouse');
+    sgn('mercury', 'mercurySign');
+    hse('sun', 'sunHouse'); hse('saturn', 'saturnHouse'); hse('jupiter', 'jupiterHouse');
+    return out;
   }
   function chartSignature(c) {
     var cands = [], i, k;
@@ -4360,7 +4399,7 @@ var APP = (function () {
     solarReturnChart: solarReturnChart, upcomingEclipses: upcomingEclipses, bestDaysFor: bestDaysFor, electIntents: electIntents, oddPredictions: oddPredictions, composeProfectionYear: composeProfectionYear, signHouseWeave: signHouseWeave,
     progressedTimeline: progressedTimeline, retroSeasons: retroSeasons,
     exportBook: exportBook, exportBackup: exportBackup, importBackup: importBackup, composeDailyEssay: composeDailyEssay, chartFP: chartFP, weaveNote: weaveNote, termOf: termOf, anA: anA, composeColleague: composeColleague, exportColleague: exportColleague,
-    microFor: microFor, tellsFor: tellsFor, receptionOf: receptionOf, chartSignature: chartSignature, lifeQuirks: lifeQuirks, interests: interests, emergingPull: emergingPull, addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenOf: almutenOf, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, returnsAlmanac: returnsAlmanac, progressedLunation: progressedLunation, planetaryHours: planetaryHours, moonVoidWindow: moonVoidWindow, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
+    microFor: microFor, tellsFor: tellsFor, receptionOf: receptionOf, chartSignature: chartSignature, lifeQuirks: lifeQuirks, interests: interests, emergingPull: emergingPull, spookyReads: spookyReads, addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenOf: almutenOf, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, returnsAlmanac: returnsAlmanac, progressedLunation: progressedLunation, planetaryHours: planetaryHours, moonVoidWindow: moonVoidWindow, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
     saveCurrentChart: saveCurrentChart, deleteSavedChart: deleteSavedChart, activateSavedChart: activateSavedChart, activeChartKey: activeChartKey, chartKey: chartKey, famousMatches: famousMatches, lifeTransits: lifeTransits, upcomingTransits: upcomingTransits, transitMotion: transitMotion, compositeChart: compositeChart,
     nameFor: nameFor, glyphFor: glyphFor, sgAbbr: sgAbbr, pad: pad,
     domElement: domElement, lowElement: lowElement, domMod: domMod, tzOffsetHours: tzOffsetHours
@@ -6709,6 +6748,21 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
           ly += paragraph(UI.intCache[ii9].charAt(0).toUpperCase() + UI.intCache[ii9].slice(1) + '.', x + 18, ly, w - 18, 15.5, INK, SERIF, 24) + 10;
         }
         if (UI.intPull) { ly += 4; ly += paragraph(UI.intPull, x, ly, w, 15.5, INK, SERIF, 24, 250) + 10; }
+        ly += 12; hairline(x, ly, x + w, 36); ly += 20;
+      }
+      // the placement library, read onto this chart: a rotating handful, fresh each day
+      if (UI.spookCache === undefined) { try { UI.spookCache = APP.spookyReads(c); } catch (eSp9) { UI.spookCache = []; } }
+      if (UI.spookCache && UI.spookCache.length) {
+        eyebrow('Read closely, your placements say', x, ly, ACC); ly += 22;
+        var pool9 = UI.spookCache, n9 = pool9.length, showN9 = Math.min(5, n9);
+        var dSeed9 = 0; try { var dd9 = new Date(); dSeed9 = dd9.getFullYear() * 366 + dd9.getMonth() * 31 + dd9.getDate(); } catch (eDs9) {}
+        var st9 = n9 ? (dSeed9 % n9) : 0, sk9;
+        for (sk9 = 0; sk9 < showN9; sk9++) {
+          var line9 = pool9[(st9 + sk9) % n9];
+          p.noStroke(); fillc(ACC, 200); p.ellipse(x + 4, sY(ly) + 9, 6, 6);
+          ly += paragraph(line9.charAt(0).toUpperCase() + line9.slice(1) + '.', x + 18, ly, w - 18, 15.5, INK, SERIF, 24) + 10;
+        }
+        if (n9 > showN9) { setFont(MONO, 9, INK, p.CENTER, p.TOP, 130); p.text('THESE ROTATE \u00B7 ' + n9 + ' IN TOTAL FOR YOUR CHART', x + w / 2, sY(ly + 2)); ly += 20; }
         ly += 12; hairline(x, ly, x + w, 36); ly += 20;
       }
       // then the single most specific structural fact about this exact chart
@@ -10400,7 +10454,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       try {
         var ckW9 = APP.activeChartKey ? (APP.activeChartKey() + '|' + (APP.STATE.settings ? APP.STATE.settings.house + APP.STATE.settings.zodiac : '')) : '';
         if (UI.ckW !== ckW9) {
-          if (UI.ckW != null) { UI.readSig = null; UI.walkTr = null; UI.walkTheme = null; UI.plun = null; UI.forecast = null; UI.readCache = null; UI.todayCache = null; UI.calEvents = null; UI.fmList = null; UI.lbCache = null; UI.lqzCache = null; UI.lwSky = null; UI.progTL = null; UI.retroS = null; UI.sigCache = undefined; UI.arcCache = null; UI.promCache = null; UI.oddPred = undefined; UI.profYear = undefined; UI.quirkCache = undefined; UI.intCache = undefined; UI.intPull = undefined; }
+          if (UI.ckW != null) { UI.readSig = null; UI.walkTr = null; UI.walkTheme = null; UI.plun = null; UI.forecast = null; UI.readCache = null; UI.todayCache = null; UI.calEvents = null; UI.fmList = null; UI.lbCache = null; UI.lqzCache = null; UI.lwSky = null; UI.progTL = null; UI.retroS = null; UI.sigCache = undefined; UI.arcCache = null; UI.promCache = null; UI.oddPred = undefined; UI.profYear = undefined; UI.quirkCache = undefined; UI.intCache = undefined; UI.intPull = undefined; UI.spookCache = undefined; }
           UI.ckW = ckW9;
         }
       } catch (eCk9) {}
