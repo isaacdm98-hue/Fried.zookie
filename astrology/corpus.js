@@ -1530,3 +1530,94 @@ DATA.SPOOKY.rulerHouse = [
   'the ruler of your chart sits in your 11th house, so your life runs through friends, groups and the future; your people and your hopes are where your energy really goes',
   'the ruler of your chart sits in your 12th house, so your energy flows toward the hidden, the spiritual and the behind-the-scenes; much of your real life happens where others cannot see'
 ];
+
+// ===== decans, moon phase, element/modality balance, rising & MC planets =====
+DATA.SPOOKY.decan = [
+  'the purest, most driven Aries: the initiator, all spark and forward motion, first through every door',
+  'Aries with a Leo warmth: you lead with heart and flair, and you need your courage witnessed',
+  'Aries with a Sagittarian reach: you fight for a cause and a horizon, restless for something bigger',
+  'the purest Taurus: sensual, steady, immovable, deeply loyal to comfort and to your people',
+  'Taurus with a Virgo precision: you build carefully and well, and you notice quality in everything',
+  'Taurus with a Capricorn ambition: you build to last and to climb, patient and quietly determined',
+  'the purest Gemini: quick, curious, endlessly talking, two minds running in one body',
+  'Gemini with a Libra charm: you connect through grace and words, a natural diplomat',
+  'Gemini with an Aquarian edge: your mind runs to the future and the unconventional',
+  'the purest Cancer: tidal, tender, protective, your feelings running the whole show',
+  'Cancer with a Scorpio depth: you feel intensely and privately, and you never quite forget',
+  'Cancer with a Piscean softness: dreamy, compassionate, porous to everyone around you',
+  'the purest Leo: warm, proud, generous, born to be seen and to lead with the heart',
+  'Leo with a Sagittarian fire: expansive and adventurous, a big-hearted teacher or performer',
+  'Leo with an Aries drive: bold and competitive, quick to act on your creative fire',
+  'the purest Virgo: precise, analytical, useful, forever refining the details',
+  'Virgo with a Capricorn discipline: you master a craft slowly and build real, lasting expertise',
+  'Virgo with a Taurus warmth: practical and sensual, you find beauty in the well-made',
+  'the purest Libra: charming, fair, relational, always seeking the balance point',
+  'Libra with an Aquarian mind: you weigh things for the group and the ideal, socially original',
+  'Libra with a Gemini wit: you charm through words and ideas, quick, light and clever',
+  'the purest Scorpio: intense, penetrating, all-or-nothing, powerful under a still surface',
+  'Scorpio with a Piscean depth: mystical and emotional, drawn to the hidden and the sacred',
+  'Scorpio with a Cancer tenderness: fiercely protective, deeply feeling, loyal to the bone',
+  'the purest Sagittarius: expansive, philosophical, freedom-loving, always aiming past the fence',
+  'Sagittarius with an Aries fire: a bold crusader, blunt and quick to chase the vision',
+  'Sagittarius with a Leo warmth: a big-hearted teacher who needs the adventure witnessed',
+  'the purest Capricorn: disciplined, ambitious, patient, building something that outlasts you',
+  'Capricorn with a Taurus steadiness: you build wealth and comfort slowly and surely',
+  'Capricorn with a Virgo precision: strategic and exacting, a master of the useful detail',
+  'the purest Aquarius: original, detached, future-facing, different on purpose',
+  'Aquarius with a Gemini quickness: an inventive mind, a connector of ideas and people',
+  'Aquarius with a Libra grace: a humanitarian who works through relationship and fairness',
+  'the purest Pisces: dreamy, compassionate, boundless, tuned to the unseen',
+  'Pisces with a Cancer tenderness: nurturing and sensitive, deeply attached to home and feeling',
+  'Pisces with a Scorpio depth: mystical and intense, drawn to the profound and the transformative'
+];
+DATA.SPOOKY.phase = [
+  'born on a New Moon: you are a beginner and a self-starter, instinctive and a little self-focused, planting seeds whose shape you cannot yet see',
+  'born on a Crescent Moon: you push a new thing forward against the pull of the old and the familiar, and your life is a steady act of leaving the shore',
+  'born on a First Quarter Moon: you are built for building and for crisis, you thrive on challenge, and you get restless without something to push against',
+  'born on a Gibbous Moon: you are a perfecter and analyser, driven to refine and improve, and rarely quite satisfied that a thing is finished',
+  'born on a Full Moon: you are relationship-oriented and wide awake, you see both sides of everything, and you meet yourself through other people',
+  'born on a Disseminating Moon: you are a natural teacher and sharer, here to spread what you have learned and give it away',
+  'born on a Last Quarter Moon: you are a crisis-in-consciousness type, quietly questioning the systems you were handed, a revolutionary under a calm surface',
+  'born on a Balsamic Moon: you are an old soul and a natural ender, here to release and distill, carrying the seed of what comes next'
+];
+DATA.SPOOKY.elDom = {
+  'fire': 'your chart is fire-dominant: you run on enthusiasm, courage and momentum, you act before you overthink, and you burn out if you never rest',
+  'earth': 'your chart is earth-dominant: you are practical, reliable and results-driven, you trust what you can touch, and you can get stuck when nothing changes',
+  'air': 'your chart is air-dominant: you live in ideas, words and perspective, you need mental exchange, and you can float clean above your own feelings',
+  'water': 'your chart is water-dominant: you feel everything, you are intuitive and empathic, and you need real solitude or you quietly drown in other people'
+};
+DATA.SPOOKY.elLack = {
+  'fire': 'you run low on fire: starting, self-asserting and trusting your own spark can be hard, and you often borrow enthusiasm from fierier people',
+  'earth': 'you run low on earth: the practical and tangible do not come naturally, you can feel ungrounded, and structure has to be built on purpose',
+  'air': 'you run low on air: stepping back to think and detach is the hard part, you feel your way through, and objectivity is a skill you learn',
+  'water': 'you run low on water: feeling and emotional expression do not flow easily, you can seem detached, and you learn the language of the heart deliberately'
+};
+DATA.SPOOKY.modDom = {
+  'cardinal': 'your chart is cardinal-heavy: you are an initiator, forever starting things, restless to lead, and you can leave a trail of unfinished beginnings',
+  'fixed': 'your chart is fixed-heavy: you are determined and immovable, you sustain and endure, and your gift and your curse are the same: you do not let go',
+  'mutable': 'your chart is mutable-heavy: you are adaptable and versatile, you go with the flow and wear many hats, and you can struggle to settle on one shape'
+};
+DATA.SPOOKY.ascPlanet = {
+  'sun': 'you were born with the Sun rising: identity and presence are fused, you shine the moment you enter, and people simply cannot not notice you',
+  'moon': 'you were born with the Moon rising: you wear your feelings openly, people find you nurturing and moody by turns, and your face gives everything away',
+  'mercury': 'you were born with Mercury rising: you are quick, chatty and youthful, known for your mind and your words, restless and endlessly curious',
+  'venus': 'you were born with Venus rising: you have natural charm and grace, people find you easy and attractive, and you soften every room you walk into',
+  'mars': 'you were born with Mars rising: you come across direct, energetic and a little combative, you move fast, and people feel your force at once',
+  'jupiter': 'you were born with Jupiter rising: you seem lucky, generous and larger than life, people expand around you, and optimism is your first impression',
+  'saturn': 'you were born with Saturn rising: you come across serious, reserved and mature, you took yourself seriously young, and warmth is something people earn',
+  'uranus': 'you were born with Uranus rising: you strike people as unusual, electric and hard to place, you prize freedom, and you were always a little different',
+  'neptune': 'you were born with Neptune rising: you are dreamy, elusive and easy to project onto, your image blurs, and you can become whoever a room needs',
+  'pluto': 'you were born with Pluto rising: you have an intense, magnetic, slightly unsettling presence, people sense your depth, and you are impossible to ignore'
+};
+DATA.SPOOKY.mcPlanet = {
+  'sun': 'your Sun sits on the Midheaven: you are meant to be visible and to lead, your identity and your public role are one, and you are made to shine in the world',
+  'moon': 'your Moon sits on the Midheaven: your career is emotional and public-facing, you are drawn to caring or public work, and the public feels they know you',
+  'mercury': 'your Mercury sits on the Midheaven: you are known for your mind and your voice, and writing, speaking or teaching sits at the centre of your path',
+  'venus': 'your Venus sits on the Midheaven: you are known for charm, beauty or diplomacy, and your career runs through relationships, art, or making things pleasant',
+  'mars': 'your Mars sits on the Midheaven: you are driven and ambitious in the world, known for your energy or your fight, and you push hard toward status',
+  'jupiter': 'your Jupiter sits on the Midheaven: you are meant to grow big in the world, luck follows your reputation, and teaching, law or travel may call you',
+  'saturn': 'your Saturn sits on the Midheaven: your career is a long, serious climb, you carry real authority, and you reach genuine standing later and then keep it',
+  'uranus': 'your Uranus sits on the Midheaven: your path is unconventional and full of sudden turns, you innovate in public, and an ordinary career would suffocate you',
+  'neptune': 'your Neptune sits on the Midheaven: your calling is artistic, spiritual or caring, your public image stays dreamy or unclear, and you serve something larger',
+  'pluto': 'your Pluto sits on the Midheaven: you are driven toward power and influence, your public life moves through real transformation, and you leave a deep mark'
+};

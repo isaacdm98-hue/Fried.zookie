@@ -1,5 +1,8 @@
 # Changelog
 
+## 3.13.0 — 2026-07-06
+- **Seventy-five more, the library reaches 385.** The reading now also knows: the exact decan of your Sun (each sign split in three, so "the purest Aries" reads differently from "Aries with a Sagittarian reach"); the Moon phase you were born under (New-Moon self-starter through Balsamic old soul); whether your chart is dominant or starved in an element ("your chart is fire-dominant… you burn out if you never rest"; "you run low on water… the language of the heart is learned deliberately"); its ruling modality; and the single strongest placements of all, a planet sitting right on your Ascendant ("born with Saturn rising: serious, reserved, warmth is something people earn") or your Midheaven ("your Moon on the Midheaven: your career is public, and people feel they know you"). A full chart now reads around thirty-four of its own placement insights.
+
 ## 3.12.0 — 2026-07-06
 - **The spookiest layer: aspect backstories.** The reading now says the thing an astrologer says that makes the room go quiet. Thirty-four hard-aspect backstories fire only when your chart actually holds that aspect: "a father or authority figure was hard, absent or heavy; you grew up fast and still carry a quiet fear of not being enough" (Sun-Saturn); "you learned early that comfort had to be earned; a parent was distant or overworked" (Moon-Saturn); "you doubted your own intelligence young; a teacher or a critic marked you" (Mercury-Saturn). Every hard contact between two planets carries its own story.
 - **Retrograde life-patterns.** A planet retrograde at your birth now reads its inward signature: "Saturn was retrograde when you were born, so you had to become your own strict, fair father." Eight of them, one per planet.

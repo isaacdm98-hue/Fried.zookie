@@ -1086,6 +1086,31 @@ var APP = (function () {
     if (tk && P.node && P.node.house && S.nodeHouse && S.nodeHouse[P.node.house - 1]) out.push(S.nodeHouse[P.node.house - 1]);
     // the Sun x Moon element blend: who you are vs what you need
     if (S.sunMoon && P.sun && P.moon) { var smk = DATA.SIGNS[P.sun.sign].element + '-' + DATA.SIGNS[P.moon.sign].element; if (S.sunMoon[smk]) out.push(S.sunMoon[smk]); }
+    // the Sun's decan: the sub-flavour of the sign
+    if (S.decan && P.sun) { var dcIdx = P.sun.sign * 3 + Math.min(2, Math.floor((P.sun.deg != null ? P.sun.deg : (P.sun.lon % 30)) / 10)); if (S.decan[dcIdx]) out.push(S.decan[dcIdx]); }
+    // the Moon phase you were born under
+    if (S.phase && P.sun && P.moon) { var elong = (((P.moon.lon - P.sun.lon) % 360) + 360) % 360, phi = Math.min(7, Math.floor(elong / 45)); if (S.phase[phi]) out.push(S.phase[phi]); }
+    // element and modality balance
+    if (c.elements) {
+      var els9 = ['fire', 'earth', 'air', 'water'], ei9, hiE = 'fire', loE = 'fire';
+      for (ei9 = 0; ei9 < 4; ei9++) { if (c.elements[els9[ei9]] > c.elements[hiE]) hiE = els9[ei9]; if (c.elements[els9[ei9]] < c.elements[loE]) loE = els9[ei9]; }
+      if (S.elDom && c.elements[hiE] >= 40 && S.elDom[hiE]) out.push(S.elDom[hiE]);
+      if (S.elLack && c.elements[loE] <= 8 && S.elLack[loE]) out.push(S.elLack[loE]);
+    }
+    if (c.modalities && S.modDom) {
+      var mods9 = ['cardinal', 'fixed', 'mutable'], mi9, hiM = 'cardinal';
+      for (mi9 = 0; mi9 < 3; mi9++) if (c.modalities[mods9[mi9]] > c.modalities[hiM]) hiM = mods9[mi9];
+      if (c.modalities[hiM] >= 45 && S.modDom[hiM]) out.push(S.modDom[hiM]);
+    }
+    // a planet on the Ascendant or Midheaven: the strongest, most visible placements
+    if (tk && c.ascBody) {
+      var PL9 = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto'], pi9;
+      for (pi9 = 0; pi9 < PL9.length; pi9++) {
+        var plp = P[PL9[pi9]]; if (!plp) continue;
+        if (S.ascPlanet && Math.abs(((plp.lon - c.ascBody.lon + 540) % 360) - 180) < 8 && S.ascPlanet[PL9[pi9]]) out.push(S.ascPlanet[PL9[pi9]]);
+        if (S.mcPlanet && c.mc != null && Math.abs(((plp.lon - c.mc + 540) % 360) - 180) < 8 && S.mcPlanet[PL9[pi9]]) out.push(S.mcPlanet[PL9[pi9]]);
+      }
+    }
     // the chart ruler's house: where your captain sits
     if (tk && S.rulerHouse && c.ascBody) { var rlrK = RULERKEY[DATA.SIGNS[c.ascBody.sign].ruler], rlrP = rlrK && P[rlrK]; if (rlrP && rlrP.house && S.rulerHouse[rlrP.house - 1]) out.push(S.rulerHouse[rlrP.house - 1]); }
     // retrograde life-patterns
