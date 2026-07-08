@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.8.0 — 2026-07-06
+- **The opening names your exact moment.** The welcome walk no longer begins on a flat "This is your sky." Page one now reads back the real minute and place you were born — "On 16 April 1991 over Berlin, every planet stood at one exact degree of a single great wheel, this precise shape, and it has never formed again" — so it feels like yours from the first line.
+- **The sky above the runner clears.** The loose background stars thin out, dim down, and keep to the upper air, so the real constellations read as the figures they are instead of getting lost in a scatter of dots.
+- **The run comes alive.** The running figure gains a genuine float at the top of each stride, a torso that breathes forward into the effort instead of a locked lean, and arms that drive higher and harder opposite the legs. It reads as a body running, not a puppet.
+
 ## 3.7.0 — 2026-07-06
 - **The predictions now speak like a real astrologer.** The Seasons forecast stops describing weather and starts naming life events, in the voice a reader across the table would use. It looks back as well as forward: "You have recently been through a real test around work and your health — something got heavier, a limit showed up, or a chapter you had outgrown finally ended," and it calls what is coming: "You are likely to get a surge of energy around romance, children or a creative project: a strong window to start and to act." Each statement names the exact life-area (the house that natal planet rules), tells you the planet and date behind it, and reads in the right tense — past for what has landed, present for what is landing now. The scanner reaches four months back so the "you've recently…" reads are real, slow multi-pass transits fold into one chapter with all their dates, and no single fast planet is allowed to dominate the list.
 
