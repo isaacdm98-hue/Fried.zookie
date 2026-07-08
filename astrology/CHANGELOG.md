@@ -1,5 +1,8 @@
 # Changelog
 
+## 3.11.0 — 2026-07-06
+- **The placement library doubles: 240 lines, and every chart now reads twenty of its own.** Batch two adds the Sun by sign (life purpose), Mercury by house, Jupiter and Saturn by sign (how you grow, what you fear), both lunar Nodes by sign and house (where the soul is headed), and Pluto, Uranus and Neptune by house (where you transform, rebel and dream). A full chart now pulls around twenty of these read straight onto its exact placements, still rotating so the reading keeps opening new doors. Halfway to the five hundred, and the structure holds the rest.
+
 ## 3.10.0 — 2026-07-06
 - **A placement library, read onto your chart.** A new corpus of 132 oddly-specific "a rising Gemini often means…" insights, covering the rising sign, the Moon, Venus, Mars and Mercury by sign, and the Moon, Venus, Mars, Sun, Saturn and Jupiter by house. Every chart pulls its own set (eleven for a full chart) under "Read closely, your placements say," and they rotate day to day so the reading keeps giving. This is installment one toward the full five hundred.
 - **The oddly-specific lines now combine, so no two charts read alike.** Each life-detail is shaded by the driving planet's tightest aspect (or its retrograde): the same Venus in Gemini reads "you always over-order" on a chart where Venus meets Jupiter, and something else entirely where Venus meets Saturn or Pluto. Sign times aspect times five bodies makes the output effectively unique per chart, not a shared template.

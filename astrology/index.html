@@ -1077,8 +1077,13 @@ var APP = (function () {
     sgn('moon', 'moonSign'); hse('moon', 'moonHouse');
     sgn('venus', 'venusSign'); hse('venus', 'venusHouse');
     sgn('mars', 'marsSign'); hse('mars', 'marsHouse');
-    sgn('mercury', 'mercurySign');
-    hse('sun', 'sunHouse'); hse('saturn', 'saturnHouse'); hse('jupiter', 'jupiterHouse');
+    sgn('mercury', 'mercurySign'); hse('mercury', 'mercuryHouse');
+    sgn('sun', 'sunSign'); hse('sun', 'sunHouse');
+    sgn('jupiter', 'jupiterSign'); hse('jupiter', 'jupiterHouse');
+    sgn('saturn', 'saturnSign'); hse('saturn', 'saturnHouse');
+    hse('pluto', 'plutoHouse'); hse('uranus', 'uranusHouse'); hse('neptune', 'neptuneHouse');
+    if (P.node && S.nodeSign && S.nodeSign[P.node.sign]) out.push(S.nodeSign[P.node.sign]);
+    if (tk && P.node && P.node.house && S.nodeHouse && S.nodeHouse[P.node.house - 1]) out.push(S.nodeHouse[P.node.house - 1]);
     return out;
   }
   function chartSignature(c) {

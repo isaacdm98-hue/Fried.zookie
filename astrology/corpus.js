@@ -1320,3 +1320,131 @@ DATA.SPOOKY = {
     'your luck is quiet and behind the scenes; you grow through solitude, spirit and compassion, and unseen help arrives when you need it'
   ]
 };
+
+// ===== SPOOKY library, batch two: 108 more placement reads =====
+DATA.SPOOKY.sunSign = [
+  'you are here to learn to go first without waiting for permission; your life rewards nerve and quietly punishes hesitation',
+  'you are here to build something lasting and to know your own worth; your life rewards patience and steady hands',
+  'you are here to connect, learn and carry ideas between people; your life rewards curiosity and cannot stand a rut',
+  'you are here to feel, protect and belong; your whole life is a lesson in letting yourself be held, not only holding others',
+  'you are here to shine, create and lead with heart; your life rewards the courage to be seen and dims every time you hide',
+  'you are here to refine, serve and master a craft; your life rewards useful excellence and torments you with perfectionism',
+  'you are here to learn relationship, fairness and beauty; your life keeps teaching you through other people, again and again',
+  'you are here to transform and to face what others look away from; your life moves through real death and rebirth on repeat',
+  'you are here to seek meaning and widen the map; your life rewards faith and freedom and slowly dies inside any cage',
+  'you are here to build, endure and earn real authority; your life is a long climb that pays off late and then lasts',
+  'you are here to be different on purpose and to serve the future; your life rewards the original over the approved',
+  'you are here to dissolve, imagine and feel with everyone; your life keeps returning you to art, spirit or service'
+];
+DATA.SPOOKY.mercuryHouse = [
+  'you think out loud and identify with your mind; you are known for how you talk, and being called stupid would wound you most',
+  'your mind is practical and value-minded; you think about worth and money, and you can talk a thing into being worth more',
+  'you have the quick, restless, communicative mind in its purest form; you are the writer or talker, and siblings shaped your thinking',
+  'your mind is private and rooted in the past; you think best at home, and you remember your childhood in unusual detail',
+  'you think creatively and speak with flair; you are playful and persuasive, and you may write, teach or perform',
+  'your mind is analytical and detail-hungry; you think through work and health, and you catch every small thing that is wrong',
+  'you think through dialogue and other people; you need someone to bounce off, and you are a natural negotiator or counsellor',
+  'your mind digs into secrets, depth and the forbidden; you are a researcher who cannot rest until you know what is really going on',
+  'you think in big ideas and far horizons; you are a natural teacher or traveller, and small talk bores you almost instantly',
+  'your mind is bound up with career and reputation; you are known for what you say publicly, and you think strategically about status',
+  'you think about the future, the group and the ideal; your ideas run ahead of their time, and you talk best among your own people',
+  'your mind runs quietly and intuitively; you think in images and hunches, and your best ideas arrive in the shower or half-asleep'
+];
+DATA.SPOOKY.jupiterSign = [
+  'you grow through boldness and going first; your excess is impatience and biting off more than you can chew',
+  'you grow through steadiness and pleasure; your excess is indulgence and hoarding comfort',
+  'you grow through learning and talking; your excess is scattering yourself across too many interests at once',
+  'you grow through care and belonging; your excess is smothering and over-feeding, literally and otherwise',
+  'you grow through generosity and creative courage; your excess is ego and needing the spotlight',
+  'you grow through service and craft; your excess is over-analysis and never feeling it is quite good enough',
+  'you grow through relationship and fairness; your excess is people-pleasing and losing yourself in others',
+  'you grow through depth and transformation; your excess is obsession and all-or-nothing intensity',
+  'you grow through adventure and belief; your excess is preaching, over-promising and never sitting still',
+  'you grow through discipline and ambition; your excess is workaholism and mistaking status for worth',
+  'you grow through vision and community; your excess is aloof superiority and rejecting the normal on principle',
+  'you grow through compassion and imagination; your excess is escapism, martyrdom and losing your own edges'
+];
+DATA.SPOOKY.saturnSign = [
+  'your lesson is clean assertion; you fear your own anger or seeming selfish, and you master real, honest courage late',
+  'your lesson is real security; you fear scarcity and losing what is yours, and you learn worth is not the same as wealth',
+  'your lesson is trusting your own mind; you fear sounding stupid, and you become a careful, respected voice over years',
+  'your lesson is letting yourself be cared for; you fear needing anyone, and you slowly learn to build a home that holds you',
+  'your lesson is honest self-expression; you fear being seen and judged, and you grow into a quieter, realer confidence',
+  'your lesson is good-enough; you fear imperfection and uselessness, and you learn to serve without punishing yourself',
+  'your lesson is real partnership; you fear commitment and being unfair, and you learn to stay through the hard parts',
+  'your lesson is trust and letting go; you fear betrayal and losing control, and you master power by learning to release it',
+  'your lesson is grounded belief; you fear being trapped or wrong, and you earn a wisdom that is tested rather than borrowed',
+  'your lesson is worth beyond achievement; you fear failure and irrelevance, and you learn you are not your resume',
+  'your lesson is genuine belonging; you fear being ordinary or shut out, and you learn to need people without losing yourself',
+  'your lesson is boundaries and faith together; you fear the formless, and you learn to build something real out of a dream'
+];
+DATA.SPOOKY.nodeSign = [
+  'your soul is learning to put yourself first and act alone, after lifetimes of deferring to everyone else',
+  'you are learning steadiness, self-worth and enough, after a long pattern of intensity and crisis',
+  'you are learning curiosity, listening and the small truths, after clinging too hard to one big one',
+  'you are learning to feel, nurture and belong, after over-relying on status, control and doing',
+  'you are learning to shine as yourself, after a habit of hiding safely in the group',
+  'you are learning to be useful, grounded and precise, after drifting in the dream',
+  'you are learning partnership and other people, after running a life entirely your own way',
+  'you are learning depth, trust and sharing, after clutching comfort and possessions',
+  'you are learning faith and the bigger picture, after drowning in detail and other people\u2019s opinions',
+  'you are learning to grow up, take charge and be seen, after hiding in home and feeling',
+  'you are learning to serve the many, after a life centred on your own spotlight',
+  'you are learning surrender, faith and compassion, after trying to control every last detail'
+];
+DATA.SPOOKY.nodeHouse = [
+  'your growth is toward becoming yourself and stepping forward, away from hiding behind other people',
+  'your growth is toward your own worth and resources, away from entanglement in what others own and want',
+  'your growth is toward everyday curiosity and connection, away from grand fixed certainties',
+  'your growth is toward home, roots and feeling, away from all-consuming ambition',
+  'your growth is toward play, creativity and the heart, away from losing yourself in the crowd',
+  'your growth is toward useful daily work and the body, away from escapism and drift',
+  'your growth is toward real partnership, away from going it alone',
+  'your growth is toward depth, intimacy and sharing, away from clinging to comfort and control',
+  'your growth is toward meaning, faith and the wider world, away from small talk and second-guessing',
+  'your growth is toward stepping into the world and being seen, away from hiding at home',
+  'your growth is toward community and the future, away from performing for personal glory',
+  'your growth is toward surrender and the unseen, away from control and overwork'
+];
+DATA.SPOOKY.plutoHouse = [
+  'you are on a lifelong project of remaking yourself; you have an intense presence, and people either feel your power or are unnerved by it',
+  'your bond with money and self-worth runs deep and sometimes obsessive; you can lose it all and rebuild from nothing',
+  'your mind is intense and probing, your words carry weight, and a sibling or early school experience marked you deeply',
+  'the home or family carried buried intensity or upheaval; you break a generational pattern and build your own roots from scratch',
+  'you love, create and play with obsessive intensity; a child or a creative calling can transform your entire life',
+  'your work and health are sites of deep transformation; you can burn down and rebuild, and control shows up in the daily grind',
+  'your close relationships are intense and transformative; you attract powerful partners, and love teaches you power and surrender',
+  'you are at home in the depths; crisis, intimacy and other people\u2019s resources remake you, and you have real regenerative power',
+  'your beliefs go through total upheaval; you can lose and rebuild a whole worldview, and travel or study can remake you',
+  'your ambition is deep and driving; you rise, fall and rise again in the public world, and you are pulled toward real power',
+  'your friendships and causes run intense and transformative; you outgrow whole circles, and you can move a group profoundly',
+  'your deepest transformation happens unseen; you carry buried power and heal by facing what is hidden inside you'
+];
+DATA.SPOOKY.uranusHouse = [
+  'you are visibly unconventional and need freedom to be yourself; you have changed your look or direction suddenly more than once',
+  'your income and values are unconventional and erratic; money comes and goes in surprising ways, and you refuse to be owned',
+  'your mind is original and electric; you think in leaps, you stay restless, and you learn in bursts rather than straight lines',
+  'your home life was unusual or unstable; you may move often, and you quietly rebel against how you were raised',
+  'you create and love in unconventional ways; you need freedom in romance, and your creativity is original and a little shocking',
+  'you cannot do a conventional routine or job for long; you need freedom in your work, and your energy can be erratic and nerve-driven',
+  'you need freedom inside partnership; you attract unusual partners, and you resist the traditional relationship script',
+  'your bond with shared money, intimacy and endings is unconventional; you meet sudden reversals and free others by facing the taboo',
+  'your beliefs are original and independent; you reject inherited dogma, and study or travel arrives in sudden, life-changing bursts',
+  'your career path is unconventional and full of sudden turns; you rebel against authority and are meant to do it your own way',
+  'your friends and causes are your revolution; you are drawn to the alternative crowd and run ahead of your time about the future',
+  'your rebellion is inward and spiritual; you get sudden inner awakenings and free yourself in private before anyone notices'
+];
+DATA.SPOOKY.neptuneHouse = [
+  'you are dreamy and hard to pin down, and easy to project onto; your sense of self is fluid, and you can lose yourself in a role',
+  'your bond with money is foggy and idealistic; you can be vague or deceived about finances, and you value the intangible over the countable',
+  'your mind is imaginative and intuitive; you think in images, you forget hard facts, and you may have a real gift for words or music',
+  'your home or family had a dreamy, confusing or sacrificial quality; you long for an ideal home you can half-remember',
+  'you love and create through the imagination; your romances can be idealised, and your art seems to come from somewhere beyond you',
+  'your work and health are where illusion and inspiration meet; you serve, you over-give, and your body answers to the unseen',
+  'you idealise your partners; you are drawn to the artistic, the wounded or the spiritual, and you learn to love the real person',
+  'your bond with intimacy and the mystical is deep and dissolving; you carry a psychic sensitivity around what is shared and hidden',
+  'your beliefs are mystical and vast; you are drawn to the sea of meaning, and no dogma can ever quite hold you',
+  'your calling is artistic, spiritual or caring; your public image stays a little unclear, and you are meant to serve something larger',
+  'your hopes are dreamlike and idealistic; you are drawn to visionary groups and can be disillusioned by your own high ideals',
+  'you are deeply connected to the unseen; your intuition runs strong, and solitude is where you actually meet the infinite'
+];
