@@ -7104,99 +7104,67 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       ly += 50;
       var rt = UI.readTab;
       if (rt === 'story') {
-      // the guided reading: a co-authored walk through the real chart, one card at a time
-      flatBtn('◉  Guided reading — walk your chart with me', x, ly, w, 46, function () { UI.guide = { phase: 'intro', t0: nowT() }; UI.scroll.read = 0; buzz(12); }, false); ly += 58;
-      // the oddly-specific: concrete life-details, the "how did it know" layer, up top
+      // ===== the You tab, re-architected: one clear headline, then calm chapters you open on tap =====
+      // (was a single 15-screen wall of near-identical sections; now scannable and in your control)
+      if (UI.smCache === undefined) { try { UI.smCache = APP.sunMoonCharacter(c); } catch (eSm9) { UI.smCache = null; } }
+      eyebrow('You', x, ly, ACC); ly += 26;
+      if (UI.smCache) { ly += paragraph(UI.smCache, x, ly, w, 18, INK, SERIF, 28) + 18; }
+      flatBtn('◉  Guided reading — walk your chart with me', x, ly, w, 46, function () { UI.guide = { phase: 'intro', t0: nowT() }; UI.scroll.read = 0; buzz(12); }, false); ly += 60;
+      setFont(MONO, 9, INK, p.LEFT, p.TOP, 140); p.text('OR OPEN A CHAPTER', x, sY(ly)); ly += 20;
+      UI.sec = UI.sec || {};
+      var chapterHead = function (id, label, sub) {
+        var open = !!UI.sec[id], rh = 46, hy = sY(ly);
+        if (open) { p.noStroke(); fillc(ACC, 16); p.rect(x - 8, hy, w + 16, rh, 7); }
+        setFont(SANS, 16, INK, p.LEFT, p.CENTER, 255); bold();
+        p.text((open ? '–   ' : '+   ') + label, x + 2, hy + rh / 2 + 1); normal();
+        if (sub) { setFont(MONO, 9, ACCTX, p.RIGHT, p.CENTER, 205); p.text(sub, x + w - 4, hy + rh / 2); }
+        if (!open) { strokec(INK, 34); p.strokeWeight(1); p.line(x, hy + rh, x + w, hy + rh); p.noStroke(); }
+        (function (i9) { pushHit(x - 8, hy, w + 16, rh, function () { UI.sec[i9] = !UI.sec[i9]; buzz(8); UI.popT = nowT(); }); })(id);
+        ly += rh + (open ? 12 : 3);
+        return open;
+      };
+      var bullets9 = function (arr, nmax, capIt) {
+        var bi, lim = nmax ? Math.min(nmax, arr.length) : arr.length;
+        for (bi = 0; bi < lim; bi++) { var ln = arr[bi]; if (capIt) ln = ln.charAt(0).toUpperCase() + ln.slice(1) + (/[.!?]$/.test(ln) ? '' : '.'); p.noStroke(); fillc(ACC, 200); p.ellipse(x + 4, sY(ly) + 9, 6, 6); ly += paragraph(ln, x + 18, ly, w - 18, 15, INK, SERIF, 23) + 9; }
+        return lim;
+      };
+      // 1 — How you're wired (the combination synthesis; open by default)
+      if (UI.comboCache === undefined) { try { UI.comboCache = APP.combinationRead(c); } catch (eCm9) { UI.comboCache = null; } }
+      if (UI.comboCache && chapterHead('wired', 'How you’re wired')) { ly += paragraph(UI.comboCache, x, ly, w, 15.5, INK, SERIF, 24) + 12; }
+      // 2 — Oddly specific (the concrete tells)
       if (UI.quirkCache === undefined) { try { UI.quirkCache = APP.lifeQuirks(c); } catch (eQ9) { UI.quirkCache = []; } }
-      if (UI.quirkCache && UI.quirkCache.length) {
-        eyebrow('Oddly specific', x, ly, ACC); ly += 22;
-        ly += paragraph('Small, true things your chart seems to know about your actual life. No pressure — just notice which ones land.', x, ly, w, 13, INK, SERIF, 19, 185) + 12;
-        for (var qi9 = 0; qi9 < UI.quirkCache.length; qi9++) {
-          var qA9 = reduced() ? 1 : cl01((nowT() - (UI.actT || UI.fxT) - 120 - qi9 * 120) / 460);
-          p.noStroke(); fillc(ACC, 210 * qA9); p.ellipse(x + 4, sY(ly) + 9, 6, 6);
-          ly += paragraph(UI.quirkCache[qi9], x + 18, ly + (1 - eCubic(qA9)) * 6, w - 18, 15.5, INK, SERIF, 24, 250 * qA9) + 10;
-        }
-        ly += 12; hairline(x, ly, x + w, 36); ly += 20;
+      if (UI.quirkCache && UI.quirkCache.length && chapterHead('oddly', 'Oddly specific', UI.quirkCache.length + '')) {
+        ly += paragraph('Small, true things your chart seems to know about your actual life.', x, ly, w, 12.5, INK, SERIF, 18, 175) + 10;
+        bullets9(UI.quirkCache, 0, false); ly += 4;
       }
-      // what you are drawn to do: hobbies and passions, then the current pull
+      // 3 — What you're drawn to (interests + the current pull)
       if (UI.intCache === undefined) { try { UI.intCache = APP.interests(c); } catch (eI9) { UI.intCache = []; } if (UI.intPull === undefined) { try { UI.intPull = APP.emergingPull(c, b); } catch (eIP9) { UI.intPull = null; } } }
-      if (UI.intCache && UI.intCache.length) {
-        eyebrow('What you are drawn to', x, ly, ACC); ly += 22;
-        for (var ii9 = 0; ii9 < UI.intCache.length; ii9++) {
-          p.noStroke(); fillc(ACC, 205); p.ellipse(x + 4, sY(ly) + 9, 6, 6);
-          ly += paragraph(UI.intCache[ii9].charAt(0).toUpperCase() + UI.intCache[ii9].slice(1) + '.', x + 18, ly, w - 18, 15.5, INK, SERIF, 24) + 10;
-        }
-        if (UI.intPull) { ly += 4; ly += paragraph(UI.intPull, x, ly, w, 15.5, INK, SERIF, 24, 250) + 10; }
-        ly += 12; hairline(x, ly, x + w, 36); ly += 20;
+      if (UI.intCache && UI.intCache.length && chapterHead('drawn', 'What you’re drawn to')) {
+        bullets9(UI.intCache, 0, true);
+        if (UI.intPull) { ly += 4; ly += paragraph(UI.intPull, x, ly, w, 15, INK, SERIF, 23, 250) + 6; }
+        ly += 4;
       }
-      // the placement library, read onto this chart: a rotating handful, fresh each day
+      // 4 — Read closely (the placement library, a rotating handful)
       if (UI.spookCache === undefined) { try { UI.spookCache = APP.spookyReads(c); } catch (eSp9) { UI.spookCache = []; } }
-      if (UI.spookCache && UI.spookCache.length) {
-        eyebrow('Read closely, your placements say', x, ly, ACC); ly += 22;
-        var pool9 = UI.spookCache, n9 = pool9.length, showN9 = Math.min(5, n9);
+      if (UI.spookCache && UI.spookCache.length && chapterHead('closely', 'Read closely', UI.spookCache.length + '')) {
+        var pool9 = UI.spookCache, n9 = pool9.length, showN9 = Math.min(6, n9);
         var dSeed9 = 0; try { var dd9 = new Date(); dSeed9 = dd9.getFullYear() * 366 + dd9.getMonth() * 31 + dd9.getDate(); } catch (eDs9) {}
         var st9 = n9 ? (dSeed9 % n9) : 0, sk9;
-        for (sk9 = 0; sk9 < showN9; sk9++) {
-          var line9 = pool9[(st9 + sk9) % n9];
-          p.noStroke(); fillc(ACC, 200); p.ellipse(x + 4, sY(ly) + 9, 6, 6);
-          ly += paragraph(line9.charAt(0).toUpperCase() + line9.slice(1) + '.', x + 18, ly, w - 18, 15.5, INK, SERIF, 24) + 10;
-        }
-        if (n9 > showN9) { setFont(MONO, 9, INK, p.CENTER, p.TOP, 130); p.text('THESE ROTATE \u00B7 ' + n9 + ' IN TOTAL FOR YOUR CHART', x + w / 2, sY(ly + 2)); ly += 20; }
-        ly += 12; hairline(x, ly, x + w, 36); ly += 20;
+        for (sk9 = 0; sk9 < showN9; sk9++) { var line9 = pool9[(st9 + sk9) % n9]; p.noStroke(); fillc(ACC, 200); p.ellipse(x + 4, sY(ly) + 9, 6, 6); ly += paragraph(line9.charAt(0).toUpperCase() + line9.slice(1) + '.', x + 18, ly, w - 18, 15, INK, SERIF, 23) + 9; }
+        if (n9 > showN9) { setFont(MONO, 8.5, INK, p.LEFT, p.TOP, 120); p.text('THESE ROTATE DAILY · ' + n9 + ' IN TOTAL FOR YOUR CHART', x, sY(ly + 2)); ly += 18; }
+        ly += 4;
       }
-      // then the single most specific structural fact about this exact chart
+      // 5 — What's most specifically you (the single sharpest structural fact)
       if (UI.sigCache === undefined) { try { UI.sigCache = APP.chartSignature(c); } catch (eSc9) { UI.sigCache = null; } }
-      if (UI.sigCache) {
-        eyebrow('What is most specifically you', x, ly, ACC); ly += 22;
-        var sgA9 = reduced() ? 1 : cl01((nowT() - (UI.actT || UI.fxT)) / 600);
-        var fsg9 = (APP.STATE.settings && APP.STATE.settings.textScale) || 1, ssz9 = 17 * fsg9;
-        var sgL9 = wrapLines2(UI.sigCache, w - 16, SERIF, ssz9), sgi9, sgh9 = ssz9 * 1.5;
-        strokec(ACC, 220 * sgA9); p.strokeWeight(3); p.line(x + 1.5, sY(ly) + 4, x + 1.5, sY(ly) + sgL9.length * sgh9 - 4); p.noStroke();
-        for (sgi9 = 0; sgi9 < sgL9.length; sgi9++) {
-          var sga9 = reduced() ? 1 : cl01((nowT() - (UI.actT || UI.fxT) - 120 - sgi9 * 80) / 460);
-          p.textStyle(p.ITALIC); setFont(SERIF, ssz9, INK, p.LEFT, p.TOP, 250 * sga9);
-          p.text(sgL9[sgi9], x + 16, sY(ly) + sgi9 * sgh9 + (1 - eCubic(sga9)) * 8); p.textStyle(p.NORMAL);
-        }
-        ly += sgL9.length * sgh9 + 22;
-        hairline(x, ly, x + w, 36); ly += 20;
+      if (UI.sigCache && chapterHead('mostyou', 'What’s most specifically you')) {
+        var ssz9 = 16.5, sgL9 = wrapLines2(UI.sigCache, w - 18, SERIF, ssz9), sgi9, sgh9 = ssz9 * 1.5;
+        strokec(ACC, 210); p.strokeWeight(3); p.line(x + 1.5, sY(ly) + 4, x + 1.5, sY(ly) + sgL9.length * sgh9 - 4); p.noStroke();
+        for (sgi9 = 0; sgi9 < sgL9.length; sgi9++) { p.textStyle(p.ITALIC); setFont(SERIF, ssz9, INK, p.LEFT, p.TOP, 250); p.text(sgL9[sgi9], x + 16, sY(ly) + sgi9 * sgh9); p.textStyle(p.NORMAL); }
+        ly += sgL9.length * sgh9 + 10;
       }
-      // the flagship: the crafted character of your exact Sun x Moon pairing (one of 144)
-      if (UI.smCache === undefined) { try { UI.smCache = APP.sunMoonCharacter(c); } catch (eSm9) { UI.smCache = null; } }
-      if (UI.smCache) {
-        eyebrow('Your Sun and Moon', x, ly, ACC); ly += 22;
-        ly += paragraph(UI.smCache, x, ly, w, 16.5, INK, SERIF, 25) + 14;
-        hairline(x, ly, x + w, 36); ly += 20;
-      }
-      // your specific combination: how your core placements actually interact
-      if (UI.comboCache === undefined) { try { UI.comboCache = APP.combinationRead(c); } catch (eCm9) { UI.comboCache = null; } }
-      if (UI.comboCache) {
-        eyebrow('Your exact combination', x, ly, ACC); ly += 22;
-        ly += paragraph(UI.comboCache, x, ly, w, 15.5, INK, SERIF, 24) + 14;
-        hairline(x, ly, x + w, 36); ly += 20;
-      }
-      // then the four-movement arc — spine, engine, edge, where it's heading
-      if (!UI.arcCache) { try { UI.arcCache = APP.composeArc(c, b); } catch (ea) { UI.arcCache = null; } }
-      if (UI.arcCache && UI.arcCache.length) {
-        eyebrow('Your chart in four movements', x, ly, ACC); ly += 24;
-        for (var ar = 0; ar < UI.arcCache.length; ar++) {
-          var bt = UI.arcCache[ar];
-          setFont(MONO, 9.5, INK, p.LEFT, p.TOP, 210); bold(); p.text(bt.label.toUpperCase(), x, sY(ly)); normal(); ly += 18;
-          ly += expandPara(bt.text, x, ly, w, 'arc' + ar, 16, 25) + 14;
-        }
-        ly += 8;
-      }
-      // the fuller read waits behind one door; the arc above is the whole story in brief
-      ly += 10;
-      flatBtn(UI.deepRead ? '\u2715  Close the fuller read' : '\u25B8  Go deeper', x, ly, w, 44, function () { UI.deepRead = !UI.deepRead; }, false); ly += 56;
-      if (UI.deepRead) {
-        if (!UI.readCache) UI.readCache = APP.composeCore(c);
-        for (var i = 0; i < UI.readCache.length; i++) ly += expandPara(UI.readCache[i], x, ly, w, 'core' + i, 17, 27) + 10;
-        ly += 14;
-      }
-      // a quick visual of the heaviest three — ranked by the prominence engine (no prose; the arc already explained why)
+      // 6 — What carries the most weight (top three by the prominence engine)
       if (!UI.promCache) { try { UI.promCache = APP.prominence(c); } catch (epr) { UI.promCache = null; } }
-      if (UI.promCache) {
-        ly += 10; hairline(x, ly, x + w, 40); ly += 22; eyebrow('What carries the most weight', x, ly, ACC); ly += 24;
+      if (UI.promCache && chapterHead('weight', 'What carries the most weight')) {
         var pr = UI.promCache, pn; for (pn = 0; pn < 3; pn++) {
           var pk = pr.ranked[pn], pp = c.planets[pk]; if (!pp) continue;
           setFont(SANS, 18, ACC, p.LEFT, p.TOP); p.text(APP.glyphFor(pk), x, sY(ly));
@@ -7204,8 +7172,21 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
           var why = (pr.why[pk] && pr.why[pk].length) ? pr.why[pk].slice(0, 2).join(' · ') : 'strong and busy with aspects';
           setFont(MONO, 9.5, ACCTX, p.LEFT, p.TOP, 215); p.text(why.toUpperCase(), x + 28, sY(ly) + 21); ly += 44;
         }
-        ly += 12;
+        ly += 6;
       }
+      // 7 — Your chart in four movements
+      if (!UI.arcCache) { try { UI.arcCache = APP.composeArc(c, b); } catch (ea) { UI.arcCache = null; } }
+      if (UI.arcCache && UI.arcCache.length && chapterHead('arc', 'Your chart in four movements')) {
+        for (var ar = 0; ar < UI.arcCache.length; ar++) { var bt = UI.arcCache[ar]; setFont(MONO, 9.5, INK, p.LEFT, p.TOP, 210); bold(); p.text(bt.label.toUpperCase(), x, sY(ly)); normal(); ly += 18; ly += paragraph(bt.text, x, ly, w, 15.5, INK, SERIF, 24) + 12; }
+        ly += 4;
+      }
+      // 8 — The deep read (the full composed core)
+      if (chapterHead('deep', 'The deep read')) {
+        if (!UI.readCache) UI.readCache = APP.composeCore(c);
+        for (var i = 0; i < UI.readCache.length; i++) ly += paragraph(UI.readCache[i], x, ly, w, 16, INK, SERIF, 25) + 10;
+        ly += 6;
+      }
+      ly += 18;
       }
       if (rt === 'days') {
       // the day, written out: one composed reading with an arc — precision first, then the rows
