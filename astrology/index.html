@@ -985,7 +985,7 @@ var APP = (function () {
     var cap = function (t) { return t ? t.charAt(0).toUpperCase() + t.slice(1) : ''; };
     var parts = [];
     var head = anA(SG[su].name, true) + ' Sun, ' + anA(SG[mo].name) + ' Moon and ' + anA(SG[ma].name) + ' Mars' + (asc != null ? ', rising in ' + SG[asc].name : '');
-    parts.push(head + '. At your core, you are ' + E.sun[su] + '. And underneath that, you need ' + (E.moon[mo].replace(/^underneath, you need /, '')) + '. When you reach for something, ' + E.mars[ma] + (asc != null ? ', ' + E.rising[asc] : '') + '.');
+    parts.push(head + '. You are ' + E.sun[su] + '. Underneath, you need ' + (E.moon[mo].replace(/^underneath, you need /, '')) + '. When you want something, ' + E.mars[ma] + (asc != null ? ', ' + E.rising[asc] : '') + '.');
     // the actual aspect between the two lights: what makes all 144 Sun/Moon pairings read differently
     if (E.lights) {
       var dLM = ((mo - su) % 12 + 12) % 12;
@@ -5028,7 +5028,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       return out;
     }
     function paragraph(str, x, ly, boxW, sz, c, font, lead, a) {
-      var fs = (APP.STATE.settings && APP.STATE.settings.textScale) || 1; sz = sz * fs * 1.3; // larger, bolder reading base + dyslexia-friendly scale
+      var fs = (APP.STATE.settings && APP.STATE.settings.textScale) || 1; sz = sz * fs * 1.46; // larger, bolder reading base + dyslexia-friendly scale
       p.textFont(font || SERIF); p.textSize(sz); p.textStyle(p.NORMAL);
       var dysLh = (APP.STATE.settings && APP.STATE.settings.font === 'dyslexic') ? 1.12 : 1;
       var lines = wrapLines(str, boxW), lh = (lead ? lead * fs * 1.2 : sz * 1.62) * dysLh; fillc(c, a); p.textAlign(p.LEFT, p.TOP);
@@ -7108,7 +7108,17 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       // (was a single 15-screen wall of near-identical sections; now scannable and in your control)
       if (UI.smCache === undefined) { try { UI.smCache = APP.sunMoonCharacter(c); } catch (eSm9) { UI.smCache = null; } }
       eyebrow('You', x, ly, ACC); ly += 26;
-      if (UI.smCache) { ly += paragraph(UI.smCache, x, ly, w, 18, INK, SERIF, 28) + 18; }
+      if (UI.smCache) { ly += paragraph(UI.smCache, x, ly, w, 18, INK, SERIF, 28) + 16; }
+      // lead with the spooky-specific hook: one chart-exact tell, the "how did it know" line, up front
+      if (UI.quirkCache === undefined) { try { UI.quirkCache = APP.lifeQuirks(c); } catch (eQ9) { UI.quirkCache = []; } }
+      if (UI.quirkCache && UI.quirkCache.length) {
+        var dseedH = 0; try { var ddH = new Date(); dseedH = ddH.getFullYear() * 366 + ddH.getMonth() * 31 + ddH.getDate(); } catch (eDsH) {}
+        var hookN = UI.quirkCache.length, hook9 = UI.quirkCache[dseedH % hookN], hkY0 = sY(ly);
+        var hkH = paragraph(hook9, x + 16, ly, w - 16, 16.5, INK, SERIF, 26);
+        strokec(ACC, 220); p.strokeWeight(3); p.line(x + 1.5, hkY0 + 4, x + 1.5, hkY0 + hkH - 4); p.noStroke();
+        ly += hkH + 8;
+        setFont(MONO, 8.5, ACCTX, p.LEFT, p.TOP, 190); p.text('AND ' + (hookN - 1) + ' MORE ODDLY-SPECIFIC THINGS BELOW', x, sY(ly)); ly += 24;
+      }
       flatBtn('◉  Guided reading — walk your chart with me', x, ly, w, 46, function () { UI.guide = { phase: 'intro', t0: nowT() }; UI.scroll.read = 0; buzz(12); }, false); ly += 60;
       setFont(MONO, 9, INK, p.LEFT, p.TOP, 140); p.text('OR OPEN A CHAPTER', x, sY(ly)); ly += 20;
       UI.sec = UI.sec || {};

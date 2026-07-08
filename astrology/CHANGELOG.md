@@ -1,5 +1,8 @@
 # Changelog
 
+## 3.27.0 — 2026-07-08
+- **Bigger text, and it leads with the spooky part.** Two fixes to how the reading actually reads. First, the body text is meaningfully larger everywhere — the readings were too small to sink into. Second, the You tab no longer opens with a sign-level generality: right under the one-line headline it now leads with a single chart-exact "how did it know that" line — "you have a specific spot on the sofa, a blanket you are territorial about, and a snack that fixes most bad moods" — the way a real reader hooks you with the specific before the general, with the rest one tap below. The combination read was also tightened: less throat-clearing, more to the point.
+
 ## 3.26.0 — 2026-07-08
 - **The You tab, rebuilt so it stops overwhelming you.** It had become one fifteen-screen wall of seven near-identical sections, all bold bulleted paragraphs, all saying "who you are" in slightly different words — no hierarchy, no starting point, exhausting. Now the whole tab fits on one screen: a single clear headline of who you are, the guided-reading button, and then a calm, scannable menu of chapters — How you're wired · Oddly specific · What you're drawn to · Read closely · What's most specifically you · What carries the most weight · Your chart in four movements · The deep read — each collapsed, with a count, opening only when you tap it. Same depth underneath; you're now in control of how much of it you see at once, instead of being buried.
 
