@@ -1066,6 +1066,64 @@ var APP = (function () {
     } catch (ePl9) {}
     return null;
   }
+  // grand cross: two oppositions whose axes square each other, four planets in mutual tension
+  function detectGrandCross9(c) {
+    var bs; try { bs = presentBodies(c); } catch (eGC0) { return null; }
+    var opps = [], i, j;
+    for (i = 0; i < bs.length; i++) for (j = i + 1; j < bs.length; j++) if (hasAsp(bs[i].lon, bs[j].lon, 180, 7)) opps.push([bs[i], bs[j]]);
+    for (i = 0; i < opps.length; i++) for (j = i + 1; j < opps.length; j++) {
+      var a = opps[i], b = opps[j];
+      if (a[0] === b[0] || a[0] === b[1] || a[1] === b[0] || a[1] === b[1]) continue;
+      if (hasAsp(a[0].lon, b[0].lon, 90, 6) && hasAsp(a[0].lon, b[1].lon, 90, 6) && hasAsp(a[1].lon, b[0].lon, 90, 6) && hasAsp(a[1].lon, b[1].lon, 90, 6))
+        return DATA.SIGNS[a[0].sign].modality;
+    }
+    return null;
+  }
+  // the clever layer: whole-chart configurations and syntheses a real astrologer reads
+  function cleverReads(c) {
+    var out = [], S = DATA.SPOOKY || {}, i;
+    function nm9(k) { return (k === 'sun' || k === 'moon') ? ('the ' + nameFor(k)) : nameFor(k); }
+    var pats = []; try { pats = aspectPatterns(c); } catch (eCR0) {}
+    for (i = 0; i < pats.length; i++) {
+      var pt = pats[i];
+      if (pt.type === 'Grand Trine' && S.grandTrine && S.grandTrine[pt.where]) out.push(S.grandTrine[pt.where]);
+      else if (pt.type === 'T-Square') out.push('you have a T-square with your ' + nameFor(pt.apex) + ' at the apex: two planets pull against each other and dump all the pressure onto ' + nameFor(pt.apex) + '. It is your hardest-working, most-tested point, and, paradoxically, exactly where you achieve the most, because you are forced to; aim it on purpose and the whole tension resolves through it');
+      else if (pt.type === 'Yod') out.push('you have a yod, the "finger of fate", pointing at your ' + nameFor(pt.apex) + ': two planets strain toward it from awkward angles, giving it a fated, adjust-or-else quality; it can feel like a mission you did not choose, and it usually clicks into purpose somewhere in your thirties');
+    }
+    try { var gcm = detectGrandCross9(c); if (gcm && S.grandCross && S.grandCross[gcm]) out.push(S.grandCross[gcm]); } catch (eCR1) {}
+    // the chart ruler: the single keystone of a traditional reading
+    try {
+      if (STATE.birth.timeKnown && c.ascBody) {
+        var rlr = RULERKEY[DATA.SIGNS[c.ascBody.sign].ruler], rp = rlr && c.planets[rlr];
+        if (rp) {
+          var dgc = dignityOf(rlr, rp.signName), th = (HOUSE_LIFE[rp.house - 1] ? HOUSE_LIFE[rp.house - 1].th : 'that area of life');
+          out.push('your chart ruler is ' + nm9(rlr) + ', the planet that runs your whole chart because it rules your ' + c.ascBody.signName + ' rising; it sits in ' + rp.signName + ' in your ' + ordinal(rp.house) + ' house' + (dgc ? ' (' + dgc.toLowerCase() + ')' : '') + ', so the captain of your life steers toward ' + th + ' — wherever ' + nm9(rlr) + ' goes, you go');
+        }
+      }
+    } catch (eCR2) {}
+    // hemispheres: where the weight of the chart falls
+    try {
+      if (STATE.birth.timeKnown && c.cusps) {
+        var ks = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto'], up = 0, dn = 0, ea = 0, we = 0, kk;
+        for (kk = 0; kk < ks.length; kk++) { var pl = c.planets[ks[kk]]; if (!pl || !pl.house) continue; if (pl.house >= 7 && pl.house <= 12) up++; else dn++; if (pl.house >= 10 || pl.house <= 3) ea++; else we++; }
+        if (S.hemisphere) {
+          if (up >= 7) out.push(S.hemisphere.above); else if (dn >= 7) out.push(S.hemisphere.below);
+          if (ea >= 7) out.push(S.hemisphere.east); else if (we >= 7) out.push(S.hemisphere.west);
+        }
+      }
+    } catch (eCR3) {}
+    // the busiest and the unaspected planet
+    try {
+      var CNT = {}, ks2 = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto'], a2, k2;
+      for (k2 = 0; k2 < ks2.length; k2++) CNT[ks2[k2]] = 0;
+      for (a2 = 0; a2 < c.aspects.length; a2++) { var A2 = c.aspects[a2]; if (A2.minor) continue; if (CNT[A2.a] != null) CNT[A2.a]++; if (CNT[A2.b] != null) CNT[A2.b]++; }
+      var busy = null, bn = 0, un = null, core = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn'];
+      for (k2 = 0; k2 < ks2.length; k2++) { if (!c.planets[ks2[k2]]) continue; if (CNT[ks2[k2]] > bn) { bn = CNT[ks2[k2]]; busy = ks2[k2]; } if (CNT[ks2[k2]] === 0 && !un && core.indexOf(ks2[k2]) >= 0) un = ks2[k2]; }
+      if (busy && bn >= 4) out.push('your busiest planet is ' + nm9(busy) + ', wired into more of your chart than any other; it is the switchboard everything routes through, so when ' + nm9(busy) + ' is lit, your whole system lights with it');
+      if (un) out.push('your ' + nm9(un) + ' makes no major aspect to anything: an unaspected planet that runs unmoderated and all-or-nothing; it is often the most striking, least integrated thing about you, brilliant and a little wild');
+    } catch (eCR4) {}
+    return out;
+  }
   // the placement library, read onto this exact chart: every "a rising Gemini often
   // means..." line that applies, collected. Sign lines for everyone; house lines with a time.
   function spookyReads(c) {
@@ -1127,6 +1185,8 @@ var APP = (function () {
         if (SA[key]) out.push(SA[key]);
       }
     }
+    // the clever layer: whole-chart configurations
+    try { var cv = cleverReads(c), ci; for (ci = 0; ci < cv.length; ci++) out.push(cv[ci]); } catch (eCV9) {}
     return out;
   }
   function chartSignature(c) {

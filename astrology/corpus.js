@@ -1621,3 +1621,22 @@ DATA.SPOOKY.mcPlanet = {
   'neptune': 'your Neptune sits on the Midheaven: your calling is artistic, spiritual or caring, your public image stays dreamy or unclear, and you serve something larger',
   'pluto': 'your Pluto sits on the Midheaven: you are driven toward power and influence, your public life moves through real transformation, and you leave a deep mark'
 };
+
+// ===== clever configurations: grand trine, grand cross, hemisphere =====
+DATA.SPOOKY.grandTrine = {
+  'fire': 'you have a grand trine in fire: a rare, self-contained gift of confidence, creativity and momentum; it flows so effortlessly you can coast on it for years and never be pushed to develop it',
+  'earth': 'you have a grand trine in earth: an effortless competence with the practical and the material; things get built and money gets managed almost by themselves, and the only real trap is complacency',
+  'air': 'you have a grand trine in air: an effortless flow of ideas, words and social ease; you think and connect like breathing, and the risk is living in your head and never grounding any of it',
+  'water': 'you have a grand trine in water: an effortless emotional and intuitive depth; you understand people without trying, and the risk is passivity, letting so natural a gift quietly go soft'
+};
+DATA.SPOOKY.grandCross = {
+  'cardinal': 'you have a cardinal grand cross: a powerhouse of initiative pulled hard in four directions at once; you start everything, feel constantly torn, and your whole life is learning where to send the force',
+  'fixed': 'you have a fixed grand cross: immense, immovable determination locked in four-way tension; you have extraordinary staying power and an equally extraordinary struggle to ever let anything change',
+  'mutable': 'you have a mutable grand cross: restless adaptability stretched across four directions; you juggle endlessly, scatter easily, and your work is holding one shape long enough for it to matter'
+};
+DATA.SPOOKY.hemisphere = {
+  'above': 'most of your planets sit above the horizon: you are oriented outward, toward the world, career and other people, and your life plays out in public more than in private',
+  'below': 'most of your planets sit below the horizon: you are oriented inward and personal, your real life happens in private, and you build who you are from the inside out',
+  'east': 'most of your planets sit on the eastern, self-directed side of your chart: you make your own circumstances, you act on your own initiative, and your life is unusually yours to steer',
+  'west': 'most of your planets sit on the western, relational side of your chart: your life tends to unfold through other people, timing and circumstance more than through raw personal will'
+};
