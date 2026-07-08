@@ -1008,6 +1008,24 @@ var APP = (function () {
         if (lone) parts.push('Two of you run ' + mods[(lone === 'sun') ? 1 : 0] + ', but your ' + names[lone] + ' is ' + loneMod + ': ' + (E.modRole[loneMod] || '') + ', the one part of you that behaves differently, and often the most important to understand.');
       }
     }
+    // Venus: how you love, read against what you need (the Moon)
+    if (P.venus && E.venus && E.venus[P.venus.sign]) {
+      var ve = P.venus.sign, veE = SG[ve].element;
+      var vsent = 'In love, ' + E.venus[ve] + '.';
+      if (ve === mo) vsent += ' It sits in the same sign as your Moon, so what you need and how you love are one thing: you tend to know a real bond the moment you feel it.';
+      else if (veE === moE) vsent += ' How you love and what you need speak the same ' + veE + ' language, so your heart and your comfort rarely pull against each other.';
+      else vsent += ' But what you love (' + veE + ') and what you need (' + moE + ') run on different currents, so you are sometimes drawn to people who do not, in the end, settle you.';
+      parts.push(vsent);
+    }
+    // Mercury: how you think, read against who you are (the Sun)
+    if (P.mercury && E.mercury && E.mercury[P.mercury.sign]) {
+      var me = P.mercury.sign, meE = SG[me].element;
+      var msent = 'And ' + E.mercury[me] + '.';
+      if (me === su) msent += ' Your mind and your identity share a sign, so you think in the same voice you live in: what you say is who you are, with no translation layer.';
+      else if (meE === suE) msent += ' Your thinking runs in the same ' + meE + ' key as your core, so you tend to sound exactly like yourself.';
+      else msent += ' Your mind runs on ' + meE + ' while you run on ' + suE + ', so you often think in one register and act in another, which can read as a person still deciding what they mean.';
+      parts.push(msent);
+    }
     return parts.join(' ');
   }
   function lifeQuirks(c) {
@@ -3301,15 +3319,27 @@ var APP = (function () {
   // ===== where the clocks agree: three independent time-lord systems, cross-checked. A human rarely does this; the engine always does. =====
   function clockConvergence(c, fc) {
     try {
-      var votes = {}, why = {}, add = function (k, sysName) { if (!k || !c.planets[k]) return; votes[k] = (votes[k] || 0) + 1; (why[k] = why[k] || []).push(sysName); };
+      // The timing funnel: four INDEPENDENT time-lord spines vote for a planet. Agreement
+      // across independent methods is the strongest signal timing astrology has. Sub-periods
+      // (monthly profection, ZR L2, Firdaria sub) do not add to the independent count — they
+      // are correlated with their parent — but they reinforce the citation when they land too.
+      var votes = {}, why = {}, sub = {};
+      var add = function (k, sysName) { if (!k || !c.planets[k]) return; votes[k] = (votes[k] || 0) + 1; (why[k] = why[k] || []).push(sysName); };
+      var reinforce = function (k, sysName) { if (!k || !c.planets[k]) return; (sub[k] = sub[k] || []).push(sysName); };
       if (fc.profection) add(fc.profection.lord, 'the profection year');
-      if (fc.firdaria && fc.firdaria.lord !== 'node' && fc.firdaria.lord !== 'snode') add(fc.firdaria.lord, 'the Firdaria period');
       if (fc.zr && fc.zr.l1) add(fc.zr.l1.ruler, 'the Zodiacal Releasing chapter');
+      if (fc.firdaria && fc.firdaria.lord !== 'node' && fc.firdaria.lord !== 'snode') add(fc.firdaria.lord, 'the Firdaria period');
+      // the moving sky is a fourth, fully independent spine: a real transit to the planet, now
+      var now2 = new Date().getTime(), i2, skyKey = {};
+      for (i2 = 0; i2 < fc.upcoming.length; i2++) { var ev2 = fc.upcoming[i2]; if (ev2.date.getTime() - now2 < 75 * 86400000 && !skyKey[ev2.np]) { add(ev2.np, 'the moving sky'); skyKey[ev2.np] = ev2; } }
+      // sub-period reinforcements (correlated, so they inform but do not count)
+      if (fc.monthly && fc.monthly.lord) reinforce(fc.monthly.lord, 'this month’s profection');
+      if (fc.zr && fc.zr.l2) reinforce(fc.zr.l2.ruler, 'the current sub-chapter');
+      if (fc.firdaria && fc.firdaria.sub && fc.firdaria.sub !== 'node' && fc.firdaria.sub !== 'snode') reinforce(fc.firdaria.sub, 'the Firdaria sub-period');
       var best = null, k2; for (k2 in votes) if (votes.hasOwnProperty(k2) && votes[k2] >= 2 && (!best || votes[k2] > votes[best])) best = k2;
       if (!best) return null;
-      var hit = null, i2, now2 = new Date().getTime();
-      for (i2 = 0; i2 < fc.upcoming.length; i2++) { var ev2 = fc.upcoming[i2]; if ((ev2.np === best || ev2.tp === best) && ev2.date.getTime() - now2 < 75 * 86400000) { hit = ev2; break; } }
-      return { lord: best, systems: why[best], n: votes[best], strike: hit };
+      var strike = skyKey[best] || null;
+      return { lord: best, systems: why[best], reinforced: sub[best] || [], n: votes[best], strike: strike };
     } catch (e) { return null; }
   }
   // an observation only a machine would sit down and make
@@ -7119,7 +7149,12 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         if (fc2.convergence) {
           var CV = fc2.convergence;
           ly += 2; eyebrow('Where the clocks agree', x, ly, ACC); ly += 24;
-          ly += paragraph('Three independent time-lord systems run in this app, and right now ' + (CV.n >= 3 ? 'all three' : 'two of them') + ' point at the same planet: ' + APP.nameFor(CV.lord) + ' rules ' + CV.systems.join(' and ') + '. Independent systems agreeing is the strongest signal timing astrology has. Weight this planet\u2019s themes above everything else this year.' + (CV.strike ? (' And the sky strikes it: ' + APP.nameFor(CV.strike.tp) + ' ' + CV.strike.aspKey + ' your ' + APP.nameFor(CV.strike.np) + ' is exact ' + fmtShort(CV.strike.date) + '. Mark that fortnight.') : ''), x, ly, w, 15, INK, SERIF, 23) + 12;
+          var cvN = ['', '', 'Two', 'Three', 'Four'][Math.min(CV.n, 4)] || (CV.n + '');
+          var cvSys = []; for (var cvi = 0; cvi < CV.systems.length; cvi++) if (CV.systems[cvi] !== 'the moving sky') cvSys.push(CV.systems[cvi]);
+          var cvBody = cvN + ' independent timing methods, each built on a different rule, all point at one planet right now: ' + APP.nameFor(CV.lord) + '. It carries ' + cvSys.join(', ') + '. Independent methods agreeing is the strongest signal timing astrology has \u2014 a fluke would scatter them. Weight this planet\u2019s themes above everything else this year.';
+          if (CV.reinforced && CV.reinforced.length) cvBody += ' Even the finer clocks nod along: ' + CV.reinforced.join(' and ') + ' land on it too.';
+          if (CV.strike) cvBody += ' And one of them is the sky itself: ' + APP.nameFor(CV.strike.tp) + ' ' + CV.strike.aspKey + ' your ' + APP.nameFor(CV.strike.np) + ' is exact ' + fmtShort(CV.strike.date) + '. Mark that fortnight.';
+          ly += paragraph(cvBody, x, ly, w, 15, INK, SERIF, 23) + 12;
         }
         if (fc2.firdaria) {
           var fd = fc2.firdaria, fdName = function (k9) { return k9 === 'node' ? 'North Node' : k9 === 'snode' ? 'South Node' : APP.nameFor(k9); };

@@ -1699,6 +1699,34 @@ DATA.COMBO = {
   'and people first meet you as original and slightly detached',
   'and people first meet you as dreamy and hard to pin down'
   ],
+  venus: [
+  'you love fast and head-on, chasing the spark and quick to say it out loud',
+  'you love slowly and physically, loyal and steady, and you show it through touch and providing',
+  'you love through words and wit, and you need good conversation more than grand romance',
+  'you love by caring and nesting, tender and a little clingy once someone is truly in',
+  'you love grandly and loyally, needing romance said out loud and to be adored back',
+  'you love by helping and improving, and you show it in small useful acts more than declarations',
+  'you love through partnership itself, happiest paired, and you court with charm and fairness',
+  'you love all-or-nothing, wanting total merging, and fiercely private about what you keep',
+  'you love as adventure and blunt honesty, and you need freedom left inside the bond',
+  'you love seriously and for keeps, slow to commit but rock-solid once you have',
+  'you love as friendship first, needing your own space and drawn to the unconventional',
+  'you love romantically and without edges, the idealist who gives everything and forgives too much'
+  ],
+  mercury: [
+  'your mind runs fast and out loud, blunt and quick, first to speak',
+  'your mind runs slow and concrete, and once you reach a conclusion it is set',
+  'your mind runs in a dozen directions at once, curious, verbal and easily bored',
+  'your mind runs by feeling and memory, and you take words to heart',
+  'your mind thinks in bold strokes and speaks with warmth, built to persuade',
+  'your mind runs in fine detail, analytical, precise and quietly critical',
+  'your mind weighs both sides before it commits to a view',
+  'your mind runs deep and a little suspicious, drawn to what is hidden, and you rarely say all you know',
+  'your mind runs big-picture and philosophical, blunt with the truth and weak on the small print',
+  'your mind runs structural and strategic, saying little until it is worth saying',
+  'your mind runs in systems and sudden leaps, original and often ahead of the room',
+  'your mind runs in images and impressions, intuitive and poetic, hard to pin to a straight line'
+  ],
   elemPure: {
   'fire': 'all drive, warmth and momentum, brilliant and prone to burning out',
   'earth': 'all substance, patience and results, grounded and prone to getting stuck',
