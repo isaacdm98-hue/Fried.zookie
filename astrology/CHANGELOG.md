@@ -1,5 +1,8 @@
 # Changelog
 
+## 3.29.0 — 2026-07-08
+- **The whole Read screen now speaks in one voice (rework pillar 2).** The other three tabs got the same treatment as the You tab, so moving between them feels like one reader, not four different apps. Patterns opens "The shapes in you — the structures a real astrologer reads before anything else"; Seasons opens "Your seasons — here's what the sky has actually been doing to your life lately, and what's coming; not vague vibes, real transits with real dates"; Today opens "Today, for you — here's the sky today and what it actually touches in your chart." Warm, punchy, bigger text, leading with the specific — consistent across all four tabs.
+
 ## 3.28.0 — 2026-07-08
 - **The Read tab opens as a reading now, not a menu.** First pillar of a full quality pass: instead of landing on a headline and a list, the You tab now greets you like a real reader — "Alright, let me read you properly. Not your star sign. You." — then delivers, in big warm text, the spooky-specific hook (one chart-exact "how did it know" line, marked with an accent bar), who you are in a line, and what is genuinely live for you right now (a dated transit: "Saturn sitting on the ruler of your 7th, in passes on 23 Jun, 29 Aug, 7 Mar"). Then a warm bridge hands you the rest — how you love, what you're chasing, what the sky is doing this year — one chapter at a time, on tap. The wheel, the dashboard and all the depth are untouched; this makes the front door of the reading actually feel like a reading.
 

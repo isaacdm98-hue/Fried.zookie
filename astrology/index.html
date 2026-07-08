@@ -7210,8 +7210,9 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       // the day, written out: one composed reading with an arc — precision first, then the rows
       if (!UI.dailyEssay || nowT() - (UI.dailyEssayT || 0) > 600000) { try { UI.dailyEssay = APP.composeDailyEssay(c); } catch (eDE) { UI.dailyEssay = ''; } UI.dailyEssayT = nowT(); }
       if (UI.dailyEssay) {
-        eyebrow('Today, written out', x, ly, ACC); ly += 24;
-        ly += expandPara(UI.dailyEssay, x, ly, w, 'dessay', 16.5, 26) + 18;
+        eyebrow('Today, for you', x, ly, ACC); ly += 26;
+        ly += paragraph('Here’s the sky today, and what it actually touches in your chart.', x, ly, w, 14.5, INK, SERIF, 23, 225) + 14;
+        ly += expandPara(UI.dailyEssay, x, ly, w, 'dessay', 17, 27) + 18;
       }
       // watch today acted out again: the same bulletin that greets the day
       flatBtn('▸  Watch today as a scene', x, ly, w, 42, function () {
@@ -7267,7 +7268,8 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       // ---- on-device chart intelligence: patterns & signatures (no AI) ----
       if (!UI.readSig) { try { UI.readSig = APP.composeSignatures(c); } catch (e) { UI.readSig = []; } }
       if (UI.readSig && UI.readSig.length) {
-        ly += 14; hairline(x, ly, x + w, 40); ly += 22; eyebrow('Patterns in your chart', x, ly, ACC); ly += 26;
+        eyebrow('The shapes in you', x, ly, ACC); ly += 26;
+        ly += paragraph('The structures woven through your whole chart — the shapes a real astrologer reads before anything else.', x, ly, w, 14.5, INK, SERIF, 23, 225) + 16;
         for (var sgi = 0; sgi < UI.readSig.length; sgi++) {
           var blk = UI.readSig[sgi];
           setFont(MONO, 9.5, INK, p.LEFT, p.TOP, 210); bold(); p.text(blk.label.toUpperCase(), x, sY(ly)); normal(); ly += 17;
@@ -7286,8 +7288,8 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         // oddly specific, dated, and computed straight from where the planets will actually be
         if (UI.oddPred === undefined) { try { UI.oddPred = APP.oddPredictions(c, b); } catch (eOp9) { UI.oddPred = []; } }
         if (UI.oddPred && UI.oddPred.length) {
-          eyebrow('What you are moving through', x, ly, ACC); ly += 22;
-          ly += paragraph('What the sky has recently done and is about to do to your life, read the way a good astrologer would say it. Computed from where the real planets actually are.', x, ly, w, 13, INK, SERIF, 19, 185) + 12;
+          eyebrow('Your seasons', x, ly, ACC); ly += 26;
+          ly += paragraph('Here’s what the sky has actually been doing to your life lately, and what’s coming. Not vague vibes — real transits, with real dates.', x, ly, w, 14.5, INK, SERIF, 23, 225) + 14;
           var op9; for (op9 = 0; op9 < Math.min(UI.oddPred.length, 5); op9++) {
             var opv = UI.oddPred[op9]; if (op9) { hairline(x, ly, x + w, 30); ly += 8; }
             var qc9 = opv.quality;
