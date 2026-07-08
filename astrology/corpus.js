@@ -1073,3 +1073,79 @@ DATA.ARCH = {
     pluto: { n: 'The Underworld Guide', line: 'the chart is run from the vault: depth, power and rebirth working on a geological clock' }
   }
 };
+
+// ===== Oddly specific: the small, concrete, spooky life-details the chart implies.
+// Not traits. Habits, tastes, tells. The "how did it know" layer. Sign-indexed
+// (Aries..Pisces) per body, written to be startlingly specific rather than safe.
+DATA.QUIRK = {
+  venus: [
+    'you eat fast, you like it hot and a bit too spicy, and you have genuinely walked out over slow service',
+    'you would rather have one excellent meal than three cheap ones, and there is a "good" snack in your house you do not share',
+    'you get menu envy, you order the thing you have never tried, and you text someone about what to get',
+    'you have a comfort meal tied to a specific person, and food someone made for you beats the same dish anywhere',
+    'you pick the place with the good lighting, you photograph the plate, and you over-tip when you feel seen',
+    'you notice the sticky table, you have opinions about how things are plated, and you fix other people\u2019s arrangements in your head',
+    'you cannot choose the restaurant, you will happily eat whatever your date is having, and presentation genuinely changes the taste for you',
+    'you like it intense: dark chocolate, strong coffee, and you remember exactly what you ate on the important nights',
+    'you will try the strange street food abroad, you like a big shared table, and you have one cuisine you discovered travelling and now evangelise',
+    'you have a "usual", you rate places by whether they were worth it, and you quietly judge overpriced small plates',
+    'you have an oddly specific food rule, you love the place nobody has heard of, and you will eat cereal for dinner with zero shame',
+    'you eat by mood, you are the one who says "let\u2019s just get pizza", and comfort food does more for you than it probably should'
+  ],
+  moon: [
+    'you slam a cupboard when you are upset and feel almost fine again after moving your body',
+    'you have a specific spot on the sofa, a blanket you are territorial about, and a snack that fixes most bad moods',
+    'you cannot settle until you have talked or texted it out, and you fall asleep better with background noise',
+    'you have a mug that is yours, you keep things for who gave them to you, and you cook or clean when you are stressed',
+    'your home has at least one deliberately dramatic thing in it, and a dull, grey room genuinely lowers your mood',
+    'you tidy when you are anxious, you cannot fully relax in a messy room, and you have a system nobody else understands',
+    'you need the room to feel balanced before you can rest, you hate eating alone, and an unresolved argument keeps you up',
+    'you have a private space or ritual nobody gets access to, and you need real solitude, not company, to actually recharge',
+    'you get twitchy staying in too long, and you feel most at home somewhere you could leave at any moment',
+    'you calm yourself by getting one thing done, and you find it genuinely hard to rest while a list is unfinished',
+    'you need a good chunk of alone time, your setup is a little unconventional, and you retreat into your head when overwhelmed',
+    'you reset with water, music or a nap, you cry more easily than you admit, and you soak up the mood of whatever room you are in'
+  ],
+  mars: [
+    'you walk fast, you hate waiting for the kettle, and you finish other people\u2019s sentences',
+    'you are slow to start but nearly impossible to stop once you go, and being rushed makes you dig in harder',
+    'you do three things at once, you lose interest the moment it gets boring, and you argue for fun',
+    'you go quiet and clipped rather than loud when you are angry, and you defend your people faster than yourself',
+    'you need it to be a bit of a performance, you hate being ignored, and your energy fills whatever room you walk into',
+    'you channel stress into a task, you are precise under pressure, and half your anger is really just frustration at a mess',
+    'you avoid the direct fight, you win by being reasonable, and passive tension bothers you more than an open row',
+    'you do not forget, you play a long game, and your calm surface has a very deep engine under it',
+    'you say the blunt thing then apologise for the delivery not the content, and you cannot sit still on a good idea',
+    'you pace yourself, you outlast people who sprinted, and you get quietly competitive about things that "do not matter"',
+    'you act on the new idea while others are still forwarding the article, and you rebel most against being told to hurry',
+    'your drive runs on mood and meaning, a written goal doubles your output, and you procrastinate then finish in one intense burst'
+  ],
+  mercury: [
+    'you think out loud, you talk fast, and your second sentence is usually the true one',
+    'you take a beat before you answer, you hate being hurried mid-thought, and once you learn a thing it is yours for good',
+    'you have a lot of tabs open right now, literally, and you interrupt because your brain finished early',
+    'you remember conversations by how they felt, you take things personally that were not meant that way, and you talk to family in a private shorthand',
+    'you tell it as a story with yourself as narrator, you are generous with detail, and you cannot resist a good tangent',
+    'you reread your texts before sending, you notice everyone\u2019s typos, and you keep lists you mostly do not look at',
+    'you soften the hard sentence, you weigh how it will land before you say it, and you can argue either side too well',
+    'you say little then say the one thing that reframes it, you read subtext everyone missed, and you research things obsessively before deciding',
+    'you overshoot the point then circle back, you love the big idea, and you have been told you sound more certain than you are',
+    'you say the dry, final line, you think before you speak, and you quote things you read years ago',
+    'your mind jumps steps and lands right, you struggle to show the working, and you have strong opinions about how things "should" be organised',
+    'you think in pictures and feelings, you say things sideways and land truer, and you write things down so they stop drifting'
+  ],
+  rising: [
+    'people read you as more confident and more up-for-it than you feel, and strangers ask you to go first',
+    'you come across calm and hard to rush, people find you steadying, and they comment on your voice or your taste',
+    'you seem younger and quicker than your age, people talk to you easily, and they never quite know which version they will get',
+    'you give off a soft, approachable, look-after-you energy, and strangers tell you their problems unprompted',
+    'you walk into a room and it registers, people assume you are the confident one, and you dress with at least one bold choice',
+    'you read as neat, capable and a little reserved, people bring you their problems to fix, and they underestimate how funny you are',
+    'people find you easy on the eye and easy to be around, you are the diplomatic one, and you are better at first impressions than you think',
+    'you come across as intense and slightly unreadable, people feel you clock them, and they either trust you fast or not at all',
+    'you seem open, lucky and game for the adventure, people relax around your optimism, and you look like you are about to travel',
+    'you read as older, competent and quietly in charge even when young, and people give you responsibility you did not ask for',
+    'you come across as a bit different on purpose, people find you interesting before they find you warm, and you are the friend with the unusual take',
+    'you seem gentle, dreamy and hard to pin down, people project onto you, and strangers, stray cats and sad friends all find you without a map'
+  ]
+};

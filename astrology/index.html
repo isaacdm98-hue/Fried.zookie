@@ -972,6 +972,76 @@ var APP = (function () {
   }
   // the sharpest, rarest, most specific true thing about this exact chart. Each candidate
   // carries a rarity weight (how few charts have it); the strongest becomes the opening hook.
+  // the oddly-specific layer: concrete life-details the chart implies (taste, home,
+  // pace, mind, first impression). No hedging, no app-talk: things about their actual life.
+  function lifeQuirks(c) {
+    var Q = DATA.QUIRK; if (!Q) return [];
+    var out = [], tk = STATE.birth.timeKnown;
+    function add(lead, body) { if (body) out.push(lead + body + '.'); }
+    if (c.planets.venus && Q.venus) add('At the table, ', Q.venus[c.planets.venus.sign]);
+    if (c.planets.moon && Q.moon) add('At home, ', Q.moon[c.planets.moon.sign]);
+    if (c.planets.mars && Q.mars) add('For pace and temper, ', Q.mars[c.planets.mars.sign]);
+    if (c.planets.mercury && Q.mercury) add('In how your mind runs, ', Q.mercury[c.planets.mercury.sign]);
+    if (tk && c.ascBody && Q.rising) add('And on first meeting you, ', Q.rising[c.ascBody.sign]);
+    return out;
+  }
+  // interests & passions: what this person is actually drawn to do, scored from the
+  // real placements. The "you love playing guitar and long walks" layer.
+  function interests(c) {
+    var tk = STATE.birth.timeKnown, P = c.planets, el = c.elements;
+    var WATER = [3, 7, 11], EARTH = [1, 5, 9], AIR = [2, 6, 10];
+    function inS(k, arr) { return P[k] && arr.indexOf(P[k].sign) >= 0; }
+    function inH(k, arr) { return tk && P[k] && P[k].house && arr.indexOf(P[k].house) >= 0; }
+    function asp(a, b) { var i; for (i = 0; i < c.aspects.length; i++) { var A = c.aspects[i]; if ((A.a === a && A.b === b) || (A.a === b && A.b === a)) return true; } return false; }
+    var D = [
+      { say: 'you play an instrument, or you badly want to — music reaches you deeper and faster than it reaches most people',
+        t: (inS('venus', WATER) ? 2 : 0) + (inS('moon', WATER) ? 2 : 0) + (asp('venus', 'neptune') ? 2 : 0) + (asp('moon', 'neptune') ? 1 : 0) + (inS('venus', [1]) ? 1 : 0) + (inH('neptune', [5, 3]) ? 1 : 0) + (el.water >= 35 ? 1 : 0) },
+      { say: 'long walks, running or some steady physical outlet is how you actually think — you solve things with your body, not sitting at a desk',
+        t: (inS('mars', EARTH) ? 1 : 0) + (inS('moon', EARTH) ? 1 : 0) + (inS('sun', [0, 8]) ? 1 : 0) + (inS('mars', [0, 8]) ? 2 : 0) + (inH('mars', [1, 6]) ? 1 : 0) + (el.earth >= 35 ? 1 : 0) + (el.fire >= 40 ? 1 : 0) },
+      { say: 'you write, journal, or think in words — and you are quietly good at it, whether or not anyone has read a line',
+        t: (inS('mercury', [2, 5]) ? 2 : 0) + (inH('mercury', [3, 9]) ? 1 : 0) + (asp('mercury', 'moon') ? 1 : 0) + (inH('mercury', [1]) ? 1 : 0) + (el.air >= 35 ? 1 : 0) },
+      { say: 'you have an eye — photography, film, drawing or design keeps pulling at you, and you catch framing and light that others walk straight past',
+        t: (asp('venus', 'neptune') ? 2 : 0) + (inS('venus', [11]) ? 1 : 0) + (inS('sun', [11]) ? 1 : 0) + (inH('neptune', [3, 5, 1]) ? 1 : 0) + (inS('moon', [11]) ? 1 : 0) + (asp('mercury', 'neptune') ? 1 : 0) },
+      { say: 'you make things with your hands — cooking, growing, building, mending — and a day with nothing tangible to show for it leaves you restless',
+        t: (inS('venus', [1, 5]) ? 2 : 0) + (inS('moon', [1, 5]) ? 1 : 0) + (inH('venus', [2, 6]) ? 1 : 0) + (inS('mars', EARTH) ? 1 : 0) + (el.earth >= 40 ? 2 : 0) },
+      { say: 'you need the horizon — travel, languages, other cultures, big questions — and you get low and small when you stay in one place too long',
+        t: (inS('jupiter', [8]) ? 1 : 0) + (inH('jupiter', [9]) ? 2 : 0) + (inS('sun', [8]) ? 2 : 0) + (inS('moon', [8]) ? 1 : 0) + (inH('sun', [9]) ? 1 : 0) },
+      { say: 'you are a maker or a performer — you come alive making something and showing it, and you need an audience of at least one',
+        t: (inS('sun', [4]) ? 2 : 0) + (inH('sun', [5]) ? 1 : 0) + (inH('venus', [5]) ? 1 : 0) + (inH('moon', [5]) ? 1 : 0) + (inS('venus', [4]) ? 1 : 0) },
+      { say: 'you like systems, puzzles and the odd corners of knowledge — you are the type who reads a real ephemeris for fun (hello)',
+        t: (inS('sun', [10]) ? 1 : 0) + (inS('mercury', [10]) ? 1 : 0) + (asp('mercury', 'uranus') ? 2 : 0) + (inH('uranus', [3, 11]) ? 1 : 0) + (el.air >= 40 ? 1 : 0) },
+      { say: 'you are pulled toward the hidden — psychology, mysteries, the real story under the surface — you cannot leave a locked door alone',
+        t: (inS('sun', [7]) ? 1 : 0) + (inS('moon', [7]) ? 1 : 0) + (inH('pluto', [8, 1]) ? 1 : 0) + (inS('mercury', [7]) ? 1 : 0) + (asp('mercury', 'pluto') ? 2 : 0) + (inH('sun', [8]) ? 1 : 0) },
+      { say: 'you like building something that lasts, and getting genuinely, unglamorously good at one hard thing over years',
+        t: (inS('sun', [9]) ? 1 : 0) + (inS('saturn', [9, 10]) ? 1 : 0) + (inH('saturn', [10, 1]) ? 1 : 0) + (inS('mars', [9]) ? 1 : 0) + (inH('sun', [10]) ? 1 : 0) }
+    ];
+    D.sort(function (a, b) { return b.t - a.t; });
+    var out = [], i;
+    for (i = 0; i < D.length && out.length < 3; i++) if (D[i].t >= 2) out.push(D[i].say);
+    if (!out.length && D[0]) out.push(D[0].say);
+    return out;
+  }
+  // the current pull: what has lately been calling louder, from a live transit to a
+  // creative / mental / restless planet. The "something is pulling you toward photography" line.
+  function emergingPull(c, b) {
+    if (!b) return null;
+    var PULL = {
+      venus: 'making things beautiful — a new look, a creative outlet, or someone new',
+      mercury: 'a new subject or skill — a course, writing, something you keep reading about',
+      neptune: 'something artistic or spiritual — photography, film, music, or a quiet practice',
+      moon: 'home, roots, and taking better care of yourself',
+      jupiter: 'a bigger horizon — travel, study, or a belief quietly shifting',
+      mars: 'a physical challenge — a sport, or a project worth fighting for',
+      sun: 'a louder, more visible version of yourself',
+      saturn: 'getting serious about one craft or one commitment'
+    };
+    try {
+      var evs = upcomingTransits(c, 5, 120), best = null, now = (new Date()).getTime(), i;
+      for (i = 0; i < evs.length; i++) { var e = evs[i]; if (!PULL[e.np]) continue; var dd = (e.date.getTime() - now) / 86400000; if (dd < -20 || dd > 150) continue; if (!best || Math.abs(dd) < best.dd) best = { e: e, dd: Math.abs(dd) }; }
+      if (best) return 'And lately, something has been pulling you toward ' + PULL[best.e.np] + '. That is transiting ' + nameFor(best.e.tp) + ' waking up your ' + nameFor(best.e.np) + ' — a genuine new thread, worth following.';
+    } catch (ePl9) {}
+    return null;
+  }
   function chartSignature(c) {
     var cands = [], i, k;
     var PC9 = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto'];
@@ -4290,7 +4360,7 @@ var APP = (function () {
     solarReturnChart: solarReturnChart, upcomingEclipses: upcomingEclipses, bestDaysFor: bestDaysFor, electIntents: electIntents, oddPredictions: oddPredictions, composeProfectionYear: composeProfectionYear, signHouseWeave: signHouseWeave,
     progressedTimeline: progressedTimeline, retroSeasons: retroSeasons,
     exportBook: exportBook, exportBackup: exportBackup, importBackup: importBackup, composeDailyEssay: composeDailyEssay, chartFP: chartFP, weaveNote: weaveNote, termOf: termOf, anA: anA, composeColleague: composeColleague, exportColleague: exportColleague,
-    microFor: microFor, tellsFor: tellsFor, receptionOf: receptionOf, chartSignature: chartSignature, addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenOf: almutenOf, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, returnsAlmanac: returnsAlmanac, progressedLunation: progressedLunation, planetaryHours: planetaryHours, moonVoidWindow: moonVoidWindow, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
+    microFor: microFor, tellsFor: tellsFor, receptionOf: receptionOf, chartSignature: chartSignature, lifeQuirks: lifeQuirks, interests: interests, emergingPull: emergingPull, addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenOf: almutenOf, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, returnsAlmanac: returnsAlmanac, progressedLunation: progressedLunation, planetaryHours: planetaryHours, moonVoidWindow: moonVoidWindow, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
     saveCurrentChart: saveCurrentChart, deleteSavedChart: deleteSavedChart, activateSavedChart: activateSavedChart, activeChartKey: activeChartKey, chartKey: chartKey, famousMatches: famousMatches, lifeTransits: lifeTransits, upcomingTransits: upcomingTransits, transitMotion: transitMotion, compositeChart: compositeChart,
     nameFor: nameFor, glyphFor: glyphFor, sgAbbr: sgAbbr, pad: pad,
     domElement: domElement, lowElement: lowElement, domMod: domMod, tzOffsetHours: tzOffsetHours
@@ -6618,7 +6688,30 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       ly += 50;
       var rt = UI.readTab;
       if (rt === 'story') {
-      // the hook: the single rarest, most specific true thing about this exact chart
+      // the oddly-specific: concrete life-details, the "how did it know" layer, up top
+      if (UI.quirkCache === undefined) { try { UI.quirkCache = APP.lifeQuirks(c); } catch (eQ9) { UI.quirkCache = []; } }
+      if (UI.quirkCache && UI.quirkCache.length) {
+        eyebrow('Oddly specific', x, ly, ACC); ly += 22;
+        ly += paragraph('Small, concrete things the maths says about your actual life. Read them and see how many land.', x, ly, w, 13, INK, SERIF, 19, 185) + 12;
+        for (var qi9 = 0; qi9 < UI.quirkCache.length; qi9++) {
+          var qA9 = reduced() ? 1 : cl01((nowT() - (UI.actT || UI.fxT) - 120 - qi9 * 120) / 460);
+          p.noStroke(); fillc(ACC, 210 * qA9); p.ellipse(x + 4, sY(ly) + 9, 6, 6);
+          ly += paragraph(UI.quirkCache[qi9], x + 18, ly + (1 - eCubic(qA9)) * 6, w - 18, 15.5, INK, SERIF, 24, 250 * qA9) + 10;
+        }
+        ly += 12; hairline(x, ly, x + w, 36); ly += 20;
+      }
+      // what you are drawn to do: hobbies and passions, then the current pull
+      if (UI.intCache === undefined) { try { UI.intCache = APP.interests(c); } catch (eI9) { UI.intCache = []; } if (UI.intPull === undefined) { try { UI.intPull = APP.emergingPull(c, b); } catch (eIP9) { UI.intPull = null; } } }
+      if (UI.intCache && UI.intCache.length) {
+        eyebrow('What you are drawn to', x, ly, ACC); ly += 22;
+        for (var ii9 = 0; ii9 < UI.intCache.length; ii9++) {
+          p.noStroke(); fillc(ACC, 205); p.ellipse(x + 4, sY(ly) + 9, 6, 6);
+          ly += paragraph(UI.intCache[ii9].charAt(0).toUpperCase() + UI.intCache[ii9].slice(1) + '.', x + 18, ly, w - 18, 15.5, INK, SERIF, 24) + 10;
+        }
+        if (UI.intPull) { ly += 4; ly += paragraph(UI.intPull, x, ly, w, 15.5, INK, SERIF, 24, 250) + 10; }
+        ly += 12; hairline(x, ly, x + w, 36); ly += 20;
+      }
+      // then the single most specific structural fact about this exact chart
       if (UI.sigCache === undefined) { try { UI.sigCache = APP.chartSignature(c); } catch (eSc9) { UI.sigCache = null; } }
       if (UI.sigCache) {
         eyebrow('What is most specifically you', x, ly, ACC); ly += 22;
@@ -7603,7 +7696,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       nodes: function (c) { var nn = c.planets.node; return nn ? ('Your North Node sits in ' + nn.signName + ': the direction that feels unfamiliar but right. Its opposite you already know by heart; that is precisely why it cannot teach you anything new.') : ''; },
       bigthree: function (c, b) { return 'Yours: Sun in ' + c.planets.sun.signName + ', Moon in ' + c.planets.moon.signName + ((b && b.timeKnown && c.ascBody) ? (', ' + c.ascBody.signName + ' rising') : ': and a rising sign waiting on a birth time') + '. That is the headline of you.'; },
       moving: function (c) { try { var tr = APP.composeTransits(c); if (tr.daily && tr.daily.length) return 'It is happening to you right now: ' + APP.transitSentence(tr.daily[0]); } catch (e) {} return 'Right now the sky is quiet on your chart, your natal pattern running undisturbed. Check Read tomorrow; it never stays quiet for long.'; },
-      you: function (c) { return 'Your sentence begins: Sun in ' + c.planets.sun.signName + ', Moon in ' + c.planets.moon.signName + '. The rest of this app reads you the whole paragraph.'; }
+      you: function (c) { return 'Your sentence begins: Sun in ' + c.planets.sun.signName + ', Moon in ' + c.planets.moon.signName + '. From here it only gets more specific to you.'; }
     };
     // recall checks — one tap-question per chapter, answered (where possible) by the user's own sky
     function signOpts(cs) { var others = [DATA.SIGNS[(cs + 5) % 12].name, DATA.SIGNS[(cs + 9) % 12].name], ci = cs % 3, o = [], i, oi = 0; for (i = 0; i < 3; i++) o.push(i === ci ? DATA.SIGNS[cs].name : others[oi++]); return { o: o, ci: ci }; }
@@ -9242,7 +9335,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         var a2N = still ? 1 : cl01((lt - 1.1) / 0.7);
         setFont(MONO, 10, INK, p.CENTER, p.TOP, 200 * a2N); p.text(DOWN[dN.getDay()] + ' · ' + dN.getDate() + ' ' + MONN[dN.getMonth()] + ' · ' + n + (n === 1 ? ' STORY' : ' STORIES'), cx, gy0 + 106);
         var a3N = still ? 1 : cl01((lt - 1.7) / 0.7);
-        setFont(MONO, 9, INK, p.CENTER, p.TOP, 140 * a3N); p.text('COMPUTED ON THIS DEVICE · JUST NOW', cx, gy0 + 128);
+        setFont(MONO, 9, INK, p.CENTER, p.TOP, 140 * a3N); p.text('THE SKY ON YOUR CHART · RIGHT NOW', cx, gy0 + 128);
         if (a3N > 0.6) { var plsN = still ? 1 : 0.6 + 0.4 * Math.sin(nowT() * 0.004); setFont(MONO, 10, ACC, p.CENTER, p.TOP, 235 * plsN); p.text('TAP TO READ TODAY ›', cx, H - (UI.safeBottom || 0) - 64); }
       } else if (dn.i < n) {
         // ---- one story: the same scene language as everywhere; today's real sky ----
@@ -10162,7 +10255,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
             var bb = APP.STATE.birth || {}, plc = bb.place ? (' over ' + String(bb.place).split(',')[0]) : '';
             var mon = ['January','February','March','April','May','June','July','August','September','October','November','December'][(bb.mo || 1) - 1];
             var when = (bb.d && mon) ? ('On ' + bb.d + ' ' + mon + ' ' + (bb.y || '') + plc + ', ') : 'The minute you were born, ';
-            return when + 'every planet stood at one exact degree of a single great wheel \u2014 this precise shape, and it has never formed again. This app keeps that sky, computes it on your phone, and reads it back to you in plain words. Nothing you type ever leaves the device.';
+            return when + 'every planet stood at one exact degree of a single great wheel \u2014 this precise shape, and it has never formed since. That arrangement is the map of you: what you reach for, what you flinch from, the small habits you have never told anyone. It is all in here, and it is oddly specific.';
           })() },
         { k: 'sun', title: 'Your Sun is in ' + sunSg, body: 'The Sun is the engine: the part of you that is being built all life long. Yours runs ' + sunSg + '.' + (tSun ? ' ' + cap(tSun) + '.' : '') },
         { k: 'moon', title: 'Your Moon is in ' + moonSg, body: 'The Moon is the weather inside: how you feel, refuel and reach for comfort. Yours lives in ' + moonSg + '.' + (tMoon ? ' ' + cap(tMoon) + '.' : '') },
@@ -10307,7 +10400,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       try {
         var ckW9 = APP.activeChartKey ? (APP.activeChartKey() + '|' + (APP.STATE.settings ? APP.STATE.settings.house + APP.STATE.settings.zodiac : '')) : '';
         if (UI.ckW !== ckW9) {
-          if (UI.ckW != null) { UI.readSig = null; UI.walkTr = null; UI.walkTheme = null; UI.plun = null; UI.forecast = null; UI.readCache = null; UI.todayCache = null; UI.calEvents = null; UI.fmList = null; UI.lbCache = null; UI.lqzCache = null; UI.lwSky = null; UI.progTL = null; UI.retroS = null; UI.sigCache = undefined; UI.arcCache = null; UI.promCache = null; UI.oddPred = undefined; UI.profYear = undefined; }
+          if (UI.ckW != null) { UI.readSig = null; UI.walkTr = null; UI.walkTheme = null; UI.plun = null; UI.forecast = null; UI.readCache = null; UI.todayCache = null; UI.calEvents = null; UI.fmList = null; UI.lbCache = null; UI.lqzCache = null; UI.lwSky = null; UI.progTL = null; UI.retroS = null; UI.sigCache = undefined; UI.arcCache = null; UI.promCache = null; UI.oddPred = undefined; UI.profYear = undefined; UI.quirkCache = undefined; UI.intCache = undefined; UI.intPull = undefined; }
           UI.ckW = ckW9;
         }
       } catch (eCk9) {}

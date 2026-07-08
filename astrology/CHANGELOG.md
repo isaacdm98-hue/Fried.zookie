@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.9.0 — 2026-07-06
+- **Oddly specific, about your actual life.** The You tab now opens on the "how did it know" layer instead of a definition. Concrete life-details drawn from your real placements: at the table ("you get menu envy and text someone about what to get"), at home ("a specific spot on the sofa, a blanket you are territorial about"), your pace and temper, how your mind runs, and how you land on first meeting. Sixty written variants, sign by sign per body.
+- **What you are drawn to.** A new engine scores your placements for what you actually love doing and says it plainly: "you play an instrument, or you badly want to — music reaches you deeper than it reaches most"; "long walks are how you actually think"; "you have an eye — photography, film or drawing keeps pulling at you". Then it reads the live sky for the current pull: "lately, something has been pulling you toward making things beautiful — that is transiting Uranus waking up your Venus." The guitar-and-long-walks layer a real astrologer reaches for.
+- **No more app-talk.** The reading stops narrating the software. The opening no longer says "this app computes it on your phone"; it names your real birth minute and place and turns straight to you. The daily masthead and the closing lesson line lose their self-reference too. The reading is about you, not about itself.
+
 ## 3.8.0 — 2026-07-06
 - **The opening names your exact moment.** The welcome walk no longer begins on a flat "This is your sky." Page one now reads back the real minute and place you were born — "On 16 April 1991 over Berlin, every planet stood at one exact degree of a single great wheel, this precise shape, and it has never formed again" — so it feels like yours from the first line.
 - **The sky above the runner clears.** The loose background stars thin out, dim down, and keep to the upper air, so the real constellations read as the figures they are instead of getting lost in a scatter of dots.
