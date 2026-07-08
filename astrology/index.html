@@ -1043,6 +1043,73 @@ var APP = (function () {
     var SG = DATA.SIGNS;
     return anA(SG[su].name, true) + ' Sun with ' + anA(SG[mo].name) + ' Moon: ' + line + '.';
   }
+  // the guided reading: real, chart-derived observations the user can affirm one at a time,
+  // and for each one they recognise, the genuine astrology underneath it. Cold-reading's fork
+  // structure, made honest: nothing is fished for, the user simply steers which real thread to
+  // pull, and every "deeper" is composed from the actual computed chart, not from their answers.
+  function guideCards(c, b) {
+    var out = [], P = c.planets, S = DATA.SPOOKY || {}, SG = DATA.SIGNS, tk = STATE.birth.timeKnown;
+    var cap = function (t) { return t ? t.charAt(0).toUpperCase() + t.slice(1) : ''; };
+    var end = function (t) { return t && /[.!?]$/.test(t) ? t : (t ? t + '.' : t); };
+    function push(area, cite, claim, deeper) { if (claim && deeper) out.push({ area: area, cite: cite, claim: end(cap(claim)), deeper: end(cap(deeper)) }); }
+    // 1. Sun & Moon — the core self, with the real aspect between the lights underneath
+    if (P.sun && P.moon && DATA.SUNMOON) {
+      var su = P.sun.sign, mo = P.moon.sign, smLine = DATA.SUNMOON[su] && DATA.SUNMOON[su][mo];
+      var dLM = ((mo - su) % 12 + 12) % 12, lKey = (dLM === 0) ? 'conjunction' : (dLM === 6) ? 'opposition' : (dLM === 1 || dLM === 11) ? 'semisextile' : (dLM === 2 || dLM === 10) ? 'sextile' : (dLM === 3 || dLM === 9) ? 'square' : (dLM === 4 || dLM === 8) ? 'trine' : 'quincunx';
+      var lights = DATA.COMBO && DATA.COMBO.lights && DATA.COMBO.lights[lKey];
+      var e1 = SG[su].element, e2 = SG[mo].element, chem = (e1 === e2) ? 'And both your core and your needs run ' + e1 + ', which doubles the tone into a very consistent inner weather' : 'And where your core (' + e1 + ') meets your needs (' + e2 + '), ' + elementMix(e1, e2);
+      if (smLine && lights) push('Who you are', SG[su].name + ' Sun · ' + SG[mo].name + ' Moon', smLine, lights + '. ' + chem);
+    }
+    // 2. Rising and the chart ruler — how you come across, and the planet that runs your whole chart
+    if (tk && c.ascBody && S.rising) {
+      var asc = c.ascBody.sign, rlr = RULERKEY[SG[asc].ruler], rp = rlr && P[rlr];
+      var deeper = null;
+      if (rp) { var dgc = dignityOf(rlr, rp.signName), th = (HOUSE_LIFE[rp.house - 1] ? HOUSE_LIFE[rp.house - 1].th : 'that area of life'); deeper = 'Your chart ruler is ' + nameFor(rlr) + ', the planet that runs your whole chart because it rules your ' + c.ascBody.signName + ' rising. It sits in ' + rp.signName + ' in your ' + ordinal(rp.house) + ' house' + (dgc ? ' (' + dgc.toLowerCase() + ')' : '') + ', so the captain of your life steers toward ' + th + ' — wherever ' + nameFor(rlr) + ' goes, you go'; }
+      if (S.rising[asc] && deeper) push('How you land', c.ascBody.signName + ' rising', S.rising[asc], deeper);
+    }
+    // 3. Love — Venus by sign, deepened by its house
+    if (P.venus && S.venusSign) {
+      var vh = (tk && P.venus.house && S.venusHouse) ? S.venusHouse[P.venus.house - 1] : (DATA.COMBO && DATA.COMBO.venus && ('under it, ' + DATA.COMBO.venus[P.venus.sign]));
+      push('In love', 'Venus in ' + P.venus.signName, S.venusSign[P.venus.sign], vh);
+    }
+    // 4. Drive — Mars by sign, deepened by its house
+    if (P.mars && S.marsSign) {
+      var mh = (tk && P.mars.house && S.marsHouse) ? S.marsHouse[P.mars.house - 1] : (DATA.COMBO && DATA.COMBO.mars && ('under it, when you want something ' + DATA.COMBO.mars[P.mars.sign]));
+      push('What drives you', 'Mars in ' + P.mars.signName, S.marsSign[P.mars.sign], mh);
+    }
+    // 5. Mind — Mercury by sign, deepened by its house
+    if (P.mercury && S.mercurySign) {
+      var qh = (tk && P.mercury.house && S.mercuryHouse) ? S.mercuryHouse[P.mercury.house - 1] : (DATA.COMBO && DATA.COMBO.mercury && ('under it, ' + DATA.COMBO.mercury[P.mercury.sign]));
+      push('How your mind runs', 'Mercury in ' + P.mercury.signName, S.mercurySign[P.mercury.sign], qh);
+    }
+    // 6. Roots — Moon by sign, deepened by its house
+    if (P.moon && S.moonSign) {
+      var oh = (tk && P.moon.house && S.moonHouse) ? S.moonHouse[P.moon.house - 1] : null;
+      if (oh) push('What you need', 'Moon in ' + P.moon.signName, S.moonSign[P.moon.sign], oh);
+    }
+    // 7. The two tightest personal aspects — the short read as the claim, the full read as the deeper
+    try {
+      var PSET = { sun: 1, moon: 1, mercury: 1, venus: 1, mars: 1 }, cand = [], ai;
+      for (ai = 0; ai < c.aspects.length; ai++) { var A = c.aspects[ai]; if (A.minor) continue; if (!PSET[A.a] && !PSET[A.b]) continue; cand.push(A); }
+      cand.sort(function (u, v) { return u.orb - v.orb; });
+      var an = 0, k2;
+      for (k2 = 0; k2 < cand.length && an < 2; k2++) {
+        var as = cand[k2], shortT = pairAspectText(as.a, as.b, as.asp.key);
+        if (!shortT) shortT = nameFor(as.a) + ' and ' + nameFor(as.b) + ' are ' + as.asp.key + ', a ' + as.asp.quality + ' link between them';
+        var full = null; try { full = aspectText(c, as); } catch (eGa) { full = null; }
+        if (full && shortT) { push('A wire in you', nameFor(as.a) + ' ' + (as.asp.glyph || as.asp.key) + ' ' + nameFor(as.b), shortT, full); an++; }
+      }
+    } catch (eG7) {}
+    // 8. One timed life-event — the astrologer's "so this happened recently / is coming"
+    try {
+      var preds = oddPredictions(c, b);
+      if (preds && preds.length) {
+        var pr = preds[0], txt = pr.text || '', dot = txt.indexOf('. ');
+        if (dot > 0) push('Right now', 'The moving sky', txt.slice(0, dot), txt.slice(dot + 2));
+      }
+    } catch (eG8) {}
+    return out;
+  }
   function lifeQuirks(c) {
     var Q = DATA.QUIRK, QM = DATA.QUIRK_MOD || {}; if (!Q) return [];
     var out = [], tk = STATE.birth.timeKnown;
@@ -4591,7 +4658,7 @@ var APP = (function () {
     solarReturnChart: solarReturnChart, upcomingEclipses: upcomingEclipses, bestDaysFor: bestDaysFor, electIntents: electIntents, oddPredictions: oddPredictions, composeProfectionYear: composeProfectionYear, signHouseWeave: signHouseWeave,
     progressedTimeline: progressedTimeline, retroSeasons: retroSeasons,
     exportBook: exportBook, exportBackup: exportBackup, importBackup: importBackup, composeDailyEssay: composeDailyEssay, chartFP: chartFP, weaveNote: weaveNote, termOf: termOf, anA: anA, composeColleague: composeColleague, exportColleague: exportColleague,
-    microFor: microFor, tellsFor: tellsFor, receptionOf: receptionOf, chartSignature: chartSignature, lifeQuirks: lifeQuirks, interests: interests, emergingPull: emergingPull, spookyReads: spookyReads, combinationRead: combinationRead, sunMoonCharacter: sunMoonCharacter, addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenOf: almutenOf, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, returnsAlmanac: returnsAlmanac, progressedLunation: progressedLunation, planetaryHours: planetaryHours, moonVoidWindow: moonVoidWindow, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
+    microFor: microFor, tellsFor: tellsFor, receptionOf: receptionOf, chartSignature: chartSignature, lifeQuirks: lifeQuirks, interests: interests, emergingPull: emergingPull, spookyReads: spookyReads, combinationRead: combinationRead, sunMoonCharacter: sunMoonCharacter, guideCards: guideCards, addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenOf: almutenOf, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, returnsAlmanac: returnsAlmanac, progressedLunation: progressedLunation, planetaryHours: planetaryHours, moonVoidWindow: moonVoidWindow, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
     saveCurrentChart: saveCurrentChart, deleteSavedChart: deleteSavedChart, activateSavedChart: activateSavedChart, activeChartKey: activeChartKey, chartKey: chartKey, famousMatches: famousMatches, lifeTransits: lifeTransits, upcomingTransits: upcomingTransits, transitMotion: transitMotion, compositeChart: compositeChart,
     nameFor: nameFor, glyphFor: glyphFor, sgAbbr: sgAbbr, pad: pad,
     domElement: domElement, lowElement: lowElement, domMod: domMod, tzOffsetHours: tzOffsetHours
@@ -6854,6 +6921,88 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       }
       return '';
     }
+    // ===== the guided reading: a co-authored walk through your real chart =====
+    // You are shown genuine, ephemeris-derived observations one at a time; you affirm the ones
+    // that ring true; each affirmation unfurls the actual astrology beneath it. Nothing is fished
+    // for. The closing portrait reflects back only what you yourself recognised.
+    function drawGuide(c, b) {
+      var x = sx(), w = cw(), top = topY(), t = nowT(), G = UI.guide;
+      p.noStroke(); fillc(shade(GROUNDS.read, -10)); p.rect(0, 0, W, H);
+      setFont(MONO, 10, ACCTX, p.LEFT, p.TOP, 235); p.text('GUIDED READING', x, top + 12);
+      flatBtn('Close', x + w - 86, 8, 86, 34, function () { UI.guide = null; UI.scroll.read = 0; }, false, true);
+      var ly = 44;
+      // -------- intro --------
+      if (G.phase === 'intro') {
+        riseText('A guided reading', x, sY(ly), 30, SANS, INK, G.t0, 30, 255, true); ly += 46;
+        ly += paragraph('I’ll show you real things your chart says, one at a time. Tap the ones that ring true. For each one you recognise, I’ll open up the astrology underneath it.', x, ly, w, 15.5, INK, SERIF, 25) + 12;
+        ly += paragraph('Nothing here is a guess, and I never ask you to feed me anything. You just choose which real thread to pull — and at the end I hand you back only what you found.', x, ly, w, 14.5, INK, SERIF, 23, 235) + 20;
+        flatBtn('Begin', x, ly, w, 48, function () {
+          var deck = []; try { deck = APP.guideCards(APP.STATE.chart, APP.STATE.birth) || []; } catch (eGb) { deck = []; }
+          G.deck = deck; G.i = 0; G.picks = {}; G.revealed = false; G.phase = deck.length ? 'cards' : 'empty'; G.cardT = nowT(); UI.scroll.read = 0; buzz(10);
+        }, true); ly += 60;
+        UI.contentH.read = ly + 20; return;
+      }
+      if (G.phase === 'empty') {
+        ly += paragraph('Your chart did not surface enough to walk through right now. Add a birth time in Settings for the fullest reading.', x, ly, w, 15.5, INK, SERIF, 25) + 16;
+        flatBtn('Close', x, ly, w, 46, function () { UI.guide = null; }, false); ly += 58; UI.contentH.read = ly + 20; return;
+      }
+      // -------- portrait --------
+      if (G.phase === 'portrait') {
+        var deckP = G.deck || [], kept = [], mi; for (mi = 0; mi < deckP.length; mi++) if (G.picks[mi]) kept.push(deckP[mi]);
+        eyebrow('Your portrait', x, ly, ACC); ly += 24;
+        riseText('What you recognised', x, sY(ly), 26, SANS, INK, G.cardT, 26, 255, true); ly += 42;
+        if (!kept.length) {
+          ly += paragraph('Nothing quite landed today, and that is real information too — a chart read on the wrong day says very little. Come back when something is moving; you and the sky both keep turning.', x, ly, w, 15.5, INK, SERIF, 25) + 18;
+        } else {
+          var areas = []; for (mi = 0; mi < kept.length; mi++) areas.push(kept[mi].area.toLowerCase());
+          var joinA = areas.length === 1 ? areas[0] : areas.slice(0, -1).join(', ') + ' and ' + areas[areas.length - 1];
+          ly += paragraph('You recognised yourself in ' + kept.length + ' of ' + deckP.length + '. The threads you trusted were ' + joinA + '.', x, ly, w, 16, INK, SERIF, 25) + 12;
+          for (mi = 0; mi < kept.length; mi++) {
+            var kc = kept[mi], ka = reduced() ? 1 : cl01((t - G.cardT - mi * 90) / 420);
+            p.noStroke(); fillc(ACC, 210 * ka); p.ellipse(x + 4, sY(ly) + 9, 6, 6);
+            setFont(MONO, 9.5, ACCTX, p.LEFT, p.TOP, 210 * ka); p.text(kc.cite.toUpperCase(), x + 18, sY(ly) + (1 - eCubic(ka)) * 6);
+            ly += paragraph(kc.claim, x + 18, ly + 14 + (1 - eCubic(ka)) * 6, w - 18, 14.5, INK, SERIF, 22, 245 * ka) + 12;
+          }
+          ly += 4;
+          ly += paragraph('When a reading feels true, it is usually because it names something you already knew. You just did the naming — that is the whole art. Trust these placements; they are where your chart speaks to you most clearly.', x, ly, w, 14.5, INK, SERIF, 23, 235) + 20;
+        }
+        flatBtn('Open full reading', x, ly, w, 46, function () { UI.guide = null; UI.readTab = 'story'; UI.scroll.read = 0; buzz(8); }, true); ly += 56;
+        flatBtn('Walk it again', x, ly, w * 0.48 - 6, 44, function () { G.i = 0; G.picks = {}; G.revealed = false; G.phase = 'cards'; G.cardT = nowT(); UI.scroll.read = 0; buzz(8); }, false, true);
+        flatBtn('Done', x + w * 0.52 + 6, ly, w * 0.48 - 6, 44, function () { UI.guide = null; UI.scroll.read = 0; }, false, true); ly += 56;
+        UI.contentH.read = ly + 20; return;
+      }
+      // -------- cards --------
+      var deck = G.deck || [], i = G.i, card = deck[i]; if (!card) { G.phase = 'portrait'; G.cardT = nowT(); return; }
+      // progress dots
+      var dn = deck.length, dotW = Math.min(14, (w - 20) / dn), dx0 = x + (w - (dn * dotW)) / 2, di;
+      for (di = 0; di < dn; di++) { var on = di === i, done = G.picks[di] !== undefined; p.noStroke(); fillc(on ? ACC : INK, on ? 255 : (done ? 150 : 55)); p.ellipse(dx0 + di * dotW + dotW / 2, sY(ly) + 4, on ? 7 : 5, on ? 7 : 5); }
+      ly += 22;
+      var ca = reduced() ? 1 : cl01((t - (G.cardT || 0)) / 380), ce = eCubic(ca), rise = (1 - ce) * 10;
+      setFont(MONO, 10, ACCTX, p.LEFT, p.TOP, 235 * ca); p.text(card.area.toUpperCase(), x, sY(ly) + rise); ly += 18;
+      setFont(MONO, 9, INK, p.LEFT, p.TOP, 150 * ca); p.text(card.cite.toUpperCase(), x, sY(ly) + rise); ly += 22;
+      ly += paragraph(card.claim, x, ly + rise, w, 18.5, INK, SERIF, 28, 255 * ca) + 18;
+      if (!G.revealed && ly < 300) ly = 300; // anchor the affirm buttons so they do not jump between cards
+      if (!G.revealed) {
+        setFont(MONO, 9.5, INK, p.LEFT, p.TOP, 150); p.text('DOES THIS RING TRUE?', x, sY(ly)); ly += 20;
+        flatBtn('That’s me', x, ly, w * 0.5 - 6, 50, function () { G.picks[i] = true; G.revealed = true; G.revT = nowT(); buzz(12); }, true);
+        flatBtn('Not quite', x + w * 0.5 + 6, ly, w * 0.5 - 6, 50, function () { G.picks[i] = false; advanceGuide(G, deck); }, false); ly += 62;
+      } else {
+        strokec(ACC, 150); p.strokeWeight(1.4); p.line(x, sY(ly), x + 34, sY(ly)); p.noStroke();
+        setFont(MONO, 9.5, ACCTX, p.LEFT, p.TOP, 220); p.text(G.picks[i] ? 'WHY IT FITS —' : 'WHAT IT MEANS —', x + 42, sY(ly) - 4); ly += 18;
+        var ra = reduced() ? 1 : cl01((t - (G.revT || 0)) / 420);
+        ly += paragraph(card.deeper, x, ly + (1 - eCubic(ra)) * 8, w, 15.5, INK, SERIF, 24, 250 * ra) + 20;
+        var last = i >= deck.length - 1;
+        flatBtn(last ? 'See your portrait' : 'Go on', x, ly, w, 48, function () { advanceGuide(G, deck); }, true); ly += 60;
+      }
+      setFont(MONO, 8.5, INK, p.CENTER, p.TOP, 120); p.text('TAP WHAT RINGS TRUE · NOTHING HERE IS A GUESS', x + w / 2, sY(ly)); ly += 18;
+      UI.contentH.read = ly + 20;
+    }
+    function advanceGuide(G, deck) {
+      G.revealed = false; G.revT = 0;
+      if (G.i >= deck.length - 1) { G.phase = 'portrait'; G.cardT = nowT(); }
+      else { G.i += 1; G.cardT = nowT(); }
+      UI.scroll.read = 0; buzz(8);
+    }
     function drawRings(c, b) {
       var x = sx(), w = cw(), top = topY(), vh = viewH(), cx = x + w / 2, t = nowT();
       p.noStroke(); fillc(shade(GROUNDS.read, -10)); p.rect(0, 0, W, H);
@@ -6906,6 +7055,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     }
     function drawRead() {
       var c = APP.STATE.chart, b = APP.STATE.birth; if (!c) { UI.screen = 'onboard'; return; }
+      if (UI.guide) { drawGuide(c, b); return; }
       if (UI.rings) { drawRings(c, b); return; }
       if (UI.calView) { drawTransitCalendar(c, b); return; }
       if (UI.lifeView) { drawLifeTimeline(c, b); return; }
@@ -6919,6 +7069,8 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       ly += 50;
       var rt = UI.readTab;
       if (rt === 'story') {
+      // the guided reading: a co-authored walk through the real chart, one card at a time
+      flatBtn('◉  Guided reading — walk your chart with me', x, ly, w, 46, function () { UI.guide = { phase: 'intro', t0: nowT() }; UI.scroll.read = 0; buzz(12); }, false); ly += 58;
       // the oddly-specific: concrete life-details, the "how did it know" layer, up top
       if (UI.quirkCache === undefined) { try { UI.quirkCache = APP.lifeQuirks(c); } catch (eQ9) { UI.quirkCache = []; } }
       if (UI.quirkCache && UI.quirkCache.length) {
@@ -10665,7 +10817,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       try {
         var ckW9 = APP.activeChartKey ? (APP.activeChartKey() + '|' + (APP.STATE.settings ? APP.STATE.settings.house + APP.STATE.settings.zodiac : '')) : '';
         if (UI.ckW !== ckW9) {
-          if (UI.ckW != null) { UI.readSig = null; UI.walkTr = null; UI.walkTheme = null; UI.plun = null; UI.forecast = null; UI.readCache = null; UI.todayCache = null; UI.calEvents = null; UI.fmList = null; UI.lbCache = null; UI.lqzCache = null; UI.lwSky = null; UI.progTL = null; UI.retroS = null; UI.sigCache = undefined; UI.arcCache = null; UI.promCache = null; UI.oddPred = undefined; UI.profYear = undefined; UI.quirkCache = undefined; UI.intCache = undefined; UI.intPull = undefined; UI.spookCache = undefined; UI.comboCache = undefined; UI.smCache = undefined; }
+          if (UI.ckW != null) { UI.readSig = null; UI.walkTr = null; UI.walkTheme = null; UI.plun = null; UI.forecast = null; UI.readCache = null; UI.todayCache = null; UI.calEvents = null; UI.fmList = null; UI.lbCache = null; UI.lqzCache = null; UI.lwSky = null; UI.progTL = null; UI.retroS = null; UI.sigCache = undefined; UI.arcCache = null; UI.promCache = null; UI.oddPred = undefined; UI.profYear = undefined; UI.quirkCache = undefined; UI.intCache = undefined; UI.intPull = undefined; UI.spookCache = undefined; UI.comboCache = undefined; UI.smCache = undefined; UI.guide = null; }
           UI.ckW = ckW9;
         }
       } catch (eCk9) {}
