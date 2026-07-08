@@ -1,5 +1,8 @@
 # Changelog
 
+## 3.22.0 — 2026-07-08
+- **The sky, stripped clean.** Still too busy, so this goes all the way to storybook calm. The drifting clouds are gone; the walk sky now carries no constellations at all (they remain only in the teaching sky, where they are the lesson); and the crowd of planets is reduced to just the two brightest wanderers, Venus and Jupiter, dimmed to soft distant lights that sit back in the deep. What is left is a clean gradient warming to a luminous horizon, a scatter of gentle stars, a few drifting motes of light, and the walker under a single soft beam. Quiet, and magic.
+
 ## 3.21.0 — 2026-07-08
 - **The sky, pulled back to storybook simplicity.** The reworked sky was too busy; this is the Ghibli pass. Gone are the dense parallax starfield, the Milky Way band and the sharp diffraction spikes. What is left is quiet and magical: one deep, soft gradient warming to a luminous horizon, a scatter of large gentle stars, a few slow motes of light drifting through the air, and — above the walker — only the one constellation that matters right now, its figure glowing while every other sign settles to a single soft star. The planets are soft glowing orbs in their own hues, the brightest storybook few, held steady and dreamlike.
 
