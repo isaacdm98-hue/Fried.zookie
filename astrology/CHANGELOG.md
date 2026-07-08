@@ -1,5 +1,8 @@
 # Changelog
 
+## 3.24.0 — 2026-07-08
+- **More eggs-for-breakfast specificity.** The "oddly specific" tells — the section that reads your actual daily life, not your archetype — grew from five to eight, and now covers your Sun (how you move through a day: "you have pressed the crosswalk button more than once, you start the thing before you have finished planning it, and 'I will just do it myself' is basically your catchphrase"), your Jupiter (where you overdo it: "you go big on birthdays, you round the generosity up, and none of your gestures are ever small"), and your Saturn (the weight you carry: "you have felt responsible since you were small, you quietly equate rest with laziness, and some part of you is sure it is all on you"). Thirty-six new concrete tells, each keyed to your real placements — the closer-to-the-bone register, more of it.
+
 ## 3.23.0 — 2026-07-08
 - **A warmer voice — wave one.** The readings are being rewritten to speak with more care: CHANI-style warmth, but keeping every specific placement and the honesty intact (never a horoscope-paper). This first wave warms the surfaces you meet first — the guided reading now walks with you "gently, at your own pace"; the life walkthrough speaks tenderly and closes each hard chapter with "however it arrived, you carried it, and you are still here"; the Saturn return is "the real beginning of a life that is actually yours… that weight was never a punishment; it was the making of you"; the timed predictions open softer ("Lately, you've…" / "Soon, you're likely…"); and the combination read leads with "At your core, you are… and underneath that, you need…". The exact astrology underneath every line is unchanged. More waves to follow across the whole app.
 

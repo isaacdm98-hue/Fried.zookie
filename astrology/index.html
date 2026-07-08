@@ -1134,10 +1134,13 @@ var APP = (function () {
       var mod = modFor(drive, QM[drive] || {});
       out.push(lead + base + (mod ? '. ' + capMod9(mod) : '') + '.');
     }
+    if (c.planets.sun && Q.sun) add('Day to day, ', 'sun', Q.sun[c.planets.sun.sign]);
     if (c.planets.venus && Q.venus) add('At the table, ', 'venus', Q.venus[c.planets.venus.sign]);
     if (c.planets.moon && Q.moon) add('At home, ', 'moon', Q.moon[c.planets.moon.sign]);
     if (c.planets.mars && Q.mars) add('For pace and temper, ', 'mars', Q.mars[c.planets.mars.sign]);
     if (c.planets.mercury && Q.mercury) add('In how your mind runs, ', 'mercury', Q.mercury[c.planets.mercury.sign]);
+    if (c.planets.jupiter && Q.jupiter) add('When you overdo it, ', 'jupiter', Q.jupiter[c.planets.jupiter.sign]);
+    if (c.planets.saturn && Q.saturn) add('The weight you carry: ', 'saturn', Q.saturn[c.planets.saturn.sign]);
     // the rising takes no aspect itself, so it is shaded by its ruling planet's tightest aspect
     if (tk && c.ascBody && Q.rising) {
       var rbase = Q.rising[c.ascBody.sign], rlr = RULERKEY[DATA.SIGNS[c.ascBody.sign].ruler];

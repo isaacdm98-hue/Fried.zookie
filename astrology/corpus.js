@@ -1967,3 +1967,47 @@ DATA.SUNMOON = [
   'pure ocean: boundlessly imaginative, compassionate and permeable, you feel everything and dream deeply, and you have to guard your own shores'
   ]
 ];
+
+// ===== more concrete tells: the eggs-for-breakfast register, extended to Sun, Jupiter, Saturn =====
+DATA.QUIRK.sun = [
+  'you have pressed the crosswalk button more than once, you start the thing before you have finished planning it, and "I will just do it myself" is basically your catchphrase',
+  'you have a favourite everything and you order it every single time, you cannot be rushed out of bed, and you have kept the same few worn-in shirts for a decade',
+  'you have three chats going at once, you know a startling little about a startling number of things, and you have changed the subject mid-sentence and not noticed',
+  'your lock screen is people you love, you feed guests within four minutes of them arriving, and you still think about a kindness someone did you years ago',
+  'you check yourself in every reflective surface you pass, you give genuinely good presents, and you can feel it in the room when you are not being paid attention to',
+  'you have a "better" way to load the dishwasher and you are correct, you spot the one typo on the whole menu, and you deflect compliments on reflex',
+  'you have asked "what are you getting?" so you can order the same, you keep the peace and quietly resent it later, and you have real opinions about things matching',
+  'you have researched a person thoroughly online, you clock exactly who left the group and who stayed, and you give almost nothing away until you fully trust someone',
+  'you have a trip half-planned right now, you say the blunt true thing and then soften it, and you own the full kit for a hobby you have done three times',
+  'you have a five-year plan and a faint guilt about resting, you were the responsible one far too young, and you deeply respect a person who shows up on time',
+  'you have a strong opinion on something most people never think about once, you sometimes like humanity more than individual humans, and you will not do it just because everybody else is',
+  'you have cried at an advert, you drift off mid-conversation to somewhere nicer in your head, and you feel the mood of a room before anyone has said a word'
+];
+DATA.QUIRK.jupiter = [
+  'you say yes to the plan before checking your calendar, and you have launched something big on pure nerve',
+  'you over-cater every time, you buy the nice version "because it lasts," and your idea of enough is quietly a bit more than enough',
+  'you have signed up for three courses and finished one, and you somehow know a guy for everything',
+  'you feed everyone, you adopt people into your family alarmingly fast, and your home stretches to fit whoever needs it',
+  'you go big on birthdays, you round the generosity up, and none of your gestures are ever small',
+  'you research a purchase for three weeks, you help more than you were asked to, and you have opinions about the correct brand of ordinary things',
+  'you say yes to keep everyone happy and overbook yourself by Thursday, and you quietly upgrade things for other people\u2019s comfort',
+  'you go all in or not at all, you learn everything about the thing you love, and your enthusiasms are total or absent',
+  'you have booked the flight on a whim, you promise the big version and mostly deliver it, and your optimism has both cost you and saved you',
+  'you grow it slowly and it stays grown, you are generous in strictly practical ways, and you back things that compound',
+  'you give your time freely to a cause, you hand people freedom as if it were a gift, and you instinctively back the underdog',
+  'you give until it pinches a little, you forgive faster than is wise, and your generosity has no obvious off switch'
+];
+DATA.QUIRK.saturn = [
+  'you push through when you should rest, and you are hardest on yourself about not being "further along" by now',
+  'you hold on to things, and to money, a good while past when you needed to, and security never quite feels like enough',
+  'you over-prepare so you will not sound stupid, and you re-read the text you already sent',
+  'you find it genuinely hard to ask for help, you look after everyone and go stiff when looked after, and family duty sits heavy on you',
+  'you fear being ordinary or unseen, you rehearse before you perform, and praise somehow never fully lands',
+  'you set the bar where nobody can reach it, yourself included, and "good enough" feels like getting away with something',
+  'you put off the hard conversation until it is overdue, and you fear being disliked more than you will admit',
+  'you keep the real fear private, you half-brace for the betrayal, and you trust slowly and completely or not at all',
+  'you fear being trapped so you always keep an exit, and you struggle to commit to a single path',
+  'you have felt responsible since you were small, you quietly equate rest with laziness, and some part of you is sure it is all on you',
+  'you hold people at a slight distance to stay safe, and you fear losing yourself inside belonging',
+  'you doubt your own boundaries, you carry guilt that was never yours, and you fear the world is too sharp for how soft you actually are'
+];
