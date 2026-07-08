@@ -1448,3 +1448,85 @@ DATA.SPOOKY.neptuneHouse = [
   'your hopes are dreamlike and idealistic; you are drawn to visionary groups and can be disillusioned by your own high ideals',
   'you are deeply connected to the unseen; your intuition runs strong, and solitude is where you actually meet the infinite'
 ];
+
+// ===== Aspect backstories (hard aspects) + retrograde life-patterns =====
+DATA.SPOOKY_ASPECT = {
+  'sun-moon': 'your parents pulled in different directions, or you felt torn between pleasing one and being your own person; you learned young to split the difference inside yourself',
+  'sun-mars': 'you were competitive or combative early; you have real fight in you, and you learned to go after what you want, sometimes at war with yourself',
+  'sun-jupiter': 'you were encouraged to think big, maybe too big; you promise large and grow into it, and confidence is both your gift and your trap',
+  'sun-saturn': 'a father or authority figure was hard, absent, critical or heavy; you grew up fast, learned to earn approval, and still carry a quiet fear of not being enough',
+  'sun-uranus': 'you never fit the mould and something marked you as different young; you need freedom to be yourself and you bolt when anyone boxes you in',
+  'sun-neptune': 'your sense of self was foggy young, or a parent was absent, idealised or lost in something; you find yourself through art, spirit or service, and you dissolve into roles',
+  'sun-pluto': 'power and control were themes early; someone loomed large, and you learned to read who really holds the power in any room',
+  'moon-mars': 'the home could get volatile; you learned to defend yourself young, and your feelings still come out as heat before you can name them',
+  'moon-jupiter': 'you were indulged emotionally or learned to soothe yourself in excess; your feelings run big and generous, sometimes too big',
+  'moon-saturn': 'you learned early that comfort had to be earned; a parent was distant, overworked or unwell, and you became self-sufficient long before you should have had to',
+  'moon-uranus': 'home or a parent was unpredictable, or came and went; you learned not to lean on closeness, and you need freedom in order to feel safe',
+  'moon-neptune': 'a parent was dreamy, absent, sacrificing or lost in something; you absorbed everyone\u2019s feelings, and the line between you and other people is still thin',
+  'moon-pluto': 'there was emotional intensity, control or loss early; you feel deeply and privately, and trust is something people have to earn from you slowly',
+  'mercury-mars': 'you think and speak sharply; you argued a lot young, and your words can cut a beat before you mean them to',
+  'mercury-jupiter': 'you were the big-picture one who skipped the details; you oversell then over-deliver, and you cannot tell a short version of anything',
+  'mercury-saturn': 'you doubted your own intelligence young; a teacher or a critic marked you, and you became careful, thorough and quietly authoritative',
+  'mercury-uranus': 'your mind ran ahead and sideways young; you were the odd one with the strange idea, and you still think in leaps others struggle to follow',
+  'mercury-neptune': 'facts and daydreams blurred early; you were called a daydreamer, you think in images, and you have to write things down to hold them still',
+  'mercury-pluto': 'you learned to read the room and the subtext young; words had power, or were used against you, and now you dig for the real story under every one',
+  'venus-mars': 'what you want and how you chase it argue inside you; your love life runs hot and complicated, and a little friction is part of the draw',
+  'venus-jupiter': 'you were loved generously or taught love should be easy; you give your heart widely, and you have to watch a tendency to over-promise it',
+  'venus-saturn': 'love came with conditions or delay early; you may have felt unlovable or unchosen, and you take relationships seriously and slowly because of it',
+  'venus-uranus': 'love and freedom pull hard against each other in you; you fall suddenly and then need space, and you have left, or been left, abruptly',
+  'venus-neptune': 'you have idealised someone and paid the toll; you are drawn to the artistic, the wounded or the unavailable, and the lesson is loving the real person',
+  'venus-pluto': 'love and intensity fused young; you love all-or-nothing, and you have known jealousy, obsession, or a love that genuinely transformed you',
+  'mars-jupiter': 'you go big when you go; you were the one who bet the whole tank on the first mile, and you win the distance only once you learn to ration the fire',
+  'mars-saturn': 'your drive met resistance early; you learned to work hard and hold back, and anger and fear can lock you up until you give them a real job',
+  'mars-uranus': 'your temper or your energy fires without warning; you are accident-prone when rushed, and you rebel hard against anyone trying to control you',
+  'mars-neptune': 'your drive can leak away into vagueness or escape; you learned your engine runs on inspiration rather than orders, and a written goal doubles your horsepower',
+  'mars-pluto': 'you carry a deep, sometimes frightening will; power struggles marked you, and you either master your own intensity or it quietly masters you',
+  'jupiter-saturn': 'you swing between hope and hard realism; you were taught both to dream and to doubt, and you build slowly toward something that actually lasts',
+  'saturn-uranus': 'you are torn between the rules and the rebellion; something old had to break for you, and you learned to build the new thing carefully',
+  'saturn-neptune': 'you have watched a dream meet hard reality; you doubt your own vision on schedule, and your work is building something real out of something formless',
+  'saturn-pluto': 'you have known real hardship, control or loss; you endure what flattens other people, and you rebuild yourself from bedrock'
+};
+DATA.SPOOKY.retro = {
+  'mercury': 'Mercury was retrograde when you were born, so you think before you speak and your inner voice is louder than your outer one; you understood the world in your own private order first, and you often need to say a thing twice, once to yourself, before it comes out right',
+  'venus': 'Venus was retrograde when you were born, so love and worth work inside-out for you; you question what you value, you may have loved unconventionally or late, and you had to learn your own worth before anyone else could confirm it',
+  'mars': 'Mars was retrograde when you were born, so your drive runs inward first; you act after you have processed, anger turns back on you before it turns out, and your strength is a slow, considered kind rather than a reflex',
+  'jupiter': 'Jupiter was retrograde when you were born, so your luck and faith are self-generated; you find meaning within rather than from teachers or institutions, and your optimism is earned, not inherited',
+  'saturn': 'Saturn was retrograde when you were born, so your inner critic is fiercer than any outside one; the authority and the rules you answer to are your own, and you had to become your own strict, fair father',
+  'uranus': 'Uranus was retrograde when you were born, so your rebellion is inward and quiet; you free yourself in private long before anyone sees it, and your originality lives under a fairly ordinary surface',
+  'neptune': 'Neptune was retrograde when you were born, so your spirituality is personal and unshowy; you dissolve inward, your dreams and intuitions are your own, and you distrust ready-made mysticism',
+  'pluto': 'Pluto was retrograde when you were born, so your transformations happen underground; you remake yourself from the inside, and the deepest changes of your life leave little visible trace until they are done'
+};
+
+// ===== Sun x Moon element blend + chart-ruler house =====
+DATA.SPOOKY.sunMoon = {
+  'fire-fire': 'you are all engine and no brakes: what you are and what you need both run hot, so you burn bright, act on instinct, and have to build in your own cooling-off periods',
+  'fire-earth': 'a spark with ballast: you want to leap but you need solid ground, so you are the rare person who has big ideas and actually finishes them, once you stop fighting your own caution',
+  'fire-air': 'you run on inspiration and ideas together: you think out loud, act fast, and light rooms up, but you can talk and burn yourself out before anything lands',
+  'fire-water': 'fire over water makes steam: you are driven and deeply feeling at once, passionate and easily hurt, and you run hot then need to retreat and lick your wounds',
+  'earth-fire': 'a steady body with a restless heart: you build carefully but you need excitement, so you are reliable on the outside and secretly craving a spark',
+  'earth-earth': 'you are grounded through and through: what you are and what you need both want the real and the lasting, so you are the rock, though you can calcify if nothing ever changes',
+  'earth-air': 'a practical mind that needs to think: you want results but you feed on ideas and talk, so you are the one who theorises then quietly gets it done',
+  'earth-water': 'earth and water grow things: you are practical and deeply feeling, nurturing and solid, the friend who both cares and actually shows up with soup',
+  'air-fire': 'ideas that catch fire: you think fast and act on it, you inspire and provoke, and you need both a conversation and a cause or you get restless',
+  'air-earth': 'a thinker who needs the tangible: you live in your head but you crave the real, so you are happiest turning a good idea into a solid thing',
+  'air-air': 'you live almost entirely in the mind: what you are and what you need are both about ideas, words and perspective, brilliant and a little detached from the body',
+  'air-water': 'thinking and feeling at once, hard to separate: you analyse your emotions and feel your thoughts, which makes you perceptive and occasionally lost in your own head',
+  'water-fire': 'deep feeling with a hot engine: you are sensitive and driven, moody and passionate, and you swing between retreat and going all-in',
+  'water-earth': 'feeling with a container: you are deeply emotional but grounded, nurturing and reliable, the still water that runs deep and steady',
+  'water-air': 'you feel everything and then try to explain it: emotional and analytical at once, you process by talking your feelings through, and you know yourself unusually well',
+  'water-water': 'you are pure ocean: what you are and what you need both run on feeling and depth, so you are profoundly empathic, intuitive, and need real solitude to not drown'
+};
+DATA.SPOOKY.rulerHouse = [
+  'the ruler of your chart sits in your 1st house, so your energy pours straight into being yourself; you are self-directed, and your life is unusually your own to steer',
+  'the ruler of your chart sits in your 2nd house, so your life energy goes into money, security and self-worth; building a stable base is a lifelong throughline',
+  'the ruler of your chart sits in your 3rd house, so your life runs on communication, learning and your local world; words, siblings and short journeys shape your path',
+  'the ruler of your chart sits in your 4th house, so your energy centres on home, family and roots; your private life and your origins are the real stage of your story',
+  'the ruler of your chart sits in your 5th house, so your life pours into creativity, romance and play; self-expression and joy are not extras for you, they are the point',
+  'the ruler of your chart sits in your 6th house, so your energy goes into work, health and being useful; the daily craft of your life is where you actually live',
+  'the ruler of your chart sits in your 7th house, so your life runs through relationships; you find yourself in partnership, and other people are the making of you',
+  'the ruler of your chart sits in your 8th house, so your energy goes into depth, intimacy and transformation; you live close to the big stuff and are remade by it',
+  'the ruler of your chart sits in your 9th house, so your life pulls toward meaning, travel and the wider world; you are here to expand, and staying small suffocates you',
+  'the ruler of your chart sits in your 10th house, so your energy goes into career and the public world; you are meant to be seen and to leave a mark out there',
+  'the ruler of your chart sits in your 11th house, so your life runs through friends, groups and the future; your people and your hopes are where your energy really goes',
+  'the ruler of your chart sits in your 12th house, so your energy flows toward the hidden, the spiritual and the behind-the-scenes; much of your real life happens where others cannot see'
+];

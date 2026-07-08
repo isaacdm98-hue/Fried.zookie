@@ -1084,6 +1084,24 @@ var APP = (function () {
     hse('pluto', 'plutoHouse'); hse('uranus', 'uranusHouse'); hse('neptune', 'neptuneHouse');
     if (P.node && S.nodeSign && S.nodeSign[P.node.sign]) out.push(S.nodeSign[P.node.sign]);
     if (tk && P.node && P.node.house && S.nodeHouse && S.nodeHouse[P.node.house - 1]) out.push(S.nodeHouse[P.node.house - 1]);
+    // the Sun x Moon element blend: who you are vs what you need
+    if (S.sunMoon && P.sun && P.moon) { var smk = DATA.SIGNS[P.sun.sign].element + '-' + DATA.SIGNS[P.moon.sign].element; if (S.sunMoon[smk]) out.push(S.sunMoon[smk]); }
+    // the chart ruler's house: where your captain sits
+    if (tk && S.rulerHouse && c.ascBody) { var rlrK = RULERKEY[DATA.SIGNS[c.ascBody.sign].ruler], rlrP = rlrK && P[rlrK]; if (rlrP && rlrP.house && S.rulerHouse[rlrP.house - 1]) out.push(S.rulerHouse[rlrP.house - 1]); }
+    // retrograde life-patterns
+    if (S.retro) { var rk; for (rk in S.retro) if (S.retro.hasOwnProperty(rk) && P[rk] && P[rk].retro) out.push(S.retro[rk]); }
+    // the spookiest layer: hard-aspect backstories (the "your father was hard on you" reads)
+    var SA = DATA.SPOOKY_ASPECT;
+    if (SA) {
+      var PO = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto'], ai;
+      for (ai = 0; ai < c.aspects.length; ai++) {
+        var A = c.aspects[ai]; if (A.minor) continue;
+        var q = A.asp.quality; if (q !== 'fusion' && q !== 'tension' && q !== 'friction') continue; // conjunction / opposition / square
+        var ia = PO.indexOf(A.a), ib = PO.indexOf(A.b); if (ia < 0 || ib < 0) continue;
+        var key = ia < ib ? (A.a + '-' + A.b) : (A.b + '-' + A.a);
+        if (SA[key]) out.push(SA[key]);
+      }
+    }
     return out;
   }
   function chartSignature(c) {

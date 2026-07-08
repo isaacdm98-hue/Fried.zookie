@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.12.0 — 2026-07-06
+- **The spookiest layer: aspect backstories.** The reading now says the thing an astrologer says that makes the room go quiet. Thirty-four hard-aspect backstories fire only when your chart actually holds that aspect: "a father or authority figure was hard, absent or heavy; you grew up fast and still carry a quiet fear of not being enough" (Sun-Saturn); "you learned early that comfort had to be earned; a parent was distant or overworked" (Moon-Saturn); "you doubted your own intelligence young; a teacher or a critic marked you" (Mercury-Saturn). Every hard contact between two planets carries its own story.
+- **Retrograde life-patterns.** A planet retrograde at your birth now reads its inward signature: "Saturn was retrograde when you were born, so you had to become your own strict, fair father." Eight of them, one per planet.
+- **The Sun-and-Moon blend, and your chart's captain.** The classic who-you-are-versus-what-you-need read ("a spark with ballast: you want to leap but you need solid ground") across all sixteen element pairings, plus the house your chart ruler sits in ("the ruler of your chart sits in your 9th: you are here to expand, and staying small suffocates you"). The library is now 310 lines; a full chart reads around thirty of its own.
+
 ## 3.11.0 — 2026-07-06
 - **The placement library doubles: 240 lines, and every chart now reads twenty of its own.** Batch two adds the Sun by sign (life purpose), Mercury by house, Jupiter and Saturn by sign (how you grow, what you fear), both lunar Nodes by sign and house (where the soul is headed), and Pluto, Uranus and Neptune by house (where you transform, rebel and dream). A full chart now pulls around twenty of these read straight onto its exact placements, still rotating so the reading keeps opening new doors. Halfway to the five hundred, and the structure holds the rest.
 
