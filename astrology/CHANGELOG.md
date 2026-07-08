@@ -1,5 +1,8 @@
 # Changelog
 
+## 3.7.0 — 2026-07-06
+- **The predictions now speak like a real astrologer.** The Seasons forecast stops describing weather and starts naming life events, in the voice a reader across the table would use. It looks back as well as forward: "You have recently been through a real test around work and your health — something got heavier, a limit showed up, or a chapter you had outgrown finally ended," and it calls what is coming: "You are likely to get a surge of energy around romance, children or a creative project: a strong window to start and to act." Each statement names the exact life-area (the house that natal planet rules), tells you the planet and date behind it, and reads in the right tense — past for what has landed, present for what is landing now. The scanner reaches four months back so the "you've recently…" reads are real, slow multi-pass transits fold into one chapter with all their dates, and no single fast planet is allowed to dominate the list.
+
 ## 3.6.0 — 2026-07-06
 - **The wheel breathes.** The Home chart was doing too much at once. The live sky now rides a faint track set well outside the zodiac names and glyphs, so nothing collides: only the planets actually touching your chart today glow, pulse and thread inward, while the quiet rest of the sky becomes a small unobtrusive tick. The busy fifteen-ring interior drops to four calm rings.
 - **The Sun, Moon and rising, made real.** The three little dials under the wheel stop being flat glyphs ringed by filler dots. The Sun now renders as its true glowing body and the Moon as its cratered orb (the same craft as the hero), the rising as a clean, gently-listing sign, and a single fine mark on each ring shows the exact degree the body sits at in its sign.

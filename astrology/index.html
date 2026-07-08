@@ -2541,10 +2541,11 @@ var APP = (function () {
     var dn = jsDayNum(dt), a = EPH.positions(dn - 0.5)[tk].lon, b = EPH.positions(dn + 0.5)[tk].lon;
     return sdelta(rev(a - (ay || 0)), rev(b - (ay || 0)));
   }
-  function upcomingTransits(c, months, cap) {
+  function upcomingTransits(c, months, cap, backMonths) {
     var transiting = ['mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto'], natal = DATA.PLANET_ORDER;
     var SLOW = { jupiter: 1, saturn: 1, uranus: 1, neptune: 1, pluto: 1 };
-    var t0 = new Date(), days = Math.round((months || 8) * 30.4), step = 2, ay = c.ayan || 0, samples = [], k;
+    var nowD = new Date(), backD = Math.round((backMonths || 0) * 30.4), t0 = new Date(nowD.getTime() - backD * 86400000);
+    var days = Math.round((months || 8) * 30.4) + backD, step = 2, ay = c.ayan || 0, samples = [], k;
     for (k = 0; k <= days; k += step) { var dt = new Date(t0.getTime() + k * 86400000); samples.push({ dt: dt, pos: EPH.positions(jsDayNum(dt)) }); }
     var events = [], ti, ni, ai;
     for (ti = 0; ti < transiting.length; ti++) {
@@ -2571,7 +2572,7 @@ var APP = (function () {
     }
     events.sort(function (x, y) { return x.date - y.date; });
     // applying vs separating as of NOW: compare |offset to target| now vs +4 days
-    var nowMs = t0.getTime(), ev0, p0Pos = samples.length ? samples[0].pos : EPH.positions(jsDayNum(t0));
+    var nowMs = nowD.getTime(), ev0, p0Pos = EPH.positions(jsDayNum(nowD));
     for (ev0 = 0; ev0 < events.length; ev0++) {
       var E = events[ev0], npE = c.planets[E.np];
       var sdNow = sdelta(npE.lon, rev(p0Pos[E.tp].lon - ay)), gNow = sdelta(E.target, sdNow);
@@ -3188,50 +3189,61 @@ var APP = (function () {
     }
     return { pf: pf, parts: parts };
   }
+  // the astrologer's voice: not weather, but life events. Read from where the real
+  // planets are, said the way a reader across the table would say it: "you've recently
+  // been through X", "you're likely to Y soon", tied to the exact house it touches.
   function oddPredictions(c, b) {
     var evs = [];
-    try { evs = upcomingTransits(c, 11, 18); } catch (eOp0) { return []; }
-    var MON9 = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], DOW9 = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], SLOW9 = { jupiter: 1, saturn: 1, uranus: 1, neptune: 1, pluto: 1 };
-    var PUSH9 = {
-      mars: { feel: 'a stretch of heat and hurry', good: 'starting the thing you have been circling for months, or finally having the conversation you have been ducking', risk: 'saying it a size too sharp, rushing a decision, and the small accidents that come with haste' },
-      jupiter: { feel: 'a run of room, nerve and open doors', good: 'asking for more than feels polite, saying yes to the larger version, betting on your own growth', risk: 'over-promising and then having to grow into a size you named too fast' },
-      saturn: { feel: 'a season of weight, tests and hard edges', good: 'committing for real, cutting the dead weight you have been dragging, doing the unglamorous work that actually lasts', risk: 'reading a slow no as a permanent one, and quietly carrying more than is yours to carry' },
-      uranus: { feel: 'a jolt and a live-wire itch to break the pattern', good: 'changing the thing you have plainly outgrown before it breaks on its own terms', risk: 'detonating something stable for a reason that will not hold up in a month' },
-      neptune: { feel: 'a soft, foggy, longing sort of spell', good: 'art, rest, devotion, and letting one hard edge in you actually dissolve', risk: 'wishful thinking, being quietly fooled, and mistaking a strong mood for a fact' },
-      pluto: { feel: 'a slow underground pressure that will not lift on command', good: 'letting something finish so a truer version of it can be born', risk: 'power struggles, and gripping white-knuckled onto what is already leaving' }
+    try { evs = upcomingTransits(c, 11, 200, 4); } catch (eOp0) { return []; } // 4 months back, 11 ahead; large cap so future events survive the sort
+    var MON9 = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    var nowMs9 = (new Date()).getTime(), nowY9 = (new Date()).getFullYear(), DAY9 = 86400000;
+    // the concrete life-area each house names, in plain words a client would use
+    var DOM9 = ['your sense of self, your body, or how you show up', 'money and what you value', 'your everyday communication, a sibling, or learning', 'home and family', 'romance, children, or a creative project', 'work and your health', 'a close relationship or partnership', 'shared money, deep intimacy, or an ending', 'travel, study, or what you believe', 'your career and public standing', 'friends, a group, or a long-held goal', 'a retreat, a closure, or something behind the scenes'];
+    // per transiting planet: the event it brings, in past and future voice, hard and soft
+    var EVT9 = {
+      mars: { hp: 'come through some friction around {d} \u2014 a conflict, a hard push, or something you had to fight for', hf: 'to hit friction around {d} \u2014 a confrontation, a rush, or a decision that will not wait', sp: 'had a real burst of drive around {d} and got something moving', sf: 'to get a surge of energy around {d}: a strong window to start and to act', why: 'Mars {t} lighting up' },
+      jupiter: { hp: 'seen things around {d} grow faster than you expected', hf: 'to be handed a big opportunity around {d} that is worth a second, careful look', sp: 'had a genuine opening around {d} \u2014 an offer, a yes, or room to grow', sf: 'to be offered an opportunity around {d}: an offer, an invitation, or a door opening', why: 'Jupiter {t} crossing' },
+      saturn: { hp: 'been through a real test around {d} \u2014 something got heavier, a limit showed up, or a chapter you had outgrown finally ended', hf: 'to face a test around {d} \u2014 a commitment that gets serious, a weight you cannot dodge, or an ending you have seen coming', sp: 'been steadily building something solid and lasting around {d}', sf: 'to lock in something lasting around {d}: a commitment that finally holds', why: 'Saturn {t} sitting on' },
+      uranus: { hp: 'had something around {d} change or break suddenly, in a way you did not plan', hf: 'to hit a sudden change around {d} \u2014 a break, an exit, or a rule you stop following', sp: 'had a refreshing shake-up around {d}: a new angle, or a freedom you reached for', sf: 'to break a rut around {d}: an unexpected opening or a new kind of freedom', why: 'Uranus {t} crossing' },
+      neptune: { hp: 'been in a fog around {d} \u2014 an ideal, a confusion, or something that dissolved when you looked closely', hf: 'to meet some confusion or a beautiful illusion around {d}: high hopes worth double-checking', sp: 'had a tender, imaginative spell around {d}', sf: 'to feel a soft, dreamlike pull around {d}: good for the imaginative, less good for the fine print', why: 'Neptune {t} drifting over' },
+      pluto: { hp: 'been through a deep, pressured change around {d} \u2014 a power shift, an ending, or something you could not stop', hf: 'to go through a deep change around {d}: a power shift, an ending that clears the ground, or a drive to remake it', sp: 'been quietly, thoroughly remaking something around {d}', sf: 'to transform something around {d} for good, slowly and completely', why: 'Pluto {t} grinding over' }
     };
-    var QV9 = { fusion: 'lands right on top of', flow: 'flows kindly into', opportunity: 'opens a small door onto', tension: 'pulls hard against', friction: 'grinds against' };
-    function ruled9(nk) {
-      if (b && b.timeKnown && c.cusps) {
-        var hs = [], hi; for (hi = 1; hi <= 12; hi++) { var cs = Math.floor((((c.cusps[hi] % 360) + 360) % 360) / 30); if (DATA.SIGNS[cs] && RULERKEY[DATA.SIGNS[cs].ruler] === nk) hs.push(hi); }
-        if (hs.length) return hs.slice(0, 2).map(function (h) { return DATA.HOUSES[h - 1].title.toLowerCase(); }).join(' and ');
-      }
-      return null;
-    }
     function ruledHouse9(nk) {
       if (b && b.timeKnown && c.cusps) { var hi; for (hi = 1; hi <= 12; hi++) { var cs = Math.floor((((c.cusps[hi] % 360) + 360) % 360) / 30); if (DATA.SIGNS[cs] && RULERKEY[DATA.SIGNS[cs].ruler] === nk) return hi; } }
       return null;
     }
-    var out = [], i;
-    for (i = 0; i < evs.length && out.length < 7; i++) {
-      var ev = evs[i], pu = PUSH9[ev.tp]; if (!pu) continue;
-      var np = c.planets[ev.np]; if (!np) continue;
-      var d = ev.date, dstr = DOW9[d.getDay()] + ' ' + d.getDate() + ' ' + MON9[d.getMonth()] + (d.getFullYear() !== (new Date()).getFullYear() ? ' ' + d.getFullYear() : '');
-      var q = QV9[ev.quality] || 'meets';
-      // the concrete event: the house this natal planet RULES is the life-area that moves;
-      // fall back to the house it sits in, then to its natural domain
-      var rH9 = ruledHouse9(ev.np), evtH9 = rH9 || (b && b.timeKnown ? np.house : 0);
-      var where = (np.house && b && b.timeKnown) ? (', which sits in your ' + ordinal(np.house) + ' house') : '';
-      var rules = (rH9 && HOUSE_LIFE[rH9 - 1]) ? (' and rules your ' + ordinal(rH9) + ' house of ' + HOUSE_LIFE[rH9 - 1].th) : '';
-      var lead = 'Around ' + dstr + ', ' + nameFor(ev.tp) + ' ' + q + ' your ' + nameFor(ev.np) + where + rules + '.';
-      var evt = (evtH9 && HOUSE_LIFE[evtH9 - 1]) ? ('This is the classic timing for ' + HOUSE_LIFE[evtH9 - 1].ev + '.') : ('This tends to stir ' + practicalDomain(ev.np) + '.');
-      var body = evt + ' It is good for ' + pu.good + '; watch for ' + pu.risk + '.';
-      var win;
-      if (ev.multi && ev.passes && ev.passes.length > 1) win = ' It comes in ' + ev.passes.length + ' passes (' + ev.passes.map(function (pz) { return pz.date.getDate() + ' ' + MON9[pz.date.getMonth()]; }).join(', ') + '), so it is a long chapter, not a single day.';
-      else if (SLOW9[ev.tp]) win = ' It builds for weeks either side, so read the date as the peak.';
-      else win = ' Sharpest for about three days around then.';
-      out.push({ date: d, text: lead + ' ' + body + win, quality: ev.quality, tp: ev.tp });
+    function whenTxt9(d, past, slow, ev) {
+      var dd = Math.round((d.getTime() - nowMs9) / DAY9), md = d.getDate() + ' ' + MON9[d.getMonth()].slice(0, 3) + (d.getFullYear() !== nowY9 ? ' ' + d.getFullYear() : '');
+      if (ev && ev.multi && ev.passes && ev.passes.length > 1) { var ps = ev.passes.map(function (pz) { return pz.date.getDate() + ' ' + MON9[pz.date.getMonth()].slice(0, 3); }); return 'It works in passes (' + ps.join(', ') + '), so this is a long chapter rather than a single day.'; }
+      if (past) { var ago = -dd; return ago < 20 ? 'It peaked just weeks ago and is easing now.' : ('It peaked around ' + md + ' and is settling now.'); }
+      if (dd <= 3) return 'It is landing right now, this very week.';
+      if (dd <= 45) return 'It is exact around ' + md + ' \u2014 the next few weeks.';
+      return (slow ? 'It builds toward ' + md + ' and is felt for months either side.' : 'It comes to a head around ' + md + '.');
     }
+    // collect, split into recent-and-heavy vs upcoming, then say each as an event
+    var past = [], future = [], i;
+    for (i = 0; i < evs.length; i++) {
+      var ev = evs[i]; if (!EVT9[ev.tp]) continue; if (!c.planets[ev.np]) continue;
+      var dd2 = (ev.date.getTime() - nowMs9) / DAY9;
+      if (dd2 < -6) { if (ev.tp !== 'mars' && dd2 > -125) past.push(ev); }   // recent, heavy movers only
+      else future.push(ev);
+    }
+    past.sort(function (a, b2) { return b2.date - a.date; });   // most recent first
+    future.sort(function (a, b2) { return a.date - b2.date; }); // soonest first
+    function build9(ev, isPast) {
+      var E = EVT9[ev.tp], hard = (ev.quality === 'tension' || ev.quality === 'friction' || ev.quality === 'fusion');
+      var rH = ruledHouse9(ev.np), np = c.planets[ev.np];
+      var hIdx = rH || (b && b.timeKnown ? np.house : 0);
+      var dom = hIdx ? DOM9[hIdx - 1] : (SHORTFN[ev.np] || 'this part of your life');
+      var clause = (isPast ? (hard ? E.hp : E.sp) : (hard ? E.hf : E.sf)).replace('{d}', dom);
+      var opener = isPast ? 'You have recently ' : 'You are likely ';
+      var why = E.why.replace('{t}', isPast ? 'was' : 'is') + ' ' + nameFor(ev.np) + (rH ? ', the ruler of your ' + ordinal(rH) + ' house' : (np && np.house && b && b.timeKnown ? ', in your ' + ordinal(np.house) + ' house' : '')) + '.';
+      var when = whenTxt9(ev.date, isPast, !!ev.slow, ev);
+      return { date: ev.date, text: opener + clause + '. ' + why + ' ' + when, quality: ev.quality, tp: ev.tp, past: isPast };
+    }
+    var out = [], used = {}, tpN = {};
+    for (i = 0; i < past.length && out.length < 2; i++) { var kp = past[i].tp + past[i].np; if (used[kp]) continue; used[kp] = 1; out.push(build9(past[i], true)); }
+    for (i = 0; i < future.length && out.length < 6; i++) { var kf = future[i].tp + future[i].np; if (used[kf] || (tpN[future[i].tp] || 0) >= 2) continue; used[kf] = 1; tpN[future[i].tp] = (tpN[future[i].tp] || 0) + 1; out.push(build9(future[i], false)); }
     return out;
   }
   function composeForecast(c) {
@@ -6735,8 +6747,8 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         // oddly specific, dated, and computed straight from where the planets will actually be
         if (UI.oddPred === undefined) { try { UI.oddPred = APP.oddPredictions(c, b); } catch (eOp9) { UI.oddPred = []; } }
         if (UI.oddPred && UI.oddPred.length) {
-          eyebrow('What is coming, to the day', x, ly, ACC); ly += 22;
-          ly += paragraph('Read straight off where the real planets will be. Each date is the day that contact is exact on your chart.', x, ly, w, 13, INK, SERIF, 19, 185) + 12;
+          eyebrow('What you are moving through', x, ly, ACC); ly += 22;
+          ly += paragraph('What the sky has recently done and is about to do to your life, read the way a good astrologer would say it. Computed from where the real planets actually are.', x, ly, w, 13, INK, SERIF, 19, 185) + 12;
           var op9; for (op9 = 0; op9 < Math.min(UI.oddPred.length, 5); op9++) {
             var opv = UI.oddPred[op9]; if (op9) { hairline(x, ly, x + w, 30); ly += 8; }
             var qc9 = opv.quality;
