@@ -4019,6 +4019,15 @@ var APP = (function () {
     if (tSign !== sSign) out.push({ lab: 'Where your Sun truly stands', txt: 'Your Sun sign is ' + DATA.SIGNS[tSign].name + ', the seasonal zodiac tied to the equinox. But against the actual constellations — the sky the pyramid-builders watched — your Sun stood in ' + DATA.SIGNS[sSign].name + '. Precession has slid the two apart by about ' + aya.toFixed(0) + '° across the ages: the link between the calendar and the real stars that most readings drop.' });
     // 4) your decan, the Egyptian star-clock
     try { var dec = decanOf(P.sun.sign, P.sun.deg); if (dec) out.push({ lab: 'Your decan, the first clock', txt: 'You were born in the ' + ordinal(dec.decan) + ' decan of ' + DATA.SIGNS[P.sun.sign].name + ', the ten-day window ruled by ' + dec.rulerName + '. The Egyptians divided the year into 36 such decans, each marked by a star that rose at dusk — the first clock humankind ever built, painted across tomb ceilings. This ten-day window is the one the sky kept for you.' }); } catch (eDk) {}
+    // 5) Babylon: the base-sixty math the whole chart still runs on
+    try { var dg = P.sun.deg, mn = Math.floor((dg - Math.floor(dg)) * 60); out.push({ lab: 'In Babylonian base sixty', txt: 'The Babylonians gave us the twelve signs and the 360° circle, counting in base sixty — the reason a degree still holds sixty minutes and an hour sixty seconds. A scribe would have set your Sun at ' + Math.floor(dg) + '° ' + mn + '′ of ' + DATA.SIGNS[P.sun.sign].name + ', predicting it on a clay tablet with zig-zag arithmetic three centuries before Greece. The math under your whole chart is theirs.' }); } catch (eBb) {}
+    // 6) Vedic: the Moon's nakshatra, the lunar mansion India has read for 3,000 years
+    try {
+      if (P.moon && DATA.NAKSHATRA) {
+        var moonSid = rev(trop(P.moon.lon) - aya), nki = Math.floor(moonSid / (360 / 27)) % 27, nak = DATA.NAKSHATRA[nki];
+        if (nak) out.push({ lab: 'Your Moon’s nakshatra (Vedic)', txt: 'In the Vedic sky, your Moon sits in ' + nak.n + ': ' + nak.m + '. The 27 nakshatras are the Moon’s mansions — the lunar zodiac India has read for three thousand years, and the seed of your Vimshottari life-periods. It is the single most personal point in Jyotisha.' });
+      }
+    } catch (eNk) {}
     return out;
   }
   // Planetary joys — the Hellenistic doctrine (Paulus Alexandrinus, et al.) that each of the seven

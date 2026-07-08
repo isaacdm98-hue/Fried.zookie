@@ -2069,3 +2069,34 @@ DATA.QUIRK_HOUSE = {
   'you love quietly and sometimes secretly, and you fall for people you cannot quite fully have'
   ]
 };
+
+// ===== the 27 nakshatras: the Moon's mansions of Vedic astrology (Lahiri) =====
+DATA.NAKSHATRA = [
+  { n: 'Ashwini', m: 'the healers on horseback — swift starts, fresh energy, and a gift for getting things moving' },
+  { n: 'Bharani', m: 'the bearer — intensity, endurance, and the strength to hold both life and death' },
+  { n: 'Krittika', m: 'the flame that cuts — sharp, purifying, ambitious, and not to be underestimated' },
+  { n: 'Rohini', m: 'the red one — growth, beauty, sensuality, and a magnetic pull others feel' },
+  { n: 'Mrigashira', m: 'the searching deer — curious, gentle, forever seeking the next thing' },
+  { n: 'Ardra', m: 'the storm — upheaval that clears the ground, and a sharp, cutting mind' },
+  { n: 'Punarvasu', m: 'the return of the light — renewal, optimism, and always finding your way home' },
+  { n: 'Pushya', m: 'nourishment — the most auspicious of all, caring, steady, made to look after others' },
+  { n: 'Ashlesha', m: 'the coiled serpent — hypnotic depth, penetrating insight, and hard to read' },
+  { n: 'Magha', m: 'the throne — ancestry, pride, legacy, and a natural, inherited authority' },
+  { n: 'Purva Phalguni', m: 'the hammock — pleasure, romance, creativity, and knowing how to rest' },
+  { n: 'Uttara Phalguni', m: 'the patron — generosity, loyalty, and steady, committed partnership' },
+  { n: 'Hasta', m: 'the hand — skill, craft, and a cleverness that works best through the fingers' },
+  { n: 'Chitra', m: 'the jewel — brilliance, design, and a dazzling, deliberate beauty' },
+  { n: 'Swati', m: 'the wind — independence, self-reliance, movement, and a trader\u2019s instinct' },
+  { n: 'Vishakha', m: 'the forked branch — fierce determination, goal-driven, focus won after a split' },
+  { n: 'Anuradha', m: 'devotion — friendship, loyalty, and success reached through other people' },
+  { n: 'Jyeshtha', m: 'the eldest — seniority, protectiveness, and a quiet, hidden power' },
+  { n: 'Mula', m: 'the root — getting to the very bottom of things, upheaval in service of truth' },
+  { n: 'Purva Ashadha', m: 'the early victory — invincible optimism, pride, and an unstoppable current' },
+  { n: 'Uttara Ashadha', m: 'the later victory — lasting achievement, integrity, and wins that hold' },
+  { n: 'Shravana', m: 'the ear — listening, learning, and wisdom gathered through hearing' },
+  { n: 'Dhanishta', m: 'the drum — wealth, rhythm, music, and a pull toward fame' },
+  { n: 'Shatabhisha', m: 'the hundred healers — mystery, healing, secrecy, and a private, veiling nature' },
+  { n: 'Purva Bhadrapada', m: 'the fire of transformation — idealism, intensity, and a two-faced depth' },
+  { n: 'Uttara Bhadrapada', m: 'the deep water — wisdom, calm, and the still serpent at the bottom of things' },
+  { n: 'Revati', m: 'the wealthy — nourishing, kind, and a safe-keeper who eases every ending' }
+];
