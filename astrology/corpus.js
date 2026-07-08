@@ -1744,3 +1744,53 @@ DATA.COMBO = {
   'mutable': 'the flex that adapts it'
   }
 };
+
+// ===== the aspect between the two lights: distinguishes all 144 Sun/Moon pairings by real angle =====
+DATA.COMBO.lights = {
+  'conjunction': 'your Sun and Moon are conjunct, fused in one sign: there is no daylight between who you are and what you feel. It makes you whole and single-minded, but you carry no built-in second opinion, so your mood is often your judgement, and you rarely catch yourself from the outside',
+  'semisextile': 'your Sun and Moon sit in neighbouring signs, a semisextile: they share a border but not a language. What you are and what you need stay subtly, permanently out of step, and a quiet part of your life is negotiating between two rooms that never quite connect',
+  'sextile': 'your Sun and Moon are sextile, an easy working friendship: who you are and what you need cooperate the moment you ask them to, so you can usually be your own support. The only risk is leaving the talent unused, because it never had to demand your attention',
+  'square': 'your Sun and Moon are square, built-in friction: what you are and what you need pull at right angles, so in a real sense you are your own opposition. It is uncomfortable, and it is also your engine, because something inside is never quite satisfied and it keeps you moving',
+  'trine': 'your Sun and Moon are trine, a natural flowing accord: head and heart back each other without effort, which gives you an inner steadiness other people envy. The shadow is coasting, because ease this deep rarely forces you to grow',
+  'quincunx': 'your Sun and Moon are inconjunct, two signs sharing nothing in element or mode: they never quite see each other, so you spend your life improvising the bridge, and you can feel like two different people depending on who is in the room',
+  'opposition': 'your Sun and Moon are opposite, a full see-saw self: you swing between what you are and what you need, and you are often drawn to people who carry the missing end for you. The work of a lifetime is holding both poles at once instead of ping-ponging between them'
+};
+
+// ===== soft-aspect backstories (trine/sextile): the natural gifts you were born with =====
+DATA.SPOOKY_ASPECT_SOFT = {
+  'sun-moon': 'you came from a home that mostly made sense: your parents, whatever else, did not pull you in half, so your will and your feelings tend to agree, and you can want something and feel good about wanting it at the same time',
+  'sun-mercury': 'you think clearly about yourself and say what you mean without much strain: a natural, unforced fluency, so you explain your own reasoning better than most people ever manage',
+  'sun-venus': 'you are easy to like and you know it gently: charm, taste and a warmth that opens doors, and you tend to attract rather than chase',
+  'sun-mars': 'your will and your drive point the same way: when you decide, your body moves, so you act on your intentions instead of talking yourself out of them, with a clean, unforced confidence',
+  'sun-jupiter': 'luck genuinely follows you, and you were given room to believe in yourself early: a natural optimism and generosity that other people warm to and want to back',
+  'sun-saturn': 'you carry a quiet, early-earned maturity: discipline that does not feel like punishment, so you can do the boring necessary work and be trusted with real responsibility',
+  'sun-uranus': 'your originality sits comfortably in you: you are different without having to fight to be, so you innovate and go your own way without needing to rebel against anyone',
+  'sun-neptune': 'you have a natural line to the imaginative and the spiritual: an artist or a dreamer with real access, and people feel a soft, inspiring quality in you they cannot quite name',
+  'sun-pluto': 'you have quiet, unforced personal power: an intensity you can channel rather than fight, so you regenerate through change instead of being wrecked by it',
+  'moon-mercury': 'you can say what you feel: your heart and your words run on the same track, so you talk through emotion instead of choking on it, and people find you easy to confide in',
+  'moon-venus': 'you give and receive affection easily: a genuine sweetness, so love and comfort come naturally to you and you make the people around you feel safe and liked',
+  'moon-mars': 'you act on your feelings cleanly: your instincts and your drive agree, so you protect what matters without hesitation and rarely sit stewing when you could move',
+  'moon-jupiter': 'you have a deep well of emotional generosity and hope: you bounce back, you comfort others without effort, and abundance tends to find you through the people you care for',
+  'moon-saturn': 'your feelings have real backbone: a steady, reliable emotional core, so people lean on you in a crisis and you keep your head when others lose theirs',
+  'moon-uranus': 'your emotional life is original and free: you feel things your own way, need your own space, and can read a room and its undercurrents faster than most',
+  'moon-neptune': 'you are quietly psychic about people: a soft, absorbent, compassionate nature, so you sense what others feel before they say it, and imagination is where you go to rest',
+  'moon-pluto': 'you feel everything deeply and survive it: emotional depth you can actually use, so you understand people at a level that unsettles them, and you heal by going down rather than around',
+  'mercury-venus': 'you speak beautifully: words come out charming, tactful and well-shaped, so you smooth situations and make ideas sound as good as they are',
+  'mercury-mars': 'your mind is quick and decisive: you think fast, argue well and act on your conclusions, so you cut through where others dither',
+  'mercury-jupiter': 'you see the big picture and can teach it: a natural storyteller and explainer, good with meaning and reach, and people learn things from you without feeling lectured',
+  'mercury-saturn': 'you think in structures that hold: careful, thorough, built to last, so your plans survive contact with reality and people trust your judgement on the details',
+  'mercury-uranus': 'you have flashes of genuine insight: an original, quick, inventive mind that leaps to the answer, so you solve things sideways that others grind at head-on',
+  'mercury-neptune': 'you think in images and intuition: a poetic, musical, visual mind, so you grasp things you cannot yet prove and often turn out to be right',
+  'mercury-pluto': 'your mind goes deep and sees through: research, strategy, the thing behind the thing, so you understand what people mean under what they say',
+  'venus-mars': 'love and desire run together in you without a war: you know what you want and you are comfortable wanting it, so attraction is uncomplicated and creativity flows',
+  'venus-jupiter': 'you have real warmth and generosity in love, and good fortune through relationships: people are glad to help you, and pleasure and abundance come easily',
+  'venus-saturn': 'you love loyally and for keeps: a steady, committed heart, so once you are in you stay, and you are trusted with other people\u2019s vulnerability',
+  'venus-uranus': 'you love freely and originally: excitement, spark, unconventional taste, so your relationships and your art refuse to run on other people\u2019s rules',
+  'venus-neptune': 'you love romantically and boundlessly: a genuine artist\u2019s or a genuine devotee\u2019s heart, so beauty moves you deeply and you give without keeping score',
+  'venus-pluto': 'you love intensely and transformatively: you do not do shallow, so the people you love change you and you change them, and your art carries real weight',
+  'mars-jupiter': 'you act boldly and it tends to pay off: energy, timing and confidence together, so you take the big swing at the right moment and land more of them than you should',
+  'mars-saturn': 'your drive has discipline behind it: controlled, enduring effort, so you outlast people with more raw talent and build things that stay built',
+  'mars-uranus': 'you move fast and inventively: quick reflexes and a nerve for the unexpected, so you thrive exactly where others freeze',
+  'mars-neptune': 'you act from inspiration: your energy serves an ideal or an art, so you fight best for something larger than yourself and move with a grace that looks easy',
+  'mars-pluto': 'you have deep, controllable power: stamina and will that do not quit, so you can rebuild from nothing and outwork anyone once you decide it matters'
+};

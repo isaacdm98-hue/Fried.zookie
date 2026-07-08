@@ -986,6 +986,12 @@ var APP = (function () {
     var parts = [];
     var head = anA(SG[su].name, true) + ' Sun, ' + anA(SG[mo].name) + ' Moon and ' + anA(SG[ma].name) + ' Mars' + (asc != null ? ', rising in ' + SG[asc].name : '');
     parts.push(head + '. At your core you are ' + E.sun[su] + '. ' + cap(E.moon[mo]) + '. When you want something, ' + E.mars[ma] + (asc != null ? ', ' + E.rising[asc] : '') + '.');
+    // the actual aspect between the two lights: what makes all 144 Sun/Moon pairings read differently
+    if (E.lights) {
+      var dLM = ((mo - su) % 12 + 12) % 12;
+      var lKey = (dLM === 0) ? 'conjunction' : (dLM === 6) ? 'opposition' : (dLM === 1 || dLM === 11) ? 'semisextile' : (dLM === 2 || dLM === 10) ? 'sextile' : (dLM === 3 || dLM === 9) ? 'square' : (dLM === 4 || dLM === 8) ? 'trine' : 'quincunx';
+      if (E.lights[lKey]) parts.push(cap(E.lights[lKey]) + '.');
+    }
     // element synthesis
     if (suE === moE && moE === maE) {
       parts.push('All three run ' + suE + ', which makes you an unusually pure, undiluted ' + suE + ' type: ' + (E.elemPure[suE] || '') + '. What you are, what you need and how you chase it all speak one language, for better and worse.');
@@ -1227,16 +1233,19 @@ var APP = (function () {
     if (tk && S.rulerHouse && c.ascBody) { var rlrK = RULERKEY[DATA.SIGNS[c.ascBody.sign].ruler], rlrP = rlrK && P[rlrK]; if (rlrP && rlrP.house && S.rulerHouse[rlrP.house - 1]) out.push(S.rulerHouse[rlrP.house - 1]); }
     // retrograde life-patterns
     if (S.retro) { var rk; for (rk in S.retro) if (S.retro.hasOwnProperty(rk) && P[rk] && P[rk].retro) out.push(S.retro[rk]); }
-    // the spookiest layer: hard-aspect backstories (the "your father was hard on you" reads)
-    var SA = DATA.SPOOKY_ASPECT;
-    if (SA) {
+    // the spookiest layer: hard-aspect backstories (the "your father was hard on you" reads),
+    // and the soft-aspect layer: trines and sextiles read as the natural gifts you were born with
+    var SA = DATA.SPOOKY_ASPECT, SAS = DATA.SPOOKY_ASPECT_SOFT;
+    if (SA || SAS) {
       var PO = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto'], ai;
       for (ai = 0; ai < c.aspects.length; ai++) {
         var A = c.aspects[ai]; if (A.minor) continue;
-        var q = A.asp.quality; if (q !== 'fusion' && q !== 'tension' && q !== 'friction') continue; // conjunction / opposition / square
+        var q = A.asp.quality, hard = (q === 'fusion' || q === 'tension' || q === 'friction'), soft = (q === 'flow' || q === 'opportunity');
+        if (!hard && !soft) continue; // only conjunction/opposition/square (hard) and trine/sextile (soft)
         var ia = PO.indexOf(A.a), ib = PO.indexOf(A.b); if (ia < 0 || ib < 0) continue;
         var key = ia < ib ? (A.a + '-' + A.b) : (A.b + '-' + A.a);
-        if (SA[key]) out.push(SA[key]);
+        if (hard && SA && SA[key]) out.push(SA[key]);
+        else if (soft && SAS && SAS[key]) out.push(SAS[key]);
       }
     }
     // the clever layer: whole-chart configurations
