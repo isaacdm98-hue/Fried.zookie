@@ -9517,39 +9517,32 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var camT9 = still ? 0 : eCubic(cl01((nowT() - o.t0) / 12000));
       p.push(); p.translate(cxS, gy); p.scale(1 + 0.05 * camT9); p.translate(-cxS, -gy);
       if (!still) p.translate(Math.sin(nowT() * 0.00021) * 2.2, Math.cos(nowT() * 0.00017) * 1.6);
-      var skyH9 = (gy - topS), starTop9 = Math.max(24, skyH9 * 0.42); // keep loose stars in the upper air, above the constellation band
-      // atmospheric sky: a deep, cool crown that warms toward a luminous horizon, with a soft airglow where the ground meets the air
+      var skyH9 = (gy - topS), starTop9 = Math.max(24, skyH9 * 0.5);
+      // the Ghibli wash: one deep, soft gradient warming to a luminous horizon, with a gentle airglow. Nothing busy.
       if (dcW9) {
-        var topC9 = [pal[0][0] * 0.80, pal[0][1] * 0.80, Math.min(255, pal[0][2] * 0.92 + 6)];
-        var horC9 = [Math.min(255, pal[1][0] * 1.02 + 6), Math.min(255, pal[1][1] + 2), pal[1][2]];
+        var topC9 = [pal[0][0] * 0.84, pal[0][1] * 0.84, Math.min(255, pal[0][2] * 0.95 + 6)];
+        var horC9 = [Math.min(255, pal[1][0] * 1.03 + 8), Math.min(255, pal[1][1] + 4), pal[1][2]];
         var gS = dcW9.createLinearGradient(0, topS, 0, gy);
-        gS.addColorStop(0, rgbaStr(topC9, 0.97 * ee)); gS.addColorStop(0.52, rgbaStr(pal[0], 0.96 * ee)); gS.addColorStop(1, rgbaStr(horC9, 0.96 * ee));
+        gS.addColorStop(0, rgbaStr(topC9, 0.97 * ee)); gS.addColorStop(0.58, rgbaStr(pal[0], 0.96 * ee)); gS.addColorStop(1, rgbaStr(horC9, 0.96 * ee));
         dcW9.fillStyle = gS; dcW9.fillRect(0, topS, W, gy - topS);
-        var ag9 = dcW9.createRadialGradient(cxS, gy, 4, cxS, gy, W * 0.72);
-        ag9.addColorStop(0, 'rgba(255,238,206,' + (0.16 * ee) + ')'); ag9.addColorStop(1, 'rgba(255,238,206,0)');
+        var ag9 = dcW9.createRadialGradient(cxS, gy, 4, cxS, gy, W * 0.82);
+        ag9.addColorStop(0, 'rgba(255,240,212,' + (0.20 * ee) + ')'); ag9.addColorStop(1, 'rgba(255,240,212,0)');
         dcW9.fillStyle = ag9; dcW9.fillRect(0, topS, W, gy - topS);
       } else { p.noStroke(); fillc(pal[0], 240 * ee); p.rect(0, topS, W, gy - topS); }
-      p.noStroke(); fillc([238, 228, 206], 10); p.rect(0, topS, W, gy - topS);
       var sdr9 = o.ph != null ? o.ph * 3.2 : (still ? 0 : nowT() * 0.0016);
-      // the Milky Way: a faint luminous river spilled across the high sky
-      if (dcW9) {
-        dcW9.save(); dcW9.translate(cxS + (still ? 0 : Math.sin(nowT() * 0.00003) * 8), topS + skyH9 * 0.24); dcW9.rotate(-0.52);
-        var mw9 = dcW9.createLinearGradient(0, -58, 0, 58);
-        mw9.addColorStop(0, 'rgba(224,228,255,0)'); mw9.addColorStop(0.5, 'rgba(226,230,255,' + (0.055 * ee) + ')'); mw9.addColorStop(1, 'rgba(224,228,255,0)');
-        dcW9.fillStyle = mw9; dcW9.fillRect(-W, -58, W * 2, 116); dcW9.restore();
-      }
-      // layered parallax starfield: three depths, real star-colours, and only the stars twinkle
-      var starN9 = still ? 30 : 46, si9;
+      // a scatter of soft stars — few, large, gentle, a couple hero-bright with a whisper of glow
+      var starN9 = still ? 12 : 16, si9;
       for (si9 = 0; si9 < starN9; si9++) {
-        var lay9 = si9 % 3, dep9 = 0.35 + lay9 * 0.32;
-        var stx9 = 6 + ((((si9 * 137.5) - sdr9 * dep9 * 0.5) % (W - 12)) + (W - 12)) % (W - 12);
-        var sty9 = topS + 5 + ((si9 * 53) % (starTop9 * (0.66 + lay9 * 0.12)));
-        var tw9 = still ? 0.85 : 0.42 + 0.58 * Math.abs(Math.sin(nowT() * (0.0016 + (si9 % 5) * 0.0007) + si9 * 1.7));
-        var scol9 = (si9 % 7 === 0) ? [212, 224, 255] : (si9 % 5 === 0) ? [255, 236, 198] : [255, 250, 242];
-        var srad9 = 0.7 + lay9 * 0.55, sbase9 = 42 + lay9 * 46;
-        p.noStroke(); fillc(scol9, sbase9 * tw9 * ee); p.ellipse(stx9, sty9, srad9, srad9);
-        if (lay9 === 2 && si9 % 4 === 0) { fillc(scol9, 22 * tw9 * ee); p.ellipse(stx9, sty9, srad9 * 4.2, srad9 * 4.2); }
+        var stx9 = 10 + ((((si9 * 137.5) - sdr9 * 0.35) % (W - 20)) + (W - 20)) % (W - 20);
+        var sty9 = topS + 8 + ((si9 * 71) % (starTop9 * 0.86));
+        var tw9 = still ? 0.85 : 0.55 + 0.45 * Math.abs(Math.sin(nowT() * 0.0013 + si9 * 1.9));
+        var hero9 = (si9 % 6 === 0), scol9 = (si9 % 5 === 0) ? [255, 238, 206] : [255, 251, 244], srad9 = hero9 ? 2.1 : 1.3;
+        p.noStroke();
+        if (hero9) { fillc(scol9, 26 * tw9 * ee); p.ellipse(stx9, sty9, srad9 * 5, srad9 * 5); }
+        fillc(scol9, (hero9 ? 205 : 120) * tw9 * ee); p.ellipse(stx9, sty9, srad9, srad9);
       }
+      // the magic: a few slow motes of light drifting through the air, like spores catching the last of the sun
+      if (!still) { var mte9; for (mte9 = 0; mte9 < 5; mte9++) { var mtT9 = nowT() * 0.00006 + mte9 * 1.7; var mtx9 = (((mte9 * 89 + Math.sin(mtT9) * 46) % W) + W) % W; var mty9 = topS + skyH9 * (0.28 + 0.52 * (0.5 + 0.5 * Math.sin(mtT9 * 1.3 + mte9))); var mtg9 = 0.4 + 0.6 * (0.5 + 0.5 * Math.sin(nowT() * 0.001 + mte9 * 2)); p.noStroke(); fillc([255, 244, 214], 13 * mtg9 * ee); p.ellipse(mtx9, mty9, 9, 9); fillc([255, 248, 226], 85 * mtg9 * ee); p.ellipse(mtx9, mty9, 2.1, 2.1); } }
       // the ecliptic laid across the sky, centred on the mover
       var ay9 = o.ay || 0;
       function zl9(k) { var pp9 = o.tp && o.tp[k]; return (pp9 && pp9.lon != null) ? ((pp9.lon - ay9) % 360 + 360) % 360 : null; }
@@ -9597,6 +9590,14 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         var ccy9 = byS(zc9 * 30 + 15) - 6;
         var CZ9 = ZCON[zc9], hot9 = (zc9 === moverSign9);
         var sxSc9 = 26, sySc9 = 24;
+        // Ghibli restraint: only the mover's own constellation draws its full figure. Every other
+        // sign is just its single brightest star, a soft point of light — no web of lines across the sky.
+        if (!hot9 && !o.sparse) {
+          var bs9 = CZ9.s[CZ9.b], bxc9 = ccx9 + bs9[0] * sxSc9, byc9 = ccy9 - bs9[1] * sySc9;
+          var tb9 = still ? 0.8 : 0.5 + 0.5 * Math.sin(nowT() * 0.0016 + zc9 * 2.3);
+          p.noStroke(); fillc([255, 250, 236], 26 * tb9 * ee); p.ellipse(bxc9, byc9, 6, 6); fillc([255, 250, 236], 105 * tb9 * ee); p.ellipse(bxc9, byc9, 1.9, 1.9);
+          continue;
+        }
         var drw9 = still ? 1 : cl01((nowT() - o.t0 - (o.sparse ? 300 + Math.abs(ccx9 - cxS) * 2.4 : 500)) / 1800);
         var li9; for (li9 = 0; li9 < CZ9.l.length; li9++) {
           var lp9 = cl01(drw9 * CZ9.l.length - li9); if (lp9 <= 0) continue;
@@ -9622,21 +9623,25 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         var ln9 = zl9(k9); if (ln9 == null) continue;
         var ppx9 = bxS(ln9); if (ppx9 < -20 || ppx9 > W + 20) continue;
         var ppy9 = byS(ln9);
+        // Ghibli restraint: only the bright, storybook bodies appear, as soft glowing orbs
+        if (!({ sun: 1, moon: 1, venus: 1, jupiter: 1, saturn: 1 })[k9]) continue;
         var bcol9 = BODYCOL[k9] || [240, 234, 220];
-        var brt9 = [Math.min(255, bcol9[0] + 66), Math.min(255, bcol9[1] + 62), Math.min(255, bcol9[2] + 60)];
-        var prd9 = (k9 === 'sun') ? 7 : (k9 === 'jupiter') ? 5.6 : (k9 === 'moon') ? 5.2 : (k9 === 'venus') ? 5 : (k9 === 'saturn') ? 4.6 : (k9 === 'mars') ? 4 : 3.4;
-        var brth9 = still ? 1 : 1 + 0.05 * Math.sin(nowT() * 0.0012 + pb9 * 1.7); // planets breathe, they do not twinkle
-        // atmospheric bloom, layered soft light in the body's own hue
-        if (dcW9) { var pgl = dcW9.createRadialGradient(ppx9, ppy9, 0, ppx9, ppy9, prd9 * 4.6 * brth9); pgl.addColorStop(0, rgbaStr(brt9, 0.5 * ee)); pgl.addColorStop(0.4, rgbaStr(brt9, 0.13 * ee)); pgl.addColorStop(1, rgbaStr(brt9, 0)); dcW9.fillStyle = pgl; dcW9.beginPath(); dcW9.arc(ppx9, ppy9, prd9 * 4.6 * brth9, 0, Math.PI * 2); dcW9.fill(); }
-        else { p.noStroke(); fillc(brt9, 30 * ee); p.ellipse(ppx9, ppy9, prd9 * 4, prd9 * 4); }
-        // a genuine little disc: bright lit limb falling to a soft terminator
-        if (dcW9) { var pdg = dcW9.createRadialGradient(ppx9 - prd9 * 0.36, ppy9 - prd9 * 0.36, prd9 * 0.12, ppx9 + prd9 * 0.2, ppy9 + prd9 * 0.2, prd9 * 1.15); pdg.addColorStop(0, rgbaStr([Math.min(255, brt9[0] + 28), Math.min(255, brt9[1] + 28), Math.min(255, brt9[2] + 28)], ee)); pdg.addColorStop(1, rgbaStr([bcol9[0] * 0.66, bcol9[1] * 0.66, bcol9[2] * 0.72], ee)); dcW9.fillStyle = pdg; dcW9.beginPath(); dcW9.arc(ppx9, ppy9, prd9, 0, Math.PI * 2); dcW9.fill(); }
-        else { p.noStroke(); fillc(brt9, 225 * ee); p.ellipse(ppx9, ppy9, prd9 * 2, prd9 * 2); }
-        // diffraction glint on the brightest, an ethereal four-point star
-        if ((k9 === 'sun' || k9 === 'venus' || k9 === 'jupiter') && !still) { var gl9 = 0.55 + 0.45 * Math.sin(nowT() * 0.002 + pb9 * 2.1), gx9 = prd9 * 3.2 * gl9; strokec(brt9, 95 * gl9 * ee); p.strokeWeight(0.8); p.line(ppx9 - gx9, ppy9, ppx9 + gx9, ppy9); p.line(ppx9, ppy9 - gx9, ppx9, ppy9 + gx9); p.noStroke(); }
-        // saturn's ring, fine and hue-matched; the moon's shaded limb
-        if (k9 === 'saturn') { p.noFill(); strokec(brt9, 185 * ee); p.strokeWeight(0.9); p.push(); p.translate(ppx9, ppy9); p.rotate(-0.42); p.ellipse(0, 0, prd9 * 2.7, prd9 * 0.95); p.pop(); p.noStroke(); }
-        if (k9 === 'moon') { fillc([pal[0][0] * 0.7, pal[0][1] * 0.7, pal[0][2] * 0.8], 190 * ee); p.ellipse(ppx9 + prd9 * 0.42, ppy9 - prd9 * 0.18, prd9 * 1.05, prd9 * 1.05); }
+        var brt9 = [Math.min(255, bcol9[0] + 48), Math.min(255, bcol9[1] + 46), Math.min(255, bcol9[2] + 44)];
+        var prd9 = (k9 === 'sun') ? 6 : (k9 === 'jupiter') ? 5 : (k9 === 'moon') ? 4.8 : (k9 === 'venus') ? 4.4 : 4.2;
+        var brth9 = still ? 1 : 1 + 0.05 * Math.sin(nowT() * 0.001 + pb9 * 1.7);
+        // one soft halo, then a gently shaded orb — no spikes, no hard detail
+        if (dcW9) {
+          var pgl = dcW9.createRadialGradient(ppx9, ppy9, 0, ppx9, ppy9, prd9 * 3.4 * brth9);
+          pgl.addColorStop(0, rgbaStr(brt9, 0.32 * ee)); pgl.addColorStop(0.5, rgbaStr(brt9, 0.09 * ee)); pgl.addColorStop(1, rgbaStr(brt9, 0));
+          dcW9.fillStyle = pgl; dcW9.beginPath(); dcW9.arc(ppx9, ppy9, prd9 * 3.4 * brth9, 0, Math.PI * 2); dcW9.fill();
+          var pdg = dcW9.createRadialGradient(ppx9 - prd9 * 0.34, ppy9 - prd9 * 0.34, prd9 * 0.16, ppx9, ppy9, prd9);
+          pdg.addColorStop(0, rgbaStr([Math.min(255, brt9[0] + 22), Math.min(255, brt9[1] + 22), Math.min(255, brt9[2] + 22)], ee));
+          pdg.addColorStop(1, rgbaStr([bcol9[0] * 0.74, bcol9[1] * 0.74, bcol9[2] * 0.8], ee));
+          dcW9.fillStyle = pdg; dcW9.beginPath(); dcW9.arc(ppx9, ppy9, prd9, 0, Math.PI * 2); dcW9.fill();
+        } else { p.noStroke(); fillc(brt9, 26 * ee); p.ellipse(ppx9, ppy9, prd9 * 3, prd9 * 3); fillc(brt9, 205 * ee); p.ellipse(ppx9, ppy9, prd9 * 2, prd9 * 2); }
+        // saturn a whisper of a ring; the moon a soft shaded edge — nothing louder
+        if (k9 === 'saturn') { p.noFill(); strokec(brt9, 145 * ee); p.strokeWeight(0.8); p.push(); p.translate(ppx9, ppy9); p.rotate(-0.42); p.ellipse(0, 0, prd9 * 2.5, prd9 * 0.88); p.pop(); p.noStroke(); }
+        if (k9 === 'moon') { fillc([pal[0][0] * 0.72, pal[0][1] * 0.72, pal[0][2] * 0.8], 170 * ee); p.ellipse(ppx9 + prd9 * 0.4, ppy9 - prd9 * 0.18, prd9 * 1.04, prd9 * 1.04); }
       }
       // the mover: a breathing body of light; its name appears once, then lets go
       var mvx9 = bxS(mLon), mvy9 = byS(mLon);

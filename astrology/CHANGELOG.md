@@ -1,5 +1,8 @@
 # Changelog
 
+## 3.21.0 — 2026-07-08
+- **The sky, pulled back to storybook simplicity.** The reworked sky was too busy; this is the Ghibli pass. Gone are the dense parallax starfield, the Milky Way band and the sharp diffraction spikes. What is left is quiet and magical: one deep, soft gradient warming to a luminous horizon, a scatter of large gentle stars, a few slow motes of light drifting through the air, and — above the walker — only the one constellation that matters right now, its figure glowing while every other sign settles to a single soft star. The planets are soft glowing orbs in their own hues, the brightest storybook few, held steady and dreamlike.
+
 ## 3.20.0 — 2026-07-08
 - **The sky is reworked: realistic, ethereal, alive.** The whole scene the runner walks beneath — used in the daily walk, the life walk, the lessons and the news reels — was rebuilt. The sky is now an atmospheric gradient that deepens to a cool crown and warms to a luminous horizon, with a soft airglow where the ground meets the air, a faint Milky Way spilled across the high sky, and a layered, parallax starfield in real star-colours (warm-white, gold, faint blue) where only the stars twinkle.
 - **The planets in the sky, completely reworked.** Each background planet is no longer a flat dot but a genuine luminous body: a soft atmospheric bloom in its own hue, a real lit limb falling to a terminator shadow, Saturn's fine hue-matched ring, the Moon's shaded edge, and an ethereal four-point diffraction glint on the brightest — the Sun, Venus and Jupiter. And, true to life, the planets hold steady and breathe while the stars twinkle.
