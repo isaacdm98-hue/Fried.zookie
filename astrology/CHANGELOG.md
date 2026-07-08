@@ -1,5 +1,8 @@
 # Changelog
 
+## 3.30.0 — 2026-07-08
+- **The reading no longer narrates itself.** Cut the app-talk: the You tab opened with "Alright, let me read you properly, not your star sign, you" — the reading announcing the act of reading. Gone. It now drops straight in: the spooky hook, then who you are, then what's live for you now. The meta bridge and the "read me properly" button label went too (the button just says "Walk through your chart, one piece at a time"), and the Seasons/Today/Patterns intros lost their defensive framing ("not vague vibes", "what a real astrologer reads"). It just reads you now, instead of talking about reading you.
+
 ## 3.29.0 — 2026-07-08
 - **The whole Read screen now speaks in one voice (rework pillar 2).** The other three tabs got the same treatment as the You tab, so moving between them feels like one reader, not four different apps. Patterns opens "The shapes in you — the structures a real astrologer reads before anything else"; Seasons opens "Your seasons — here's what the sky has actually been doing to your life lately, and what's coming; not vague vibes, real transits with real dates"; Today opens "Today, for you — here's the sky today and what it actually touches in your chart." Warm, punchy, bigger text, leading with the specific — consistent across all four tabs.
 

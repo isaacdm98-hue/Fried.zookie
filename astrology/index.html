@@ -7111,8 +7111,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (UI.smCache === undefined) { try { UI.smCache = APP.sunMoonCharacter(c); } catch (eSm9) { UI.smCache = null; } }
       if (UI.quirkCache === undefined) { try { UI.quirkCache = APP.lifeQuirks(c); } catch (eQ9) { UI.quirkCache = []; } }
       if (UI.oddPred === undefined) { try { UI.oddPred = APP.oddPredictions(c, b); } catch (eOp9) { UI.oddPred = []; } }
-      eyebrow('A reading for you', x, ly, ACC); ly += 26;
-      ly += paragraph('Alright — let me read you properly. Not your star sign. You.', x, ly, w, 18, INK, SERIF, 30) + 20;
+      eyebrow('You', x, ly, ACC); ly += 26;
       // beat 1 — the hook: the spookiest chart-exact thing, marked with the accent bar
       if (UI.quirkCache && UI.quirkCache.length) {
         var dseedH = 0; try { var ddH = new Date(); dseedH = ddH.getFullYear() * 366 + ddH.getMonth() * 31 + ddH.getDate(); } catch (eDsH) {}
@@ -7125,9 +7124,8 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (UI.smCache) { ly += paragraph(UI.smCache, x, ly, w, 17, INK, SERIF, 27) + 20; }
       // beat 3 — what is alive for you right now
       if (UI.oddPred && UI.oddPred.length) { ly += paragraph(UI.oddPred[0].text, x, ly, w, 17, INK, SERIF, 27) + 20; }
-      // the bridge into the depth
-      ly += paragraph('That’s the core of you. How you love, what you’re chasing, and what the sky is doing to you this year — it’s all here, one piece at a time, whenever you want it.', x, ly, w, 14.5, INK, SERIF, 23, 230) + 20;
-      flatBtn('◉  Read me properly — the guided walk', x, ly, w, 48, function () { UI.guide = { phase: 'intro', t0: nowT() }; UI.scroll.read = 0; buzz(12); }, false); ly += 62;
+      ly += 6; hairline(x, ly, x + w, 40); ly += 22;
+      flatBtn('◉  Walk through your chart, one piece at a time', x, ly, w, 48, function () { UI.guide = { phase: 'intro', t0: nowT() }; UI.scroll.read = 0; buzz(12); }, false); ly += 62;
       setFont(MONO, 9, INK, p.LEFT, p.TOP, 140); p.text('OR OPEN A CHAPTER', x, sY(ly)); ly += 20;
       UI.sec = UI.sec || {};
       var chapterHead = function (id, label, sub) {
@@ -7211,7 +7209,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (!UI.dailyEssay || nowT() - (UI.dailyEssayT || 0) > 600000) { try { UI.dailyEssay = APP.composeDailyEssay(c); } catch (eDE) { UI.dailyEssay = ''; } UI.dailyEssayT = nowT(); }
       if (UI.dailyEssay) {
         eyebrow('Today, for you', x, ly, ACC); ly += 26;
-        ly += paragraph('Here’s the sky today, and what it actually touches in your chart.', x, ly, w, 14.5, INK, SERIF, 23, 225) + 14;
+        ly += paragraph('The sky today, and what it touches in your chart.', x, ly, w, 14.5, INK, SERIF, 23, 225) + 14;
         ly += expandPara(UI.dailyEssay, x, ly, w, 'dessay', 17, 27) + 18;
       }
       // watch today acted out again: the same bulletin that greets the day
@@ -7269,7 +7267,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (!UI.readSig) { try { UI.readSig = APP.composeSignatures(c); } catch (e) { UI.readSig = []; } }
       if (UI.readSig && UI.readSig.length) {
         eyebrow('The shapes in you', x, ly, ACC); ly += 26;
-        ly += paragraph('The structures woven through your whole chart — the shapes a real astrologer reads before anything else.', x, ly, w, 14.5, INK, SERIF, 23, 225) + 16;
+        ly += paragraph('The structures woven through your whole chart — the shapes underneath everything else.', x, ly, w, 14.5, INK, SERIF, 23, 225) + 16;
         for (var sgi = 0; sgi < UI.readSig.length; sgi++) {
           var blk = UI.readSig[sgi];
           setFont(MONO, 9.5, INK, p.LEFT, p.TOP, 210); bold(); p.text(blk.label.toUpperCase(), x, sY(ly)); normal(); ly += 17;
@@ -7289,7 +7287,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         if (UI.oddPred === undefined) { try { UI.oddPred = APP.oddPredictions(c, b); } catch (eOp9) { UI.oddPred = []; } }
         if (UI.oddPred && UI.oddPred.length) {
           eyebrow('Your seasons', x, ly, ACC); ly += 26;
-          ly += paragraph('Here’s what the sky has actually been doing to your life lately, and what’s coming. Not vague vibes — real transits, with real dates.', x, ly, w, 14.5, INK, SERIF, 23, 225) + 14;
+          ly += paragraph('What the sky has been doing to your life lately — and what’s coming. Real transits, with dates.', x, ly, w, 14.5, INK, SERIF, 23, 225) + 14;
           var op9; for (op9 = 0; op9 < Math.min(UI.oddPred.length, 5); op9++) {
             var opv = UI.oddPred[op9]; if (op9) { hairline(x, ly, x + w, 30); ly += 8; }
             var qc9 = opv.quality;
