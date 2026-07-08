@@ -1,5 +1,8 @@
 # Changelog
 
+## 3.31.0 — 2026-07-08
+- **The whole reading is rebuilt to arrive one line at a time.** The complaint was right: there was way too much at the beginning. So the Read tab no longer opens as a page of stacked sections — it opens as a single, calm, spacious line, with room to breathe and "tap to continue" at the bottom. Each tap brings the next: the spooky-specific hook, then who you are, then what's live for you right now, then another oddly-specific thing, then the sharpest fact about you, then what you're drawn to. Progress dots track where you are. A quiet "≡ All" jumps to the full chapter menu whenever you want everything at once, and "back to the reading" returns. No wall, ever — just one thing at a time.
+
 ## 3.30.0 — 2026-07-08
 - **The reading no longer narrates itself.** Cut the app-talk: the You tab opened with "Alright, let me read you properly, not your star sign, you" — the reading announcing the act of reading. Gone. It now drops straight in: the spooky hook, then who you are, then what's live for you now. The meta bridge and the "read me properly" button label went too (the button just says "Walk through your chart, one piece at a time"), and the Seasons/Today/Patterns intros lost their defensive framing ("not vague vibes", "what a real astrologer reads"). It just reads you now, instead of talking about reading you.
 

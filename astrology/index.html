@@ -7104,29 +7104,48 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       ly += 50;
       var rt = UI.readTab;
       if (rt === 'story') {
-      // ===== the You tab, re-architected: one clear headline, then calm chapters you open on tap =====
-      // (was a single 15-screen wall of near-identical sections; now scannable and in your control)
-      // ===== "A reading for you" — the reworked front door. Not a dashboard: an astrologer
-      // reading your exact chart. Warm, punchy, spooky-first, one beat at a time. =====
-      if (UI.smCache === undefined) { try { UI.smCache = APP.sunMoonCharacter(c); } catch (eSm9) { UI.smCache = null; } }
-      if (UI.quirkCache === undefined) { try { UI.quirkCache = APP.lifeQuirks(c); } catch (eQ9) { UI.quirkCache = []; } }
-      if (UI.oddPred === undefined) { try { UI.oddPred = APP.oddPredictions(c, b); } catch (eOp9) { UI.oddPred = []; } }
-      eyebrow('You', x, ly, ACC); ly += 26;
-      // beat 1 — the hook: the spookiest chart-exact thing, marked with the accent bar
-      if (UI.quirkCache && UI.quirkCache.length) {
-        var dseedH = 0; try { var ddH = new Date(); dseedH = ddH.getFullYear() * 366 + ddH.getMonth() * 31 + ddH.getDate(); } catch (eDsH) {}
-        var hook9 = UI.quirkCache[dseedH % UI.quirkCache.length], hkY0 = sY(ly);
-        var hkH = paragraph(hook9, x + 16, ly, w - 16, 17, INK, SERIF, 27);
-        strokec(ACC, 225); p.strokeWeight(3); p.line(x + 1.5, hkY0 + 4, x + 1.5, hkY0 + hkH - 4); p.noStroke();
-        ly += hkH + 20;
+      // ===== the reading: ONE insight at a time by default (calm, spacious, tap to continue),
+      // with a quiet way out to the full chapter menu. No wall at the beginning. =====
+      if (UI.smCache === undefined) { try { UI.smCache = APP.sunMoonCharacter(c); } catch (e0f) { UI.smCache = null; } }
+      if (UI.quirkCache === undefined) { try { UI.quirkCache = APP.lifeQuirks(c); } catch (e1f) { UI.quirkCache = []; } }
+      if (UI.oddPred === undefined) { try { UI.oddPred = APP.oddPredictions(c, b); } catch (e2f) { UI.oddPred = []; } }
+      if (UI.sigCache === undefined) { try { UI.sigCache = APP.chartSignature(c); } catch (e3f) { UI.sigCache = null; } }
+      if (UI.intCache === undefined) { try { UI.intCache = APP.interests(c); } catch (e4f) { UI.intCache = []; } if (UI.intPull === undefined) { try { UI.intPull = APP.emergingPull(c, b); } catch (e5f) { UI.intPull = null; } } }
+      if (UI.rdBeats === undefined) {
+        var bsF = [], qkF = UI.quirkCache || [], sdF = 0; try { var dqF = new Date(); sdF = dqF.getFullYear() * 366 + dqF.getMonth() * 31 + dqF.getDate(); } catch (e6f) {}
+        if (qkF.length) bsF.push({ lab: '', txt: qkF[sdF % qkF.length] });
+        if (UI.smCache) bsF.push({ lab: 'Who you are', txt: UI.smCache });
+        if (UI.oddPred && UI.oddPred.length) bsF.push({ lab: 'Right now', txt: UI.oddPred[0].text });
+        if (qkF.length > 3) bsF.push({ lab: 'Also true', txt: qkF[(sdF + 4) % qkF.length] });
+        if (UI.sigCache) bsF.push({ lab: 'The sharpest thing about you', txt: UI.sigCache });
+        if (UI.intCache && UI.intCache.length) bsF.push({ lab: 'What you’re drawn to', txt: UI.intCache.map(function (t9) { return t9.charAt(0).toUpperCase() + t9.slice(1); }).join('. ') + '.' });
+        UI.rdBeats = bsF;
       }
-      // beat 2 — who you are, in one line
-      if (UI.smCache) { ly += paragraph(UI.smCache, x, ly, w, 17, INK, SERIF, 27) + 20; }
-      // beat 3 — what is alive for you right now
-      if (UI.oddPred && UI.oddPred.length) { ly += paragraph(UI.oddPred[0].text, x, ly, w, 17, INK, SERIF, 27) + 20; }
-      ly += 6; hairline(x, ly, x + w, 40); ly += 22;
-      flatBtn('◉  Walk through your chart, one piece at a time', x, ly, w, 48, function () { UI.guide = { phase: 'intro', t0: nowT() }; UI.scroll.read = 0; buzz(12); }, false); ly += 62;
-      setFont(MONO, 9, INK, p.LEFT, p.TOP, 140); p.text('OR OPEN A CHAPTER', x, sY(ly)); ly += 20;
+      if (UI.readMode === undefined) UI.readMode = 'flow';
+      if (UI.readMode === 'flow' && UI.rdBeats.length) {
+        var beats = UI.rdBeats, bi = Math.min(UI.rdI || 0, beats.length - 1), beat = beats[bi];
+        var scrTop = sY(ly), scrBot = botY() - 8;
+        var dn = beats.length, dotW = 13, dx0 = x + (w - dn * dotW) / 2, di;
+        for (di = 0; di < dn; di++) { p.noStroke(); fillc(di === bi ? ACC : INK, di === bi ? 255 : (di < bi ? 130 : 50)); p.ellipse(dx0 + di * dotW + 6, scrTop + 9, di === bi ? 7 : 5, di === bi ? 7 : 5); }
+        flatBtn('≡ All', x + w - 60, ly + 24, 60, 30, function () { UI.readMode = 'menu'; UI.scroll.read = 0; buzz(6); }, false, true);
+        var caF = reduced() ? 1 : cl01((nowT() - (UI.rdT || UI.fxT)) / 500), riseF = (1 - eCubic(caF)) * 14;
+        var availTop = scrTop + 74, availBot = scrBot - 52;
+        var tszF = beat.txt.length > 230 ? 17 : (beat.txt.length > 140 ? 19 : 21);
+        var wlF = wrapLines2(beat.txt, w, SERIF, tszF * 1.46), lhF = tszF * 1.46 * 1.5, thF = wlF.length * lhF;
+        var tyF = availTop + Math.max(0, ((availBot - availTop) - thF) / 2);
+        if (beat.lab) { setFont(MONO, 10, ACCTX, p.LEFT, p.TOP, 230 * caF); p.text(beat.lab.toUpperCase(), x, tyF - 34 + riseF); }
+        setFont(SERIF, tszF, INK, p.LEFT, p.TOP, 255 * caF); var wiF; for (wiF = 0; wiF < wlF.length; wiF++) p.text(wlF[wiF], x, tyF + wiF * lhF + riseF);
+        var lastF = bi >= beats.length - 1;
+        setFont(MONO, 10.5, ACCTX, p.CENTER, p.BOTTOM, 175 + 55 * (reduced() ? 1 : (0.5 + 0.5 * Math.sin(nowT() * 0.003)))); p.text(lastF ? 'SEE EVERYTHING  ›' : 'TAP TO CONTINUE  ›', x + w / 2, scrBot);
+        pushHit(x - 8, scrTop + 42, w + 16, (scrBot - 46) - (scrTop + 42), function () { if (lastF) { UI.readMode = 'menu'; UI.scroll.read = 0; } else { UI.rdI = bi + 1; } UI.rdT = nowT(); buzz(8); });
+        UI.contentH.read = 0;
+      } else {
+      // ===== the full chapter menu (reached via "All"; return via "back to the reading") =====
+      eyebrow('You', x, ly, ACC); ly += 24;
+      if (UI.smCache) ly += paragraph(UI.smCache, x, ly, w, 16, INK, SERIF, 25) + 12;
+      flatBtn('‹  Back to the reading', x, ly, w, 40, function () { UI.readMode = 'flow'; UI.rdI = 0; UI.rdT = nowT(); UI.scroll.read = 0; buzz(8); }, false, true); ly += 50;
+      flatBtn('◉  Walk through your chart, one piece at a time', x, ly, w, 46, function () { UI.guide = { phase: 'intro', t0: nowT() }; UI.scroll.read = 0; buzz(12); }, false); ly += 58;
+      setFont(MONO, 9, INK, p.LEFT, p.TOP, 140); p.text('CHAPTERS', x, sY(ly)); ly += 20;
       UI.sec = UI.sec || {};
       var chapterHead = function (id, label, sub) {
         var open = !!UI.sec[id], rh = 46, hy = sY(ly);
@@ -7140,27 +7159,21 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         return open;
       };
       var bullets9 = function (arr, nmax, capIt) {
-        var bi, lim = nmax ? Math.min(nmax, arr.length) : arr.length;
-        for (bi = 0; bi < lim; bi++) { var ln = arr[bi]; if (capIt) ln = ln.charAt(0).toUpperCase() + ln.slice(1) + (/[.!?]$/.test(ln) ? '' : '.'); p.noStroke(); fillc(ACC, 200); p.ellipse(x + 4, sY(ly) + 9, 6, 6); ly += paragraph(ln, x + 18, ly, w - 18, 15, INK, SERIF, 23) + 9; }
+        var bj, lim = nmax ? Math.min(nmax, arr.length) : arr.length;
+        for (bj = 0; bj < lim; bj++) { var ln = arr[bj]; if (capIt) ln = ln.charAt(0).toUpperCase() + ln.slice(1) + (/[.!?]$/.test(ln) ? '' : '.'); p.noStroke(); fillc(ACC, 200); p.ellipse(x + 4, sY(ly) + 9, 6, 6); ly += paragraph(ln, x + 18, ly, w - 18, 15, INK, SERIF, 23) + 9; }
         return lim;
       };
-      // 1 — How you're wired (the combination synthesis; open by default)
       if (UI.comboCache === undefined) { try { UI.comboCache = APP.combinationRead(c); } catch (eCm9) { UI.comboCache = null; } }
       if (UI.comboCache && chapterHead('wired', 'How you’re wired')) { ly += paragraph(UI.comboCache, x, ly, w, 15.5, INK, SERIF, 24) + 12; }
-      // 2 — Oddly specific (the concrete tells)
-      if (UI.quirkCache === undefined) { try { UI.quirkCache = APP.lifeQuirks(c); } catch (eQ9) { UI.quirkCache = []; } }
       if (UI.quirkCache && UI.quirkCache.length && chapterHead('oddly', 'Oddly specific', UI.quirkCache.length + '')) {
         ly += paragraph('Small, true things your chart seems to know about your actual life.', x, ly, w, 12.5, INK, SERIF, 18, 175) + 10;
         bullets9(UI.quirkCache, 0, false); ly += 4;
       }
-      // 3 — What you're drawn to (interests + the current pull)
-      if (UI.intCache === undefined) { try { UI.intCache = APP.interests(c); } catch (eI9) { UI.intCache = []; } if (UI.intPull === undefined) { try { UI.intPull = APP.emergingPull(c, b); } catch (eIP9) { UI.intPull = null; } } }
       if (UI.intCache && UI.intCache.length && chapterHead('drawn', 'What you’re drawn to')) {
         bullets9(UI.intCache, 0, true);
         if (UI.intPull) { ly += 4; ly += paragraph(UI.intPull, x, ly, w, 15, INK, SERIF, 23, 250) + 6; }
         ly += 4;
       }
-      // 4 — Read closely (the placement library, a rotating handful)
       if (UI.spookCache === undefined) { try { UI.spookCache = APP.spookyReads(c); } catch (eSp9) { UI.spookCache = []; } }
       if (UI.spookCache && UI.spookCache.length && chapterHead('closely', 'Read closely', UI.spookCache.length + '')) {
         var pool9 = UI.spookCache, n9 = pool9.length, showN9 = Math.min(6, n9);
@@ -7170,15 +7183,12 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         if (n9 > showN9) { setFont(MONO, 8.5, INK, p.LEFT, p.TOP, 120); p.text('THESE ROTATE DAILY · ' + n9 + ' IN TOTAL FOR YOUR CHART', x, sY(ly + 2)); ly += 18; }
         ly += 4;
       }
-      // 5 — What's most specifically you (the single sharpest structural fact)
-      if (UI.sigCache === undefined) { try { UI.sigCache = APP.chartSignature(c); } catch (eSc9) { UI.sigCache = null; } }
       if (UI.sigCache && chapterHead('mostyou', 'What’s most specifically you')) {
         var ssz9 = 16.5, sgL9 = wrapLines2(UI.sigCache, w - 18, SERIF, ssz9), sgi9, sgh9 = ssz9 * 1.5;
         strokec(ACC, 210); p.strokeWeight(3); p.line(x + 1.5, sY(ly) + 4, x + 1.5, sY(ly) + sgL9.length * sgh9 - 4); p.noStroke();
         for (sgi9 = 0; sgi9 < sgL9.length; sgi9++) { p.textStyle(p.ITALIC); setFont(SERIF, ssz9, INK, p.LEFT, p.TOP, 250); p.text(sgL9[sgi9], x + 16, sY(ly) + sgi9 * sgh9); p.textStyle(p.NORMAL); }
         ly += sgL9.length * sgh9 + 10;
       }
-      // 6 — What carries the most weight (top three by the prominence engine)
       if (!UI.promCache) { try { UI.promCache = APP.prominence(c); } catch (epr) { UI.promCache = null; } }
       if (UI.promCache && chapterHead('weight', 'What carries the most weight')) {
         var pr = UI.promCache, pn; for (pn = 0; pn < 3; pn++) {
@@ -7190,19 +7200,18 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         }
         ly += 6;
       }
-      // 7 — Your chart in four movements
       if (!UI.arcCache) { try { UI.arcCache = APP.composeArc(c, b); } catch (ea) { UI.arcCache = null; } }
       if (UI.arcCache && UI.arcCache.length && chapterHead('arc', 'Your chart in four movements')) {
         for (var ar = 0; ar < UI.arcCache.length; ar++) { var bt = UI.arcCache[ar]; setFont(MONO, 9.5, INK, p.LEFT, p.TOP, 210); bold(); p.text(bt.label.toUpperCase(), x, sY(ly)); normal(); ly += 18; ly += paragraph(bt.text, x, ly, w, 15.5, INK, SERIF, 24) + 12; }
         ly += 4;
       }
-      // 8 — The deep read (the full composed core)
       if (chapterHead('deep', 'The deep read')) {
         if (!UI.readCache) UI.readCache = APP.composeCore(c);
         for (var i = 0; i < UI.readCache.length; i++) ly += paragraph(UI.readCache[i], x, ly, w, 16, INK, SERIF, 25) + 10;
         ly += 6;
       }
       ly += 18;
+      }
       }
       if (rt === 'days') {
       // the day, written out: one composed reading with an arc — precision first, then the rows
@@ -10876,7 +10885,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       } catch (e) {}
     }
     // battery: stop the draw loop entirely while the tab/app is hidden
-    try { document.addEventListener('visibilitychange', function () { try { if (document.hidden) p.noLoop(); else { var d9 = new Date(), k9 = d9.getFullYear() * 10000 + (d9.getMonth() + 1) * 100 + d9.getDate(); if (UI.dayKey && UI.dayKey !== k9) { UI.todayCache = null; UI.calEvents = null; UI.walkTr = null; UI.fmList = null; UI.readCache = null; UI.oddPred = undefined; UI.profYear = undefined; } UI.dayKey = k9; p.loop(); } } catch (e2) {} }); } catch (e3) {}
+    try { document.addEventListener('visibilitychange', function () { try { if (document.hidden) p.noLoop(); else { var d9 = new Date(), k9 = d9.getFullYear() * 10000 + (d9.getMonth() + 1) * 100 + d9.getDate(); if (UI.dayKey && UI.dayKey !== k9) { UI.todayCache = null; UI.calEvents = null; UI.walkTr = null; UI.fmList = null; UI.readCache = null; UI.oddPred = undefined; UI.profYear = undefined; UI.rdBeats = undefined; UI.rdI = 0; } UI.dayKey = k9; p.loop(); } } catch (e2) {} }); } catch (e3) {}
     p.draw = function () {
       // auto-dark-at-night: re-apply the theme when the effective key changes (time or accent)
       var ek = effectiveThemeKey() + '|' + ((APP.STATE.settings && APP.STATE.settings.accent) || 0); if (ek !== UI.appliedThemeKey) { applyTheme(); setBodyBg(GROUNDS[UI.screen] || GROUNDS.chart); }
@@ -10884,7 +10893,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       try {
         var ckW9 = APP.activeChartKey ? (APP.activeChartKey() + '|' + (APP.STATE.settings ? APP.STATE.settings.house + APP.STATE.settings.zodiac : '')) : '';
         if (UI.ckW !== ckW9) {
-          if (UI.ckW != null) { UI.readSig = null; UI.walkTr = null; UI.walkTheme = null; UI.plun = null; UI.forecast = null; UI.readCache = null; UI.todayCache = null; UI.calEvents = null; UI.fmList = null; UI.lbCache = null; UI.lqzCache = null; UI.lwSky = null; UI.progTL = null; UI.retroS = null; UI.sigCache = undefined; UI.arcCache = null; UI.promCache = null; UI.oddPred = undefined; UI.profYear = undefined; UI.quirkCache = undefined; UI.intCache = undefined; UI.intPull = undefined; UI.spookCache = undefined; UI.comboCache = undefined; UI.smCache = undefined; UI.guide = null; }
+          if (UI.ckW != null) { UI.readSig = null; UI.walkTr = null; UI.walkTheme = null; UI.plun = null; UI.forecast = null; UI.readCache = null; UI.todayCache = null; UI.calEvents = null; UI.fmList = null; UI.lbCache = null; UI.lqzCache = null; UI.lwSky = null; UI.progTL = null; UI.retroS = null; UI.sigCache = undefined; UI.arcCache = null; UI.promCache = null; UI.oddPred = undefined; UI.profYear = undefined; UI.quirkCache = undefined; UI.intCache = undefined; UI.intPull = undefined; UI.spookCache = undefined; UI.comboCache = undefined; UI.smCache = undefined; UI.guide = null; UI.rdBeats = undefined; UI.rdI = 0; }
           UI.ckW = ckW9;
         }
       } catch (eCk9) {}
