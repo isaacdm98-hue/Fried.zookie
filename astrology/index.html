@@ -7106,20 +7106,28 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (rt === 'story') {
       // ===== the You tab, re-architected: one clear headline, then calm chapters you open on tap =====
       // (was a single 15-screen wall of near-identical sections; now scannable and in your control)
+      // ===== "A reading for you" — the reworked front door. Not a dashboard: an astrologer
+      // reading your exact chart. Warm, punchy, spooky-first, one beat at a time. =====
       if (UI.smCache === undefined) { try { UI.smCache = APP.sunMoonCharacter(c); } catch (eSm9) { UI.smCache = null; } }
-      eyebrow('You', x, ly, ACC); ly += 26;
-      if (UI.smCache) { ly += paragraph(UI.smCache, x, ly, w, 18, INK, SERIF, 28) + 16; }
-      // lead with the spooky-specific hook: one chart-exact tell, the "how did it know" line, up front
       if (UI.quirkCache === undefined) { try { UI.quirkCache = APP.lifeQuirks(c); } catch (eQ9) { UI.quirkCache = []; } }
+      if (UI.oddPred === undefined) { try { UI.oddPred = APP.oddPredictions(c, b); } catch (eOp9) { UI.oddPred = []; } }
+      eyebrow('A reading for you', x, ly, ACC); ly += 26;
+      ly += paragraph('Alright — let me read you properly. Not your star sign. You.', x, ly, w, 18, INK, SERIF, 30) + 20;
+      // beat 1 — the hook: the spookiest chart-exact thing, marked with the accent bar
       if (UI.quirkCache && UI.quirkCache.length) {
         var dseedH = 0; try { var ddH = new Date(); dseedH = ddH.getFullYear() * 366 + ddH.getMonth() * 31 + ddH.getDate(); } catch (eDsH) {}
-        var hookN = UI.quirkCache.length, hook9 = UI.quirkCache[dseedH % hookN], hkY0 = sY(ly);
-        var hkH = paragraph(hook9, x + 16, ly, w - 16, 16.5, INK, SERIF, 26);
-        strokec(ACC, 220); p.strokeWeight(3); p.line(x + 1.5, hkY0 + 4, x + 1.5, hkY0 + hkH - 4); p.noStroke();
-        ly += hkH + 8;
-        setFont(MONO, 8.5, ACCTX, p.LEFT, p.TOP, 190); p.text('AND ' + (hookN - 1) + ' MORE ODDLY-SPECIFIC THINGS BELOW', x, sY(ly)); ly += 24;
+        var hook9 = UI.quirkCache[dseedH % UI.quirkCache.length], hkY0 = sY(ly);
+        var hkH = paragraph(hook9, x + 16, ly, w - 16, 17, INK, SERIF, 27);
+        strokec(ACC, 225); p.strokeWeight(3); p.line(x + 1.5, hkY0 + 4, x + 1.5, hkY0 + hkH - 4); p.noStroke();
+        ly += hkH + 20;
       }
-      flatBtn('◉  Guided reading — walk your chart with me', x, ly, w, 46, function () { UI.guide = { phase: 'intro', t0: nowT() }; UI.scroll.read = 0; buzz(12); }, false); ly += 60;
+      // beat 2 — who you are, in one line
+      if (UI.smCache) { ly += paragraph(UI.smCache, x, ly, w, 17, INK, SERIF, 27) + 20; }
+      // beat 3 — what is alive for you right now
+      if (UI.oddPred && UI.oddPred.length) { ly += paragraph(UI.oddPred[0].text, x, ly, w, 17, INK, SERIF, 27) + 20; }
+      // the bridge into the depth
+      ly += paragraph('That’s the core of you. How you love, what you’re chasing, and what the sky is doing to you this year — it’s all here, one piece at a time, whenever you want it.', x, ly, w, 14.5, INK, SERIF, 23, 230) + 20;
+      flatBtn('◉  Read me properly — the guided walk', x, ly, w, 48, function () { UI.guide = { phase: 'intro', t0: nowT() }; UI.scroll.read = 0; buzz(12); }, false); ly += 62;
       setFont(MONO, 9, INK, p.LEFT, p.TOP, 140); p.text('OR OPEN A CHAPTER', x, sY(ly)); ly += 20;
       UI.sec = UI.sec || {};
       var chapterHead = function (id, label, sub) {
