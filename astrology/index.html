@@ -974,6 +974,42 @@ var APP = (function () {
   // carries a rarity weight (how few charts have it); the strongest becomes the opening hook.
   // the oddly-specific layer: concrete life-details the chart implies (taste, home,
   // pace, mind, first impression). No hedging, no app-talk: things about their actual life.
+  // the combination synthesiser: composes a bespoke read of how a chart's core placements
+  // interact. Not a lookup of 1,728 combos: it reasons from element, modality and role, so
+  // any Sun/Moon/Mars/rising mix gets its own specific paragraph.
+  function combinationRead(c) {
+    var E = DATA.COMBO, P = c.planets, tk = STATE.birth.timeKnown;
+    if (!E || !P.sun || !P.moon || !P.mars) return null;
+    var su = P.sun.sign, mo = P.moon.sign, ma = P.mars.sign, asc = (tk && c.ascBody) ? c.ascBody.sign : null;
+    var SG = DATA.SIGNS, suE = SG[su].element, moE = SG[mo].element, maE = SG[ma].element;
+    var cap = function (t) { return t ? t.charAt(0).toUpperCase() + t.slice(1) : ''; };
+    var parts = [];
+    var head = anA(SG[su].name, true) + ' Sun, ' + anA(SG[mo].name) + ' Moon and ' + anA(SG[ma].name) + ' Mars' + (asc != null ? ', rising in ' + SG[asc].name : '');
+    parts.push(head + '. At your core you are ' + E.sun[su] + '. ' + cap(E.moon[mo]) + '. When you want something, ' + E.mars[ma] + (asc != null ? ', ' + E.rising[asc] : '') + '.');
+    // element synthesis
+    if (suE === moE && moE === maE) {
+      parts.push('All three run ' + suE + ', which makes you an unusually pure, undiluted ' + suE + ' type: ' + (E.elemPure[suE] || '') + '. What you are, what you need and how you chase it all speak one language, for better and worse.');
+    } else {
+      parts.push('Where your core (' + suE + ') meets your needs (' + moE + '), ' + elementMix(suE, moE) + '.');
+      if (maE !== suE && maE !== moE) parts.push('Your ' + SG[ma].name + ' Mars is the wildcard here: your drive runs on ' + maE + ' while the rest of you does not, so how you go after things keeps surprising people who thought they had you read.');
+      else if (maE === suE) parts.push('Your Mars pulls in the same direction as your Sun, so you chase things in the same key as who you are, which makes you decisive and genuinely hard to deflect.');
+      else parts.push('Your Mars answers to your Moon, so you fight hardest for what you need and who you love, rather than for anything abstract.');
+    }
+    // modality synthesis
+    var mods = [SG[su].modality, SG[mo].modality, SG[ma].modality], names = { sun: SG[su].name + ' Sun', moon: SG[mo].name + ' Moon', mars: SG[ma].name + ' Mars' }, keys = ['sun', 'moon', 'mars'];
+    if (mods[0] === mods[1] && mods[1] === mods[2]) {
+      parts.push('And all three share the same mode: ' + (E.modPure[mods[0]] || '') + '.');
+    } else {
+      var cnt = {}, mi; for (mi = 0; mi < 3; mi++) cnt[mods[mi]] = (cnt[mods[mi]] || 0) + 1;
+      if (cnt.cardinal === 1 && cnt.fixed === 1 && cnt.mutable === 1) {
+        parts.push('You carry one of each mode: something in you to start, something to hold, and something to adapt, which is a rare, self-balancing engine that rarely stays stuck for long.');
+      } else {
+        var lone = null, loneMod = null; for (mi = 0; mi < 3; mi++) if (cnt[mods[mi]] === 1) { lone = keys[mi]; loneMod = mods[mi]; }
+        if (lone) parts.push('Two of you run ' + mods[(lone === 'sun') ? 1 : 0] + ', but your ' + names[lone] + ' is ' + loneMod + ': ' + (E.modRole[loneMod] || '') + ', the one part of you that behaves differently, and often the most important to understand.');
+      }
+    }
+    return parts.join(' ');
+  }
   function lifeQuirks(c) {
     var Q = DATA.QUIRK, QM = DATA.QUIRK_MOD || {}; if (!Q) return [];
     var out = [], tk = STATE.birth.timeKnown;
@@ -4507,7 +4543,7 @@ var APP = (function () {
     solarReturnChart: solarReturnChart, upcomingEclipses: upcomingEclipses, bestDaysFor: bestDaysFor, electIntents: electIntents, oddPredictions: oddPredictions, composeProfectionYear: composeProfectionYear, signHouseWeave: signHouseWeave,
     progressedTimeline: progressedTimeline, retroSeasons: retroSeasons,
     exportBook: exportBook, exportBackup: exportBackup, importBackup: importBackup, composeDailyEssay: composeDailyEssay, chartFP: chartFP, weaveNote: weaveNote, termOf: termOf, anA: anA, composeColleague: composeColleague, exportColleague: exportColleague,
-    microFor: microFor, tellsFor: tellsFor, receptionOf: receptionOf, chartSignature: chartSignature, lifeQuirks: lifeQuirks, interests: interests, emergingPull: emergingPull, spookyReads: spookyReads, addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenOf: almutenOf, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, returnsAlmanac: returnsAlmanac, progressedLunation: progressedLunation, planetaryHours: planetaryHours, moonVoidWindow: moonVoidWindow, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
+    microFor: microFor, tellsFor: tellsFor, receptionOf: receptionOf, chartSignature: chartSignature, lifeQuirks: lifeQuirks, interests: interests, emergingPull: emergingPull, spookyReads: spookyReads, combinationRead: combinationRead, addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenOf: almutenOf, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, returnsAlmanac: returnsAlmanac, progressedLunation: progressedLunation, planetaryHours: planetaryHours, moonVoidWindow: moonVoidWindow, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
     saveCurrentChart: saveCurrentChart, deleteSavedChart: deleteSavedChart, activateSavedChart: activateSavedChart, activeChartKey: activeChartKey, chartKey: chartKey, famousMatches: famousMatches, lifeTransits: lifeTransits, upcomingTransits: upcomingTransits, transitMotion: transitMotion, compositeChart: compositeChart,
     nameFor: nameFor, glyphFor: glyphFor, sgAbbr: sgAbbr, pad: pad,
     domElement: domElement, lowElement: lowElement, domMod: domMod, tzOffsetHours: tzOffsetHours
@@ -6887,6 +6923,13 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
           p.text(sgL9[sgi9], x + 16, sY(ly) + sgi9 * sgh9 + (1 - eCubic(sga9)) * 8); p.textStyle(p.NORMAL);
         }
         ly += sgL9.length * sgh9 + 22;
+        hairline(x, ly, x + w, 36); ly += 20;
+      }
+      // your specific combination: how your core placements actually interact
+      if (UI.comboCache === undefined) { try { UI.comboCache = APP.combinationRead(c); } catch (eCm9) { UI.comboCache = null; } }
+      if (UI.comboCache) {
+        eyebrow('Your exact combination', x, ly, ACC); ly += 22;
+        ly += paragraph(UI.comboCache, x, ly, w, 15.5, INK, SERIF, 24) + 14;
         hairline(x, ly, x + w, 36); ly += 20;
       }
       // then the four-movement arc — spine, engine, edge, where it's heading
@@ -10562,7 +10605,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       try {
         var ckW9 = APP.activeChartKey ? (APP.activeChartKey() + '|' + (APP.STATE.settings ? APP.STATE.settings.house + APP.STATE.settings.zodiac : '')) : '';
         if (UI.ckW !== ckW9) {
-          if (UI.ckW != null) { UI.readSig = null; UI.walkTr = null; UI.walkTheme = null; UI.plun = null; UI.forecast = null; UI.readCache = null; UI.todayCache = null; UI.calEvents = null; UI.fmList = null; UI.lbCache = null; UI.lqzCache = null; UI.lwSky = null; UI.progTL = null; UI.retroS = null; UI.sigCache = undefined; UI.arcCache = null; UI.promCache = null; UI.oddPred = undefined; UI.profYear = undefined; UI.quirkCache = undefined; UI.intCache = undefined; UI.intPull = undefined; UI.spookCache = undefined; }
+          if (UI.ckW != null) { UI.readSig = null; UI.walkTr = null; UI.walkTheme = null; UI.plun = null; UI.forecast = null; UI.readCache = null; UI.todayCache = null; UI.calEvents = null; UI.fmList = null; UI.lbCache = null; UI.lqzCache = null; UI.lwSky = null; UI.progTL = null; UI.retroS = null; UI.sigCache = undefined; UI.arcCache = null; UI.promCache = null; UI.oddPred = undefined; UI.profYear = undefined; UI.quirkCache = undefined; UI.intCache = undefined; UI.intPull = undefined; UI.spookCache = undefined; UI.comboCache = undefined; }
           UI.ckW = ckW9;
         }
       } catch (eCk9) {}

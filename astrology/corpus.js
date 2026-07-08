@@ -1640,3 +1640,79 @@ DATA.SPOOKY.hemisphere = {
   'east': 'most of your planets sit on the eastern, self-directed side of your chart: you make your own circumstances, you act on your own initiative, and your life is unusually yours to steer',
   'west': 'most of your planets sit on the western, relational side of your chart: your life tends to unfold through other people, timing and circumstance more than through raw personal will'
 };
+
+// ===== the combination synthesiser: essences that compose into any Sun/Moon/Mars/rising mix =====
+DATA.COMBO = {
+  sun: [
+  'a pioneer wired to go first, act on instinct and lead from the front',
+  'a builder wired for the steady, the sensual and the things that last',
+  'a messenger wired for curiosity, variety and the trade of ideas',
+  'a nurturer wired to protect, to feel deeply and to belong',
+  'a performer wired to shine, to create and to lead with the heart',
+  'a craftsman wired to refine, to serve and to get it right',
+  'a diplomat wired for balance, beauty and relationship',
+  'an alchemist wired for depth, intensity and transformation',
+  'a seeker wired for meaning, freedom and the far horizon',
+  'a strategist wired for mastery, structure and the long climb',
+  'an original wired for the future, the unconventional and the collective',
+  'a dreamer wired for imagination, compassion and the unseen'
+  ],
+  moon: [
+  'underneath, you need action and independence to feel right, and you feel things fast and hot',
+  'underneath, you need comfort, security and the familiar, and you settle yourself through the body',
+  'underneath, you need mental stimulation and conversation, and you cannot rest until you have talked it out',
+  'underneath, you need closeness, home and to be needed, and your moods run deep and tidal',
+  'underneath, you need to feel special and seen, and your feelings run warm, generous and a little dramatic',
+  'underneath, you need order and usefulness, and you soothe yourself by fixing and tidying',
+  'underneath, you need harmony and a partner, and open conflict genuinely unsettles you',
+  'underneath, you need depth and total trust, and you feel everything at full volume',
+  'underneath, you need freedom and room to roam, and you cheer yourself up by planning an escape',
+  'underneath, you need to feel competent and in control, and you self-soothe by getting something done',
+  'underneath, you need space and a tribe, and you watch your own feelings from a step back',
+  'underneath, you need solitude, water and beauty, and you soak up the mood of the whole room'
+  ],
+  mars: [
+  'you go after it head-on, fast and first',
+  'you pursue it slowly and stubbornly, and you never quit once you have started',
+  'you chase it with words and quick moves, juggling several things at once',
+  'you pursue it sideways and protectively, driven more by feeling than by strategy',
+  'you go after it with pride and flair, and you need it to be seen',
+  'you pursue it through precision and hard, useful work',
+  'you go after it through charm and negotiation, and you hate an open fight',
+  'you pursue it with relentless, controlled intensity',
+  'you chase it on principle and enthusiasm, always aiming big',
+  'you pursue it with discipline and patience, playing the long game',
+  'you go after it your own way, on principle, resisting anyone telling you how',
+  'you pursue it by feel and inspiration, and you dodge the head-on confrontation'
+  ],
+  rising: [
+  'and people first meet you as bold and direct',
+  'and people first meet you as calm and grounded',
+  'and people first meet you as quick and curious',
+  'and people first meet you as gentle and a little guarded',
+  'and people first meet you as warm and commanding',
+  'and people first meet you as neat and capable',
+  'and people first meet you as charming and fair',
+  'and people first meet you as intense and hard to read',
+  'and people first meet you as open and up for anything',
+  'and people first meet you as serious and competent',
+  'and people first meet you as original and slightly detached',
+  'and people first meet you as dreamy and hard to pin down'
+  ],
+  elemPure: {
+  'fire': 'all drive, warmth and momentum, brilliant and prone to burning out',
+  'earth': 'all substance, patience and results, grounded and prone to getting stuck',
+  'air': 'all ideas, words and perspective, brilliant and prone to living in your head',
+  'water': 'all feeling, depth and intuition, profound and prone to drowning in it'
+  },
+  modPure: {
+  'cardinal': 'you are pure initiative: forever starting, restless to lead, a trail of beginnings behind you',
+  'fixed': 'you are pure staying power: immovable once set, and both blessed and cursed by never letting go',
+  'mutable': 'you are pure adaptability: always shifting, a dozen things at once, and genuinely hard to pin to one shape'
+  },
+  modRole: {
+  'cardinal': 'the spark that starts it',
+  'fixed': 'the anchor that holds it',
+  'mutable': 'the flex that adapts it'
+  }
+};
