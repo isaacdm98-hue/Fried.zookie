@@ -1,5 +1,8 @@
 # Changelog
 
+## 3.23.0 — 2026-07-08
+- **A warmer voice — wave one.** The readings are being rewritten to speak with more care: CHANI-style warmth, but keeping every specific placement and the honesty intact (never a horoscope-paper). This first wave warms the surfaces you meet first — the guided reading now walks with you "gently, at your own pace"; the life walkthrough speaks tenderly and closes each hard chapter with "however it arrived, you carried it, and you are still here"; the Saturn return is "the real beginning of a life that is actually yours… that weight was never a punishment; it was the making of you"; the timed predictions open softer ("Lately, you've…" / "Soon, you're likely…"); and the combination read leads with "At your core, you are… and underneath that, you need…". The exact astrology underneath every line is unchanged. More waves to follow across the whole app.
+
 ## 3.22.0 — 2026-07-08
 - **The sky, stripped clean.** Still too busy, so this goes all the way to storybook calm. The drifting clouds are gone; the walk sky now carries no constellations at all (they remain only in the teaching sky, where they are the lesson); and the crowd of planets is reduced to just the two brightest wanderers, Venus and Jupiter, dimmed to soft distant lights that sit back in the deep. What is left is a clean gradient warming to a luminous horizon, a scatter of gentle stars, a few drifting motes of light, and the walker under a single soft beam. Quiet, and magic.
 

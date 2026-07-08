@@ -110,7 +110,7 @@ on-device, no server, no API keys.
 
 ## Version
 
-**3.22.0** — see `CHANGELOG.md`. Licensed MIT (`LICENSE`).
+**3.23.0** — see `CHANGELOG.md`. Licensed MIT (`LICENSE`).
 
 ## Deploy
 

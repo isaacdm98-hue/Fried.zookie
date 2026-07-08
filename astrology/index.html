@@ -985,7 +985,7 @@ var APP = (function () {
     var cap = function (t) { return t ? t.charAt(0).toUpperCase() + t.slice(1) : ''; };
     var parts = [];
     var head = anA(SG[su].name, true) + ' Sun, ' + anA(SG[mo].name) + ' Moon and ' + anA(SG[ma].name) + ' Mars' + (asc != null ? ', rising in ' + SG[asc].name : '');
-    parts.push(head + '. At your core you are ' + E.sun[su] + '. ' + cap(E.moon[mo]) + '. When you want something, ' + E.mars[ma] + (asc != null ? ', ' + E.rising[asc] : '') + '.');
+    parts.push(head + '. At your core, you are ' + E.sun[su] + '. And underneath that, you need ' + (E.moon[mo].replace(/^underneath, you need /, '')) + '. When you reach for something, ' + E.mars[ma] + (asc != null ? ', ' + E.rising[asc] : '') + '.');
     // the actual aspect between the two lights: what makes all 144 Sun/Moon pairings read differently
     if (E.lights) {
       var dLM = ((mo - su) % 12 + 12) % 12;
@@ -3604,7 +3604,7 @@ var APP = (function () {
       var hIdx = rH || (b && b.timeKnown ? np.house : 0);
       var dom = hIdx ? DOM9[hIdx - 1] : (SHORTFN[ev.np] || 'this part of your life');
       var clause = (isPast ? (hard ? E.hp : E.sp) : (hard ? E.hf : E.sf)).replace('{d}', dom);
-      var opener = isPast ? 'You have recently ' : 'You are likely ';
+      var opener = isPast ? 'Lately, you’ve ' : 'Soon, you’re likely ';
       var why = E.why.replace('{t}', isPast ? 'was' : 'is') + ' ' + nameFor(ev.np) + (rH ? ', the ruler of your ' + ordinal(rH) + ' house' : (np && np.house && b && b.timeKnown ? ', in your ' + ordinal(np.house) + ' house' : '')) + '.';
       var when = whenTxt9(ev.date, isPast, !!ev.slow, ev);
       return { date: ev.date, text: opener + clause + '. ' + why + ' ' + when, quality: ev.quality, tp: ev.tp, past: isPast };
@@ -3707,11 +3707,11 @@ var APP = (function () {
   var LIFE_FEEL = { 0: 'switching it fully on', 90: 'forcing a real adjustment whether you choose it or not', 180: 'bringing it to a head, usually through other people', 120: 'opening it so smoothly you could miss the door swinging' };
   var MOVER_TASK = { jupiter: 'say yes to what genuinely grows you, without overreaching', saturn: 'do the unglamorous work and build something that lasts', uranus: 'loosen your grip and let the change move through you', neptune: 'stay gentle and clear-eyed, and sign nothing blind', pluto: 'let what is ending actually end: you are being remade' };
   function lifeText(ev, c) {
-    if (ev.isReturn && ev.tp === 'saturn') return ev.age < 40 ? 'Age ' + Math.round(ev.age) + ': your first Saturn return, the real start of adulthood. You build the life that is actually yours and shoulder its weight. Demanding, and the making of you.' : 'Age ' + Math.round(ev.age) + ': your second Saturn return. A reckoning with what you have built and what you want the rest of it to mean. Mastery, and letting finished things go.';
-    if (ev.isReturn && ev.tp === 'jupiter') return 'Age ' + Math.round(ev.age) + ': a fresh ~12-year Jupiter cycle opens. Room to grow, travel, study and believe in something larger. Plant now what you want to harvest over the next decade.';
-    if (ev.isReturn && ev.tp === 'uranus') return 'Age ' + Math.round(ev.age) + ': your Uranus return. A whole lifetime’s arc of freedom comes full circle. Permission to be exactly, unapologetically yourself.';
-    if (ev.isReturn && (ev.tp === 'neptune' || ev.tp === 'pluto')) return 'Age ' + Math.round(ev.age) + ': a rare return of ' + nameFor(ev.tp) + ': a deep, generational tide swinging back through where it stood at your birth.';
-    if (ev.tp === 'uranus' && ev.np === 'uranus' && ev.ang === 180) return 'Age ' + Math.round(ev.age) + ': the midlife awakening. A restless pull to live more truly, even if it shakes up what you had carefully settled into. The question becomes “is this actually mine?”';
+    if (ev.isReturn && ev.tp === 'saturn') return ev.age < 40 ? 'Around age ' + Math.round(ev.age) + ', you moved through your first Saturn return — the real beginning of a life that is actually yours. You were building it, and learning to carry its weight. It asked a lot of you, and that weight was never a punishment; it was the making of you. Be gentle with how long that took.' : 'Around age ' + Math.round(ev.age) + ', your second Saturn return — a tender reckoning with what you have built and what you want the rest of it to mean. This is mastery, and it is also permission to let finished things go. You have earned both.';
+    if (ev.isReturn && ev.tp === 'jupiter') return 'Around age ' + Math.round(ev.age) + ', a fresh twelve-year Jupiter cycle opened for you — room to grow, to wander, to learn, to believe in something larger than the day in front of you. Whatever you plant in a season like this, you get to harvest for the next decade. Let yourself hope.';
+    if (ev.isReturn && ev.tp === 'uranus') return 'Around age ' + Math.round(ev.age) + ', your Uranus return — a whole lifetime’s arc of freedom coming full circle. This is the sky handing you permission to be exactly, unapologetically yourself. You do not need anyone to sign off on it.';
+    if (ev.isReturn && (ev.tp === 'neptune' || ev.tp === 'pluto')) return 'Around age ' + Math.round(ev.age) + ', a rare return of ' + nameFor(ev.tp) + ' — a deep, generational tide swinging slowly back through the place it stood when you were born. You are not meant to rush this one.';
+    if (ev.tp === 'uranus' && ev.np === 'uranus' && ev.ang === 180) return 'Around age ' + Math.round(ev.age) + ', your midlife awakening — a restless, honest pull to live more truly, even when it unsettles what you had so carefully arranged. The quiet question underneath it is simply: is this actually mine? You are allowed to ask it out loud.';
     // every non-return line is stamped with age, year, the natal point’s real sign + house, and an aspect-specific verb,
     // so no two life moments can read the same and none are vague.
     var nlon = c ? natalLonOf(c, ev.np) : null;
@@ -3759,7 +3759,7 @@ var APP = (function () {
     };
     var domain5 = POINT_CORE5[ev.np] || ('your ' + who);
     if (hs && HOUSE_LIFE[hs - 1]) domain5 += ', and for you especially the part of life around ' + HOUSE_LIFE[hs - 1].th;
-    var astro5 = MOVER_ON5[ev.tp] ? (' In an astrologer’s words: ' + MOVER_ON5[ev.tp].replace('{D}', domain5) + '.') : '';
+    var astro5 = MOVER_ON5[ev.tp] ? (' In plain, kind terms: ' + MOVER_ON5[ev.tp].replace('{D}', domain5) + '. However it arrived, you carried it — and you are still here.') : '';
     return open5 + ' ' + plot5 + (MOVER_NOUN[ev.tp] ? ' ' + vpick([nameFor(ev.tp) + ' is ' + MOVER_NOUN[ev.tp] + '; it leaves a mark shaped like itself.', 'That is ' + nameFor(ev.tp) + ' for you: ' + MOVER_NOUN[ev.tp] + '.', 'It bore the signature of ' + nameFor(ev.tp) + ': ' + MOVER_NOUN[ev.tp] + '.'], seed5 + 'tl') : '') + astro5;
   }
 
@@ -6946,8 +6946,8 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       // -------- intro --------
       if (G.phase === 'intro') {
         riseText('A guided reading', x, sY(ly), 30, SANS, INK, G.t0, 30, 255, true); ly += 46;
-        ly += paragraph('I’ll show you real things your chart says, one at a time. Tap the ones that ring true. For each one you recognise, I’ll open up the astrology underneath it.', x, ly, w, 15.5, INK, SERIF, 25) + 12;
-        ly += paragraph('Nothing here is a guess, and I never ask you to feed me anything. You just choose which real thread to pull — and at the end I hand you back only what you found.', x, ly, w, 14.5, INK, SERIF, 23, 235) + 20;
+        ly += paragraph('Let’s walk through your chart together, gently, one piece at a time. I’ll show you something real the sky says about you — you tell me what lands. For each one that rings true, I’ll open up what’s underneath it.', x, ly, w, 15.5, INK, SERIF, 25) + 12;
+        ly += paragraph('None of this is a guess, and I’ll never fish. You just follow what feels true, at your own pace — and at the end, I’ll hand you back only what you recognised in yourself.', x, ly, w, 14.5, INK, SERIF, 23, 235) + 20;
         flatBtn('Begin', x, ly, w, 48, function () {
           var deck = []; try { deck = APP.guideCards(APP.STATE.chart, APP.STATE.birth) || []; } catch (eGb) { deck = []; }
           G.deck = deck; G.i = 0; G.picks = {}; G.revealed = false; G.phase = deck.length ? 'cards' : 'empty'; G.cardT = nowT(); UI.scroll.read = 0; buzz(10);
@@ -6968,7 +6968,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         } else {
           var areas = []; for (mi = 0; mi < kept.length; mi++) areas.push(kept[mi].area.toLowerCase());
           var joinA = areas.length === 1 ? areas[0] : areas.slice(0, -1).join(', ') + ' and ' + areas[areas.length - 1];
-          ly += paragraph('You recognised yourself in ' + kept.length + ' of ' + deckP.length + '. The threads you trusted were ' + joinA + '.', x, ly, w, 16, INK, SERIF, 25) + 12;
+          ly += paragraph('You saw yourself in ' + kept.length + ' of ' + deckP.length + '. The parts that landed were ' + joinA + ' — hold onto those; they are the truest of you.', x, ly, w, 16, INK, SERIF, 25) + 12;
           for (mi = 0; mi < kept.length; mi++) {
             var kc = kept[mi], ka = reduced() ? 1 : cl01((t - G.cardT - mi * 90) / 420);
             p.noStroke(); fillc(ACC, 210 * ka); p.ellipse(x + 4, sY(ly) + 9, 6, 6);
@@ -7087,7 +7087,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (UI.quirkCache === undefined) { try { UI.quirkCache = APP.lifeQuirks(c); } catch (eQ9) { UI.quirkCache = []; } }
       if (UI.quirkCache && UI.quirkCache.length) {
         eyebrow('Oddly specific', x, ly, ACC); ly += 22;
-        ly += paragraph('Small, concrete things the maths says about your actual life. Read them and see how many land.', x, ly, w, 13, INK, SERIF, 19, 185) + 12;
+        ly += paragraph('Small, true things your chart seems to know about your actual life. No pressure — just notice which ones land.', x, ly, w, 13, INK, SERIF, 19, 185) + 12;
         for (var qi9 = 0; qi9 < UI.quirkCache.length; qi9++) {
           var qA9 = reduced() ? 1 : cl01((nowT() - (UI.actT || UI.fxT) - 120 - qi9 * 120) / 460);
           p.noStroke(); fillc(ACC, 210 * qA9); p.ellipse(x + 4, sY(ly) + 9, 6, 6);
