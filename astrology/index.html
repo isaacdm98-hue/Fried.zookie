@@ -3747,8 +3747,20 @@ var APP = (function () {
     var open5 = vpick(OPEN5[stage5], seed5 + 'o'), plot5 = vpick(PLOT5[ev.ang] || PLOT5[0], seed5 + 'p');
     if (/[.!?]$/.test(open5.replace(/\s+$/, ''))) plot5 = plot5.charAt(0).toUpperCase() + plot5.slice(1);
     plot5 = plot5.replace('{TP}', nameFor(ev.tp)).replace('{WHO}', who).replace('{LOC}', loc);
-    return open5 + ' ' + plot5 + (MOVER_NOUN[ev.tp] ? ' ' + vpick([nameFor(ev.tp) + ' is ' + MOVER_NOUN[ev.tp] + '; it leaves a mark shaped like itself.', 'That is ' + nameFor(ev.tp) + ' for you: ' + MOVER_NOUN[ev.tp] + '.', 'It bore the signature of ' + nameFor(ev.tp) + ': ' + MOVER_NOUN[ev.tp] + '.'], seed5 + 'tl') : '');
-    // (superseded by the story register above)
+    // the astrologer's clause: the concrete life-domain (the point's nature + the house it rules
+    // for you) and the kind of event this exact mover classically brings to it. Weather, not fate.
+    var POINT_CORE5 = { sun: 'your identity, your vitality and the direction of your life', moon: 'your emotional life, your home and your family', asc: 'your body, your image and how you begin things', mc: 'your career, your calling and your standing in the world' };
+    var MOVER_ON5 = {
+      saturn: 'Saturn tests and commits, so this is classically the season {D} got heavier and more serious — a real weight was shouldered, a commitment got binding, or something there you had outgrown finally ended',
+      pluto: 'Pluto remakes through pressure, so this is classically the season {D} went through a power shift, an ending or a loss that cleared the ground and rebuilt it from underneath',
+      uranus: 'Uranus breaks the pattern, so this is classically the season {D} changed without warning — a break, an exit, a rule you stopped following, or a freedom you reached for',
+      neptune: 'Neptune dissolves the edges, so this is classically the season {D} turned dreamlike or unclear — a high ideal, a slow disillusion, or something that quietly slipped away',
+      jupiter: 'Jupiter widens the frame, so this is classically the season {D} opened up — an opportunity, a yes, more room than you had before'
+    };
+    var domain5 = POINT_CORE5[ev.np] || ('your ' + who);
+    if (hs && HOUSE_LIFE[hs - 1]) domain5 += ', and for you especially the part of life around ' + HOUSE_LIFE[hs - 1].th;
+    var astro5 = MOVER_ON5[ev.tp] ? (' In an astrologer’s words: ' + MOVER_ON5[ev.tp].replace('{D}', domain5) + '.') : '';
+    return open5 + ' ' + plot5 + (MOVER_NOUN[ev.tp] ? ' ' + vpick([nameFor(ev.tp) + ' is ' + MOVER_NOUN[ev.tp] + '; it leaves a mark shaped like itself.', 'That is ' + nameFor(ev.tp) + ' for you: ' + MOVER_NOUN[ev.tp] + '.', 'It bore the signature of ' + nameFor(ev.tp) + ': ' + MOVER_NOUN[ev.tp] + '.'], seed5 + 'tl') : '') + astro5;
   }
 
   // ================= extra information layers =================
@@ -9505,11 +9517,39 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var camT9 = still ? 0 : eCubic(cl01((nowT() - o.t0) / 12000));
       p.push(); p.translate(cxS, gy); p.scale(1 + 0.05 * camT9); p.translate(-cxS, -gy);
       if (!still) p.translate(Math.sin(nowT() * 0.00021) * 2.2, Math.cos(nowT() * 0.00017) * 1.6);
-      if (dcW9) { var gS = dcW9.createLinearGradient(0, topS, 0, gy); gS.addColorStop(0, 'rgba(' + (pal[0][0] | 0) + ',' + (pal[0][1] | 0) + ',' + (pal[0][2] | 0) + ',' + (0.96 * ee) + ')'); gS.addColorStop(1, 'rgba(' + (pal[1][0] | 0) + ',' + (pal[1][1] | 0) + ',' + (pal[1][2] | 0) + ',' + (0.96 * ee) + ')'); dcW9.fillStyle = gS; dcW9.fillRect(0, topS, W, gy - topS); }
-      p.noStroke(); fillc([238, 228, 206], 13); p.rect(0, topS, W, gy - topS);
-      var sdr9 = o.ph != null ? o.ph * 3.2 : (still ? 0 : nowT() * 0.0016);
       var skyH9 = (gy - topS), starTop9 = Math.max(24, skyH9 * 0.42); // keep loose stars in the upper air, above the constellation band
-      var si9; for (si9 = 0; si9 < 15; si9++) { var tw9 = still ? 0.7 : 0.5 + 0.4 * Math.sin(nowT() * 0.0026 + si9 * 1.7); var stx9 = 8 + ((((si9 * 101) - sdr9 * (0.4 + (si9 % 3) * 0.28)) % (W - 16)) + (W - 16)) % (W - 16); p.noStroke(); fillc([255, 252, 240], 72 * tw9 * ee); p.ellipse(stx9, topS + 8 + ((si9 * 37) % starTop9), 1.3, 1.3); }
+      // atmospheric sky: a deep, cool crown that warms toward a luminous horizon, with a soft airglow where the ground meets the air
+      if (dcW9) {
+        var topC9 = [pal[0][0] * 0.80, pal[0][1] * 0.80, Math.min(255, pal[0][2] * 0.92 + 6)];
+        var horC9 = [Math.min(255, pal[1][0] * 1.02 + 6), Math.min(255, pal[1][1] + 2), pal[1][2]];
+        var gS = dcW9.createLinearGradient(0, topS, 0, gy);
+        gS.addColorStop(0, rgbaStr(topC9, 0.97 * ee)); gS.addColorStop(0.52, rgbaStr(pal[0], 0.96 * ee)); gS.addColorStop(1, rgbaStr(horC9, 0.96 * ee));
+        dcW9.fillStyle = gS; dcW9.fillRect(0, topS, W, gy - topS);
+        var ag9 = dcW9.createRadialGradient(cxS, gy, 4, cxS, gy, W * 0.72);
+        ag9.addColorStop(0, 'rgba(255,238,206,' + (0.16 * ee) + ')'); ag9.addColorStop(1, 'rgba(255,238,206,0)');
+        dcW9.fillStyle = ag9; dcW9.fillRect(0, topS, W, gy - topS);
+      } else { p.noStroke(); fillc(pal[0], 240 * ee); p.rect(0, topS, W, gy - topS); }
+      p.noStroke(); fillc([238, 228, 206], 10); p.rect(0, topS, W, gy - topS);
+      var sdr9 = o.ph != null ? o.ph * 3.2 : (still ? 0 : nowT() * 0.0016);
+      // the Milky Way: a faint luminous river spilled across the high sky
+      if (dcW9) {
+        dcW9.save(); dcW9.translate(cxS + (still ? 0 : Math.sin(nowT() * 0.00003) * 8), topS + skyH9 * 0.24); dcW9.rotate(-0.52);
+        var mw9 = dcW9.createLinearGradient(0, -58, 0, 58);
+        mw9.addColorStop(0, 'rgba(224,228,255,0)'); mw9.addColorStop(0.5, 'rgba(226,230,255,' + (0.055 * ee) + ')'); mw9.addColorStop(1, 'rgba(224,228,255,0)');
+        dcW9.fillStyle = mw9; dcW9.fillRect(-W, -58, W * 2, 116); dcW9.restore();
+      }
+      // layered parallax starfield: three depths, real star-colours, and only the stars twinkle
+      var starN9 = still ? 30 : 46, si9;
+      for (si9 = 0; si9 < starN9; si9++) {
+        var lay9 = si9 % 3, dep9 = 0.35 + lay9 * 0.32;
+        var stx9 = 6 + ((((si9 * 137.5) - sdr9 * dep9 * 0.5) % (W - 12)) + (W - 12)) % (W - 12);
+        var sty9 = topS + 5 + ((si9 * 53) % (starTop9 * (0.66 + lay9 * 0.12)));
+        var tw9 = still ? 0.85 : 0.42 + 0.58 * Math.abs(Math.sin(nowT() * (0.0016 + (si9 % 5) * 0.0007) + si9 * 1.7));
+        var scol9 = (si9 % 7 === 0) ? [212, 224, 255] : (si9 % 5 === 0) ? [255, 236, 198] : [255, 250, 242];
+        var srad9 = 0.7 + lay9 * 0.55, sbase9 = 42 + lay9 * 46;
+        p.noStroke(); fillc(scol9, sbase9 * tw9 * ee); p.ellipse(stx9, sty9, srad9, srad9);
+        if (lay9 === 2 && si9 % 4 === 0) { fillc(scol9, 22 * tw9 * ee); p.ellipse(stx9, sty9, srad9 * 4.2, srad9 * 4.2); }
+      }
       // the ecliptic laid across the sky, centred on the mover
       var ay9 = o.ay || 0;
       function zl9(k) { var pp9 = o.tp && o.tp[k]; return (pp9 && pp9.lon != null) ? ((pp9.lon - ay9) % 360 + 360) % 360 : null; }
@@ -9582,14 +9622,21 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         var ln9 = zl9(k9); if (ln9 == null) continue;
         var ppx9 = bxS(ln9); if (ppx9 < -20 || ppx9 > W + 20) continue;
         var ppy9 = byS(ln9);
-        var twp9 = still ? 0.85 : 0.7 + 0.3 * Math.sin(nowT() * 0.0021 + pb9 * 2.3);
         var bcol9 = BODYCOL[k9] || [240, 234, 220];
-        var brt9 = [Math.min(255, bcol9[0] + 110), Math.min(255, bcol9[1] + 110), Math.min(255, bcol9[2] + 110)];
-        var prd9 = (k9 === 'sun') ? 6.5 : (k9 === 'jupiter') ? 5.4 : (k9 === 'moon' || k9 === 'venus') ? 4.8 : (k9 === 'saturn') ? 4.4 : 3.6;
-        p.noStroke(); fillc(brt9, 36 * twp9 * ee); p.ellipse(ppx9, ppy9, prd9 * 4.2, prd9 * 4.2);
-        fillc(brt9, 225 * twp9 * ee); p.ellipse(ppx9, ppy9, prd9, prd9);
-        if (k9 === 'saturn') { p.noFill(); strokec(brt9, 170 * twp9 * ee); p.strokeWeight(0.9); p.push(); p.translate(ppx9, ppy9); p.rotate(-0.42); p.ellipse(0, 0, prd9 * 2.4, prd9 * 0.9); p.pop(); p.noStroke(); }
-        if (k9 === 'moon') { fillc(pal[0], 200 * ee); p.ellipse(ppx9 + prd9 * 0.34, ppy9 - prd9 * 0.16, prd9 * 0.9, prd9 * 0.9); }
+        var brt9 = [Math.min(255, bcol9[0] + 66), Math.min(255, bcol9[1] + 62), Math.min(255, bcol9[2] + 60)];
+        var prd9 = (k9 === 'sun') ? 7 : (k9 === 'jupiter') ? 5.6 : (k9 === 'moon') ? 5.2 : (k9 === 'venus') ? 5 : (k9 === 'saturn') ? 4.6 : (k9 === 'mars') ? 4 : 3.4;
+        var brth9 = still ? 1 : 1 + 0.05 * Math.sin(nowT() * 0.0012 + pb9 * 1.7); // planets breathe, they do not twinkle
+        // atmospheric bloom, layered soft light in the body's own hue
+        if (dcW9) { var pgl = dcW9.createRadialGradient(ppx9, ppy9, 0, ppx9, ppy9, prd9 * 4.6 * brth9); pgl.addColorStop(0, rgbaStr(brt9, 0.5 * ee)); pgl.addColorStop(0.4, rgbaStr(brt9, 0.13 * ee)); pgl.addColorStop(1, rgbaStr(brt9, 0)); dcW9.fillStyle = pgl; dcW9.beginPath(); dcW9.arc(ppx9, ppy9, prd9 * 4.6 * brth9, 0, Math.PI * 2); dcW9.fill(); }
+        else { p.noStroke(); fillc(brt9, 30 * ee); p.ellipse(ppx9, ppy9, prd9 * 4, prd9 * 4); }
+        // a genuine little disc: bright lit limb falling to a soft terminator
+        if (dcW9) { var pdg = dcW9.createRadialGradient(ppx9 - prd9 * 0.36, ppy9 - prd9 * 0.36, prd9 * 0.12, ppx9 + prd9 * 0.2, ppy9 + prd9 * 0.2, prd9 * 1.15); pdg.addColorStop(0, rgbaStr([Math.min(255, brt9[0] + 28), Math.min(255, brt9[1] + 28), Math.min(255, brt9[2] + 28)], ee)); pdg.addColorStop(1, rgbaStr([bcol9[0] * 0.66, bcol9[1] * 0.66, bcol9[2] * 0.72], ee)); dcW9.fillStyle = pdg; dcW9.beginPath(); dcW9.arc(ppx9, ppy9, prd9, 0, Math.PI * 2); dcW9.fill(); }
+        else { p.noStroke(); fillc(brt9, 225 * ee); p.ellipse(ppx9, ppy9, prd9 * 2, prd9 * 2); }
+        // diffraction glint on the brightest, an ethereal four-point star
+        if ((k9 === 'sun' || k9 === 'venus' || k9 === 'jupiter') && !still) { var gl9 = 0.55 + 0.45 * Math.sin(nowT() * 0.002 + pb9 * 2.1), gx9 = prd9 * 3.2 * gl9; strokec(brt9, 95 * gl9 * ee); p.strokeWeight(0.8); p.line(ppx9 - gx9, ppy9, ppx9 + gx9, ppy9); p.line(ppx9, ppy9 - gx9, ppx9, ppy9 + gx9); p.noStroke(); }
+        // saturn's ring, fine and hue-matched; the moon's shaded limb
+        if (k9 === 'saturn') { p.noFill(); strokec(brt9, 185 * ee); p.strokeWeight(0.9); p.push(); p.translate(ppx9, ppy9); p.rotate(-0.42); p.ellipse(0, 0, prd9 * 2.7, prd9 * 0.95); p.pop(); p.noStroke(); }
+        if (k9 === 'moon') { fillc([pal[0][0] * 0.7, pal[0][1] * 0.7, pal[0][2] * 0.8], 190 * ee); p.ellipse(ppx9 + prd9 * 0.42, ppy9 - prd9 * 0.18, prd9 * 1.05, prd9 * 1.05); }
       }
       // the mover: a breathing body of light; its name appears once, then lets go
       var mvx9 = bxS(mLon), mvy9 = byS(mLon);
