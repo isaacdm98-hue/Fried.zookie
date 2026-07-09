@@ -1,5 +1,8 @@
 # Changelog
 
+## 3.34.0 — 2026-07-08
+- **The Four Royal Stars of Persia, and the nakshatra pada.** The Ancient Sky gains a fourth civilisation and sharper Vedic detail. Persia: three thousand years ago four bright stars — Aldebaran, Regulus, Antares, Fomalhaut — marked the solstices and equinoxes and were set as the "Watchers" of the four corners of heaven; if one falls on a planet or angle of yours, the reading names it ("your Sun falls on Regulus, the Watcher of the North"). And the Vedic Moon-mansion now gives its pada — which of the nakshatra's four quarters your Moon occupies — the finer grain a Jyotishi actually reads. Egypt, Babylon, Persia and India, all on the one chart.
+
 ## 3.33.0 — 2026-07-08
 - **The Ancient Sky now spans three civilizations.** Extended back past Egypt to the other two roots of astrology, all computed on your exact chart. **Babylon:** your Sun written in base sixty the way a scribe would have set it on a clay tablet — "14° 9′ of Cancer" — with the note that their base-sixty counting is the reason a degree still holds sixty minutes and the whole chart runs on their math. **Vedic:** your Moon's nakshatra, one of the 27 lunar mansions India has read for three thousand years and the seed of the Vimshottari periods — the single most personal point in Jyotisha — surfaced right in the main reading instead of hidden in a sidereal setting. Egypt, Babylon and India, drawn together onto the one chart.
 

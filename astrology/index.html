@@ -3991,6 +3991,14 @@ var APP = (function () {
     { n: 'Orion’s Belt', lon: 83.2, why: 'the three pyramids of Giza were laid out to mirror the three stars of Orion’s Belt on the ground', m: 'the stars of Osiris: death and renewal, and the drive to build something that outlasts you' },
     { n: 'Sirius', lon: 104.1, why: 'the dawn rising of Sirius (Sopdet) opened the Egyptian year and brought the flood of the Nile', m: 'the sacred fire: brilliance, devotion, and a knack for heralding what matters before anyone else sees it' }
   ];
+  // The Four Royal Stars of Persia (~3000 BCE): four bright stars that marked the solstices and
+  // equinoxes, the "Watchers" set to guard the four corners of the heavens.
+  var ROYAL_STARS = [
+    { n: 'Aldebaran', lon: 69.8, watch: 'the Watcher of the East, guardian of the spring equinox', m: 'integrity and courage — honour that holds only as long as you keep your word' },
+    { n: 'Regulus', lon: 149.9, watch: 'the Watcher of the North, guardian of the summer', m: 'leadership and honour — the throne is yours to lose only through revenge' },
+    { n: 'Antares', lon: 249.9, watch: 'the Watcher of the West, guardian of the autumn equinox', m: 'passion and war — all or nothing, and a life lived at the extremes' },
+    { n: 'Fomalhaut', lon: 334.0, watch: 'the Watcher of the South, guardian of the winter', m: 'idealism and a fated, mystical gift — kept clean or corrupted, never neutral' }
+  ];
   function ancientSky(c, b) {
     var out = [], P = c.planets, tk = STATE.birth.timeKnown, ay0 = c.ayan || 0;
     if (!P.sun) return out;
@@ -4010,6 +4018,15 @@ var APP = (function () {
       var h0 = hits[0], nm = (h0.k === 'asc') ? 'rising degree' : (h0.k === 'mc') ? 'Midheaven' : nameFor(h0.k);
       out.push({ lab: 'A pyramid star sits on your chart', txt: 'Your ' + nm + ' sits within ' + h0.orb.toFixed(1) + '° of ' + h0.star.n + ' — ' + h0.star.why + '. In you it reads as ' + h0.star.m + '. Almost nobody carries a planet on one of these. You do.' });
     }
+    // 1b) the Four Royal Stars of Persia — the Watchers of the four corners of heaven
+    var rhits = [], rj;
+    for (ki = 0; ki < keys.length; ki++) {
+      var plr = (keys[ki] === 'asc') ? c.ascBody : (keys[ki] === 'mc') ? c.mcBody : P[keys[ki]]; if (!plr) continue;
+      var lonR = trop(plr.lon);
+      for (rj = 0; rj < ROYAL_STARS.length; rj++) { var orb = Math.abs(sdelta(lonR, ROYAL_STARS[rj].lon)); if (orb <= 2.2) rhits.push({ k: keys[ki], star: ROYAL_STARS[rj], orb: orb }); }
+    }
+    rhits.sort(function (u, v) { return u.orb - v.orb; });
+    if (rhits.length) { var r0 = rhits[0], rnm = (r0.k === 'asc') ? 'rising degree' : (r0.k === 'mc') ? 'Midheaven' : nameFor(r0.k); out.push({ lab: 'A Watcher stands guard on your chart', txt: 'Your ' + rnm + ' falls on ' + r0.star.n + ', one of the Four Royal Stars the Persians set to guard the sky ' + '(' + r0.star.watch + '). Three thousand years ago these four marked the turning of the seasons. On you it carries ' + r0.star.m + '.' }); }
     // 2) your herald star — heliacal rising, the Egyptian way of reading the dawn
     var herald = null, hb = 99, hi;
     for (hi = 0; hi < FIXED_STARS.length; hi++) { var dh = ((sunT - FIXED_STARS[hi].lon) % 360 + 360) % 360; if (dh >= 7 && dh <= 20) { var dd = Math.abs(dh - 13); if (dd < hb) { hb = dd; herald = FIXED_STARS[hi]; } } }
@@ -4024,8 +4041,9 @@ var APP = (function () {
     // 6) Vedic: the Moon's nakshatra, the lunar mansion India has read for 3,000 years
     try {
       if (P.moon && DATA.NAKSHATRA) {
-        var moonSid = rev(trop(P.moon.lon) - aya), nki = Math.floor(moonSid / (360 / 27)) % 27, nak = DATA.NAKSHATRA[nki];
-        if (nak) out.push({ lab: 'Your Moon’s nakshatra (Vedic)', txt: 'In the Vedic sky, your Moon sits in ' + nak.n + ': ' + nak.m + '. The 27 nakshatras are the Moon’s mansions — the lunar zodiac India has read for three thousand years, and the seed of your Vimshottari life-periods. It is the single most personal point in Jyotisha.' });
+        var moonSid = rev(trop(P.moon.lon) - aya), span = 360 / 27, nki = Math.floor(moonSid / span) % 27, nak = DATA.NAKSHATRA[nki];
+        var pada = Math.floor((moonSid - nki * span) / (span / 4)) + 1; if (pada < 1) pada = 1; if (pada > 4) pada = 4;
+        if (nak) out.push({ lab: 'Your Moon’s nakshatra (Vedic)', txt: 'In the Vedic sky, your Moon sits in ' + nak.n + ' (pada ' + pada + ' of 4): ' + nak.m + '. The 27 nakshatras are the Moon’s mansions — the lunar zodiac India has read for three thousand years, each split into four quarters, and the seed of your Vimshottari life-periods. It is the single most personal point in Jyotisha.' });
       }
     } catch (eNk) {}
     return out;
