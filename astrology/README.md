@@ -1,9 +1,10 @@
 # Aqau Pluto
 
-A single-file, offline-first astrology + tarot PWA. Computed natal charts
+A single-file, offline-first astrology PWA. Computed natal charts
 (planets, houses, aspects, elemental balance), deterministic element-first
-readings, an educational **Learn** screen, and a tarot reference — all
-on-device, no server, no API keys.
+readings, and an educational **Learn** screen — all on-device, no server,
+no API keys. Once installed it makes **zero network requests**: the entire
+app, chart and reading are computed on your phone.
 
 ### In the Read screen
 
@@ -49,12 +50,6 @@ on-device, no server, no API keys.
   semisextile), and **Chiron + the four major asteroids** folded into the aspect
   grid. Positions are arcminute-aligned with Astro.com.
 
-### In the Tarot screen
-
-- **Card-art flicker** — pick a card and it gathers every version of that card
-  from the open Wikimedia Commons archive and flickers through them as a
-  slideshow drawn on the canvas. Stop the flicker to study one.
-
 ## This release — thirty upgrades, five movements
 
 - **The walkthrough is now a staged performance.** Every act has its own
@@ -71,11 +66,6 @@ on-device, no server, no API keys.
   check answered by your own sky, earning persistent stars. Learn is a
   levelled curriculum; how-to guides can walk you through the real app
   step by step; every glossary term in every paragraph is tappable.
-- **Watch is a curated channel guide.** Your sign's programme (a matched
-  public-domain classic, your ruling planet on film, your myth), newsreels
-  from your birth year, short science films, and the live open dial — each
-  pick with a written "why this is yours". The guide is remembered and its
-  thumbnails cached, so it renders offline.
 - **The reading engine goes deeper.** Seeded sentence-variety banks on
   every beat, decans and the anaretic/0° degrees in placements, orb
   tightness woven into aspect sentences, derived house-ruler chains,
@@ -110,7 +100,7 @@ on-device, no server, no API keys.
 
 ## Version
 
-**3.35.0** — see `CHANGELOG.md`. Licensed MIT (`LICENSE`).
+**3.36.0** — see `CHANGELOG.md`. Licensed MIT (`LICENSE`).
 
 ## Deploy
 

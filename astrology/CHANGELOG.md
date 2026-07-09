@@ -1,5 +1,8 @@
 # Changelog
 
+## 3.36.0 — 2026-07-09
+- **The streamline: pure astrology, and the privacy claim made literally true.** A full feature audit against the app's own purpose. **Tarot is gone from the app** — it was the one off-scope feature (none of Co-Star, CHANI or The Pattern read cards) and the only screen that ever reached out to the network, pulling card art from Wikimedia Commons. Removing it sharpens the whole app to the thing it's actually the best at: the chart and the reading. **The old Watch channel guide (already unreachable) is fully retired**, and with both media features gone the service worker no longer has any cross-origin exception at all — it only ever touches the app's own files. So the wedge stated in v3.35 ("nothing you enter ever leaves your phone") is now not just true of your data but of the entire app: it makes zero network requests once installed. Less surface, one voice, and a promise the code now keeps completely.
+
 ## 3.35.0 — 2026-07-08
 - **The alignment audit: the app now says why it exists.** Measured against Co-Star, CHANI and The Pattern, the reading, timing, people and calm UX already match or beat them — the gap was that the one thing they can't say was going unsaid. So the More screen now states it plainly under "Why this one": free forever with no premium wall, everything computed on your device so nothing ever leaves your phone, and every line shows its working — the real transit, the exact degree, the source — not vibes behind a paywall. And the daily nudge (the notification the big three lead with) is no longer buried: a "Turn on a daily nudge" button surfaces it right there.
 
