@@ -1,5 +1,8 @@
 # Changelog
 
+## 3.39.0 — 2026-07-09
+- **The type is now bundled — the app makes zero network requests on startup.** The brand fonts (Fraunces and Space Grotesk) were being fetched from a CDN (jsdelivr) on every load, which meant a request left the device, the first paint waited on the network, and offline the app quietly fell back to system fonts and looked wrong. They are now inlined directly in the page as data URIs, so the real type renders on the very first frame, fully offline, with no request at all. The opt-in **OpenDyslexic** accessibility font is bundled locally too (and precached), so dyslexia-friendly mode also works offline. Verified in a headless browser: a cold load now issues **no external requests whatsoever**. All three fonts are SIL Open Font License (see `fonts/CREDITS.txt`).
+
 ## 3.38.0 — 2026-07-09
 - **Dead-code audit: ~60 KB of an old, unreachable UI removed.** The app had quietly carried a whole second user interface — the original DOM/HTML version (its own onboarding, chart, reading, tarot, today, settings and about screens, plus the generative-field background loader) — from before it was rebuilt on the p5 canvas. Its entry point (`boot()`) hadn't been called in a long time and nothing live reached any of it. A scope-aware reachability pass (comments and strings stripped, export aliases and the two `recompute`/`toggleRow` name-collisions resolved by scope) identified 67 provably-dead functions, which have been deleted along with their now-unused export entries. Nothing users touch changed: the engine regression still reads **ALL 12 PASS — positions locked to baseline**, and every screen (chart, read, today, learn, tarot, people, settings) renders with zero errors. Just a smaller, clearer single file.
 

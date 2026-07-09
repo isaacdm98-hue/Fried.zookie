@@ -1,0 +1,17 @@
+Fonts
+=====
+
+The app's type is bundled so it works offline and makes no network request.
+
+Brand fonts (inlined in index.html as base64 data URIs):
+  - Fraunces (400, 600) — Undercase Type. SIL Open Font License 1.1.
+  - Space Grotesk (500, 700) — Florian Karsten. SIL Open Font License 1.1.
+
+Accessibility font (bundled here as .woff, loaded on demand when the
+"Dyslexia-friendly" setting is on):
+  - OpenDyslexic (Regular, Bold) — Abbie Gonzalez. SIL Open Font License 1.1.
+
+All three are licensed under the SIL Open Font License, Version 1.1
+(http://scripts.sil.org/OFL), which permits bundling and redistribution
+with the software. Sourced from their @fontsource / open-dyslexic npm
+packages; the latin subsets are used to keep the bundle small.
