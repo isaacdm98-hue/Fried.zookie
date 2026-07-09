@@ -6438,10 +6438,10 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       return sc ? (sc + APP.pad(cd.num) + '.jpg') : null;
     }
     function loadCardArt(cd) {
-      UI.cardImgs = []; UI.cardImgIdx = 0; UI.cardImgCard = UI.card; UI.cardFlickerOn = true; UI.cardFlickT = nowT(); UI.cardImgStatus = 'Gathering decks from around the world…';
+      UI.cardImgs = []; UI.cardImgIdx = 0; UI.cardImgCard = UI.card; UI.cardFlickerOn = true; UI.cardFlickT = nowT(); UI.cardImgStatus = 'Loading the card…';
       var mine = UI.card, base = 'https://commons.wikimedia.org/wiki/Special:FilePath/', seen = {};
       function add(url) { if (!url || seen[url]) return; seen[url] = 1; var im = new Image(); im.onload = function () { if (UI.cardImgCard === mine && UI.cardImgs.length < 16) UI.cardImgs.push(im); }; im.onerror = function () {}; im.src = url; }
-      var f = rwsFile(cd); if (f) add(base + encodeURIComponent(f)); // guaranteed correct anchor image
+      add('tarot/' + mine + '.jpg'); // the bundled Rider-Waite-Smith deck (public domain) - always there, offline, and first
       if (typeof fetch !== 'function') { return; }
       // broad discovery, then strict deck allow-list filter on every result
       var api = 'https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=' + encodeURIComponent(cd.name + ' tarot card') +
@@ -6456,7 +6456,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
           var u = ii[0].thumburl || ii[0].url; if (u) add(u);
         }
       }).catch(function () {});
-      setTimeout(function () { if (UI.cardImgCard === mine && !UI.cardImgs.length) UI.cardImgStatus = 'Couldn’t reach the deck archive. Connect to the internet to see the art.'; }, 2800);
+      setTimeout(function () { if (UI.cardImgCard === mine && !UI.cardImgs.length) UI.cardImgStatus = 'The card art didn’t load — reopen the card to try again.'; }, 2800);
     }
     // one row of a transit (transiting body, aspect glyph, natal body, orb) for the Read screen
     function transitRow(t, asMoon, x, w, ly) {
@@ -7766,7 +7766,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
             flatBtn(UI.cardFlickerOn ? 'Stop' : 'Resume flicker', x, ly, 132, 36, function () { UI.cardFlickerOn = !UI.cardFlickerOn; UI.cardFlickT = nowT(); }, !UI.cardFlickerOn, true);
             setFont(MONO, 10, INK, p.RIGHT, p.CENTER, 160); p.text(imgs.length + ' scans', x + w, sY(ly + 18)); ly += 48;
           }
-          ly += paragraph('Public-domain tarot decks via Wikimedia Commons, filtered to known decks only. Stop the flicker to study one.', x, ly, w, 11, INK, MONO, 16, 160) + 12;
+          ly += paragraph(imgs.length > 1 ? 'The Rider-Waite-Smith deck (public domain) ships inside the app; online it also flickers through other public-domain decks from Wikimedia Commons. Stop the flicker to study one.' : 'The Rider-Waite-Smith deck (public domain), bundled with the app so it works offline.', x, ly, w, 11, INK, MONO, 16, 160) + 12;
           ly += paragraph(cd2.ess, x, ly, w, 17, INK, SERIF, 26) + 16; hairline(x, ly, x + w, 60); ly += 14;
           // comprehensive meaning (a companion reference \u2014 pull your cards in real life)
           setFont(MONO, 9, ELHUE.air, p.LEFT, p.TOP); bold(); p.text('UPRIGHT', x, sY(ly)); normal(); ly += 16;

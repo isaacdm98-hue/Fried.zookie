@@ -52,9 +52,13 @@ the whole chart and reading are computed locally.
 
 ### In the Tarot screen
 
-- **Card-art flicker** — pick a card and it gathers every version of that card
-  from the open Wikimedia Commons archive and flickers through them as a
-  slideshow drawn on the canvas. Stop the flicker to study one.
+- **The deck ships with the app.** The full public-domain **Rider–Waite–Smith**
+  deck (Pamela Colman Smith, 1909) is bundled in `tarot/` and drawn on the
+  canvas, so every card's art is there instantly and **works offline** — no
+  network needed.
+- **Card-art flicker** — when you're online it *also* gathers other
+  public-domain versions of the card from the open Wikimedia Commons archive
+  and flickers through them as a slideshow. Stop the flicker to study one.
 
 ## This release — thirty upgrades, five movements
 
@@ -106,7 +110,7 @@ the whole chart and reading are computed locally.
 
 ## Version
 
-**3.36.0** — see `CHANGELOG.md`. Licensed MIT (`LICENSE`).
+**3.37.0** — see `CHANGELOG.md`. Licensed MIT (`LICENSE`).
 
 ## Deploy
 

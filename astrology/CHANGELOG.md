@@ -1,5 +1,8 @@
 # Changelog
 
+## 3.37.0 — 2026-07-09
+- **The tarot deck now ships inside the app — the art works offline.** The full public-domain **Rider–Waite–Smith** deck (Pamela Colman Smith, 1909) is bundled as 78 small images in `tarot/` and precached by the service worker, so every card's art appears instantly and with no network at all. The beloved multi-deck flicker stays exactly as it was: when you're online the card *also* gathers other public-domain versions from Wikimedia Commons and cycles through them — but now there's always the real card sitting there first, even on a plane. (Images recompressed to ~3.6 MB total for the whole deck.)
+
 ## 3.36.0 — 2026-07-09
 - **The streamline: the dead Watch guide retired, everything you use kept.** A feature audit that trims only what nothing reaches. The old **Watch channel guide** — a retro-TV shelf that was already orphaned (no menu, no search, unreachable) — is fully retired, and with it the service worker's one cross-origin exception (it cached archive.org / jsdelivr thumbnails). The SW now only ever touches the app's own files. The chart, the reading, Learn, People and **Tarot** are all untouched — Tarot's card-art flicker stays, exactly as it was. Your birth data is still computed entirely on-device and never leaves your phone.
 

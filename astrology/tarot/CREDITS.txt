@@ -1,0 +1,20 @@
+Tarot card art — Rider–Waite–Smith deck
+========================================
+
+Files: 0.jpg … 77.jpg, indexed to the app's card order (DATA.TAROT):
+  0–21   Major Arcana (The Fool … The World)
+  22–77  Minor Arcana (Wands, Cups, Swords, Pentacles — Ace … King)
+
+Artwork: the Rider–Waite–Smith Tarot, illustrated by Pamela Colman Smith
+(1878–1951), first published 1909. The original deck is in the public domain
+in the United States and many other jurisdictions (published pre-1928; its
+author died in 1951).
+
+Source: the scans were obtained from the npm package
+@cometpisces/tarot-kit-images (MIT-licensed code; the bundled images are the
+public-domain RWS deck). They were recompressed here to small JPEGs (~300px
+wide) purely to keep the offline bundle light.
+
+These images are included so the Tarot screen works fully offline. When the
+device is online, the app additionally flickers through other public-domain
+versions of each card from Wikimedia Commons.
