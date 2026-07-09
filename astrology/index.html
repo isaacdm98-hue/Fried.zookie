@@ -512,7 +512,6 @@ var APP = (function () {
     if (kids.nodeType) { n.appendChild(kids); return; }
     for (var i = 0; i < kids.length; i++) if (kids[i] != null) addKids(n, kids[i]);
   }
-  function clear(n) { while (n.firstChild) n.removeChild(n.firstChild); }
   function $(id) { return doc.getElementById(id); }
 
   // ---------- state ----------
@@ -600,11 +599,6 @@ var APP = (function () {
       if (off !== null) return bh + bm / 60 - off;
     }
     return bh + bm / 60 - (b.tz || 0); // manual override (or fallback)
-  }
-  function offsetOf(b) {
-    var bh = (b.hour == null ? 12 : b.hour), bm = (b.min == null ? 0 : b.min);
-    if (!b.manualTz && b.iana) { var off = tzOffsetHours(b.iana, b.y, b.mo, b.d, bh, bm); if (off !== null) return off; }
-    return b.tz || 0;
   }
 
   function computeChart(b, settings) {
@@ -754,28 +748,6 @@ var APP = (function () {
   }
 
   // ---------- chart-as-text (used by the share card; pure data, no AI) ----------
-  function chartText(c, b) {
-    var L = [], k;
-    L.push('Name: ' + (b.name || 'the person') + '. Born ' + b.d + '/' + b.mo + '/' + b.y +
-      (b.timeKnown ? (' at ' + pad(b.hour) + ':' + pad(b.min) + ' local (UTC' + (b.tz >= 0 ? '+' : '') + b.tz + ')') : ' (birth time unknown)') +
-      ' in ' + (b.place || (b.lat + ',' + b.lon)) + '.');
-    L.push('Zodiac: ' + c.zodiac + (c.zodiac === 'sidereal' ? (' (Lahiri ayanamsa ' + c.ayan.toFixed(2) + '\u00B0)') : '') + '. Houses: ' + c.house + '.');
-    for (k = 0; k < DATA.PLANET_ORDER.length; k++) {
-      var key = DATA.PLANET_ORDER[k], p = c.planets[key];
-      if (!p) continue;
-      L.push(nameFor(key) + ': ' + degStr(p.deg) + ' ' + p.signName + ', house ' + p.house + (p.retro && key !== 'sun' && key !== 'moon' ? ', retrograde' : ''));
-    }
-    if (b.timeKnown) { L.push('Ascendant: ' + degStr(c.ascBody.deg) + ' ' + c.ascBody.signName + '.'); L.push('Midheaven: ' + degStr(c.mcBody.deg) + ' ' + c.mcBody.signName + '.'); }
-    L.push('Element balance: fire ' + c.elements.fire + '%, earth ' + c.elements.earth + '%, air ' + c.elements.air + '%, water ' + c.elements.water + '%.');
-    L.push('Modality balance: cardinal ' + c.modalities.cardinal + '%, fixed ' + c.modalities.fixed + '%, mutable ' + c.modalities.mutable + '%.');
-    var asp = [];
-    for (k = 0; k < Math.min(c.aspects.length, 12); k++) {
-      var as = c.aspects[k];
-      asp.push(nameFor(as.a) + ' ' + as.asp.key + ' ' + nameFor(as.b) + ' (orb ' + as.orb.toFixed(1) + '\u00B0)');
-    }
-    L.push('Main aspects: ' + asp.join('; ') + '.');
-    return L.join('\n');
-  }
   function pad(n) { return (n < 10 ? '0' : '') + n; }
   function degStr(d) { var dd = Math.floor(d), mm = Math.round((d - dd) * 60); if (mm === 60) { mm = 0; dd++; } return dd + '\u00B0' + pad(mm) + "'"; }
 
@@ -1521,413 +1493,22 @@ var APP = (function () {
   function lowElement(e) { var b = 'fire', k; for (k in e) if (e[k] < e[b]) b = k; return b; }
 
   // ---------- screens ----------
-  function setScreen(s) {
-    STATE.screen = s;
-    var tabs = doc.querySelectorAll('.nav-btn');
-    for (var i = 0; i < tabs.length; i++) tabs[i].classList.toggle('active', tabs[i].getAttribute('data-s') === s);
-    render();
-    var main = $('main'); if (main) main.scrollTop = 0;
-    closeMenu();
-  }
-  function render() {
-    var main = $('main'); clear(main);
-    if (!STATE.birth) { main.appendChild(renderOnboarding()); return; }
-    if (!STATE.chart) STATE.chart = computeChart(STATE.birth, STATE.settings);
-    var s = STATE.screen;
-    if (s === 'chart') main.appendChild(renderChart());
-    else if (s === 'today') main.appendChild(renderToday());
-    else if (s === 'read') main.appendChild(renderRead());
-    else if (s === 'tarot') main.appendChild(renderTarot());
-    else if (s === 'videos') main.appendChild(renderVideos());
-    else if (s === 'settings') main.appendChild(renderSettings());
-    else if (s === 'about') main.appendChild(renderAbout());
-    else main.appendChild(renderChart());
-  }
 
   // ----- onboarding -----
-  function renderOnboarding() {
-    var wrap = el('div', { class: 'screen pad' });
-    wrap.appendChild(el('div', { class: 'eyebrow', text: 'AQAU PLUTO' }));
-    wrap.appendChild(el('h1', { class: 'h1', text: 'Your chart, read straight.' }));
-    wrap.appendChild(el('p', { class: 'lede', text: 'Real positions, computed on device. No fate, no flattery, a mirror you can actually use. Enter your birth details to begin.' }));
-
-    var f = el('div', { class: 'form' });
-    var nameI = inputRow(f, 'Name (optional)', 'text', '', 'e.g. Isaac');
-    var dateRow = el('div', { class: 'row3' });
-    var dI = miniInput('Day', 'number', '', '27'); var mI = miniInput('Month', 'number', '', '5'); var yI = miniInput('Year', 'number', '', '1998');
-    dateRow.appendChild(dI.row); dateRow.appendChild(mI.row); dateRow.appendChild(yI.row); f.appendChild(labelBlock('Birth date', dateRow));
-
-    var timeRow = el('div', { class: 'row3' });
-    var hI = miniInput('Hour', 'number', '', '06'); var minI = miniInput('Min', 'number', '', '07');
-    var tzI = miniInput('UTC\u00B1', 'number', '', '1');
-    timeRow.appendChild(hI.row); timeRow.appendChild(minI.row); timeRow.appendChild(tzI.row);
-    f.appendChild(labelBlock('Birth time + UTC offset', timeRow));
-    var unk = el('label', { class: 'check' }); var unkBox = el('input', { type: 'checkbox' });
-    unk.appendChild(unkBox); unk.appendChild(el('span', { text: ' I don\u2019t know my birth time (no houses / rising)' })); f.appendChild(unk);
-    f.appendChild(el('p', { class: 'hint', text: 'Offset includes daylight saving. UK summer (BST) = 1. UK winter (GMT) = 0.' }));
-
-    // place autocomplete
-    var placeWrap = el('div', { class: 'field' });
-    placeWrap.appendChild(el('div', { class: 'flabel', text: 'Birth place' }));
-    var placeI = el('input', { class: 'inp', type: 'text', placeholder: 'Start typing a city\u2026', autocomplete: 'off' });
-    var sug = el('div', { class: 'suggest' });
-    var chosen = { lat: null, lon: null, place: '', iana: null };
-    placeI.addEventListener('input', function () {
-      var q = placeI.value.trim().toLowerCase(); clear(sug);
-      if (q.length < 2) { sug.style.display = 'none'; return; }
-      var hits = [];
-      for (var i = 0; i < DATA.CITIES.length && hits.length < 6; i++) {
-        if (DATA.CITIES[i][0].toLowerCase().indexOf(q) === 0) hits.push(DATA.CITIES[i]);
-      }
-      if (!hits.length) for (var j = 0; j < DATA.CITIES.length && hits.length < 6; j++) {
-        if (DATA.CITIES[j][0].toLowerCase().indexOf(q) >= 0) hits.push(DATA.CITIES[j]);
-      }
-      if (!hits.length) { sug.style.display = 'none'; return; }
-      sug.style.display = 'block';
-      hits.forEach(function (h) {
-        sug.appendChild(el('div', { class: 'suggest-item', onclick: function () {
-          chosen.lat = h[2]; chosen.lon = h[3]; chosen.place = h[0] + ', ' + h[1]; chosen.iana = h[4];
-          placeI.value = chosen.place; clear(sug); sug.style.display = 'none';
-          var yy = parseInt(yI.input.value, 10), mm = parseInt(mI.input.value, 10), dd = parseInt(dI.input.value, 10);
-          var hh = parseInt(hI.input.value || '12', 10), m2 = parseInt(minI.input.value || '0', 10);
-          if (yy && mm && dd) { var off = tzOffsetHours(h[4], yy, mm, dd, hh, m2); if (off !== null) tzI.input.value = (off >= 0 ? '+' : '') + off; }
-        } }, [el('span', { text: h[0] }), el('span', { class: 'muted', text: ' ' + h[1] })]));
-      });
-    });
-    placeWrap.appendChild(placeI); placeWrap.appendChild(sug);
-    f.appendChild(placeWrap);
-
-    var manual = el('details', { class: 'details' });
-    manual.appendChild(el('summary', { text: 'Or enter coordinates manually' }));
-    var latI = inputRow(manual, 'Latitude', 'number', '', '51.4545');
-    var lonI = inputRow(manual, 'Longitude (East +, West \u2212)', 'number', '', '-2.5879');
-    f.appendChild(manual);
-
-    var err = el('div', { class: 'err' });
-    f.appendChild(err);
-    f.appendChild(el('button', { class: 'btn primary big', text: 'Build my chart', onclick: function () {
-      var lat = chosen.lat, lon = chosen.lon, place = chosen.place;
-      if (latI.value && lonI.value) { lat = parseFloat(latI.value); lon = parseFloat(lonI.value); place = place || (lat.toFixed(2) + ', ' + lon.toFixed(2)); }
-      var y = parseInt(yI.input.value, 10), mo = parseInt(mI.input.value, 10), da = parseInt(dI.input.value, 10);
-      var timeKnown = !unkBox.checked;
-      var hr = timeKnown ? parseInt(hI.input.value || '12', 10) : 12;
-      var mn = timeKnown ? parseInt(minI.input.value || '0', 10) : 0;
-      var tz = parseFloat(tzI.input.value || '0');
-      if (!y || !mo || !da) { err.textContent = 'Please enter a full birth date.'; return; }
-      if (lat == null || lon == null || isNaN(lat) || isNaN(lon)) { err.textContent = 'Please choose a birth place or enter coordinates.'; return; }
-      STATE.birth = { name: nameI.value.trim(), y: y, mo: mo, d: da, hour: hr, min: mn, tz: tz, iana: (latI.value && lonI.value) ? null : chosen.iana, lat: lat, lon: lon, place: place, timeKnown: timeKnown };
-      STATE.chart = null; save(); setScreen('chart');
-    } }));
-    wrap.appendChild(f);
-    return wrap;
-  }
-  function inputRow(parent, label, type, val, ph) {
-    var field = el('div', { class: 'field' });
-    field.appendChild(el('div', { class: 'flabel', text: label }));
-    var inp = el('input', { class: 'inp', type: type, value: val, placeholder: ph || '' });
-    if (type === 'number') inp.setAttribute('inputmode', 'decimal');
-    field.appendChild(inp); parent.appendChild(field); return inp;
-  }
-  function miniInput(label, type, val, ph) {
-    var row = el('div', { class: 'field' });
-    row.appendChild(el('div', { class: 'flabel', text: label }));
-    var input = el('input', { class: 'inp', type: type, value: val, placeholder: ph || '' });
-    input.setAttribute('inputmode', 'numeric');
-    row.appendChild(input); return { row: row, input: input };
-  }
-  function labelBlock(label, node) { var f = el('div', { class: 'field' }); f.appendChild(el('div', { class: 'flabel', text: label })); f.appendChild(node); return f; }
 
   // ----- chart screen -----
-  function renderChart() {
-    var c = STATE.chart, b = STATE.birth, wrap = el('div', { class: 'screen' });
-    var head = el('div', { class: 'pad' });
-    head.appendChild(el('div', { class: 'eyebrow', text: (b.name ? b.name.toUpperCase() + '  \u00B7  ' : '') + b.d + '/' + b.mo + '/' + b.y }));
-    head.appendChild(microStrip(c, b));
-    var three = el('div', { class: 'bigthree' });
-    three.appendChild(bigTile('SUN', c.planets.sun, 'var(--fire)'));
-    three.appendChild(bigTile('MOON', c.planets.moon, 'var(--water)'));
-    if (b.timeKnown) three.appendChild(bigTile('RISING', c.ascBody, 'var(--earth)'));
-    else three.appendChild(noTimeTile());
-    head.appendChild(three);
-    wrap.appendChild(head);
-
-    // view toggle: dial / grid
-    var toggle = el('div', { class: 'viewtoggle' });
-    ['dial', 'grid'].forEach(function (v) {
-      toggle.appendChild(el('button', { class: STATE.chartView === v ? 'on' : '', text: v === 'dial' ? 'Dial' : 'Grid', onclick: function () { STATE.chartView = v; render(); } }));
-    });
-    wrap.appendChild(toggle);
-
-    if (STATE.chartView === 'dial') {
-      var dialCard = el('div', { class: 'dialcard' });
-      dialCard.appendChild(chartDial(c));
-      dialCard.appendChild(el('div', { class: 'dial-cap', text: 'Tap a planet to read it' }));
-      dialCard.appendChild(el('div', { class: 'body-detail', id: 'bodyDetail' }));
-      wrap.appendChild(dialCard);
-    } else {
-      wrap.appendChild(aspectarian(c));
-      wrap.appendChild(el('div', { class: 'dialcard', id: 'gridDetailCard' }, [el('div', { class: 'body-detail', id: 'bodyDetail' })]));
-    }
-
-    wrap.appendChild(sectionLabel('Elemental signature'));
-    wrap.appendChild(elementBalance(c));
-
-    wrap.appendChild(sectionLabel('Placements'));
-    wrap.appendChild(placementList(c));
-
-    wrap.appendChild(sectionLabel('Aspects'));
-    wrap.appendChild(aspectList(c));
-    return wrap;
-  }
-  function bigTile(label, body, color) {
-    var t = el('div', { class: 'tile' });
-    t.appendChild(el('div', { class: 'tile-label', text: label }));
-    var g = el('div', { class: 'tile-glyph' }); g.style.color = color; g.appendChild(doc.createTextNode(DATA.SIGNS[body.sign].glyph));
-    t.appendChild(g);
-    t.appendChild(el('div', { class: 'tile-sign', text: body.signName }));
-    t.appendChild(el('div', { class: 'tile-deg', text: degStr(body.deg) }));
-    return t;
-  }
-  function noTimeTile() {
-    var t = el('div', { class: 'tile dim2' });
-    t.appendChild(el('div', { class: 'tile-label', text: 'RISING' }));
-    t.appendChild(el('div', { class: 'tile-glyph', text: '\u2014' }));
-    t.appendChild(el('div', { class: 'tile-sign small', text: 'Add birth time for rising + houses' }));
-    return t;
-  }
 
   // ----- chart dial (precision instrument) -----
-  function chartDial(c) {
-    var size = 360, cx = size / 2, cy = size / 2;
-    var rDeg = 166, rDegIn = 150, rOrbit = 116, rChord = 100, rHouse = 132;
-    var s = svg('svg', { viewBox: '0 0 ' + size + ' ' + size, class: 'dial', width: '100%' });
-    var elColor = { fire: '#E5634B', earth: '#C7A64C', air: '#7FB7C9', water: '#9079D2' };
-    var ascLon = STATE.birth.timeKnown ? c.asc : 0;
-    function pt(lon, r) { var a = (180 + (lon - ascLon)) * Math.PI / 180; return { x: cx + r * Math.cos(a), y: cy - r * Math.sin(a) }; }
-
-    s.appendChild(svg('circle', { cx: cx, cy: cy, r: rDeg, class: 'd-ring' }));
-    s.appendChild(svg('circle', { cx: cx, cy: cy, r: rDegIn, class: 'd-ring faint' }));
-    s.appendChild(svg('circle', { cx: cx, cy: cy, r: rChord, class: 'd-ring faint' }));
-
-    // jog-wheel needle pointing to the Ascendant + orange center hub
-    if (STATE.birth.timeKnown) {
-      var ascPt = pt(ascLon, rDegIn - 8);
-      s.appendChild(svg('line', { x1: cx, y1: cy, x2: ascPt.x, y2: ascPt.y, class: 'd-needle' }));
-    }
-    s.appendChild(svg('circle', { cx: cx, cy: cy, r: 6, class: 'd-hub' }));
-
-    // degree ticks every 5, major every 30
-    for (var t = 0; t < 360; t += 5) {
-      var maj = (t % 30 === 0);
-      var o = pt(t, rDeg), i = pt(t, rDeg - (maj ? 8 : 4));
-      s.appendChild(svg('line', { x1: o.x, y1: o.y, x2: i.x, y2: i.y, class: maj ? 'd-tick maj' : 'd-tick' }));
-    }
-    // sign glyphs
-    for (var z = 0; z < 12; z++) {
-      var mid = pt(z * 30 + 15, (rDeg + rDegIn) / 2 - 2);
-      var gl = svg('text', { x: mid.x, y: mid.y, class: 'd-zglyph', 'text-anchor': 'middle', 'dominant-baseline': 'central' });
-      gl.setAttribute('fill', elColor[DATA.SIGNS[z].element]);
-      gl.appendChild(doc.createTextNode(DATA.SIGNS[z].glyph));
-      s.appendChild(gl);
-    }
-    // house cusps + numbers
-    if (STATE.birth.timeKnown) {
-      for (var h = 1; h <= 12; h++) {
-        var ang = (h === 1 || h === 4 || h === 7 || h === 10);
-        var c0 = pt(c.cusps[h], rChord), c1 = pt(c.cusps[h], rDegIn);
-        s.appendChild(svg('line', { x1: c0.x, y1: c0.y, x2: c1.x, y2: c1.y, class: ang ? 'd-cusp ang' : 'd-cusp' }));
-        var nextC = c.cusps[h === 12 ? 1 : h + 1], span = rev(nextC - c.cusps[h]);
-        var nm = pt(c.cusps[h] + span / 2, rChord - 11);
-        var num = svg('text', { x: nm.x, y: nm.y, class: 'd-hnum', 'text-anchor': 'middle', 'dominant-baseline': 'central' });
-        num.appendChild(doc.createTextNode(String(h))); s.appendChild(num);
-      }
-      [['ASC', c.asc], ['MC', c.mc], ['DC', rev(c.asc + 180)], ['IC', rev(c.mc + 180)]].forEach(function (m) {
-        var p = pt(m[1], rDeg + 11);
-        var tx = svg('text', { x: p.x, y: p.y, class: 'd-angle', 'text-anchor': 'middle', 'dominant-baseline': 'central' });
-        tx.appendChild(doc.createTextNode(m[0])); s.appendChild(tx);
-      });
-    }
-    // aspect chords (clean geometry on rChord)
-    for (var ai = 0; ai < c.aspects.length; ai++) {
-      var as = c.aspects[ai];
-      if (as.a === 'asc' || as.a === 'mc' || as.b === 'asc' || as.b === 'mc') continue;
-      var pa = c.planets[as.a], pb = c.planets[as.b]; if (!pa || !pb) continue;
-      var A = pt(pa.lon, rChord), B = pt(pb.lon, rChord);
-      var cls = (as.asp.quality === 'flow' || as.asp.quality === 'opportunity') ? 'flow' : (as.asp.quality === 'fusion' ? 'fuse' : 'hard');
-      s.appendChild(svg('line', { x1: A.x, y1: A.y, x2: B.x, y2: B.y, class: 'd-chord ' + cls }));
-    }
-    // planets: pin (leader) + node, nudged inward when clustered
-    var placed = [], di = 0;
-    for (var oi = 0; oi < DATA.PLANET_ORDER.length; oi++) {
-      var key = DATA.PLANET_ORDER[oi], p = c.planets[key]; if (!p) continue;
-      var nudge = 0;
-      for (var q = 0; q < placed.length; q++) if (Math.abs(sdelta(placed[q], p.lon)) < 8) nudge += 16;
-      placed.push(p.lon);
-      var nodeR = rOrbit - nudge;
-      var lead0 = pt(p.lon, rDegIn - 2), lead1 = pt(p.lon, nodeR + 12), node = pt(p.lon, nodeR);
-      s.appendChild(svg('line', { x1: lead0.x, y1: lead0.y, x2: lead1.x, y2: lead1.y, class: 'd-leader' }));
-      var g = svg('g', { class: 'd-planet', tabindex: '0' });
-      g.setAttribute('style', 'animation-delay:' + (di * 0.045).toFixed(3) + 's');
-      g.appendChild(svg('circle', { cx: node.x, cy: node.y, r: 12, class: 'd-node' }));
-      var tg = svg('text', { x: node.x, y: node.y, class: 'd-pglyph', 'text-anchor': 'middle', 'dominant-baseline': 'central' });
-      tg.appendChild(doc.createTextNode(glyphFor(key))); g.appendChild(tg);
-      (function (k) {
-        g.addEventListener('click', function () { showBody(k); });
-        g.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); showBody(k); } });
-      })(key);
-      s.appendChild(g); di++;
-    }
-    return s;
-  }
 
   // ----- aspectarian (lower-triangular matrix) -----
-  function aspectarian(c) {
-    var wrap = el('div', { class: 'aspgrid-wrap' });
-    var order = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto'];
-    if (STATE.birth.timeKnown) { order.push('asc'); order.push('mc'); }
-    function lonOf(k) { return k === 'asc' ? c.asc : (k === 'mc' ? c.mc : (c.planets[k] ? c.planets[k].lon : null)); }
-    function find(a, b) {
-      var la = lonOf(a), lb = lonOf(b); if (la == null || lb == null) return null;
-      var sep = Math.abs(sdelta(la, lb));
-      for (var i = 0; i < DATA.ASPECTS.length; i++) { var asp = DATA.ASPECTS[i]; if (Math.abs(sep - asp.angle) <= asp.orb * STATE.settings.orbScale) return asp; }
-      return null;
-    }
-    var table = el('table', { class: 'aspgrid' });
-    for (var r = 0; r < order.length; r++) {
-      var tr = el('tr');
-      for (var col = 0; col <= r; col++) {
-        if (col === r) {
-          var td = el('td', { class: 'diag' }); td.appendChild(doc.createTextNode(glyphFor(order[r]))); tr.appendChild(td);
-        } else {
-          var asp = find(order[r], order[col]);
-          if (asp) {
-            var cls = (asp.quality === 'flow' || asp.quality === 'opportunity') ? 'flow' : (asp.quality === 'fusion' ? 'fuse' : 'hard');
-            var cell = el('td', { class: 'acell ' + cls }); cell.appendChild(doc.createTextNode(asp.glyph));
-            (function (a, b) { cell.addEventListener('click', function () { showBody(a); }); })(order[r], order[col]);
-            tr.appendChild(cell);
-          } else tr.appendChild(el('td', { class: 'empty' }));
-        }
-      }
-      table.appendChild(tr);
-    }
-    wrap.appendChild(table);
-    var key = el('div', { class: 'gridkey' }, [
-      el('span', { class: 'k-flow' }, [el('b', { text: '\u25B3 ' }), 'flowing']),
-      el('span', { class: 'k-hard' }, [el('b', { text: '\u25A1 ' }), 'dynamic']),
-      el('span', { class: 'k-fuse' }, [el('b', { text: '\u260C ' }), 'fused'])
-    ]);
-    wrap.appendChild(key);
-    return wrap;
-  }
-  function showBody(key) {
-    var c = STATE.chart, d = $('bodyDetail'); if (!d) return; clear(d);
-    var p = key === 'asc' ? c.ascBody : (key === 'mc' ? c.mcBody : c.planets[key]);
-    if (!p) return;
-    var head = el('div', { class: 'bd-head' });
-    var g = el('span', { class: 'bd-glyph' }); g.appendChild(doc.createTextNode(glyphFor(key))); head.appendChild(g);
-    head.appendChild(el('span', { class: 'bd-title', text: nameFor(key) + ' in ' + p.signName }));
-    head.appendChild(el('span', { class: 'bd-deg', text: degStr(p.deg) + (p.retro && key !== 'sun' && key !== 'moon' && key !== 'asc' && key !== 'mc' ? '  R' : '') }));
-    d.appendChild(head);
-    if (key !== 'asc' && key !== 'mc') {
-      d.appendChild(el('p', { class: 'bd-text', text: capit(DATA.PLANETS[key].fn) + ', expressed through ' + DATA.SIGNS[p.sign].style + '.' }));
-      d.appendChild(el('p', { class: 'bd-sub', text: 'House ' + p.house + ', ' + DATA.HOUSES[p.house - 1].title + ': ' + DATA.HOUSES[p.house - 1].meaning }));
-    } else {
-      var idx = p.sign;
-      d.appendChild(el('p', { class: 'bd-text', text: key === 'asc' ? DATA.RISING_IN_SIGN[idx] : ('Your public face and direction point to ' + DATA.SIGNS[idx].style + '.') }));
-    }
-  }
   function capit(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
 
   // ----- element balance: the Element Rose (a 4-lobe radial unique to each chart) -----
-  function elementBalance(c) {
-    var card = el('div', { class: 'balance' });
-    var wrap = el('div', { class: 'rose-wrap' });
-    wrap.appendChild(elementRose(c));
-    card.appendChild(wrap);
-    var dom = domElement(c.elements), low = lowElement(c.elements);
-    card.appendChild(el('p', { class: 'balnote', text: 'Strongest in ' + DATA.ELEMENTS[dom].name.toLowerCase() + ': ' + DATA.ELEMENTS[dom].high + '. Lightest in ' + DATA.ELEMENTS[low].name.toLowerCase() + '. ' + DATA.ELEMENTS[low].need }));
-    var modbar = el('div', { class: 'modbar' });
-    var modColors = { cardinal: '#E5634B', fixed: '#9079D2', mutable: '#7FB7C9' };
-    ['cardinal', 'fixed', 'mutable'].forEach(function (m) {
-      var seg = el('div', { class: 'modseg' }); seg.style.flex = c.modalities[m] + ' 0 0'; seg.style.background = modColors[m]; modbar.appendChild(seg);
-    });
-    card.appendChild(modbar);
-    var modkey = el('div', { class: 'modkey' });
-    ['cardinal', 'fixed', 'mutable'].forEach(function (m) {
-      modkey.appendChild(el('span', {}, [el('b', { text: DATA.MODALITIES[m].name + ' ' }), c.modalities[m] + '%']));
-    });
-    card.appendChild(modkey);
-    return card;
-  }
   var ELHEX = { fire: '#E5634B', earth: '#C7A64C', air: '#7FB7C9', water: '#9079D2' };
-  function elementRose(c) {
-    var s = svg('svg', { viewBox: '0 0 320 300', class: 'rose' });
-    var cx = 160, cy = 150, gr = [44, 86, 124], i;
-    for (i = 0; i < gr.length; i++) s.appendChild(svg('circle', { cx: cx, cy: cy, r: gr[i], fill: 'none', stroke: '#332C20', 'stroke-width': '1' }));
-    var defs = [['fire', -90], ['air', 0], ['water', 90], ['earth', 180]];
-    for (i = 0; i < defs.length; i++) {
-      var eln = defs[i][0], ang = defs[i][1], pct = c.elements[eln], col = ELHEX[eln];
-      var R = 30 + pct * 1.34, W = 15 + pct * 0.4;
-      s.appendChild(svg('path', { d: petalPath(cx, cy, ang, R, W), class: 'rose-petal', fill: col, 'fill-opacity': '0.16', stroke: col }));
-    }
-    s.appendChild(svg('circle', { cx: cx, cy: cy, r: '3', fill: '#EAE5D8' }));
-    for (i = 0; i < defs.length; i++) {
-      var e2 = defs[i][0], a2 = defs[i][1] * Math.PI / 180, col2 = ELHEX[e2], pc2 = c.elements[e2];
-      var lr = 138, lx = cx + lr * Math.cos(a2), ly = cy + lr * Math.sin(a2);
-      var t1 = svg('text', { x: lx, y: ly - 5, 'text-anchor': 'middle', 'dominant-baseline': 'central', class: 'rose-tip', fill: col2 });
-      t1.appendChild(doc.createTextNode(DATA.ELEMENTS[e2].name.toUpperCase())); s.appendChild(t1);
-      var t2 = svg('text', { x: lx, y: ly + 8, 'text-anchor': 'middle', 'dominant-baseline': 'central', class: 'rose-pct', fill: col2 });
-      t2.appendChild(doc.createTextNode(pc2 + '%')); s.appendChild(t2);
-    }
-    return s;
-  }
-  function petalPath(cx, cy, angDeg, R, W) {
-    var a = angDeg * Math.PI / 180, dx = Math.cos(a), dy = Math.sin(a), px = -dy, py = dx;
-    function P(f, w) { return (cx + f * R * dx + w * px).toFixed(1) + ' ' + (cy + f * R * dy + w * py).toFixed(1); }
-    var tip = (cx + R * dx).toFixed(1) + ' ' + (cy + R * dy).toFixed(1);
-    return 'M ' + cx + ' ' + cy + ' C ' + P(0.34, W) + ' ' + P(0.72, 0.55 * W) + ' ' + tip +
-      ' C ' + P(0.72, -0.55 * W) + ' ' + P(0.34, -W) + ' ' + cx + ' ' + cy + ' Z';
-  }
-  function firstSignOf(elm) { for (var i = 0; i < 12; i++) if (DATA.SIGNS[i].element === elm) return i; return 0; }
 
   // ----- placements list -----
-  function placementList(c) {
-    var card = el('div', { class: 'card list' });
-    DATA.PLANET_ORDER.forEach(function (key) {
-      var p = c.planets[key]; if (!p) return;
-      var row = el('div', { class: 'lrow', onclick: function () { showBody(key); scrollToDial(); } });
-      var g = el('span', { class: 'lglyph' }); g.appendChild(doc.createTextNode(glyphFor(key)));
-      row.appendChild(g);
-      row.appendChild(el('span', { class: 'lname', text: nameFor(key) }));
-      var sg = el('span', { class: 'lsign' });
-      var sgl = el('span', { class: 'lsignglyph' }); sgl.appendChild(doc.createTextNode(DATA.SIGNS[p.sign].glyph));
-      sg.appendChild(sgl); sg.appendChild(doc.createTextNode(' ' + degStr(p.deg) + ' ' + p.signName));
-      row.appendChild(sg);
-      row.appendChild(el('span', { class: 'lhouse', text: (STATE.birth.timeKnown ? ('H' + p.house) : '') + (p.retro && key !== 'sun' && key !== 'moon' && key !== 'node' ? ' R' : '') }));
-      card.appendChild(row);
-    });
-    return card;
-  }
-  function scrollToDial() { var w = doc.querySelector('.dialcard'); if (w) w.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
 
   // ----- aspect list -----
-  function aspectList(c) {
-    var card = el('div', { class: 'card list' });
-    if (!c.aspects.length) { card.appendChild(el('p', { class: 'muted pad', text: 'No major aspects within orb.' })); return card; }
-    for (var i = 0; i < Math.min(c.aspects.length, 14); i++) {
-      var as = c.aspects[i];
-      var row = el('div', { class: 'arow' });
-      var ga = el('span', { class: 'aglyph' }); ga.appendChild(doc.createTextNode(glyphFor(as.a)));
-      var gasp = el('span', { class: 'aspglyph ' + (as.asp.quality === 'flow' || as.asp.quality === 'opportunity' ? 'flow' : (as.asp.quality === 'fusion' ? 'fuse' : 'hard')) });
-      gasp.appendChild(doc.createTextNode(as.asp.glyph));
-      var gb = el('span', { class: 'aglyph' }); gb.appendChild(doc.createTextNode(glyphFor(as.b)));
-      row.appendChild(ga); row.appendChild(gasp); row.appendChild(gb);
-      row.appendChild(el('span', { class: 'atext', text: nameFor(as.a) + ' ' + as.asp.key + ' ' + nameFor(as.b) }));
-      row.appendChild(el('span', { class: 'aorb', text: as.orb.toFixed(1) + '\u00B0' }));
-      card.appendChild(row);
-    }
-    return card;
-  }
 
   // ----- read screen (local engine first, cloud optional) -----
   // ----- daily + time transits woven into the personal reading -----
@@ -2068,57 +1649,7 @@ var APP = (function () {
     if (t.tp === t.np) return base + ': the sky’s ' + nameFor(t.tp) + ' stirring your own.' + tail;
     return base + ': ' + DATA.PLANETS[t.tp].fn + ', meeting ' + natalFn(t.np) + '.' + tail;
   }
-  function transitListCard(list, asMoon) {
-    var tc = el('div', { class: 'card list' });
-    list.forEach(function (t) {
-      var row = el('div', { class: 'arow' });
-      var ga = el('span', { class: 'aglyph' }); ga.appendChild(doc.createTextNode(glyphFor(t.tp)));
-      var gasp = el('span', { class: 'aspglyph ' + (t.asp.quality === 'flow' || t.asp.quality === 'opportunity' ? 'flow' : (t.asp.quality === 'fusion' ? 'fuse' : 'hard')) });
-      gasp.appendChild(doc.createTextNode(t.asp.glyph));
-      var gb = el('span', { class: 'aglyph' }); gb.appendChild(doc.createTextNode(glyphFor(t.np)));
-      row.appendChild(ga); row.appendChild(gasp); row.appendChild(gb);
-      row.appendChild(el('span', { class: 'atext', text: (asMoon ? 'Moon' : 'transiting ' + nameFor(t.tp)) + ' ' + t.asp.key + ' your ' + nameFor(t.np) }));
-      row.appendChild(el('span', { class: 'aorb', text: t.orb.toFixed(1) + '°' }));
-      tc.appendChild(row);
-    });
-    return tc;
-  }
-  function clockStr(dt) { return pad(dt.getHours()) + ':' + pad(dt.getMinutes()); }
   // Current transits rendered as plain text for the live model prompt.
-  function transitText(c) {
-    var tr = composeTransits(c);
-    var L = ['Current sky (' + fmtDate(tr.ctx.now) + ', ' + clockStr(tr.ctx.now) + ' local): ' + skyLine(tr.ctx.tp, tr.ctx.ay) + '.'];
-    L.push(tr.daily.length
-      ? 'Daily transits to my natal chart (slower planets): ' + tr.daily.slice(0, 8).map(function (t) { return 'transiting ' + nameFor(t.tp) + ' ' + t.asp.key + ' natal ' + nameFor(t.np) + ' (orb ' + t.orb.toFixed(1) + '°)'; }).join('; ') + '.'
-      : 'No close daily transits to my natal chart right now.');
-    if (tr.timed.length) L.push('Time-sensitive now (transiting Moon, shifts within hours): ' + tr.timed.slice(0, 4).map(function (t) { return 'Moon ' + t.asp.key + ' natal ' + nameFor(t.np) + ' (orb ' + t.orb.toFixed(1) + '°)'; }).join('; ') + '.');
-    return L.join('\n');
-  }
-  function appendTransitReading(wrap, c) {
-    var tr = composeTransits(c);
-    // ---- daily ----
-    wrap.appendChild(sectionLabel('Live on your chart: today'));
-    if (!tr.daily.length) {
-      wrap.appendChild(el('p', { class: 'muted', text: 'No close daily transits to your chart right now, a quiet stretch. The natal pattern above is running undisturbed.' }));
-    } else {
-      wrap.appendChild(transitListCard(tr.daily.slice(0, 6), false));
-      var dread = el('div', { class: 'reading' });
-      dread.appendChild(el('p', { text: 'Today the moving sky is touching your birth chart in a few places. ' + tr.daily.slice(0, 3).map(transitSentence).join(' ') }));
-      wrap.appendChild(dread);
-    }
-    // ---- time / the passing hour ----
-    wrap.appendChild(sectionLabel('Right now: the passing hour'));
-    var stamp = clockStr(tr.ctx.now);
-    if (!tr.timed.length) {
-      wrap.appendChild(el('p', { class: 'muted', text: 'At ' + stamp + ' the Moon isn’t closely touching your chart. It moves about half a degree an hour, so check back later, this part changes fast.' }));
-    } else {
-      wrap.appendChild(transitListCard(tr.timed.slice(0, 4), true));
-      var tread = el('div', { class: 'reading' });
-      tread.appendChild(el('p', { text: 'The Moon is the fast hand of the clock, these shift within hours, not days. As of ' + stamp + ': ' + tr.timed.slice(0, 2).map(transitSentence).join(' ') }));
-      wrap.appendChild(tread);
-    }
-    wrap.appendChild(el('p', { class: 'source small', text: 'Transits computed live against your natal chart. Tight orbs only (Moon ≤3°, others ≤2–2.5°). Reload to refresh the hour.' }));
-  }
 
   // ================= on-device chart intelligence (deterministic, no network, no AI) =================
   // Inspired by open-source chart readers (chart2txt, immanuel-python): aspect patterns,
@@ -2194,12 +1725,6 @@ var APP = (function () {
   }
   function addScore(s, k, v) { if (k) s[k] = (s[k] || 0) + v; }
   // almuten of a single point: the planet with the most essential dignity exactly there
-  function almutenOf(lon, isDay) {
-    var L = dignityLedger(lon, isDay), s = {};
-    addScore(s, L.domicile, 5); addScore(s, L.exaltation, 4); addScore(s, L.triplicity, 3); addScore(s, L.bound, 2); addScore(s, L.face, 1);
-    var best = null, bm = -1, k; for (k in s) if (s.hasOwnProperty(k) && s[k] > bm) { bm = s[k]; best = k; }
-    return { winner: best, score: bm, scores: s, ledger: L };
-  }
   // almuten figuris: the planet that wins the most dignity summed over the chart's hylegic points — the chart's true ruler
   function almutenChart(c) {
     var isDay = true, sct = sect(c); if (sct) isDay = sct.day;
@@ -2234,18 +1759,6 @@ var APP = (function () {
     return { lead: best, count: bm, all: list, tally: tally };
   }
 
-  function dominantPlanet(c) {
-    var b = STATE.birth, score = {}, i, k, p;
-    for (i = 0; i < PATKEYS.length; i++) score[PATKEYS[i]] = 0;
-    for (i = 0; i < c.aspects.length; i++) { var as = c.aspects[i]; var add = 1 + Math.max(0, 1 - as.orb / 8); if (score[as.a] != null) score[as.a] += add; if (score[as.b] != null) score[as.b] += add; }
-    score.sun += 2; score.moon += 2; // luminaries always speak up
-    for (i = 0; i < PATKEYS.length; i++) { k = PATKEYS[i]; p = c.planets[k]; if (!p) continue; var dg = dignityOf(k, p.signName); if (dg === 'Domicile') score[k] += 3; else if (dg === 'Exaltation') score[k] += 2; else if (dg === 'Detriment') score[k] -= 2; else if (dg === 'Fall') score[k] -= 3; }
-    if (b.timeKnown && c.ascBody) { var ar = RULERKEY[DATA.SIGNS[c.ascBody.sign].ruler]; if (score[ar] != null) score[ar] += 4; } // chart ruler
-    var sr = RULERKEY[DATA.SIGNS[c.planets.sun.sign].ruler]; if (score[sr] != null) score[sr] += 2;
-    if (b.timeKnown) for (i = 0; i < PATKEYS.length; i++) { k = PATKEYS[i]; var h = c.planets[k] && c.planets[k].house; if (h === 1 || h === 4 || h === 7 || h === 10) score[k] += 2; }
-    var best = PATKEYS[0]; for (i = 1; i < PATKEYS.length; i++) if (score[PATKEYS[i]] > score[best]) best = PATKEYS[i];
-    return { key: best };
-  }
   // unified PROMINENCE model — the "what actually matters in THIS chart" scorer (essential dignity + angularity +
   // sect + chart rulership + almuten + aspect activity + stellium), with transparent reasons. The intelligence is here.
   function prominence(c) {
@@ -2480,9 +1993,6 @@ var APP = (function () {
     }
     out.sort(function (x, y) { return x.orb - y.orb; });
     return out.slice(0, 5);
-  }
-  function pointAspectLine(pa) {
-    return pa.pointName + ' ' + pa.asp.key + ' your ' + nameFor(pa.np) + ': ' + pa.pointFn + ' ' + aspVerb(pa.asp) + ' your ' + shortFn(pa.np) + ', ' + aspTone(pa.asp) + '.';
   }
   // sect: is this a day chart (Sun above the horizon) or a night chart? It reweights the benefics/malefics.
   function sect(c) {
@@ -3671,11 +3181,6 @@ var APP = (function () {
     neptune: 'your imagination, your faith and your escape routes',
     pluto: 'your power, your obsessions and what you try to control'
   };
-  function targetArea(np, age) {
-    if (np === 'mc') return age < 16 ? 'the early shape of where you’re headed' : 'your career, calling and public standing';
-    if (np === 'asc') return age < 16 ? 'how you’re learning to meet the world' : 'your identity and how you come across';
-    return ({ sun: 'your core self', moon: 'your inner life and home', jupiter: 'your sense of growth', saturn: 'your structures and duties', uranus: 'your independence', neptune: 'your dreams', pluto: 'your depths' })[np] || 'your life';
-  }
   function natalLonOf(c, key) { if (key === 'asc') return c.ascBody ? c.ascBody.lon : null; if (key === 'mc') return c.mcBody ? c.mcBody.lon : null; return c.planets[key] ? c.planets[key].lon : null; }
   function lifeTransits(c, b) {
     var ay = c.ayan || 0, birthMs = Date.UTC(b.y, b.mo - 1, b.d, 12, 0, 0), yearMs = 365.2422 * 86400000;
@@ -4199,84 +3704,8 @@ var APP = (function () {
     return out;
   }
 
-  function renderRead() {
-    var c = STATE.chart, wrap = el('div', { class: 'screen pad' });
-    wrap.appendChild(el('div', { class: 'eyebrow', text: 'READ' }));
-    wrap.appendChild(el('h2', { class: 'h2', text: 'Your chart, in plain terms' }));
-
-    var out = el('div', { class: 'reading', id: 'reading' });
-    composeCore(c).forEach(function (para) { out.appendChild(el('p', { text: para })); });
-    wrap.appendChild(out);
-
-    // daily + time aspects: what the moving sky is doing to your chart now
-    appendTransitReading(wrap, c);
-
-    wrap.appendChild(sectionLabel('Ask your chart'));
-    var ask = el('div', { class: 'askbox' });
-    var ta = el('textarea', { class: 'inp ta', rows: '2', placeholder: 'e.g. Why do I keep avoiding commitment? What is my relationship pattern?' });
-    var ansWrap = el('div', { class: 'reading', id: 'answer' });
-    ask.appendChild(ta);
-    ask.appendChild(el('button', { class: 'btn primary', text: 'Ask', onclick: function (e) {
-      var q = ta.value.trim(); if (!q) return;
-      clear(ansWrap); renderProse(ansWrap, localAsk(q, c));
-    } }));
-    ask.appendChild(ansWrap);
-    wrap.appendChild(ask);
-    wrap.appendChild(modelNote());
-    return wrap;
-  }
-  function renderProse(target, txt) {
-    var paras = txt.split(/\n\n+/);
-    for (var i = 0; i < paras.length; i++) {
-      var t = paras[i].replace(/\*\*/g, '').replace(/^#+\s*/, '').trim();
-      if (t) target.appendChild(el('p', { text: t }));
-    }
-  }
 
   // ----- today / transits -----
-  function renderToday() {
-    var wrap = el('div', { class: 'screen pad' }), c = STATE.chart;
-    var now = new Date();
-    var ut = now.getUTCHours() + now.getUTCMinutes() / 60;
-    var dNow = EPH.dayNumber(now.getUTCFullYear(), now.getUTCMonth() + 1, now.getUTCDate(), ut);
-    var tp = EPH.positions(dNow);
-    var ay = STATE.settings.zodiac === 'sidereal' ? ayanamsa(dNow) : 0;
-    wrap.appendChild(el('div', { class: 'eyebrow', text: 'TODAY \u00B7 ' + fmtDate(now) }));
-    wrap.appendChild(el('h2', { class: 'h2', text: 'What the sky is doing' }));
-
-    // sky now
-    var sky = el('div', { class: 'card list' });
-    DATA.PLANET_ORDER.forEach(function (key) {
-      if (!tp[key]) return;
-      var lon = rev(tp[key].lon - ay), sign = Math.floor(lon / 30), deg = lon - sign * 30;
-      var row = el('div', { class: 'lrow' });
-      var g = el('span', { class: 'lglyph' }); g.appendChild(doc.createTextNode(glyphFor(key)));
-      row.appendChild(g); row.appendChild(el('span', { class: 'lname', text: nameFor(key) }));
-      var sg = el('span', { class: 'lsign' });
-      var sgl = el('span', { class: 'lsignglyph' }); sgl.appendChild(doc.createTextNode(DATA.SIGNS[sign].glyph));
-      sg.appendChild(sgl); sg.appendChild(doc.createTextNode(' ' + degStr(deg) + ' ' + DATA.SIGNS[sign].name));
-      row.appendChild(sg); sky.appendChild(row);
-    });
-    wrap.appendChild(sectionLabel('Sky right now'));
-    wrap.appendChild(sky);
-
-    // transits to natal
-    var trans = transitsToNatal(tp, ay, c);
-    wrap.appendChild(sectionLabel('Hitting your chart'));
-    if (!trans.length) wrap.appendChild(el('p', { class: 'muted', text: 'No close transits to your planets today. A quiet sky.' }));
-    else wrap.appendChild(transitListCard(trans.slice(0, 10), false));
-
-    var out = el('div', { class: 'reading', id: 'todayReading' });
-    wrap.appendChild(el('div', { class: 'btnrow' }, [el('button', { class: 'btn primary', text: 'Read today for me', onclick: function (e) {
-      var summary = 'Today is ' + fmtDate(now) + '. Transiting positions: ' + skyLine(tp, ay) + '. ' +
-        'Active transits to my natal chart: ' + (trans.length ? trans.slice(0, 8).map(function (t) { return 'transiting ' + nameFor(t.tp) + ' ' + t.asp.key + ' natal ' + nameFor(t.np) + ' (orb ' + t.orb.toFixed(1) + '\u00B0)'; }).join('; ') : 'none close') + '.\n\nMy natal chart:\n' + chartText(c, STATE.birth) +
-        '\n\nGive me a grounded, practical read on what is actually live for me today and this week, mood, what to watch, what to lean into. No fortune-telling. About 180 words.';
-      runReading(summary, e.target, out);
-    } })]));
-    wrap.appendChild(out);
-    wrap.appendChild(modelNote());
-    return wrap;
-  }
   function transitsToNatal(tp, ay, c) {
     var out = [], tk, nk;
     var transiting = ['sun', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto', 'moon'];
@@ -4321,448 +3750,46 @@ var APP = (function () {
     out.sort(function (x, y) { return x.orb - y.orb; });
     return out;
   }
-  function skyLine(tp, ay) {
-    var parts = [];
-    DATA.PLANET_ORDER.forEach(function (key) {
-      if (!tp[key]) return; var lon = rev(tp[key].lon - ay), sign = Math.floor(lon / 30);
-      parts.push(nameFor(key) + ' ' + degStr(lon - sign * 30) + ' ' + DATA.SIGNS[sign].name);
-    });
-    // the deeper strata: birth phase, the node, the element blend, the calling, the crowd
-    try {
-      var T9c = DATA.TELLS || {};
-      var ph9c = Math.floor(rev(moon.lon - sun.lon) / 45);
-      if (T9c.phase && T9c.phase[ph9c]) parts.push('One more layer: ' + T9c.phase[ph9c] + '.');
-      var nd9c = c.planets.node;
-      if (nd9c && T9c.node) {
-        var ndTxt9 = 'Your North Node: ' + (T9c.node.sign[nd9c.signName] || '');
-        if (tk && nd9c.house && T9c.node.house[nd9c.house]) ndTxt9 += ' In the ' + ordinal(nd9c.house) + ' house, ' + T9c.node.house[nd9c.house] + '.';
-        parts.push(ndTxt9);
-      }
-      if (T9c.blend && T9c.blend[se + '-' + me]) parts.push('The blend of you: ' + T9c.blend[se + '-' + me] + '.');
-      if (tk && c.mc != null && T9c.mc) { var mcS9 = DATA.SIGNS[Math.floor(rev(c.mc) / 30)]; if (mcS9 && T9c.mc[mcS9.name]) parts.push('At the top of your chart, ' + mcS9.name + ': ' + T9c.mc[mcS9.name] + '.'); }
-      if (tk && T9c.stellium) {
-        var hc9 = {}, kk9, best9 = 0, bh9 = 0;
-        for (kk9 in c.planets) if (c.planets.hasOwnProperty(kk9) && c.planets[kk9].house) { hc9[c.planets[kk9].house] = (hc9[c.planets[kk9].house] || 0) + 1; if (hc9[c.planets[kk9].house] > best9) { best9 = hc9[c.planets[kk9].house]; bh9 = c.planets[kk9].house; } }
-        if (best9 >= 3 && T9c.stellium[bh9]) parts.push(capT(T9c.stellium[bh9]) + '.');
-      }
-    } catch (eDL9) {}
-    return parts.join(', ');
-  }
-  function fmtDate(dt) { var mo = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']; return dt.getDate() + ' ' + mo[dt.getMonth()] + ' ' + dt.getFullYear(); }
 
   // ----- tarot -----
   var TAROT_STATE = { flicker: null, imgs: [], idx: 0, running: false };
-  function renderTarot() {
-    var wrap = el('div', { class: 'screen pad' });
-    wrap.appendChild(el('div', { class: 'eyebrow', text: 'TAROT' }));
-    wrap.appendChild(el('h2', { class: 'h2', text: 'Spreads to lay, with real cards' }));
-    wrap.appendChild(el('p', { class: 'lede small', text: 'This doesn\u2019t pull cards for you, it shows you how to lay them out yourself. Pick a spread to see its layout and what each position means.' }));
-
-    // spread picker
-    var picker = el('div', { class: 'chiprow' });
-    DATA.SPREADS.forEach(function (sp, i) {
-      picker.appendChild(el('button', { class: 'chip' + (i === 0 ? ' on' : ''), 'data-i': i, text: sp.name + ' \u00B7 ' + sp.cards, onclick: function () {
-        var chips = picker.querySelectorAll('.chip'); for (var z = 0; z < chips.length; z++) chips[z].classList.remove('on');
-        this.classList.add('on'); showSpread(sp, $('spreadHost'));
-      } }));
-    });
-    wrap.appendChild(picker);
-    var host = el('div', { id: 'spreadHost' });
-    wrap.appendChild(host);
-    showSpread(DATA.SPREADS[0], host);
-    wrap.appendChild(el('p', { class: 'source', text: 'Layouts after the Labyrinthos / Biddy Tarot standard (Rider\u2013Waite\u2013Smith tradition).' }));
-
-    // card lookup
-    wrap.appendChild(sectionLabel('Look up a card'));
-    var lk = el('div', { class: 'askbox' });
-    var inp = el('input', { class: 'inp', type: 'text', placeholder: 'e.g. The Tower, Three of Cups, Death\u2026', autocomplete: 'off' });
-    var sug = el('div', { class: 'suggest' });
-    inp.addEventListener('input', function () {
-      var q = inp.value.trim().toLowerCase(); clear(sug);
-      if (q.length < 2) { sug.style.display = 'none'; return; }
-      var hits = [];
-      for (var i = 0; i < DATA.TAROT.length && hits.length < 7; i++) if (DATA.TAROT[i].name.toLowerCase().indexOf(q) >= 0) hits.push(DATA.TAROT[i]);
-      if (!hits.length) { sug.style.display = 'none'; return; }
-      sug.style.display = 'block';
-      hits.forEach(function (card) {
-        sug.appendChild(el('div', { class: 'suggest-item', onclick: function () { inp.value = card.name; clear(sug); sug.style.display = 'none'; showCard(card, $('cardHost')); } }, card.name));
-      });
-    });
-    lk.appendChild(inp); lk.appendChild(sug);
-    wrap.appendChild(lk);
-    wrap.appendChild(el('div', { id: 'cardHost' }));
-    return wrap;
-  }
-  function showSpread(sp, host) {
-    clear(host);
-    var card = el('div', { class: 'card' });
-    card.appendChild(el('div', { class: 'spread-head' }, [el('b', { text: sp.name }), el('span', { class: 'muted', text: ' \u00B7 ' + sp.cards + ' cards' })]));
-    card.appendChild(el('p', { class: 'spread-use', text: sp.use }));
-    // board
-    var board = el('div', { class: 'spread-board' });
-    sp.positions.forEach(function (p) {
-      var slot = el('div', { class: 'slot' });
-      slot.style.left = (p.x * 100) + '%'; slot.style.top = (p.y * 100) + '%';
-      slot.style.transform = 'translate(-50%,-50%) rotate(' + (p.rot || 0) + 'deg)';
-      slot.appendChild(el('span', { class: 'slot-n', text: String(p.n) }));
-      board.appendChild(slot);
-    });
-    card.appendChild(board);
-    // positions legend
-    var legend = el('div', { class: 'poslist' });
-    sp.positions.forEach(function (p) {
-      legend.appendChild(el('div', { class: 'pos' }, [
-        el('span', { class: 'pos-n', text: String(p.n) }),
-        el('span', { class: 'pos-t', text: p.t }),
-        el('span', { class: 'pos-m', text: p.m })
-      ]));
-    });
-    card.appendChild(legend);
-    host.appendChild(card);
-  }
-  function showCard(card, host) {
-    stopFlicker();
-    clear(host);
-    var c = el('div', { class: 'card cardview' });
-    c.appendChild(el('div', { class: 'cv-name', text: card.name }));
-    c.appendChild(el('div', { class: 'cv-arc', text: card.arcana === 'major' ? 'Major Arcana' : (card.arcana + ' \u00B7 ' + DATA.SUIT_KW[card.arcana].el) }));
-    c.appendChild(el('p', { class: 'cv-ess', text: card.ess }));
-    var kw = el('div', { class: 'cv-kw' });
-    kw.appendChild(el('div', { class: 'kwrow' }, [el('span', { class: 'kwlab up', text: 'Upright' }), el('span', { text: card.up.join(' \u00B7 ') })]));
-    kw.appendChild(el('div', { class: 'kwrow' }, [el('span', { class: 'kwlab rev', text: 'Reversed' }), el('span', { text: card.rev.join(' \u00B7 ') })]));
-    c.appendChild(kw);
-    // the art line + flicker (Isaac's stage-direction framing)
-    c.appendChild(el('p', { class: 'cv-prompt', text: 'You want meaning: the art is important. What does your card look like?' }));
-    c.appendChild(el('div', { class: 'stage-dir', text: 'STAGE DIRECTION: flicker through versions of this card' }));
-    var stage = el('div', { class: 'flicker' });
-    var imgEl = el('img', { class: 'flicker-img', alt: card.name });
-    var spin = el('div', { class: 'flicker-status', text: 'Gathering versions from open decks\u2026' });
-    stage.appendChild(imgEl); stage.appendChild(spin);
-    c.appendChild(stage);
-    var controls = el('div', { class: 'flicker-ctrl' });
-    var btn = el('button', { class: 'btn', text: 'Stop', onclick: function () { toggleFlicker(btn); } });
-    var count = el('span', { class: 'flicker-count', text: '' });
-    controls.appendChild(btn); controls.appendChild(count);
-    c.appendChild(controls);
-    c.appendChild(el('p', { class: 'source small', text: 'Images: public-domain decks via Wikimedia Commons. Stop the flicker to study one.' }));
-    host.appendChild(c);
-    loadCardImages(card, imgEl, spin, count, btn);
-  }
   // SAFETY: discover broadly but accept a result ONLY if its filename belongs to a known
   // public-domain tarot deck. Arbitrary/offensive uploads can never pass this allow-list.
   var DOM_TAROT_DECK_RE = new RegExp('^File:\\s*(RWS[ _]Tarot|Rider[-_ ]Waite|(Cups|Wands|Swords|Pents)\\s*\\d|Tarot[ _](de[ _])?Marseille|Marseille|Jean[ _]Dodal|Dodal|Nicolas[ _]Conver|Conver|(Oswald[ _])?Wirth|Sola[-_ ]?Busca|Visconti|Minchiate|Tarot[ _]Nouveau|Grand[ _]Etteilla|Etteilla|Mantegna|Tarocc(o|hi)|Swiss[ _]1JJ|1JJ|Papus|Waite[ _]Smith|Pamela[ _]Colman)', 'i');
   var DOM_TAROT_BAD_RE = /(swastika|hakenkreuz|nazi|hitler|reich|1488|white[ _-]?power|confeder)/i;
-  function safeTarotTitleDom(t) { t = t || ''; return DOM_TAROT_DECK_RE.test(t) && !DOM_TAROT_BAD_RE.test(t); }
-  function rwsFileName(card) {
-    if (card.arcana === 'major') return 'RWS_Tarot_' + pad(card.num) + '_' + card.name.replace(/^The /, '').replace(/ /g, '_') + '.jpg';
-    var sc = { Wands: 'Wands', Cups: 'Cups', Swords: 'Swords', Pentacles: 'Pents' }[card.arcana];
-    return sc ? (sc + pad(card.num) + '.jpg') : null;
-  }
-  function loadCardImages(card, imgEl, spin, count, btn) {
-    TAROT_STATE.imgs = []; TAROT_STATE.idx = 0; var seen = {};
-    function tryAdd(url) {
-      if (!url || seen[url]) return; seen[url] = 1;
-      var im = new Image();
-      im.onload = function () { TAROT_STATE.imgs.push(url); if (TAROT_STATE.imgs.length === 1) { imgEl.src = url; spin.style.display = 'none'; startFlicker(imgEl, count); } updateCount(count); };
-      im.onerror = function () {};
-      im.src = url;
-    }
-    var f = rwsFileName(card); if (f) tryAdd('https://commons.wikimedia.org/wiki/Special:FilePath/' + encodeURIComponent(f));
-    if (typeof fetch !== 'function') { afterSearch(spin); return; }
-    var q = encodeURIComponent(card.name + ' tarot card');
-    var api = 'https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=' + q +
-      '&gsrnamespace=6&gsrlimit=50&prop=imageinfo&iiprop=url|mime&iiurlwidth=520&format=json&origin=*';
-    fetch(api).then(function (r) { return r.json(); }).then(function (data) {
-      if (!data || !data.query || !data.query.pages) { afterSearch(spin); return; }
-      var pages = data.query.pages, k;
-      for (k in pages) if (pages.hasOwnProperty(k)) {
-        var pg = pages[k]; if (!safeTarotTitleDom(pg.title || '')) continue; // allow-list: known decks only
-        var ii = pg.imageinfo; if (!ii || !ii[0]) continue;
-        var mime = ii[0].mime || ''; if (mime.indexOf('image') !== 0 || mime.indexOf('svg') >= 0) continue;
-        var u = ii[0].thumburl || ii[0].url; if (u) tryAdd(u);
-      }
-      afterSearch(spin);
-    }).catch(function () { afterSearch(spin); });
-  }
-  function afterSearch(spin) {
-    setTimeout(function () {
-      if (TAROT_STATE.imgs.length === 0) { spin.textContent = 'Couldn\u2019t reach the deck archive. Connect to the internet to see the art flicker.'; }
-    }, 2500);
-  }
-  function updateCount(count) { if (count) count.textContent = TAROT_STATE.imgs.length + ' versions'; }
-  function startFlicker(imgEl, count) {
-    stopFlicker(); TAROT_STATE.running = true;
-    TAROT_STATE.flicker = setInterval(function () {
-      if (!TAROT_STATE.imgs.length) return;
-      TAROT_STATE.idx = (TAROT_STATE.idx + 1) % TAROT_STATE.imgs.length;
-      imgEl.src = TAROT_STATE.imgs[TAROT_STATE.idx];
-    }, 280);
-    updateCount(count);
-  }
-  function stopFlicker() { if (TAROT_STATE.flicker) { clearInterval(TAROT_STATE.flicker); TAROT_STATE.flicker = null; } TAROT_STATE.running = false; }
-  function toggleFlicker(btn) {
-    if (TAROT_STATE.running) { stopFlicker(); btn.textContent = 'Resume flicker'; btn.classList.add('primary'); }
-    else { var im = doc.querySelector('.flicker-img'); var cnt = doc.querySelector('.flicker-count'); if (im) startFlicker(im, cnt); btn.textContent = 'Stop'; btn.classList.remove('primary'); }
-  }
 
   // ----- videos (menu) -----
-  function renderVideos() {
-    var wrap = el('div', { class: 'screen pad' }), c = STATE.chart;
-    wrap.appendChild(el('div', { class: 'eyebrow', text: 'VIDEOS' }));
-    wrap.appendChild(el('h2', { class: 'h2', text: 'Watch your chart' }));
-    wrap.appendChild(el('p', { class: 'lede small', text: 'Hand-picked searches tuned to your placements and what the sky is doing now. Each opens current videos on YouTube.' }));
-    var topics = [];
-    topics.push(['Your Sun', DATA.SIGNS[c.planets.sun.sign].name + ' sun sign personality']);
-    topics.push(['Your Moon', DATA.SIGNS[c.planets.moon.sign].name + ' moon meaning']);
-    if (STATE.birth.timeKnown) topics.push(['Your Rising', DATA.SIGNS[c.ascBody.sign].name + ' rising ascendant explained']);
-    var dom = domElement(c.elements);
-    topics.push(['Your dominant element', DATA.ELEMENTS[dom].name + ' element astrology']);
-    // current transit topics
-    var now = new Date(); var ut = now.getUTCHours() + now.getUTCMinutes() / 60;
-    var dNow = EPH.dayNumber(now.getUTCFullYear(), now.getUTCMonth() + 1, now.getUTCDate(), ut);
-    var tp = EPH.positions(dNow);
-    var jLon = tp.jupiter.lon, jSign = DATA.SIGNS[Math.floor(jLon / 30)].name;
-    topics.push(['Jupiter now', 'Jupiter in ' + jSign + ' ' + now.getUTCFullYear()]);
-    var sLon = tp.saturn.lon, sSign = DATA.SIGNS[Math.floor(sLon / 30)].name;
-    topics.push(['Saturn now', 'Saturn in ' + sSign + ' transit']);
-    topics.push(['This month', 'astrology forecast ' + fmtMonth(now)]);
-    topics.push(['Learn your chart', 'how to read your birth chart beginners']);
-
-    var grid = el('div', { class: 'vidgrid' });
-    topics.forEach(function (t) {
-      grid.appendChild(el('a', { class: 'vidcard', href: 'https://www.youtube.com/results?search_query=' + encodeURIComponent(t[1]), target: '_blank', rel: 'noopener' }, [
-        el('div', { class: 'vid-play', html: playSvg() }),
-        el('div', { class: 'vid-meta' }, [el('div', { class: 'vid-t', text: t[0] }), el('div', { class: 'vid-q', text: t[1] })])
-      ]));
-    });
-    wrap.appendChild(grid);
-    return wrap;
-  }
-  function fmtMonth(dt) { var mo = ['January','February','March','April','May','June','July','August','September','October','November','December']; return mo[dt.getMonth()] + ' ' + dt.getFullYear(); }
-  function playSvg() { return '<svg viewBox="0 0 24 24" width="20" height="20"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>'; }
 
   // ----- settings -----
-  function renderSettings() {
-    var wrap = el('div', { class: 'screen pad' });
-    wrap.appendChild(el('div', { class: 'eyebrow', text: 'SETTINGS' }));
-    wrap.appendChild(el('h2', { class: 'h2', text: 'Tune the system' }));
-
-    wrap.appendChild(toggleRow('Zodiac', [['tropical', 'Tropical'], ['sidereal', 'Sidereal (Vedic)']], STATE.settings.zodiac, function (v) { STATE.settings.zodiac = v; recompute(); }));
-    wrap.appendChild(el('p', { class: 'hint', text: STATE.settings.zodiac === 'sidereal' ? 'Sidereal subtracts the Lahiri ayanamsa from every position (the sky against the fixed stars, as used in Vedic astrology).' : 'Tropical ties the zodiac to the seasons (Western default).' }));
-
-    wrap.appendChild(toggleRow('House system', [['placidus', 'Placidus'], ['whole', 'Whole Sign'], ['equal', 'Equal']], STATE.settings.house, function (v) { STATE.settings.house = v; recompute(); }));
-    wrap.appendChild(el('p', { class: 'hint', text: 'Placidus is the common Western default. Whole Sign is the Hellenistic and Vedic standard. All are computed exactly.' }));
-
-    // orb slider
-    var orbWrap = el('div', { class: 'setrow' });
-    orbWrap.appendChild(el('div', { class: 'flabel', text: 'Aspect orb' }));
-    var orb = el('input', { class: 'slider', type: 'range', min: '0.5', max: '1.5', step: '0.1', value: String(STATE.settings.orbScale) });
-    var orbVal = el('span', { class: 'slider-val', text: '\u00D7' + STATE.settings.orbScale });
-    orb.addEventListener('input', function () { orbVal.textContent = '\u00D7' + orb.value; });
-    orb.addEventListener('change', function () { STATE.settings.orbScale = parseFloat(orb.value); recompute(); });
-    var orbLine = el('div', { class: 'sliderline' }); orbLine.appendChild(orb); orbLine.appendChild(orbVal);
-    orbWrap.appendChild(orbLine);
-    wrap.appendChild(orbWrap);
-
-    // AI toggle
-
-    wrap.appendChild(sectionLabel('Birth data'));
-    var b = STATE.birth;
-    wrap.appendChild(el('div', { class: 'card pad' }, [
-      el('div', { class: 'kvrow' }, [el('span', { class: 'k', text: 'Date' }), el('span', { text: b.d + '/' + b.mo + '/' + b.y })]),
-      el('div', { class: 'kvrow' }, [el('span', { class: 'k', text: 'Time' }), el('span', { text: b.timeKnown ? (pad(b.hour) + ':' + pad(b.min) + ' (UTC' + (b.tz >= 0 ? '+' : '') + b.tz + ')') : 'unknown' })]),
-      el('div', { class: 'kvrow' }, [el('span', { class: 'k', text: 'Place' }), el('span', { text: b.place })])
-    ]));
-    wrap.appendChild(el('button', { class: 'btn', text: 'Edit birth details', onclick: function () { STATE.birth = null; STATE.chart = null; save(); render(); } }));
-    return wrap;
-  }
-  function recompute() { STATE.chart = computeChart(STATE.birth, STATE.settings); save(); render(); }
-  function toggleRow(label, opts, current, cb) {
-    var row = el('div', { class: 'setrow' });
-    row.appendChild(el('div', { class: 'flabel', text: label }));
-    var seg = el('div', { class: 'seg' });
-    opts.forEach(function (o) {
-      seg.appendChild(el('button', { class: 'seg-btn' + (o[0] === current ? ' on' : ''), text: o[1], onclick: function () {
-        var bs = seg.querySelectorAll('.seg-btn'); for (var z = 0; z < bs.length; z++) bs[z].classList.remove('on');
-        this.classList.add('on'); cb(o[0]);
-      } }));
-    });
-    row.appendChild(seg); return row;
-  }
 
   // ----- about -----
-  function renderAbout() {
-    var wrap = el('div', { class: 'screen pad' });
-    wrap.appendChild(el('div', { class: 'eyebrow', text: 'ABOUT' }));
-    wrap.appendChild(el('h2', { class: 'h2', text: 'How this works' }));
-    var body = el('div', { class: 'prose' });
-    body.appendChild(el('p', { text: 'Aqau Pluto computes your chart with a Schlyter-algorithm ephemeris running entirely on your device. Validated to arc-minute accuracy against the Swiss Ephemeris for the Sun, Moon, planets, Ascendant, Midheaven and house cusps. The positions are genuine, not invented.' }));
-    body.appendChild(el('p', { text: 'The voice is deliberately grounded: astrology here is a mirror for self-understanding, not a fixed fate. It leans on the four elements and on behaviour you can actually do something about. Every reading is composed on-device from your genuine computed chart.' }));
-    body.appendChild(el('p', { text: 'The tarot section never reads cards for you. It shows the standard spreads so you can lay them with a physical deck, and lets you look up a card\u2019s meaning and see many versions of its art pulled from public-domain decks.' }));
-    body.appendChild(el('p', { class: 'muted', text: 'Pluto and the lunar node are lower-precision approximations (correct sign and house; wide-orb aspects). Chiron and minor points are intentionally omitted rather than shown inaccurately.' }));
-    wrap.appendChild(body);
-    return wrap;
-  }
 
   // ---------- shared UI bits ----------
-  function sectionLabel(t) { return el('div', { class: 'seclabel', text: t }); }
   function loader() { var d = el('div', { class: 'loader' }); d.appendChild(el('span', { class: 'dot' })); d.appendChild(el('span', { class: 'dot' })); d.appendChild(el('span', { class: 'dot' })); return d; }
-  function modelNote() { return el('p', { class: 'source small', text: 'Built-in on-device engine: free, private, works offline. From your genuine computed chart.' }); }
 
   // ---------- menu ----------
-  function openMenu() { var m = $('menu'); if (m) m.classList.add('open'); }
-  function closeMenu() { var m = $('menu'); if (m) m.classList.remove('open'); }
 
   // ---------- boot ----------
   // ---------- micrographic HUD readout ----------
-  function sgAbbr(sign) { return DATA.SIGNS[sign].name.slice(0, 3).toUpperCase(); }
-  function microStrip(c, b) {
-    var strip = el('div', { class: 'microstrip' });
-    var r1 = el('div', { class: 'ms-row' });
-    r1.appendChild(el('span', { class: 'ms-tag', text: '[ONLINE]' }));
-    r1.appendChild(el('span', { class: 'ms-sep', text: '//' }));
-    r1.appendChild(el('span', { text: STATE.settings.zodiac === 'sidereal' ? 'SIDEREAL' : 'TROPICAL' }));
-    r1.appendChild(el('span', { class: 'ms-sep', text: '//' }));
-    r1.appendChild(el('span', { text: (STATE.settings.house || 'whole').toUpperCase() }));
-    if (b.timeKnown) {
-      r1.appendChild(el('span', { class: 'ms-sep', text: '//' }));
-      r1.appendChild(el('span', { text: 'ASC ' + c.ascBody.deg.toFixed(2) + '\u00B0 ' + sgAbbr(c.ascBody.sign) }));
-    }
-    r1.appendChild(el('span', { class: 'ms-dot' }));
-    strip.appendChild(r1);
-    var r2 = el('div', { class: 'ms-row' });
-    var latH = (b.lat >= 0 ? 'N' : 'S'), lonH = (b.lon >= 0 ? 'E' : 'W');
-    r2.appendChild(el('span', { text: Math.abs(b.lat).toFixed(2) + '\u00B0' + latH + ' ' + Math.abs(b.lon).toFixed(2) + '\u00B0' + lonH }));
-    r2.appendChild(el('span', { class: 'ms-sep', text: '\u00B7' }));
-    var mtx = el('span', { class: 'ms-matrix' });
-    var bits = Math.round(Math.abs(c.planets.sun.deg) * 4) % 256;
-    for (var i = 0; i < 8; i++) mtx.appendChild(el('span', { class: 'ms-cell' + (((bits >> i) & 1) ? '' : ' off') }));
-    r2.appendChild(mtx);
-    r2.appendChild(el('span', { class: 'ms-bar' }));
-    r2.appendChild(el('span', { text: 'SYS 0x' + (0x1A + (b.d || 1)).toString(16).toUpperCase() }));
-    strip.appendChild(r2);
-    return strip;
-  }
 
   // ---------- p5 generative micrographic field (the living layer) ----------
   var FIELD = null;
   function reducedMotion() {
     try { var w = (typeof window !== 'undefined') ? window : null; return !!(w && w.matchMedia && w.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) { return false; }
   }
-  function loadP5(cb) {
-    if (typeof p5 !== 'undefined') { cb(); return; }
-    if (!doc) return;
-    function inject(src, onok, onfail) { var s = doc.createElement('script'); s.src = src; s.async = true; s.onload = onok; s.onerror = onfail; doc.head.appendChild(s); }
-    inject('https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.4/p5.min.js', cb, function () {
-      inject('https://cdn.jsdelivr.net/npm/p5@1.9.4/lib/p5.min.js', cb, function () {});
-    });
-  }
-  function startField() {
-    if (typeof p5 === 'undefined' || FIELD) return;
-    var sketch = function (p) {
-      var parts = [], W = 0, H = 0, NUM = 0, paused = false;
-      var TYPES = ['dot', 'dot', 'dot', 'sq', 'sq', 'line', 'tick', 'cross'];
-      function mk() {
-        return { x: p.random(W), y: p.random(H), sp: p.random(0.12, 0.7), sz: p.random([2, 2, 3, 3, 4, 5]),
-          t: TYPES[Math.floor(p.random(TYPES.length))], seed: p.random(1000), acc: p.random() < 0.05, a: p.random(26, 118) };
-      }
-      function drawMark(q, alpha) {
-        var col = q.acc ? p.color(255, 90, 31, alpha) : p.color(240, 234, 220, alpha);
-        if (q.t === 'dot') { p.noStroke(); p.fill(col); p.rect(q.x, q.y, q.sz * 0.75, q.sz * 0.75); }
-        else if (q.t === 'sq') { p.noFill(); p.stroke(col); p.strokeWeight(1); p.rect(q.x, q.y, q.sz, q.sz); }
-        else if (q.t === 'line') { p.stroke(col); p.strokeWeight(1); p.line(q.x - q.sz, q.y, q.x + q.sz, q.y); }
-        else if (q.t === 'tick') { p.stroke(col); p.strokeWeight(1); p.line(q.x, q.y - q.sz, q.x, q.y + q.sz); }
-        else { p.stroke(col); p.strokeWeight(1); p.line(q.x - q.sz, q.y, q.x + q.sz, q.y); p.line(q.x, q.y - q.sz, q.x, q.y + q.sz); }
-      }
-      function paint() {
-        p.clear();
-        for (var i = 0; i < parts.length; i++) {
-          var q = parts[i], pulse = 0.55 + 0.45 * Math.sin((p.frameCount + q.seed) * 0.02);
-          drawMark(q, q.a * pulse);
-        }
-      }
-      p.setup = function () {
-        W = p.windowWidth; H = p.windowHeight;
-        var c = p.createCanvas(W, H); c.addClass('p5field'); if (c.elt) c.elt.setAttribute('aria-hidden', 'true');
-        p.frameRate(30); p.rectMode(p.CENTER);
-        NUM = Math.max(120, Math.min(340, Math.floor(W * H / 3200)));
-        parts = []; for (var i = 0; i < NUM; i++) parts.push(mk());
-        if (reducedMotion()) { paint(); p.noLoop(); }
-      };
-      p.draw = function () {
-        if (paused) return;
-        for (var i = 0; i < parts.length; i++) {
-          var q = parts[i];
-          var ang = p.noise(q.x * 0.0015, q.y * 0.0015, p.frameCount * 0.0035) * p.TWO_PI * 2;
-          q.x += Math.cos(ang) * q.sp; q.y += Math.sin(ang) * q.sp;
-          if (q.x < -12) q.x = W + 12; if (q.x > W + 12) q.x = -12;
-          if (q.y < -12) q.y = H + 12; if (q.y > H + 12) q.y = -12;
-        }
-        paint();
-      };
-      p.windowResized = function () { W = p.windowWidth; H = p.windowHeight; p.resizeCanvas(W, H); };
-      if (doc) doc.addEventListener('visibilitychange', function () { paused = doc.hidden; if (!paused && !reducedMotion()) p.loop(); });
-    };
-    try { FIELD = new p5(sketch); } catch (e) { FIELD = null; }
-  }
 
-  function boot() {
-    load();
-    var root = $('app');
-    var bar = el('header', { class: 'topbar' });
-    bar.appendChild(el('div', { class: 'brand' }, [el('span', { class: 'brand-mark', html: '\u2647\uFE0E' }), el('span', { class: 'brand-name', text: 'AQAU PLUTO' })]));
-    bar.appendChild(el('button', { class: 'menu-btn', 'aria-label': 'Menu', html: menuSvg(), onclick: function () { var m = $('menu'); if (m.classList.contains('open')) closeMenu(); else openMenu(); } }));
-    root.appendChild(bar);
-
-    var main = el('main', { id: 'main' });
-    root.appendChild(main);
-
-    // slide menu
-    var menu = el('div', { class: 'menu', id: 'menu' });
-    var sheet = el('div', { class: 'menu-sheet' });
-    [['Elements & balance', 'chart'], ['Videos', 'videos'], ['Settings', 'settings'], ['About', 'about']].forEach(function (m) {
-      sheet.appendChild(el('button', { class: 'menu-item', text: m[0], onclick: function () { setScreen(m[1]); } }));
-    });
-    menu.appendChild(el('div', { class: 'menu-scrim', onclick: closeMenu }));
-    menu.appendChild(sheet);
-    root.appendChild(menu);
-
-    // bottom nav
-    var nav = el('nav', { class: 'bottomnav' });
-    [['Chart', 'chart', chartIcon()], ['Today', 'today', todayIcon()], ['Read', 'read', readIcon()], ['Tarot', 'tarot', tarotIcon()]].forEach(function (n) {
-      nav.appendChild(el('button', { class: 'nav-btn' + (n[1] === 'chart' ? ' active' : ''), 'data-s': n[1], onclick: function () { setScreen(n[1]); } }, [
-        el('span', { class: 'nav-ico', html: n[2] }), el('span', { class: 'nav-lab', text: n[0] })
-      ]));
-    });
-    root.appendChild(nav);
-
-    render();
-
-    // living layer: load p5 (cdnjs -> jsdelivr) and start the generative field
-    if (reducedMotion()) {
-      var ans = doc ? doc.querySelectorAll('animate') : [];
-      for (var ai = 0; ai < ans.length; ai++) { if (ans[ai].parentNode) ans[ai].parentNode.removeChild(ans[ai]); }
-    } else {
-      loadP5(startField);
-    }
-  }
-  function menuSvg() { return '<svg viewBox="0 0 24 24" width="22" height="22"><rect x="3" y="6" width="18" height="2" fill="currentColor"/><rect x="3" y="11" width="18" height="2" fill="currentColor"/><rect x="3" y="16" width="18" height="2" fill="currentColor"/></svg>'; }
-  function chartIcon() { return '<svg viewBox="0 0 24 24" width="22" height="22"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="2.5" fill="currentColor"/></svg>'; }
-  function todayIcon() { return '<svg viewBox="0 0 24 24" width="22" height="22"><circle cx="12" cy="12" r="4" fill="currentColor"/><g stroke="currentColor" stroke-width="2"><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/></g></svg>'; }
-  function readIcon() { return '<svg viewBox="0 0 24 24" width="22" height="22"><path d="M4 5h16v3H4zM4 11h16v2H4zM4 16h11v2H4z" fill="currentColor"/></svg>'; }
-  function tarotIcon() { return '<svg viewBox="0 0 24 24" width="22" height="22"><rect x="6" y="3" width="12" height="18" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="9" r="2" fill="currentColor"/><path d="M12 12l3 5H9z" fill="currentColor"/></svg>'; }
 
   return {
-    boot: boot, _compute: computeChart, _state: STATE, _data: function () { return DATA; },
+    _compute: computeChart, _state: STATE, _data: function () { return DATA; },
     STATE: STATE, save: save, load: load, compute: computeChart,
-    composeCore: composeCore, localAsk: localAsk, chartText: chartText, aspectText: aspectText,
+    composeCore: composeCore, localAsk: localAsk, aspectText: aspectText,
     composeTransits: composeTransits, transitSentence: transitSentence, composeSignatures: composeSignatures,
     solarReturnChart: solarReturnChart, upcomingEclipses: upcomingEclipses, bestDaysFor: bestDaysFor, electIntents: electIntents, oddPredictions: oddPredictions, composeProfectionYear: composeProfectionYear, signHouseWeave: signHouseWeave,
     progressedTimeline: progressedTimeline, retroSeasons: retroSeasons,
     exportBook: exportBook, exportBackup: exportBackup, importBackup: importBackup, composeDailyEssay: composeDailyEssay, chartFP: chartFP, weaveNote: weaveNote, termOf: termOf, anA: anA, composeColleague: composeColleague, exportColleague: exportColleague,
-    microFor: microFor, tellsFor: tellsFor, receptionOf: receptionOf, chartSignature: chartSignature, lifeQuirks: lifeQuirks, interests: interests, emergingPull: emergingPull, spookyReads: spookyReads, combinationRead: combinationRead, sunMoonCharacter: sunMoonCharacter, guideCards: guideCards, ancientSky: ancientSky, addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenOf: almutenOf, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, returnsAlmanac: returnsAlmanac, progressedLunation: progressedLunation, planetaryHours: planetaryHours, moonVoidWindow: moonVoidWindow, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
+    microFor: microFor, tellsFor: tellsFor, receptionOf: receptionOf, chartSignature: chartSignature, lifeQuirks: lifeQuirks, interests: interests, emergingPull: emergingPull, spookyReads: spookyReads, combinationRead: combinationRead, sunMoonCharacter: sunMoonCharacter, guideCards: guideCards, ancientSky: ancientSky, addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, returnsAlmanac: returnsAlmanac, progressedLunation: progressedLunation, planetaryHours: planetaryHours, moonVoidWindow: moonVoidWindow, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
     saveCurrentChart: saveCurrentChart, deleteSavedChart: deleteSavedChart, activateSavedChart: activateSavedChart, activeChartKey: activeChartKey, chartKey: chartKey, famousMatches: famousMatches, lifeTransits: lifeTransits, upcomingTransits: upcomingTransits, transitMotion: transitMotion, compositeChart: compositeChart,
-    nameFor: nameFor, glyphFor: glyphFor, sgAbbr: sgAbbr, pad: pad,
+    nameFor: nameFor, glyphFor: glyphFor, pad: pad,
     domElement: domElement, lowElement: lowElement, domMod: domMod, tzOffsetHours: tzOffsetHours
   };
 })();

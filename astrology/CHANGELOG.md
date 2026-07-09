@@ -1,5 +1,8 @@
 # Changelog
 
+## 3.38.0 — 2026-07-09
+- **Dead-code audit: ~60 KB of an old, unreachable UI removed.** The app had quietly carried a whole second user interface — the original DOM/HTML version (its own onboarding, chart, reading, tarot, today, settings and about screens, plus the generative-field background loader) — from before it was rebuilt on the p5 canvas. Its entry point (`boot()`) hadn't been called in a long time and nothing live reached any of it. A scope-aware reachability pass (comments and strings stripped, export aliases and the two `recompute`/`toggleRow` name-collisions resolved by scope) identified 67 provably-dead functions, which have been deleted along with their now-unused export entries. Nothing users touch changed: the engine regression still reads **ALL 12 PASS — positions locked to baseline**, and every screen (chart, read, today, learn, tarot, people, settings) renders with zero errors. Just a smaller, clearer single file.
+
 ## 3.37.0 — 2026-07-09
 - **The tarot deck now ships inside the app — the art works offline.** The full public-domain **Rider–Waite–Smith** deck (Pamela Colman Smith, 1909) is bundled as 78 small images in `tarot/` and precached by the service worker, so every card's art appears instantly and with no network at all. The beloved multi-deck flicker stays exactly as it was: when you're online the card *also* gathers other public-domain versions from Wikimedia Commons and cycles through them — but now there's always the real card sitting there first, even on a plane. (Images recompressed to ~3.6 MB total for the whole deck.)
 
