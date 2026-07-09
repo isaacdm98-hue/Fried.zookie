@@ -10753,6 +10753,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       p.textStyle(p.BOLD); glitchText('More', x, sY(ly), 34, SANS, INK, p.LEFT, p.TOP, gi); normal(); ly += 50;
       var ROWS9 = [
         ['Learn', 'THE SKY, FROM ZERO', 'learn'],
+        ['Tarot', 'SPREADS AND MEANINGS', 'tarot'],
         ['Settings', 'LOOK, SOUND, YOUR DATA', 'settings']
       ], mi9;
       for (mi9 = 0; mi9 < ROWS9.length; mi9++) {
@@ -11016,7 +11017,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       drawParaAct();
       if (!UI.jDrawn) hideJournalInput();
       if (!UI.notifChecked && APP.STATE.chart) { UI.notifChecked = true; setTimeout(maybeNotifyToday, 4000); setTimeout(updateBadge, 4500); }
-      if (!UI.deepLinked) { UI.deepLinked = true; try { var mq = /[?&]go=([a-z]+)/.exec(location.search); if (mq && APP.STATE.chart) { if (mq[1] === 'today') openToday(); else if (({ chart: 1, read: 1, learn: 1, people: 1, settings: 1 })[mq[1]]) UI.screen = mq[1]; } } catch (eD) {} }
+      if (!UI.deepLinked) { UI.deepLinked = true; try { var mq = /[?&]go=([a-z]+)/.exec(location.search); if (mq && APP.STATE.chart) { if (mq[1] === 'today') openToday(); else if (({ chart: 1, read: 1, learn: 1, tarot: 1, people: 1, settings: 1 })[mq[1]]) UI.screen = mq[1]; } } catch (eD) {} }
       // a small, brief celestial wink on screen entry (kept subtle so it doesn't over-stimulate)
       if (!reduced() && s !== 'onboard') { var te = (nowT() - UI.fxT) / 520; if (te >= 0 && te < 1) { var al = (1 - te) * (1 - te); celestialEmblem(W / 2, topY() + viewH() * 0.26, Math.min(W, H) * 0.07 * (0.8 + 0.2 * eCubic(te)), al * 0.4); } }
       // first run: once a chart exists, gently guide the newcomer

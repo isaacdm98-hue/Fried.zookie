@@ -1,10 +1,10 @@
 # Aqau Pluto
 
-A single-file, offline-first astrology PWA. Computed natal charts
+A single-file, offline-first astrology + tarot PWA. Computed natal charts
 (planets, houses, aspects, elemental balance), deterministic element-first
-readings, and an educational **Learn** screen — all on-device, no server,
-no API keys. Once installed it makes **zero network requests**: the entire
-app, chart and reading are computed on your phone.
+readings, an educational **Learn** screen, and a tarot reference — all
+on-device, no server, no API keys. Your birth data never leaves your phone;
+the whole chart and reading are computed locally.
 
 ### In the Read screen
 
@@ -49,6 +49,12 @@ app, chart and reading are computed on your phone.
   toggle), optional **minor aspects** (quincunx / sesquiquadrate / semisquare /
   semisextile), and **Chiron + the four major asteroids** folded into the aspect
   grid. Positions are arcminute-aligned with Astro.com.
+
+### In the Tarot screen
+
+- **Card-art flicker** — pick a card and it gathers every version of that card
+  from the open Wikimedia Commons archive and flickers through them as a
+  slideshow drawn on the canvas. Stop the flicker to study one.
 
 ## This release — thirty upgrades, five movements
 
