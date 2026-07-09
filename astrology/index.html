@@ -10766,6 +10766,11 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         (function (scr9) { pushHit(x, ry9, w, rh9, function () { UI.screen = scr9; UI.fxT = nowT(); }); })(ROWS9[mi9][2]);
         ly += rh9 + 14;
       }
+      // the wedge — said plainly, once. Free, private, and it shows its working. The thing the others can't say.
+      ly += 8; hairline(x, ly, x + w, 40); ly += 22;
+      eyebrow('Why this one', x, ly, ACC); ly += 24;
+      ly += paragraph('Free, forever — no subscription, no premium wall. Nothing you enter ever leaves your phone; the whole chart is computed on the device, offline. And every line shows its working: the real transit, the exact degree, the source. Not vibes behind a paywall — the actual astronomy, yours to keep.', x, ly, w, 15, INK, SERIF, 24) + 16;
+      flatBtn('◐  Turn on a daily nudge', x, ly, w, 44, function () { UI.screen = 'settings'; UI.fxT = nowT(); if (APP.STATE.settings && !APP.STATE.settings.notify) { UI.settingsFlash = 'notify'; } }, false); ly += 56;
       UI.contentH.more = ly + 20;
     }
     function drawNav() {

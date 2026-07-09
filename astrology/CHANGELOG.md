@@ -1,5 +1,8 @@
 # Changelog
 
+## 3.35.0 — 2026-07-08
+- **The alignment audit: the app now says why it exists.** Measured against Co-Star, CHANI and The Pattern, the reading, timing, people and calm UX already match or beat them — the gap was that the one thing they can't say was going unsaid. So the More screen now states it plainly under "Why this one": free forever with no premium wall, everything computed on your device so nothing ever leaves your phone, and every line shows its working — the real transit, the exact degree, the source — not vibes behind a paywall. And the daily nudge (the notification the big three lead with) is no longer buried: a "Turn on a daily nudge" button surfaces it right there.
+
 ## 3.34.0 — 2026-07-08
 - **The Four Royal Stars of Persia, and the nakshatra pada.** The Ancient Sky gains a fourth civilisation and sharper Vedic detail. Persia: three thousand years ago four bright stars — Aldebaran, Regulus, Antares, Fomalhaut — marked the solstices and equinoxes and were set as the "Watchers" of the four corners of heaven; if one falls on a planet or angle of yours, the reading names it ("your Sun falls on Regulus, the Watcher of the North"). And the Vedic Moon-mansion now gives its pada — which of the nakshatra's four quarters your Moon occupies — the finer grain a Jyotishi actually reads. Egypt, Babylon, Persia and India, all on the one chart.
 
