@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.42.0 — 2026-07-10
+- **THE WEAVE — the start of the app's own language engine, and a glanceable Today.** Two things, one idea: the day should read in three seconds *and* be provable in one tap. The Today sheet now opens with **At a glance** — one **DO**, one **EASY ON**, one **WATCH** — each line cut from the strongest real transit of the day (tailwind, grind, and the most time-boxed thing: eclipse > void Moon > personal retrograde > Moon contact > next exact pass). Tap any line and it shows its working: a paragraph built by **the weave**, a deterministic language loom (no AI) that assembles each sentence from banks × math — the mechanism of the transiting planet, your natal planet **at its exact arcminute**, its sign and house, whether it runs your whole chart, one of *your own* behavioural tells quoted back to you, the orb read as timing (closing/separating, peak/echo), and one concrete piece of advice — every choice seeded by your chart's fingerprint down to the arcminute plus the calendar day. Same chart, same day: the same words, always. A twin born four minutes later: a different degree printed in the line and a different sentence around it.
+
+
 ## 3.41.0 — 2026-07-10
 - **A proper maskable app icon.** The install icon was reusing the full-bleed artwork for Android's *maskable* slot, so its outer chart-ring sat right at the edge and got clipped when the OS masks the icon to a circle or squircle. Added a dedicated `icon-maskable-512.png` with the moon-and-ring artwork inset into the maskable safe zone (inner ~78%) on the app's own background, so it reads cleanly under every icon shape. Precached with the shell.
 

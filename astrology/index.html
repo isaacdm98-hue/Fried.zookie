@@ -1560,6 +1560,97 @@ var APP = (function () {
   function aspVerb(asp) {
     return ({ conjunction: 'sitting right on', opposition: 'opposite', trine: 'in easy flow with', square: 'squaring', sextile: 'making an opening to' })[asp.key] || 'aspecting';
   }
+  // ===== THE WEAVE: a deterministic language loom for transits. No AI — banks × math.
+  // Every clause is chosen by a seed cut from the chart's exact positions (to the
+  // arcminute), the calendar day and the contact itself, then grounded in THIS chart:
+  // the natal degree is printed, the natal house is named, the person's own behavioural
+  // tell is quoted, the orb and direction are read as timing. Two charts born minutes
+  // apart carry different arcminutes, so they never weave the same sentence. =====
+  function weaveFam(q) { return (q === 'flow' || q === 'opportunity') ? 'lift' : (q === 'fusion') ? 'fuse' : 'press'; }
+  var WV_MECH = {
+    sun: { lift: ['lending its daylight', 'putting a warm spotlight', 'throwing steady light', 'walking its noon light'], press: ['glaring hard', 'over-lighting everything', 'burning a little proud'], fuse: ['standing directly', 'planting its flag', 'setting its whole weight'] },
+    moon: { lift: ['washing softly', 'leaning kindly', 'resting a tide'], press: ['tugging moodily', 'dragging its tide', 'pulling sideways'], fuse: ['pooling all its feeling', 'settling bodily', 'laying its whole tide'] },
+    mercury: { lift: ['running quick messages', 'opening clean lines', 'carrying easy words'], press: ['talking over', 'crossing wires', 'rushing the wording'], fuse: ['thinking out loud', 'writing directly', 'putting words right'] },
+    venus: { lift: ['smoothing the road', 'warming the room', 'sweetening the terms'], press: ['overspending its charm', 'flattering past the point', 'softening what needs edges'], fuse: ['setting its full charm', 'laying its warmth', 'pressing its liking'] },
+    mars: { lift: ['handing clean fuel', 'lending a straight push', 'sharpening the edge usefully'], press: ['grinding its heat', 'forcing the pace', 'picking a fight'], fuse: ['driving its spear', 'putting raw heat', 'landing its charge'] },
+    jupiter: { lift: ['opening a wide door', 'stretching the ceiling', 'backing the bigger ask'], press: ['promising too much', 'inflating the stakes', 'overreaching grandly'], fuse: ['setting its whole abundance', 'planting its luck', 'growing everything it touches'] },
+    saturn: { lift: ['laying dependable rails', 'quietly load-testing what holds', 'rewarding the patient version'], press: ['leaning its whole weight', 'auditing coldly', 'narrowing the gate'], fuse: ['setting its stone', 'holding a long exam', 'pressing its seal'] },
+    uranus: { lift: ['cracking a window open', 'jolting something loose usefully', 'offering the odd exit'], press: ['rattling the fixtures', 'yanking the rug', 'sparking static'], fuse: ['plugging live current', 'switching the polarity', 'earthing a lightning line'] },
+    neptune: { lift: ['softening the light beautifully', 'lending the good fog', 'opening the back door to dreams'], press: ['blurring the figures', 'thinning the boundaries', 'selling a mirage'], fuse: ['dissolving the outline', 'flooding the ground floor', 'laying its tide of longing'] },
+    pluto: { lift: ['handing quiet leverage', 'composting what is done', 'funding a deep repair'], press: ['excavating without permission', 'squeezing the root', 'testing where the power sits'], fuse: ['drilling straight down', 'setting its whole gravity', 'turning the ground over'] }
+  };
+  var WV_ADV = {
+    lift: {
+      sun: ['Use the visibility on purpose', 'Show the work while the light is good', 'Let yourself be seen doing it'],
+      moon: ['Take the softer option; it is load-bearing today', 'Feed the body, the mood follows', 'Let home carry more of the weight'],
+      mercury: ['Say it today; the wording will not get better', 'Book the conversation while the line is clean', 'Write the thing down before dark'],
+      venus: ['Ask warmly; warmth is the leverage', 'Make the offer prettier, not louder', 'Price it kindly and it sells'],
+      mars: ['Start before you feel ready; the push is clean', 'Spend the heat on the hardest task', 'One decisive act beats three plans'],
+      jupiter: ['Ask for the bigger version', 'Take the meeting; the ceiling is up', 'Say yes, then grow into it'],
+      saturn: ['Commit it to writing; today it holds', 'Do the boring step properly once', 'Build the version that survives you'],
+      uranus: ['Take the odd route on purpose', 'Change one fixed habit and watch', 'Let the surprise reorganise the plan'],
+      neptune: ['Make the soft thing: art, rest, care', 'Follow the hunch one gentle step', 'Give an hour to the dream on purpose'],
+      pluto: ['Go one honest layer deeper', 'Retire something you have outgrown', 'Take the quiet power, not the loud kind']
+    },
+    press: {
+      sun: ['Skip the credit-grab; keep the work', 'Do not argue with the spotlight', 'Let the ego request pass unanswered'],
+      moon: ['Do not sign anything mid-mood', 'Eat, then decide', 'Let the tide finish before you read it'],
+      mercury: ['Draft the reply; send it tomorrow', 'Repeat the plan back before agreeing', 'Slow the wording down by half'],
+      venus: ['Want it tomorrow too? Then buy it', 'Do not soothe with spending', 'Flattery is data, not instruction'],
+      mars: ['Count to ten, then to ten again', 'Do not force the door today', 'Burn the heat off physically first'],
+      jupiter: ['Say yes to half', 'Shrink the promise to what Tuesday-you keeps', 'Check the optimism against one number'],
+      saturn: ['Schedule around the wall, not through it', 'Let the stuck thing stay stuck today', 'Meet the deadline; skip the verdict on yourself'],
+      uranus: ['Sleep on the exit once', 'Make it tomorrow’s decision', 'Unplug the provocation; it needs your current'],
+      neptune: ['Verify before you rely', 'Sign nothing blurry', 'Name the fantasy to break its billing cycle'],
+      pluto: ['You do not need to win today', 'Leave the buried thing buried one more day', 'Refuse the power struggle; keep the power']
+    },
+    fuse: {
+      sun: ['Aim the confidence at one target', 'Make it a debut, not a parade', 'Choose what the light lands on'],
+      moon: ['Let yourself actually feel it through', 'Guard the evening for the inner weather', 'Say the need out loud once'],
+      mercury: ['Write the definitive version', 'Have the conversation that names it', 'Put the idea where others can read it'],
+      venus: ['Declare the liking plainly', 'Set the relationship term you want', 'Make the beautiful thing today'],
+      mars: ['Pick the one fight worth having', 'Launch it; the charge is real', 'Cut the thing that needed cutting'],
+      jupiter: ['Size the leap and take it', 'Publish the ambition', 'Let it grow in public'],
+      saturn: ['Sign the long-term thing deliberately', 'Accept the responsibility by name', 'Set the boundary that will outlast the mood'],
+      uranus: ['Change it on purpose before it changes itself', 'Prototype the strange idea today', 'Free the trapped variable'],
+      neptune: ['Give the vision one concrete anchor', 'Make the art; skip the analysis', 'Let the longing point, not drive'],
+      pluto: ['Transform it deliberately or it transforms you', 'Close the old account completely', 'Take the depth seriously; it is the exit']
+    }
+  };
+  function weaveTiming(ev, seed) {
+    var o = ev.orb, ap = ev.applying === true, sp = ev.applying === false;
+    if (o <= 0.4 && ap) return vpick(['exact to ' + o.toFixed(1) + '° and still closing — these are the peak hours of it', 'within ' + o.toFixed(1) + '° and tightening — today is the crest'], seed);
+    if (o <= 0.4 && sp) return vpick(['just past exact — the charge is spent and the meaning is being filed', o.toFixed(1) + '° past the peak — what it meant is already in the room'], seed);
+    if (o <= 1.2 && ap) return vpick([o.toFixed(1) + '° out and closing — it builds through the day', 'closing from ' + o.toFixed(1) + '° — the volume rises toward evening'], seed);
+    if (o <= 1.2 && sp) return vpick([o.toFixed(1) + '° past and separating — easing off from here', 'separating at ' + o.toFixed(1) + '° — the grip loosens as the day runs'], seed);
+    if (ap) return vpick(['wide at ' + o.toFixed(1) + '° but gathering — background weather, not yet the headline', o.toFixed(1) + '° out — a front moving in, not a storm overhead'], seed);
+    return vpick(['wide and leaving — an echo more than an event', o.toFixed(1) + '° behind — the afterimage of something already said'], seed);
+  }
+  function weaveTransit(ev, c) {
+    var pl = (ev.np === 'asc') ? c.ascBody : (ev.np === 'mc') ? c.mcBody : c.planets[ev.np];
+    if (!pl) return null;
+    var fam = weaveFam(ev.asp.quality);
+    // the seed: chart fingerprint + the contacted planet's exact arcminute + day + contact.
+    // The arcminute is the twin-splitter: minutes of birth move it.
+    var dt = new Date(), day = '' + dt.getFullYear() + pad(dt.getMonth() + 1) + pad(dt.getDate());
+    var seed = chartFP(c) + '|' + Math.round(pl.lon * 60) + '|' + day + '|' + ev.tp + ev.asp.key + ev.np;
+    var mech = vpick((WV_MECH[ev.tp] || WV_MECH.sun)[fam], seed + 'm');
+    var sName = DATA.SIGNS[pl.sign] ? DATA.SIGNS[pl.sign].name : pl.signName;
+    var role = '';
+    if (c.ascBody && DATA.SIGNS[c.ascBody.sign]) { var rk9 = RULERKEY[DATA.SIGNS[c.ascBody.sign].ruler]; if (rk9 === ev.np) role = ' — the planet that runs your whole chart'; }
+    var line = 'Transiting ' + nameFor(ev.tp) + ' is ' + mech + ', ' + aspVerb(ev.asp) + ' your natal ' + nameFor(ev.np) +
+      ' at ' + degStr(pl.lon % 30) + ' ' + sName + (pl.house ? ' in your ' + ordinal(pl.house) + ' house' : '') + role + '.';
+    // quote the person's own behavioural tell — but only where it reads as grammar:
+    // clauses that start "you …" or "people …" and carry no colon slot in cleanly.
+    var tells = tellsFor(c, ev.np), fits = [], tf9;
+    for (tf9 = 0; tf9 < tells.length; tf9++) if (/^(you|people)\b/i.test(tells[tf9]) && tells[tf9].indexOf(':') < 0 && tells[tf9].indexOf(';') < 0) fits.push(tells[tf9]);
+    var tell = fits.length ? vpick(fits, seed + 't') : '';
+    if (tell && (vpick([0, 1, 1, 1], seed + 'ti'))) line += ' The same ' + nameFor(ev.np) + ' is behind the fact that ' + tell.charAt(0).toLowerCase() + tell.slice(1).replace(/\.$/, '') + '.';
+    line += ' It is ' + weaveTiming(ev, seed + 'w') + '.';
+    line += ' ' + vpick((WV_ADV[fam] || WV_ADV.lift)[ev.tp] || WV_ADV[fam].sun, seed + 'a') + '.';
+    var receipt = ('transiting ' + nameFor(ev.tp) + ' ' + ev.asp.key + ' natal ' + nameFor(ev.np) + ' · ' + degStr(pl.lon % 30) + ' ' + sName + (pl.house ? ' · ' + ordinal(pl.house) + ' house' : '') + ' · orb ' + ev.orb.toFixed(1) + '°' + (ev.applying === true ? ' closing' : (ev.applying === false ? ' separating' : ''))).toUpperCase();
+    return { line: line, receipt: receipt };
+  }
   // seeded picker — same input always gives the same variant, but DIFFERENT placements
   // get DIFFERENT phrasings, so the daily reading never repeats the same line twice.
   function vpick(arr, seed) { var h = 0, i; seed = '' + (seed || ''); for (i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0; return arr[h % arr.length]; }
@@ -3809,7 +3900,7 @@ var APP = (function () {
     solarReturnChart: solarReturnChart, upcomingEclipses: upcomingEclipses, bestDaysFor: bestDaysFor, electIntents: electIntents, oddPredictions: oddPredictions, composeProfectionYear: composeProfectionYear, signHouseWeave: signHouseWeave,
     progressedTimeline: progressedTimeline, retroSeasons: retroSeasons,
     exportBook: exportBook, exportBackup: exportBackup, importBackup: importBackup, composeDailyEssay: composeDailyEssay, chartFP: chartFP, weaveNote: weaveNote, termOf: termOf, anA: anA, composeColleague: composeColleague, exportColleague: exportColleague,
-    microFor: microFor, tellsFor: tellsFor, receptionOf: receptionOf, chartSignature: chartSignature, lifeQuirks: lifeQuirks, interests: interests, emergingPull: emergingPull, spookyReads: spookyReads, combinationRead: combinationRead, sunMoonCharacter: sunMoonCharacter, guideCards: guideCards, ancientSky: ancientSky, addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, returnsAlmanac: returnsAlmanac, progressedLunation: progressedLunation, planetaryHours: planetaryHours, moonVoidWindow: moonVoidWindow, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
+    microFor: microFor, tellsFor: tellsFor, weaveTransit: weaveTransit, receptionOf: receptionOf, chartSignature: chartSignature, lifeQuirks: lifeQuirks, interests: interests, emergingPull: emergingPull, spookyReads: spookyReads, combinationRead: combinationRead, sunMoonCharacter: sunMoonCharacter, guideCards: guideCards, ancientSky: ancientSky, addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, returnsAlmanac: returnsAlmanac, progressedLunation: progressedLunation, planetaryHours: planetaryHours, moonVoidWindow: moonVoidWindow, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
     saveCurrentChart: saveCurrentChart, deleteSavedChart: deleteSavedChart, activateSavedChart: activateSavedChart, activeChartKey: activeChartKey, chartKey: chartKey, famousMatches: famousMatches, lifeTransits: lifeTransits, upcomingTransits: upcomingTransits, transitMotion: transitMotion, compositeChart: compositeChart,
     nameFor: nameFor, glyphFor: glyphFor, pad: pad,
     domElement: domElement, lowElement: lowElement, domMod: domMod, tzOffsetHours: tzOffsetHours
@@ -5525,6 +5616,93 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (q === 'flow' || q === 'opportunity') return { kind: 'open', col: ELHUE.air, tag: 'OPEN', line: 'An easy opening around ' + dom + ': a good day to lean in and act.' };
       if (q === 'fusion') return { kind: 'charged', col: ACC, tag: 'CHARGED', line: 'A charged spotlight on ' + dom + ': big energy, so aim it on purpose.' };
       return { kind: 'gentle', col: ELHUE.fire, tag: 'GENTLE', line: 'Friction around ' + dom + ': go gentle, and don’t force it.' };
+    }
+    // ---- today at a glance: the three-second layer over the full Today reading.
+    // One do, one easy-on, one watch — each cut from the strongest real transit,
+    // each carrying its working (the exact contact and orb) for a tap to reveal. ----
+    function gpick(arr, seed) { var h = 0, i; seed = '' + (seed || ''); for (i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0; return arr[h % arr.length]; }
+    function gcap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+    var GLANCE_DO = {
+      sun: ['step forward: being seen goes well today', 'take the visible seat; the light suits you today'],
+      mercury: ['have the conversation: words land clean today', 'send the message you keep redrafting'],
+      venus: ['ask warmly for what you want: the charm is real today', 'say the warm thing out loud; it lands'],
+      mars: ['start the thing you keep circling', 'do the hardest task first: your push runs clean today'],
+      jupiter: ['ask for more: the answer leans yes today', 'take the bigger version of the plan'],
+      saturn: ['commit to the boring, durable version: today it holds', 'do the admin; today it actually sticks'],
+      uranus: ['try the odd route: the detour pays today', 'break one routine on purpose'],
+      neptune: ['make the soft thing: art, rest, care', 'follow the hunch, gently; it knows something'],
+      pluto: ['go one layer deeper: you can handle the real answer', 'clear out one thing you have outgrown']
+    };
+    var GLANCE_EASE = {
+      sun: ['the ego flex: you don’t need the credit today', 'making it about you; let the work speak today'],
+      mercury: ['the hot reply: draft it, don’t send it', 'the snap decision; sleep on the wording'],
+      venus: ['the comfort spend: want it tomorrow too? then buy it', 'over-promising affection you’ll resent by Friday'],
+      mars: ['the short fuse: count to ten before you hit send', 'forcing the door; today it pushes back'],
+      jupiter: ['the overpromise: say yes to half', 'betting big on a mood; size it down'],
+      saturn: ['arguing with the wall: schedule around it instead', 'grinding harder at the stuck thing; let it be stuck today'],
+      uranus: ['the sudden exit: sleep on it once', 'the impulse swerve; make it tomorrow’s decision'],
+      neptune: ['the fog: double-check details, sign nothing blurry', 'taking a vague promise at face value'],
+      pluto: ['the power struggle: you don’t need to win today', 'digging where you’re not ready to find something']
+    };
+    function glanceWhy(ev) {
+      return APP.nameFor(ev.tp).toUpperCase() + ' ' + ev.asp.key.toUpperCase() + ' YOUR NATAL ' + APP.nameFor(ev.np).toUpperCase() +
+        ' · ORB ' + ev.orb.toFixed(1) + '°' + (ev.applying === true ? ', CLOSING' : (ev.applying === false ? ', SEPARATING' : ''));
+    }
+    function glanceToday(d) {
+      var c = APP.STATE.chart; if (!c || !d || !d.tr) return null;
+      var seed = ymd(new Date()), daily = (d.tr.daily || []).slice(), i, q, ev;
+      daily.sort(function (a, b) { return (a.orb - (a.applying ? 0.5 : 0)) - (b.orb - (b.applying ? 0.5 : 0)); });
+      var open = null, charged = null, hard = null;
+      for (i = 0; i < daily.length; i++) {
+        q = daily[i].asp.quality;
+        if (!open && (q === 'flow' || q === 'opportunity')) open = daily[i];
+        if (!charged && q === 'fusion') charged = daily[i];
+        if (!hard && (q === 'friction' || q === 'tension')) hard = daily[i];
+      }
+      // DO — the strongest tailwind; a charged contact if that's all there is; else honest quiet.
+      // Each carries THE WEAVE: the loom-built, chart-exact paragraph revealed on tap.
+      var wv = function (ev) { try { return (APP.weaveTransit && APP.weaveTransit(ev, c)) || null; } catch (eWv) { return null; } };
+      var doL, doW;
+      if (open) { doW = wv(open); doL = { txt: gcap(gpick(GLANCE_DO[open.tp] || GLANCE_DO.sun, seed + open.tp + open.np)) + '. The tailwind sits on ' + (NATAL_DOMAIN[open.np] || 'you') + '.', full: doW && doW.line, why: doW ? doW.receipt : glanceWhy(open) }; }
+      else if (charged) { doW = wv(charged); doL = { txt: 'Aim the spotlight on purpose: big energy lands on ' + (NATAL_DOMAIN[charged.np] || 'you') + ' today. Spend it, don’t leak it.', full: doW && doW.line, why: doW ? doW.receipt : glanceWhy(charged) }; }
+      else doL = { txt: 'No tailwind today: treat it as a maintenance day. Sleep, water, one small win.', why: 'NO SUPPORTIVE TRANSIT WITHIN ORB TODAY' };
+      // EASY ON — the strongest grind; or honest ease
+      var easeL, eaW;
+      if (hard) { eaW = wv(hard); easeL = { txt: gcap(gpick(GLANCE_EASE[hard.tp] || GLANCE_EASE.saturn, seed + hard.tp + hard.np)) + '. The friction runs through ' + (NATAL_DOMAIN[hard.np] || 'you') + '.', full: eaW && eaW.line, why: eaW ? eaW.receipt : glanceWhy(hard) }; }
+      else easeL = { txt: 'Nothing grinding against you today. Spend the ease on something that matters.', why: 'NO HARD TRANSIT WITHIN ORB TODAY' };
+      // WATCH — the most time-boxed real thing: eclipse > void Moon > personal retro > Moon contact > next exact pass
+      var watchL = null, hm = function (dd) { return pad2(dd.getHours()) + ':' + pad2(dd.getMinutes()); };
+      try {
+        if (d.f && d.f.eclipses && d.f.eclipses.length) {
+          var EC = d.f.eclipses[0], dd = Math.round((EC.date - new Date()) / 86400000);
+          if (dd >= -2 && dd <= 15) watchL = { txt: (EC.type === 'solar' ? 'A solar eclipse' : 'A lunar eclipse') + (dd <= 0 ? ' is exact now' : ' lands in ' + dd + (dd === 1 ? ' day' : ' days')) + (EC.house ? ', in your ' + ordinal(EC.house) + ' house' : '') + ': thresholds, not routine.', why: (EC.type + ' eclipse · ' + EC.deg.toFixed(0) + '° ' + DATA.SIGNS[EC.sign].name + (EC.house ? ' · your ' + ordinal(EC.house) + ' house' : '')).toUpperCase() };
+        }
+        if (!watchL) {
+          if (!UI.vocW || nowT() - (UI.vocWT || 0) > 900000) { UI.vocW = APP.moonVoidWindow(); UI.vocWT = nowT(); }
+          var VW = UI.vocW, today9 = new Date();
+          if (VW && VW.voidNow) watchL = { txt: 'The Moon is void until ' + hm(VW.until) + ': finish and tidy, don’t launch before then.', why: ('MOON VOID NOW · ENTERS ' + DATA.SIGNS[VW.nextSign].name + ' AT ' + hm(VW.until)).toUpperCase() };
+          else if (VW && VW.from && VW.from.getDate() === today9.getDate() && VW.from.getMonth() === today9.getMonth()) watchL = { txt: 'The Moon runs void ' + hm(VW.from) + '–' + hm(VW.until) + ' today: land anything that matters outside that window.', why: ('VOID ' + hm(VW.from) + '–' + hm(VW.until) + ' · THEN INTO ' + DATA.SIGNS[VW.nextSign].name).toUpperCase() };
+        }
+      } catch (eGW) {}
+      if (!watchL && d.f && d.f.sky && d.f.sky.retros) {
+        var RR = d.f.sky.retros, RLINE = {
+          mercury: { txt: 'Mercury is retrograde: re-read before you resend, back up before you update, confirm the time.', why: 'MERCURY RETROGRADE · IT RULES TALKS, PLANS AND DECISIONS' },
+          venus: { txt: 'Venus is retrograde: old flames and old wants resurface. Browse; don’t buy the big thing.', why: 'VENUS RETROGRADE · IT RULES LOVE, MONEY AND PLEASURE' },
+          mars: { txt: 'Mars is retrograde: effort runs hot then stalls. Redo beats push-through.', why: 'MARS RETROGRADE · IT RULES DRIVE AND ASSERTION' }
+        };
+        for (i = 0; i < RR.length; i++) if (RLINE[RR[i]]) { watchL = RLINE[RR[i]]; break; }
+      }
+      if (!watchL && d.tr.timed && d.tr.timed.length) {
+        var tm = d.tr.timed.slice().sort(function (a, b) { return a.orb - b.orb; })[0], tmW = wv(tm);
+        watchL = { txt: 'The Moon crosses your ' + APP.nameFor(tm.np) + (tm.exactDate ? ' around ' + hm(tm.exactDate) : ' in the next hours') + ': a brief spike in ' + (NATAL_DOMAIN[tm.np] || 'mood') + '. Let it pass before you decide anything.', full: tmW && tmW.line, why: (tmW ? tmW.receipt : glanceWhy(tm)) + (tm.exactDate ? ' · EXACT ~' + hm(tm.exactDate) : '') };
+      }
+      if (!watchL) {
+        ev = null;
+        for (i = 0; i < daily.length; i++) if (daily[i].applying && daily[i].exactDate) { if (!ev || daily[i].exactDate < ev.exactDate) ev = daily[i]; }
+        if (ev) { var evW = wv(ev); watchL = { txt: APP.nameFor(ev.tp) + ' ' + ev.asp.key + ' your ' + APP.nameFor(ev.np) + ' turns exact ' + fmtShort(ev.exactDate) + ': it is building now.', full: evW && evW.line, why: (evW ? evW.receipt : glanceWhy(ev)) + ' · EXACT ' + fmtShort(ev.exactDate).toUpperCase() }; }
+        else watchL = { txt: 'Nothing sharp on watch. A plain sky is permission to just live the day.', why: 'NO EXACT PASS, VOID WINDOW, ECLIPSE OR PERSONAL RETROGRADE IN RANGE' };
+      }
+      return { rows: [{ tag: 'DO', col: ELHUE.air, txt: doL.txt, full: doL.full, why: doL.why }, { tag: 'EASY ON', col: ACC, txt: easeL.txt, full: easeL.full, why: easeL.why }, { tag: 'WATCH', col: ELHUE.fire, txt: watchL.txt, full: watchL.full, why: watchL.why }] };
     }
     // ---- life-in-chapters timeline: the slow transits & returns across a lifetime ----
     // ===== THE ACTOR: a gesture-drawing come to life. Head ball with construction cross,
@@ -9630,6 +9808,36 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         (function (kk3) { pushHit(wx - 16, wyc - 13, 32, 38, function () { UI.today = false; UI.screen = 'read'; UI.calView = true; UI.calDay = kk3; UI.calEvents = null; UI.jMap = null; UI.scroll.read = 0; }); })(wkey);
       }
       yy += 46; rule();
+      // at a glance — the three-second layer: do / easy on / watch, each with its working on tap
+      if (!UI.glance || UI.glanceT !== UI.todayCacheT) { try { UI.glance = glanceToday(d); } catch (eGl) { UI.glance = null; } UI.glanceT = UI.todayCacheT; UI.glanceOpen = {}; }
+      if (UI.glance) {
+        head('At a glance');
+        var GLR = UI.glance.rows, gIndent = 66, gi9;
+        for (gi9 = 0; gi9 < GLR.length; gi9++) {
+          var G9 = GLR[gi9], gy0 = ty();
+          setFont(MONO, 8.5, G9.col, p.LEFT, p.TOP, 255); bold(); p.text(G9.tag, x + pad, gy0 + 3); normal();
+          var gls = wrapLines2(G9.txt, w - pad * 2 - gIndent, SERIF, 14.5), gj9;
+          setFont(SERIF, 14.5, INK, p.LEFT, p.TOP, 245);
+          for (gj9 = 0; gj9 < gls.length; gj9++) p.text(gls[gj9], x + pad + gIndent, gy0 + gj9 * 20);
+          yy += gls.length * 20 + 3;
+          if (UI.glanceOpen && UI.glanceOpen[gi9]) {
+            if (G9.full) {
+              var gfs = wrapLines2(G9.full, w - pad * 2 - gIndent, SERIF, 13), gf9;
+              setFont(SERIF, 13, INK, p.LEFT, p.TOP, 225);
+              for (gf9 = 0; gf9 < gfs.length; gf9++) p.text(gfs[gf9], x + pad + gIndent, ty() + gf9 * 18);
+              yy += gfs.length * 18 + 6;
+            }
+            var gws = wrapLines2(G9.why, w - pad * 2 - gIndent, MONO, 9), gk9;
+            setFont(MONO, 9, G9.col, p.LEFT, p.TOP, 215);
+            for (gk9 = 0; gk9 < gws.length; gk9++) p.text(gws[gk9], x + pad + gIndent, ty() + gk9 * 13);
+            yy += gws.length * 13 + 5;
+          }
+          (function (idx9, top9) { pushHit(x + pad, top9 - 4, w - pad * 2, ty() - top9 + 6, function () { UI.glanceOpen = UI.glanceOpen || {}; UI.glanceOpen[idx9] = !UI.glanceOpen[idx9]; buzz(6); }); })(gi9, gy0);
+          yy += 9;
+        }
+        setFont(MONO, 8, INK, p.LEFT, p.TOP, 105); p.text('TAP A LINE FOR THE WORKING', x + pad + gIndent, ty()); yy += 16;
+        rule();
+      }
       // the day, written out — the composed reading leads the sheet
       if (!UI.dailyEssay || nowT() - (UI.dailyEssayT || 0) > 600000) { try { UI.dailyEssay = APP.composeDailyEssay(APP.STATE.chart); } catch (eDE) { UI.dailyEssay = ''; } UI.dailyEssayT = nowT(); }
       if (UI.dailyEssay) { head('Today, written out'); body(UI.dailyEssay, 14.5); rule(); }
