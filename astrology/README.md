@@ -163,8 +163,20 @@ to the home screen. On iOS Safari: **Share → Add to Home Screen**.
   p5 canvas UI, all inlined)
 - `sw.js` — service worker for offline launch
 
-## Not yet verified
+## Verified headlessly
 
-The canvas rendering and touch interaction can't be tested headlessly. Please
-confirm on device: chart accuracy, the Learn screen, the bold block-colour
-wipe between sections, tap-to-magnify on the chart wheel, and offline install.
+An automated headless-Chromium pass (see `test.html` plus the harness in
+development) confirms: the ephemeris matches its pinned baseline (**ALL 12
+positions locked**); every screen (chart, read, today, learn, tarot, people,
+settings) renders with **no runtime errors**; a cold load issues **zero
+external network requests** (fonts inlined); the app **installs and launches
+fully offline** (service worker precaches the shell, the tarot deck and the
+fonts — 89 entries — and a reload with the network cut still boots, computes a
+chart and shows the bundled card art); and charts stay correct across **DST,
+leap days, sidereal mode, extreme dates (1300–2100) and polar latitudes**.
+
+## Still worth a device check
+
+Touch *feel* and pixel-level aesthetics can't be judged headlessly. On a real
+phone, confirm: tap-to-magnify on the chart wheel, the block-colour wipe
+between sections, haptics, and the install-to-home-screen flow on iOS Safari.
