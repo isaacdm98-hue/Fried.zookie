@@ -404,6 +404,20 @@ var EPH = (function () {
     }
     return rev(atan2d(sind(ra), cosd(ra) * cosd(ecl)));
   }
+  // Placidus (and Koch) are undefined above the polar circle: the semi-arc has no
+  // solution and the cusps collapse onto the angles. Detect that and we fall back.
+  function cuspsMonotonic(c) {
+    var total = 0;
+    for (var i = 1; i <= 12; i++) {
+      var span = rev(c[i === 12 ? 1 : i + 1] - c[i]);
+      if (span < 1 || span > 179) return false; // a house collapsed or ballooned past a semicircle
+      total += span;
+    }
+    return Math.abs(total - 360) < 1; // the 12 houses must wrap the zodiac exactly once, not several times
+  }
+  function placidusOk(c, lat) {
+    return Math.abs(lat) < 66 && cuspsMonotonic(c); // beyond the polar circle Placidus is undefined
+  }
   function houses(system, d, latDeg, lonEast) {
     var a = angles(d, latDeg, lonEast);
     var c = new Array(13);
@@ -426,6 +440,13 @@ var EPH = (function () {
       c[3] = placCusp(a.ramc, latDeg, a.ecl, 150);
       c[4] = rev(a.mc + 180); c[5] = rev(c[11] + 180); c[6] = rev(c[12] + 180);
       c[7] = rev(a.asc + 180); c[8] = rev(c[2] + 180); c[9] = rev(c[3] + 180);
+      // polar birth: Placidus degenerates. Fall back to Porphyry (real ASC/MC); at extreme
+      // latitudes even Porphyry can fold, so drop to Equal (depends only on the ASC — always valid).
+      if (!placidusOk(c, latDeg)) {
+        var pf = houses('porphyry', d, latDeg, lonEast), sys = 'porphyry';
+        if (!cuspsMonotonic(pf.cusps)) { pf = houses('equal', d, latDeg, lonEast); sys = 'equal'; }
+        pf.polar = sys; return pf;
+      }
     }
     return { cusps: c, asc: a.asc, mc: a.mc, ramc: a.ramc, ecl: a.ecl };
   }
@@ -654,7 +675,8 @@ var APP = (function () {
     return {
       d: d, planets: planets, points: points, extras: extras, asc: asc, mc: mc, ascBody: ascBody, mcBody: mcBody,
       cusps: cusps, aspects: aspects, elements: bal.el, modalities: bal.mo,
-      zodiac: settings.zodiac, ayan: ay, house: settings.house
+      zodiac: settings.zodiac, ayan: ay, house: settings.house,
+      houseFallback: (hz.polar && settings.house === 'placidus') ? hz.polar : null
     };
   }
   function mkPoint2(key, lon, cusps) { var pt = makeBody(key, lon); pt.house = (cusps && cusps[1] != null) ? EPH.houseOf(lon, cusps) : null; return pt; }
@@ -8489,6 +8511,10 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       ly += toggleRow('Zodiac', [['tropical', 'Tropical'], ['sidereal', 'Sidereal']], st.zodiac, ly, function (v) { st.zodiac = v; recompute(); });
       ly += toggleRow('House system', [['whole', 'Whole'], ['equal', 'Equal'], ['porphyry', 'Porphyry'], ['placidus', 'Placidus']], st.house, ly, function (v) { st.house = v; recompute(); });
       ly += paragraph('Whole: each sign is one house, the oldest way, steady even without an exact birth time. Placidus: the modern default, angles cut to your minute. Your planets never move between systems; only the room lines do.', x, ly, w, 12.5, INK, SERIF, 19, 180) + 12;
+      if (APP.STATE.chart && APP.STATE.chart.houseFallback) {
+        eyebrow('A note on your latitude', x, ly, ACC); ly += 22;
+        ly += paragraph('You were born far enough from the equator that Placidus houses are mathematically undefined — this far north or south its cusps collapse onto each other. So your chart quietly uses ' + (APP.STATE.chart.houseFallback === 'equal' ? 'equal' : 'Porphyry') + ' houses instead, which stay exact at any latitude. Your Ascendant and Midheaven are unchanged; only the in-between cusps differ.', x, ly, w, 12.5, INK, SERIF, 19, 180) + 12;
+      }
       if (APP.STATE.birth && !APP.STATE.birth.timeKnown) {
         eyebrow('No birth time? Set a rough one', x, ly, ACC); ly += 22;
         ly += paragraph('Without a time, the Ascendant, the houses and the time-lord systems stay dark. Even \u201Croughly morning\u201D restores most of them, the reading is then marked approximate.', x, ly, w, 13.5, INK, SERIF, 20, 190) + 10;

@@ -1,5 +1,8 @@
 # Changelog
 
+## 3.40.0 — 2026-07-10
+- **Polar births now get a correct chart.** Placidus (the default house system) is mathematically undefined above the polar circle — the semi-arc has no solution, so the house cusps silently collapse onto the angles. Anyone born in Tromsø, Reykjavík, Murmansk, Anchorage, Svalbard (or the far south) was getting a quietly broken wheel with houses stacked on top of each other. Now, when Placidus degenerates, the chart falls back to **Porphyry** (same real Ascendant and Midheaven, valid at any latitude); at truly extreme latitudes where even Porphyry folds, it drops to **Equal** houses. A note in Settings explains the switch. Verified across 78°N, 69°N and 82°S: every case now returns twelve clean houses that wrap the zodiac exactly once. Normal-latitude charts are byte-for-byte unchanged (engine regression still reads ALL 12 PASS).
+
 ## 3.39.0 — 2026-07-09
 - **The type is now bundled — the app makes zero network requests on startup.** The brand fonts (Fraunces and Space Grotesk) were being fetched from a CDN (jsdelivr) on every load, which meant a request left the device, the first paint waited on the network, and offline the app quietly fell back to system fonts and looked wrong. They are now inlined directly in the page as data URIs, so the real type renders on the very first frame, fully offline, with no request at all. The opt-in **OpenDyslexic** accessibility font is bundled locally too (and precached), so dyslexia-friendly mode also works offline. Verified in a headless browser: a cold load now issues **no external requests whatsoever**. All three fonts are SIL Open Font License (see `fonts/CREDITS.txt`).
 
