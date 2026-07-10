@@ -1,5 +1,8 @@
 # Changelog
 
+## 3.41.0 — 2026-07-10
+- **A proper maskable app icon.** The install icon was reusing the full-bleed artwork for Android's *maskable* slot, so its outer chart-ring sat right at the edge and got clipped when the OS masks the icon to a circle or squircle. Added a dedicated `icon-maskable-512.png` with the moon-and-ring artwork inset into the maskable safe zone (inner ~78%) on the app's own background, so it reads cleanly under every icon shape. Precached with the shell.
+
 ## 3.40.0 — 2026-07-10
 - **Polar births now get a correct chart.** Placidus (the default house system) is mathematically undefined above the polar circle — the semi-arc has no solution, so the house cusps silently collapse onto the angles. Anyone born in Tromsø, Reykjavík, Murmansk, Anchorage, Svalbard (or the far south) was getting a quietly broken wheel with houses stacked on top of each other. Now, when Placidus degenerates, the chart falls back to **Porphyry** (same real Ascendant and Midheaven, valid at any latitude); at truly extreme latitudes where even Porphyry folds, it drops to **Equal** houses. A note in Settings explains the switch. Verified across 78°N, 69°N and 82°S: every case now returns twelve clean houses that wrap the zodiac exactly once. Normal-latitude charts are byte-for-byte unchanged (engine regression still reads ALL 12 PASS).
 
