@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.44.0 — 2026-07-11
+- **YOUR WEEK — the week ahead, woven hit by hit.** The CHANI slot in the big-three lineup, done the Aqau way. Seasons now carries a flowing paragraph for the next seven days: every clause hangs on a real exact contact — "Tuesday, Venus perfects its square to your natal Mercury — rubbing against it, the friction that forces change" — found by a dedicated forward scan (the in-orb transit list can't see a fast planet that is still five degrees away today but exact on Friday; the week now gets its own per-body sweep, every hit bisected to the minute). The paragraph closes with the week's honest tilt (more doors than walls, more walls than doors, or even), and a tap reveals the receipts: day, contact, exact time. Quiet weeks are told straight — "the sky handing you the pen" — never padded. Runs in ~30 ms and stays word-stable for the whole ISO week.
+
+
 ## 3.43.0 — 2026-07-10
 - **YOUR CYCLES — the long transits as named chapters, The-Pattern-style but honest.** Seasons now opens with the chapters you are actually inside: every slow planet (Jupiter → Pluto) currently working a natal point gets a card with a **name** ("The Load-Bearing Test", "The Open Door", "The Excavation"…), its **date range**, a **progress bar** with today's marker and a tick at every exact pass (including the retrograde double-backs), and — on tap — the chapter woven by the loom: since-when, your natal planet at its exact arcminute, sign, house, your own tell, each exact date, until-when, and one piece of advice, plus the receipt. Cycle names and words are seeded **without** the calendar day, so a chapter keeps its identity for its whole run — only the marker moves. The scan itself is honest math: each slow planet's real path is sampled around now (single-body series, stepped to each planet's own speed), the ≤3° window found, and every exact hit refined by bisection to the day.
 
