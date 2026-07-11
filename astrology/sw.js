@@ -1,5 +1,5 @@
 /* Aqau Pluto service worker - ES5, offline-first single-file PWA */
-var CACHE = 'aqau-pluto-v81';
+var CACHE = 'aqau-pluto-v82';
 var CORE = ['./', 'index.html', 'corpus.js', 'lib-astronomy.js', 'lib-p5.js', 'manifest.webmanifest', 'icon-180.png', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png'];
 // the bundled public-domain Rider-Waite-Smith tarot deck (0.jpg .. 77.jpg), so the
 // card art is there offline. Best-effort: a miss here never breaks the core precache.

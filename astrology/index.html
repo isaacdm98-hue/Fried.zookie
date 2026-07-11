@@ -494,7 +494,7 @@ var EPH = (function () {
   }
 
   return {
-    SIGNS: SIGNS, rev: rev, dayNumber: dayNumber, positions: positions, declOf: declOf,
+    SIGNS: SIGNS, rev: rev, dayNumber: dayNumber, positions: positions, declOf: declOf, eclLon: eclLon,
     angles: angles, houses: houses, houseOf: houseOf, obliquity: obliquity, lstDeg: lstDeg
   };
 })();
@@ -2597,6 +2597,91 @@ var APP = (function () {
     grouped.sort(function (x, y) { return x.date - y.date; });
     return grouped.slice(0, cap || 10);
   }
+  // ===== YOUR CYCLES: the long transits read as named chapters with a position inside them.
+  // For each slow planet contacting a natal point right now, find the whole felt window
+  // (orb entry to orb exit, spanning every retrograde re-hit), how far through it you are,
+  // and weave the chapter with the same loom — seeded WITHOUT the day, so a cycle keeps
+  // its name and its words for its whole life. =====
+  var CYC_MON3 = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  function cycMonYr(d) { return CYC_MON3[d.getMonth()] + ' ' + d.getFullYear(); }
+  function transitCycles(c) {
+    // Perf note: never call the full ephemeris in a sweep — positions() computes every
+    // body plus the true node's lunar theory per sample. One light single-body series
+    // per slow planet, each stepped to its own speed, then bisection only at the hits.
+    var PLAN = [
+      { k: 'jupiter', ae: 'Jupiter', step: 6 },
+      { k: 'saturn', ae: 'Saturn', step: 10 },
+      { k: 'uranus', ae: 'Uranus', step: 15 },
+      { k: 'neptune', ae: 'Neptune', step: 18 },
+      { k: 'pluto', ae: 'Pluto', step: 20 }
+    ];
+    var natal = DATA.PLANET_ORDER, ay = c.ayan || 0;
+    var ORB = 3, BACK = 480, FWD = 660; // days around now
+    var nowMs = new Date().getTime(), out = [], ti, ni, ai, s, si;
+    for (ti = 0; ti < PLAN.length; ti++) {
+      var P9 = PLAN[ti], tk = P9.k, times = [], lons = [];
+      for (s = -BACK; s <= FWD; s += P9.step) { var ms9 = nowMs + s * 86400000; times.push(ms9); lons.push(rev(EPH.eclLon(P9.ae, new Date(ms9)) - ay)); }
+      var iNow = Math.round(BACK / P9.step);
+      for (ni = 0; ni < natal.length; ni++) {
+        var nk = natal[ni], np = c.planets[nk]; if (!np || np.lon == null) continue;
+        for (ai = 0; ai < DATA.ASPECTS.length; ai++) {
+          var A = DATA.ASPECTS[ai], offs = [];
+          for (s = 0; s < lons.length; s++) offs.push(Math.abs(sdelta(lons[s], np.lon)) - A.angle);
+          if (Math.abs(offs[iNow]) > ORB) continue;
+          var s0 = iNow; while (s0 > 0 && Math.abs(offs[s0 - 1]) <= ORB) s0--;
+          var s1 = iNow; while (s1 < offs.length - 1 && Math.abs(offs[s1 + 1]) <= ORB) s1++;
+          // exact passes: sign changes, refined by bisection on the real series
+          var passes = [], pv = offs[s0];
+          for (si = s0 + 1; si <= s1; si++) {
+            if ((pv <= 0 && offs[si] >= 0) || (pv >= 0 && offs[si] <= 0)) {
+              var lo = times[si - 1], hi = times[si], loNeg = pv <= 0, it9;
+              for (it9 = 0; it9 < 16; it9++) { var mid = (lo + hi) / 2, om = Math.abs(sdelta(rev(EPH.eclLon(P9.ae, new Date(mid)) - ay), np.lon)) - A.angle; if ((om <= 0) === loNeg) lo = mid; else hi = mid; }
+              passes.push(new Date((lo + hi) / 2));
+            }
+            pv = offs[si];
+          }
+          var start = new Date(times[s0]), end = new Date(times[s1]);
+          var prog = (nowMs - start.getTime()) / Math.max(1, end.getTime() - start.getTime());
+          out.push({ tp: tk, np: nk, aspKey: A.key, glyph: A.glyph, quality: A.quality, start: start, end: end, openStart: s0 === 0, openEnd: s1 === offs.length - 1, passes: passes, progress: Math.max(0, Math.min(1, prog)), orbNow: Math.abs(offs[iNow]) });
+        }
+      }
+    }
+    var W9 = { pluto: 5, neptune: 4, uranus: 3, saturn: 2, jupiter: 1 };
+    out.sort(function (a, b) { return (W9[b.tp] - W9[a.tp]) || (a.orbNow - b.orbNow); });
+    return out.slice(0, 6);
+  }
+  var CYCLE_TITLE = {
+    jupiter: { lift: ['The Open Door', 'The Wider Map', 'The Yes Season'], press: ['The Overreach', 'The Big Ask', 'The Swelling'], fuse: ['The Expansion', 'The Growth Spurt', 'The Enlargement'] },
+    saturn: { lift: ['The Quiet Build', 'The Long Game', 'The Foundation Pour'], press: ['The Load-Bearing Test', 'The Slow Wall', 'The Audit'], fuse: ['The Setting of Stone', 'The Long Exam', 'The Commitment'] },
+    uranus: { lift: ['The Window Cracks Open', 'The Useful Jolt', 'The Odd Exit'], press: ['The Rug-Pull', 'The Static Season', 'The Shake'], fuse: ['The Rewiring', 'The Polarity Flip', 'The Lightning Rod'] },
+    neptune: { lift: ['The Good Fog', 'The Soft Focus', 'The Tide Coming In'], press: ['The Blur', 'The Mirage', 'The Thin Walls'], fuse: ['The Dissolve', 'The Longing Tide', 'The Ground-Floor Flood'] },
+    pluto: { lift: ['The Deep Repair', 'The Compost Turn', 'The Quiet Leverage'], press: ['The Excavation', 'The Root Squeeze', 'The Power Question'], fuse: ['The Overhaul', 'The Gravity Well', 'The Ground Turning Over'] }
+  };
+  function weaveCycle(cy, c) {
+    var pl = c.planets[cy.np]; if (!pl) return null;
+    var fam = weaveFam(cy.quality);
+    // stable seed: no calendar day — a cycle keeps its name and words for its whole run
+    var seed = chartFP(c) + '|' + Math.round(pl.lon * 60) + '|' + cy.tp + cy.aspKey + cy.np;
+    var title = vpick(CYCLE_TITLE[cy.tp][fam], seed + 'n');
+    var mech = vpick(WV_MECH[cy.tp][fam], seed + 'm');
+    var sName = DATA.SIGNS[pl.sign] ? DATA.SIGNS[pl.sign].name : pl.signName;
+    var role = '';
+    if (c.ascBody && DATA.SIGNS[c.ascBody.sign]) { var rk9 = RULERKEY[DATA.SIGNS[c.ascBody.sign].ruler]; if (rk9 === cy.np) role = ' — the planet that runs your whole chart'; }
+    var line = 'Since ' + cycMonYr(cy.start) + (cy.openStart ? ' at the latest' : '') + ', transiting ' + nameFor(cy.tp) + ' has been ' + mech + ', ' + aspVerb({ key: cy.aspKey }) + ' your natal ' + nameFor(cy.np) +
+      ' at ' + degStr(pl.lon % 30) + ' ' + sName + (pl.house ? ' in your ' + ordinal(pl.house) + ' house' : '') + role + '.';
+    var tells = tellsFor(c, cy.np), fits = [], tf9;
+    for (tf9 = 0; tf9 < tells.length; tf9++) if (/^(you|people)\b/i.test(tells[tf9]) && tells[tf9].indexOf(':') < 0 && tells[tf9].indexOf(';') < 0) fits.push(tells[tf9]);
+    if (fits.length) { var tell = vpick(fits, seed + 't'); line += ' It is working on the ' + nameFor(cy.np) + ' behind the fact that ' + tell.charAt(0).toLowerCase() + tell.slice(1).replace(/\.$/, '') + '.'; }
+    if (cy.passes.length > 1) {
+      var pd = [], pi9; for (pi9 = 0; pi9 < cy.passes.length; pi9++) pd.push(cy.passes[pi9].getDate() + ' ' + CYC_MON3[cy.passes[pi9].getMonth()] + ' ' + cy.passes[pi9].getFullYear());
+      line += ' It touches exact ' + (cy.passes.length === 2 ? 'twice' : cy.passes.length + ' times') + ' — ' + pd.slice(0, -1).join(', ') + ' and ' + pd[pd.length - 1] + ' — the retrograde double-back that makes this a season, not an event.';
+    } else if (cy.passes.length === 1) {
+      line += ' It is exact once, on ' + cy.passes[0].getDate() + ' ' + CYC_MON3[cy.passes[0].getMonth()] + ' ' + cy.passes[0].getFullYear() + '.';
+    }
+    line += ' It holds until ' + cycMonYr(cy.end) + (cy.openEnd ? ' and beyond' : '') + '. ' + vpick((WV_ADV[fam] || WV_ADV.lift)[cy.tp] || WV_ADV[fam].sun, seed + 'a') + '.';
+    var receipt = ('transiting ' + nameFor(cy.tp) + ' ' + cy.aspKey + ' natal ' + nameFor(cy.np) + ' · ' + degStr(pl.lon % 30) + ' ' + sName + (pl.house ? ' · ' + ordinal(pl.house) + ' house' : '') + ' · in orb (≤3°) ' + cycMonYr(cy.start) + '–' + cycMonYr(cy.end) + ' · ' + (cy.passes.length || 'no') + ' exact ' + (cy.passes.length === 1 ? 'pass' : 'passes') + ' · now ' + cy.orbNow.toFixed(1) + '° out').toUpperCase();
+    return { title: title, line: line, receipt: receipt, range: (cycMonYr(cy.start) + ' – ' + cycMonYr(cy.end) + (cy.openEnd ? '+' : '')).toUpperCase(), sub: (nameFor(cy.tp) + ' ' + cy.aspKey + ' your ' + nameFor(cy.np)).toUpperCase() };
+  }
   // ===== the full solar-return chart: the year's own horoscope, cast for the exact return instant at the birthplace =====
   function solarReturnChart(c, b, sum) {
     if (!sum) return null;
@@ -3900,7 +3985,7 @@ var APP = (function () {
     solarReturnChart: solarReturnChart, upcomingEclipses: upcomingEclipses, bestDaysFor: bestDaysFor, electIntents: electIntents, oddPredictions: oddPredictions, composeProfectionYear: composeProfectionYear, signHouseWeave: signHouseWeave,
     progressedTimeline: progressedTimeline, retroSeasons: retroSeasons,
     exportBook: exportBook, exportBackup: exportBackup, importBackup: importBackup, composeDailyEssay: composeDailyEssay, chartFP: chartFP, weaveNote: weaveNote, termOf: termOf, anA: anA, composeColleague: composeColleague, exportColleague: exportColleague,
-    microFor: microFor, tellsFor: tellsFor, weaveTransit: weaveTransit, receptionOf: receptionOf, chartSignature: chartSignature, lifeQuirks: lifeQuirks, interests: interests, emergingPull: emergingPull, spookyReads: spookyReads, combinationRead: combinationRead, sunMoonCharacter: sunMoonCharacter, guideCards: guideCards, ancientSky: ancientSky, addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, returnsAlmanac: returnsAlmanac, progressedLunation: progressedLunation, planetaryHours: planetaryHours, moonVoidWindow: moonVoidWindow, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
+    microFor: microFor, tellsFor: tellsFor, weaveTransit: weaveTransit, transitCycles: transitCycles, weaveCycle: weaveCycle, receptionOf: receptionOf, chartSignature: chartSignature, lifeQuirks: lifeQuirks, interests: interests, emergingPull: emergingPull, spookyReads: spookyReads, combinationRead: combinationRead, sunMoonCharacter: sunMoonCharacter, guideCards: guideCards, ancientSky: ancientSky, addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, returnsAlmanac: returnsAlmanac, progressedLunation: progressedLunation, planetaryHours: planetaryHours, moonVoidWindow: moonVoidWindow, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
     saveCurrentChart: saveCurrentChart, deleteSavedChart: deleteSavedChart, activateSavedChart: activateSavedChart, activeChartKey: activeChartKey, chartKey: chartKey, famousMatches: famousMatches, lifeTransits: lifeTransits, upcomingTransits: upcomingTransits, transitMotion: transitMotion, compositeChart: compositeChart,
     nameFor: nameFor, glyphFor: glyphFor, pad: pad,
     domElement: domElement, lowElement: lowElement, domMod: domMod, tzOffsetHours: tzOffsetHours
@@ -6607,6 +6692,46 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
             ly += paragraph(opv.text, x + 18, ly, w - 18, 15.5, INK, SERIF, 24) + 12;
           }
           ly += 8; hairline(x, ly, x + w, 40); ly += 24;
+        }
+        // ===== YOUR CYCLES — the long transits as named chapters, with your position inside each.
+        // The name and the words stay fixed for the life of the cycle; only the marker moves. =====
+        if (UI.cycles === undefined) {
+          UI.cycles = [];
+          try {
+            var cyc9 = APP.transitCycles(c), cyi9;
+            for (cyi9 = 0; cyi9 < cyc9.length; cyi9++) { var wv9 = APP.weaveCycle(cyc9[cyi9], c); if (wv9) UI.cycles.push({ cy: cyc9[cyi9], w: wv9 }); }
+          } catch (eCy9) { UI.cycles = []; }
+        }
+        if (UI.cycles && UI.cycles.length) {
+          eyebrow('Your cycles', x, ly, ACC); ly += 24;
+          ly += paragraph('The long chapters you are inside right now — each one named, dated, and holding its words for its whole run. The marker is today.', x, ly, w, 13.5, INK, SERIF, 20, 200) + 14;
+          var cyj;
+          for (cyj = 0; cyj < UI.cycles.length; cyj++) {
+            var CY = UI.cycles[cyj], cyTop = ly;
+            if (cyj) { hairline(x, ly, x + w, 30); ly += 14; }
+            var cyY0 = sY(ly);
+            setFont(SERIF, 18, INK, p.LEFT, p.TOP); bold(); p.text(CY.w.title, x, sY(ly)); normal();
+            var pct9 = Math.round(CY.cy.progress * 100);
+            setFont(MONO, 9.5, ACCTX, p.RIGHT, p.TOP, 220); p.text(CY.cy.openEnd ? 'ONGOING' : pct9 + '%', x + w, sY(ly) + 4); ly += 26;
+            setFont(MONO, 9, INK, p.LEFT, p.TOP, 165); p.text(CY.w.sub + ' · ' + CY.w.range, x, sY(ly)); ly += 20;
+            // the bar: track, fill to today, ticks at each exact pass
+            var bh9 = 5, byy = sY(ly);
+            p.noStroke(); fillc(INK, 45); p.rect(x, byy, w, bh9, 3);
+            fillc(ACC, 230); p.rect(x, byy, Math.max(4, w * CY.cy.progress), bh9, 3);
+            var t0ms = CY.cy.start.getTime(), t1ms = CY.cy.end.getTime(), pk9;
+            for (pk9 = 0; pk9 < CY.cy.passes.length; pk9++) { var pf9 = (CY.cy.passes[pk9].getTime() - t0ms) / Math.max(1, t1ms - t0ms); strokec(INK, 200); p.strokeWeight(1.4); p.line(x + w * pf9, byy - 3, x + w * pf9, byy + bh9 + 3); }
+            p.noStroke(); fillc(ACC); p.ellipse(x + w * CY.cy.progress, byy + bh9 / 2, 11, 11); fillc(GROUNDS[UI.screen]); p.ellipse(x + w * CY.cy.progress, byy + bh9 / 2, 5, 5);
+            ly += 20;
+            if (UI.cycOpen && UI.cycOpen[cyj]) {
+              ly += paragraph(CY.w.line, x, ly, w, 14, INK, SERIF, 21, 235) + 8;
+              ly += paragraph(CY.w.receipt, x, ly, w, 9, ACCTX, MONO, 13, 200) + 8;
+            } else {
+              setFont(MONO, 8.5, INK, p.LEFT, p.TOP, 115); p.text('TAP FOR THE CHAPTER', x, sY(ly)); ly += 16;
+            }
+            (function (idx9, topLy9) { pushHit(x - 6, sY(topLy9), w + 12, sY(ly) - sY(topLy9), function () { UI.cycOpen = UI.cycOpen || {}; UI.cycOpen[idx9] = !UI.cycOpen[idx9]; buzz(6); }); })(cyj, cyTop);
+            ly += 10;
+          }
+          ly += 6; hairline(x, ly, x + w, 40); ly += 24;
         }
         // ===== the phase of your life: the progressed lunation cycle, after Rudhyar =====
         if (!UI.plun) { try { UI.plun = APP.progressedLunation(c, b); UI.plunT = nowT(); } catch (eL9) { UI.plun = false; } }
@@ -9499,7 +9624,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       recompute(); UI.selPlanet = 'sun'; UI.popT = nowT(); UI.popFrom = 22; UI.scroll.chart = 0; UI.screen = 'chart'; hideSearchInput();
       if (!APP.STATE.settings.walked) { UI.walk = { i: 0, t0: nowT() }; UI.walkTr = null; UI.walkTheme = null; } // first reveal: walk them through it
     }
-    function recompute() { APP.STATE.chart = APP.compute(APP.STATE.birth, APP.STATE.settings); APP.save(); UI.readCache = null; UI.readSig = null; UI.readTransit = null; UI.forecast = null; UI.promCache = null; UI.arcCache = null; UI.todayCache = null; UI.fmList = null; UI.lifeList = null; UI.calEvents = null; UI.calDay = null; UI.walkTr = null; UI.walkTheme = null; UI.bondCache = null; UI.bondFor = null; UI.plun = null; UI.ringsData = null; UI.ringSel = null; UI.vocW = null; UI.phCache = null; UI.synToneCache = null; UI.dailyEssay = null; if (APP.clearPersonCharts) APP.clearPersonCharts(); UI.askAns = ''; UI.quip = null; UI.quipNext = 0; buildField(); }
+    function recompute() { APP.STATE.chart = APP.compute(APP.STATE.birth, APP.STATE.settings); APP.save(); UI.readCache = null; UI.readSig = null; UI.readTransit = null; UI.forecast = null; UI.promCache = null; UI.arcCache = null; UI.todayCache = null; UI.fmList = null; UI.lifeList = null; UI.calEvents = null; UI.calDay = null; UI.walkTr = null; UI.walkTheme = null; UI.bondCache = null; UI.bondFor = null; UI.plun = null; UI.ringsData = null; UI.ringSel = null; UI.vocW = null; UI.phCache = null; UI.synToneCache = null; UI.dailyEssay = null; UI.cycles = undefined; UI.cycOpen = {}; if (APP.clearPersonCharts) APP.clearPersonCharts(); UI.askAns = ''; UI.quip = null; UI.quipNext = 0; buildField(); }
 
     // ---------- share / export a clean chart card (own untainted canvas; the live one holds remote images) ----------
     // share a daily card (clean offscreen canvas) — moon phase + what's live on your chart today
@@ -10227,7 +10352,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       } catch (e) {}
     }
     // battery: stop the draw loop entirely while the tab/app is hidden
-    try { document.addEventListener('visibilitychange', function () { try { if (document.hidden) p.noLoop(); else { var d9 = new Date(), k9 = d9.getFullYear() * 10000 + (d9.getMonth() + 1) * 100 + d9.getDate(); if (UI.dayKey && UI.dayKey !== k9) { UI.todayCache = null; UI.calEvents = null; UI.walkTr = null; UI.fmList = null; UI.readCache = null; UI.oddPred = undefined; UI.profYear = undefined; UI.rdBeats = undefined; UI.rdI = 0; UI.ancient = undefined; } UI.dayKey = k9; p.loop(); } } catch (e2) {} }); } catch (e3) {}
+    try { document.addEventListener('visibilitychange', function () { try { if (document.hidden) p.noLoop(); else { var d9 = new Date(), k9 = d9.getFullYear() * 10000 + (d9.getMonth() + 1) * 100 + d9.getDate(); if (UI.dayKey && UI.dayKey !== k9) { UI.todayCache = null; UI.calEvents = null; UI.walkTr = null; UI.fmList = null; UI.readCache = null; UI.oddPred = undefined; UI.profYear = undefined; UI.rdBeats = undefined; UI.rdI = 0; UI.ancient = undefined; UI.cycles = undefined; UI.cycOpen = {}; } UI.dayKey = k9; p.loop(); } } catch (e2) {} }); } catch (e3) {}
     p.draw = function () {
       // auto-dark-at-night: re-apply the theme when the effective key changes (time or accent)
       var ek = effectiveThemeKey() + '|' + ((APP.STATE.settings && APP.STATE.settings.accent) || 0); if (ek !== UI.appliedThemeKey) { applyTheme(); setBodyBg(GROUNDS[UI.screen] || GROUNDS.chart); }
@@ -10235,7 +10360,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       try {
         var ckW9 = APP.activeChartKey ? (APP.activeChartKey() + '|' + (APP.STATE.settings ? APP.STATE.settings.house + APP.STATE.settings.zodiac : '')) : '';
         if (UI.ckW !== ckW9) {
-          if (UI.ckW != null) { UI.readSig = null; UI.walkTr = null; UI.walkTheme = null; UI.plun = null; UI.forecast = null; UI.readCache = null; UI.todayCache = null; UI.calEvents = null; UI.fmList = null; UI.lbCache = null; UI.lqzCache = null; UI.lwSky = null; UI.progTL = null; UI.retroS = null; UI.sigCache = undefined; UI.arcCache = null; UI.promCache = null; UI.oddPred = undefined; UI.profYear = undefined; UI.quirkCache = undefined; UI.intCache = undefined; UI.intPull = undefined; UI.spookCache = undefined; UI.comboCache = undefined; UI.smCache = undefined; UI.guide = null; UI.rdBeats = undefined; UI.rdI = 0; UI.ancient = undefined; }
+          if (UI.ckW != null) { UI.readSig = null; UI.walkTr = null; UI.walkTheme = null; UI.plun = null; UI.forecast = null; UI.readCache = null; UI.todayCache = null; UI.calEvents = null; UI.fmList = null; UI.lbCache = null; UI.lqzCache = null; UI.lwSky = null; UI.progTL = null; UI.retroS = null; UI.sigCache = undefined; UI.arcCache = null; UI.promCache = null; UI.oddPred = undefined; UI.profYear = undefined; UI.quirkCache = undefined; UI.intCache = undefined; UI.intPull = undefined; UI.spookCache = undefined; UI.comboCache = undefined; UI.smCache = undefined; UI.guide = null; UI.rdBeats = undefined; UI.rdI = 0; UI.ancient = undefined; UI.cycles = undefined; UI.cycOpen = {}; }
           UI.ckW = ckW9;
         }
       } catch (eCk9) {}
