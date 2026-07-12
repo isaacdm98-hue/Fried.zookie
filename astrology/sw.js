@@ -1,5 +1,5 @@
 /* Aqau Pluto service worker - ES5, offline-first single-file PWA */
-var CACHE = 'aqau-pluto-v83';
+var CACHE = 'aqau-pluto-v84';
 var CORE = ['./', 'index.html', 'corpus.js', 'lib-astronomy.js', 'lib-p5.js', 'manifest.webmanifest', 'icon-180.png', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png'];
 // the bundled public-domain Rider-Waite-Smith tarot deck (0.jpg .. 77.jpg), so the
 // card art is there offline. Best-effort: a miss here never breaks the core precache.
@@ -8,11 +8,16 @@ for (var _ti = 0; _ti < 78; _ti++) TAROT_ART.push('tarot/' + _ti + '.jpg');
 // the opt-in OpenDyslexic accessibility font, bundled so it works offline (the four
 // brand fonts are inlined in index.html as data URIs, so they need no request at all).
 var EXTRAS = ['fonts/OpenDyslexic-Regular.woff', 'fonts/OpenDyslexic-Bold.woff'];
+// the Ancient Sky illustrations are optional bundled assets (see art/README.md); they get
+// their own best-effort batch so a deployment without them never breaks the deck precache
+var ART = ['art/ancient-egypt.webp', 'art/ancient-babylon.webp', 'art/ancient-persia.webp', 'art/ancient-vedic.webp'];
 self.addEventListener('install', function (e) {
   // precache the whole app at install, so offline works before every file has been visited
   e.waitUntil(
     caches.open(CACHE).then(function (c) {
-      return c.addAll(CORE).then(function () { return c.addAll(TAROT_ART.concat(EXTRAS))['catch'](function () {}); });
+      return c.addAll(CORE)
+        .then(function () { return c.addAll(TAROT_ART.concat(EXTRAS))['catch'](function () {}); })
+        .then(function () { return c.addAll(ART)['catch'](function () {}); });
     })['catch'](function () {})
       .then(function () { return self.skipWaiting(); })
   );

@@ -54,3 +54,5 @@ version takes over (it bumps its cache and reloads itself).
 - `fonts/` — bundled OpenDyslexic (brand fonts are inlined)
 - `test.html` — public regression suite (ships on purpose: the app
   says it shows its working, so the working ships too)
+- `art/` — optional Ancient Sky illustrations; run `node get-art.js`
+  once before deploying to include them (the app falls back to text)

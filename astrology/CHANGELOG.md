@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.45.0 — 2026-07-12
+- **The Ancient Sky, illustrated.** Each civilisation in the app's signature feature now carries a commissioned illustrated header in the house style (warm cream paper, ink linework, one burnt-orange accent): Giza under a rising Sirius for the Egyptian beats, a ziggurat under a clay star-chart for Babylon, a watchtower under the Four Royal Stars for Persia, and the Moon's arc through the 27 mansions for the Vedic beat. The art is a bundled local asset like the tarot deck — fetched once at build time (`node get-art.js`), precached, never loaded from the network by the app — so the offline / zero-request promise holds. The images are AI-generated (Higgsfield, Nano Banana Pro) and are **assets only**: every word of every reading remains deterministic (see `art/README.md`). The reading flow centres each Ancient Sky beat around its illustration when present and falls back to pure text, pixel-identical to before, when absent.
+
+
 ## 3.44.0 — 2026-07-11
 - **YOUR WEEK — the week ahead, woven hit by hit.** The CHANI slot in the big-three lineup, done the Aqau way. Seasons now carries a flowing paragraph for the next seven days: every clause hangs on a real exact contact — "Tuesday, Venus perfects its square to your natal Mercury — rubbing against it, the friction that forces change" — found by a dedicated forward scan (the in-orb transit list can't see a fast planet that is still five degrees away today but exact on Friday; the week now gets its own per-body sweep, every hit bisected to the minute). The paragraph closes with the week's honest tilt (more doors than walls, more walls than doors, or even), and a tap reveals the receipts: day, contact, exact time. Quiet weeks are told straight — "the sky handing you the pen" — never padded. Runs in ~30 ms and stays word-stable for the whole ISO week.
 

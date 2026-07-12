@@ -3787,7 +3787,7 @@ var APP = (function () {
     hits.sort(function (u, v) { return u.orb - v.orb; });
     if (hits.length) {
       var h0 = hits[0], nm = (h0.k === 'asc') ? 'rising degree' : (h0.k === 'mc') ? 'Midheaven' : nameFor(h0.k);
-      out.push({ lab: 'A pyramid star sits on your chart', txt: 'Your ' + nm + ' sits within ' + h0.orb.toFixed(1) + '° of ' + h0.star.n + ' — ' + h0.star.why + '. In you it reads as ' + h0.star.m + '. Almost nobody carries a planet on one of these. You do.' });
+      out.push({ civ: 'egypt', lab: 'A pyramid star sits on your chart', txt: 'Your ' + nm + ' sits within ' + h0.orb.toFixed(1) + '° of ' + h0.star.n + ' — ' + h0.star.why + '. In you it reads as ' + h0.star.m + '. Almost nobody carries a planet on one of these. You do.' });
     }
     // 1b) the Four Royal Stars of Persia — the Watchers of the four corners of heaven
     var rhits = [], rj;
@@ -3797,24 +3797,24 @@ var APP = (function () {
       for (rj = 0; rj < ROYAL_STARS.length; rj++) { var orb = Math.abs(sdelta(lonR, ROYAL_STARS[rj].lon)); if (orb <= 2.2) rhits.push({ k: keys[ki], star: ROYAL_STARS[rj], orb: orb }); }
     }
     rhits.sort(function (u, v) { return u.orb - v.orb; });
-    if (rhits.length) { var r0 = rhits[0], rnm = (r0.k === 'asc') ? 'rising degree' : (r0.k === 'mc') ? 'Midheaven' : nameFor(r0.k); out.push({ lab: 'A Watcher stands guard on your chart', txt: 'Your ' + rnm + ' falls on ' + r0.star.n + ', one of the Four Royal Stars the Persians set to guard the sky ' + '(' + r0.star.watch + '). Three thousand years ago these four marked the turning of the seasons. On you it carries ' + r0.star.m + '.' }); }
+    if (rhits.length) { var r0 = rhits[0], rnm = (r0.k === 'asc') ? 'rising degree' : (r0.k === 'mc') ? 'Midheaven' : nameFor(r0.k); out.push({ civ: 'persia', lab: 'A Watcher stands guard on your chart', txt: 'Your ' + rnm + ' falls on ' + r0.star.n + ', one of the Four Royal Stars the Persians set to guard the sky ' + '(' + r0.star.watch + '). Three thousand years ago these four marked the turning of the seasons. On you it carries ' + r0.star.m + '.' }); }
     // 2) your herald star — heliacal rising, the Egyptian way of reading the dawn
     var herald = null, hb = 99, hi;
     for (hi = 0; hi < FIXED_STARS.length; hi++) { var dh = ((sunT - FIXED_STARS[hi].lon) % 360 + 360) % 360; if (dh >= 7 && dh <= 20) { var dd = Math.abs(dh - 13); if (dd < hb) { hb = dd; herald = FIXED_STARS[hi]; } } }
-    if (herald) out.push({ lab: 'Your herald star', txt: herald.n + ' is your herald: around your birthday it rose in the dawn just ahead of the Sun — the way Egyptian priests read the coming day by the star that broke the horizon first. Its old meaning, ' + herald.m + ', is the note struck the moment before your Sun, every year.' });
+    if (herald) out.push({ civ: 'egypt', lab: 'Your herald star', txt: herald.n + ' is your herald: around your birthday it rose in the dawn just ahead of the Sun — the way Egyptian priests read the coming day by the star that broke the horizon first. Its old meaning, ' + herald.m + ', is the note struck the moment before your Sun, every year.' });
     // 3) the precession the seasonal zodiac quietly hides
     var tSign = Math.floor(rev(sunT) / 30), sSign = Math.floor(sunSid / 30);
-    if (tSign !== sSign) out.push({ lab: 'Where your Sun truly stands', txt: 'Your Sun sign is ' + DATA.SIGNS[tSign].name + ', the seasonal zodiac tied to the equinox. But against the actual constellations — the sky the pyramid-builders watched — your Sun stood in ' + DATA.SIGNS[sSign].name + '. Precession has slid the two apart by about ' + aya.toFixed(0) + '° across the ages: the link between the calendar and the real stars that most readings drop.' });
+    if (tSign !== sSign) out.push({ civ: 'egypt', lab: 'Where your Sun truly stands', txt: 'Your Sun sign is ' + DATA.SIGNS[tSign].name + ', the seasonal zodiac tied to the equinox. But against the actual constellations — the sky the pyramid-builders watched — your Sun stood in ' + DATA.SIGNS[sSign].name + '. Precession has slid the two apart by about ' + aya.toFixed(0) + '° across the ages: the link between the calendar and the real stars that most readings drop.' });
     // 4) your decan, the Egyptian star-clock
-    try { var dec = decanOf(P.sun.sign, P.sun.deg); if (dec) out.push({ lab: 'Your decan, the first clock', txt: 'You were born in the ' + ordinal(dec.decan) + ' decan of ' + DATA.SIGNS[P.sun.sign].name + ', the ten-day window ruled by ' + dec.rulerName + '. The Egyptians divided the year into 36 such decans, each marked by a star that rose at dusk — the first clock humankind ever built, painted across tomb ceilings. This ten-day window is the one the sky kept for you.' }); } catch (eDk) {}
+    try { var dec = decanOf(P.sun.sign, P.sun.deg); if (dec) out.push({ civ: 'egypt', lab: 'Your decan, the first clock', txt: 'You were born in the ' + ordinal(dec.decan) + ' decan of ' + DATA.SIGNS[P.sun.sign].name + ', the ten-day window ruled by ' + dec.rulerName + '. The Egyptians divided the year into 36 such decans, each marked by a star that rose at dusk — the first clock humankind ever built, painted across tomb ceilings. This ten-day window is the one the sky kept for you.' }); } catch (eDk) {}
     // 5) Babylon: the base-sixty math the whole chart still runs on
-    try { var dg = P.sun.deg, mn = Math.floor((dg - Math.floor(dg)) * 60); out.push({ lab: 'In Babylonian base sixty', txt: 'The Babylonians gave us the twelve signs and the 360° circle, counting in base sixty — the reason a degree still holds sixty minutes and an hour sixty seconds. A scribe would have set your Sun at ' + Math.floor(dg) + '° ' + mn + '′ of ' + DATA.SIGNS[P.sun.sign].name + ', predicting it on a clay tablet with zig-zag arithmetic three centuries before Greece. The math under your whole chart is theirs.' }); } catch (eBb) {}
+    try { var dg = P.sun.deg, mn = Math.floor((dg - Math.floor(dg)) * 60); out.push({ civ: 'babylon', lab: 'In Babylonian base sixty', txt: 'The Babylonians gave us the twelve signs and the 360° circle, counting in base sixty — the reason a degree still holds sixty minutes and an hour sixty seconds. A scribe would have set your Sun at ' + Math.floor(dg) + '° ' + mn + '′ of ' + DATA.SIGNS[P.sun.sign].name + ', predicting it on a clay tablet with zig-zag arithmetic three centuries before Greece. The math under your whole chart is theirs.' }); } catch (eBb) {}
     // 6) Vedic: the Moon's nakshatra, the lunar mansion India has read for 3,000 years
     try {
       if (P.moon && DATA.NAKSHATRA) {
         var moonSid = rev(trop(P.moon.lon) - aya), span = 360 / 27, nki = Math.floor(moonSid / span) % 27, nak = DATA.NAKSHATRA[nki];
         var pada = Math.floor((moonSid - nki * span) / (span / 4)) + 1; if (pada < 1) pada = 1; if (pada > 4) pada = 4;
-        if (nak) out.push({ lab: 'Your Moon’s nakshatra (Vedic)', txt: 'In the Vedic sky, your Moon sits in ' + nak.n + ' (pada ' + pada + ' of 4): ' + nak.m + '. The 27 nakshatras are the Moon’s mansions — the lunar zodiac India has read for three thousand years, each split into four quarters, and the seed of your Vimshottari life-periods. It is the single most personal point in Jyotisha.' });
+        if (nak) out.push({ civ: 'vedic', lab: 'Your Moon’s nakshatra (Vedic)', txt: 'In the Vedic sky, your Moon sits in ' + nak.n + ' (pada ' + pada + ' of 4): ' + nak.m + '. The 27 nakshatras are the Moon’s mansions — the lunar zodiac India has read for three thousand years, each split into four quarters, and the seed of your Vimshottari life-periods. It is the single most personal point in Jyotisha.' });
       }
     } catch (eNk) {}
     return out;
@@ -6568,10 +6568,20 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         if (UI.intCache && UI.intCache.length) bsF.push({ lab: 'What you’re drawn to', txt: UI.intCache.map(function (t9) { return t9.charAt(0).toUpperCase() + t9.slice(1); }).join('. ') + '.' });
         // the ancient sky: the pyramid-builders' astronomy on your exact chart — the strongest connections first
         if (UI.ancient === undefined) { try { UI.ancient = APP.ancientSky(c, b); } catch (eAs9) { UI.ancient = []; } }
-        if (UI.ancient && UI.ancient.length) { var asF; for (asF = 0; asF < UI.ancient.length; asF++) bsF.push({ lab: UI.ancient[asF].lab, txt: UI.ancient[asF].txt }); }
+        if (UI.ancient && UI.ancient.length) { var asF; for (asF = 0; asF < UI.ancient.length; asF++) bsF.push({ lab: UI.ancient[asF].lab, txt: UI.ancient[asF].txt, civ: UI.ancient[asF].civ }); }
         UI.rdBeats = bsF;
       }
       if (UI.readMode === undefined) UI.readMode = 'flow';
+      // bundled illustration loader: local files only (art/ancient-<civ>.webp), loaded once,
+      // silently absent-safe — the app never fetches art from the network at runtime
+      function artImg(k) {
+        UI.artImgs = UI.artImgs || {};
+        if (!(k in UI.artImgs)) {
+          UI.artImgs[k] = null;
+          try { var im9 = new Image(); im9.onload = function () { UI.artImgs[k] = im9; }; im9.onerror = function () { UI.artImgs[k] = false; }; im9.src = 'art/ancient-' + k + '.webp'; } catch (eAi) { UI.artImgs[k] = false; }
+        }
+        return UI.artImgs[k] || null;
+      }
       if (UI.readMode === 'flow' && UI.rdBeats.length) {
         var beats = UI.rdBeats, bi = Math.min(UI.rdI || 0, beats.length - 1), beat = beats[bi];
         var scrTop = sY(ly), scrBot = botY() - 8;
@@ -6582,7 +6592,17 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         var availTop = scrTop + 74, availBot = scrBot - 52;
         var tszF = beat.txt.length > 230 ? 17 : (beat.txt.length > 140 ? 19 : 21);
         var wlF = wrapLines2(beat.txt, w, SERIF, tszF * 1.46), lhF = tszF * 1.46 * 1.5, thF = wlF.length * lhF;
-        var tyF = availTop + Math.max(0, ((availBot - availTop) - thF) / 2);
+        // the Ancient Sky beats carry illustrated headers when the bundled art/ folder is present;
+        // absence costs nothing — the beat simply centres its text the way it always did
+        var artIm = beat.civ ? artImg(beat.civ) : null, artH = 0;
+        if (artIm) { artH = Math.min(Math.round(w * 9 / 16), (availBot - availTop) - thF - 130); if (artH < 70) { artIm = null; artH = 0; } }
+        var tyF = availTop + Math.max(0, ((availBot - availTop) - thF - (artH ? artH + 24 : 0)) / 2) + (artH ? artH + 24 : 0);
+        if (artIm) {
+          var artY = tyF - 34 - 18 - artH + riseF, dcArt = p.drawingContext;
+          if (dcArt) { dcArt.save(); dcArt.globalAlpha = 0.92 * caF; }
+          drawImageContain(artIm, x, artY, w, artH);
+          if (dcArt) dcArt.restore();
+        }
         if (beat.lab) { setFont(MONO, 10, ACCTX, p.LEFT, p.TOP, 230 * caF); p.text(beat.lab.toUpperCase(), x, tyF - 34 + riseF); }
         setFont(SERIF, tszF, INK, p.LEFT, p.TOP, 255 * caF); var wiF; for (wiF = 0; wiF < wlF.length; wiF++) p.text(wlF[wiF], x, tyF + wiF * lhF + riseF);
         var lastF = bi >= beats.length - 1;
