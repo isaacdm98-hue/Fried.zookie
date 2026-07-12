@@ -1,5 +1,5 @@
 /* Aqau Pluto service worker - ES5, offline-first single-file PWA */
-var CACHE = 'aqau-pluto-v84';
+var CACHE = 'aqau-pluto-v85';
 var CORE = ['./', 'index.html', 'corpus.js', 'lib-astronomy.js', 'lib-p5.js', 'manifest.webmanifest', 'icon-180.png', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png'];
 // the bundled public-domain Rider-Waite-Smith tarot deck (0.jpg .. 77.jpg), so the
 // card art is there offline. Best-effort: a miss here never breaks the core precache.
@@ -10,7 +10,7 @@ for (var _ti = 0; _ti < 78; _ti++) TAROT_ART.push('tarot/' + _ti + '.jpg');
 var EXTRAS = ['fonts/OpenDyslexic-Regular.woff', 'fonts/OpenDyslexic-Bold.woff'];
 // the Ancient Sky illustrations are optional bundled assets (see art/README.md); they get
 // their own best-effort batch so a deployment without them never breaks the deck precache
-var ART = ['art/ancient-egypt.webp', 'art/ancient-babylon.webp', 'art/ancient-persia.webp', 'art/ancient-vedic.webp'];
+var ART = ['art/ancient-egypt.webp', 'art/ancient-babylon.webp', 'art/ancient-persia.webp', 'art/ancient-vedic.webp', 'art/act-sun.webp', 'art/act-moon.webp', 'art/act-mars.webp', 'art/act-saturn.webp', 'art/act-venus.webp'];
 self.addEventListener('install', function (e) {
   // precache the whole app at install, so offline works before every file has been visited
   e.waitUntil(

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
- * Downloads the four Ancient Sky illustrations into astrology/art/.
+ * Downloads the nine bundled illustrations (Ancient Sky headers + walkthrough act backdrops) into astrology/art/.
  * Run once, on your own machine, from the astrology/ folder:
  *
  *     node get-art.js
@@ -19,10 +19,15 @@ var path = require('path');
 
 var BASE = 'https://d8j0ntlcm91z4.cloudfront.net/user_3GOi38u71dNlmcLnlyx8X2gLWJE/';
 var ART = {
-  'ancient-egypt.webp': BASE + 'hf_20260712_095740_41322ef8-e25c-425b-b7e5-cc586503dae7_min.webp',
-  'ancient-babylon.webp': BASE + 'hf_20260712_095802_7f7033f0-235d-4e1d-a214-42e3468179aa_min.webp',
-  'ancient-persia.webp': BASE + 'hf_20260712_095815_871fcbdc-3303-4205-a6f1-9ace190c1b01_min.webp',
-  'ancient-vedic.webp': BASE + 'hf_20260712_095827_abaaea03-fec2-46e3-842d-c92225243807_min.webp'
+  'ancient-egypt.webp': BASE + 'hf_20260712_102622_da416e46-04ed-4987-a33a-9b4f9b7663a2_min.webp',
+  'ancient-babylon.webp': BASE + 'hf_20260712_102631_a0e5f765-1253-4cc3-b573-16f1dd9ba7a3_min.webp',
+  'ancient-persia.webp': BASE + 'hf_20260712_102640_07e844d2-69ee-4cea-b1d7-af71661c8006_min.webp',
+  'ancient-vedic.webp': BASE + 'hf_20260712_102650_b8d53223-a197-49be-a9bd-337c1f3c2c79_min.webp',
+  'act-sun.webp': BASE + 'hf_20260712_102703_7e78596c-a5bb-448e-9331-afc88d939747_min.webp',
+  'act-moon.webp': BASE + 'hf_20260712_102712_58d75913-618b-4e21-9b12-d640e455f9ac_min.webp',
+  'act-mars.webp': BASE + 'hf_20260712_102725_93ce285d-4ae4-49cb-919c-18659b8bf717_min.webp',
+  'act-saturn.webp': BASE + 'hf_20260712_102736_7d3bba3b-ee5a-45e6-a17c-afb0ca47ef14_min.webp',
+  'act-venus.webp': BASE + 'hf_20260712_102750_1d459fdb-25eb-43b7-bc58-abb880c41812_min.webp'
 };
 
 var dir = path.join(__dirname, 'art');

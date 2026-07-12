@@ -4718,7 +4718,13 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         var sz9 = 8.5; p.textFont(SANS); p.textSize(sz9);
         var ws9 = [], tw9 = 0; for (i9 = 0; i9 < txt.length; i9++) { var cw9 = p.textWidth(txt.charAt(i9)) + 0.6; ws9.push(cw9); tw9 += cw9; }
         var ang9 = tw9 / r9;
-        if (ang9 > budget9) { sz9 = Math.max(6.2, sz9 * budget9 / ang9); p.textSize(sz9); ws9 = []; tw9 = 0; for (i9 = 0; i9 < txt.length; i9++) { var cw2 = p.textWidth(txt.charAt(i9)) + 0.6; ws9.push(cw2); tw9 += cw2; } ang9 = tw9 / r9; }
+        if (ang9 > budget9) {
+          // if the full name can't sit at a readable size inside its 27° arc,
+          // use the classic three-letter form instead of cramming
+          var need9 = sz9 * budget9 / ang9;
+          if (need9 < 7.4) { txt = txt.slice(0, 3); } else { sz9 = need9; }
+          p.textSize(sz9); ws9 = []; tw9 = 0; for (i9 = 0; i9 < txt.length; i9++) { var cw2 = p.textWidth(txt.charAt(i9)) + 0.6; ws9.push(cw2); tw9 += cw2; } ang9 = tw9 / r9;
+        }
         var acc9 = -ang9 / 2;
         for (i9 = 0; i9 < txt.length; i9++) {
           var cAng9 = ws9[i9] / r9, off9 = acc9 + cAng9 / 2; acc9 += cAng9;
@@ -5304,6 +5310,12 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var stg = actStage(sc, c), tt = still ? 99999 : (nowT() - UI.walk.t0), t = nowT();
       var te = cl01(tt / stg.ent), e = (stg.ease === 'back') ? eBack(te) : eCubic(te), alpha = still ? 1 : cl01(te * 1.6);
       if (UI.walkMotifI !== UI.walk.i) { UI.walkMotifI = UI.walk.i; actMotif(sc, c); }
+      // cinematic backdrop: the act's world painted behind the stage (bundled art, absent-safe),
+      // then the act's own light wash on top so the theme still owns the colour
+      if (sc.k === 'body' && sc.key) {
+        var bkIm9 = artImg('act-' + sc.key);
+        if (bkIm9) { var dcB9 = p.drawingContext; if (dcB9) { dcB9.save(); dcB9.globalAlpha = 0.52 * cl01(te * 1.2); } drawImageCover(bkIm9, 0, 0, W, H); if (dcB9) dcB9.restore(); }
+      }
       // the act's light: wash the stage in this scene's own ground
       if (stg.tint) { p.noStroke(); fillc(stg.tint, stg.ta * cl01(te * 1.2)); p.rect(0, 0, W, H); }
       var ct = walkContent(c, b, sc), pre = walkPre(c, b, sc);
@@ -5650,68 +5662,26 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       }
 
       if (UI.pcard) UI.pcardDraw = true;
-      eyebrow('Placements', x, ly); ly += 24;
-      var ord = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto', 'node'], rh = 36;
-      for (var i = 0; i < ord.length; i++) {
-        var k2 = ord[i], pp = c.planets[k2], onx = (UI.selPlanet === k2);
-        if (i) hairline(x, ly, x + w, 40);
-        if (onx) { p.noStroke(); fillc(INK, 14); p.rect(x - 6, sY(ly), w + 12, rh, 6); }
-        setFont(SANS, 17, onx ? ACC : INK, p.LEFT, p.CENTER); p.text(APP.glyphFor(k2), x + 2, sY(ly + rh / 2));
-        setFont(SANS, 13, INK, p.LEFT, p.CENTER); bold(); p.text(APP.nameFor(k2), x + 30, sY(ly + rh / 2)); normal();
-        p.noStroke(); fillc(ELHUE[DATA.SIGNS[pp.sign].element], 210); p.ellipse(x + 24, sY(ly + rh / 2), 4, 4);
-        setFont(MONO, 11.5, INK, p.RIGHT, p.CENTER, 170); p.text(pp.deg.toFixed(1) + '\u00B0 ' + pp.signName + (b.timeKnown ? '  H' + pp.house : ''), x + w, sY(ly + rh / 2));
-        (function (kk, ay) { pushHit(x, sY(ay), w, rh, function () { if (UI.selPlanet === kk && kk !== 'node') openStory(kk); else selectPlanet(kk); }); })(k2, ly);
-        ly += rh;
-      }
-      ly += 26;
-      eyebrow('Aspects', x, ly); ly += 24;
-      var rows = Math.min(c.aspects.length, 10);
-      for (var a = 0; a < rows; a++) {
-        var as = c.aspects[a], qc = as.asp.quality;
-        if (a) hairline(x, ly, x + w, 36);
-        setFont(SANS, 14, INK, p.LEFT, p.CENTER); p.text(APP.glyphFor(as.a), x + 2, sY(ly + 16));
-        setFont(SANS, 12, qc === 'flow' || qc === 'opportunity' ? ELHUE.air : (qc === 'fusion' ? INK : ACC), p.CENTER, p.CENTER); bold(); p.text(as.asp.glyph, x + 24, sY(ly + 16)); normal();
-        var gB = APP.glyphFor(as.b); setFont(SANS, gB.length > 1 ? 11 : 14, INK, p.LEFT, p.CENTER); p.text(gB, x + 40, sY(ly + 16));
-        setFont(MONO, 10.5, INK, p.LEFT, p.CENTER, 150); p.text(as.asp.key + ' \u00B7 ' + as.orb.toFixed(1) + '\u00B0', x + (gB.length > 1 ? 72 : 60), sY(ly + 16));
-        if (as.orb <= 0.35) { setFont(MONO, 9.5, ACCTX, p.RIGHT, p.CENTER, 235); p.text('\u25CF exact', x + w, sY(ly + 16)); }
-        else { setFont(MONO, 9.5, INK, p.RIGHT, p.CENTER, 110); p.text(as.asp.quality, x + w, sY(ly + 16)); }
-        (function (aa9, ay9) { pushHit(x, sY(ay9), w, 32, function () { if (aa9 !== 'asc' && aa9 !== 'mc') openStory(aa9); }); })(as.a, ly);
-        ly += 32;
-      }
-      // the wheel shows ten; the rest live one tap away
-      if (c.aspects.length > rows) {
-        setFont(MONO, 9, ACCTX, p.LEFT, p.TOP, 210); p.text('+ ' + (c.aspects.length - rows) + ' MORE IN PATTERNS \u203A', x, sY(ly + 4));
-        pushHit(x, sY(ly) - 2, 220, 26, function () { UI.screen = 'read'; UI.readTab = 'wiring'; UI.scroll.read = 0; UI.actT = nowT(); });
-        ly += 26;
-      }
-      ly += 30;
-      eyebrow('Elemental balance', x, ly); ly += 26;
-      var els = ['fire', 'earth', 'air', 'water'];
-      for (var e = 0; e < 4; e++) {
-        var en = els[e], pct = c.elements[en], by = sY(ly);
-        setFont(MONO, 10, INK, p.LEFT, p.CENTER, 170); p.text(en.toUpperCase(), x, by + 6);
-        var bx = x + 54, bw = w - 54 - 40;
-        strokec(INK, 60); p.strokeWeight(1); p.noFill(); p.rect(bx, by, bw, 12, 6);
-        // animated fill (breathes toward pct)
-        p.noStroke(); fillc(ELHUE[en]); p.rect(bx, by, bw * pct / 100, 12, 6);
-        setFont(MONO, 10, INK, p.RIGHT, p.CENTER, 170); p.text(pct + '%', x + w, by + 6);
-        ly += 22;
-      }
-      // ---- extra points (true Node, South Node, Lilith, Part of Fortune) ----
-      if (c.points) {
-        ly += 26; eyebrow('Points', x, ly); ly += 24; var prh = 34, pk2 = ['trueNode', 'southNode', 'lilith', 'pof'], pn;
-        for (pn = 0; pn < pk2.length; pn++) {
-          var pp = c.points[pk2[pn]]; if (!pp) continue; if (pn) hairline(x, ly, x + w, 38);
-          setFont(SANS, 16, ACC, p.LEFT, p.CENTER); p.text(APP.glyphFor(pk2[pn]), x + 2, sY(ly + prh / 2));
-          setFont(SANS, 13, INK, p.LEFT, p.CENTER); bold(); p.text(APP.nameFor(pk2[pn]), x + 30, sY(ly + prh / 2)); normal();
-          setFont(MONO, 11, INK, p.RIGHT, p.CENTER, 170); p.text(pp.deg.toFixed(1) + '° ' + pp.signName + (b.timeKnown ? '  H' + pp.house : ''), x + w, sY(ly + prh / 2));
-          ly += prh;
-        }
-        if (!APP.STATE.settings.minorBodies) { setFont(MONO, 8.5, INK, p.LEFT, p.TOP, 130); ly += paragraph('Mean Lilith and the true Node are standard computations; Part of Fortune uses the day/night formula. Turn on extra points in Settings for Chiron and the asteroids.', x, ly, w, 11, INK, MONO, 15, 130) + 6; }
-      }
+      // the raw data tables (placements / aspects / balance / points) came out in 3.46:
+      // the wheel, the chip reel and the planet stories carry the same facts, told properly.
       ly += 30; UI.contentH.chart = ly;
     }
 
+    // bundled illustration loader: local files only (art/<key>.webp), loaded once,
+    // silently absent-safe — the app never fetches art from the network at runtime
+    function artImg(k) {
+      UI.artImgs = UI.artImgs || {};
+      if (!(k in UI.artImgs)) {
+        UI.artImgs[k] = null;
+        try { var im9 = new Image(); im9.onload = function () { UI.artImgs[k] = im9; }; im9.onerror = function () { UI.artImgs[k] = false; }; im9.src = 'art/' + k + '.webp'; } catch (eAi) { UI.artImgs[k] = false; }
+      }
+      return UI.artImgs[k] || null;
+    }
+    function drawImageCover(im, dx, dy, dw, dh) {
+      var iw = im.naturalWidth || im.width, ih = im.naturalHeight || im.height; if (!iw || !ih) return;
+      var s = Math.max(dw / iw, dh / ih), rw = iw * s, rh = ih * s;
+      try { p.drawingContext.drawImage(im, dx + (dw - rw) / 2, dy + (dh - rh) / 2, rw, rh); } catch (e) {}
+    }
     // ---- live tarot art: real deck images from the open archive, drawn straight on the canvas ----
     function drawImageContain(im, dx, dy, dw, dh) {
       var iw = im.naturalWidth || im.width, ih = im.naturalHeight || im.height; if (!iw || !ih) return;
@@ -5903,20 +5873,22 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       // rounded back, a real face line (brow, nose, chin), far limbs a tone lighter.
       var h = rig.h, lean = rig.lean || 0, cr = rig.crouch || 0, look = rig.look || 0, col = rig.col || [34, 29, 25];
       var dir = rig.dir != null ? rig.dir : (look < -0.05 ? -1 : 1), lm = Math.abs(look);
-      var br = reduced() ? 0 : Math.sin(nowT() * 0.0021 + (rig.ph || 0)) * h * 0.005;
+      var br = reduced() ? 0 : (Math.sin(nowT() * 0.0021 + (rig.ph || 0)) * h * 0.010 + Math.sin(nowT() * 0.00073 + (rig.ph || 0) * 2.1) * h * 0.004);
       var bob9 = rig.bob || 0;
       // a standing body is never still: weight pools into one hip, then the other
-      if (!rig.fL && !rig.fR && !reduced()) { var idl9 = rig.ph != null ? rig.ph : rig.x * 0.13; bob9 += Math.sin(nowT() * 0.0008 + idl9) * h * 0.004; lean += Math.sin(nowT() * 0.00058 + idl9) * 0.018; }
-      var hipY = rig.y - h * (0.52 - cr * 0.14) + bob9, hipX = rig.x + lean * h * 0.03;
+      if (!rig.fL && !rig.fR && !reduced()) { var idl9 = rig.ph != null ? rig.ph : rig.x * 0.13; bob9 += Math.sin(nowT() * 0.0008 + idl9) * h * 0.007; lean += Math.sin(nowT() * 0.00058 + idl9) * 0.034; }
+      var hipY = rig.y - h * (0.52 - cr * 0.14) + bob9, hipX = rig.x + lean * h * 0.03 + (reduced() ? 0 : Math.sin(nowT() * 0.00058 + (rig.ph != null ? rig.ph : rig.x * 0.13)) * h * 0.010);
       var chY = hipY - h * (0.29 - cr * 0.04) + br, chX = hipX + lean * h * 0.15 * dir;
       var hdR = h * 0.075, hdX = chX + (lean * h * 0.06 + lm * h * 0.02) * dir, hdY = chY - h * 0.10 - bob9 * 0.5;
+      if (!reduced()) { var gl9 = Math.sin(nowT() * 0.00019 + (rig.ph || rig.x * 0.13) * 1.7); gl9 = gl9 * gl9 * gl9; hdX += gl9 * h * 0.022 * dir; hdY += Math.sin(nowT() * 0.00047 + (rig.ph || 0)) * h * 0.006; }
       var fwd9 = rig.fL || rig.fR ? 0 : h * 0.05;
       var fL = rig.fL || { x: rig.x - fwd9 * 0.4 * dir, y: rig.y };
       var fR = rig.fR || { x: rig.x + fwd9 * dir, y: rig.y };
       var shX = chX + h * 0.012 * dir, shY2 = chY - h * 0.008;
       // unless a pose claims the hands, each arm counter-swings its own side's leg
-      var hL = rig.hL || { x: shX - (fL.x - hipX) * 0.55 - h * 0.03 * dir, y: chY + h * 0.30 - Math.abs(fL.x - hipX) * 0.10 };
-      var hR = rig.hR || { x: shX - (fR.x - hipX) * 0.55 + h * 0.015 * dir, y: chY + h * 0.30 - Math.abs(fR.x - hipX) * 0.10 };
+      var sw9 = reduced() ? 0 : Math.sin(nowT() * 0.0011 + (rig.ph != null ? rig.ph : rig.x * 0.13)) * h * 0.009;
+      var hL = rig.hL || { x: shX - (fL.x - hipX) * 0.55 - h * 0.03 * dir, y: chY + h * 0.30 - Math.abs(fL.x - hipX) * 0.10 + sw9 };
+      var hR = rig.hR || { x: shX - (fR.x - hipX) * 0.55 + h * 0.015 * dir, y: chY + h * 0.30 - Math.abs(fR.x - hipX) * 0.10 - sw9 * 0.7 };
       var lg1 = h * 0.245, lg2 = h * 0.235, ar1 = h * 0.175, ar2 = h * 0.16;
       function seg9(ax, ay, bx, by, wa, wb) {
         var dx = bx - ax, dy = by - ay, dl = Math.sqrt(dx * dx + dy * dy) || 1, nx = -dy / dl, ny = dx / dl;
@@ -6572,16 +6544,6 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         UI.rdBeats = bsF;
       }
       if (UI.readMode === undefined) UI.readMode = 'flow';
-      // bundled illustration loader: local files only (art/ancient-<civ>.webp), loaded once,
-      // silently absent-safe — the app never fetches art from the network at runtime
-      function artImg(k) {
-        UI.artImgs = UI.artImgs || {};
-        if (!(k in UI.artImgs)) {
-          UI.artImgs[k] = null;
-          try { var im9 = new Image(); im9.onload = function () { UI.artImgs[k] = im9; }; im9.onerror = function () { UI.artImgs[k] = false; }; im9.src = 'art/ancient-' + k + '.webp'; } catch (eAi) { UI.artImgs[k] = false; }
-        }
-        return UI.artImgs[k] || null;
-      }
       if (UI.readMode === 'flow' && UI.rdBeats.length) {
         var beats = UI.rdBeats, bi = Math.min(UI.rdI || 0, beats.length - 1), beat = beats[bi];
         var scrTop = sY(ly), scrBot = botY() - 8;
@@ -6594,7 +6556,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         var wlF = wrapLines2(beat.txt, w, SERIF, tszF * 1.46), lhF = tszF * 1.46 * 1.5, thF = wlF.length * lhF;
         // the Ancient Sky beats carry illustrated headers when the bundled art/ folder is present;
         // absence costs nothing — the beat simply centres its text the way it always did
-        var artIm = beat.civ ? artImg(beat.civ) : null, artH = 0;
+        var artIm = beat.civ ? artImg('ancient-' + beat.civ) : null, artH = 0;
         if (artIm) { artH = Math.min(Math.round(w * 9 / 16), (availBot - availTop) - thF - 130); if (artH < 70) { artIm = null; artH = 0; } }
         var tyF = availTop + Math.max(0, ((availBot - availTop) - thF - (artH ? artH + 24 : 0)) / 2) + (artH ? artH + 24 : 0);
         if (artIm) {
