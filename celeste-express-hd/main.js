@@ -361,7 +361,9 @@ function applyCel(root) {
     if (o.name) parts[o.name] = o;
   });
   if (parts.body) addOutline(parts.body, 0.045);
-  if (parts.wheels && parts.wheels.isGroup) parts.wheels = parts.wheels.children;
+  /* the exported 'wheels' node reloads as a plain Object3D — expose its child
+     meshes as an array so the animation loop can iterate them */
+  if (parts.wheels && parts.wheels.isObject3D && parts.wheels.children) parts.wheels = parts.wheels.children;
   return parts;
 }
 let hero = null;
