@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>Celeste Express — HD</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#FFB13D">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="description" content="Celeste Express (HD pipeline) — cel-shaded disco train with passing scenery.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,900&family=Atkinson+Hyperlegible:wght@400;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --plum:#2B1B33; --velvet:#46284F; --marigold:#FFB13D; --tangerine:#FF7847;
+  --peach:#FFE8CE; --gold:#D9A441; --teal:#35C4B5; --raspberry:#E8508D;
+  --green:#6FA05E; --hush:#8D8A93;
+  --serif:"Fraunces", Georgia, serif; --sans:"Atkinson Hyperlegible", system-ui, sans-serif; --mono:"IBM Plex Mono", ui-monospace, monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--plum);color:var(--peach);font-family:var(--sans);touch-action:none;overscroll-behavior:none;}
+#app{position:fixed;inset:0;}
+canvas{display:block;width:100%;height:100%;}
+
+#loader{position:fixed;inset:0;z-index:70;display:flex;align-items:center;justify-content:center;flex-direction:column;background:var(--plum);}
+#loader .m{font-family:var(--mono);color:var(--peach);opacity:.85;font-size:13px;margin-top:14px;}
+#loader .disc{width:54px;height:54px;border-radius:50%;border:3px solid var(--gold);border-top-color:var(--tangerine);animation:spin 1s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+#title{position:fixed;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;background:radial-gradient(120% 120% at 50% 32%, rgba(70,40,79,.35), rgba(43,27,51,.86));}
+#title.hidden{display:none;}
+.wordmark{font-family:var(--serif);font-weight:900;color:var(--peach);line-height:.9;letter-spacing:2px;text-shadow:0 3px 0 rgba(0,0,0,.28);}
+.wordmark .celeste{display:block;font-size:13vw;} .wordmark .express{display:block;font-size:8.6vw;color:var(--marigold);} .wordmark .needle{color:var(--tangerine);} .wordmark .disc{color:var(--tangerine);}
+#title .hint{margin-top:6vh;font-family:var(--mono);font-size:14px;color:var(--peach);opacity:.85;}
+#title .tonearm{margin-top:2vh;font-size:34px;color:var(--gold);animation:bob 2s ease-in-out infinite;}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(6px)}}
+
+#select{position:fixed;inset:0;z-index:41;display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px;background:rgba(43,27,51,.72);}
+#select.show{display:flex;}
+#select h3{font-family:var(--serif);font-weight:600;font-size:22px;margin-bottom:18px;}
+.cards{display:flex;gap:18px;flex-wrap:wrap;justify-content:center;}
+.card{width:240px;border-radius:16px;padding:18px;background:rgba(70,40,79,.9);border:2px solid var(--gold);cursor:pointer;transition:transform .12s;backdrop-filter:blur(3px);}
+.card:active{transform:scale(.97);} .card.zil{border-color:var(--teal);}
+.card h4{font-family:var(--serif);font-weight:600;font-size:20px;margin-bottom:6px;} .card.zil h4{color:var(--teal);} .card.marm h4{color:var(--marigold);}
+.card p{font-size:13px;line-height:1.45;color:var(--peach);} .card .verb{margin-top:10px;font-family:var(--mono);font-size:11px;color:var(--gold);}
+
+#hud{position:fixed;inset:0;z-index:20;pointer-events:none;font-family:var(--mono);color:var(--peach);}
+#hud.hidden{display:none;}
+.hud-top{position:absolute;top:calc(env(safe-area-inset-top,0) + 10px);left:14px;right:14px;display:flex;justify-content:space-between;}
+.hud-badge{background:rgba(43,27,51,.66);border:1px solid var(--gold);border-radius:10px;padding:6px 10px;font-size:12px;}
+.hud-badge .k{color:var(--gold);}
+.beat-ring{position:absolute;top:calc(env(safe-area-inset-top,0) + 10px);left:50%;transform:translateX(-50%);width:38px;height:38px;border-radius:50%;border:2px solid var(--marigold);opacity:.5;}
+.beat-ring.pulse{animation:bp .18s ease-out;}
+@keyframes bp{from{transform:translateX(-50%) scale(1.35);opacity:1;border-color:var(--tangerine)}to{transform:translateX(-50%) scale(1);opacity:.5}}
+#toast{position:absolute;top:16%;left:50%;transform:translateX(-50%);background:rgba(43,27,51,.88);border:1px solid var(--gold);border-radius:12px;padding:10px 16px;font-family:var(--sans);font-size:15px;opacity:0;transition:opacity .25s;max-width:74%;text-align:center;}
+#toast.show{opacity:1;}
+#dialogue{position:absolute;left:50%;bottom:calc(env(safe-area-inset-bottom,0) + 14px);transform:translateX(-50%);width:min(680px,88%);background:rgba(43,27,51,.9);border:2px solid var(--gold);border-radius:14px;padding:14px 18px;display:none;}
+#dialogue.show{display:block;}
+#dialogue .who{font-family:var(--serif);font-weight:600;font-size:15px;margin-bottom:4px;} .who.zil{color:var(--teal);} .who.marm{color:var(--marigold);} .who.cond{color:var(--gold);}
+#dialogue .line{font-size:15px;line-height:1.5;} #dialogue .more{font-family:var(--mono);font-size:11px;color:var(--gold);margin-top:6px;text-align:right;}
+#sysbtns{position:fixed;z-index:22;top:calc(env(safe-area-inset-top,0) + 54px);right:14px;display:flex;flex-direction:column;gap:8px;}
+#sysbtns.hidden{display:none;}
+.mini{width:40px;height:40px;border-radius:10px;background:rgba(43,27,51,.66);border:1px solid var(--gold);color:var(--peach);font-size:16px;cursor:pointer;}
+#credit{position:fixed;bottom:6px;left:8px;z-index:22;font-family:var(--mono);font-size:10px;color:var(--gold);opacity:.6;}
+@media (max-width:820px) and (orientation:portrait){#rotate{display:flex!important;}}
+#rotate{position:fixed;inset:0;z-index:80;display:none;align-items:center;justify-content:center;flex-direction:column;background:var(--plum);text-align:center;padding:24px;}
+#rotate .g{font-size:64px;color:var(--marigold);margin-bottom:14px;}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<div id="loader"><div class="disc"></div><div class="m" id="loaderMsg">warming up the decks…</div></div>
+
+<div id="title" class="hidden">
+  <div class="wordmark"><span class="celeste"><span class="disc">C</span>ELESTE</span><span class="express">EXPRESS<span class="needle">.</span></span></div>
+  <div class="tonearm">&#9835;</div>
+  <div class="hint">drop the needle to begin</div>
+</div>
+
+<div id="select">
+  <h3>Who crosses the train?</h3>
+  <div class="cards">
+    <div class="card zil" data-char="zil"><h4>ZIL</h4><p>A sleepy alien, rear to front, to lift the needle on the First Record and phone home. Run, jump, air-dash on the beat, wall-climb, blanket-glide.</p><div class="verb">HUSH BUBBLE &middot; LEND AN EAR</div></div>
+    <div class="card marm" data-char="marm"><h4>DJ MARMALADE</h4><p>The resident selector, front to rear, to win the Hushed back one needle-drop at a time. Skate, carve, grind the brass rails, throw drawn-curve records.</p><div class="verb">VINYL THROWS &middot; HEAR ME OUT</div></div>
+  </div>
+</div>
+
+<div id="hud" class="hidden">
+  <div class="hud-top">
+    <div class="hud-badge"><span class="k">CAR</span> <span id="hCar">120</span>/120 &nbsp; <span class="k">LANE</span> <span id="hLane">INT</span></div>
+    <div class="hud-badge"><span class="k">BAND</span> <span id="hBand">I</span> &middot; <span id="hBiome">Dusk Desert</span></div>
+  </div>
+  <div class="beat-ring" id="beatRing"></div>
+  <div id="toast"></div>
+  <div id="dialogue"><div class="who cond" id="dWho">The Conductor</div><div class="line" id="dLine"></div><div class="more">tap to continue &#9654;</div></div>
+</div>
+
+<div id="sysbtns" class="hidden">
+  <button class="mini" id="btnNext" title="Next carriage">&#8594;</button>
+  <button class="mini" id="btnPrev" title="Previous carriage">&#8592;</button>
+  <button class="mini" id="btnAssist" title="Assist / speed">&#9881;</button>
+</div>
+<div id="credit">art: procedural + Higgsfield scenery &middot; Three.js r128</div>
+<div id="rotate"><div class="g">&#128241;</div><div>Turn the train sideways — Celeste Express rides best in landscape.</div></div>
+
+<script src="./engine.js"></script>
+<script type="importmap">
+{ "imports": { "three": "./vendor/three.module.js" } }
+</script>
+<script type="module" src="./main.js"></script>
+</body>
+</html>

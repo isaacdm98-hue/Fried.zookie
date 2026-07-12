@@ -1098,87 +1098,249 @@ canvas{display:block;width:100%;height:100%;}
     return tex;
   }
 
-  /* --- character built from spheres + cylinders (no CapsuleGeometry in r128) - */
-  function buildZil() {
-    var grp = new THREE.Group();
-    var body = new THREE.Mesh(new THREE.SphereGeometry(0.5, 18, 14), toon(P.teal));
-    body.scale.set(1, 0.9, 1); grp.add(body);
-    var cape = new THREE.Mesh(new THREE.SphereGeometry(0.56, 16, 12, 0, Math.PI * 2, 0, Math.PI * 0.6), toon(P.velvet));
-    cape.position.y = 0.1; cape.rotation.x = Math.PI; grp.add(cape);
-    var eyeL = new THREE.Mesh(new THREE.SphereGeometry(0.07, 8, 8), toon(P.plum));
-    eyeL.position.set(-0.16, 0.12, 0.44); grp.add(eyeL);
-    var eyeR = eyeL.clone(); eyeR.position.x = 0.16; grp.add(eyeR);
-    /* moth antennae */
-    var antL = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.02, 0.35, 6), toon(P.peach));
-    antL.position.set(-0.12, 0.5, 0); antL.rotation.z = 0.4; grp.add(antL);
-    var antR = antL.clone(); antR.position.x = 0.12; antR.rotation.z = -0.4; grp.add(antR);
-    return grp;
-  }
-  function buildMarmalade() {
-    var grp = new THREE.Group();
-    var body = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.42, 1.0, 14), toon(P.marigold));
-    body.position.y = 0.1; grp.add(body);
-    var head = new THREE.Mesh(new THREE.SphereGeometry(0.34, 16, 14), toon(P.gold));
-    head.position.y = 0.82; grp.add(head);
-    var afro = new THREE.Mesh(new THREE.SphereGeometry(0.42, 16, 14), toon(P.peach));
-    afro.position.y = 0.95; afro.scale.set(1, 0.8, 1); grp.add(afro);
-    /* skates */
-    var skL = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.12, 0.5), toon(P.tangerine));
-    skL.position.set(-0.18, -0.5, 0.05); grp.add(skL);
-    var skR = skL.clone(); skR.position.x = 0.18; grp.add(skR);
-    return grp;
-  }
   function toon(hex) {
     /* cel-ish material; r128 MeshToonMaterial + ramp gradient */
     var m = new THREE.MeshToonMaterial({ color: hexInt(hex) });
     if (CE._ramp) m.gradientMap = CE._ramp;
     return m;
   }
+  function glow(hex, op) {
+    return new THREE.MeshBasicMaterial({ color: hexInt(hex), transparent: op !== undefined, opacity: op === undefined ? 1 : op });
+  }
+  /* shared limb geometry keeps draw setup cheap */
+  function limb(rad, len, hex) {
+    var m = new THREE.Mesh(new THREE.CylinderGeometry(rad, rad * 0.85, len, 7), toon(hex));
+    m.geometry.translate(0, -len / 2, 0);   /* pivot at the top so rotation swings the leg */
+    return m;
+  }
+
+  /* --- Zil: round teal alien, articulated for a beat waddle ------------------ */
+  function buildZil() {
+    var grp = new THREE.Group(); grp.userData.kind = "zil"; grp.userData.parts = {};
+    var body = new THREE.Mesh(new THREE.SphereGeometry(0.5, 20, 16), toon(P.teal));
+    body.scale.set(1, 0.92, 1); body.position.y = 0.62; grp.add(body); grp.userData.parts.body = body;
+    /* quilted blanket-cape */
+    var cape = new THREE.Mesh(new THREE.SphereGeometry(0.58, 18, 12, 0, Math.PI * 2, 0, Math.PI * 0.62), toon(P.velvet));
+    cape.position.y = 0.7; cape.rotation.x = Math.PI; grp.add(cape); grp.userData.parts.cape = cape;
+    /* heavy-lidded eyes */
+    var eyeL = new THREE.Mesh(new THREE.SphereGeometry(0.08, 10, 10), glow(P.plum));
+    eyeL.position.set(-0.17, 0.66, 0.45); grp.add(eyeL);
+    var eyeR = eyeL.clone(); eyeR.position.x = 0.17; grp.add(eyeR);
+    var lidL = new THREE.Mesh(new THREE.SphereGeometry(0.09, 10, 6, 0, Math.PI * 2, 0, Math.PI * 0.5), toon(P.teal));
+    lidL.position.set(-0.17, 0.68, 0.45); grp.add(lidL);
+    var lidR = lidL.clone(); lidR.position.x = 0.17; grp.add(lidR);
+    /* moth antennae + folding ear-fins */
+    var antL = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.025, 0.4, 6), toon(P.peach));
+    antL.geometry.translate(0, 0.2, 0); antL.position.set(-0.13, 1.02, 0); antL.rotation.z = 0.4; grp.add(antL); grp.userData.parts.antL = antL;
+    var antR = antL.clone(); antR.position.x = 0.13; antR.rotation.z = -0.4; grp.add(antR); grp.userData.parts.antR = antR;
+    var finL = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.28, 8), toon(P.teal));
+    finL.position.set(-0.48, 0.7, 0); finL.rotation.z = 1.2; grp.add(finL); grp.userData.parts.finL = finL;
+    var finR = finL.clone(); finR.position.x = 0.48; finR.rotation.z = -1.2; grp.add(finR); grp.userData.parts.finR = finR;
+    /* stubby limbs */
+    var legL = limb(0.08, 0.32, P.teal); legL.position.set(-0.2, 0.34, 0); grp.add(legL); grp.userData.parts.legL = legL;
+    var legR = limb(0.08, 0.32, P.teal); legR.position.set(0.2, 0.34, 0); grp.add(legR); grp.userData.parts.legR = legR;
+    var armL = limb(0.07, 0.3, P.teal); armL.position.set(-0.46, 0.7, 0); grp.add(armL); grp.userData.parts.armL = armL;
+    var armR = limb(0.07, 0.3, P.teal); armR.position.set(0.46, 0.7, 0); grp.add(armR); grp.userData.parts.armR = armR;
+    /* inverted-hull outline on the body (hero objects only) */
+    addOutline(body, 0.04);
+    return grp;
+  }
+
+  /* --- DJ Marmalade: silver afro, lame suit, skates, crate-quiver ----------- */
+  function buildMarmalade() {
+    var grp = new THREE.Group(); grp.userData.kind = "marm"; grp.userData.parts = {};
+    var body = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.44, 1.05, 16), toon(P.marigold));
+    body.position.y = 0.72; grp.add(body); grp.userData.parts.body = body;
+    var lapel = new THREE.Mesh(new THREE.ConeGeometry(0.34, 0.5, 4), toon(P.gold));
+    lapel.position.y = 0.95; lapel.rotation.y = Math.PI / 4; grp.add(lapel);
+    var head = new THREE.Mesh(new THREE.SphereGeometry(0.3, 18, 16), toon(P.gold));
+    head.position.y = 1.42; grp.add(head); grp.userData.parts.head = head; grp.userData.parts.headY = 1.42;
+    var afro = new THREE.Mesh(new THREE.SphereGeometry(0.42, 18, 16), toon(P.peach));
+    afro.position.y = 1.56; afro.scale.set(1.05, 0.85, 1.05); grp.add(afro); grp.userData.parts.afro = afro;
+    /* arms hold the crate */
+    var armL = limb(0.09, 0.42, P.marigold); armL.position.set(-0.42, 1.12, 0); armL.rotation.x = -0.5; grp.add(armL); grp.userData.parts.armL = armL;
+    var armR = limb(0.09, 0.42, P.marigold); armR.position.set(0.42, 1.12, 0); armR.rotation.x = -0.5; grp.add(armR); grp.userData.parts.armR = armR;
+    var crate = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.3, 0.22), toon(P.velvet));
+    crate.position.set(0, 0.78, 0.42); grp.add(crate);
+    var disc = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 0.02, 16), glow(P.tangerine));
+    disc.position.set(0, 0.95, 0.44); disc.rotation.x = Math.PI / 2; grp.add(disc);
+    /* legs + roller skates */
+    var legL = limb(0.1, 0.45, P.plum); legL.position.set(-0.16, 0.4, 0); grp.add(legL); grp.userData.parts.legL = legL;
+    var legR = limb(0.1, 0.45, P.plum); legR.position.set(0.16, 0.4, 0); grp.add(legR); grp.userData.parts.legR = legR;
+    var skL = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.1, 0.5), toon(P.tangerine)); skL.position.set(-0.16, -0.02, 0.06); grp.add(skL); grp.userData.parts.skL = skL;
+    var skR = skL.clone(); skR.position.x = 0.16; grp.add(skR); grp.userData.parts.skR = skR;
+    var w1 = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.04, 10), glow(P.gold)); w1.rotation.z = Math.PI / 2;
+    w1.position.set(-0.16, -0.08, 0.22); grp.add(w1);
+    var w2 = w1.clone(); w2.position.z = -0.1; grp.add(w2);
+    var w3 = w1.clone(); w3.position.x = 0.16; grp.add(w3);
+    var w4 = w2.clone(); w4.position.x = 0.16; grp.add(w4);
+    grp.userData.parts.wheels = [w1, w2, w3, w4];
+    addOutline(body, 0.04);
+    return grp;
+  }
+
+  /* inverted-hull outline in Deep Velvet — hero objects only */
+  function addOutline(mesh, scale) {
+    var g = mesh.geometry;
+    var o = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color: hexInt(P.velvet), side: THREE.BackSide }));
+    o.scale.set(1 + scale, 1 + scale, 1 + scale);
+    mesh.add(o);
+  }
+
+  /* --- NPCs: dancers, the Hushed, Groove Wardens ---------------------------- */
+  function buildNPC(type, rng, colourSafe) {
+    var grp = new THREE.Group(); grp.userData.parts = {}; grp.userData.type = type;
+    grp.userData.off = rng.next();                    /* dance phase offset */
+    var base = type === "hushed" ? P.hush : (type === "warden" ? P.gold : rng.pick([P.raspberry, P.marigold, P.tangerine, P.green]));
+    var h = type === "warden" ? 1.15 : 0.95;
+    var body = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.28, h, 12), toon(base));
+    body.position.y = h / 2; grp.add(body); grp.userData.parts.body = body;
+    var head = new THREE.Mesh(new THREE.SphereGeometry(0.22, 14, 12), toon(type === "hushed" ? P.hush : P.peach));
+    head.position.y = h + 0.16; grp.add(head); grp.userData.parts.head = head; grp.userData.parts.baseY = h + 0.16;
+    var armL = limb(0.06, 0.34, base); armL.position.set(-0.26, h - 0.05, 0); grp.add(armL); grp.userData.parts.armL = armL;
+    var armR = limb(0.06, 0.34, base); armR.position.set(0.26, h - 0.05, 0); grp.add(armR); grp.userData.parts.armR = armR;
+    if (type === "warden") {
+      var sash = new THREE.Mesh(new THREE.TorusGeometry(0.24, 0.05, 8, 20), glow(P.raspberry));
+      sash.rotation.x = 1.1; sash.position.y = h * 0.55; grp.add(sash);
+    }
+    if (type === "hushed" && colourSafe) {
+      /* colour-safe: a stipple marker so the Hushed read without relying on grey */
+      var mark = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.2, 4), glow(P.peach, 0.85));
+      mark.position.y = h + 0.5; grp.add(mark);
+    }
+    return grp;
+  }
+
+  /* --- biome sky texture (seen through the windows) ------------------------- */
+  var skyCache = {};
+  function biomeSky(biome) {
+    if (skyCache[biome]) return skyCache[biome];
+    var cv = doc.createElement("canvas"); cv.width = 8; cv.height = 64;
+    var g = cv.getContext("2d"), grad = g.createLinearGradient(0, 0, 0, 64), top, bot;
+    if (biome === "Dusk Desert") { top = P.raspberry; bot = P.marigold; }
+    else if (biome === "Aurora Tundra") { top = P.teal; bot = P.velvet; }
+    else if (biome === "Sea Viaduct") { top = P.teal; bot = P.peach; }
+    else if (biome === "Marmalade Canyon") { top = P.tangerine; bot = P.gold; }
+    else if (biome === "Glass Prairie") { top = P.peach; bot = P.green; }
+    else { top = P.hush; bot = P.velvet; }               /* the Still's Edge — quiet grey */
+    grad.addColorStop(0, top); grad.addColorStop(1, bot);
+    g.fillStyle = grad; g.fillRect(0, 0, 8, 64);
+    var tex = new THREE.Texture(cv); tex.needsUpdate = true;
+    skyCache[biome] = tex; return tex;
+  }
 
   /* --- mirrorball speckle sweep: instanced dot field, 1 rev per bar --------- */
   function buildSpeckles(count) {
-    count = count || 90;
-    var geo = new THREE.PlaneGeometry(0.09, 0.09);
-    var mat = new THREE.MeshBasicMaterial({ color: hexInt(P.peach), transparent: true, opacity: 0.5 });
+    count = count || 110;
+    var geo = new THREE.PlaneGeometry(0.1, 0.1);
+    var mat = new THREE.MeshBasicMaterial({ color: hexInt(P.peach), transparent: true, opacity: 0.45 });
     var inst = new THREE.InstancedMesh(geo, mat, count);
     var dummy = new THREE.Object3D(), i;
     inst.userData.seed = [];
     for (i = 0; i < count; i++) {
-      var a = (i / count) * Math.PI * 2;
-      inst.userData.seed.push({ a: a, y: 0.5 + Math.random() * 3.4, r: 3.4 });
-      dummy.position.set(Math.cos(a) * 3.4, inst.userData.seed[i].y, Math.sin(a) * 3.4);
+      var a = (i / count) * Math.PI * 2 * 3;             /* three loose bands */
+      var r = 2.6 + (i % 3) * 0.5;
+      inst.userData.seed.push({ a: a, y: 0.4 + (i * 0.618034 % 1) * 3.2, r: r });
+      dummy.position.set(Math.cos(a) * r, inst.userData.seed[i].y, Math.sin(a) * r);
       dummy.updateMatrix(); inst.setMatrixAt(i, dummy.matrix);
     }
     inst.instanceMatrix.needsUpdate = true;
     return inst;
   }
 
-  /* --- a single carriage group (interior box + speakers) -------------------- */
+  /* --- a single carriage group: shell, windows, dancefloor, scenery, crowd -- */
   function buildCarriageGroup(car) {
     var layout = CE.genCarriage(car);
+    var rng = new CE.Rand(car * 92821 >>> 0 || car || 1);
     var grp = new THREE.Group();
     grp.userData.layout = layout;
-    /* shell */
-    var floor = new THREE.Mesh(new THREE.BoxGeometry(7.2, 0.2, 20), toon(P.velvet));
-    floor.position.y = -0.6; grp.add(floor);
-    var ceil = new THREE.Mesh(new THREE.BoxGeometry(7.2, 0.2, 20), toon(P.plum));
-    ceil.position.y = 3.2; grp.add(ceil);
-    var wallL = new THREE.Mesh(new THREE.BoxGeometry(0.2, 3.8, 20), toon(P.plum));
-    wallL.position.set(-3.6, 1.3, 0); grp.add(wallL);
-    var wallR = wallL.clone(); wallR.position.x = 3.6; grp.add(wallR);
-    /* speakers pulse on the beat */
     grp.userData.speakers = [];
-    var i;
-    for (i = 0; i < layout.speakers; i++) {
-      var sp = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.9, 0.4), new THREE.MeshBasicMaterial({ color: hexInt(P.raspberry) }));
-      sp.position.set(i % 2 === 0 ? -3.2 : 3.2, 0.4, -8 + i * 5);
-      grp.add(sp); grp.userData.speakers.push(sp);
+    grp.userData.npcs = [];
+    grp.userData.lamps = [];
+    var LEN = 22, i;
+
+    /* shell */
+    var floor = new THREE.Mesh(new THREE.BoxGeometry(7.2, 0.2, LEN), toon(P.velvet));
+    floor.position.y = -0.6; grp.add(floor);
+    var ceil = new THREE.Mesh(new THREE.BoxGeometry(7.4, 0.2, LEN), toon(P.plum));
+    ceil.position.y = 3.4; grp.add(ceil);
+    var wallL = new THREE.Mesh(new THREE.BoxGeometry(0.2, 4, LEN), toon(P.plum)); wallL.position.set(-3.6, 1.4, 0); grp.add(wallL);
+    var wallR = wallL.clone(); wallR.position.x = 3.6; grp.add(wallR);
+
+    /* windows onto the passing biome — one continuous strip per wall (cheap) */
+    var sky = biomeSky(layout.biome); sky.wrapS = THREE.RepeatWrapping; sky.repeat.set(6, 1);
+    var winMat = new THREE.MeshBasicMaterial({ map: sky });
+    var winL = new THREE.Mesh(new THREE.PlaneGeometry(LEN - 3, 1.4), winMat); winL.position.set(-3.48, 1.7, 0); winL.rotation.y = Math.PI / 2; grp.add(winL);
+    var winR = new THREE.Mesh(new THREE.PlaneGeometry(LEN - 3, 1.4), winMat); winR.position.set(3.48, 1.7, 0); winR.rotation.y = -Math.PI / 2; grp.add(winR);
+    /* brass sills top and bottom of each strip (2 boxes per wall) */
+    var sillGeo = new THREE.BoxGeometry(0.08, 0.1, LEN - 3), gm = glow(P.gold);
+    var s1 = new THREE.Mesh(sillGeo, gm); s1.position.set(-3.52, 2.45, 0); grp.add(s1);
+    var s2 = new THREE.Mesh(sillGeo, gm); s2.position.set(-3.52, 0.95, 0); grp.add(s2);
+    var s3 = new THREE.Mesh(sillGeo, gm); s3.position.set(3.52, 2.45, 0); grp.add(s3);
+    var s4 = new THREE.Mesh(sillGeo, gm); s4.position.set(3.52, 0.95, 0); grp.add(s4);
+
+    /* dancefloor — one InstancedMesh (cheap), tiles step colour each beat */
+    var cols = 4, rows = 8, tileN = cols * rows;
+    var tileGeo = new THREE.BoxGeometry(0.85, 0.06, 0.85);
+    var tiles = new THREE.InstancedMesh(tileGeo, new THREE.MeshBasicMaterial(), tileN);
+    var dummy = new THREE.Object3D(), tx, tz, ti = 0, parity = [];
+    for (tx = 0; tx < cols; tx++) {
+      for (tz = 0; tz < rows; tz++) {
+        dummy.position.set(-1.6 + tx * 1.05, -0.46, -3.6 + tz * 1.0);
+        dummy.updateMatrix(); tiles.setMatrixAt(ti, dummy.matrix);
+        parity.push((tx + tz) % 2);
+        tiles.setColorAt(ti, new THREE.Color(hexInt((tx + tz) % 2 ? P.raspberry : P.velvet)));
+        ti++;
+      }
     }
-    /* brass grind rail */
-    var rail = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 18, 8), new THREE.MeshBasicMaterial({ color: hexInt(P.gold) }));
-    rail.rotation.x = Math.PI / 2; rail.position.set(-3.1, 1.4, 0); grp.add(rail);
+    tiles.instanceColor.needsUpdate = true;
+    tiles.userData.parity = parity;
+    grp.add(tiles); grp.userData.tiles = tiles;
+
+    /* hanging lamps (glow discs, pulse subtly) */
+    for (i = 0; i < 4; i++) {
+      var lamp = new THREE.Mesh(new THREE.SphereGeometry(0.14, 12, 12), glow(P.marigold));
+      lamp.position.set(rng.pick([-2.4, 2.4]), 3.0, -LEN / 2 + 3 + i * 4.5); grp.add(lamp); grp.userData.lamps.push(lamp);
+      var flex = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 0.4, 5), glow(P.gold));
+      flex.position.set(lamp.position.x, 3.25, lamp.position.z); grp.add(flex);
+    }
+
+    /* mirrorball at ceiling centre — casts the speckle sweep */
+    var ball = new THREE.Mesh(new THREE.IcosahedronGeometry(0.4, 1), new THREE.MeshPhongMaterial({ color: hexInt(P.peach), flatShading: true, shininess: 90, emissive: hexInt(P.velvet) }));
+    ball.position.set(0, 2.7, 0); grp.add(ball); grp.userData.ball = ball;
+
+    /* benches */
+    for (i = 0; i < 3; i++) {
+      var bench = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.4, 0.5), toon(P.deepvelvet || P.velvet));
+      bench.position.set(rng.pick([-2.9, 2.9]), -0.3, -LEN / 2 + 5 + i * 6); grp.add(bench);
+    }
+
+    /* speakers pulse on the beat */
+    for (i = 0; i < layout.speakers; i++) {
+      var sp = new THREE.Mesh(new THREE.BoxGeometry(0.55, 1.0, 0.45), glow(P.raspberry));
+      sp.position.set(i % 2 === 0 ? -3.15 : 3.15, 0.0, -8 + i * 5); grp.add(sp); grp.userData.speakers.push(sp);
+      var cone = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.22, 0.1, 14), glow(P.plum));
+      cone.rotation.x = Math.PI / 2; cone.position.set(sp.position.x + (i % 2 === 0 ? 0.24 : -0.24), 0.15, sp.position.z); grp.add(cone);
+    }
+
+    /* brass grind rail (Marmalade) */
+    var rail = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, LEN - 2, 8), glow(P.gold));
+    rail.rotation.x = Math.PI / 2; rail.position.set(-3.15, 1.5, 0); grp.add(rail);
+
+    /* crowd: dancers + the Hushed + the odd Warden */
+    var colourSafe = (game && game.assist) ? game.assist.colourSafe : false;
+    var crowd = rng.int(3, 5), c;
+    for (c = 0; c < crowd; c++) {
+      var roll = rng.next();
+      var type = roll < 0.45 ? "dancer" : (roll < 0.8 ? "hushed" : "warden");
+      var npc = buildNPC(type, rng, colourSafe);
+      npc.position.set(rng.range(-2.4, 2.4), -0.5, rng.range(-LEN / 2 + 2, LEN / 2 - 2));
+      npc.rotation.y = rng.range(0, Math.PI * 2);
+      grp.add(npc); grp.userData.npcs.push(npc);
+    }
+
     grp.userData.dispose = function () {
-      grp.traverse(function (o) { if (o.geometry) o.geometry.dispose(); if (o.material) { if (o.material.dispose) o.material.dispose(); } });
+      grp.traverse(function (o) { if (o.geometry) o.geometry.dispose(); if (o.material && o.material.dispose) o.material.dispose(); });
     };
     return grp;
   }
@@ -1249,29 +1411,93 @@ canvas{display:block;width:100%;height:100%;}
 
     ensureGroups();
 
+    /* animate one character rig (hero or NPC) to the beat */
+    function animateRig(rig, t, pop, swing, moving, dance) {
+      var pr = rig.userData.parts; if (!pr) return;
+      if (pr.legL) { pr.legL.rotation.x = swing * (moving ? 0.7 : 0.25); }
+      if (pr.legR) { pr.legR.rotation.x = -swing * (moving ? 0.7 : 0.25); }
+      if (pr.armL) { pr.armL.rotation.x = (pr.armL.userData.base || 0) - swing * (dance ? 1.2 : 0.5) - (dance ? pop * 0.6 : 0); }
+      if (pr.armR) { pr.armR.rotation.x = (pr.armR.userData.base || 0) + swing * (dance ? 1.2 : 0.5) - (dance ? pop * 0.6 : 0); }
+      if (pr.antL) { pr.antL.rotation.z = 0.4 + Math.sin(t * 0.008) * 0.18; }
+      if (pr.antR) { pr.antR.rotation.z = -0.4 - Math.sin(t * 0.008) * 0.18; }
+      if (pr.afro) { pr.afro.position.y = 1.56 + pop * 0.04; }
+    }
+
     /* render loop */
-    var lastT = 0;
+    var lastBeat = -1;
     function frame(t) {
       root.requestAnimationFrame(frame);
       game.clock.advance((game.env.performance && game.env.performance.now) ? game.env.performance.now() : t);
+      var phase = game.clock.phase();
+      var barPhase = game.clock.barPhase();
+      var pop = Math.pow(1 - phase, 2);                  /* punchy on the beat, decays */
+      var swing = Math.sin(t * 0.006);
+      var beatN = game.clock.beatCount;
+      var beatChanged = (beatN !== lastBeat);
+
       /* mirrorball speckle: one revolution per bar */
-      var bp = game.clock.barPhase();
-      var rot = bp * Math.PI * 2, i, dummy = new THREE.Object3D();
+      var rot = barPhase * Math.PI * 2, i, dummy = new THREE.Object3D();
       for (i = 0; i < speckles.userData.seed.length; i++) {
         var sd = speckles.userData.seed[i], a = sd.a + rot;
         dummy.position.set(Math.cos(a) * sd.r, sd.y, Math.sin(a) * sd.r);
         dummy.lookAt(0, sd.y, 0); dummy.updateMatrix(); speckles.setMatrixAt(i, dummy.matrix);
       }
       speckles.instanceMatrix.needsUpdate = true;
-      /* fade speaker flash back to raspberry */
-      var k;
-      for (k in groups) { if (groups.hasOwnProperty(k)) { var gg = groups[k], s; for (s = 0; s < gg.userData.speakers.length; s++) { gg.userData.speakers[s].material.color.lerp(new THREE.Color(hexInt(P.raspberry)), 0.12); } } }
-      /* lazy 3/4 chase */
-      camera.position.x += (hero.position.x - camera.position.x) * 0.08;
-      camera.lookAt(hero.position.x, hero.position.y + 1, hero.position.z);
-      hero.rotation.y = game.world.heading;
+
+      /* per-carriage life */
+      var k, gg, s, tileCol = new THREE.Color();
+      for (k in groups) {
+        if (!groups.hasOwnProperty(k)) continue;
+        gg = groups[k];
+        /* speakers ease back to raspberry after the beat flash */
+        for (s = 0; s < gg.userData.speakers.length; s++) {
+          gg.userData.speakers[s].material.color.lerp(tileCol.setHex(hexInt(P.raspberry)), 0.12);
+          gg.userData.speakers[s].scale.y = 1 + pop * 0.25;
+        }
+        /* mirrorball spins; lamps breathe */
+        if (gg.userData.ball) gg.userData.ball.rotation.y += 0.03;
+        for (s = 0; s < gg.userData.lamps.length; s++) { gg.userData.lamps[s].material.opacity = 0.6 + pop * 0.4; gg.userData.lamps[s].material.transparent = true; }
+        /* dancefloor steps colour each beat (running checker) — only on beat change */
+        var tl = gg.userData.tiles;
+        if (tl && tl.instanceColor && beatChanged) {
+          var pcount = tl.userData.parity.length, pi;
+          for (pi = 0; pi < pcount; pi++) {
+            var lit = (beatN + tl.userData.parity[pi]) % 2 === 0;
+            tl.setColorAt(pi, tileCol.setHex(hexInt(lit ? P.raspberry : P.velvet)));
+          }
+          tl.instanceColor.needsUpdate = true;
+        }
+        /* the crowd dances (dancers bounce on beat, the Hushed sway slow) */
+        var np;
+        for (np = 0; np < gg.userData.npcs.length; np++) {
+          var npc = gg.userData.npcs[np], off = npc.userData.off, ph = (phase + off) % 1, npop = Math.pow(1 - ph, 2);
+          if (npc.userData.type === "dancer") {
+            npc.position.y = -0.5 + npop * 0.22; npc.rotation.y += 0.01;
+            animateRig(npc, t + off * 1000, npop, Math.sin(t * 0.006 + off * 6), false, true);
+          } else if (npc.userData.type === "warden") {
+            npc.position.y = -0.5 + npop * 0.12;
+            animateRig(npc, t + off * 1000, npop, Math.sin(t * 0.005 + off * 6), false, true);
+          } else {                                        /* the Hushed — barely humming */
+            npc.rotation.z = Math.sin(t * 0.0011 + off * 6) * 0.08;
+            npc.position.y = -0.5 + Math.abs(Math.sin(t * 0.0009 + off)) * 0.03;
+          }
+        }
+      }
+
+      /* hero dances/waddles to the beat; leans into a dash */
+      var moving = (t - (game._lastMoveT || 0)) < 260;
+      animateRig(hero, t, pop, swing, moving, true);
+      hero.position.y = pop * 0.12 + (moving ? Math.abs(swing) * 0.04 : 0);
+      if (hero.userData.parts && hero.userData.parts.wheels) { var wi; for (wi = 0; wi < hero.userData.parts.wheels.length; wi++) hero.userData.parts.wheels[wi].rotation.x += moving ? 0.4 : 0.04; }
+
+      /* lazy 3/4 chase; keeps both leads a consistent size in frame */
+      camera.position.x += (hero.position.x * 0.5 - camera.position.x) * 0.06;
+      camera.position.y += (2.0 - camera.position.y) * 0.05;
+      camera.position.z += ((hero.position.z + 5.2) - camera.position.z) * 0.06;
+      camera.lookAt(hero.position.x, hero.position.y + 0.7, hero.position.z - 1.5);
+      hero.rotation.y += (game.world.heading - hero.rotation.y) * 0.15;
+      lastBeat = beatN;
       renderer.render(scene, camera);
-      lastT = t;
     }
     root.requestAnimationFrame(frame);
     root.addEventListener("resize", function () { api.resize(); });
@@ -1478,7 +1704,7 @@ canvas{display:block;width:100%;height:100%;}
       if (intent === "dash") {
         var ang = Math.atan2(dy, dx);
         var d = game.tryDash((game.env.performance && game.env.performance.now) ? game.env.performance.now() : Date.now(), ang);
-        if (d.ok) { showToast(d.onBeat ? "ON-BEAT DASH — +25%!" : "Dash."); game.world.heading = -ang; }
+        if (d.ok) { showToast(d.onBeat ? "ON-BEAT DASH — +25%!" : "Dash."); game.world.heading = -ang; game._lastMoveT = (game.env.performance && game.env.performance.now) ? game.env.performance.now() : Date.now(); }
         else { showToast("Dash spent — refreshes on the downbeat."); }
       } else if (intent === "jump") {
         showToast("Jump.");
@@ -1486,8 +1712,9 @@ canvas{display:block;width:100%;height:100%;}
         showToast("Record thrown along your drawn path.");
       }
     } else {
-      /* left zone: move heading a touch for feedback */
+      /* left zone: drift-stick nudges heading, and kicks the skate/walk cycle */
       game.world.heading += dx * 0.002;
+      game._lastMoveT = (game.env.performance && game.env.performance.now) ? game.env.performance.now() : Date.now();
     }
     touchStart = null;
   }, { passive: true });
@@ -1495,8 +1722,9 @@ canvas{display:block;width:100%;height:100%;}
   /* keyboard fallback for desktop testing */
   doc.addEventListener("keydown", function (e) {
     if (game.state !== "playing") return;
-    if (e.key === "ArrowLeft") { game.transitionTo(game.world.carriage + 1); updateHUD(); }
-    else if (e.key === "ArrowRight") { game.transitionTo(game.world.carriage - 1); updateHUD(); }
+    game._lastMoveT = (game.env.performance && game.env.performance.now) ? game.env.performance.now() : Date.now();
+    if (e.key === "ArrowLeft") { game.transitionTo(game.world.carriage + 1); if (game.renderer && game.renderer.refreshCarriages) game.renderer.refreshCarriages(); updateHUD(); }
+    else if (e.key === "ArrowRight") { game.transitionTo(game.world.carriage - 1); if (game.renderer && game.renderer.refreshCarriages) game.renderer.refreshCarriages(); updateHUD(); }
     else if (e.key === " ") { var d = game.tryDash((game.env.performance && game.env.performance.now) ? game.env.performance.now() : Date.now(), 0); showToast(d.ok ? (d.onBeat ? "ON-BEAT DASH!" : "Dash.") : "Dash spent."); }
     else if (e.key === "m") { openMap(); }
   });
