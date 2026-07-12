@@ -1,0 +1,10 @@
+{
+  "name": "celeste-express",
+  "version": "0.1.0",
+  "description": "CELESTE EXPRESS — a 3D open-world disco train odyssey. Single-file, zero-build, ES5-only PWA.",
+  "type": "commonjs",
+  "private": true,
+  "scripts": {
+    "smoke": "node smoke.js"
+  }
+}
