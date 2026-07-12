@@ -4995,6 +4995,9 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     function drawStory(c, b) {
       var key = UI.story.key, pl = (key === 'asc') ? c.ascBody : c.planets[key]; if (!pl) { closeStory(); return; }
       var x = sx(), w = cw(), still = reduced(), te = cl01((nowT() - UI.story.t0) / 600), e = eCubic(te), cx = x + w / 2, ly = 20;
+      // the planet's world, painted faint behind its story (bundled art, absent-safe)
+      var stBk9 = artImg('act-' + key);
+      if (stBk9) { var dcS9 = p.drawingContext; if (dcS9) { dcS9.save(); dcS9.globalAlpha = 0.16 * e; } drawImageCover(stBk9, 0, 0, W, H); if (dcS9) dcS9.restore(); }
       flatBtn('\u2039 Back to the wheel', x, ly, 176, 38, function () { closeStory(); }, false, true);
       (function () {
         var ordS9 = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto']; if (b.timeKnown) ordS9.push('asc');
@@ -8942,7 +8945,6 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       ly += 8;
       flatBtn('Edit birth data', x, ly, 170, 44, function () { UI.draft = newDraft(); UI.screen = 'onboard'; }, true);
       flatBtn('Replay the walk', x + 182, ly, 170, 44, function () { startTour(); }, false); ly += 56;
-      flatBtn('Walk me through my chart', x, ly, w, 44, function () { startWalk(); }, false); ly += 56;
       flatBtn('Watch the opening again', x, ly, w, 44, function () { UI.introReplay = true; UI.introT = 0; UI.introSound = false; buzz(12); }, false); ly += 56;
       flatBtn('Share my chart (image)', x, ly, w, 44, function () { exportChartCard(); }, false); ly += 56;
       flatBtn('The Book of You: full printable report', x, ly, w, 44, function () { APP.exportBook(); }, true); ly += 56;
@@ -9178,24 +9180,16 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         if (dcW9 && !still) { var pgl9 = dcW9.createRadialGradient(mvx9, gy, 6, mvx9, gy, 110); pgl9.addColorStop(0, 'rgba(255,240,204,' + (0.10 * ee) + ')'); pgl9.addColorStop(1, 'rgba(255,240,204,0)'); dcW9.fillStyle = pgl9; dcW9.fillRect(mvx9 - 110, gy - 26, 220, 28); }
       }
       // your natal point in the same sky, and the aspect drawn between
-      if (o.natalLon != null) {
+      if (o.natalLon != null && o.natalKey !== o.mover) {
         var nlon9 = ((o.natalLon) % 360 + 360) % 360;
         var nx9 = bxS(nlon9), ny9 = byS(nlon9);
         if (nx9 > 14 && nx9 < W - 14) {
-          p.noFill(); strokec(ACC, 225 * ee); p.strokeWeight(1.4); p.ellipse(nx9, ny9, 16, 16);
-          setFont(SANS, 9, [252, 246, 232], p.CENTER, p.CENTER, 240 * ee); p.text(o.natalKey === 'asc' ? '\u2191' : o.natalKey === 'mc' ? '\u25B4' : APP.glyphFor(o.natalKey), nx9, ny9);
+          // a soft warm glow marks the natal point — no ring, no wire: those read as chart clutter
+          p.noStroke(); fillc([255, 216, 170], 34 * ee); p.ellipse(nx9, ny9, 24, 24); fillc([255, 226, 190], 120 * ee); p.ellipse(nx9, ny9, 5, 5);
+          setFont(SANS, 9, [252, 246, 232], p.CENTER, p.CENTER, 240 * ee); p.text(o.natalKey === 'asc' ? '\u2191' : o.natalKey === 'mc' ? '\u25B4' : APP.glyphFor(o.natalKey), nx9, ny9 - 10);
           var nlUp9 = (o.mover && Math.abs(nx9 - mvx9) < 46);
           var nlA9 = still ? 0.7 : Math.min(cl01((nowT() - o.t0 - 1200) / 700), cl01((5200 - (nowT() - o.t0)) / 900));
           if (nlA9 > 0.01) { setFont(MONO, 7, [255, 216, 170], p.CENTER, nlUp9 ? p.BOTTOM : p.TOP, 225 * ee * nlA9); p.text(('YOUR ' + (o.natalKey === 'asc' ? 'RISING' : o.natalKey === 'mc' ? 'MIDHEAVEN' : APP.nameFor(o.natalKey))).toUpperCase(), nx9, nlUp9 ? ny9 - 12 : ny9 + 12); }
-          var thA9 = still ? 1 : cl01((nowT() - o.t0 - 900) / 900);
-          if (thA9 > 0.01 && o.mover) {
-            var tc9 = (o.quality === 'flow') ? ELHUE.air : (o.quality === 'fusion') ? [255, 232, 180] : ACC;
-            strokec(tc9, 150 * thA9 * ee); p.strokeWeight(1.3); p.noFill();
-            var mmx9 = (mvx9 + nx9) / 2, mmy9 = Math.min(mvy9, ny9) - 14 - (still ? 0 : Math.sin(nowT() * 0.0016) * 3);
-            p.bezier(mvx9, mvy9 + 12, mmx9, mmy9 + 26, mmx9, mmy9 + 26, nx9, ny9 - 10);
-            if (o.aspGlyph) { setFont(SANS, 11, tc9, p.CENTER, p.CENTER, 235 * thA9 * ee); p.text(o.aspGlyph, mmx9, mmy9 + 20); }
-            p.noStroke();
-          }
         }
       }
       // weather that means what the aspect means
@@ -9689,7 +9683,6 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       else { var ci = DATA.CITIES[d.cityIdx]; place = ci[0] + ', ' + ci[1]; iana = ci[4]; lat = ci[2]; lon = ci[3]; }
       APP.STATE.birth = { name: '', y: d.y, mo: d.mo, d: d.d, hour: d.hour, min: d.min, tz: d.tz || 0, manualTz: !!d.manualTz, iana: iana, lat: lat, lon: lon, place: place, timeKnown: d.timeKnown };
       recompute(); UI.selPlanet = 'sun'; UI.popT = nowT(); UI.popFrom = 22; UI.scroll.chart = 0; UI.screen = 'chart'; hideSearchInput();
-      if (!APP.STATE.settings.walked) { UI.walk = { i: 0, t0: nowT() }; UI.walkTr = null; UI.walkTheme = null; } // first reveal: walk them through it
     }
     function recompute() { APP.STATE.chart = APP.compute(APP.STATE.birth, APP.STATE.settings); APP.save(); UI.readCache = null; UI.readSig = null; UI.readTransit = null; UI.forecast = null; UI.promCache = null; UI.arcCache = null; UI.todayCache = null; UI.fmList = null; UI.lifeList = null; UI.calEvents = null; UI.calDay = null; UI.walkTr = null; UI.walkTheme = null; UI.bondCache = null; UI.bondFor = null; UI.plun = null; UI.ringsData = null; UI.ringSel = null; UI.vocW = null; UI.phCache = null; UI.synToneCache = null; UI.dailyEssay = null; UI.cycles = undefined; UI.cycOpen = {}; UI.weekWv = undefined; if (APP.clearPersonCharts) APP.clearPersonCharts(); UI.askAns = ''; UI.quip = null; UI.quipNext = 0; buildField(); }
 
