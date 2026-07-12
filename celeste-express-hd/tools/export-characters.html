@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en-GB"><head><meta charset="utf-8"><title>Export characters → GLB</title></head>
+<body style="background:#2B1B33;color:#FFE8CE;font-family:monospace;padding:20px">
+<pre id="log">building…</pre>
+<script type="importmap">{ "imports": { "three": "../vendor/three.module.js" } }</script>
+<script type="module">
+/* Dev tool (not shipped): authors Zil & DJ Marmalade as detailed, named
+   meshes and exports each to a real .glb via GLTFExporter in a real browser
+   (native Blob/FileReader). Playwright reads window.__glb and writes the files.
+   Materials are MeshStandardMaterial (colour only) so the app can swap them to
+   its cel+rim shader on load; node names drive the beat animation. */
+import * as THREE from 'three';
+import { GLTFExporter } from '../vendor/jsm/GLTFExporter.js';
+
+const P = { plum:0x2B1B33, velvet:0x46284F, marigold:0xFFB13D, tangerine:0xFF7847, peach:0xFFE8CE, gold:0xD9A441, teal:0x35C4B5, raspberry:0xE8508D, green:0x6FA05E, hush:0x8D8A93 };
+const mat = (c, r=0.75, m=0.0) => new THREE.MeshStandardMaterial({ color: new THREE.Color(c), roughness:r, metalness:m });
+function part(mesh, name){ mesh.name = name; return mesh; }
+function limb(rad, len, c){ const g = new THREE.CylinderGeometry(rad, rad*0.8, len, 10); g.translate(0,-len/2,0); return new THREE.Mesh(g, mat(c)); }
+
+function buildZil(){
+  const g = new THREE.Group(); g.name = 'zil';
+  const body = part(new THREE.Mesh(new THREE.SphereGeometry(0.5,32,24), mat(P.teal,0.6)), 'body'); body.scale.set(1,0.92,1); body.position.y=0.62; g.add(body);
+  const belly = new THREE.Mesh(new THREE.SphereGeometry(0.37,24,18), mat(0x5AD8CB,0.55)); belly.position.set(0,0.55,0.2); belly.scale.set(1,0.82,0.5); g.add(belly);
+  const cape = part(new THREE.Mesh(new THREE.SphereGeometry(0.61,28,18,0,Math.PI*2,0,Math.PI*0.62), mat(P.velvet,0.85)), 'cape'); cape.position.y=0.72; cape.rotation.x=Math.PI; g.add(cape);
+  const collar = new THREE.Mesh(new THREE.TorusGeometry(0.42,0.06,10,26), mat(P.raspberry,0.6)); collar.position.y=0.78; collar.rotation.x=Math.PI/2; g.add(collar);
+  const eL = new THREE.Mesh(new THREE.SphereGeometry(0.1,18,18), mat(P.plum,0.4)); eL.position.set(-0.17,0.66,0.45); g.add(eL);
+  const eR = eL.clone(); eR.position.x=0.17; g.add(eR);
+  const sL = new THREE.Mesh(new THREE.SphereGeometry(0.032,10,10), mat(P.peach,0.3)); sL.position.set(-0.14,0.71,0.51); g.add(sL);
+  const sR = sL.clone(); sR.position.x=0.2; g.add(sR);
+  const antGeo = new THREE.CylinderGeometry(0.014,0.03,0.44,8); antGeo.translate(0,0.22,0);
+  const aL = part(new THREE.Mesh(antGeo, mat(P.peach)), 'antL'); aL.position.set(-0.13,1.02,0); aL.rotation.z=0.4; g.add(aL);
+  const aR = part(aL.clone(),'antR'); aR.position.x=0.13; aR.rotation.z=-0.4; g.add(aR);
+  const pL = new THREE.Mesh(new THREE.SphereGeometry(0.055,12,12), mat(P.marigold,0.5)); pL.position.set(0,0.44,0); aL.add(pL);
+  const pR = pL.clone(); aR.add(pR);
+  const fL = part(new THREE.Mesh(new THREE.ConeGeometry(0.14,0.32,12), mat(P.teal,0.6)),'finL'); fL.position.set(-0.47,0.7,0); fL.rotation.z=1.2; g.add(fL);
+  const fR = part(fL.clone(),'finR'); fR.position.x=0.47; fR.rotation.z=-1.2; g.add(fR);
+  const lL = part(limb(0.085,0.34,P.teal),'legL'); lL.position.set(-0.2,0.34,0); g.add(lL);
+  const lR = part(limb(0.085,0.34,P.teal),'legR'); lR.position.set(0.2,0.34,0); g.add(lR);
+  const footL = new THREE.Mesh(new THREE.SphereGeometry(0.1,12,10), mat(P.velvet,0.7)); footL.position.set(0,-0.34,0.05); footL.scale.set(1,0.6,1.4); lL.add(footL);
+  const footR = footL.clone(); lR.add(footR);
+  const armL = part(limb(0.072,0.32,P.teal),'armL'); armL.position.set(-0.46,0.7,0); g.add(armL);
+  const armR = part(limb(0.072,0.32,P.teal),'armR'); armR.position.set(0.46,0.7,0); g.add(armR);
+  return g;
+}
+function buildMarm(){
+  const g = new THREE.Group(); g.name = 'marm';
+  const body = part(new THREE.Mesh(new THREE.CylinderGeometry(0.32,0.46,1.08,24), mat(P.marigold,0.55,0.15)), 'body'); body.position.y=0.74; g.add(body);
+  const lame = new THREE.Mesh(new THREE.ConeGeometry(0.37,0.58,6), mat(P.gold,0.4,0.35)); lame.position.y=0.98; lame.rotation.y=Math.PI/6; g.add(lame);
+  const belt = new THREE.Mesh(new THREE.TorusGeometry(0.4,0.05,10,26), mat(P.tangerine,0.5)); belt.position.y=0.4; belt.rotation.x=Math.PI/2; g.add(belt);
+  const head = part(new THREE.Mesh(new THREE.SphereGeometry(0.3,28,24), mat(0xC98A3A,0.6)),'head'); head.position.y=1.44; g.add(head);
+  const afro = part(new THREE.Mesh(new THREE.IcosahedronGeometry(0.45,2), mat(P.peach,0.85)),'afro'); afro.position.y=1.6; afro.scale.set(1.05,0.9,1.05); g.add(afro);
+  const eL = new THREE.Mesh(new THREE.SphereGeometry(0.05,12,12), mat(P.plum,0.4)); eL.position.set(-0.11,1.46,0.27); g.add(eL);
+  const eR = eL.clone(); eR.position.x=0.11; g.add(eR);
+  const shades = new THREE.Mesh(new THREE.BoxGeometry(0.34,0.08,0.05), mat(P.plum,0.3,0.4)); shades.position.set(0,1.47,0.28); g.add(shades);
+  const armL = part(limb(0.092,0.46,P.marigold),'armL'); armL.position.set(-0.42,1.14,0); armL.rotation.x=-0.5; g.add(armL);
+  const armR = part(limb(0.092,0.46,P.marigold),'armR'); armR.position.set(0.42,1.14,0); armR.rotation.x=-0.5; g.add(armR);
+  const crate = new THREE.Mesh(new THREE.BoxGeometry(0.37,0.33,0.25), mat(P.velvet,0.8)); crate.position.set(0,0.8,0.44); g.add(crate);
+  const disc = new THREE.Mesh(new THREE.CylinderGeometry(0.13,0.13,0.02,24), mat(P.tangerine,0.4)); disc.position.set(0,0.98,0.47); disc.rotation.x=Math.PI/2; g.add(disc);
+  disc.add(new THREE.Mesh(new THREE.CylinderGeometry(0.04,0.04,0.022,14), mat(P.peach,0.4)));
+  const lL = part(limb(0.1,0.46,P.plum),'legL'); lL.position.set(-0.16,0.42,0); g.add(lL);
+  const lR = part(limb(0.1,0.46,P.plum),'legR'); lR.position.set(0.16,0.42,0); g.add(lR);
+  const wheels = new THREE.Group(); wheels.name='wheels'; g.add(wheels);
+  [[-0.16,0.22],[-0.16,-0.12],[0.16,0.22],[0.16,-0.12]].forEach(([x,z],i)=>{ const w = part(new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.06,0.05,14), mat(P.gold,0.3,0.4)),'wheel'+i); w.rotation.z=Math.PI/2; w.position.set(x,-0.09,z); wheels.add(w); });
+  [[-0.16],[0.16]].forEach(([x])=>{ const s = new THREE.Mesh(new THREE.BoxGeometry(0.2,0.1,0.52), mat(P.tangerine,0.5)); s.position.set(x,-0.02,0.06); g.add(s); });
+  return g;
+}
+
+const log = (m)=>{ document.getElementById('log').textContent += '\n'+m; };
+async function toGLB(obj){
+  /* r128 signature is parse(input, onDone, options) — no onError arg */
+  return await new Promise((res)=> new GLTFExporter().parse(obj, (r)=>res(r), { binary:true }));
+}
+function b64(ab){ const b = new Uint8Array(ab); let s=''; for(let i=0;i<b.length;i++) s+=String.fromCharCode(b[i]); return btoa(s); }
+
+(async () => {
+  window.__glb = {};
+  const zil = await toGLB(buildZil()); window.__glb.zil = b64(zil); log('zil.glb '+zil.byteLength+' bytes');
+  const marm = await toGLB(buildMarm()); window.__glb.marm = b64(marm); log('marm.glb '+marm.byteLength+' bytes');
+  window.__done = true; log('DONE');
+})().catch(e=>{ document.getElementById('log').textContent += '\nERR '+e.message; window.__err = e.message; });
+</script>
+</body></html>

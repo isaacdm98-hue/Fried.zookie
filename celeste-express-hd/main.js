@@ -7,6 +7,7 @@
    Three.js r128 (vendored ES module). British English throughout.
    ============================================================================ */
 import * as THREE from 'three';
+import { GLTFLoader } from './vendor/jsm/GLTFLoader.js';
 
 const CE = window.CE;
 const doc = document;
@@ -342,11 +343,39 @@ function ensureGroups() {
   for (const k of Object.keys(groups)) { if (!want.has(+k)) { scene.remove(groups[k]); groups[k].userData.dispose(); delete groups[k]; } }
 }
 
+/* Authored GLB characters (bundled, offline). Loaded via GLTFLoader; materials
+   are swapped to the cel+rim shader on load and named nodes drive animation.
+   Falls back to the in-code procedural build if the GLB can't be fetched. */
+const gltfLoader = new GLTFLoader();
+const MODEL = { zil: 'assets/models/zil.glb', marm: 'assets/models/marmalade.glb' };
+function applyCel(root) {
+  const parts = {};
+  root.traverse(o => {
+    if (o.isMesh) {
+      const col = (o.material && o.material.color) ? o.material.color.clone() : new THREE.Color(P.peach);
+      o.material = cel(col.getHex(), { rimStr: 0.55 });
+      /* keep cool colours (Zil's teal) reading cool against the warm ramp */
+      if (col.b > col.r * 1.1) o.material.emissive = col.multiplyScalar(0.3);
+      o.castShadow = false;
+    }
+    if (o.name) parts[o.name] = o;
+  });
+  if (parts.body) addOutline(parts.body, 0.045);
+  if (parts.wheels && parts.wheels.isGroup) parts.wheels = parts.wheels.children;
+  return parts;
+}
 let hero = null;
 function spawnHero() {
-  if (hero) scene.remove(hero);
-  hero = game.world.character === 'zil' ? buildZil() : buildMarmalade();
-  scene.add(hero);
+  if (hero) { scene.remove(hero); hero = null; }
+  const which = game.world.character;
+  gltfLoader.load(MODEL[which], (gltf) => {
+    const root = gltf.scene;
+    root.userData = { kind: which, parts: applyCel(root) };
+    hero = root; scene.add(hero);
+  }, undefined, () => {
+    toast('Using built-in model (GLB unavailable).');
+    hero = which === 'zil' ? buildZil() : buildMarmalade(); scene.add(hero);
+  });
 }
 
 /* ==========================================================================
