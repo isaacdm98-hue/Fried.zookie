@@ -2971,6 +2971,8 @@ var APP = (function () {
     if (det.house && det.nature.verdict === 'benefic' && MALEFIC_HOUSES9[det.house]) hk9.counterAnalogy = { kind: 'shield', note: 'a benefic in a difficult house: the house’s trouble comes in its mildest form, and the native escapes it' };
     else if (det.house && det.nature.verdict === 'malefic' && !MALEFIC_HOUSES9[det.house]) hk9.counterAnalogy = { kind: 'tax', note: det.essential && det.essential.score >= 3 ? 'a malefic in a fortunate house, but dignified: it builds the house’s matters slowly instead of denying them' : 'a malefic in a fortunate house: it withholds and delays the house’s good' };
     det.analogy = hk9;
+    det.spd = (p.spd != null) ? p.spd : null;
+    det.condition = conditionVerdict(c, b, k, det); // Lilly's full point-scoring (phase 4)
     return det;
   }
   // the Morin-style determination sheet: the whole object rendered for receipts and for the acceptance harness
@@ -2997,7 +2999,264 @@ var APP = (function () {
     }
     if (an.counterAnalogy) aBits.push('counter-analogy (' + an.counterAnalogy.kind + '): ' + an.counterAnalogy.note);
     if (aBits.length) L.push('ANALOGY: ' + aBits.join(' · '));
+    if (det.condition) L.push('CONDITION: ' + det.condition.line);
     return L.join('\n');
+  }
+  // ===== PHASE 4 — THE STATE MACHINE: Lilly's table of fortitudes and debilities =====
+  // (Christian Astrology I, the table at p.115), reproduced with every point named and both
+  // columns summed into one articulate verdict. Note: peregrine scores −5 HERE, in Lilly's
+  // accounting, while the dignity ledger's own score stays neutral — the doctrines differ
+  // and the two figures are kept apart on purpose.
+  var MEAN_SPD9 = { sun: 0.9856, moon: 13.176, mercury: 1.383, venus: 1.199, mars: 0.524, jupiter: 0.0831, saturn: 0.0335 };
+  var HOUSE_PTS9 = { 1: 5, 10: 5, 4: 4, 7: 4, 11: 4, 2: 3, 5: 3, 9: 2, 3: 1, 12: -5, 6: -2, 8: -2 };
+  var LILLY_STARS9 = [['Regulus', 149.83, 6], ['Spica', 203.83, 5], ['Algol', 56.17, -5]]; // J2000 lons, precessed at use
+  function conditionVerdict(c, b, k, det) {
+    det = det || determination(c, b, k);
+    if (!det || !det.essential || det.essential.modern) return null;
+    var p = c.planets[k], ess = [], acc = [], L = det.essential.layers, i9;
+    if (L.domicile) ess.push(['in its own sign', 5]);
+    if (L.exaltation) ess.push(['exalted', 4]);
+    if (L.triplicity) ess.push(['in its own triplicity', 3]);
+    if (L.term) ess.push(['in its own Egyptian terms', 2]);
+    if (L.face) ess.push(['in its own face', 1]);
+    if (L.detriment) ess.push(['in detriment', -5]);
+    if (L.fall) ess.push(['in fall', -4]);
+    if (det.essential.peregrine) ess.push(['peregrine', -5]);
+    if (det.house && HOUSE_PTS9[det.house] != null) acc.push(['in the ' + ordinal(det.house) + ' house', HOUSE_PTS9[det.house]]);
+    if (k !== 'sun' && k !== 'moon') acc.push([p.retro ? 'retrograde' : 'direct in motion', p.retro ? -5 : 4]);
+    if (p.spd != null && k !== 'sun') { var swift9 = Math.abs(p.spd) > MEAN_SPD9[k]; acc.push([swift9 ? 'swift in motion' : 'slow in motion', swift9 ? 2 : -2]); }
+    if (k === 'moon') acc.push([det.nature.waxing ? 'increasing in light' : 'decreasing in light', det.nature.waxing ? 2 : -2]);
+    else if (k !== 'sun' && c.planets.sun) {
+      var rel9 = rev(c.planets.sun.lon - p.lon), ori9 = rel9 > 0 && rel9 < 180; // it rises before the Sun
+      var wantsOri9 = (k === 'saturn' || k === 'jupiter' || k === 'mars'); // the superiors want to be oriental, the inferiors occidental
+      acc.push([(ori9 ? 'oriental' : 'occidental') + ' of the Sun', (ori9 === wantsOri9) ? 2 : -2]);
+    }
+    if (k !== 'sun' && c.planets.sun) {
+      var ss9 = angSep(p.lon, c.planets.sun.lon);
+      if (ss9 <= 0.283) acc.push(['cazimi — in the heart of the Sun', 5]);
+      else if (ss9 <= 7.5) acc.push(['combust', -5]);
+      else if (ss9 <= 15) acc.push(['under the Sun’s beams', -4]);
+      else acc.push(['free of combustion and the beams', 5]);
+    }
+    for (i9 = 0; i9 < c.aspects.length; i9++) {
+      var A9 = c.aspects[i9]; if ((A9.a !== k && A9.b !== k) || A9.orb > 1) continue;
+      var o9 = A9.a === k ? A9.b : A9.a, ky9 = A9.asp.key;
+      if (o9 === 'jupiter' || o9 === 'venus') {
+        if (ky9 === 'conjunction') acc.push(['partile conjunction with ' + nameFor(o9), 5]);
+        else if (ky9 === 'trine') acc.push(['partile trine to ' + nameFor(o9), 4]);
+        else if (ky9 === 'sextile') acc.push(['partile sextile to ' + nameFor(o9), 3]);
+      }
+      if (o9 === 'saturn' || o9 === 'mars') {
+        if (ky9 === 'conjunction') acc.push(['partile conjunction with ' + nameFor(o9), -5]);
+        else if (ky9 === 'opposition') acc.push(['partile opposition to ' + nameFor(o9), -4]);
+        else if (ky9 === 'square') acc.push(['partile square to ' + nameFor(o9), -3]);
+      }
+    }
+    var nn9 = (c.points && c.points.trueNode) ? c.points.trueNode.lon : (c.planets.node ? c.planets.node.lon : null);
+    if (nn9 != null) {
+      if (angSep(p.lon, nn9) <= 1) acc.push(['partile conjunction with the North Node', 4]);
+      if (angSep(p.lon, rev(nn9 + 180)) <= 1) acc.push(['partile conjunction with the South Node', -4]);
+    }
+    if (k !== 'mars' && k !== 'saturn' && c.planets.mars && c.planets.saturn) {
+      var dM9 = sdelta(c.planets.mars.lon, p.lon), dS9 = sdelta(c.planets.saturn.lon, p.lon);
+      if (Math.abs(dM9) <= 8 && Math.abs(dS9) <= 8 && dM9 * dS9 < 0) acc.push(['besieged between Mars and Saturn', -5]);
+    }
+    var prec9 = 1.39775 * (((b && b.y) || 2000) - 2000) / 100, si9;
+    for (si9 = 0; si9 < LILLY_STARS9.length; si9++) { var st9 = LILLY_STARS9[si9]; if (angSep(p.lon, rev(st9[1] + prec9)) <= 2) acc.push(['conjunct the star ' + st9[0], st9[2]]); }
+    var eT9 = 0, aT9 = 0;
+    for (i9 = 0; i9 < ess.length; i9++) eT9 += ess[i9][1];
+    for (i9 = 0; i9 < acc.length; i9++) aT9 += acc[i9][1];
+    var tot9 = eT9 + aT9;
+    var band9 = tot9 >= 10 ? 'commanding' : tot9 >= 5 ? 'sound' : tot9 >= 0 ? 'mixed' : tot9 >= -5 ? 'strained' : 'afflicted';
+    var bandLine9 = { commanding: 'it can deliver what it signifies, and add interest', sound: 'able — what it promises, it can mostly perform', mixed: 'divided — real strengths, real handicaps, and the outcome turns on which is triggered', strained: 'hampered — it acts, but late, at cost, or through others', afflicted: 'overmatched — what it signifies struggles to arrive without repair from elsewhere' }[band9];
+    var best9 = null, worst9 = null, all9 = ess.concat(acc);
+    for (i9 = 0; i9 < all9.length; i9++) { if (!best9 || all9[i9][1] > best9[1]) best9 = all9[i9]; if (!worst9 || all9[i9][1] < worst9[1]) worst9 = all9[i9]; }
+    return {
+      key: k, essential: { rows: ess, total: eT9 }, accidental: { rows: acc, total: aT9 }, total: tot9, band: band9,
+      line: 'By Lilly’s reckoning ' + nameFor(k) + ' scores ' + (eT9 >= 0 ? '+' : '') + eT9 + ' essential and ' + (aT9 >= 0 ? '+' : '') + aT9 + ' accidental — ' + (tot9 >= 0 ? '+' : '') + tot9 + ' in all, ' + band9 + ': ' + bandLine9
+        + (best9 && best9[1] > 0 ? ' — the strongest testimony ' + best9[0] + ' (+' + best9[1] + ')' : '')
+        + (worst9 && worst9[1] < 0 ? (best9 && best9[1] > 0 ? ', the heaviest ' : ' — the heaviest testimony ') + worst9[0] + ' (' + worst9[1] + ')' : '') + '.',
+      src: 'Lilly, Christian Astrology I, the table of fortitudes and debilities (1647)'
+    };
+  }
+  // small language helpers for the judged prose: indefinite article, the dignity label as an
+  // adjective phrase, and the traditional planet pronouns (Venus and the Moon are she)
+  function art9(w) { return /^[aeiou]/i.test(w) ? 'an' : 'a'; }
+  function stateAdj9(label) {
+    var l9 = String(label || '').toLowerCase();
+    if (l9.indexOf('domicile') === 0) return 'in its own sign';
+    if (l9.indexOf('exaltation') === 0) return 'exalted';
+    if (l9.indexOf('triplicity') === 0) return 'in its own triplicity';
+    if (l9.indexOf('term') === 0) return 'in its own terms';
+    if (l9.indexOf('face') === 0) return 'in its own face';
+    if (l9.indexOf('detriment and fall') === 0) return 'in detriment and fall';
+    if (l9.indexOf('detriment') === 0) return 'in detriment';
+    if (l9.indexOf('fall') === 0) return 'in fall';
+    return 'peregrine';
+  }
+  var PRON9 = { venus: ['she', 'her', 'her'], moon: ['she', 'her', 'her'] };
+  function pron9(k, i) { return (PRON9[k] || ['he', 'his', 'him'])[i]; }
+  // ===== PHASE 5 — NATURE AND SECT, chart-level: the chart's readiest help and sharpest tooth =====
+  function sectProfile(c, b) {
+    var isDay = isDayChart9(c, b);
+    if (isDay === null) return { hasTime: false, note: 'Sect needs the horizon: without a birth time we cannot say whether the Sun stood above or below it, so the chart’s helper and tooth stay unnamed. The planets’ natures still hold (see each state).' };
+    var helperK = isDay ? 'jupiter' : 'venus', toothK = isDay ? 'mars' : 'saturn';
+    var quietBenK = isDay ? 'venus' : 'jupiter', firmMalK = isDay ? 'saturn' : 'mars';
+    var hD = determination(c, b, helperK), tD = determination(c, b, toothK);
+    function stClause9(D) {
+      var bits = [stateAdj9(D.essential.label) + ' in ' + D.signName];
+      if (D.house) bits.push('in your ' + ordinal(D.house) + ' house');
+      if (D.condition) bits.push(D.condition.band + ' at ' + (D.condition.total >= 0 ? '+' : '') + D.condition.total + ' by Lilly’s count');
+      return bits.join(', ');
+    }
+    var line = 'Yours is a ' + (isDay ? 'day' : 'night') + ' chart, so the doctrine of sect assigns its parts: '
+      + nameFor(helperK) + ' is the readiest help — the benefic of sect — and stands ' + stClause9(hD) + ', which is the measure of how cleanly that help arrives. '
+      + nameFor(toothK) + ' is the sharpest tooth — the malefic out of sect — standing ' + stClause9(tD) + ': where the chart’s least-supervised damage happens, and where the most maturity is asked. '
+      + nameFor(quietBenK) + ' still helps, but out of sect it over-promises; ' + nameFor(firmMalK) + ' is strict in sect — hard, but housetrained.';
+    return {
+      hasTime: true, day: isDay, light: isDay ? 'sun' : 'moon',
+      helper: { key: helperK, state: hD.essential.label, house: hD.house, band: hD.condition && hD.condition.band, why: 'benefic of sect in a ' + (isDay ? 'day' : 'night') + ' chart; ' + stClause9(hD) },
+      tooth: { key: toothK, state: tD.essential.label, house: tD.house, band: tD.condition && tD.condition.band, why: 'malefic out of sect in a ' + (isDay ? 'day' : 'night') + ' chart; ' + stClause9(tD) },
+      line: line, receipt: ((isDay ? 'day chart' : 'night chart') + ' · helper ' + nameFor(helperK) + ' · tooth ' + nameFor(toothK)).toUpperCase(),
+      src: 'the Hellenistic doctrine of sect (hairesis); see also Lilly on the Fortunes and Infortunes'
+    };
+  }
+  // ===== PHASE 6 — THE ASCENDANT JUDGED: constitution, not personality =====
+  var HUMOR9 = { fire: ['choleric', 'hot and dry — quick to ignite, decisive, spending itself in bursts'], earth: ['melancholic', 'cold and dry — retentive, careful, built to endure rather than to dazzle'], air: ['sanguine', 'hot and moist — sociable, mobile, fed by exchange and starved by isolation'], water: ['phlegmatic', 'cold and moist — receptive, tidal, slow to rouse and slow to settle'] };
+  var MODE_TEMPO9 = { cardinal: 'starts fast and decides early', fixed: 'holds its course and resists being moved', mutable: 'adapts, doubles back and swerves' };
+  // the zodiacal matrix: the whole-sign fate-skeleton every chart with this rising shares,
+  // read through each sign's natural tenants — used as the CONFIRMATION layer (doctrine-notes §8)
+  function zodiacMatrix(c) {
+    if (!c.ascBody) return null;
+    var as = c.ascBody.sign, out = [], i, k;
+    for (i = 0; i < 12; i++) {
+      var s = (as + i) % 12, sd = DATA.SIGNS[s], ten = { ruler: TRAD_RULER[s], exalt: EXALT_SIGN[s], exile: [], fall: [] };
+      for (k in DIGNITY) if (DIGNITY.hasOwnProperty(k)) {
+        if (DIGNITY[k].det.indexOf(sd.name) >= 0) ten.exile.push(k);
+        if (DIGNITY[k].fal === sd.name) ten.fall.push(k);
+      }
+      var bits = [nameFor(ten.ruler) + '’s ground'];
+      if (ten.exalt) bits.push('where ' + nameFor(ten.exalt) + ' is exalted');
+      if (ten.exile.length) bits.push('where ' + ten.exile.map(nameFor).join(' and ') + (ten.exile.length > 1 ? ' are' : ' is') + ' exiled');
+      if (ten.fall.length) bits.push('where ' + ten.fall.map(nameFor).join(' and ') + (ten.fall.length > 1 ? ' fall' : ' falls'));
+      out.push({ house: i + 1, sign: sd.name, tenants: ten, line: 'Your ' + ordinal(i + 1) + ' — ' + HOUSE_AREA9[i] + ' — falls in ' + sd.name + ' by whole sign: ' + bits.join(', ') + '.' });
+    }
+    return out;
+  }
+  function judgeAscendant(c, b) {
+    if (!(b && b.timeKnown && c.ascBody)) return { hasTime: false, note: 'Without a birth time there is no Ascendant, and the constitution cannot be judged: this reading needs the hour. The two lights and the planets in their signs still speak plainly — see their states.' };
+    var as = c.ascBody.sign, sd = DATA.SIGNS[as], hum = HUMOR9[sd.element], tempo = MODE_TEMPO9[sd.modality];
+    var rk = TRAD_RULER[as], rD = determination(c, b, rk);
+    var lordHum = rD ? HUMOR9[DATA.SIGNS[rD.sign].element] : null;
+    var settled = lordHum && lordHum[0] === hum[0];
+    // bodies on or in aspect to the ASC — each judged with its nature, not just listed
+    var onAsc = [], i, CL9 = { sun: 1, moon: 1, mercury: 1, venus: 1, mars: 1, jupiter: 1, saturn: 1 };
+    for (i = 0; i < c.aspects.length; i++) {
+      var A = c.aspects[i]; if (A.a !== 'asc' && A.b !== 'asc') continue;
+      var o = A.a === 'asc' ? A.b : A.a; if (!CL9[o]) continue;
+      onAsc.push({ key: o, aspect: A.asp.key, orb: A.orb, nature: aspectNature('asc', o, A.asp.key) });
+    }
+    onAsc.sort(function (x, y) { return x.orb - y.orb; });
+    var line = 'You rise in ' + sd.name + '. This is the constitution, not the personality: the body you arrived in and the gate every undertaking passes through. '
+      + sd.name + ' is ' + art9(sd.element) + ' ' + sd.element + ' sign — the ' + hum[0] + ' temperament, ' + hum[1] + ' — and ' + sd.modality + ', so the constitution ' + tempo + '. ';
+    if (rD) {
+      line += 'Its lord, ' + nameFor(rk) + ', stands in ' + rD.signName + (rD.house ? ' in your ' + ordinal(rD.house) + ' house' : '') + ', ' + stateAdj9(rD.essential.label) + ': '
+        + (settled ? 'a second dose of the ' + hum[0] + ' — the temperament is settled, and unmistakable to anyone who has met you twice. ' : 'which stirs ' + (lordHum ? lordHum[0] : 'another') + ' into the mix — a constitution of two speeds, ' + hum[0] + ' at the surface, ' + (lordHum ? lordHum[0] : '') + ' underneath. ');
+    }
+    if (onAsc.length) {
+      var tt = onAsc[0];
+      line += 'And ' + nameFor(tt.key) + ' ' + (tt.aspect === 'conjunction' ? 'stands on the Ascendant itself' : 'holds ' + art9(tt.aspect) + ' ' + tt.aspect + ' to the Ascendant') + ' (' + tt.orb.toFixed(1) + '°): ' + tt.nature.line + ' — stamped on the body and the bearing, visible before you speak.';
+    } else {
+      line += 'No classical planet touches the Ascendant by aspect: the constitution runs clean on its sign and its lord, with nothing stamped over the doorway.';
+    }
+    return {
+      hasTime: true, sign: sd.name, temperament: { primary: hum[0], settled: !!settled, lordHumor: lordHum ? lordHum[0] : null },
+      lord: rk, onAsc: onAsc, line: line, matrix: zodiacMatrix(c),
+      receipt: ('ascendant ' + degStr(c.asc % 30) + ' ' + sd.name + ' · ' + sd.element + '/' + sd.modality + ' · lord ' + nameFor(rk) + ' → ' + rD.signName + (rD.house ? ' H' + rD.house : '')).toUpperCase(),
+      src: 'temperament after Lilly, Christian Astrology I (1647); the matrix after the school’s zodiacal domification'
+    };
+  }
+  // ===== PHASE 7 — THE LORD OF THE ASCENDANT, FULLY: the keystone paragraph =====
+  function judgeCaptain(c, b) {
+    if (!(b && b.timeKnown && c.ascBody)) return { hasTime: false, note: 'The captain of a chart is the lord of its Ascendant, and without a birth time the Ascendant is unknown. Set even a rough hour and this paragraph appears.' };
+    var as = c.ascBody.sign, rk = TRAD_RULER[as], D = determination(c, b, rk);
+    if (!D) return null;
+    var ruled = [], i;
+    for (i = 0; i < D.rules.length; i++) if (D.rules[i].house !== 1) ruled.push(ordinal(D.rules[i].house) + ' (' + HOUSE_AREA9[D.rules[i].house - 1] + ')');
+    // the tightest received aspect, or failing that the tightest classical aspect, judged
+    var CL9 = { sun: 1, moon: 1, mercury: 1, venus: 1, mars: 1, jupiter: 1, saturn: 1 }, bond = null;
+    for (i = 0; i < D.aspects.length; i++) { var A = D.aspects[i]; if (!CL9[A.other]) continue; if (!bond || (A.reception && !bond.reception)) bond = A; if (bond && !bond.reception && A.reception) bond = A; }
+    if (!bond) for (i = 0; i < D.aspects.length; i++) if (CL9[D.aspects[i].other]) { bond = D.aspects[i]; break; }
+    var strong = D.condition && D.condition.total >= 5, weak = D.condition && D.condition.total < 0;
+    var he9 = pron9(rk, 0), his9 = pron9(rk, 1), He9 = he9.charAt(0).toUpperCase() + he9.slice(1);
+    var line = 'The captain of this chart — the lord of your ' + DATA.SIGNS[as].name + ' Ascendant — is ' + nameFor(rk) + ', and the whole life keeps ' + his9 + ' hours. '
+      + He9 + ' keeps ' + his9 + ' court in your ' + ordinal(D.house) + ' house — ' + HOUSE_AREA9[D.house - 1] + ' — in ' + D.signName + ', ' + stateAdj9(D.essential.label) + ': ' + D.essential.character + '. '
+      + (ruled.length ? 'Besides the life itself, ' + nameFor(rk) + ' answers for your ' + ruled.join(' and your ') + ' — departments that dock wherever ' + he9 + ' stands, here the ' + ordinal(D.house) + '. ' : '')
+      + 'From the ' + ordinal(D.house) + ' in ' + D.signName + ', ' + he9 + ' speaks first of ' + D.analogy.speaksFirst.matter + (D.sectRole ? '; by sect, the ' + D.sectRole : '') + '. '
+      + (D.condition ? D.condition.line + ' ' : '');
+    if (bond) {
+      line += (He9 === 'She' ? 'Her' : 'His') + ' closest working bond is ' + art9(bond.aspect) + ' ' + bond.aspect + ' with ' + nameFor(bond.other) + ' (' + bond.orb.toFixed(1) + '°'
+        + (bond.reception ? (bond.reception.kind === 'mutual' ? ', in mutual reception — each holds a key to the other’s door' : ', received by ' + nameFor(bond.reception.host) + ' as a guest') : '') + '): ' + bond.nature.line + '. ';
+    }
+    line += (strong ? 'The promise, then: what the ' + ordinal(D.house) + ' house asks of this life, ' + nameFor(rk) + ' can pay for — the life’s business concludes, and holds.'
+      : weak ? 'The cost is written in ' + his9 + ' state: the life’s business runs through ' + HOUSE_AREA9[D.house - 1] + ', but ' + nameFor(rk) + ' pays late and through others — expect the ' + ordinal(D.house) + '’s matters to need a second attempt.'
+        : 'The promise is mixed exactly as ' + nameFor(rk) + '’s figures are mixed: the ' + ordinal(D.house) + '’s matters carry the life, with real strengths and real taxes, and timing decides which speaks.');
+    return {
+      hasTime: true, key: rk, det: D, line: line,
+      receipt: ('chart ruler ' + nameFor(rk) + ' · ' + degStr(D.lon % 30) + ' ' + D.signName + ' · ' + ordinal(D.house) + ' house · ' + D.essential.label + (D.condition ? ' · lilly ' + (D.condition.total >= 0 ? '+' : '') + D.condition.total : '')).toUpperCase(),
+      src: 'Morin, Astrologia Gallica XXI (1661): the lord of the Ascendant determines the life by his place, state and rulerships'
+    };
+  }
+  // ===== PHASE 8 — THE RULERSHIP WEB: chains, finals, and the almuten of every cusp =====
+  function dispositorEndTrad(c, k) {
+    var cur = k, path = [k], hops = {}, steps = 0;
+    while (steps < 14) {
+      var pl = c.planets[cur]; if (!pl) break;
+      var r = TRAD_RULER[pl.sign];
+      if (!c.planets[r] || r === cur) break;      // its own sign — a final dispositor
+      if (hops[r]) { path.push(r); break; }       // loop / mutual reception
+      hops[cur] = 1; path.push(r); cur = r; steps++;
+    }
+    return path;
+  }
+  function cuspAlmuten(c, b, h) {
+    if (!c.cusps || c.cusps[h] == null) return null;
+    var isDay = isDayChart9(c, b); if (isDay === null) isDay = true;
+    var led = dignityLedger(c.cusps[h], isDay), tal = {}, t, bk = null, bv = -1, ties = [];
+    addScore(tal, led.domicile, 5); addScore(tal, led.exaltation, 4); addScore(tal, led.triplicity, 3); addScore(tal, led.bound, 2); addScore(tal, led.face, 1);
+    for (t in tal) if (tal.hasOwnProperty(t) && tal[t] > bv) { bv = tal[t]; bk = t; }
+    for (t in tal) if (tal.hasOwnProperty(t) && tal[t] === bv) ties.push(t);
+    ties.sort();
+    return { house: h, lord: led.domicile, lead: bk, score: bv, tie: ties, tally: tal, differs: bk !== led.domicile };
+  }
+  function rulershipWeb(c, b) {
+    if (!(b && b.timeKnown && c.ascBody && c.cusps)) return { hasTime: false, note: 'The rulership web needs house cusps, and cusps need a birth time. The dispositor chains by sign still run: see the chart’s final dispositors.' };
+    var captain = TRAD_RULER[c.ascBody.sign];
+    var PK = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn'], chains = {}, finals = {}, i, k;
+    for (i = 0; i < PK.length; i++) {
+      k = PK[i]; var path = dispositorEndTrad(c, k); chains[k] = path;
+      var end = path[path.length - 1]; finals[end] = (finals[end] || 0) + 1;
+    }
+    var cusps = [], lines = [], h;
+    for (h = 1; h <= 12; h++) {
+      var ca = cuspAlmuten(c, b, h); if (!ca) continue;
+      cusps.push(ca);
+      var chain = chains[ca.lord] || [ca.lord], steps = [];
+      for (i = 0; i + 1 < chain.length; i++) steps.push(nameFor(chain[i]) + ' answers to ' + nameFor(chain[i + 1]));
+      var endK = chain[chain.length - 1];
+      var lineTxt = 'Your ' + ordinal(h) + ' — ' + HOUSE_AREA9[h - 1] + ' — answers to ' + nameFor(ca.lord)
+        + (steps.length ? '; ' + steps.join('; ') : '; ' + nameFor(ca.lord) + ' stands in its own sign — the chain ends at its own desk')
+        + (endK === captain && ca.lord !== captain ? ' — so this department ultimately reports to the captain.' : (ca.lord === captain ? ' — the captain’s own department.' : '.'));
+      if (ca.differs) lineTxt += ' And at the cusp’s exact degree ' + nameFor(ca.lead) + ' out-dignifies ' + nameFor(ca.lord) + ' (' + ca.score + ' points against ' + (ca.tally[ca.lord] || 0) + '): the true lord of this house is ' + nameFor(ca.lead) + ' — judge it by both.';
+      lines.push({ house: h, text: lineTxt });
+    }
+    var fbest = null, fb = -1, fk;
+    for (fk in finals) if (finals.hasOwnProperty(fk) && finals[fk] > fb) { fb = finals[fk]; fbest = fk; }
+    return {
+      hasTime: true, captain: captain, chains: chains, finals: { lead: fbest, count: fb, tally: finals }, cusps: cusps, lines: lines,
+      receipt: ('rulership web · captain ' + nameFor(captain) + ' · final dispositor ' + nameFor(fbest) + ' (' + fb + ' of 7 chains)').toUpperCase(),
+      src: 'Morin, Astrologia Gallica XXI (1661), on determination by rulership; the almuten after Ibn Ezra and the school’s method'
+    };
   }
   function houseChain(c, hn) {
     var cuspLon = c.cusps[hn]; if (cuspLon == null) return null;
@@ -4390,7 +4649,7 @@ var APP = (function () {
     solarReturnChart: solarReturnChart, upcomingEclipses: upcomingEclipses, bestDaysFor: bestDaysFor, electIntents: electIntents, oddPredictions: oddPredictions, composeProfectionYear: composeProfectionYear, signHouseWeave: signHouseWeave,
     progressedTimeline: progressedTimeline, retroSeasons: retroSeasons,
     exportBook: exportBook, exportBackup: exportBackup, importBackup: importBackup, composeDailyEssay: composeDailyEssay, chartFP: chartFP, weaveNote: weaveNote, termOf: termOf, anA: anA, composeColleague: composeColleague, exportColleague: exportColleague,
-    microFor: microFor, tellsFor: tellsFor, weaveTransit: weaveTransit, traditionalRead: traditionalRead, determination: determination, determinationSheet: determinationSheet, derivedHouseOf: derivedHouseOf, derivedPhrase: derivedPhrase, symbolicDirections: symbolicDirections, directionLine: directionLine, directionReceipt: directionReceipt, aspectNature: aspectNature, transitCycles: transitCycles, weaveCycle: weaveCycle, weaveWeek: weaveWeek, receptionOf: receptionOf, chartSignature: chartSignature, lifeQuirks: lifeQuirks, interests: interests, emergingPull: emergingPull, spookyReads: spookyReads, combinationRead: combinationRead, sunMoonCharacter: sunMoonCharacter, guideCards: guideCards, ancientSky: ancientSky, addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, returnsAlmanac: returnsAlmanac, progressedLunation: progressedLunation, planetaryHours: planetaryHours, moonVoidWindow: moonVoidWindow, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
+    microFor: microFor, tellsFor: tellsFor, weaveTransit: weaveTransit, traditionalRead: traditionalRead, determination: determination, determinationSheet: determinationSheet, derivedHouseOf: derivedHouseOf, derivedPhrase: derivedPhrase, conditionVerdict: conditionVerdict, sectProfile: sectProfile, judgeAscendant: judgeAscendant, judgeCaptain: judgeCaptain, rulershipWeb: rulershipWeb, zodiacMatrix: zodiacMatrix, cuspAlmuten: cuspAlmuten, symbolicDirections: symbolicDirections, directionLine: directionLine, directionReceipt: directionReceipt, aspectNature: aspectNature, transitCycles: transitCycles, weaveCycle: weaveCycle, weaveWeek: weaveWeek, receptionOf: receptionOf, chartSignature: chartSignature, lifeQuirks: lifeQuirks, interests: interests, emergingPull: emergingPull, spookyReads: spookyReads, combinationRead: combinationRead, sunMoonCharacter: sunMoonCharacter, guideCards: guideCards, ancientSky: ancientSky, addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, returnsAlmanac: returnsAlmanac, progressedLunation: progressedLunation, planetaryHours: planetaryHours, moonVoidWindow: moonVoidWindow, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
     saveCurrentChart: saveCurrentChart, deleteSavedChart: deleteSavedChart, activateSavedChart: activateSavedChart, activeChartKey: activeChartKey, chartKey: chartKey, famousMatches: famousMatches, lifeTransits: lifeTransits, upcomingTransits: upcomingTransits, transitMotion: transitMotion, compositeChart: compositeChart,
     nameFor: nameFor, glyphFor: glyphFor, pad: pad,
     domElement: domElement, lowElement: lowElement, domMod: domMod, tzOffsetHours: tzOffsetHours
