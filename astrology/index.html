@@ -3378,6 +3378,132 @@ var APP = (function () {
     out.sort(function (x, y) { return x.orb - y.orb; });
     return out;
   }
+  // ===== PHASE 11 — RECEPTION DOCTRINE (Mashallah, On Reception; Bonatti) =====
+  // Reception runs through ALL five dignities, not just sign and exaltation: a planet
+  // receives another when it holds dignity at the other's exact degree. Reception repairs
+  // a hard aspect (both hold a key to the other's door) and hollows an easy one (a favour
+  // promised by someone with no standing to grant it). Mutual reception by fall or
+  // detriment is the hostile bond — two planets each stranded in the other's worst ground.
+  var DIGRANK11 = { domicile: 5, exaltation: 4, triplicity: 3, term: 2, face: 1 };
+  var DIGWORD11 = { domicile: 'its own house', exaltation: 'its exaltation', triplicity: 'its triplicity', term: 'its own terms', face: 'its face' };
+  var DIGNOUN11 = { domicile: 'house', exaltation: 'exaltation', triplicity: 'triplicity', term: 'terms', face: 'face' }; // neutral form for "the X of Y"
+  // the dignities the host holds at the guest's degree — strongest first
+  function receivesBy11(hostK, guestLon, isDay) {
+    var led = dignityLedger(guestLon, isDay !== false), out = [];
+    if (led.domicile === hostK) out.push('domicile');
+    if (led.exaltation === hostK) out.push('exaltation');
+    if (led.triplicity === hostK) out.push('triplicity');
+    if (led.bound === hostK) out.push('term');
+    if (led.face === hostK) out.push('face');
+    return out;
+  }
+  function fullReception(c, b, aK, bK) {
+    var pa = c.planets[aK], pb = c.planets[bK]; if (!pa || !pb) return null;
+    var isDay = isDayChart9(c, b); if (isDay === null) isDay = true;
+    var aHostsB = receivesBy11(aK, pb.lon, isDay), bHostsA = receivesBy11(bK, pa.lon, isDay);
+    var aInBdeb = !!(DIGNITY[bK] && (DIGNITY[bK].det.indexOf(pa.signName) >= 0 || DIGNITY[bK].fal === pa.signName));
+    var bInAdeb = !!(DIGNITY[aK] && (DIGNITY[aK].det.indexOf(pb.signName) >= 0 || DIGNITY[aK].fal === pb.signName));
+    var hostile = aInBdeb && bInAdeb;
+    if (!aHostsB.length && !bHostsA.length && !hostile) return null;
+    var mutual = aHostsB.length > 0 && bHostsA.length > 0;
+    var major = (aHostsB[0] === 'domicile' || aHostsB[0] === 'exaltation' || bHostsA[0] === 'domicile' || bHostsA[0] === 'exaltation');
+    var strength = Math.max(aHostsB.length ? DIGRANK11[aHostsB[0]] : 0, bHostsA.length ? DIGRANK11[bHostsA[0]] : 0);
+    var parts = [];
+    if (mutual) parts.push(nameFor(aK) + ' and ' + nameFor(bK) + ' receive each other — ' + nameFor(aK) + ' sits in the ' + DIGNOUN11[bHostsA[0]] + ' of ' + nameFor(bK) + ', and ' + nameFor(bK) + ' in the ' + DIGNOUN11[aHostsB[0]] + ' of ' + nameFor(aK) + ' — a mutual reception' + (major ? ' by ' + (DIGRANK11[aHostsB[0]] >= 4 && DIGRANK11[bHostsA[0]] >= 4 ? 'the major dignities, the strong kind' : 'sign or exaltation') : ' by the minor dignities, a lighter bond'));
+    else if (aHostsB.length) parts.push(nameFor(aK) + ' receives ' + nameFor(bK) + ' into ' + DIGWORD11[aHostsB[0]] + ', as a host takes in a guest');
+    else if (bHostsA.length) parts.push(nameFor(bK) + ' receives ' + nameFor(aK) + ' into ' + DIGWORD11[bHostsA[0]] + ', as a host takes in a guest');
+    if (hostile) parts.push((mutual ? 'but the ground is contested: ' : '') + nameFor(aK) + ' and ' + nameFor(bK) + ' also stand each in the other’s fall or detriment — a bond of mutual hindrance, two planets stranded in each other’s worst country');
+    return { a: aK, b: bK, mutual: mutual, major: major, minorOnly: (!!(aHostsB.length || bHostsA.length) && !major), hostile: hostile, strength: strength, aHostsB: aHostsB, bHostsA: bHostsA, note: parts.join('; ') };
+  }
+  // reception as it MODIFIES an aspect — the repair/betray verdict
+  function receptionOnAspect(c, b, aK, bK, aspKey) {
+    var R = fullReception(c, b, aK, bK); if (!R) return null;
+    var hard = (aspKey === 'square' || aspKey === 'opposition'), soft = (aspKey === 'trine' || aspKey === 'sextile');
+    var verdict;
+    if (R.hostile && !R.mutual) verdict = 'and this bond only sharpens it: each planet is a stranger in the other’s worst sign';
+    else if (R.mutual && hard) verdict = R.major ? 'and this repairs the hard angle at the root: each holds a key to the other’s door, so the argument resolves faster than it breaks' : 'and this eases the hard angle a little — a minor key, but a key';
+    else if (R.mutual && soft) verdict = 'and this deepens the ease past mere geometry: each one actively keeps the other’s promises';
+    else if (soft && !R.mutual && R.strength <= 2) verdict = 'yet the receiving planet has little standing to grant the favour — an easy angle that promises more than it can deliver';
+    else if (hard) verdict = 'and the reception gives the friction somewhere warm to land, host to guest';
+    else verdict = 'and the reception runs one way, host to guest, so the good flows in that direction first';
+    return { reception: R, verdict: verdict, line: R.note + ' — ' + verdict + '.' };
+  }
+  function receptionsInChart(c, b) {
+    var CL = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn'], seen = {}, out = [], i, j;
+    for (i = 0; i < CL.length; i++) for (j = i + 1; j < CL.length; j++) {
+      var R = fullReception(c, b, CL[i], CL[j]); if (!R) continue;
+      out.push(R);
+    }
+    out.sort(function (x, y) { return (y.mutual - x.mutual) || (y.strength - x.strength) || (y.hostile - x.hostile); });
+    return out;
+  }
+  // ===== PHASE 12 — THE JUDGMENT HIERARCHY (Bonatti): who wins when testimonies conflict =====
+  // Never average a contradiction into mush. Rank testimonies by authority — almuten of the
+  // matter first, then the lord, then occupants, then aspectors; within that, angularity,
+  // essential state, and sect (Bonatti's ordering). The loudest voice rules; a near-equal
+  // opposing voice makes the matter genuinely contested, and the reading says so.
+  function testimonyAuthority(c, b, k, matterHouse) {
+    var det = determination(c, b, k); if (!det) return null;
+    var w = 0, why = [], role = 'bystander';
+    if (matterHouse && c.cusps) {
+      var alm = cuspAlmuten(c, b, matterHouse), lordK = TRAD_RULER[Math.floor(rev(c.cusps[matterHouse]) / 30)];
+      var aspectsCusp = false, ii;
+      for (ii = 0; ii < c.aspects.length; ii++) { var A = c.aspects[ii]; if ((A.a === k && A.b === lordK) || (A.b === k && A.a === lordK)) aspectsCusp = true; }
+      if (alm && alm.lead === k) { w += 6; role = 'almuten'; why.push('almuten of the ' + ordinal(matterHouse)); }
+      else if (lordK === k) { w += 5; role = 'lord'; why.push('lord of the ' + ordinal(matterHouse)); }
+      else if (det.house === matterHouse) { w += 3; role = 'occupant'; why.push('occupies the ' + ordinal(matterHouse)); }
+      else if (aspectsCusp) { w += 2; role = 'aspector'; why.push('aspects the lord of the ' + ordinal(matterHouse)); }
+      else return null; // not a testimony about this matter
+    } else { w += 2; }
+    if (det.house) { var cl = det.terrestrial.houseClass; if (cl === 'angular') { w += 4; why.push('angular'); } else if (cl === 'succedent') { w += 2; why.push('succedent'); } else { why.push('cadent — a fainter voice'); } }
+    var sc = det.condition ? det.condition.total : (det.essential ? det.essential.score : 0);
+    if (sc >= 10) { w += 3; why.push('commanding in state'); } else if (sc >= 5) { w += 2; why.push('sound in state'); } else if (sc < -5) { why.push('afflicted — it testifies, but from a sickbed'); }
+    var sct = sectProfile(c, b);
+    if (sct && sct.hasTime) { var inSect = (k === sct.helper.key) || (k === (sct.day ? 'saturn' : 'mars')) || (k === sct.light); if (inSect) { w += 1; why.push('in sect'); } }
+    // favor toward the matter: significators speak by their own condition; others by their nature
+    var favor;
+    if (role === 'almuten' || role === 'lord') { var t = det.condition ? det.condition.total : 0; favor = t >= 3 ? 1 : t < 0 ? -1 : 0; }
+    else { favor = det.nature.verdict === 'benefic' ? 1 : det.nature.verdict === 'malefic' ? -1 : 0; }
+    return { key: k, authority: w, favor: favor, role: role, why: why, det: det };
+  }
+  function contest(c, b, matterHouse) {
+    if (!(b && b.timeKnown && c.ascBody && c.cusps)) return null;
+    var CL = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn'], ts = [], i;
+    for (i = 0; i < CL.length; i++) { var t = testimonyAuthority(c, b, CL[i], matterHouse); if (t) ts.push(t); }
+    if (!ts.length) return null;
+    ts.sort(function (x, y) { return y.authority - x.authority; });
+    var fors = ts.filter(function (t) { return t.favor > 0; }), against = ts.filter(function (t) { return t.favor < 0; });
+    var topFor = fors[0] || null, topAgainst = against[0] || null;
+    var ruling = ts[0], counter = null, k2;
+    for (k2 = 1; k2 < ts.length; k2++) { if (ts[k2].favor !== ruling.favor && ts[k2].favor !== 0) { counter = ts[k2]; break; } }
+    var margin = counter ? ruling.authority - counter.authority : ruling.authority;
+    var contested = counter && margin <= 2;
+    var dir = ruling.favor > 0 ? 'well' : ruling.favor < 0 ? 'ill' : 'evenly';
+    var line;
+    if (!counter || ruling.favor === 0 && !topAgainst && !topFor) line = 'On the ' + ordinal(matterHouse) + ', the testimonies do not fight: ' + nameFor(ruling.key) + ' carries the most authority (' + ruling.why.join(', ') + ') and the matter is read from its state alone.';
+    else if (contested) line = 'Your ' + ordinal(matterHouse) + ' argues with itself: ' + nameFor(ruling.key) + ' speaks ' + dir + ' with authority ' + ruling.authority + ' (' + ruling.why.slice(0, 2).join(', ') + '), but ' + nameFor(counter.key) + ' answers back at ' + counter.authority + ' (' + counter.why.slice(0, 2).join(', ') + ') — only ' + margin + ' apart. This is a genuine tension, not a middling average: the matter swings on which is triggered in time.';
+    else line = 'On the ' + ordinal(matterHouse) + ', the verdict falls to ' + nameFor(ruling.key) + ' — the loudest voice by ' + ruling.why.slice(0, 2).join(' and ') + ' (authority ' + ruling.authority + '), speaking ' + dir + '. ' + (counter ? nameFor(counter.key) + ' dissents at ' + counter.authority + ', but is outweighed by ' + margin + ' and does not overturn it.' : 'Nothing of comparable weight dissents.');
+    return { house: matterHouse, ranked: ts, ruling: ruling, counter: counter, contested: !!contested, margin: margin, line: line,
+      receipt: (ordinal(matterHouse) + ' · ruling ' + nameFor(ruling.key) + ' auth ' + ruling.authority + (counter ? ' vs ' + nameFor(counter.key) + ' auth ' + counter.authority + (contested ? ' — CONTESTED' : ' — decided') : ' — uncontested')).toUpperCase(),
+      src: 'Bonatti, Liber Astronomiae: the ordering of testimony by significator role, angularity, dignity and sect' };
+  }
+  // the single most authoritative voice in the whole chart — the final word
+  function rulingVoice(c, b) {
+    if (!(b && b.timeKnown && c.ascBody)) return null;
+    var CL = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn'], best = null, i;
+    var almC = null; try { almC = almutenChart(c); } catch (e) {}
+    var ascLord = TRAD_RULER[c.ascBody.sign];
+    for (i = 0; i < CL.length; i++) {
+      var t = testimonyAuthority(c, b, CL[i], null); if (!t) continue;
+      if (almC && almC.lead === CL[i]) { t.authority += 3; t.why.unshift('the chart’s almuten'); }
+      if (ascLord === CL[i]) { t.authority += 3; t.why.unshift('lord of the Ascendant'); }
+      if (!best || t.authority > best.authority) best = t;
+    }
+    if (!best) return null;
+    best.line = 'The final word in this chart belongs to ' + nameFor(best.key) + ': by ' + best.why.slice(0, 3).join(', ') + ' it outranks every other testimony (authority ' + best.authority + '). When the chart is divided, this is the voice to trust last.';
+    best.receipt = ('ruling voice ' + nameFor(best.key) + ' · authority ' + best.authority).toUpperCase();
+    return best;
+  }
   function houseChain(c, hn) {
     var cuspLon = c.cusps[hn]; if (cuspLon == null) return null;
     var cs = Math.floor(((cuspLon % 360) + 360) % 360 / 30), csName = DATA.SIGNS[cs].name;
@@ -4769,7 +4895,7 @@ var APP = (function () {
     solarReturnChart: solarReturnChart, upcomingEclipses: upcomingEclipses, bestDaysFor: bestDaysFor, electIntents: electIntents, oddPredictions: oddPredictions, composeProfectionYear: composeProfectionYear, signHouseWeave: signHouseWeave,
     progressedTimeline: progressedTimeline, retroSeasons: retroSeasons,
     exportBook: exportBook, exportBackup: exportBackup, importBackup: importBackup, composeDailyEssay: composeDailyEssay, chartFP: chartFP, weaveNote: weaveNote, termOf: termOf, anA: anA, composeColleague: composeColleague, exportColleague: exportColleague,
-    microFor: microFor, tellsFor: tellsFor, weaveTransit: weaveTransit, traditionalRead: traditionalRead, determination: determination, determinationSheet: determinationSheet, derivedHouseOf: derivedHouseOf, derivedPhrase: derivedPhrase, conditionVerdict: conditionVerdict, sectProfile: sectProfile, judgeAscendant: judgeAscendant, judgeCaptain: judgeCaptain, rulershipWeb: rulershipWeb, zodiacMatrix: zodiacMatrix, cuspAlmuten: cuspAlmuten, judgeHouse: judgeHouse, judgeHouses: judgeHouses, judgeAspect: judgeAspect, judgeAspects: judgeAspects, symbolicDirections: symbolicDirections, directionLine: directionLine, directionReceipt: directionReceipt, aspectNature: aspectNature, transitCycles: transitCycles, weaveCycle: weaveCycle, weaveWeek: weaveWeek, receptionOf: receptionOf, chartSignature: chartSignature, lifeQuirks: lifeQuirks, interests: interests, emergingPull: emergingPull, spookyReads: spookyReads, combinationRead: combinationRead, sunMoonCharacter: sunMoonCharacter, guideCards: guideCards, ancientSky: ancientSky, addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, returnsAlmanac: returnsAlmanac, progressedLunation: progressedLunation, planetaryHours: planetaryHours, moonVoidWindow: moonVoidWindow, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
+    microFor: microFor, tellsFor: tellsFor, weaveTransit: weaveTransit, traditionalRead: traditionalRead, determination: determination, determinationSheet: determinationSheet, derivedHouseOf: derivedHouseOf, derivedPhrase: derivedPhrase, conditionVerdict: conditionVerdict, sectProfile: sectProfile, judgeAscendant: judgeAscendant, judgeCaptain: judgeCaptain, rulershipWeb: rulershipWeb, zodiacMatrix: zodiacMatrix, cuspAlmuten: cuspAlmuten, judgeHouse: judgeHouse, judgeHouses: judgeHouses, judgeAspect: judgeAspect, judgeAspects: judgeAspects, fullReception: fullReception, receptionOnAspect: receptionOnAspect, receptionsInChart: receptionsInChart, testimonyAuthority: testimonyAuthority, contest: contest, rulingVoice: rulingVoice, symbolicDirections: symbolicDirections, directionLine: directionLine, directionReceipt: directionReceipt, aspectNature: aspectNature, transitCycles: transitCycles, weaveCycle: weaveCycle, weaveWeek: weaveWeek, receptionOf: receptionOf, chartSignature: chartSignature, lifeQuirks: lifeQuirks, interests: interests, emergingPull: emergingPull, spookyReads: spookyReads, combinationRead: combinationRead, sunMoonCharacter: sunMoonCharacter, guideCards: guideCards, ancientSky: ancientSky, addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, returnsAlmanac: returnsAlmanac, progressedLunation: progressedLunation, planetaryHours: planetaryHours, moonVoidWindow: moonVoidWindow, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
     saveCurrentChart: saveCurrentChart, deleteSavedChart: deleteSavedChart, activateSavedChart: activateSavedChart, activeChartKey: activeChartKey, chartKey: chartKey, famousMatches: famousMatches, lifeTransits: lifeTransits, upcomingTransits: upcomingTransits, transitMotion: transitMotion, compositeChart: compositeChart,
     nameFor: nameFor, glyphFor: glyphFor, pad: pad,
     domElement: domElement, lowElement: lowElement, domMod: domMod, tzOffsetHours: tzOffsetHours
