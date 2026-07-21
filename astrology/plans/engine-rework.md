@@ -1,3 +1,7 @@
+> SUPERSEDED: the full programme now lives in plans/forty-phases.md —
+> forty phases, doctrine-first, one phase per session. This file remains
+> as the phase-1 record.
+
 # The Sonia Rework — traditional method, phased
 
 The brief (from a London School of Astrology–trained astrologer):
