@@ -3987,6 +3987,99 @@ var APP = (function () {
     out.sort(function (x, y) { return Math.abs((x.progress || 0) - 0.5) - Math.abs((y.progress || 0) - 0.5); });
     return { cycles: out, src: 'long transits re-judged through determination (Morin)' };
   }
+  // ===== PHASE 23 — RETURNS IN DOCTRINE: the solar return judged against natal + lord of year =====
+  // The Persian method: the solar return is the year's trigger-chart, never read alone. Its power
+  // is where the LORD OF THE YEAR falls in it, and the natal domain its rising activates. It
+  // switches on natal promise; it cannot manufacture what the birth chart never gave.
+  function srHouseOf23(sr, lon) { if (!sr.ascBody) return 0; return ((Math.floor(rev(lon) / 30) - sr.ascBody.sign + 12) % 12) + 1; }
+  function judgeReturn(c, b) {
+    var sum; try { sum = solarReturnSummary(c, b); } catch (e) { sum = null; }
+    if (!sum) return { hasReturn: false, note: 'The solar return could not be computed for this chart.' };
+    var sr = solarReturnChart(c, b, sum); if (!sr) return { hasReturn: false, note: 'The solar return chart could not be cast.' };
+    var loy = lordOfYear(c, b), hasTime = !!(b && b.timeKnown && c.ascBody && sr.ascBody);
+    var loyD = loy.det, loySR = sr.planets[loy.lord];
+    var loySRhouse = (hasTime && loySR) ? srHouseOf23(sr, loySR.lon) : 0;
+    var promise = (loyD.analogy && loyD.analogy.speaksFirst) ? loyD.analogy.speaksFirst.matter : (loyD.natural ? loyD.natural.karakas[0] : nameFor(loy.lord));
+    var srClass = loySRhouse ? HOUSECLASS9[(loySRhouse - 1) % 3] : null;
+    var loyPlace = (hasTime && loySR) ? ('In the return it stands in ' + loySR.signName + ', the return’s ' + ordinal(loySRhouse) + ' house — ' + (srClass === 'angular' ? 'on an angle of the year, so ' + nameFor(loy.lord) + ' comes forward and its matters lead the twelve months' : srClass === 'succedent' ? 'a succedent place, so its matters build quietly through the year' : 'a cadent place, so this is a recessed year for its matters, worked behind the scenes') + '. ')
+      : ('Its natal state — ' + (loyD.condition ? loyD.condition.band + ' at ' + (loyD.condition.total >= 0 ? '+' : '') + loyD.condition.total + ' by Lilly’s count' : stateAdj9(loyD.essential.label)) + ' — sets the tone the return only triggers. ');
+    var line = 'Your next solar return falls on ' + fmtDate21(sum.date) + ' — the year-chart cast for the Sun’s return to its exact natal degree. The Persian rule is firm: read it against the natal and against the lord of the year, never on its own. '
+      + (hasTime && sr.ascBody ? 'It rises in ' + sr.ascBody.signName + (sr.ascNatalHouse ? ', which falls across your natal ' + ordinal(sr.ascNatalHouse) + ' house — ' + HOUSE_AREA9[sr.ascNatalHouse - 1] + ', the ground this year is pitched on. ' : '. ') : '')
+      + 'Your lord of the year is ' + nameFor(loy.lord) + ' (' + ordinal(loy.profHouse) + '-house profection), which in the natal speaks first of ' + promise + '. ' + loyPlace
+      + 'Whatever the return shows, it activates the natal promise of ' + nameFor(loy.lord) + ' — it cannot manufacture what the birth chart never gave.';
+    return { hasReturn: true, hasTime: hasTime, date: sum.date, srAscSign: sr.ascBody ? sr.ascBody.signName : null, srAscNatalHouse: sr.ascNatalHouse || null, lordOfYear: loy.lord, loySRhouse: loySRhouse, line: line,
+      receipt: ('solar return ' + fmtDate21(sum.date) + (sr.ascBody ? ' · rising ' + sr.ascBody.signName : '') + ' · lord of year ' + nameFor(loy.lord) + (loySRhouse ? ' in return ' + ordinal(loySRhouse) : '')).toUpperCase(),
+      src: 'the Persian solar-return method (Abu Ma’shar, Māshā’allāh): the return judged against natal and the lord of the year, never standalone' };
+  }
+  // ===== PHASE 24 — LUNATIONS AND ECLIPSES as timers on natal degrees (tight orbs only) =====
+  function eclipseTimers(c, b) {
+    var ecl; try { ecl = upcomingEclipses(c, 3); } catch (e) { ecl = []; }
+    var timers = ecl.map(function (e) {
+      var kindTxt = (e.type === 'lunar' ? 'lunar' : 'solar') + ' eclipse', where = degStr(e.deg) + ' ' + DATA.SIGNS[e.sign].name;
+      if (e.near) {
+        var D = determination(c, b, e.near.key);
+        var promise = (D.analogy && D.analogy.speaksFirst) ? D.analogy.speaksFirst.matter : (D.natural ? D.natural.karakas[0] : nameFor(e.near.key));
+        var mal = (e.near.key === 'mars' || e.near.key === 'saturn'), ben = (e.near.key === 'venus' || e.near.key === 'jupiter');
+        var act = e.type === 'solar' ? 'A solar eclipse is the stronger timer — it resets the matters of the degree it strikes' : 'A lunar eclipse brings its matters to a head, to a visible crisis or culmination';
+        var line = 'The ' + kindTxt + ' of ' + fmtDate21(e.date) + ' at ' + where + ' falls within ' + e.near.orb.toFixed(1) + '° of your natal ' + nameFor(e.near.key) + (D.house ? ', in your ' + ordinal(D.house) + ' house' : '') + ', ' + stateAdj9(D.essential.label) + ' in ' + D.signName + ', speaking first of ' + promise + '. An eclipse is a timer, not a verdict: it switches on what that natal degree already promised. ' + act + ' — so expect ' + promise + ' to be on the clock around this date' + (mal ? ', and handled with care' : ben ? ', more opening than threat' : '') + '.';
+        return { type: e.type, date: e.date, deg: e.deg, sign: e.sign, house: e.house, activates: e.near.key, orb: e.near.orb, line: line, receipt: (kindTxt + ' ' + fmtDate21(e.date) + ' · ' + where + ' · activates natal ' + nameFor(e.near.key) + ' orb ' + e.near.orb.toFixed(1) + '°').toUpperCase() };
+      }
+      var line2 = 'The ' + kindTxt + ' of ' + fmtDate21(e.date) + ' at ' + where + (e.house ? ' falls in your ' + ordinal(e.house) + ' house' : '') + ', but strikes no natal degree within orb — a season-marker for the wider world, not a personal trigger. Tight orbs only: an eclipse that misses your points by more than three degrees is weather, not fate.';
+      return { type: e.type, date: e.date, deg: e.deg, sign: e.sign, house: e.house, activates: null, orb: null, line: line2, receipt: (kindTxt + ' ' + fmtDate21(e.date) + ' · ' + where + ' · no natal contact').toUpperCase() };
+    });
+    return { timers: timers, doctrine: 'Lunations and eclipses are timers on the natal degrees: read tightly orbed, and only where they land on a natal point. They switch on natal promise; they do not create it.', src: 'Ptolemy and the Persian tradition on eclipses over natal places; tight-orb activation, not fortune' };
+  }
+  // ===== PHASE 25 — WEEK / DAY SURFACES rewritten under the trigger doctrine =====
+  function glanceJudged(c, b) {
+    var tg = triggerReading(c, b); if (!tg) return null;
+    var doItem = null, watchItem = null;
+    for (var i = 0; i < tg.loud.length; i++) {
+      var d = tg.loud[i], ben = (d.tp === 'venus' || d.tp === 'jupiter' || d.tp === 'sun'), mal = (d.tp === 'mars' || d.tp === 'saturn'), soft = (d.asp === 'trine' || d.asp === 'sextile'), hard = (d.asp === 'square' || d.asp === 'opposition');
+      if (!doItem && ben && soft) doItem = d;
+      if (!watchItem && mal && hard) watchItem = d;
+    }
+    return { hasWire: tg.loud.length > 0, do: doItem, watch: watchItem, loudCount: tg.loud.length, doctrine: tg.doctrine, bottomLine: tg.loud.length ? 'Today is live on your chart: the sky is pressing ' + tg.loud.length + ' wire' + (tg.loud.length > 1 ? 's' : '') + ' the year already had under tension.' : 'Today is quiet on your chart — the sky moves, but presses nothing live. Not every day is an omen.', src: tg.src };
+  }
+  function weekJudged(c, b) {
+    var hits; try { hits = weekHits(c); } catch (e) { hits = []; }
+    var lw = liveWires21(c, b).wires, live = [], back = [], i;
+    for (i = 0; i < hits.length; i++) { (lw[hits[i].np] ? live : back).push(hits[i]); }
+    var liveLines = live.slice(0, 6).map(function (h) {
+      var D = determination(c, b, h.np), promise = (D.analogy && D.analogy.speaksFirst) ? D.analogy.speaksFirst.matter : (D.natural ? D.natural.karakas[0] : nameFor(h.np));
+      return { tp: h.tp, np: h.np, asp: h.asp.key, date: h.exactDate, line: fmtDate21(h.exactDate) + ': transiting ' + nameFor(h.tp) + ' perfects its ' + h.asp.key + ' to your natal ' + nameFor(h.np) + ', a live wire (' + (lw[h.np][0]) + ') — the week times ' + promise + '.', receipt: (fmtDate21(h.exactDate) + ' · ' + nameFor(h.tp) + ' ' + h.asp.key + ' natal ' + nameFor(h.np) + ' · LIVE').toUpperCase() };
+    });
+    return { live: liveLines, backgroundCount: back.length,
+      line: (liveLines.length ? 'This week, ' + liveLines.length + ' of the sky’s exact hits land on live wires; they are the ones worth diarising. ' : 'This week the sky perfects no aspect on a live wire of yours: a quiet week on the chart, whatever the general forecasts say. ')
+        + (back.length ? 'The other ' + back.length + ' exact hit' + (back.length > 1 ? 's are' : ' is') + ' real motion but touch nothing promised or directed — noted, not weighted.' : ''),
+      src: 'the week rebuilt on the trigger doctrine (phase 21): exact hits weighted only where they strike a live wire' };
+  }
+  // ===== PHASE 26 — THE LOTS: Fortune, Spirit and a small canon, delineated by their lords =====
+  var LOT_DOCTRINE26 = {
+    fortune: { name: 'Fortune', of: 'the Moon’s lot — the body, health, livelihood and the material given to you' },
+    spirit: { name: 'Spirit', of: 'the Sun’s lot — the soul, action, career and what you set in motion yourself' },
+    eros: { name: 'Eros', of: 'desire and love — what you reach for and long to be joined to' },
+    necessity: { name: 'Necessity', of: 'constraint and what binds — enmity, compulsion, the fixed conditions of a life' }
+  };
+  function lots(c, b) {
+    if (!(b && b.timeKnown && c.ascBody && c.cusps)) return { hasTime: false, note: 'The Lots are cast from the Ascendant and the two lights, so they need the hour of birth. The Part of Fortune and the Lot of Spirit, and the small canon after them, all wait on the Ascendant.' };
+    var asc = c.ascBody.lon, su = c.planets.sun.lon, mo = c.planets.moon.lon;
+    var day = (c.points && c.points.pof && typeof c.points.pof.day === 'boolean') ? c.points.pof.day : (c.planets.sun.house >= 7 && c.planets.sun.house <= 12);
+    // canonical Hellenistic Lots (day formula; Sun/Moon and the arc reversed at night)
+    var fortune = day ? rev(asc + mo - su) : rev(asc + su - mo);
+    var spirit = day ? rev(asc + su - mo) : rev(asc + mo - su);
+    var lotEros = day ? rev(asc + c.planets.venus.lon - spirit) : rev(asc + spirit - c.planets.venus.lon);
+    var lotNecessity = day ? rev(asc + fortune - c.planets.mercury.lon) : rev(asc + c.planets.mercury.lon - fortune);
+    function houseOf26(lon) { for (var h = 1; h <= 12; h++) { var a = c.cusps[h], b2 = c.cusps[h % 12 + 1], span = rev(b2 - a); if (rev(lon - a) < span) return h; } return 0; }
+    function mkLot(key, lon) {
+      var sign = Math.floor(lon / 30), house = houseOf26(lon), ruler = TRAD_RULER[sign], D = determination(c, b, ruler);
+      var rWhere = D.house ? 'in your ' + ordinal(D.house) + ' house, ' + stateAdj9(D.essential.label) + ' in ' + D.signName + ', speaking first of ' + ((D.analogy && D.analogy.speaksFirst) ? D.analogy.speaksFirst.matter : (D.natural ? D.natural.karakas[0] : nameFor(ruler))) : stateAdj9(D.essential.label) + ' in ' + D.signName;
+      var cond = D.condition ? (D.condition.total >= 5 ? 'well disposed, so the Lot pays — ' : D.condition.total < 0 ? 'poorly disposed, so the Lot is hard to collect on — ' : 'mixed, so the Lot pays unevenly — ') : '';
+      var line = 'The Lot of ' + LOT_DOCTRINE26[key].name + ' sits at ' + degStr(lon % 30) + ' ' + DATA.SIGNS[sign].name + ' in your ' + ordinal(house) + ' house — ' + LOT_DOCTRINE26[key].of + ', found here in the affairs of your ' + ordinal(house) + '. Its lord is ' + nameFor(ruler) + ', ' + rWhere + '; ' + cond + 'the Lot’s matters run through ' + (D.house ? HOUSE_AREA9[D.house - 1] : nameFor(ruler) + '’s significations') + '.';
+      return { key: key, lon: lon, sign: sign, signName: DATA.SIGNS[sign].name, house: house, ruler: ruler, rulerScore: D.condition ? D.condition.total : null, line: line, receipt: ('lot of ' + LOT_DOCTRINE26[key].name + ' ' + degStr(lon % 30) + ' ' + DATA.SIGNS[sign].name + ' · ' + ordinal(house) + ' house · lord ' + nameFor(ruler) + (D.condition ? ' lilly ' + (D.condition.total >= 0 ? '+' : '') + D.condition.total : '')).toUpperCase() };
+    }
+    return { hasTime: true, day: day, fortune: mkLot('fortune', fortune), spirit: mkLot('spirit', spirit), eros: mkLot('eros', lotEros), necessity: mkLot('necessity', lotNecessity),
+      src: 'the Hellenistic Lots (Paulus Alexandrinus, Vettius Valens): computation by day/night sect, delineated through the Lot’s lord in its determination' };
+  }
   // ===== the full solar-return chart: the year's own horoscope, cast for the exact return instant at the birthplace =====
   function solarReturnChart(c, b, sum) {
     if (!sum) return null;
@@ -5290,7 +5383,7 @@ var APP = (function () {
     solarReturnChart: solarReturnChart, upcomingEclipses: upcomingEclipses, bestDaysFor: bestDaysFor, electIntents: electIntents, oddPredictions: oddPredictions, composeProfectionYear: composeProfectionYear, signHouseWeave: signHouseWeave,
     progressedTimeline: progressedTimeline, retroSeasons: retroSeasons,
     exportBook: exportBook, exportBackup: exportBackup, importBackup: importBackup, composeDailyEssay: composeDailyEssay, chartFP: chartFP, weaveNote: weaveNote, termOf: termOf, anA: anA, composeColleague: composeColleague, exportColleague: exportColleague,
-    microFor: microFor, tellsFor: tellsFor, weaveTransit: weaveTransit, traditionalRead: traditionalRead, determination: determination, determinationSheet: determinationSheet, derivedHouseOf: derivedHouseOf, derivedPhrase: derivedPhrase, conditionVerdict: conditionVerdict, sectProfile: sectProfile, judgeAscendant: judgeAscendant, judgeCaptain: judgeCaptain, rulershipWeb: rulershipWeb, zodiacMatrix: zodiacMatrix, cuspAlmuten: cuspAlmuten, judgeHouse: judgeHouse, judgeHouses: judgeHouses, judgeAspect: judgeAspect, judgeAspects: judgeAspects, fullReception: fullReception, receptionOnAspect: receptionOnAspect, receptionsInChart: receptionsInChart, testimonyAuthority: testimonyAuthority, contest: contest, rulingVoice: rulingVoice, contradictions: contradictions, natalSynthesis: natalSynthesis, housesThatMatter: housesThatMatter, noBirthTimeReading: noBirthTimeReading, judgeDirection: judgeDirection, judgeDirections: judgeDirections, directedAscendant: directedAscendant, directedSignificators: directedSignificators, significatorFor: significatorFor, directedChapter18: directedChapter18, boundsWalk: boundsWalk, lordOfYear: lordOfYear, profectionYear: profectionYear, triggerReading: triggerReading, liveWires21: liveWires21, judgeCycle: judgeCycle, judgeCycles: judgeCycles, symbolicDirections: symbolicDirections, directionLine: directionLine, directionReceipt: directionReceipt, aspectNature: aspectNature, transitCycles: transitCycles, weaveCycle: weaveCycle, weaveWeek: weaveWeek, receptionOf: receptionOf, chartSignature: chartSignature, lifeQuirks: lifeQuirks, interests: interests, emergingPull: emergingPull, spookyReads: spookyReads, combinationRead: combinationRead, sunMoonCharacter: sunMoonCharacter, guideCards: guideCards, ancientSky: ancientSky, addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, returnsAlmanac: returnsAlmanac, progressedLunation: progressedLunation, planetaryHours: planetaryHours, moonVoidWindow: moonVoidWindow, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
+    microFor: microFor, tellsFor: tellsFor, weaveTransit: weaveTransit, traditionalRead: traditionalRead, determination: determination, determinationSheet: determinationSheet, derivedHouseOf: derivedHouseOf, derivedPhrase: derivedPhrase, conditionVerdict: conditionVerdict, sectProfile: sectProfile, judgeAscendant: judgeAscendant, judgeCaptain: judgeCaptain, rulershipWeb: rulershipWeb, zodiacMatrix: zodiacMatrix, cuspAlmuten: cuspAlmuten, judgeHouse: judgeHouse, judgeHouses: judgeHouses, judgeAspect: judgeAspect, judgeAspects: judgeAspects, fullReception: fullReception, receptionOnAspect: receptionOnAspect, receptionsInChart: receptionsInChart, testimonyAuthority: testimonyAuthority, contest: contest, rulingVoice: rulingVoice, contradictions: contradictions, natalSynthesis: natalSynthesis, housesThatMatter: housesThatMatter, noBirthTimeReading: noBirthTimeReading, judgeDirection: judgeDirection, judgeDirections: judgeDirections, directedAscendant: directedAscendant, directedSignificators: directedSignificators, significatorFor: significatorFor, directedChapter18: directedChapter18, boundsWalk: boundsWalk, lordOfYear: lordOfYear, profectionYear: profectionYear, triggerReading: triggerReading, liveWires21: liveWires21, judgeCycle: judgeCycle, judgeCycles: judgeCycles, judgeReturn: judgeReturn, eclipseTimers: eclipseTimers, glanceJudged: glanceJudged, weekJudged: weekJudged, lots: lots, symbolicDirections: symbolicDirections, directionLine: directionLine, directionReceipt: directionReceipt, aspectNature: aspectNature, transitCycles: transitCycles, weaveCycle: weaveCycle, weaveWeek: weaveWeek, receptionOf: receptionOf, chartSignature: chartSignature, lifeQuirks: lifeQuirks, interests: interests, emergingPull: emergingPull, spookyReads: spookyReads, combinationRead: combinationRead, sunMoonCharacter: sunMoonCharacter, guideCards: guideCards, ancientSky: ancientSky, addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, returnsAlmanac: returnsAlmanac, progressedLunation: progressedLunation, planetaryHours: planetaryHours, moonVoidWindow: moonVoidWindow, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
     saveCurrentChart: saveCurrentChart, deleteSavedChart: deleteSavedChart, activateSavedChart: activateSavedChart, activeChartKey: activeChartKey, chartKey: chartKey, famousMatches: famousMatches, lifeTransits: lifeTransits, upcomingTransits: upcomingTransits, transitMotion: transitMotion, compositeChart: compositeChart,
     nameFor: nameFor, glyphFor: glyphFor, pad: pad,
     domElement: domElement, lowElement: lowElement, domMod: domMod, tzOffsetHours: tzOffsetHours
