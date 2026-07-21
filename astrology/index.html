@@ -3918,6 +3918,75 @@ var APP = (function () {
       receipt: (ordinal(loy.profHouse) + '-house profection · lord of the year ' + nameFor(loy.lord) + (D.condition ? ' lilly ' + (D.condition.total >= 0 ? '+' : '') + D.condition.total : '') + ' · ' + loud.length + ' directions in force').toUpperCase(),
       src: 'annual profection and the lord of the year (Hellenistic/Persian); Morin XXII on directions activated by the time-lord; the solar return as trigger-chart' };
   }
+  // ===== PHASE 21 — TRANSITS AS TRIGGERS ONLY: the sky speaks where it strikes a live wire =====
+  // Sonia's rule: transits are the LAST thing you look at, and they matter only where they touch
+  // a natal promise already lit — by an active direction, by the lord of the year, by the
+  // captain, or by the current term-distributor. A transit that touches nothing live is real
+  // motion, not a verdict, and the reading says so rather than dressing it as fortune.
+  var CYMON21 = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  function fmtDate21(d) { return d.getDate() + ' ' + CYMON21[d.getMonth()] + ' ' + d.getFullYear(); }
+  function liveWires21(c, b) {
+    var hasTime = !!(b && b.timeKnown && c.ascBody), ageNow = ageYearsNow(b); if (ageNow < 0) ageNow = 0;
+    var wires = {};
+    function add(k, reason) { if (!k) return; (wires[k] = wires[k] || []).push(reason); }
+    var loy = lordOfYear(c, b); add(loy.lord, 'the lord of your profection year');
+    if (hasTime) {
+      add(TRAD_RULER[c.ascBody.sign], 'the captain, lord of your Ascendant');
+      var bw = boundsWalk(c, b); if (bw.hasTime && bw.current) add(bw.current.lord, 'the distributor of your current bound-span');
+    }
+    var movers = hasTime ? ['asc', 'mc', 'sun', 'moon'] : ['sun', 'moon'], mi, ei;
+    for (mi = 0; mi < movers.length; mi++) { var de = directedEvents18(c, b, movers[mi], ageNow - 1.5, ageNow + 1.5); if (!de.events) continue; for (ei = 0; ei < de.events.length; ei++) { var E = de.events[ei]; if (E.np === 'asc' || E.np === 'mc') continue; add(E.np, 'under an active direction (directed ' + nameFor(E.dp) + ' ' + E.aspKey + ' it near age ' + Math.round(E.age) + ')'); } }
+    return { wires: wires, hasTime: hasTime };
+  }
+  function triggerReading(c, b) {
+    var tr; try { tr = composeTransits(c); } catch (e) { return null; }
+    var lw = liveWires21(c, b), wires = lw.wires, evs = tr.all || [], loud = [], background = [], i;
+    for (i = 0; i < evs.length; i++) { var ev = evs[i]; if (wires[ev.np]) { ev._wire = wires[ev.np]; loud.push(ev); } else background.push(ev); }
+    loud.sort(function (x, y) { return x.orb - y.orb; });
+    var loudLines = loud.map(function (ev) {
+      var D = determination(c, b, ev.np);
+      var promise = (D.analogy && D.analogy.speaksFirst) ? D.analogy.speaksFirst.matter : (D.natural ? D.natural.karakas[0] : nameFor(ev.np));
+      var tben = (ev.tp === 'venus' || ev.tp === 'jupiter'), tmal = (ev.tp === 'mars' || ev.tp === 'saturn');
+      var hard = (ev.asp.key === 'square' || ev.asp.key === 'opposition'), soft = (ev.asp.key === 'trine' || ev.asp.key === 'sextile');
+      var manner = tben && soft ? 'A benefic in a soft aspect: a window to move on ' + promise + ' while the wire is warm.' : tben && hard ? 'A benefic under strain: help around ' + promise + ' is there, but you must reach for it.' : tmal && hard ? 'A malefic in a hard aspect: ' + promise + ' is where the pressure lands now — meet it deliberately, do not overreach.' : tmal && soft ? 'A malefic, even in an easy aspect, still runs its own water: ' + promise + ' moves, but with weight.' : 'The passing sky touches ' + promise + ' now — read it as timing on the live wire, not as a verdict of its own.';
+      var houseClause = (D.house ? 'In your chart ' + nameFor(ev.np) + ' keeps its court in your ' + ordinal(D.house) + ' house, ' + stateAdj9(D.essential.label) + ' in ' + D.signName + '. ' : '');
+      var line = 'Transiting ' + nameFor(ev.tp) + ' is ' + aspVerb(ev.asp) + ' your natal ' + nameFor(ev.np) + ' (orb ' + ev.orb.toFixed(1) + '°' + (ev.applying === true ? ', closing' : ev.applying === false ? ', separating' : '') + '), and ' + nameFor(ev.np) + ' is a live wire right now — ' + ev._wire.join('; ') + '. ' + houseClause + 'So the sky is pressing where the year is already under tension: ' + promise + '. ' + manner;
+      return { tp: ev.tp, np: ev.np, asp: ev.asp.key, orb: ev.orb, wire: ev._wire, line: line, receipt: ('transiting ' + nameFor(ev.tp) + ' ' + ev.asp.key + ' natal ' + nameFor(ev.np) + ' · LIVE WIRE · orb ' + ev.orb.toFixed(1) + '°').toUpperCase() };
+    });
+    var doctrine = 'The tradition looks at transits last, and only where they strike a live wire — a natal promise already lit by direction, by the lord of the year, by the captain, or by the current distributor. '
+      + (loud.length ? 'Right now ' + loud.length + ' transit' + (loud.length > 1 ? 's land' : ' lands') + ' on a live wire; everything else in the sky is real motion, not a verdict.' : 'Right now no transit lands on a live wire: the sky is moving, but it presses nothing the year has under tension. The honest reading is that today is quiet on your chart — not every day is an omen.');
+    var backgroundLine = background.length ? 'Also moving, but touching nothing currently promised or directed — real motion, not fortune: ' + background.slice(0, 5).map(function (ev) { return nameFor(ev.tp) + ' ' + ev.asp.key + ' ' + nameFor(ev.np); }).join(', ') + '.' : 'Nothing else of note is in orb.';
+    return { doctrine: doctrine, loud: loudLines, background: background, backgroundLine: backgroundLine, wires: wires,
+      receipt: (loud.length + ' live-wire transits · ' + background.length + ' background').toUpperCase(),
+      src: 'Sonia’s rule that transits are read last and only as triggers; the Persian doctrine of the time-lord activating natal promise' };
+  }
+  // ===== PHASE 22 — CYCLES RE-JUDGED through both planets' determinations in THIS chart =====
+  // A long transit is not a generic 'Saturn square': which houses Saturn rules for YOU is what
+  // his transit means for YOU. Each cycle is judged through the transiting planet's own natal
+  // rulerships and the natal target's full determination.
+  function judgeCycle(c, b, ev) {
+    var hasTime = !!(b && b.timeKnown && c.ascBody);
+    var Dt = determination(c, b, ev.tp), Dn = determination(c, b, ev.np); if (!Dt || !Dn) return null;
+    var tRules = []; if (hasTime && Dt.rules) for (var ri = 0; ri < Dt.rules.length; ri++) tRules.push(ordinal(Dt.rules[ri].house) + ' (' + HOUSE_AREA9[Dt.rules[ri].house - 1] + ')');
+    var tDomain = tRules.length ? 'rules your ' + tRules.join(' and your ') + ', so this cycle works on those matters' : 'carries ' + (Dt.natural ? Dt.natural.karakas.slice(0, 2).join(' and ') : 'its own significations') + (Dt.essential && Dt.essential.modern ? ' (a modern point, outside the house-rulerships)' : '');
+    var promise = (Dn.analogy && Dn.analogy.speaksFirst) ? Dn.analogy.speaksFirst.matter : (Dn.natural ? Dn.natural.karakas[0] : nameFor(ev.np));
+    var tben = (ev.tp === 'venus' || ev.tp === 'jupiter'), tmal = (ev.tp === 'mars' || ev.tp === 'saturn');
+    var hard = (ev.aspKey === 'square' || ev.aspKey === 'opposition'), soft = (ev.aspKey === 'trine' || ev.aspKey === 'sextile');
+    var pct = Math.round((ev.progress || 0) * 100);
+    var passesTxt = (ev.passes && ev.passes.length) ? 'exact ' + ev.passes.map(fmtDate21).join(', ') : (ev.progress < 0.5 ? 'still building toward exact' : 'past its exact peak, separating');
+    var judgment = tmal && hard ? 'a genuine test on ' + promise + ' — the years of this passage ask real work there, and reward only the durable version' : tmal && soft ? 'a slow, weighty rework of ' + promise + ' — not painful, but not to be coasted through either' : tben && hard ? 'a stretch that grows ' + promise + ' through some friction — expansion that has to be steered' : tben && soft ? 'a supported season for ' + promise + ' — the door on those matters stands unusually open' : 'a long reshaping of ' + promise + ', neutral in itself and coloured by what it rules for you';
+    var houseClause = hasTime && Dn.house ? 'sits in your ' + ordinal(Dn.house) + ' house, ' : '';
+    var line = 'Transiting ' + nameFor(ev.tp) + ' is ' + aspVerb({ key: ev.aspKey }) + ' your natal ' + nameFor(ev.np) + ' — ' + pct + '% through this passage, ' + passesTxt + '. This is not a generic ' + nameFor(ev.tp) + ' transit: in your chart ' + nameFor(ev.tp) + ' ' + tDomain + '; and your natal ' + nameFor(ev.np) + ' ' + houseClause + stateAdj9(Dn.essential.label) + ' in ' + Dn.signName + ', speaking first of ' + promise + '. So for you specifically, this is ' + judgment + '.';
+    return { tp: ev.tp, np: ev.np, aspKey: ev.aspKey, progress: ev.progress, passes: ev.passes, tRules: tRules, line: line,
+      receipt: (nameFor(ev.tp) + ' ' + ev.aspKey + ' natal ' + nameFor(ev.np) + ' · ' + pct + '% · ' + (tRules.length ? 'rules ' + Dt.rules.map(function (r) { return ordinal(r.house); }).join(',') : 'no house rulership') + (ev.passes && ev.passes.length ? ' · exact ' + fmtDate21(ev.passes[0]) : '')).toUpperCase(),
+      src: 'Morin XXI–XXII: a transit is judged through both planets’ determinations in the natal chart, never as a generic aspect' };
+  }
+  function judgeCycles(c, b) {
+    var evs; try { evs = transitCycles(c); } catch (e) { return { cycles: [] }; }
+    var out = evs.map(function (ev) { return judgeCycle(c, b, ev); }).filter(Boolean);
+    out.sort(function (x, y) { return Math.abs((x.progress || 0) - 0.5) - Math.abs((y.progress || 0) - 0.5); });
+    return { cycles: out, src: 'long transits re-judged through determination (Morin)' };
+  }
   // ===== the full solar-return chart: the year's own horoscope, cast for the exact return instant at the birthplace =====
   function solarReturnChart(c, b, sum) {
     if (!sum) return null;
@@ -5221,7 +5290,7 @@ var APP = (function () {
     solarReturnChart: solarReturnChart, upcomingEclipses: upcomingEclipses, bestDaysFor: bestDaysFor, electIntents: electIntents, oddPredictions: oddPredictions, composeProfectionYear: composeProfectionYear, signHouseWeave: signHouseWeave,
     progressedTimeline: progressedTimeline, retroSeasons: retroSeasons,
     exportBook: exportBook, exportBackup: exportBackup, importBackup: importBackup, composeDailyEssay: composeDailyEssay, chartFP: chartFP, weaveNote: weaveNote, termOf: termOf, anA: anA, composeColleague: composeColleague, exportColleague: exportColleague,
-    microFor: microFor, tellsFor: tellsFor, weaveTransit: weaveTransit, traditionalRead: traditionalRead, determination: determination, determinationSheet: determinationSheet, derivedHouseOf: derivedHouseOf, derivedPhrase: derivedPhrase, conditionVerdict: conditionVerdict, sectProfile: sectProfile, judgeAscendant: judgeAscendant, judgeCaptain: judgeCaptain, rulershipWeb: rulershipWeb, zodiacMatrix: zodiacMatrix, cuspAlmuten: cuspAlmuten, judgeHouse: judgeHouse, judgeHouses: judgeHouses, judgeAspect: judgeAspect, judgeAspects: judgeAspects, fullReception: fullReception, receptionOnAspect: receptionOnAspect, receptionsInChart: receptionsInChart, testimonyAuthority: testimonyAuthority, contest: contest, rulingVoice: rulingVoice, contradictions: contradictions, natalSynthesis: natalSynthesis, housesThatMatter: housesThatMatter, noBirthTimeReading: noBirthTimeReading, judgeDirection: judgeDirection, judgeDirections: judgeDirections, directedAscendant: directedAscendant, directedSignificators: directedSignificators, significatorFor: significatorFor, directedChapter18: directedChapter18, boundsWalk: boundsWalk, lordOfYear: lordOfYear, profectionYear: profectionYear, symbolicDirections: symbolicDirections, directionLine: directionLine, directionReceipt: directionReceipt, aspectNature: aspectNature, transitCycles: transitCycles, weaveCycle: weaveCycle, weaveWeek: weaveWeek, receptionOf: receptionOf, chartSignature: chartSignature, lifeQuirks: lifeQuirks, interests: interests, emergingPull: emergingPull, spookyReads: spookyReads, combinationRead: combinationRead, sunMoonCharacter: sunMoonCharacter, guideCards: guideCards, ancientSky: ancientSky, addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, returnsAlmanac: returnsAlmanac, progressedLunation: progressedLunation, planetaryHours: planetaryHours, moonVoidWindow: moonVoidWindow, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
+    microFor: microFor, tellsFor: tellsFor, weaveTransit: weaveTransit, traditionalRead: traditionalRead, determination: determination, determinationSheet: determinationSheet, derivedHouseOf: derivedHouseOf, derivedPhrase: derivedPhrase, conditionVerdict: conditionVerdict, sectProfile: sectProfile, judgeAscendant: judgeAscendant, judgeCaptain: judgeCaptain, rulershipWeb: rulershipWeb, zodiacMatrix: zodiacMatrix, cuspAlmuten: cuspAlmuten, judgeHouse: judgeHouse, judgeHouses: judgeHouses, judgeAspect: judgeAspect, judgeAspects: judgeAspects, fullReception: fullReception, receptionOnAspect: receptionOnAspect, receptionsInChart: receptionsInChart, testimonyAuthority: testimonyAuthority, contest: contest, rulingVoice: rulingVoice, contradictions: contradictions, natalSynthesis: natalSynthesis, housesThatMatter: housesThatMatter, noBirthTimeReading: noBirthTimeReading, judgeDirection: judgeDirection, judgeDirections: judgeDirections, directedAscendant: directedAscendant, directedSignificators: directedSignificators, significatorFor: significatorFor, directedChapter18: directedChapter18, boundsWalk: boundsWalk, lordOfYear: lordOfYear, profectionYear: profectionYear, triggerReading: triggerReading, liveWires21: liveWires21, judgeCycle: judgeCycle, judgeCycles: judgeCycles, symbolicDirections: symbolicDirections, directionLine: directionLine, directionReceipt: directionReceipt, aspectNature: aspectNature, transitCycles: transitCycles, weaveCycle: weaveCycle, weaveWeek: weaveWeek, receptionOf: receptionOf, chartSignature: chartSignature, lifeQuirks: lifeQuirks, interests: interests, emergingPull: emergingPull, spookyReads: spookyReads, combinationRead: combinationRead, sunMoonCharacter: sunMoonCharacter, guideCards: guideCards, ancientSky: ancientSky, addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, returnsAlmanac: returnsAlmanac, progressedLunation: progressedLunation, planetaryHours: planetaryHours, moonVoidWindow: moonVoidWindow, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
     saveCurrentChart: saveCurrentChart, deleteSavedChart: deleteSavedChart, activateSavedChart: activateSavedChart, activeChartKey: activeChartKey, chartKey: chartKey, famousMatches: famousMatches, lifeTransits: lifeTransits, upcomingTransits: upcomingTransits, transitMotion: transitMotion, compositeChart: compositeChart,
     nameFor: nameFor, glyphFor: glyphFor, pad: pad,
     domElement: domElement, lowElement: lowElement, domMod: domMod, tzOffsetHours: tzOffsetHours
