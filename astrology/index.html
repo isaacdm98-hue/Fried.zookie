@@ -3776,6 +3776,74 @@ var APP = (function () {
     var SD = symbolicDirections(c, b); if (!SD) return null;
     return { ageNow: SD.ageNow, past: SD.past.map(function (E) { return judgeDirection(c, b, E); }).filter(Boolean), next: SD.next.map(function (E) { return judgeDirection(c, b, E); }).filter(Boolean) };
   }
+  // ===== PHASES 17-18 — DIRECTIONS BY SIGNIFICATOR: the life edge, then the MC, Sun and Moon =====
+  // Each moving significator answers a different question (Lilly): the directed Ascendant for
+  // the body and the shape of the years; the directed Midheaven for the career and honour;
+  // the directed Sun for vitality and the father; the directed Moon for the felt life and the
+  // mother. We read the WHOLE window for ONE mover at a time, so each is a legible life-arc.
+  var SIGNIFICATOR_DOCTRINE18 = {
+    asc: { governs: 'the body, the vitality and the very shape of the years', line: 'For the life itself — the body, the health, and the tenor of a whole span of years — the tradition reads the directed Ascendant, the edge of the life advancing one degree for every year lived. Where it lands, the life turns.' },
+    mc: { governs: 'the career, the honour and the public name', line: 'For the career, the standing and the name spoken when you have left the room, the tradition reads the directed Midheaven — the edge of the vocation, advancing to meet each promittor in turn.' },
+    sun: { governs: 'vitality, authority and the father', line: 'For vitality, for dealings with authority, and for the father, the tradition reads the directed Sun — the vital light carried forward through the chart.' },
+    moon: { governs: 'the felt life, the body’s changing needs and the mother', line: 'For the felt life — mood, the body’s shifting needs, the domestic tide, and the mother — the tradition reads the directed Moon, the swiftest of the lights slowed to a symbolic pace.' }
+  };
+  // which mover answers which life-question (the significator-choice doctrine, Lilly)
+  var QUESTION_SIGNIFICATOR18 = { body: 'asc', life: 'asc', health: 'asc', career: 'mc', honour: 'mc', reputation: 'mc', vitality: 'sun', father: 'sun', authority: 'sun', mother: 'moon', feeling: 'moon', home: 'moon' };
+  function significatorFor(question) { return QUESTION_SIGNIFICATOR18[String(question || '').toLowerCase()] || null; }
+  // all directed-mover contacts to natal promittors across an age window, judged
+  function directedEvents18(c, b, moverK, loAge, hiAge) {
+    if (!b || !b.y) return { ageNow: 0, events: [] };
+    var now = new Date();
+    var ageNow = (now - new Date(b.y, (b.mo || 1) - 1, b.d || 1)) / 86400000 / 365.2425;
+    var lonOf = function (k) { if (k === 'asc') return c.ascBody ? c.ascBody.lon : null; if (k === 'mc') return c.mcBody ? c.mcBody.lon : null; return c.planets[k] ? c.planets[k].lon : null; };
+    var dl0 = lonOf(moverK); if (dl0 == null) return { ageNow: ageNow, events: null };
+    var targets = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto'];
+    if (b.timeKnown) targets = targets.concat(['asc', 'mc']);
+    var evs = [], ni, ai, kk;
+    for (ni = 0; ni < targets.length; ni++) {
+      var nk = targets[ni]; if (nk === moverK) continue; var nl0 = lonOf(nk); if (nl0 == null) continue;
+      var s0 = ((nl0 - dl0) % 360 + 360) % 360;
+      for (ai = 0; ai < DATA.ASPECTS.length; ai++) {
+        var A = DATA.ASPECTS[ai], sols = (A.angle === 0 || A.angle === 180) ? [A.angle] : [A.angle, 360 - A.angle];
+        for (kk = 0; kk < sols.length; kk++) {
+          var t9 = ((s0 - sols[kk]) % 360 + 360) % 360;
+          if (t9 > 95 || t9 < loAge || t9 > hiAge) continue;
+          evs.push({ dp: moverK, np: nk, aspKey: A.key, age: t9, year: Math.round(b.y + (b.mo || 6) / 12 + t9) });
+        }
+      }
+    }
+    evs.sort(function (x, y) { return x.age - y.age; });
+    return { ageNow: ageNow, events: evs };
+  }
+  function directedChapter18(c, b, moverK) {
+    var needsTime = (moverK === 'asc' || moverK === 'mc');
+    if (needsTime && !(b && b.timeKnown && c.ascBody)) {
+      return { mover: moverK, hasTime: false, governs: SIGNIFICATOR_DOCTRINE18[moverK].governs, note: 'The directed ' + nameFor(moverK) + ' is an angle, and angles need the hour of birth. Set even a rough time and this life-arc opens; without it, ' + SIGNIFICATOR_DOCTRINE18[moverK].governs + ' cannot be timed.' };
+    }
+    var de = directedEvents18(c, b, moverK, Math.max(0, 0), 95);
+    if (!de.events) return { mover: moverK, hasTime: false, note: 'The directed ' + nameFor(moverK) + ' cannot be computed for this chart.' };
+    var lo = de.ageNow - 5, hi = de.ageNow + 15;
+    var window = de.events.filter(function (E) { return E.age >= lo && E.age <= hi; });
+    // weight so the window isn't flooded: lights/angles and the hard aspects lead
+    window.sort(function (x, y) {
+      var wx = (x.aspKey === 'conjunction' || x.aspKey === 'square' || x.aspKey === 'opposition' ? 1 : 0) + (['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn'].indexOf(x.np) >= 0 ? 1 : 0);
+      var wy = (y.aspKey === 'conjunction' || y.aspKey === 'square' || y.aspKey === 'opposition' ? 1 : 0) + (['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn'].indexOf(y.np) >= 0 ? 1 : 0);
+      return wy - wx || Math.abs(x.age - de.ageNow) - Math.abs(y.age - de.ageNow);
+    });
+    var chosen = window.slice(0, 8);
+    chosen.sort(function (x, y) { return x.age - y.age; });
+    var judged = chosen.map(function (E) { return judgeDirection(c, b, E); }).filter(Boolean);
+    return { mover: moverK, hasTime: true, ageNow: de.ageNow, governs: SIGNIFICATOR_DOCTRINE18[moverK].governs, doctrine: SIGNIFICATOR_DOCTRINE18[moverK].line, directions: judged,
+      receipt: ('directed ' + nameFor(moverK) + ' · ' + judged.length + ' contacts, age ' + Math.round(lo) + '–' + Math.round(hi)).toUpperCase(),
+      src: 'Lilly, Christian Astrology (1647) on the significators of life, honour, the father and the mother; Morin XXII on directions' };
+  }
+  // PHASE 17 — the directed Ascendant, the life-arc surface
+  function directedAscendant(c, b) { return directedChapter18(c, b, 'asc'); }
+  // PHASE 18 — the directed Midheaven, Sun and Moon
+  function directedSignificators(c, b) {
+    return { mc: directedChapter18(c, b, 'mc'), sun: directedChapter18(c, b, 'sun'), moon: directedChapter18(c, b, 'moon'),
+      choiceDoctrine: 'Read the mover that owns the question: the Ascendant for the body and the life, the Midheaven for the career and the name, the Sun for vitality and the father, the Moon for the felt life and the mother. To read the career from the Sun, or the body from the Moon, is to answer a question no one asked.' };
+  }
   // ===== the full solar-return chart: the year's own horoscope, cast for the exact return instant at the birthplace =====
   function solarReturnChart(c, b, sum) {
     if (!sum) return null;
@@ -5079,7 +5147,7 @@ var APP = (function () {
     solarReturnChart: solarReturnChart, upcomingEclipses: upcomingEclipses, bestDaysFor: bestDaysFor, electIntents: electIntents, oddPredictions: oddPredictions, composeProfectionYear: composeProfectionYear, signHouseWeave: signHouseWeave,
     progressedTimeline: progressedTimeline, retroSeasons: retroSeasons,
     exportBook: exportBook, exportBackup: exportBackup, importBackup: importBackup, composeDailyEssay: composeDailyEssay, chartFP: chartFP, weaveNote: weaveNote, termOf: termOf, anA: anA, composeColleague: composeColleague, exportColleague: exportColleague,
-    microFor: microFor, tellsFor: tellsFor, weaveTransit: weaveTransit, traditionalRead: traditionalRead, determination: determination, determinationSheet: determinationSheet, derivedHouseOf: derivedHouseOf, derivedPhrase: derivedPhrase, conditionVerdict: conditionVerdict, sectProfile: sectProfile, judgeAscendant: judgeAscendant, judgeCaptain: judgeCaptain, rulershipWeb: rulershipWeb, zodiacMatrix: zodiacMatrix, cuspAlmuten: cuspAlmuten, judgeHouse: judgeHouse, judgeHouses: judgeHouses, judgeAspect: judgeAspect, judgeAspects: judgeAspects, fullReception: fullReception, receptionOnAspect: receptionOnAspect, receptionsInChart: receptionsInChart, testimonyAuthority: testimonyAuthority, contest: contest, rulingVoice: rulingVoice, contradictions: contradictions, natalSynthesis: natalSynthesis, housesThatMatter: housesThatMatter, noBirthTimeReading: noBirthTimeReading, judgeDirection: judgeDirection, judgeDirections: judgeDirections, symbolicDirections: symbolicDirections, directionLine: directionLine, directionReceipt: directionReceipt, aspectNature: aspectNature, transitCycles: transitCycles, weaveCycle: weaveCycle, weaveWeek: weaveWeek, receptionOf: receptionOf, chartSignature: chartSignature, lifeQuirks: lifeQuirks, interests: interests, emergingPull: emergingPull, spookyReads: spookyReads, combinationRead: combinationRead, sunMoonCharacter: sunMoonCharacter, guideCards: guideCards, ancientSky: ancientSky, addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, returnsAlmanac: returnsAlmanac, progressedLunation: progressedLunation, planetaryHours: planetaryHours, moonVoidWindow: moonVoidWindow, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
+    microFor: microFor, tellsFor: tellsFor, weaveTransit: weaveTransit, traditionalRead: traditionalRead, determination: determination, determinationSheet: determinationSheet, derivedHouseOf: derivedHouseOf, derivedPhrase: derivedPhrase, conditionVerdict: conditionVerdict, sectProfile: sectProfile, judgeAscendant: judgeAscendant, judgeCaptain: judgeCaptain, rulershipWeb: rulershipWeb, zodiacMatrix: zodiacMatrix, cuspAlmuten: cuspAlmuten, judgeHouse: judgeHouse, judgeHouses: judgeHouses, judgeAspect: judgeAspect, judgeAspects: judgeAspects, fullReception: fullReception, receptionOnAspect: receptionOnAspect, receptionsInChart: receptionsInChart, testimonyAuthority: testimonyAuthority, contest: contest, rulingVoice: rulingVoice, contradictions: contradictions, natalSynthesis: natalSynthesis, housesThatMatter: housesThatMatter, noBirthTimeReading: noBirthTimeReading, judgeDirection: judgeDirection, judgeDirections: judgeDirections, directedAscendant: directedAscendant, directedSignificators: directedSignificators, significatorFor: significatorFor, directedChapter18: directedChapter18, symbolicDirections: symbolicDirections, directionLine: directionLine, directionReceipt: directionReceipt, aspectNature: aspectNature, transitCycles: transitCycles, weaveCycle: weaveCycle, weaveWeek: weaveWeek, receptionOf: receptionOf, chartSignature: chartSignature, lifeQuirks: lifeQuirks, interests: interests, emergingPull: emergingPull, spookyReads: spookyReads, combinationRead: combinationRead, sunMoonCharacter: sunMoonCharacter, guideCards: guideCards, ancientSky: ancientSky, addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, returnsAlmanac: returnsAlmanac, progressedLunation: progressedLunation, planetaryHours: planetaryHours, moonVoidWindow: moonVoidWindow, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
     saveCurrentChart: saveCurrentChart, deleteSavedChart: deleteSavedChart, activateSavedChart: activateSavedChart, activeChartKey: activeChartKey, chartKey: chartKey, famousMatches: famousMatches, lifeTransits: lifeTransits, upcomingTransits: upcomingTransits, transitMotion: transitMotion, compositeChart: compositeChart,
     nameFor: nameFor, glyphFor: glyphFor, pad: pad,
     domElement: domElement, lowElement: lowElement, domMod: domMod, tzOffsetHours: tzOffsetHours
