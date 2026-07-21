@@ -4080,6 +4080,87 @@ var APP = (function () {
     return { hasTime: true, day: day, fortune: mkLot('fortune', fortune), spirit: mkLot('spirit', spirit), eros: mkLot('eros', lotEros), necessity: mkLot('necessity', lotNecessity),
       src: 'the Hellenistic Lots (Paulus Alexandrinus, Vettius Valens): computation by day/night sect, delineated through the Lot’s lord in its determination' };
   }
+  // ===== PHASE 27 — FIXED STARS re-delineated to condition/behaviour register (tight orbs) =====
+  // Robson's catalogue is kept; the register is rewritten. A star is not a fortune but a
+  // colouring of the point that carries it, and only within about a degree.
+  function starsJudged(c, b) {
+    var raw; try { raw = starsOn(c); } catch (e) { raw = []; }
+    var out = raw.map(function (st) {
+      var pk = st.planet, isPt = (pk === 'asc' || pk === 'mc'), D = isPt ? null : determination(c, b, pk);
+      var carrier = isPt ? (pk === 'asc' ? 'your Ascendant — the life and body itself' : 'your Midheaven — the career and the name') : ('your natal ' + nameFor(pk) + (D && D.house ? ', which keeps its court in your ' + ordinal(D.house) + ' house and speaks first of ' + ((D.analogy && D.analogy.speaksFirst) ? D.analogy.speaksFirst.matter : (D.natural ? D.natural.karakas[0] : nameFor(pk))) : ''));
+      var falls = isPt ? '' : 'Because it rides ' + nameFor(pk) + ', that colour falls on ' + (D && D.house ? HOUSE_AREA9[D.house - 1] : nameFor(pk) + '’s significations') + '. ';
+      var line = 'The fixed star ' + st.star + ' sits within ' + st.orb.toFixed(1) + '° of ' + carrier + ', of the nature of ' + st.nat + '. A fixed star is not a fortune but a colouring of the point it touches — read here as behaviour, not omen: ' + st.m + '. ' + falls + 'Tight orbs only: past about a degree the star is not truly carried.';
+      return { star: st.star, planet: pk, orb: st.orb, nature: st.nat, line: line, receipt: ('fixed star ' + st.star + ' on ' + nameFor(pk) + ' · orb ' + st.orb.toFixed(1) + '° · nature ' + st.nat).toUpperCase() };
+    });
+    return { stars: out, doctrine: 'A fixed star is read only where a planet or angle carries one within about a degree, and it is a colouring of that point’s condition — behaviour, not prophecy.', src: 'Robson, The Fixed Stars and Constellations in Astrology (1923) as catalogue; the register rewritten to condition/behaviour; Ptolemy on stellar natures' };
+  }
+  // ===== PHASE 28 — ANTISCIA AND DECLINATION: the hidden partnerships =====
+  // Two planets can "see" each other in shadow — mirrored across the solstice axis (antiscia)
+  // or matched in declination (parallel) — a bond the aspect grid never shows. Judged through
+  // both determinations, so the hidden link is named in the matters it joins.
+  function hiddenPartnerships(c, b) {
+    var ks = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn'], out = [], i, j;
+    function matterOf(k) { var D = determination(c, b, k); return { D: D, m: (D.analogy && D.analogy.speaksFirst) ? D.analogy.speaksFirst.matter : (D.natural ? D.natural.karakas[0] : nameFor(k)), h: D.house ? HOUSE_AREA9[D.house - 1] : null }; }
+    for (i = 0; i < ks.length; i++) {
+      var a = c.planets[ks[i]]; if (!a) continue;
+      var ant = rev(180 - a.lon), cant = rev(360 - a.lon);
+      for (j = i + 1; j < ks.length; j++) {
+        var b2 = c.planets[ks[j]]; if (!b2) continue;
+        var o1 = Math.abs(sdelta(ant, b2.lon)), o2 = Math.abs(sdelta(cant, b2.lon));
+        if (o1 <= 1.5 || o2 <= 1.5) {
+          var mi = matterOf(ks[i]), mj = matterOf(ks[j]), anti = o1 <= 1.5;
+          out.push({ kind: anti ? 'antiscion' : 'contra-antiscion', a: ks[i], b: ks[j], orb: anti ? o1 : o2, mode: 'antiscia',
+            line: 'Your natal ' + nameFor(ks[j]) + ' sits on the ' + (anti ? 'antiscion' : 'contra-antiscion') + ' of your natal ' + nameFor(ks[i]) + ' (' + (anti ? o1 : o2).toFixed(1) + '° across the solstice axis) — a partnership the aspect grid never shows. ' + (anti ? 'They work as one in secret' : 'They pull against each other in shadow, a hidden opposition') + ': ' + nameFor(ks[i]) + (mi.h ? ' (your ' + mi.h + ')' : '') + ' and ' + nameFor(ks[j]) + (mj.h ? ' (your ' + mj.h + ')' : '') + ' are joined out of sight, so ' + mi.m + ' and ' + mj.m + ' move together whether or not you notice.',
+            receipt: (nameFor(ks[j]) + ' on ' + (anti ? 'antiscion' : 'contra-antiscion') + ' of ' + nameFor(ks[i]) + ' · ' + (anti ? o1 : o2).toFixed(1) + '°').toUpperCase() });
+        }
+      }
+    }
+    var dec; try { dec = declAspects(c); } catch (e) { dec = []; }
+    for (i = 0; i < dec.length; i++) {
+      var d9 = dec[i]; if (ks.indexOf(d9.a) < 0 || ks.indexOf(d9.b) < 0) continue;
+      var ma = matterOf(d9.a), mb = matterOf(d9.b);
+      out.push({ kind: d9.type, a: d9.a, b: d9.b, orb: d9.orb, mode: 'declination',
+        line: 'Your natal ' + nameFor(d9.a) + ' and ' + nameFor(d9.b) + ' are ' + d9.type + ' by declination (' + d9.orb.toFixed(1) + '°, at ' + d9.da.toFixed(1) + '° and ' + d9.db.toFixed(1) + '°) — ' + (d9.type === 'parallel' ? 'a hidden conjunction, reinforcing each other off the ecliptic' : 'a hidden opposition, pulling on each other off the ecliptic') + '. In your chart ' + nameFor(d9.a) + (ma.h ? ' governs your ' + ma.h : ' carries ' + ma.m) + ' and ' + nameFor(d9.b) + (mb.h ? ' your ' + mb.h : ' carries ' + mb.m) + ', so those matters are linked in a way the longitudes alone never reveal.',
+        receipt: (nameFor(d9.a) + ' ' + d9.type + ' ' + nameFor(d9.b) + ' by declination · ' + d9.orb.toFixed(1) + '°').toUpperCase() });
+    }
+    out.sort(function (x, y) { return x.orb - y.orb; });
+    return { partnerships: out.slice(0, 6), doctrine: 'Antiscia (mirror degrees across the solstice axis) and declination parallels are real contacts the aspect grid does not draw — read tightly, and always as the specific matters the two planets join.', src: 'the doctrine of antiscia (Firmicus, Ptolemy) and declination parallels; judged through determination' };
+  }
+  // ===== PHASE 29 — PATTERNS AS TESTIMONY: chart shapes weighted into the judgment =====
+  // A configuration is not trivia; it is a weighted testimony about where the chart concentrates
+  // stress or gift, entered into the same hierarchy as everything else and tied to determinations.
+  function patternsAsTestimony(c, b) {
+    var pats; try { pats = aspectPatterns(c); } catch (e) { pats = []; }
+    var WEIGHT29 = { 'T-Square': 4, 'Grand Trine': 3, 'Yod': 3, 'Stellium': 3 };
+    var out = pats.map(function (pt) {
+      var apexD = pt.apex ? determination(c, b, pt.apex) : null;
+      var apexClause = apexD ? nameFor(pt.apex) + (apexD.house ? ', in your ' + ordinal(apexD.house) + ' house, ' + stateAdj9(apexD.essential.label) + ' in ' + apexD.signName + (apexD.rules && apexD.rules.length ? ', ruling your ' + apexD.rules.map(function (r) { return ordinal(r.house); }).join(' and ') : '') : '') : '';
+      var line;
+      if (pt.type === 'T-Square') line = 'A T-square dumps its pressure onto ' + apexClause + '. As a testimony it weighs heavy: this is the chart’s hardest-worked point, and because it ' + (apexD && apexD.rules && apexD.rules.length ? 'rules your ' + apexD.rules.map(function (r) { return ordinal(r.house) + ' (' + HOUSE_AREA9[r.house - 1] + ')'; }).join(' and your ') + ', the strain lands squarely on those matters' : 'carries ' + (apexD && apexD.natural ? apexD.natural.karakas[0] : 'its own significations') + ', the strain lands there') + '.';
+      else if (pt.type === 'Stellium') line = 'A stellium in ' + pt.where + ' — ' + pt.bodies.map(nameFor).join(', ') + ' piled into one sign — is a heavy testimony that the life concentrates there: whatever ' + pt.where + ' governs for you is amplified past everything around it.';
+      else if (pt.type === 'Grand Trine') line = 'A grand trine in ' + pt.where + ' — ' + pt.bodies.map(nameFor).join(', ') + ' — testifies to a closed circuit of natural gift in ' + pt.where + ' matters: fluent enough to be taken for granted, and to go unexercised.';
+      else if (pt.type === 'Yod') line = 'A yod points at ' + apexClause + ': two sextiled planets both strain toward it, a testimony of a fated, adjust-or-else pressure on ' + (apexD && apexD.house ? 'your ' + HOUSE_AREA9[apexD.house - 1] : nameFor(pt.apex) + '’s matters') + '.';
+      else line = patternText(pt);
+      return { type: pt.type, apex: pt.apex || null, bodies: pt.bodies, weight: WEIGHT29[pt.type] || 2, line: line, receipt: (pt.type + (pt.apex ? ' apex ' + nameFor(pt.apex) : ' in ' + (pt.where || '')) + ' · testimony weight ' + (WEIGHT29[pt.type] || 2)).toUpperCase() };
+    });
+    out.sort(function (x, y) { return y.weight - x.weight; });
+    var shape = null; try { shape = chartShape(c); } catch (e) {}
+    return { testimonies: out, shape: shape ? { type: shape.type, line: (SHAPE_MEAN[shape.type] || '') + ' As a testimony this is background weight — the overall distribution, under the specific configurations above.' } : null,
+      doctrine: 'Chart patterns are weighted testimonies, not trivia: they enter the same judgment as the house-lords and aspects, tied to the determinations of the planets that form them.', src: 'Marc Edmund Jones on chart shape; the configurations re-weighted as testimony (Bonatti’s hierarchy)' };
+  }
+  // ===== PHASE 30 — THE VEDIC HONESTY WALL: the zodiac is a choice; Jyotisha is its own system =====
+  function vedicWall(c, b) {
+    var mode = (STATE.settings.zodiac === 'sidereal') ? 'sidereal' : 'tropical';
+    var line = 'The zodiac you are reading in is a choice, not a truth: you are in ' + mode + ' mode. The tropical zodiac fixes the signs to the seasons — the equinoxes and solstices; the sidereal fixes them to the fixed stars, some 24° apart from the tropical now. Neither is “the real one”; they answer different questions, and this app lets you choose. '
+      + 'What must never be blended is the SYSTEM. Western traditional astrology — everything judged in this reading — and Jyotisha, the astrology of India, are two complete methods: different house logic, different dignities, and in Jyotisha the twenty-seven nakshatras and the dasha periods, which have no Western equivalent at all. '
+      + (mode === 'sidereal'
+        ? 'You are in sidereal mode, so the nakshatra and Vimshottari layers are available — but read them as Jyotisha, a separate reading, never folded into the Western judgment above. A sidereal longitude in a Western delineation is a category error.'
+        : 'You are in tropical mode, which is the setting the entire Western judgment here assumes. If you want the Jyotisha layer, switch to sidereal in Settings — but keep the two readings apart; they are not translations of each other.');
+    var nak = null; try { var jy = jyotisha(c, b); if (jy) nak = { name: jy.name, pada: jy.pada, gloss: jy.gloss, dashaLord: jy.dasha ? jy.dasha.lord : null }; } catch (e) {}
+    return { mode: mode, blended: false, line: line, nakshatra: nak,
+      note: nak ? 'As a SEPARATE Jyotisha reading (not blended): your Moon’s nakshatra is ' + nak.name + ', pada ' + nak.pada + ' — ' + nak.gloss + (nak.dashaLord ? '; current Vimshottari lord ' + nameFor(nak.dashaLord) : '') + '.' : null,
+      src: 'the honesty that tropical vs sidereal is a zodiac choice, and that Jyotisha is a distinct system — never blended with a Western judgment. Sonia: “Vedic is different. It’s not that simple.”' };
+  }
   // ===== the full solar-return chart: the year's own horoscope, cast for the exact return instant at the birthplace =====
   function solarReturnChart(c, b, sum) {
     if (!sum) return null;
@@ -5383,7 +5464,7 @@ var APP = (function () {
     solarReturnChart: solarReturnChart, upcomingEclipses: upcomingEclipses, bestDaysFor: bestDaysFor, electIntents: electIntents, oddPredictions: oddPredictions, composeProfectionYear: composeProfectionYear, signHouseWeave: signHouseWeave,
     progressedTimeline: progressedTimeline, retroSeasons: retroSeasons,
     exportBook: exportBook, exportBackup: exportBackup, importBackup: importBackup, composeDailyEssay: composeDailyEssay, chartFP: chartFP, weaveNote: weaveNote, termOf: termOf, anA: anA, composeColleague: composeColleague, exportColleague: exportColleague,
-    microFor: microFor, tellsFor: tellsFor, weaveTransit: weaveTransit, traditionalRead: traditionalRead, determination: determination, determinationSheet: determinationSheet, derivedHouseOf: derivedHouseOf, derivedPhrase: derivedPhrase, conditionVerdict: conditionVerdict, sectProfile: sectProfile, judgeAscendant: judgeAscendant, judgeCaptain: judgeCaptain, rulershipWeb: rulershipWeb, zodiacMatrix: zodiacMatrix, cuspAlmuten: cuspAlmuten, judgeHouse: judgeHouse, judgeHouses: judgeHouses, judgeAspect: judgeAspect, judgeAspects: judgeAspects, fullReception: fullReception, receptionOnAspect: receptionOnAspect, receptionsInChart: receptionsInChart, testimonyAuthority: testimonyAuthority, contest: contest, rulingVoice: rulingVoice, contradictions: contradictions, natalSynthesis: natalSynthesis, housesThatMatter: housesThatMatter, noBirthTimeReading: noBirthTimeReading, judgeDirection: judgeDirection, judgeDirections: judgeDirections, directedAscendant: directedAscendant, directedSignificators: directedSignificators, significatorFor: significatorFor, directedChapter18: directedChapter18, boundsWalk: boundsWalk, lordOfYear: lordOfYear, profectionYear: profectionYear, triggerReading: triggerReading, liveWires21: liveWires21, judgeCycle: judgeCycle, judgeCycles: judgeCycles, judgeReturn: judgeReturn, eclipseTimers: eclipseTimers, glanceJudged: glanceJudged, weekJudged: weekJudged, lots: lots, symbolicDirections: symbolicDirections, directionLine: directionLine, directionReceipt: directionReceipt, aspectNature: aspectNature, transitCycles: transitCycles, weaveCycle: weaveCycle, weaveWeek: weaveWeek, receptionOf: receptionOf, chartSignature: chartSignature, lifeQuirks: lifeQuirks, interests: interests, emergingPull: emergingPull, spookyReads: spookyReads, combinationRead: combinationRead, sunMoonCharacter: sunMoonCharacter, guideCards: guideCards, ancientSky: ancientSky, addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, returnsAlmanac: returnsAlmanac, progressedLunation: progressedLunation, planetaryHours: planetaryHours, moonVoidWindow: moonVoidWindow, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
+    microFor: microFor, tellsFor: tellsFor, weaveTransit: weaveTransit, traditionalRead: traditionalRead, determination: determination, determinationSheet: determinationSheet, derivedHouseOf: derivedHouseOf, derivedPhrase: derivedPhrase, conditionVerdict: conditionVerdict, sectProfile: sectProfile, judgeAscendant: judgeAscendant, judgeCaptain: judgeCaptain, rulershipWeb: rulershipWeb, zodiacMatrix: zodiacMatrix, cuspAlmuten: cuspAlmuten, judgeHouse: judgeHouse, judgeHouses: judgeHouses, judgeAspect: judgeAspect, judgeAspects: judgeAspects, fullReception: fullReception, receptionOnAspect: receptionOnAspect, receptionsInChart: receptionsInChart, testimonyAuthority: testimonyAuthority, contest: contest, rulingVoice: rulingVoice, contradictions: contradictions, natalSynthesis: natalSynthesis, housesThatMatter: housesThatMatter, noBirthTimeReading: noBirthTimeReading, judgeDirection: judgeDirection, judgeDirections: judgeDirections, directedAscendant: directedAscendant, directedSignificators: directedSignificators, significatorFor: significatorFor, directedChapter18: directedChapter18, boundsWalk: boundsWalk, lordOfYear: lordOfYear, profectionYear: profectionYear, triggerReading: triggerReading, liveWires21: liveWires21, judgeCycle: judgeCycle, judgeCycles: judgeCycles, judgeReturn: judgeReturn, eclipseTimers: eclipseTimers, glanceJudged: glanceJudged, weekJudged: weekJudged, lots: lots, starsJudged: starsJudged, hiddenPartnerships: hiddenPartnerships, patternsAsTestimony: patternsAsTestimony, vedicWall: vedicWall, symbolicDirections: symbolicDirections, directionLine: directionLine, directionReceipt: directionReceipt, aspectNature: aspectNature, transitCycles: transitCycles, weaveCycle: weaveCycle, weaveWeek: weaveWeek, receptionOf: receptionOf, chartSignature: chartSignature, lifeQuirks: lifeQuirks, interests: interests, emergingPull: emergingPull, spookyReads: spookyReads, combinationRead: combinationRead, sunMoonCharacter: sunMoonCharacter, guideCards: guideCards, ancientSky: ancientSky, addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, returnsAlmanac: returnsAlmanac, progressedLunation: progressedLunation, planetaryHours: planetaryHours, moonVoidWindow: moonVoidWindow, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
     saveCurrentChart: saveCurrentChart, deleteSavedChart: deleteSavedChart, activateSavedChart: activateSavedChart, activeChartKey: activeChartKey, chartKey: chartKey, famousMatches: famousMatches, lifeTransits: lifeTransits, upcomingTransits: upcomingTransits, transitMotion: transitMotion, compositeChart: compositeChart,
     nameFor: nameFor, glyphFor: glyphFor, pad: pad,
     domElement: domElement, lowElement: lowElement, domMod: domMod, tzOffsetHours: tzOffsetHours
