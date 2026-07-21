@@ -2778,6 +2778,207 @@ var APP = (function () {
     if (soft) return { tone: 'flowing', line: 'a clean channel — these two converse without effort' };
     return { tone: 'charged', line: 'standing together — one thing, for better and worse' };
   }
+  // ============ PHASE 1 — THE DETERMINATION MODEL (Morin, Astrologia Gallica, Book 21) ============
+  // A planet means nothing in the abstract. Its meaning in a chart is its DETERMINATION:
+  // where it stands (the circumstances), what it rules (its portfolio), its zodiacal state
+  // (sound or collapsing) held separately from its terrestrial state (prominent or muted) —
+  // two axes, never averaged — its nature (benefic/malefic with the traditional nuances,
+  // re-weighted by sect), its receptions and aspects, and its analogy hooks: which of its
+  // significations speaks first here. Doctrine: plans/doctrine-notes.md.
+  var HOUSECLASS9 = ['angular', 'succedent', 'cadent']; // 1,4,7,10 / 2,5,8,11 / 3,6,9,12 → (h-1)%3
+  var CHALDEAN9 = { saturn: [1, 8], jupiter: [2, 9], mars: [3, 10], sun: [4, 11], venus: [5, 12], mercury: [6], moon: [7] };
+  var CHALD_MATTER9 = { saturn1: 'the bones and skin — the body’s structure', saturn8: 'death, depth and the hidden', jupiter2: 'abundance and plenty', jupiter9: 'the teacher, the priest, full knowledge', mars3: 'initiative and risk', mars10: 'action and victory', sun4: 'the father', sun11: 'honours and the spotlight', venus5: 'love and pleasure', venus12: 'rest and indulgence', mercury6: 'service and expertise', moon7: 'the spouse' };
+  var JOY_MATTER9 = { mercury: 'the body and its one life', moon: 'the restless mind and the road', venus: 'pleasure and love’s beginnings', mars: 'sudden hurts — accidents, acute illness, enemies', sun: 'faith and authentic spiritual experience', jupiter: 'help, allies and the attainment of wishes', saturn: 'solitude and what is chronic' };
+  // the strongest planet-in-house coincidences of universal signification (karakas) — which
+  // matter a placement voices FIRST; the full analogy matrix arrives in phase 3
+  var KARAKA_FIRST9 = {
+    sun: { 4: 'the father', 10: 'authority, visibility and the aim', 11: 'honours and promotion' },
+    moon: { 3: 'movement and the everyday mind', 4: 'the mother', 10: 'the mother, and a shifting public trade', 11: 'the public and the wider circle', 12: 'intuition and the inner tide' },
+    mercury: { 2: 'the spoken word', 3: 'study, writing and the means of exchange', 7: 'trade, negotiation and counsel', 11: 'the network and the clientele' },
+    venus: { 2: 'close family and the senses', 3: 'a sister, and the artistic voice', 7: 'marriage and union', 10: 'the mother, and public grace' },
+    mars: { 3: 'a brother, and courage', 5: 'a lover, and performance', 8: 'surgery and sudden loss', 10: 'ambition and the career’s fights' },
+    jupiter: { 2: 'family means and generosity', 4: 'the family patrimony', 5: 'a child', 8: 'inheritance and others’ help', 9: 'the mentor, faith and the law', 11: 'realised wishes, backing and reward' },
+    saturn: { 2: 'thrift, and money withheld', 4: 'the ancestors, the land and endings', 5: 'discipline over pleasure', 7: 'a lasting, serious bond — or separation', 8: 'death, taxes and long study', 10: 'the slow climb, and the risk of the fall' }
+  };
+  var PLANET_SECT9 = { sun: 'day', jupiter: 'day', saturn: 'day', moon: 'night', venus: 'night', mars: 'night' }; // Mercury convertible
+  var MALEFIC_HOUSES9 = { 6: 1, 8: 1, 12: 1 };
+  // each dignity layer is a distinct character, not just a score (Ibn Ezra’s images; doctrine-notes §3)
+  var DIGNITY_CHAR9 = {
+    domicile: 'at home — pure, constant action; what it rules arrives and lasts',
+    exaltation: 'the honoured guest — great power without ownership; sudden bursts, high rank, and tribulations riding close behind',
+    triplicity: 'among family — comfortable and regular; its breakthroughs come by other people’s help',
+    term: 'in its own seat — tempered and contained, never excessive, never deficient',
+    face: 'in its fine clothes at the door — dignified in appearance, fragile in substance',
+    peregrine: 'the vagabond — no title in this territory; what it promises tends to come through strangers, nothing it gives is durable, and its dispositor decides what it can finally deliver',
+    detriment: 'in enemy territory — hindered from its proper work, its agenda at odds with its host’s; what it rules does not last without help',
+    fall: 'collapsed — a pretender that cannot deliver what it promises, showing its faults before its gifts'
+  };
+  function isDayChart9(c, b) {
+    if (b && b.timeKnown && c.planets.sun && c.planets.sun.house) return c.planets.sun.house >= 7 && c.planets.sun.house <= 12;
+    return null; // unknown — callers assume day and flag the assumption
+  }
+  // the school’s nature table: benefic/malefic with the Moon’s light rule, Mercury convertible,
+  // the Sun burning inside 7°30′ — always judged for the DOMAIN touched, never for the person
+  function natureOf9(c, k) {
+    var P = c.planets, why = [];
+    if (k === 'jupiter') return { base: 'benefic', verdict: 'benefic', greater: true, why: ['the greater benefic — warm and moist, the pair of qualities that grow things'] };
+    if (k === 'venus') return { base: 'benefic', verdict: 'benefic', greater: false, why: ['benefic — cool and moist'] };
+    if (k === 'mars') return { base: 'malefic', verdict: 'malefic', greater: false, why: ['malefic — hot and dry: it burns, breaks and hurries what it touches'] };
+    if (k === 'saturn') return { base: 'malefic', verdict: 'malefic', greater: true, why: ['the greater malefic — cold and dry: it restricts, removes and slows what it touches'] };
+    if (k === 'moon') {
+      var e9 = P.sun ? angSep(P.moon.lon, P.sun.lon) : 180, wax9 = P.sun ? rev(P.moon.lon - P.sun.lon) < 180 : true, lit9 = e9 >= 90;
+      why.push('the Moon helps by LIGHT: ' + Math.round(e9) + '° from the Sun, ' + (wax9 ? 'waxing' : 'waning') + (lit9 ? ' — bright enough to be benefic' : (wax9 ? ' — still too dark to help' : ' — dark and losing light besides')));
+      return { base: 'light-ruled', verdict: lit9 ? 'benefic' : 'malefic', elong: e9, waxing: wax9, why: why };
+    }
+    if (k === 'sun') {
+      var burns9 = [], ck9 = ['moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn'], bi9;
+      for (bi9 = 0; bi9 < ck9.length; bi9++) { var bp9 = P[ck9[bi9]]; if (!bp9) continue; var sep9 = angSep(bp9.lon, P.sun.lon); if (sep9 <= 7.5 && sep9 > 0.283) burns9.push(ck9[bi9]); }
+      why.push('benefic alone and by aspect; malefic by close conjunction — it burns whatever sits inside 7°30′' + (burns9.length ? ' (here: ' + burns9.map(nameFor).join(', ') + ')' : ''));
+      return { base: 'benefic', verdict: 'benefic', burns: burns9, why: why };
+    }
+    if (k === 'mercury') {
+      var i9, conjN9 = null, conjK9 = null, appN9 = null, appK9 = null, appO9 = 99;
+      for (i9 = 0; i9 < c.aspects.length; i9++) {
+        var A9 = c.aspects[i9]; if (A9.a !== 'mercury' && A9.b !== 'mercury') continue;
+        var o9 = A9.a === 'mercury' ? A9.b : A9.a, n9 = (o9 === 'venus' || o9 === 'jupiter') ? 'benefic' : (o9 === 'mars' || o9 === 'saturn') ? 'malefic' : null;
+        if (!n9) continue;
+        if (A9.asp.key === 'conjunction' && conjN9 !== 'malefic') { conjN9 = n9; conjK9 = o9; } // a malefic cohabitant outweighs a benefic one
+        else if (A9.asp.key !== 'conjunction' && A9.applying === true && A9.orb < appO9) { appN9 = n9; appK9 = o9; appO9 = A9.orb; }
+      }
+      if (conjN9) { why.push('convertible, and here converted: conjunct ' + nameFor(conjK9) + ', so it takes on that ' + conjN9 + ' nature'); return { base: 'convertible', verdict: conjN9, by: conjK9, why: why }; }
+      if (appN9) { why.push('convertible and standing alone — its next applying aspect, from ' + nameFor(appK9) + ', shows how it will come to behave: ' + appN9); return { base: 'convertible', verdict: appN9, by: appK9, leaning: true, why: why }; }
+      why.push('convertible, standing alone and unclaimed: lean benefic until something touches it');
+      return { base: 'convertible', verdict: 'benefic', leaning: true, why: why };
+    }
+    return { base: 'modern', verdict: 'modern', why: ['outside the traditional benefic/malefic doctrine — judged by aspect and house only, and marked modern'] };
+  }
+  // zodiacal state (état céleste): the five dignity layers scored AND charactered, with the
+  // dispositor taken both by sign and by almuten of the exact degree
+  function essentialOf9(c, k, isDay) {
+    var p = c.planets[k]; if (!p) return null;
+    var mod9 = !(k === 'sun' || k === 'moon' || k === 'mercury' || k === 'venus' || k === 'mars' || k === 'jupiter' || k === 'saturn');
+    var led = dignityLedger(p.lon, isDay !== false);
+    var out = { ledger: led, layers: {}, score: 0, peregrine: false, label: '', character: '', modern: mod9, dispositor: TRAD_RULER[p.sign], dispositorAlmuten: null, sectConcord: null };
+    if (mod9) { out.label = 'modern — outside the traditional dignities'; return out; }
+    var L9 = [['domicile', led.domicile === k, 5], ['exaltation', led.exaltation === k, 4], ['triplicity', led.triplicity === k, 3], ['term', led.bound === k, 2], ['face', led.face === k, 1]];
+    var have9 = [], i9;
+    for (i9 = 0; i9 < L9.length; i9++) { out.layers[L9[i9][0]] = L9[i9][1]; if (L9[i9][1]) { out.score += L9[i9][2]; have9.push(L9[i9][0]); } }
+    var dg9 = dignityOf(k, p.signName);
+    out.layers.detriment = dg9 === 'Detriment'; out.layers.fall = dg9 === 'Fall';
+    if (out.layers.detriment) out.score -= 5; if (out.layers.fall) out.score -= 4;
+    out.peregrine = have9.length === 0;
+    var debN9 = out.layers.detriment && out.layers.fall ? 'Detriment and Fall' : out.layers.detriment ? 'Detriment' : out.layers.fall ? 'Fall' : null;
+    var debC9 = out.layers.detriment ? DIGNITY_CHAR9.detriment + (out.layers.fall ? '; and ' + DIGNITY_CHAR9.fall : '') : out.layers.fall ? DIGNITY_CHAR9.fall : null;
+    if (debN9 && out.score < 0) {
+      // the debility outweighs any minor dignity it still holds — the debility leads
+      out.label = debN9 + (have9.length ? ' (holding its own ' + have9.join(' and ') + ')' : '');
+      out.character = debC9 + (have9.length ? '; though ' + have9.map(function (n9) { return n9 + ' — ' + DIGNITY_CHAR9[n9]; }).join('; ') + ' — tempers the worst of it' : '');
+    } else if (have9.length) {
+      out.label = have9[0].charAt(0).toUpperCase() + have9[0].slice(1);
+      out.character = DIGNITY_CHAR9[have9[0]];
+      if (have9.length > 1) out.character += '; also ' + have9.slice(1).map(function (n9) { return n9 + ' (' + DIGNITY_CHAR9[n9] + ')'; }).join('; ');
+      if (debN9) out.character += '; yet in ' + debN9.toLowerCase() + ' — ' + debC9;
+    } else { out.label = 'Peregrine'; out.character = DIGNITY_CHAR9.peregrine; }
+    var tal9 = {}; addScore(tal9, led.domicile, 5); addScore(tal9, led.exaltation, 4); addScore(tal9, led.triplicity, 3); addScore(tal9, led.bound, 2); addScore(tal9, led.face, 1);
+    var bk9 = null, bv9 = -1, t9, ties9 = [];
+    for (t9 in tal9) if (tal9.hasOwnProperty(t9) && tal9[t9] > bv9) { bv9 = tal9[t9]; bk9 = t9; }
+    for (t9 in tal9) if (tal9.hasOwnProperty(t9) && tal9[t9] === bv9) ties9.push(t9);
+    out.dispositorAlmuten = { lead: bk9, score: bv9, tie: ties9 };
+    var el9 = DATA.SIGNS[p.sign].element, signDay9 = (el9 === 'fire' || el9 === 'air');
+    if (PLANET_SECT9[k]) out.sectConcord = { planet: PLANET_SECT9[k], sign: signDay9 ? 'day' : 'night', agrees: (PLANET_SECT9[k] === 'day') === signDay9 };
+    return out;
+  }
+  // the complete determination of one planet in THIS chart — every delineation composes from this
+  function determination(c, b, k) {
+    var p = c.planets[k]; if (!p) return null;
+    var hasTime = !!(b && b.timeKnown && c.ascBody && c.cusps);
+    var isDay = isDayChart9(c, b), dayAssumed = (isDay === null);
+    var det = { key: k, name: nameFor(k), lon: p.lon, sign: p.sign, signName: p.signName, deg: p.lon % 30, house: hasTime ? (p.house || 0) : 0, hasTime: hasTime, isDay: dayAssumed ? true : isDay, dayAssumed: dayAssumed, retro: !!p.retro };
+    // the portfolio: every house this planet answers for (traditional rulerships, whole cusp-map)
+    det.rules = [];
+    if (hasTime) {
+      var h9, seen9 = {};
+      for (h9 = 1; h9 <= 12; h9++) { var cs9 = Math.floor(rev(c.cusps[h9]) / 30); if (TRAD_RULER[cs9] === k) { det.rules.push({ house: h9, sign: DATA.SIGNS[cs9].name, how: 'cusp' }); seen9[cs9] = 1; } }
+      // a sign ruled by this planet but on no cusp is intercepted — its house still answers here, quietly
+      var s9; for (s9 = 0; s9 < 12; s9++) {
+        if (TRAD_RULER[s9] !== k || seen9[s9]) continue;
+        var mid9 = s9 * 30 + 15, hh9, found9 = 0;
+        for (hh9 = 1; hh9 <= 12; hh9++) { var a9 = c.cusps[hh9], b9 = c.cusps[hh9 % 12 + 1], sp9 = rev(b9 - a9); if (rev(mid9 - a9) < sp9) { found9 = hh9; break; } }
+        if (found9) det.rules.push({ house: found9, sign: DATA.SIGNS[s9].name, how: 'intercepted' });
+      }
+      det.rules.sort(function (x, y) { return x.house - y.house; });
+    } else det.rulesSigns = DIGNITY[k] ? DIGNITY[k].dom.slice() : [];
+    det.essential = essentialOf9(c, k, det.isDay);
+    det.nature = natureOf9(c, k);
+    det.sectRole = null;
+    if (hasTime && !dayAssumed) {
+      var d9 = det.isDay;
+      if (k === 'jupiter') det.sectRole = d9 ? 'benefic of sect — its help arrives cleanly' : 'benefic out of sect — generous, but it over-promises';
+      else if (k === 'venus') det.sectRole = d9 ? 'benefic out of sect — generous, but it over-promises' : 'benefic of sect — its help arrives cleanly';
+      else if (k === 'saturn') det.sectRole = d9 ? 'malefic of sect — strict, but ultimately constructive' : 'malefic out of sect — the chart’s sharpest tooth';
+      else if (k === 'mars') det.sectRole = d9 ? 'malefic out of sect — the chart’s sharpest tooth' : 'malefic of sect — strict, but ultimately constructive';
+      else if (k === 'sun') det.sectRole = d9 ? 'the light of sect — the chart leads by it' : 'the off-duty light';
+      else if (k === 'moon') det.sectRole = d9 ? 'the off-duty light' : 'the light of sect — the chart leads by it';
+    }
+    // terrestrial state (état terrestre): the circumstances — kept apart from the zodiacal state
+    det.terrestrial = { house: det.house, area: det.house ? HOUSE_AREA9[det.house - 1] : null, houseClass: det.house ? HOUSECLASS9[(det.house - 1) % 3] : null, retro: !!p.retro };
+    det.terrestrial.classNote = det.house ? (det.terrestrial.houseClass === 'angular' ? 'angular — strongly amplified: what it does, it does in the open' : det.terrestrial.houseClass === 'succedent' ? 'succedent — mildly amplified' : 'cadent — muted: good quality here still speaks with less force') : null;
+    // sun-proximity is judged here for EVERY classical planet (the school's 7°30′ rule — the Moon
+    // and the heavy planets burn too, not just the inferiors); oob/stationary come from chartConditions
+    var cds9 = [], ci9; try { var allCd9 = chartConditions(c, b); for (ci9 = 0; ci9 < allCd9.length; ci9++) if (allCd9[ci9].k === k && (allCd9[ci9].t === 'oob' || allCd9[ci9].t === 'stationary')) cds9.push(allCd9[ci9]); } catch (eCd9) {}
+    if (k !== 'sun' && !det.essential.modern && c.planets.sun) {
+      var sSep9 = angSep(p.lon, c.planets.sun.lon);
+      if (sSep9 <= 0.283) cds9.push({ t: 'cazimi', k: k, v: sSep9 });
+      else if (sSep9 <= 7.5) cds9.push({ t: 'combust', k: k, v: sSep9 });
+      else if (sSep9 <= 15) cds9.push({ t: 'beams', k: k, v: sSep9 });
+    }
+    det.terrestrial.conditions = cds9;
+    // aspects, each judged pipe-and-liquid, with reception noted; a planet is FERAL only when
+    // no CLASSICAL planet aspects it — contacts from angles, points or outers don't feed it
+    var CL9 = { sun: 1, moon: 1, mercury: 1, venus: 1, mars: 1, jupiter: 1, saturn: 1 };
+    det.aspects = []; det.feral = true;
+    var ai9; for (ai9 = 0; ai9 < c.aspects.length; ai9++) {
+      var As9 = c.aspects[ai9]; if (As9.a !== k && As9.b !== k) continue;
+      var ot9 = As9.a === k ? As9.b : As9.a;
+      if (CL9[ot9]) det.feral = false;
+      det.aspects.push({ other: ot9, aspect: As9.asp.key, orb: As9.orb, applying: As9.applying, nature: aspectNature(k, ot9, As9.asp.key), reception: receptionOf(c, k, ot9) });
+    }
+    det.aspects.sort(function (x, y) { return x.orb - y.orb; });
+    if (det.feral) det.feralNote = 'feral — no classical planet reaches it by aspect: what it signifies stands unsupported and alone';
+    // analogy hooks: which of its significations speaks FIRST here (doctrine-notes §6)
+    var hk9 = { joyHouse: JOY[k] || null, inJoy: !!(det.house && JOY[k] === det.house), chaldeanHouses: CHALDEAN9[k] || [], inChaldean: false, karakaMatter: null, speaksFirst: null, counterAnalogy: null };
+    if (det.house && hk9.chaldeanHouses.indexOf(det.house) >= 0) hk9.inChaldean = true;
+    if (det.house && KARAKA_FIRST9[k] && KARAKA_FIRST9[k][det.house]) hk9.karakaMatter = KARAKA_FIRST9[k][det.house];
+    if (hk9.inJoy) hk9.speaksFirst = { by: 'joy', matter: JOY_MATTER9[k] };
+    else if (hk9.inChaldean) hk9.speaksFirst = { by: 'chaldean', matter: CHALD_MATTER9[k + det.house] };
+    else if (hk9.karakaMatter) hk9.speaksFirst = { by: 'karaka', matter: hk9.karakaMatter };
+    if (det.house && det.nature.verdict === 'benefic' && MALEFIC_HOUSES9[det.house]) hk9.counterAnalogy = { kind: 'shield', note: 'a benefic in a difficult house: the house’s trouble comes in its mildest form, and the native escapes it' };
+    else if (det.house && det.nature.verdict === 'malefic' && !MALEFIC_HOUSES9[det.house]) hk9.counterAnalogy = { kind: 'tax', note: det.essential && det.essential.score >= 3 ? 'a malefic in a fortunate house, but dignified: it builds the house’s matters slowly instead of denying them' : 'a malefic in a fortunate house: it withholds and delays the house’s good' };
+    det.analogy = hk9;
+    return det;
+  }
+  // the Morin-style determination sheet: the whole object rendered for receipts and for the acceptance harness
+  function determinationSheet(det) {
+    if (!det) return '';
+    var L = [];
+    L.push(det.name.toUpperCase() + ' — ' + degStr(det.deg) + ' ' + det.signName + (det.house ? ' · ' + ordinal(det.house) + ' house (' + det.terrestrial.houseClass + ')' : ' · house unknown') + (det.retro ? ' · retrograde' : ''));
+    if (det.rules.length) L.push('RULES: ' + det.rules.map(function (r) { return ordinal(r.house) + ' (' + r.sign + (r.how === 'intercepted' ? ', intercepted' : '') + ')'; }).join(', '));
+    else if (det.rulesSigns && det.rulesSigns.length) L.push('RULES (signs; no birth time): ' + det.rulesSigns.join(', '));
+    if (det.essential && !det.essential.modern) {
+      L.push('ZODIACAL STATE: ' + det.essential.label + ' (score ' + (det.essential.score > 0 ? '+' : '') + det.essential.score + (det.dayAssumed ? ', day assumed' : '') + ') — ' + det.essential.character);
+      L.push('DISPOSITOR: ' + nameFor(det.essential.dispositor) + (det.essential.dispositorAlmuten && det.essential.dispositorAlmuten.lead !== det.essential.dispositor ? ' by sign; by almuten of the degree, ' + nameFor(det.essential.dispositorAlmuten.lead) : ''));
+    }
+    L.push('NATURE: ' + det.nature.verdict + (det.sectRole ? ' · ' + det.sectRole : '') + ' — ' + det.nature.why.join('; '));
+    if (det.house) L.push('CIRCUMSTANCES: ' + det.terrestrial.area + ' · ' + det.terrestrial.classNote + (det.terrestrial.conditions.length ? ' · ' + det.terrestrial.conditions.map(function (cd) { return cd.t; }).join(', ') : ''));
+    var aspTxt9 = det.aspects.map(function (a) { return a.aspect + ' ' + nameFor(a.other) + ' (' + a.orb.toFixed(1) + '°' + (a.applying === true ? ', applying' : a.applying === false ? ', separating' : '') + (a.reception ? (a.reception.kind === 'mutual' ? ', mutual reception' : ', received by ' + nameFor(a.reception.host)) : '') + ')'; }).join('; ');
+    if (det.feral) L.push('ASPECTS: ' + (aspTxt9 ? aspTxt9 + ' — yet ' : 'none — ') + det.feralNote);
+    else L.push('ASPECTS: ' + aspTxt9);
+    var an = det.analogy, aBits = [];
+    if (an.speaksFirst) aBits.push((an.inJoy ? 'in its JOY — ' : an.inChaldean ? 'in its Chaldean house — ' : '') + 'speaks first of ' + an.speaksFirst.matter);
+    if (an.counterAnalogy) aBits.push('counter-analogy (' + an.counterAnalogy.kind + '): ' + an.counterAnalogy.note);
+    if (aBits.length) L.push('ANALOGY: ' + aBits.join(' · '));
+    return L.join('\n');
+  }
   function houseChain(c, hn) {
     var cuspLon = c.cusps[hn]; if (cuspLon == null) return null;
     var cs = Math.floor(((cuspLon % 360) + 360) % 360 / 30), csName = DATA.SIGNS[cs].name;
@@ -4169,7 +4370,7 @@ var APP = (function () {
     solarReturnChart: solarReturnChart, upcomingEclipses: upcomingEclipses, bestDaysFor: bestDaysFor, electIntents: electIntents, oddPredictions: oddPredictions, composeProfectionYear: composeProfectionYear, signHouseWeave: signHouseWeave,
     progressedTimeline: progressedTimeline, retroSeasons: retroSeasons,
     exportBook: exportBook, exportBackup: exportBackup, importBackup: importBackup, composeDailyEssay: composeDailyEssay, chartFP: chartFP, weaveNote: weaveNote, termOf: termOf, anA: anA, composeColleague: composeColleague, exportColleague: exportColleague,
-    microFor: microFor, tellsFor: tellsFor, weaveTransit: weaveTransit, traditionalRead: traditionalRead, symbolicDirections: symbolicDirections, directionLine: directionLine, directionReceipt: directionReceipt, aspectNature: aspectNature, transitCycles: transitCycles, weaveCycle: weaveCycle, weaveWeek: weaveWeek, receptionOf: receptionOf, chartSignature: chartSignature, lifeQuirks: lifeQuirks, interests: interests, emergingPull: emergingPull, spookyReads: spookyReads, combinationRead: combinationRead, sunMoonCharacter: sunMoonCharacter, guideCards: guideCards, ancientSky: ancientSky, addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, returnsAlmanac: returnsAlmanac, progressedLunation: progressedLunation, planetaryHours: planetaryHours, moonVoidWindow: moonVoidWindow, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
+    microFor: microFor, tellsFor: tellsFor, weaveTransit: weaveTransit, traditionalRead: traditionalRead, determination: determination, determinationSheet: determinationSheet, symbolicDirections: symbolicDirections, directionLine: directionLine, directionReceipt: directionReceipt, aspectNature: aspectNature, transitCycles: transitCycles, weaveCycle: weaveCycle, weaveWeek: weaveWeek, receptionOf: receptionOf, chartSignature: chartSignature, lifeQuirks: lifeQuirks, interests: interests, emergingPull: emergingPull, spookyReads: spookyReads, combinationRead: combinationRead, sunMoonCharacter: sunMoonCharacter, guideCards: guideCards, ancientSky: ancientSky, addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, returnsAlmanac: returnsAlmanac, progressedLunation: progressedLunation, planetaryHours: planetaryHours, moonVoidWindow: moonVoidWindow, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
     saveCurrentChart: saveCurrentChart, deleteSavedChart: deleteSavedChart, activateSavedChart: activateSavedChart, activeChartKey: activeChartKey, chartKey: chartKey, famousMatches: famousMatches, lifeTransits: lifeTransits, upcomingTransits: upcomingTransits, transitMotion: transitMotion, compositeChart: compositeChart,
     nameFor: nameFor, glyphFor: glyphFor, pad: pad,
     domElement: domElement, lowElement: lowElement, domMod: domMod, tzOffsetHours: tzOffsetHours
