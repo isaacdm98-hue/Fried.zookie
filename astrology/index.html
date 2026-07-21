@@ -3504,6 +3504,99 @@ var APP = (function () {
     best.receipt = ('ruling voice ' + nameFor(best.key) + ' · authority ' + best.authority).toUpperCase();
     return best;
   }
+  // ===== PHASE 13 — CONTRADICTION AS CONTENT: the chart argues with itself, said plainly =====
+  // A chart is not a mood board; it disagrees with itself, and the honest tension IS the
+  // insight. Two kinds are surfaced: the STATE-vs-CIRCUMSTANCE split within a single planet
+  // (sound by sign, undercut by house, or the reverse — doctrine-notes §1), and the
+  // PROMISE-vs-PAYMENT split within a house (a benefic occupant promising what a
+  // debilitated lord cannot pay for, or a malefic taxing what a strong lord builds).
+  function contradictions(c, b) {
+    if (!(b && b.timeKnown && c.ascBody && c.cusps)) return { hasTime: false, note: 'The chart’s internal arguments are read from houses and states, and the houses need a birth time. Set the hour and this reading appears.' };
+    var CL = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn'], out = [], i;
+    // (1) within a planet: état céleste (sign) against état terrestre (house)
+    for (i = 0; i < CL.length; i++) {
+      var D = determination(c, b, CL[i]); if (!D || !D.house || !D.essential || D.essential.modern) continue;
+      var strongSign = D.essential.score >= 4, weakSign = D.essential.score <= -4;
+      var strongHouse = D.terrestrial.houseClass === 'angular', weakHouse = D.terrestrial.houseClass === 'cadent';
+      if (strongSign && weakHouse) out.push({ kind: 'planet', key: CL[i], weight: 3, line: nameFor(CL[i]) + ' is sound in itself — ' + stateAdj9(D.essential.label) + ' in ' + D.signName + ' — but buried in your cadent ' + ordinal(D.house) + ' house: a fine instrument in a back room, where the gift of ' + D.signName + ' ' + nameFor(CL[i]) + ' is real but acts through others rather than in the open.' });
+      else if (weakSign && strongHouse) out.push({ kind: 'planet', key: CL[i], weight: 3, line: nameFor(CL[i]) + ' stands on an angle — your ' + ordinal(D.house) + ', the most public ground there is — yet ' + stateAdj9(D.essential.label) + ' in ' + D.signName + ': a loud voice with a shaky brief. It will be seen and it will matter, but it cannot always deliver what its prominence promises.' });
+      else if (weakSign && D.condition && D.condition.total >= 5) out.push({ kind: 'planet', key: CL[i], weight: 2, line: nameFor(CL[i]) + ' fails its sign — ' + stateAdj9(D.essential.label) + ' in ' + D.signName + ' — and yet by accident (house, motion, freedom from the Sun) it scores ' + (D.condition.total >= 0 ? '+' : '') + D.condition.total + ': weak by nature, propped up by circumstance. What it stands for arrives, but leans on its surroundings to do it.' });
+    }
+    // (2) within a house: the promise (occupant) against the payment (lord's state)
+    for (i = 1; i <= 12; i++) {
+      var jh = judgeHouse(c, b, i); if (!jh) continue;
+      var occW = 0, occN = null, oi;
+      for (oi = 0; oi < jh.occupants.length; oi++) { var od = determination(c, b, jh.occupants[oi]); if (od.nature.verdict === 'benefic' && od.essential.score >= 3) { occW = 1; occN = jh.occupants[oi]; } }
+      if (occW === 1 && jh.lordScore < 0) out.push({ kind: 'house', house: i, weight: 4, line: 'Your ' + ordinal(i) + ' — ' + HOUSE_AREA9[i - 1] + ' — promises more than it pays: ' + nameFor(occN) + ', a strong benefic, sits in the house, but its lord ' + nameFor(jh.lord) + ' is spent at ' + jh.lordScore + '. The good is offered and then withheld at the till — the classic shape of a domain that looks blessed and behaves otherwise.' });
+      else if (jh.lordScore >= 5 && jh.harms > jh.helps) out.push({ kind: 'house', house: i, weight: 3, line: 'Your ' + ordinal(i) + ' — ' + HOUSE_AREA9[i - 1] + ' — is built well and taxed hard: its lord ' + nameFor(jh.lord) + ' is commanding at +' + jh.lordScore + ', yet a malefic weighs on the ' + ordinal(i) + ' itself, so the foundation holds while something keeps taking a cut off the top.' });
+    }
+    // (3) the contested houses from the judgment hierarchy — genuine standoffs
+    for (i = 1; i <= 12; i++) { var ct = contest(c, b, i); if (ct && ct.contested) out.push({ kind: 'contest', house: i, weight: 3, line: ct.line }); }
+    out.sort(function (x, y) { return y.weight - x.weight; });
+    // the chart-wide temper: does it run with itself or against itself?
+    var soft = 0, hard = 0, j;
+    for (j = 0; j < c.aspects.length; j++) { var q = c.aspects[j].asp.quality, aa = c.aspects[j].a, bb2 = c.aspects[j].b; if (CL.indexOf(aa) < 0 || CL.indexOf(bb2) < 0) continue; if (q === 'flow' || q === 'opportunity') soft++; else if (q === 'friction' || q === 'tension') hard++; }
+    var temper = 'Across your seven planets the aspects run ' + hard + ' in friction to ' + soft + ' in flow: ' + ((hard > soft * 1.4) ? 'a chart built by argument, making its people by challenge rather than by gift.' : (soft > hard * 1.4) ? 'a chart that mostly agrees with itself, with the standing risk of coasting on what comes easily.' : 'gifts and grit held in near balance, neither one carrying the whole story.');
+    return { hasTime: true, tensions: out.slice(0, 6), temper: temper, count: out.length,
+      src: 'the doctrine of state vs circumstance (the school; doctrine-notes §1) and Bonatti’s contest of testimonies' };
+  }
+  // ===== PHASE 14 — THE NATAL SYNTHESIS COMPOSER: one argument, not a list =====
+  // The loom retooled to assemble the judged paragraphs of Movements II-III into a single
+  // flowing reading, in the register of the school's worked example: keystone → constitution
+  // → what runs strong → the tooth → where the life concentrates → where it argues with
+  // itself → the final word. Every movement carries a receipt and a citation.
+  function housesThatMatter(c, b) {
+    // which houses carry the life: occupancy weighted by each occupant's prominence, plus
+    // angularity, plus the captain's own house — the almuten-weighted emphasis of the chart
+    var pr = null; try { pr = prominence(c); } catch (e) {}
+    var CL = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn'], score = {}, i, h;
+    for (h = 1; h <= 12; h++) score[h] = 0;
+    for (i = 0; i < CL.length; i++) { var p = c.planets[CL[i]]; if (!p || !p.house) continue; var pw = pr ? Math.max(1, pr.score[CL[i]] || 1) : 1; score[p.house] += pw; }
+    for (h = 1; h <= 12; h++) { if (h === 1 || h === 10) score[h] += 6; else if (h === 4 || h === 7) score[h] += 4; }
+    if (c.ascBody) { var cap = TRAD_RULER[c.ascBody.sign], cd = c.planets[cap]; if (cd && cd.house) score[cd.house] += 5; }
+    var ranked = []; for (h = 1; h <= 12; h++) ranked.push({ house: h, score: score[h] });
+    ranked.sort(function (x, y) { return y.score - x.score; });
+    return ranked;
+  }
+  function natalSynthesis(c, b) {
+    if (!(b && b.timeKnown && c.ascBody && c.cusps)) {
+      return { hasTime: false, movements: [], note: 'The full traditional synthesis begins at the Ascendant and follows the house-lords home, so it needs a birth time. Without the hour the reading holds to the two lights, the planets in their signs, and their aspects — see the determinations and the aspect judgments, which ask no houses.' };
+    }
+    var M = [];
+    var cap = judgeCaptain(c, b); if (cap && cap.hasTime) M.push({ title: 'The keystone', text: cap.line, receipt: cap.receipt, src: cap.src });
+    var asc = judgeAscendant(c, b); if (asc && asc.hasTime) {
+      var aLine = asc.line.split(/(?<=[.!?])\s+/).slice(0, 3).join(' ');
+      M.push({ title: 'The constitution', text: aLine, receipt: asc.receipt, src: asc.src });
+    }
+    // what runs strong: the best planet by Lilly condition (not the captain, to avoid repeating)
+    var CL = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn'], dets = [], i;
+    for (i = 0; i < CL.length; i++) { var d = determination(c, b, CL[i]); if (d && d.condition) dets.push(d); }
+    dets.sort(function (x, y) { return y.condition.total - x.condition.total; });
+    var capK = TRAD_RULER[c.ascBody.sign], strong = null;
+    for (i = 0; i < dets.length; i++) if (dets[i].key !== capK) { strong = dets[i]; break; }
+    if (strong && strong.condition.total >= 3) {
+      var sLine = 'What runs strong in you is ' + nameFor(strong.key) + ': ' + strong.condition.line.replace(/^By Lilly’s reckoning /, '') + ' From your ' + ordinal(strong.house) + ' in ' + strong.signName + ' it speaks first of ' + strong.analogy.speaksFirst.matter + ' — the ' + ordinal(strong.house) + '’s genuine gift, the part of the chart that pays without being asked.';
+      M.push({ title: 'What runs strong', text: sLine, receipt: (nameFor(strong.key) + ' · ' + strong.essential.label + ' · lilly +' + strong.condition.total).toUpperCase(), src: 'Lilly, Christian Astrology (1647), the fortitudes' });
+    }
+    // the tooth
+    var sp = sectProfile(c, b);
+    if (sp && sp.hasTime) M.push({ title: 'The sharpest edge', text: sp.line.split(/(?<=[.!?])\s+/).filter(function (s) { return s.indexOf(nameFor(sp.tooth.key)) >= 0 && /tooth|out of sect/.test(s); }).slice(0, 1).join(' '), receipt: sp.receipt, src: sp.src });
+    // where the life concentrates
+    var htm = housesThatMatter(c, b), pick = htm.slice(0, 3), parts = [], seenV = {};
+    for (i = 0; i < pick.length; i++) { var jh = judgeHouse(c, b, pick[i].house); if (!jh) continue; var vs = jh.line.split(/(?<=[.!?])\s+/); parts.push(vs[0] + ' ' + vs[vs.length - 1]); }
+    if (parts.length) M.push({ title: 'Where the life concentrates', text: 'By occupancy and angle the chart loads onto your ' + pick.map(function (x) { return ordinal(x.house); }).join(', your ') + ' above the rest. ' + parts.join(' '), receipt: ('houses that matter: ' + pick.map(function (x) { return ordinal(x.house); }).join(', ')).toUpperCase(), src: 'prominence-weighted house emphasis; Morin XXI on determination' });
+    // where it argues with itself
+    var con = contradictions(c, b);
+    if (con.hasTime && con.tensions.length) {
+      // pick two tensions of DIFFERENT kinds where possible, so the reused contest disclaimer never stacks
+      var t1 = con.tensions[0], t2 = null, ci;
+      for (ci = 1; ci < con.tensions.length; ci++) if (con.tensions[ci].kind !== t1.kind) { t2 = con.tensions[ci]; break; }
+      M.push({ title: 'Where it argues with itself', text: t1.line + (t2 ? ' ' + t2.line : '') + ' ' + con.temper, receipt: (con.count + ' internal tensions found').toUpperCase(), src: con.src });
+    }
+    // the final word
+    var rv = rulingVoice(c, b); if (rv) M.push({ title: 'The final word', text: rv.line, receipt: rv.receipt, src: 'Bonatti, Liber Astronomiae: the judgment hierarchy' });
+    return { hasTime: true, movements: M, src: 'the natal synthesis, assembled from Movements II–III in the register of the school’s worked example' };
+  }
   function houseChain(c, hn) {
     var cuspLon = c.cusps[hn]; if (cuspLon == null) return null;
     var cs = Math.floor(((cuspLon % 360) + 360) % 360 / 30), csName = DATA.SIGNS[cs].name;
@@ -4895,7 +4988,7 @@ var APP = (function () {
     solarReturnChart: solarReturnChart, upcomingEclipses: upcomingEclipses, bestDaysFor: bestDaysFor, electIntents: electIntents, oddPredictions: oddPredictions, composeProfectionYear: composeProfectionYear, signHouseWeave: signHouseWeave,
     progressedTimeline: progressedTimeline, retroSeasons: retroSeasons,
     exportBook: exportBook, exportBackup: exportBackup, importBackup: importBackup, composeDailyEssay: composeDailyEssay, chartFP: chartFP, weaveNote: weaveNote, termOf: termOf, anA: anA, composeColleague: composeColleague, exportColleague: exportColleague,
-    microFor: microFor, tellsFor: tellsFor, weaveTransit: weaveTransit, traditionalRead: traditionalRead, determination: determination, determinationSheet: determinationSheet, derivedHouseOf: derivedHouseOf, derivedPhrase: derivedPhrase, conditionVerdict: conditionVerdict, sectProfile: sectProfile, judgeAscendant: judgeAscendant, judgeCaptain: judgeCaptain, rulershipWeb: rulershipWeb, zodiacMatrix: zodiacMatrix, cuspAlmuten: cuspAlmuten, judgeHouse: judgeHouse, judgeHouses: judgeHouses, judgeAspect: judgeAspect, judgeAspects: judgeAspects, fullReception: fullReception, receptionOnAspect: receptionOnAspect, receptionsInChart: receptionsInChart, testimonyAuthority: testimonyAuthority, contest: contest, rulingVoice: rulingVoice, symbolicDirections: symbolicDirections, directionLine: directionLine, directionReceipt: directionReceipt, aspectNature: aspectNature, transitCycles: transitCycles, weaveCycle: weaveCycle, weaveWeek: weaveWeek, receptionOf: receptionOf, chartSignature: chartSignature, lifeQuirks: lifeQuirks, interests: interests, emergingPull: emergingPull, spookyReads: spookyReads, combinationRead: combinationRead, sunMoonCharacter: sunMoonCharacter, guideCards: guideCards, ancientSky: ancientSky, addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, returnsAlmanac: returnsAlmanac, progressedLunation: progressedLunation, planetaryHours: planetaryHours, moonVoidWindow: moonVoidWindow, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
+    microFor: microFor, tellsFor: tellsFor, weaveTransit: weaveTransit, traditionalRead: traditionalRead, determination: determination, determinationSheet: determinationSheet, derivedHouseOf: derivedHouseOf, derivedPhrase: derivedPhrase, conditionVerdict: conditionVerdict, sectProfile: sectProfile, judgeAscendant: judgeAscendant, judgeCaptain: judgeCaptain, rulershipWeb: rulershipWeb, zodiacMatrix: zodiacMatrix, cuspAlmuten: cuspAlmuten, judgeHouse: judgeHouse, judgeHouses: judgeHouses, judgeAspect: judgeAspect, judgeAspects: judgeAspects, fullReception: fullReception, receptionOnAspect: receptionOnAspect, receptionsInChart: receptionsInChart, testimonyAuthority: testimonyAuthority, contest: contest, rulingVoice: rulingVoice, contradictions: contradictions, natalSynthesis: natalSynthesis, housesThatMatter: housesThatMatter, symbolicDirections: symbolicDirections, directionLine: directionLine, directionReceipt: directionReceipt, aspectNature: aspectNature, transitCycles: transitCycles, weaveCycle: weaveCycle, weaveWeek: weaveWeek, receptionOf: receptionOf, chartSignature: chartSignature, lifeQuirks: lifeQuirks, interests: interests, emergingPull: emergingPull, spookyReads: spookyReads, combinationRead: combinationRead, sunMoonCharacter: sunMoonCharacter, guideCards: guideCards, ancientSky: ancientSky, addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, returnsAlmanac: returnsAlmanac, progressedLunation: progressedLunation, planetaryHours: planetaryHours, moonVoidWindow: moonVoidWindow, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
     saveCurrentChart: saveCurrentChart, deleteSavedChart: deleteSavedChart, activateSavedChart: activateSavedChart, activeChartKey: activeChartKey, chartKey: chartKey, famousMatches: famousMatches, lifeTransits: lifeTransits, upcomingTransits: upcomingTransits, transitMotion: transitMotion, compositeChart: compositeChart,
     nameFor: nameFor, glyphFor: glyphFor, pad: pad,
     domElement: domElement, lowElement: lowElement, domMod: domMod, tzOffsetHours: tzOffsetHours
