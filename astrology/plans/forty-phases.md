@@ -21,6 +21,20 @@ their method, and cite):
 - **Jean-Baptiste Morin de Villefranche**, *Astrologia Gallica* (1661) —
   **Book 21 (determinations): the core of the whole rebuild**; Book 22 (directions)
 - **William Lilly**, *Christian Astrology* (1647) — significations, house method
+- **Abraham Ibn Ezra**, *The Beginning of Wisdom* (12th c.) — the dignity
+  characters (the man at home / the honored guest / among family / in his
+  seat / in his fine clothes)
+
+**Plus the school's own method** — Sonia's two preparatory course
+documents, distilled in our own words in **`doctrine-notes.md`** (read it
+before any phase below; its final section maps each note onto the phases
+it changes). Its four load-bearing ideas: (a) **signs tell the STATE of a
+domain, houses its CIRCUMSTANCES** — never blended; (b) **analogy is the
+selection function** — the point in common between planet and house
+(joys, Chaldean co-significators, karakas, rulership, aspect) decides
+WHICH signification a line voices; (c) benefics favor and malefics
+disturb *the domain touched*, never the person; (d) the reading is about
+the concrete domains of a life, not a personality profile.
 
 **The one idea that fixes everything (Morin, Book 21):** a planet has no
 meaning in the abstract. Its meaning in a chart is its **determination**:
@@ -59,39 +73,80 @@ thinner than that.
 **1. The determination model.** Data structure per planet: house occupied;
 houses ruled (traditional rulerships; whole cusp-map); natural
 significations; state vector; nature (with sect modification); receptions;
-aspects. One function `determination(c, planet)` returns the complete
-"what this planet is IN THIS CHART" object. Acceptance: for 5 reference
-charts, the object matches a hand-worked Morin-style determination sheet.
+aspects; **analogy hooks** (in joy? in Chaldean co-signification? in a
+house sharing its universal signification? counter-analogy?). Hard
+modeling rule from the school: the object keeps **zodiacal state** (sign:
+sound/collapsing/lasting) and **terrestrial state** (house: circumstances,
+angular force) as SEPARATE axes — a planet in fall yet angular is
+"fragile thing, prominent stage," never an average. One function
+`determination(c, planet)` returns the complete "what this planet is IN
+THIS CHART" object. Acceptance: for 5 reference charts, the object matches
+a hand-worked Morin-style determination sheet.
 
 **2. Natural significations bank.** For each of the 7 traditional planets
 (+ outers, marked modern): persons, matters, qualities, body, vocations —
-from Lilly CA Book 1 and al-Biruni, rewritten in house voice. Acceptance:
-each planet's entry is source-tagged and reads as intelligent prose, not
-keyword lists.
+from Lilly CA Book 1 and al-Biruni, rewritten in house voice; each entry
+also records its **universal significations (karakas)** and its **joy**
+and **Chaldean co-signification** houses, because those are the analogy
+hooks the composer selects by. Acceptance: each planet's entry is
+source-tagged and reads as intelligent prose, not keyword lists.
 
 **3. House significations bank.** The 12 houses in full traditional
 signification (Lilly, Firmicus, Bonatti): matters, persons, body parts,
-the derived-house logic (the 8th is the 2nd of the 7th…). Acceptance:
-derived-house reasoning available to the composer ("your partner's money").
+the derived-house logic (the 8th is the 2nd of the 7th…), and a
+**planet-in-house analogy matrix** (which of the house's matters each of
+the 7 planets voices FIRST when placed there — built fresh from Lilly and
+al-Biruni, cross-checked against the school's table). Acceptance:
+derived-house reasoning available to the composer ("your partner's
+money"), and for any (planet, house) pair the composer can answer "which
+signification speaks first, and why."
 
-**4. The state machine.** Essential dignity in five layers (domicile,
-exaltation, triplicity-by-sect, Egyptian terms, face) + debilities +
-**accidental** state (angularity, speed, direct/retro, combustion, cazimi,
-under beams, besiegement, joy) → one articulate condition verdict with
-its arithmetic shown. Acceptance: Lilly's own point-scoring reproduced on
-his example charts.
+**4. The state machine.** Essential dignity in five layers (domicile +5,
+exaltation +4, triplicity-by-sect +3, Egyptian terms +2, face +1;
+detriment −5, fall −4) + **accidental** state (angularity —
+angular/succedent/cadent amplify/mute the occupant, speed, direct/retro,
+combustion at 7°30′, cazimi, under beams, besiegement, joy) → one
+articulate condition verdict with its arithmetic shown. Each layer keeps
+its **distinct narrative character** (doctrine-notes §3): domicile = at
+home, the thing arrives and LASTS; exaltation = the honored guest, sudden
+bursts, power without ownership, subject to tribulation; triplicity =
+among family, breakthrough by others' help; term = in his seat, tempered,
+never excessive; face = fine clothes at the door, fragile credit;
+peregrine = the vagabond, benefits via strangers, nothing durable,
+leaning wholly on the dispositor; detriment = enemy territory, agendas
+that never meet; fall = the pretender who cannot deliver. Sect-concordance
+(diurnal planet in diurnal sign) modifies every verdict. Feral
+(unaspected) = unsupported, alone. Acceptance: Lilly's own point-scoring
+reproduced on his example charts, and each dignity layer's language
+distinguishable in a blind read.
 
 **5. Nature and sect.** Benefic/malefic modified by sect (Fortuna/Infortuna
 in and out of sect); the malefic contrary to sect named as the chart's
-sharpest tooth; the benefic of sect as its readiest help. Acceptance: every
-chart names its helper and its tooth, with reasons.
+sharpest tooth; the benefic of sect as its readiest help. The school's
+full nuance table (doctrine-notes §2) is law: the **Moon's light rule**
+(benefic beyond 90° from the Sun / waxing; malefic dark, waning-dark
+worst); **Mercury convertible** (takes the nature of what touches it;
+alone, its next applying aspect decides); the **Sun malefic by
+conjunction inside 7°30′**, benefic otherwise; **North Node amplifies /
+South Node reduces** whatever they join, benefic or malefic. And the
+frame sentence that governs all delineation: a planet is benefic or
+malefic *for the domain it touches*, never for the person. Acceptance:
+every chart names its helper and its tooth, with reasons; the Moon/
+Mercury/Node verdicts flip correctly on synthetic test charts.
 
 ## MOVEMENT II — JUDGING THE NATAL CHART (phases 6–10)
 *Sonia's order: Ascendant → its lord → the houses.*
 
 **6. The Ascendant judged.** Rising sign + its lord's determination +
-planets on/in aspect to the ASC → temperament and body, Lilly's method.
-Not "your personality": the constitution.
+planets on/in aspect to the ASC → temperament and body, Lilly's method
+(element → humor: fire/choleric, earth/melancholic, air/sanguine,
+water/phlegmatic; mode → tempo). Not "your personality": the
+constitution. Plus the **zodiacal matrix** (doctrine-notes §8): the
+whole-sign overlay from the rising sign, each house's sign read through
+its natural tenants (who is at home, exalted, exiled, fallen there) — the
+fate-skeleton this rising shares, used as the CONFIRMATION layer: when a
+planetary configuration agrees with the matrix, the reading says the
+indicated thing is larger in this life.
 
 **7. The Lord of the Ascendant, fully.** The captain's complete
 determination delivered as the keystone paragraph: where he stands, what
@@ -99,19 +154,46 @@ he rules, his state, who receives him, what that promises and what it
 costs. This paragraph is the heart of the natal reading.
 
 **8. The rulership web.** The full directed graph: every planet → houses
-ruled → dispositor chains → final dispositors. Rendered reasoning:
-"your 10th answers to Mars, Mars answers to Venus, so the career
-ultimately reports to the captain." Sonia: "each planet is related with
-one or multiple houses, and the link is the reading."
+ruled → dispositor chains → final dispositors. PLUS the **almuten of every
+cusp** (doctrine-notes §5): score all five dignity layers at the cusp
+degree; the victor can outrank the domicile lord ("Aries MC, but the Sun's
+exaltation + day-triplicity beats Mars's domicile — the SUN judges your
+career"), ties are content (several almutens of the 6th = several
+illnesses/employers), and dispositors may be taken by almuten of the
+degree, not only by sign. The engine reads BOTH lord and almuten — two
+windows on each domain. Rendered reasoning: "your 10th answers to Mars,
+Mars answers to Venus, so the career ultimately reports to the captain."
+Sonia: "each planet is related with one or multiple houses, and the link
+is the reading."
 
-**9. House-by-house judgment.** For each of the 12: ruler's state and
-place + occupants + aspects to cusp and ruler → a JUDGED paragraph
-(promised / withheld / repaired / taxed), with the testimony that decided
-it. This replaces the current descriptive house chains.
+**9. House-by-house judgment.** For each of the 12, the school's 12-step
+method (doctrine-notes §10) run in code: occupant judged by nature AND by
+what it rules ("Jupiter in your 4th describes the father — but as lord of
+the 8th he tends to undo what he touches"); occupant's zodiacal state;
+the LORD's state = the domain's final promise; the lord's house = the
+**cause-and-effect link** ("lord of the 2nd in the 9th: money comes
+through teaching, abroad, matters of belief"); planets conjunct the lord;
+the domain's universal significator checked last (a feral karaka = the
+person it signifies stands unsupported). **Analogy selects which
+signification speaks** at every step — joys, Chaldean co-signification,
+karakas, rulership, aspect — and counter-analogy is judged by
+nature-plus-state (the benefic in the 12th protects: the illness comes
+and the native escapes it; Saturn in the 2nd withholds — unless
+dignified, when he builds slowly). Output: a JUDGED paragraph (promised /
+withheld / repaired / taxed) with the testimony that decided it. This
+replaces the current descriptive house chains.
 
 **10. Aspect doctrine rewrite.** Every aspect text becomes pair-specific
 judgment: the two planets' determinations + aspect kind + both states +
-reception. The Mars–Saturn trine problem solved at the root.
+reception. The governing image (doctrine-notes §9): **the aspect is the
+pipe (bent or straight), the planet is the liquid in it (clean or foul)**
+— sextile venusian, trine jupiterian, square martial, opposition
+saturnian, conjunction a neutral cohabitation (collaboration between
+friends, confrontation between enemies). The planet's nature outranks the
+geometry: *better a square of Jupiter than a trine of Saturn.* Direction
+encoded too — Jupiter's aspect TO Mars helps what Mars rules; Mars's
+aspect TO Jupiter heats what Jupiter rules. The Mars–Saturn trine problem
+solved at the root.
 
 ## MOVEMENT III — SYNTHESIS (phases 11–15)
 *A reading is one argument, not a list.*
@@ -131,7 +213,11 @@ every step of it") — the honest tension IS the insight.
 **14. The natal synthesis composer.** The loom re-tooled to assemble
 judged paragraphs (phases 6–13) into one flowing argument: keystone →
 strengths in state → the tooth → the houses that matter most in THIS
-chart (by almuten weight), with receipts and citations.
+chart (by almuten weight), with receipts and citations. The register
+model is the school's worked father-example (doctrine-notes §12): four
+testimonies — occupant by nature and rulership, lord's state as promise,
+aspects as circumstances, karaka as confirmation — braided into ONE
+judgment, every clause carrying a chart-specific determinant.
 
 **15. The no-birth-time doctrine.** Without an ASC: judge what the
 tradition actually allows (lights, states, aspects, no houses), say what
@@ -215,7 +301,12 @@ the other's houses; the two captains' reception as the bond's spine.
 
 **36. The voice book.** A house style written down: intellectual, plain,
 unmystical; banned list ("energy", "the universe", "vibes", every pop
-equation); the loom's variety banks regenerated under it.
+equation); the loom's variety banks regenerated under it. Register
+doctrine = the school's **three levels of reading** (doctrine-notes §11):
+receipts speak at level 1 (the cold technical statement), the composed
+reading at level 2 (the description brought to life, warmth AFTER
+technique), and level 3 (expert counsel) is never faked — no life advice
+beyond what the configuration itself warrants.
 
 **37. The source registry.** Every doctrinal element tagged
 (author/work/book-chapter); receipts can show their citation. The
