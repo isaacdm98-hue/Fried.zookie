@@ -689,6 +689,131 @@ var DATA = (function () {
       src: 'modern signification — discovered 1930, outside the classical canon'
     }
   };
+  // ===== PHASE 3 — THE HOUSE SIGNIFICATIONS BANK =====
+  // The twelve houses in full traditional signification — matters, persons, the body part —
+  // in our own words from Lilly's house chapters (Christian Astrology I, 1647), Firmicus
+  // Maternus (Mathesis II, 4th c.), and the school's tables. In this school the FATHER is
+  // read from the 4th and the MOTHER from the 10th. The grim houses (6th, 8th, 12th) are
+  // flagged: benefics stand there in counter-analogy, as shields.
+  var HOUSE_SIG = [
+    { matters: 'The life itself: the body you arrived in, its vitality and temperament, your bearing and appearance, and the way every undertaking begins. Whatever touches this house touches the person, not one department of them.', persons: 'The native — you; and in any question, the one who asks it.', body: 'the head and the face', grim: false },
+    { matters: 'What you own and can move: money, goods, resources and the security they buy; gain and loss; the close family that shares your table; the voice, and what speaking earns.', persons: 'Bankers, stewards and keepers of what is yours; the near family around the household purse.', body: 'the neck and the throat', grim: false },
+    { matters: 'The near world: brothers and sisters, neighbours, the streets you know; letters, messages and every means of exchange; short journeys; the everyday mind with its habits of thought and speech.', persons: 'Siblings and cousins, neighbours, messengers and carriers; the schoolfellow and the familiar face.', body: 'the shoulders, arms and hands', grim: false },
+    { matters: 'The ground you come from and return to: home, land and buildings; the father and the ancestral line; inheritance of place; the end of every matter — how things conclude and where they are buried.', persons: 'The father; grandparents and the old family; landlords, and those who work the land.', body: 'the breast and the lungs', grim: false },
+    { matters: 'What you make for joy: children first of all; pleasure, play and holiday; romance in its glad opening; creation of every kind, and the pride taken in it.', persons: 'Children, your own and others’; lovers; players, entertainers and the good company of the table.', body: 'the heart, the back and the stomach', grim: false },
+    { matters: 'The body under obligation: illness — sudden and acute by preference; work as daily labour and service; employees, colleagues and all who serve; small animals; the routines that keep a life running or grind it down.', persons: 'Servants and employees, tenants and labourers; physicians in their working clothes; those who share your daily load.', body: 'the lower belly and the bowels', grim: true },
+    { matters: 'The one you face: marriage and every open partnership; contracts and the bargains that bind two; open enemies and rivals, lawsuits; trade done face to face; whoever stands directly opposite you.', persons: 'The spouse and the partner; the opponent at law; the buyer, the seller, and the one across the table.', body: 'the loins and the reins', grim: false },
+    { matters: 'What is surrendered: death and its manner; loss and what it leaves — inheritance, legacies, the partner’s money and all resources not your own; taxes and debts owed to the living and the dead; fear, and the deep transformations that feel like dying.', persons: 'Heirs and executors; the dead and those who deal with them; the partner’s bankers; investigators of hidden things.', body: 'the organs of generation', grim: true },
+    { matters: 'The far horizon: long journeys and foreign places; religion, philosophy and the higher learning; teachers and the taught; law in its idea rather than its courtroom; publishing, prophecy and dreams.', persons: 'Priests and professors, pilgrims and foreigners; publishers, judges of the higher bench, and everyone met far from home.', body: 'the hips and the thighs', grim: false },
+    { matters: 'The visible summit: career, office and command; honour, reputation and public standing; the mother; kings and every authority set over you; what you are known for when your name is said in a room you have left.', persons: 'The mother; sovereigns, magistrates and employers; the eminent, and all who confer honour or deny it.', body: 'the knees', grim: false },
+    { matters: 'The circle that carries you: friends and allies; hopes, wishes and their attainment; praise and preferment; the salary and the favours of office; recovery and convalescence — the help that arrives after the crisis.', persons: 'Friends and patrons; the older sibling; courtiers and counsellors; the company you choose rather than inherit.', body: 'the legs and the ankles', grim: false },
+    { matters: 'The hidden life: solitude and retreat; sorrow, confinement and exile; hidden enemies and quiet sabotage; self-undoing — the ways a life defeats itself; chronic illness; large animals; everything done behind the scenes, including the good.', persons: 'Hidden enemies and secret friends; prisoners and exiles; monks and recluses; those who work unseen.', body: 'the feet', grim: true }
+  ];
+  var HOUSE_SIG_SRC = 'after Lilly, Christian Astrology I (1647), the house chapters; Firmicus Maternus, Mathesis II (4th c.); and the school’s tables — our words';
+  // ===== the planet-in-house ANALOGY MATRIX: which of the house's matters each classical =====
+  // planet voices FIRST when placed there, and by what right (joy / Chaldean order / karaka /
+  // plain analogy / counter-analogy). This is the composer's selection function, complete:
+  // 7 planets x 12 houses, cross-checked against the school's table. m = the matter; by = the right.
+  var ANALOGY_MATRIX = {
+    sun: {
+      1: { m: 'vitality, and a presence that cannot hide', by: 'analogy' },
+      2: { m: 'earning and standing won in one’s own name — the voice that speaks for itself', by: 'analogy' },
+      3: { m: 'a defined aim in study and speech; influence among siblings and neighbours', by: 'analogy' },
+      4: { m: 'the father', by: 'chaldean' },
+      5: { m: 'creation, and the pride of what one makes; inspiration', by: 'analogy' },
+      6: { m: 'authority exercised through service; ailments that run hot, show themselves and pass', by: 'counter' },
+      7: { m: 'the husband; partners of rank, and public figures met face to face', by: 'analogy' },
+      8: { m: 'the father’s legacy; the life-force pitted against loss', by: 'counter' },
+      9: { m: 'faith, and authentic spiritual experience', by: 'joy' },
+      10: { m: 'authority, visibility and the aim achieved', by: 'karaka' },
+      11: { m: 'honours, promotion and the spotlight', by: 'chaldean' },
+      12: { m: 'a powerful hidden enemy; the self undone by its own pride', by: 'counter' }
+    },
+    moon: {
+      1: { m: 'the health, and the body’s daily state', by: 'analogy' },
+      2: { m: 'security — food, comfort, and money kept for the household', by: 'analogy' },
+      3: { m: 'the restless mind and the road', by: 'joy' },
+      4: { m: 'the mother; the family’s inner weather, and what the household needs', by: 'karaka' },
+      5: { m: 'children tended; upbringing and motherhood', by: 'analogy' },
+      6: { m: 'the body moved by worry — stress, anxiety, and those who tend the ill', by: 'analogy' },
+      7: { m: 'the spouse', by: 'chaldean' },
+      8: { m: 'the psyche and its depths — the mind where it cannot be seen', by: 'analogy' },
+      9: { m: 'dreams, the ideal, and the far journey imagined before it is taken', by: 'analogy' },
+      10: { m: 'the mother; a public trade that shifts and moves', by: 'karaka' },
+      11: { m: 'the public and the wider circle; an elder sister', by: 'karaka' },
+      12: { m: 'intuition, imagination and the inner tide', by: 'karaka' }
+    },
+    mercury: {
+      1: { m: 'the body and its one life — incarnation itself', by: 'joy' },
+      2: { m: 'the word as earning — speech, accounts, and what talk brings in', by: 'karaka' },
+      3: { m: 'study, writing, and every craft of exchange', by: 'karaka' },
+      4: { m: 'schooling, and the family record', by: 'analogy' },
+      5: { m: 'playful intelligence; love without vows', by: 'analogy' },
+      6: { m: 'service and expertise', by: 'chaldean' },
+      7: { m: 'trade and negotiation — the consultant, the buyer and the seller', by: 'karaka' },
+      8: { m: 'investigation — the searching mind set on hidden matters', by: 'analogy' },
+      9: { m: 'travels, and learning taken from books', by: 'analogy' },
+      10: { m: 'a trade of movement and message', by: 'analogy' },
+      11: { m: 'the network and the clientele — friends in numbers', by: 'karaka' },
+      12: { m: 'the quiet letter and the symbol — study in solitude', by: 'analogy' }
+    },
+    venus: {
+      1: { m: 'beauty, and the care of the body', by: 'analogy' },
+      2: { m: 'the close family and the senses; ornament owned and worn', by: 'karaka' },
+      3: { m: 'a sister; the artistic voice', by: 'karaka' },
+      4: { m: 'comfort, nature and well-being at home', by: 'analogy' },
+      5: { m: 'pleasure, and love’s beginnings', by: 'joy' },
+      6: { m: 'care itself — treatment, animals, and small mercies in the daily grind', by: 'counter' },
+      7: { m: 'marriage and union', by: 'karaka' },
+      8: { m: 'the hidden or forbidden bond; help arriving through others’ means', by: 'counter' },
+      9: { m: 'strangers loved, art studied, and devotion', by: 'analogy' },
+      10: { m: 'the mother; grace carried into public life', by: 'karaka' },
+      11: { m: 'friends, the circle of women, and the theatre of good company', by: 'analogy' },
+      12: { m: 'rest and indulgence — the holiday, and its price', by: 'chaldean' }
+    },
+    mars: {
+      1: { m: 'the wound and the scar; force carried in the body', by: 'counter' },
+      2: { m: 'spending, and money that arrives or leaves suddenly', by: 'counter' },
+      3: { m: 'the brother; initiative, courage and risk', by: 'chaldean' },
+      4: { m: 'anger in the family; an ending at home that comes suddenly', by: 'counter' },
+      5: { m: 'the lover; performance and appetite', by: 'karaka' },
+      6: { m: 'sudden hurts — accidents, acute illness, enemies', by: 'joy' },
+      7: { m: 'the open enemy', by: 'analogy' },
+      8: { m: 'surgery, and sudden loss', by: 'karaka' },
+      9: { m: 'practical thought — belief tested by action', by: 'analogy' },
+      10: { m: 'action and victory; ambition, and the career’s fights', by: 'chaldean' },
+      11: { m: 'quarrels among friends; the syndicate and the pressure group', by: 'counter' },
+      12: { m: 'confinement, and anger swallowed', by: 'analogy' }
+    },
+    jupiter: {
+      1: { m: 'good health and energy — the body protected', by: 'analogy' },
+      2: { m: 'abundance and plenty', by: 'chaldean' },
+      3: { m: 'ease of language and learning; the pleasure of the word', by: 'analogy' },
+      4: { m: 'the family patrimony; happiness at home', by: 'karaka' },
+      5: { m: 'a child; games, and sweet excess', by: 'karaka' },
+      6: { m: 'victory over illness; many helpers', by: 'counter' },
+      7: { m: 'a marriage that prospers; powerful partners and great undertakings', by: 'analogy' },
+      8: { m: 'inheritance, donations and financial help — growth by way of loss', by: 'counter' },
+      9: { m: 'the teacher, the priest, and full knowledge', by: 'chaldean' },
+      10: { m: 'sudden money and success; the powerful as patrons', by: 'analogy' },
+      11: { m: 'help, allies, and the attainment of wishes', by: 'joy' },
+      12: { m: 'wisdom grown in solitude; a great work done out of view', by: 'counter' }
+    },
+    saturn: {
+      1: { m: 'the bones and the skin — the body’s structure, and its burdens', by: 'chaldean' },
+      2: { m: 'money slowed — the lean purse, or the careful one', by: 'counter' },
+      3: { m: 'concentration won from difficulty; a burdened bond with siblings', by: 'analogy' },
+      4: { m: 'the ancestors, the land, and the end of things', by: 'karaka' },
+      5: { m: 'discipline over pleasure; a child late, or serious', by: 'karaka' },
+      6: { m: 'chronic illness; older colleagues, and debts of service', by: 'analogy' },
+      7: { m: 'a bond that lasts — or a separation that does', by: 'karaka' },
+      8: { m: 'death, depth and the hidden; taxes, and long study', by: 'chaldean' },
+      9: { m: 'thought apart from the crowd — strange, or brilliant', by: 'analogy' },
+      10: { m: 'the slow climb, and the risk of the fall', by: 'karaka' },
+      11: { m: 'convalescence — help that comes late, but holds', by: 'analogy' },
+      12: { m: 'solitude, and what is chronic', by: 'joy' }
+    }
+  };
   var HOUSE_TRAD = [
     { sig: 'The body and the life itself: your appearance, vitality, temperament and the way you meet the world.' },
     { sig: 'What you own and what you’re worth. Money, possessions, resources, and the things you can move and use.' },
@@ -706,6 +831,7 @@ var DATA = (function () {
   return {
     PLANETS: PLANETS, PLANET_ORDER: PLANET_ORDER, SIGNS: SIGNS, TRADITION: TRADITION,
     PLANET_TRAD: PLANET_TRAD, HOUSE_TRAD: HOUSE_TRAD, SIG: SIG,
+    HOUSE_SIG: HOUSE_SIG, HOUSE_SIG_SRC: HOUSE_SIG_SRC, ANALOGY_MATRIX: ANALOGY_MATRIX,
     SUN_IN_SIGN: SUN_IN_SIGN, MOON_IN_SIGN: MOON_IN_SIGN, RISING_IN_SIGN: RISING_IN_SIGN, PLANET_SIGN_TEXT: PLANET_SIGN_TEXT,
     HOUSES: HOUSES, ASPECTS: ASPECTS, MINOR_ASPECTS: MINOR_ASPECTS, ELEMENTS: ELEMENTS, MODALITIES: MODALITIES,
     TAROT: TAROT, SUIT_KW: SUIT_KW, SPREADS: SPREADS, CITIES: CITIES

@@ -2813,6 +2813,17 @@ var APP = (function () {
     detriment: 'in enemy territory — hindered from its proper work, its agenda at odds with its host’s; what it rules does not last without help',
     fall: 'collapsed — a pretender that cannot deliver what it promises, showing its faults before its gifts'
   };
+  // ---- derived houses (phase 3): turning the wheel — the 8th is the 2nd from the 7th, the
+  // partner's money; the 10th from the 4th, the father's standing. Persons per this school:
+  // father = 4th, mother = 10th.
+  function derivedHouseOf(from, offset) { return ((from - 1 + offset - 1) % 12) + 1; }
+  var DERIVED_PERSON9 = { 3: 'your sibling’s', 4: 'your father’s', 5: 'your child’s', 7: 'your partner’s', 9: 'your teacher’s', 10: 'your mother’s', 11: 'your friend’s' };
+  var DERIVED_MATTER9 = { 2: 'money and resources', 3: 'everyday world and words', 4: 'home and roots', 5: 'children and pleasures', 6: 'health and service', 7: 'partners and rivals', 8: 'losses and legacies', 9: 'beliefs and far journeys', 10: 'standing and career', 11: 'friends and hopes', 12: 'hidden life' };
+  function derivedPhrase(fromHouse, offset) {
+    if (!DERIVED_PERSON9[fromHouse] || !DERIVED_MATTER9[offset]) return null;
+    var h9 = derivedHouseOf(fromHouse, offset);
+    return { house: h9, from: fromHouse, offset: offset, text: DERIVED_PERSON9[fromHouse] + ' ' + DERIVED_MATTER9[offset] + ' (the ' + ordinal(offset) + ' from the ' + ordinal(fromHouse) + ')' };
+  }
   function isDayChart9(c, b) {
     if (b && b.timeKnown && c.planets.sun && c.planets.sun.house) return c.planets.sun.house >= 7 && c.planets.sun.house <= 12;
     return null; // unknown — callers assume day and flag the assumption
@@ -2950,7 +2961,11 @@ var APP = (function () {
     var hk9 = { joyHouse: JOY[k] || null, inJoy: !!(det.house && JOY[k] === det.house), chaldeanHouses: CHALDEAN9[k] || [], inChaldean: false, karakaMatter: null, speaksFirst: null, counterAnalogy: null };
     if (det.house && hk9.chaldeanHouses.indexOf(det.house) >= 0) hk9.inChaldean = true;
     if (det.house && KARAKA_FIRST9[k] && KARAKA_FIRST9[k][det.house]) hk9.karakaMatter = KARAKA_FIRST9[k][det.house];
-    if (hk9.inJoy) hk9.speaksFirst = { by: 'joy', matter: JOY_MATTER9[k] };
+    // the full analogy matrix (phase 3) answers for EVERY classical planet-in-house pair;
+    // the phase-1 hooks remain as fallback for charts without houses or non-classical bodies
+    var MX9 = det.house && DATA.ANALOGY_MATRIX && DATA.ANALOGY_MATRIX[k] && DATA.ANALOGY_MATRIX[k][det.house];
+    if (MX9) hk9.speaksFirst = { by: MX9.by, matter: MX9.m };
+    else if (hk9.inJoy) hk9.speaksFirst = { by: 'joy', matter: JOY_MATTER9[k] };
     else if (hk9.inChaldean) hk9.speaksFirst = { by: 'chaldean', matter: CHALD_MATTER9[k + det.house] };
     else if (hk9.karakaMatter) hk9.speaksFirst = { by: 'karaka', matter: hk9.karakaMatter };
     if (det.house && det.nature.verdict === 'benefic' && MALEFIC_HOUSES9[det.house]) hk9.counterAnalogy = { kind: 'shield', note: 'a benefic in a difficult house: the house’s trouble comes in its mildest form, and the native escapes it' };
@@ -2976,7 +2991,10 @@ var APP = (function () {
     if (det.feral) L.push('ASPECTS: ' + (aspTxt9 ? aspTxt9 + ' — yet ' : 'none — ') + det.feralNote);
     else L.push('ASPECTS: ' + aspTxt9);
     var an = det.analogy, aBits = [];
-    if (an.speaksFirst) aBits.push((an.inJoy ? 'in its JOY — ' : an.inChaldean ? 'in its Chaldean house — ' : '') + 'speaks first of ' + an.speaksFirst.matter);
+    if (an.speaksFirst) {
+      var byT9 = { joy: 'its joy', chaldean: 'the Chaldean order', karaka: 'universal signification', counter: 'counter-analogy', analogy: 'plain analogy' }[an.speaksFirst.by] || an.speaksFirst.by;
+      aBits.push('speaks first of ' + an.speaksFirst.matter + ' — by ' + byT9);
+    }
     if (an.counterAnalogy) aBits.push('counter-analogy (' + an.counterAnalogy.kind + '): ' + an.counterAnalogy.note);
     if (aBits.length) L.push('ANALOGY: ' + aBits.join(' · '));
     return L.join('\n');
@@ -4372,7 +4390,7 @@ var APP = (function () {
     solarReturnChart: solarReturnChart, upcomingEclipses: upcomingEclipses, bestDaysFor: bestDaysFor, electIntents: electIntents, oddPredictions: oddPredictions, composeProfectionYear: composeProfectionYear, signHouseWeave: signHouseWeave,
     progressedTimeline: progressedTimeline, retroSeasons: retroSeasons,
     exportBook: exportBook, exportBackup: exportBackup, importBackup: importBackup, composeDailyEssay: composeDailyEssay, chartFP: chartFP, weaveNote: weaveNote, termOf: termOf, anA: anA, composeColleague: composeColleague, exportColleague: exportColleague,
-    microFor: microFor, tellsFor: tellsFor, weaveTransit: weaveTransit, traditionalRead: traditionalRead, determination: determination, determinationSheet: determinationSheet, symbolicDirections: symbolicDirections, directionLine: directionLine, directionReceipt: directionReceipt, aspectNature: aspectNature, transitCycles: transitCycles, weaveCycle: weaveCycle, weaveWeek: weaveWeek, receptionOf: receptionOf, chartSignature: chartSignature, lifeQuirks: lifeQuirks, interests: interests, emergingPull: emergingPull, spookyReads: spookyReads, combinationRead: combinationRead, sunMoonCharacter: sunMoonCharacter, guideCards: guideCards, ancientSky: ancientSky, addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, returnsAlmanac: returnsAlmanac, progressedLunation: progressedLunation, planetaryHours: planetaryHours, moonVoidWindow: moonVoidWindow, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
+    microFor: microFor, tellsFor: tellsFor, weaveTransit: weaveTransit, traditionalRead: traditionalRead, determination: determination, determinationSheet: determinationSheet, derivedHouseOf: derivedHouseOf, derivedPhrase: derivedPhrase, symbolicDirections: symbolicDirections, directionLine: directionLine, directionReceipt: directionReceipt, aspectNature: aspectNature, transitCycles: transitCycles, weaveCycle: weaveCycle, weaveWeek: weaveWeek, receptionOf: receptionOf, chartSignature: chartSignature, lifeQuirks: lifeQuirks, interests: interests, emergingPull: emergingPull, spookyReads: spookyReads, combinationRead: combinationRead, sunMoonCharacter: sunMoonCharacter, guideCards: guideCards, ancientSky: ancientSky, addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, returnsAlmanac: returnsAlmanac, progressedLunation: progressedLunation, planetaryHours: planetaryHours, moonVoidWindow: moonVoidWindow, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
     saveCurrentChart: saveCurrentChart, deleteSavedChart: deleteSavedChart, activateSavedChart: activateSavedChart, activeChartKey: activeChartKey, chartKey: chartKey, famousMatches: famousMatches, lifeTransits: lifeTransits, upcomingTransits: upcomingTransits, transitMotion: transitMotion, compositeChart: compositeChart,
     nameFor: nameFor, glyphFor: glyphFor, pad: pad,
     domElement: domElement, lowElement: lowElement, domMod: domMod, tzOffsetHours: tzOffsetHours
