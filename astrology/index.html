@@ -3844,6 +3844,80 @@ var APP = (function () {
     return { mc: directedChapter18(c, b, 'mc'), sun: directedChapter18(c, b, 'sun'), moon: directedChapter18(c, b, 'moon'),
       choiceDoctrine: 'Read the mover that owns the question: the Ascendant for the body and the life, the Midheaven for the career and the name, the Sun for vitality and the father, the Moon for the felt life and the mother. To read the career from the Sun, or the body from the Moon, is to answer a question no one asked.' };
   }
+  // ===== PHASE 19 — DIRECTION THROUGH THE BOUNDS: the term-lord chapters (Abu Ma'shar) =====
+  // As the Ascendant directs one degree a year, it walks the Egyptian terms in turn. The lord
+  // of the term it currently occupies is the DISTRIBUTOR — the time-lord of that span of years,
+  // and its natal determination colours the whole chapter. A planet the directed edge meets
+  // inside the span is the PARTNER, sharpening the period.
+  function boundSegments19() {
+    var segs = [], s, i, prev;
+    for (s = 0; s < 12; s++) { prev = 0; for (i = 0; i < BOUNDS[s].length; i++) { segs.push({ lord: BOUNDS[s][i][0], start: s * 30 + prev, end: s * 30 + BOUNDS[s][i][1] }); prev = BOUNDS[s][i][1]; } }
+    return segs;
+  }
+  function boundsWalk(c, b) {
+    if (!(b && b.timeKnown && c.ascBody)) return { hasTime: false, note: 'The distribution through the bounds directs the Ascendant through the Egyptian terms, and the Ascendant needs the hour of birth. Set even a rough time and the life divides into its term-lord chapters; without it, this timing is closed.' };
+    var natalAsc = c.ascBody.lon, ageNow = ageYearsNow(b); if (ageNow < 0) ageNow = 0;
+    var segs = boundSegments19(), L = rev(natalAsc), idx = 0, j;
+    for (j = 0; j < segs.length; j++) { if (segs[j].start <= L && L < segs[j].end) { idx = j; break; } }
+    var chapters = [], age = 0, n, current = null;
+    for (n = 0; n < 70 && age < 90; n++) {
+      var seg = segs[(idx + n) % segs.length];
+      var width = (n === 0) ? rev(seg.end - natalAsc) : rev(seg.end - seg.start);
+      if (width < 1e-6) width = rev(seg.end - seg.start) || 1;
+      var startAge = age, endAge = age + width, k = seg.lord, D = determination(c, b, k);
+      var isCur = (ageNow >= startAge && ageNow < endAge);
+      var natTxt = nameFor(k) + ' is ' + stateAdj9(D.essential.label) + ' in ' + D.signName + (D.house ? ' in your ' + ordinal(D.house) + ' house, speaking first of ' + (D.analogy.speaksFirst ? D.analogy.speaksFirst.matter : (D.natural ? D.natural.karakas[0] : nameFor(k))) : '') + '.';
+      var nat = D.nature.verdict, sc = D.condition ? D.condition.total : 0;
+      var flavor = nat === 'benefic' && sc >= 5 ? 'a supported, growing stretch: a benefic time-lord in good standing lifts the matters it touches' : nat === 'benefic' ? 'a benefic time-lord but weakly placed, so the good it brings comes with effort and through others' : nat === 'malefic' && sc >= 5 ? 'a demanding but constructive stretch: a strong malefic builds by pressure, and what is built here lasts' : nat === 'malefic' ? 'the hard kind of span: a malefic time-lord poorly placed — go carefully, and expect these years to test the matters it rules' : 'a convertible time-lord, so the span takes the colour of whatever most closely touches ' + nameFor(k);
+      var line = 'Ages ' + Math.round(startAge) + '–' + Math.round(endAge) + ' (' + Math.round(b.y + startAge) + '–' + Math.round(b.y + endAge) + '): the directed Ascendant walks the Egyptian terms of ' + nameFor(k) + ', your distributor — the time-lord of these years. ' + natTxt + ' So this span takes its colour from ' + nameFor(k) + ': ' + flavor + '.';
+      var ch = { lord: k, startAge: Math.round(startAge * 10) / 10, endAge: Math.round(endAge * 10) / 10, yearStart: Math.round(b.y + startAge), yearEnd: Math.round(b.y + endAge), current: isCur, state: D.essential.label, score: sc, line: line, receipt: ('directed asc term-lord ' + nameFor(k) + ' · age ' + Math.round(startAge) + '–' + Math.round(endAge) + (D.condition ? ' · distributor lilly ' + (sc >= 0 ? '+' : '') + sc : '')).toUpperCase() };
+      if (isCur) {
+        // the partner: the strongest directed-ASC contact inside this span
+        var de = directedEvents18(c, b, 'asc', startAge, endAge);
+        if (de.events && de.events.length) {
+          var part = de.events.slice().sort(function (x, y) { var wx = (x.aspKey === 'conjunction' || x.aspKey === 'square' || x.aspKey === 'opposition' ? 1 : 0) + (['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn'].indexOf(x.np) >= 0 ? 1 : 0); var wy = (y.aspKey === 'conjunction' || y.aspKey === 'square' || y.aspKey === 'opposition' ? 1 : 0) + (['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn'].indexOf(y.np) >= 0 ? 1 : 0); return wy - wx || Math.abs(x.age - ageNow) - Math.abs(y.age - ageNow); })[0];
+          ch.line += ' Within it the life-edge perfects ' + art9(part.aspKey) + ' ' + part.aspKey + ' to your natal ' + nameFor(part.np) + ' around age ' + Math.round(part.age) + ' — the partner that sharpens the period.';
+          ch.partner = { np: part.np, aspKey: part.aspKey, age: Math.round(part.age) };
+        } else {
+          ch.line += ' No directed contact of the Ascendant falls inside this span, so ' + nameFor(k) + ' rules these years alone, without a partner to sharpen them.';
+          ch.partner = null;
+        }
+        current = ch;
+      }
+      chapters.push(ch); age = endAge;
+    }
+    return { hasTime: true, ageNow: ageNow, chapters: chapters, current: current, src: 'Abu Ma’shar and the Persian tradition: the distribution of the bounds (al-Firdaria’s cousin), the directed Ascendant’s term-lord as time-lord' };
+  }
+  // ===== PHASE 20 — PROFECTIONS × DIRECTIONS: the lord of the year decides which speak loudest =====
+  // The annual profection advances the Ascendant one whole sign a year; the lord of the profected
+  // sign is the LORD OF THE YEAR, the year's activator. Directions that touch it speak loudest.
+  // The solar return is the year's trigger-chart, read against the natal — never standalone.
+  function lordOfYear(c, b) {
+    var age = Math.max(0, Math.floor(ageYearsNow(b)));
+    var ascSign = (b && b.timeKnown && c.ascBody) ? c.ascBody.sign : c.planets.sun.sign;
+    var profSign = (ascSign + age) % 12, profHouse = (age % 12) + 1, lordK = TRAD_RULER[profSign];
+    var D = determination(c, b, lordK);
+    return { age: age, profSign: profSign, profSignName: DATA.SIGNS[profSign].name, profHouse: profHouse, lord: lordK, det: D, fromAsc: !!(b && b.timeKnown && c.ascBody) };
+  }
+  function profectionYear(c, b) {
+    if (!b || !b.y) return null;
+    var loy = lordOfYear(c, b), ageNow = ageYearsNow(b); if (ageNow < 0) ageNow = 0;
+    var movers = (b.timeKnown && c.ascBody) ? ['asc', 'mc', 'sun', 'moon', loy.lord] : ['sun', 'moon', loy.lord];
+    var seen = {}, uniq = []; for (var mi = 0; mi < movers.length; mi++) if (!seen[movers[mi]]) { seen[movers[mi]] = 1; uniq.push(movers[mi]); }
+    var events = [], m;
+    for (m = 0; m < uniq.length; m++) { var de = directedEvents18(c, b, uniq[m], ageNow - 1, ageNow + 2); if (de.events) events = events.concat(de.events); }
+    var judged = events.map(function (E) { return judgeDirection(c, b, E); }).filter(Boolean);
+    var loud = judged.filter(function (d) { return d.dp === loy.lord || d.np === loy.lord; });
+    loud.sort(function (x, y) { return Math.abs(x.age - ageNow) - Math.abs(y.age - ageNow); });
+    var D = loy.det, natTxt = nameFor(loy.lord) + ' is ' + stateAdj9(D.essential.label) + ' in ' + D.signName + (D.house ? ' in your ' + ordinal(D.house) + ' house, speaking first of ' + (D.analogy.speaksFirst ? D.analogy.speaksFirst.matter : (D.natural ? D.natural.karakas[0] : nameFor(loy.lord))) : '') + (D.condition ? ', ' + D.condition.band + ' at ' + (D.condition.total >= 0 ? '+' : '') + D.condition.total + ' by Lilly’s count' : '');
+    var line = 'You are in your ' + ordinal(loy.profHouse) + '-house profection year: the Ascendant has advanced by ' + loy.age + ' whole signs to ' + loy.profSignName + ', so ' + nameFor(loy.lord) + ' is your lord of the year — the planet the whole year runs on. ' + natTxt + '. '
+      + (D.condition && D.condition.total >= 5 ? 'A well-placed lord of the year promises a year that mostly pays: what ' + nameFor(loy.lord) + ' governs is favoured now. ' : D.condition && D.condition.total < 0 ? 'A weak lord of the year warns of a demanding one: the matters ' + nameFor(loy.lord) + ' governs are where the year asks the most. ' : 'A mixed lord of the year makes a mixed one, turning on which of its testimonies is triggered. ')
+      + (loud.length ? 'And this is the doctrine that puts prediction in order: of all the directions now in force, those that touch ' + nameFor(loy.lord) + ' speak loudest this year — first among them, ' + loud[0].line.split(/(?<=[.!?])\s+/)[0].replace(/^Around \d+ \(\d+\), /, '') + ' ' : 'No direction touches the lord of the year within this year’s window, so the year activates the natal promise of ' + nameFor(loy.lord) + ' quietly, without a sharp directional trigger. ')
+      + 'The solar return is this year’s trigger-chart: cast it, but read it against the natal and against ' + nameFor(loy.lord) + ' — where the lord of the year falls in the return sets the year’s tone. Never read the return alone.';
+    return { hasTime: !!(b.timeKnown && c.ascBody), ageNow: ageNow, lordOfYear: loy, loud: loud, natLine: natTxt, line: line,
+      receipt: (ordinal(loy.profHouse) + '-house profection · lord of the year ' + nameFor(loy.lord) + (D.condition ? ' lilly ' + (D.condition.total >= 0 ? '+' : '') + D.condition.total : '') + ' · ' + loud.length + ' directions in force').toUpperCase(),
+      src: 'annual profection and the lord of the year (Hellenistic/Persian); Morin XXII on directions activated by the time-lord; the solar return as trigger-chart' };
+  }
   // ===== the full solar-return chart: the year's own horoscope, cast for the exact return instant at the birthplace =====
   function solarReturnChart(c, b, sum) {
     if (!sum) return null;
@@ -5147,7 +5221,7 @@ var APP = (function () {
     solarReturnChart: solarReturnChart, upcomingEclipses: upcomingEclipses, bestDaysFor: bestDaysFor, electIntents: electIntents, oddPredictions: oddPredictions, composeProfectionYear: composeProfectionYear, signHouseWeave: signHouseWeave,
     progressedTimeline: progressedTimeline, retroSeasons: retroSeasons,
     exportBook: exportBook, exportBackup: exportBackup, importBackup: importBackup, composeDailyEssay: composeDailyEssay, chartFP: chartFP, weaveNote: weaveNote, termOf: termOf, anA: anA, composeColleague: composeColleague, exportColleague: exportColleague,
-    microFor: microFor, tellsFor: tellsFor, weaveTransit: weaveTransit, traditionalRead: traditionalRead, determination: determination, determinationSheet: determinationSheet, derivedHouseOf: derivedHouseOf, derivedPhrase: derivedPhrase, conditionVerdict: conditionVerdict, sectProfile: sectProfile, judgeAscendant: judgeAscendant, judgeCaptain: judgeCaptain, rulershipWeb: rulershipWeb, zodiacMatrix: zodiacMatrix, cuspAlmuten: cuspAlmuten, judgeHouse: judgeHouse, judgeHouses: judgeHouses, judgeAspect: judgeAspect, judgeAspects: judgeAspects, fullReception: fullReception, receptionOnAspect: receptionOnAspect, receptionsInChart: receptionsInChart, testimonyAuthority: testimonyAuthority, contest: contest, rulingVoice: rulingVoice, contradictions: contradictions, natalSynthesis: natalSynthesis, housesThatMatter: housesThatMatter, noBirthTimeReading: noBirthTimeReading, judgeDirection: judgeDirection, judgeDirections: judgeDirections, directedAscendant: directedAscendant, directedSignificators: directedSignificators, significatorFor: significatorFor, directedChapter18: directedChapter18, symbolicDirections: symbolicDirections, directionLine: directionLine, directionReceipt: directionReceipt, aspectNature: aspectNature, transitCycles: transitCycles, weaveCycle: weaveCycle, weaveWeek: weaveWeek, receptionOf: receptionOf, chartSignature: chartSignature, lifeQuirks: lifeQuirks, interests: interests, emergingPull: emergingPull, spookyReads: spookyReads, combinationRead: combinationRead, sunMoonCharacter: sunMoonCharacter, guideCards: guideCards, ancientSky: ancientSky, addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, returnsAlmanac: returnsAlmanac, progressedLunation: progressedLunation, planetaryHours: planetaryHours, moonVoidWindow: moonVoidWindow, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
+    microFor: microFor, tellsFor: tellsFor, weaveTransit: weaveTransit, traditionalRead: traditionalRead, determination: determination, determinationSheet: determinationSheet, derivedHouseOf: derivedHouseOf, derivedPhrase: derivedPhrase, conditionVerdict: conditionVerdict, sectProfile: sectProfile, judgeAscendant: judgeAscendant, judgeCaptain: judgeCaptain, rulershipWeb: rulershipWeb, zodiacMatrix: zodiacMatrix, cuspAlmuten: cuspAlmuten, judgeHouse: judgeHouse, judgeHouses: judgeHouses, judgeAspect: judgeAspect, judgeAspects: judgeAspects, fullReception: fullReception, receptionOnAspect: receptionOnAspect, receptionsInChart: receptionsInChart, testimonyAuthority: testimonyAuthority, contest: contest, rulingVoice: rulingVoice, contradictions: contradictions, natalSynthesis: natalSynthesis, housesThatMatter: housesThatMatter, noBirthTimeReading: noBirthTimeReading, judgeDirection: judgeDirection, judgeDirections: judgeDirections, directedAscendant: directedAscendant, directedSignificators: directedSignificators, significatorFor: significatorFor, directedChapter18: directedChapter18, boundsWalk: boundsWalk, lordOfYear: lordOfYear, profectionYear: profectionYear, symbolicDirections: symbolicDirections, directionLine: directionLine, directionReceipt: directionReceipt, aspectNature: aspectNature, transitCycles: transitCycles, weaveCycle: weaveCycle, weaveWeek: weaveWeek, receptionOf: receptionOf, chartSignature: chartSignature, lifeQuirks: lifeQuirks, interests: interests, emergingPull: emergingPull, spookyReads: spookyReads, combinationRead: combinationRead, sunMoonCharacter: sunMoonCharacter, guideCards: guideCards, ancientSky: ancientSky, addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, returnsAlmanac: returnsAlmanac, progressedLunation: progressedLunation, planetaryHours: planetaryHours, moonVoidWindow: moonVoidWindow, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
     saveCurrentChart: saveCurrentChart, deleteSavedChart: deleteSavedChart, activateSavedChart: activateSavedChart, activeChartKey: activeChartKey, chartKey: chartKey, famousMatches: famousMatches, lifeTransits: lifeTransits, upcomingTransits: upcomingTransits, transitMotion: transitMotion, compositeChart: compositeChart,
     nameFor: nameFor, glyphFor: glyphFor, pad: pad,
     domElement: domElement, lowElement: lowElement, domMod: domMod, tzOffsetHours: tzOffsetHours
