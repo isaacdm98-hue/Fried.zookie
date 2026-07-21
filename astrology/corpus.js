@@ -592,6 +592,103 @@ var DATA = (function () {
     neptune: { sig: 'Dreams, longing, compassion and dissolving edges, the mystic, the artist and the escape. Unknown to the ancients (discovered 1846); a modern signification.' },
     pluto: { sig: 'Power, depth, death and rebirth. What is buried, what is shared under pressure, and what is utterly transformed. Unknown to the tradition (discovered 1930); a modern reading.' }
   };
+  // ===== PHASE 2 — THE NATURAL SIGNIFICATIONS BANK =====
+  // What each planet MEANS in every chart — persons, matters, qualities, body, vocations —
+  // rewritten in our own words from William Lilly (Christian Astrology, Book 1, 1647; planets
+  // at chapters 15–21, Saturn down to the Moon) and al-Biruni (Book of Instruction, 1029),
+  // with the analogy hooks the composer selects by: the karakas (universal significations),
+  // the planet's Joy, and its Chaldean co-signification houses. The outer planets are marked
+  // modern and never dressed as tradition. Prose only — keyword lists are banned.
+  var SIG = {
+    sun: {
+      persons: 'Kings, and everyone who is one at any scale — the magistrate, the director, the head of the household; people in office and people hungry for it; the father; goldsmiths and workers in gold; anyone whose word settles a room.',
+      matters: 'Life itself and the force that carries it; honour, office and dignity; the aim a life organises itself around; favour from the powerful; gold, and whatever is singular, central and hard to share.',
+      qualities: 'Hot and dry, but temperately — the fire of a hearth, not a blaze. Well placed it gives confidence without noise: humane, magnanimous, faithful to its word, born to preside. Poorly placed the same fire turns to arrogance — domineering, extravagant, unable to be second.',
+      body: 'The heart and the arteries, the back and the spine that holds a person upright, the sight itself, and the vital spirit; its illnesses are those of the heart, the eyes, and burning fevers.',
+      vocations: 'Rule and representation: magistrates and ministers, directors, anyone who fronts an enterprise; the crafts of gold and of coin; every office where one person carries the authority of many.',
+      karakas: ['the father', 'authority and office', 'honour and visibility', 'the vital force', 'gold and what is singular'],
+      joy: 9, chaldean: [4, 11],
+      src: 'after Lilly, Christian Astrology I ch. 18 (1647) and al-Biruni, Book of Instruction (1029) — our words'
+    },
+    moon: {
+      persons: 'The mother, first of all in a night chart; women generally, and the queen as the people’s mirror; the common people themselves — the crowd, the customer; travellers, sailors, and everyone whose trade follows water or the road; midwives and nurses.',
+      matters: 'The daily life of the body — sleep, food, habit, mood; the household and its tides; change itself, and every removal, journey and flitting; the public and its favour; water in all its forms; whatever waxes, wanes and returns.',
+      qualities: 'Cold and moist, the phlegmatic temperament. Well placed she is composed, soft-spoken, tender toward what she keeps, a lover of peace and of home. Poorly placed the same fluidity becomes drift — unstable, idle, a vagabond of moods, carried by whoever stands nearest.',
+      body: 'The breast and the stomach, the belly and the womb, and the brain in its moistures; her illnesses are of the stomach and the humours — the swellings and rheums that come and go on her own schedule.',
+      vocations: 'Trades of the people and of movement: carriers and couriers, sailors and travellers, nurses and midwives, innkeepers, and everyone who feeds, ferries or tends the crowd; any work that lives by the public’s daily custom.',
+      karakas: ['the mother', 'women and the household', 'the common people', 'journeys and removals', 'the body’s daily tides'],
+      joy: 3, chaldean: [7],
+      src: 'after Lilly, Christian Astrology I ch. 21 (1647) and al-Biruni, Book of Instruction (1029) — our words'
+    },
+    mercury: {
+      persons: 'The literate and the quick: scribes, secretaries, clerks and accountants; merchants and brokers; messengers and printers; mathematicians, astrologers and schoolmasters; poets and orators; the young generally — and, when he is ill disposed, the cheat and the thief.',
+      matters: 'The word, spoken and written; letters, contracts and accounts; trade and negotiation; calculation, craft and skill of hand; the go-between in every sense — whatever carries one thing across to another.',
+      qualities: 'Convertible before all else: he takes the colour of whatever touches him — excellent among the good, worst among the bad. Well placed: a sharp, searching wit, learned, subtle, an unwearied student of anything. Ill placed the same subtlety turns to shifts — a boaster, a busybody, a maker of clever frauds.',
+      body: 'The brain and the tongue, the hands, the nerves and the spirits that run through them; his illnesses are of speech and of the nerves — stammering, vertigo, and the restless troubles of an overdriven mind.',
+      vocations: 'Every trade done with words, numbers or nimble hands — the writer and the teacher, the trader and the accountant, the printer and the translator; the counting-house and the school, the press, and the road that carries messages between them all.',
+      karakas: ['speech and writing', 'trade and negotiation', 'accounts and calculation', 'the young', 'service and skill of hand'],
+      joy: 1, chaldean: [6],
+      src: 'after Lilly, Christian Astrology I ch. 20 (1647) and al-Biruni, Book of Instruction (1029) — our words'
+    },
+    venus: {
+      persons: 'The beloved and the wife; the mother, in a day chart; young women; musicians, painters, jewellers, and everyone whose trade is delight; the peace-maker in any quarrel.',
+      matters: 'Love and union; marriage; pleasure, ornament and beauty; music and the arts; perfume, silk, and everything made finer than it strictly needs to be; treaties, and the making of peace.',
+      qualities: 'Cold and moist, temperate — the kindest hand in the sky after Jupiter. Well placed: quiet, neat, cheerful, faithful in affection, a natural reconciler. Ill placed the sweetness spoils — riotous, extravagant, given wholly to pleasure and to the trouble pleasure buys.',
+      body: 'The kidneys and the reins, the throat, the womb and the seed; her illnesses come chiefly by intemperance in pleasure, and settle in exactly those places.',
+      vocations: 'The trades of beauty and of peace: music and performance, painting and jewellery, fine cloth and adornment, perfume and the table; match-making, diplomacy, and every art that makes people gladder to be in a room.',
+      karakas: ['love and the beloved', 'marriage and union', 'the mother (by day)', 'art, ornament and pleasure', 'peace-making'],
+      joy: 5, chaldean: [5, 12],
+      src: 'after Lilly, Christian Astrology I ch. 19 (1647) and al-Biruni, Book of Instruction (1029) — our words'
+    },
+    mars: {
+      persons: 'Soldiers and commanders; surgeons of the sharper sort; butchers, smiths, and every worker in iron and fire; athletes and duellists; brothers; and, when he is ill disposed, the quarreller and the thief by force.',
+      matters: 'War and contest; iron, fire and the tools made of them; surgery and the cut that cures; courage; haste, and everything that arrives suddenly — the accident, the quarrel, the decisive stroke.',
+      qualities: 'Hot and dry, the choleric fire at full. Well placed: unafraid, decisive, prudent in danger — a hardness that protects what it loves. Ill placed the heat runs wild: quarrelsome, cruel, treacherous, spending in one flash what patience would have won whole.',
+      body: 'The gall, the head and face, the muscles and the blood in its heat; his illnesses are fevers, burns, cuts and wounds — and the surgeries that answer them.',
+      vocations: 'Work that cuts, burns, fights or rescues: the soldier and the officer, the surgeon, the smith, the butcher, the firefighter, the athlete; every trade where the edge is the tool.',
+      karakas: ['brothers', 'wounds and sudden hurts', 'iron, fire and the blade', 'courage and contest', 'surgery'],
+      joy: 6, chaldean: [3, 10],
+      src: 'after Lilly, Christian Astrology I ch. 17 (1647) and al-Biruni, Book of Instruction (1029) — our words'
+    },
+    jupiter: {
+      persons: 'Judges and senators; bishops, priests and ministers of religion; lawyers and scholars; the honourably wealthy; patrons, benefactors, and everyone whose word opens doors.',
+      matters: 'Increase and plenty; law and justice; religion and faith; honour honestly come by; mercy, oaths, and promises kept; children, as the giver of continuance; whatever grows because it is believed in.',
+      qualities: 'Hot and moist, the sanguine temperament — the Greater Fortune. Well placed: magnanimous, faithful, liberal, just; a largeness that steadies everyone near it. Ill placed the largeness goes soft: prodigal, careless, promising past performance, pious in word and loose in deed.',
+      body: 'The liver first, then the lungs, ribs and sides, the blood and the seed; his illnesses are of the liver and the blood’s corruption — and of excess at the table.',
+      vocations: 'The professions of judgement and belief: the bench and the bar, the pulpit and the university; publishing and endowment; every office that grows things — funds, institutions, students, congregations.',
+      karakas: ['wealth and increase', 'children', 'teachers, priests and the law', 'faith and belief', 'patrons and help'],
+      joy: 11, chaldean: [2, 9],
+      src: 'after Lilly, Christian Astrology I ch. 16 (1647) and al-Biruni, Book of Instruction (1029) — our words'
+    },
+    saturn: {
+      persons: 'The old, and everyone made old by labour: farmers of the land, miners, builders in stone; monks, hermits, and the deliberately solitary; the grandfather and the ancestors; the poor, the burdened, and the patient.',
+      matters: 'Time and what it does; limit, delay and endings; land, buildings and foundations; debts and taxes; inheritance of the heavy kind; chronic illness; solitude; death, and everything that must be waited for.',
+      qualities: 'Cold and dry, the melancholic temperament — the Greater Infortune. Well placed: grave, profound, patient, austere in the useful way; a keeper of long promises. Ill placed the weight turns inward: suspicious, envious, mistrustful, hoarding — afraid of loss, and so producing it.',
+      body: 'The bones and the teeth, the skin, the joints and knees, the spleen and the hearing; his illnesses are chronic and cold — the slow complaints that settle in and stay.',
+      vocations: 'Work with time and ground: building, farming, mining, surveying; the management of land, debt and estates; archives and antiquities; every trade whose product must outlast its maker.',
+      karakas: ['the old and the past', 'land, buildings and foundations', 'debt, delay and endings', 'chronic illness', 'solitude and the hidden'],
+      joy: 12, chaldean: [1, 8],
+      src: 'after Lilly, Christian Astrology I ch. 15 (1647) and al-Biruni, Book of Instruction (1029) — our words'
+    },
+    uranus: {
+      modern: true,
+      matters: 'Rupture, invention and independence — the sudden turn no tradition predicted, because no tradition had seen it. Read as a modern overlay: shock, technology, revolt, the break for freedom.',
+      karakas: ['sudden reversal', 'invention and technology', 'independence'],
+      src: 'modern signification — discovered 1781, outside the classical canon'
+    },
+    neptune: {
+      modern: true,
+      matters: 'Dissolution and longing — the fog that softens every hard edge. Read as a modern overlay: the ideal and the illusion, imagination, the escape, compassion without borders.',
+      karakas: ['the ideal and the illusion', 'imagination', 'escape and dissolution'],
+      src: 'modern signification — discovered 1846, outside the classical canon'
+    },
+    pluto: {
+      modern: true,
+      matters: 'Buried power and purgation — what is hidden, compelled, shared under pressure, and changed past recognition. Read as a modern overlay, never as tradition.',
+      karakas: ['buried power', 'compulsion and purgation', 'irreversible change'],
+      src: 'modern signification — discovered 1930, outside the classical canon'
+    }
+  };
   var HOUSE_TRAD = [
     { sig: 'The body and the life itself: your appearance, vitality, temperament and the way you meet the world.' },
     { sig: 'What you own and what you’re worth. Money, possessions, resources, and the things you can move and use.' },
@@ -608,7 +705,7 @@ var DATA = (function () {
   ];
   return {
     PLANETS: PLANETS, PLANET_ORDER: PLANET_ORDER, SIGNS: SIGNS, TRADITION: TRADITION,
-    PLANET_TRAD: PLANET_TRAD, HOUSE_TRAD: HOUSE_TRAD,
+    PLANET_TRAD: PLANET_TRAD, HOUSE_TRAD: HOUSE_TRAD, SIG: SIG,
     SUN_IN_SIGN: SUN_IN_SIGN, MOON_IN_SIGN: MOON_IN_SIGN, RISING_IN_SIGN: RISING_IN_SIGN, PLANET_SIGN_TEXT: PLANET_SIGN_TEXT,
     HOUSES: HOUSES, ASPECTS: ASPECTS, MINOR_ASPECTS: MINOR_ASPECTS, ELEMENTS: ELEMENTS, MODALITIES: MODALITIES,
     TAROT: TAROT, SUIT_KW: SUIT_KW, SPREADS: SPREADS, CITIES: CITIES

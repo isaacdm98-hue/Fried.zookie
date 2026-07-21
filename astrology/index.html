@@ -2908,6 +2908,7 @@ var APP = (function () {
       }
       det.rules.sort(function (x, y) { return x.house - y.house; });
     } else det.rulesSigns = DIGNITY[k] ? DIGNITY[k].dom.slice() : [];
+    det.natural = (DATA.SIG && DATA.SIG[k]) || null; // the significations bank: what this planet means everywhere (phase 2)
     det.essential = essentialOf9(c, k, det.isDay);
     det.nature = natureOf9(c, k);
     det.sectRole = null;
@@ -2964,6 +2965,7 @@ var APP = (function () {
     L.push(det.name.toUpperCase() + ' — ' + degStr(det.deg) + ' ' + det.signName + (det.house ? ' · ' + ordinal(det.house) + ' house (' + det.terrestrial.houseClass + ')' : ' · house unknown') + (det.retro ? ' · retrograde' : ''));
     if (det.rules.length) L.push('RULES: ' + det.rules.map(function (r) { return ordinal(r.house) + ' (' + r.sign + (r.how === 'intercepted' ? ', intercepted' : '') + ')'; }).join(', '));
     else if (det.rulesSigns && det.rulesSigns.length) L.push('RULES (signs; no birth time): ' + det.rulesSigns.join(', '));
+    if (det.natural && det.natural.karakas) L.push('SIGNIFIES EVERYWHERE: ' + det.natural.karakas.join('; ') + ' [' + det.natural.src + ']');
     if (det.essential && !det.essential.modern) {
       L.push('ZODIACAL STATE: ' + det.essential.label + ' (score ' + (det.essential.score > 0 ? '+' : '') + det.essential.score + (det.dayAssumed ? ', day assumed' : '') + ') — ' + det.essential.character);
       L.push('DISPOSITOR: ' + nameFor(det.essential.dispositor) + (det.essential.dispositorAlmuten && det.essential.dispositorAlmuten.lead !== det.essential.dispositor ? ' by sign; by almuten of the degree, ' + nameFor(det.essential.dispositorAlmuten.lead) : ''));
