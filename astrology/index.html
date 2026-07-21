@@ -3685,6 +3685,97 @@ var APP = (function () {
   function directionReceipt(E) {
     return ('directed ' + nameFor(E.dp) + ' (1\u00B0/yr) ' + E.aspKey + ' natal ' + nameFor(E.np) + ' · exact age ' + E.age.toFixed(1) + ' · ' + E.year).toUpperCase();
   }
+  // ===== PHASE 15 — THE NO-BIRTH-TIME DOCTRINE: judge only what the tradition allows =====
+  // Without the hour there is no Ascendant, no houses, no angles, no sect. The tradition
+  // still permits real judgment — the two lights, every planet's zodiacal state, the aspects
+  // between them, reception — but it NEVER fakes a rising. Say plainly what is closed.
+  function noBirthTimeReading(c, b) {
+    if (b && b.timeKnown && c.ascBody) return { applies: false };
+    var CL = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn'], lights = [], states = [], i;
+    for (i = 0; i < 2; i++) {
+      var lk = CL[i], D = determination(c, b, lk); if (!D) continue;
+      var natWhy = D.nature.why[0];
+      lights.push({ key: lk, line: nameFor(lk) + ' stands in ' + D.signName + ', ' + stateAdj9(D.essential.label) + ' — ' + D.essential.character.split(';')[0] + '. By nature it is ' + D.nature.verdict + ': ' + natWhy + '. What it signifies for everyone (' + (D.natural ? D.natural.karakas.slice(0, 3).join(', ') : '') + ') is read from this state, though which department of your life it touches must wait on the hour.', receipt: (nameFor(lk) + ' ' + degStr(D.lon % 30) + ' ' + D.signName + ' · ' + D.essential.label + ' · ' + D.nature.verdict).toUpperCase() });
+    }
+    for (i = 2; i < CL.length; i++) {
+      var sk = CL[i], SD9 = determination(c, b, sk); if (!SD9) continue;
+      states.push({ key: sk, line: nameFor(sk) + ' is ' + stateAdj9(SD9.essential.label) + ' in ' + SD9.signName + (SD9.essential.dispositor !== sk ? ', leaning on ' + nameFor(SD9.essential.dispositor) + ' its dispositor' : ', its own master') + ' — ' + SD9.nature.verdict + ' by nature.', receipt: (nameFor(sk) + ' ' + degStr(SD9.lon % 30) + ' ' + SD9.signName + ' · ' + SD9.essential.label).toUpperCase() });
+    }
+    var asps = judgeAspects(c, b);
+    var closed = ['the Ascendant and the constitution it gives — the body you arrived in', 'all twelve houses, so no domain of life (career, marriage, money, family) can be placed', 'the angles, the Midheaven and the career-point with them', 'sect, and with it the chart’s named helper and sharpest tooth', 'the almuten of the whole chart, which is reckoned from the angles', 'every prediction that walks the houses — directed Ascendant and Midheaven, the profected year'];
+    var open = ['both lights and every planet judged by sign — their dignity, their nature, their dispositors', 'the aspects between the planets, judged pair by pair', 'reception between them', 'the Moon’s phase and light', 'whichever rare conditions do not need a house — combustion, retrogradation, out-of-bounds'];
+    return {
+      applies: true,
+      doctrine: 'You gave a date but not a time, so this reading holds to what the tradition actually allows without an hour — and it will not invent a rising to fill the gap. The Ascendant, the houses, the angles and sect all need the minute of birth; a guessed rising would be a guessed life, and that is worse than an honest silence.',
+      lights: lights, states: states, aspects: asps, open: open, closed: closed,
+      closedLine: 'Closed until you set even a rough hour: ' + closed.join('; ') + '.',
+      openLine: 'Open now, and fully judged: ' + open.join('; ') + '.',
+      src: 'the Hellenistic rule that houses and the Ascendant require the hour (Ptolemy, Tetrabiblos III); Lilly on judging without a certain time'
+    };
+  }
+  // ===== PHASE 16 — SIGNIFICATOR / PROMITTOR DOCTRINE (Morin, Astrologia Gallica XXII) =====
+  // A direction is a significator (the moving point, carrying its own DOMAIN) meeting a
+  // promittor (a natal point in its FULL determination). "Directed A to natal B" is not
+  // "A does something to B" — it is A's domain arriving at what B IS in this chart, judged
+  // by B's state and their reception.
+  var DIRECTED_DOMAIN16 = {
+    asc: { short: 'the life itself', full: 'the moving edge of the life — the body, the vitality, the advancing years' },
+    mc: { short: 'the career and the name', full: 'the moving edge of the career and the public name — honour, office and the aim' },
+    sun: { short: 'the vital will', full: 'the directed vital light — vitality, honour and the father' },
+    moon: { short: 'the felt life', full: 'the directed Moon — the felt life, the body’s tides and the mother' },
+    mercury: { short: 'the mind and its dealings', full: 'directed Mercury — the mind, the word and the daily commerce, advancing' },
+    venus: { short: 'love and union', full: 'directed Venus — love, union, pleasure and worth, advancing' },
+    mars: { short: 'drive and contest', full: 'directed Mars — drive, the cut and the contest, advancing' },
+    jupiter: { short: 'increase and fortune', full: 'directed Jupiter — increase, faith and fortune, advancing' },
+    saturn: { short: 'limit and time', full: 'directed Saturn — time, limit and loss, advancing' },
+    uranus: { short: 'the sudden turn', full: 'directed Uranus (a modern point) — rupture and the break for freedom, advancing' },
+    neptune: { short: 'the dissolving ideal', full: 'directed Neptune (a modern point) — longing and the softening of edges, advancing' },
+    pluto: { short: 'buried power', full: 'directed Pluto (a modern point) — compulsion and irreversible change, advancing' }
+  };
+  function promittorDomain16(c, b, np) {
+    if (np === 'asc') return { isPoint: true, name: 'Ascendant', short: 'the life and body', matter: 'the life and the body itself', det: null };
+    if (np === 'mc') return { isPoint: true, name: 'Midheaven', short: 'the career and honour', matter: 'the career, honour and public name', det: null };
+    var D = determination(c, b, np); if (!D) return null;
+    return { isPoint: false, name: nameFor(np), short: (D.natural && D.natural.karakas ? D.natural.karakas[0] : nameFor(np)), matter: D.analogy && D.analogy.speaksFirst ? D.analogy.speaksFirst.matter : (D.natural ? D.natural.karakas[0] : nameFor(np)), det: D };
+  }
+  function judgeDirection(c, b, E) {
+    if (!E) return null;
+    var dd = DIRECTED_DOMAIN16[E.dp] || { short: nameFor(E.dp), full: 'directed ' + nameFor(E.dp) };
+    var pm = promittorDomain16(c, b, E.np); if (!pm) return null;
+    var when = 'Around ' + Math.round(E.age) + ' (' + E.year + ')', ageHalf = Math.round(E.age * 2) / 2;
+    var hard = (E.aspKey === 'square' || E.aspKey === 'opposition'), conj = (E.aspKey === 'conjunction'), soft = (E.aspKey === 'trine' || E.aspKey === 'sextile');
+    var pipe = conj ? 'comes to the very body of' : hard ? (E.aspKey === 'square' ? 'squares' : 'opposes') : (E.aspKey === 'trine' ? 'trines' : 'sextiles');
+    var whatB;
+    if (pm.isPoint) whatB = 'Your natal ' + pm.name + ' is ' + pm.matter + '.';
+    else {
+      var D = pm.det, capK = c.ascBody ? TRAD_RULER[c.ascBody.sign] : null, isCaptain = (D.key === capK);
+      var sf16 = D.analogy && D.analogy.speaksFirst;
+      whatB = 'In your chart ' + nameFor(D.key) + ' is no abstraction: ' + (isCaptain ? nameFor(D.key) + ' is the captain, lord of your Ascendant, and ' : '') + (D.house ? 'keeps its court in your ' + ordinal(D.house) + ' house — ' + HOUSE_AREA9[D.house - 1] + ' — ' : '') + stateAdj9(D.essential.label) + ' in ' + D.signName + (sf16 ? ', speaking first of ' + sf16.matter : (D.natural ? ', signifying ' + D.natural.karakas[0] : '')) + '.';
+    }
+    var targetNat = pm.det ? pm.det.nature.verdict : 'point', targetScore = (pm.det && pm.det.condition) ? pm.det.condition.total : null;
+    var rec = (pm.det && !pm.isPoint && c.planets[E.dp]) ? receptionOf(c, E.dp, E.np) : null;
+    var verdict;
+    if (pm.isPoint) verdict = (hard ? 'a hard direction to an angle, marking a turning under strain, where something in the standing is renegotiated rather than handed over' : conj ? 'the two edges meeting body to body — a year the life and its ' + pm.short + ' move as one instrument' : 'an easy direction to an angle, a door opening with the grain rather than against it');
+    else if (hard && targetNat === 'benefic' && targetScore != null && targetScore >= 3) verdict = 'a ' + E.aspKey + ' is work — nothing flows straight — but a dignified benefic pays what it owes: expect the friction over ' + pm.matter + ' to end in a settlement, not a wound';
+    else if (hard && targetNat === 'malefic' && targetScore != null && targetScore < 0) verdict = 'a ' + E.aspKey + ' to an afflicted malefic is the hard kind: the year exacts a real cost through ' + pm.matter + ' — brace, do not overreach, and let it pass';
+    else if (hard && targetNat === 'malefic') verdict = 'a ' + E.aspKey + ' to a malefic, even a dignified one, brings its matter to a head: ' + pm.matter + ' presses, and the work is to meet it deliberately rather than be caught by it';
+    else if (soft && targetNat === 'benefic') verdict = 'an easy channel to a benefic in good standing: help around ' + pm.matter + ' arrives more or less unasked — a year to accept what is offered';
+    else if (soft && targetNat === 'malefic') verdict = 'an easy road to a malefic still runs a malefic’s water: ' + pm.matter + ' comes smoothly but carries ' + (E.np === 'saturn' ? 'Saturn’s weight' : E.np === 'mars' ? 'Mars’s heat' : 'its edge') + ' — use the ease on purpose, or it uses you';
+    else if (conj) verdict = 'the directed point comes to the very body of ' + nameFor(E.np) + ': for this stretch, ' + dd.short + ' and ' + pm.short + ' are one instrument, for better and worse';
+    else verdict = 'the manner is a ' + E.aspKey + ', the matter is ' + pm.matter + ', and ' + (targetScore != null && targetScore >= 0 ? 'the promittor is sound enough to make it count' : 'the promittor’s weak state keeps the effect modest');
+    if (rec) verdict += ' — and there is reception between them: ' + (rec.kind === 'mutual' ? 'they hold each other’s keys, which eases the whole passage' : nameFor(rec.host) + ' receives the mover as a guest, giving the year somewhere to land');
+    var line = when + ', ' + dd.full + ' ' + pipe + ' your natal ' + nameFor(E.np) + '. ' + whatB + ' So this is the year ' + dd.short + ' meets ' + pm.short + ': ' + verdict + '. (Morin, Astrologia Gallica XXII: a direction is the significator’s domain arriving at the promittor in its full determination, judged by its state.)';
+    return {
+      dp: E.dp, np: E.np, aspKey: E.aspKey, age: E.age, year: E.year, ageHalf: ageHalf,
+      captain: (!pm.isPoint && c.ascBody && pm.det.key === TRAD_RULER[c.ascBody.sign]), promittorState: targetScore, line: line,
+      receipt: ('directed ' + nameFor(E.dp) + ' (1°/yr) ' + E.aspKey + ' natal ' + nameFor(E.np) + ' · age ' + E.age.toFixed(1) + ' · ' + E.year + (targetScore != null ? ' · promittor lilly ' + (targetScore >= 0 ? '+' : '') + targetScore : '')).toUpperCase(),
+      src: 'Morin, Astrologia Gallica XXII (1661): significator and promittor'
+    };
+  }
+  function judgeDirections(c, b) {
+    var SD = symbolicDirections(c, b); if (!SD) return null;
+    return { ageNow: SD.ageNow, past: SD.past.map(function (E) { return judgeDirection(c, b, E); }).filter(Boolean), next: SD.next.map(function (E) { return judgeDirection(c, b, E); }).filter(Boolean) };
+  }
   // ===== the full solar-return chart: the year's own horoscope, cast for the exact return instant at the birthplace =====
   function solarReturnChart(c, b, sum) {
     if (!sum) return null;
@@ -4988,7 +5079,7 @@ var APP = (function () {
     solarReturnChart: solarReturnChart, upcomingEclipses: upcomingEclipses, bestDaysFor: bestDaysFor, electIntents: electIntents, oddPredictions: oddPredictions, composeProfectionYear: composeProfectionYear, signHouseWeave: signHouseWeave,
     progressedTimeline: progressedTimeline, retroSeasons: retroSeasons,
     exportBook: exportBook, exportBackup: exportBackup, importBackup: importBackup, composeDailyEssay: composeDailyEssay, chartFP: chartFP, weaveNote: weaveNote, termOf: termOf, anA: anA, composeColleague: composeColleague, exportColleague: exportColleague,
-    microFor: microFor, tellsFor: tellsFor, weaveTransit: weaveTransit, traditionalRead: traditionalRead, determination: determination, determinationSheet: determinationSheet, derivedHouseOf: derivedHouseOf, derivedPhrase: derivedPhrase, conditionVerdict: conditionVerdict, sectProfile: sectProfile, judgeAscendant: judgeAscendant, judgeCaptain: judgeCaptain, rulershipWeb: rulershipWeb, zodiacMatrix: zodiacMatrix, cuspAlmuten: cuspAlmuten, judgeHouse: judgeHouse, judgeHouses: judgeHouses, judgeAspect: judgeAspect, judgeAspects: judgeAspects, fullReception: fullReception, receptionOnAspect: receptionOnAspect, receptionsInChart: receptionsInChart, testimonyAuthority: testimonyAuthority, contest: contest, rulingVoice: rulingVoice, contradictions: contradictions, natalSynthesis: natalSynthesis, housesThatMatter: housesThatMatter, symbolicDirections: symbolicDirections, directionLine: directionLine, directionReceipt: directionReceipt, aspectNature: aspectNature, transitCycles: transitCycles, weaveCycle: weaveCycle, weaveWeek: weaveWeek, receptionOf: receptionOf, chartSignature: chartSignature, lifeQuirks: lifeQuirks, interests: interests, emergingPull: emergingPull, spookyReads: spookyReads, combinationRead: combinationRead, sunMoonCharacter: sunMoonCharacter, guideCards: guideCards, ancientSky: ancientSky, addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, returnsAlmanac: returnsAlmanac, progressedLunation: progressedLunation, planetaryHours: planetaryHours, moonVoidWindow: moonVoidWindow, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
+    microFor: microFor, tellsFor: tellsFor, weaveTransit: weaveTransit, traditionalRead: traditionalRead, determination: determination, determinationSheet: determinationSheet, derivedHouseOf: derivedHouseOf, derivedPhrase: derivedPhrase, conditionVerdict: conditionVerdict, sectProfile: sectProfile, judgeAscendant: judgeAscendant, judgeCaptain: judgeCaptain, rulershipWeb: rulershipWeb, zodiacMatrix: zodiacMatrix, cuspAlmuten: cuspAlmuten, judgeHouse: judgeHouse, judgeHouses: judgeHouses, judgeAspect: judgeAspect, judgeAspects: judgeAspects, fullReception: fullReception, receptionOnAspect: receptionOnAspect, receptionsInChart: receptionsInChart, testimonyAuthority: testimonyAuthority, contest: contest, rulingVoice: rulingVoice, contradictions: contradictions, natalSynthesis: natalSynthesis, housesThatMatter: housesThatMatter, noBirthTimeReading: noBirthTimeReading, judgeDirection: judgeDirection, judgeDirections: judgeDirections, symbolicDirections: symbolicDirections, directionLine: directionLine, directionReceipt: directionReceipt, aspectNature: aspectNature, transitCycles: transitCycles, weaveCycle: weaveCycle, weaveWeek: weaveWeek, receptionOf: receptionOf, chartSignature: chartSignature, lifeQuirks: lifeQuirks, interests: interests, emergingPull: emergingPull, spookyReads: spookyReads, combinationRead: combinationRead, sunMoonCharacter: sunMoonCharacter, guideCards: guideCards, ancientSky: ancientSky, addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, returnsAlmanac: returnsAlmanac, progressedLunation: progressedLunation, planetaryHours: planetaryHours, moonVoidWindow: moonVoidWindow, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
     saveCurrentChart: saveCurrentChart, deleteSavedChart: deleteSavedChart, activateSavedChart: activateSavedChart, activeChartKey: activeChartKey, chartKey: chartKey, famousMatches: famousMatches, lifeTransits: lifeTransits, upcomingTransits: upcomingTransits, transitMotion: transitMotion, compositeChart: compositeChart,
     nameFor: nameFor, glyphFor: glyphFor, pad: pad,
     domElement: domElement, lowElement: lowElement, domMod: domMod, tzOffsetHours: tzOffsetHours
