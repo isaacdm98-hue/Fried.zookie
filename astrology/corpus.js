@@ -2100,3 +2100,45 @@ DATA.NAKSHATRA = [
   { n: 'Uttara Bhadrapada', m: 'the deep water — wisdom, calm, and the still serpent at the bottom of things' },
   { n: 'Revati', m: 'the wealthy — nourishing, kind, and a safe-keeper who eases every ending' }
 ];
+
+
+// ===== five more spreads: the tarot room keeps growing =====
+DATA.SPREADS.push(
+  { name: 'Relationship Mirror', cards: 7, use: 'Two people, honestly: how each stands, how each sees the other, and where it leads.', positions: [
+    { n: 1, t: 'You', m: 'Where you truly stand in this.', x: 0.22, y: 0.32, rot: 0 },
+    { n: 2, t: 'Them', m: 'Where they truly stand in this.', x: 0.78, y: 0.32, rot: 0 },
+    { n: 3, t: 'How you see them', m: 'Your picture of them - accurate or not.', x: 0.22, y: 0.66, rot: 0 },
+    { n: 4, t: 'How they see you', m: 'Their picture of you - accurate or not.', x: 0.78, y: 0.66, rot: 0 },
+    { n: 5, t: 'The bridge', m: 'What genuinely connects you.', x: 0.5, y: 0.49, rot: 0 },
+    { n: 6, t: 'The challenge', m: 'What the bond must digest to grow.', x: 0.5, y: 0.84, rot: 0 },
+    { n: 7, t: 'Where it leads', m: 'The direction this is actually moving.', x: 0.5, y: 0.13, rot: 0 }
+  ] },
+  { name: 'The Crossroads', cards: 5, use: 'A real decision with two roads. Lay it when you keep flip-flopping.', positions: [
+    { n: 1, t: 'Where you stand', m: 'The ground under your feet right now.', x: 0.5, y: 0.8, rot: 0 },
+    { n: 2, t: 'The first road', m: 'What choosing it opens and costs.', x: 0.2, y: 0.42, rot: 0 },
+    { n: 3, t: 'The second road', m: 'What choosing it opens and costs.', x: 0.8, y: 0.42, rot: 0 },
+    { n: 4, t: 'What you are not seeing', m: 'The factor your deliberating keeps skipping.', x: 0.5, y: 0.47, rot: 90 },
+    { n: 5, t: 'The counsel', m: 'The one instruction to carry into the choice.', x: 0.5, y: 0.12, rot: 0 }
+  ] },
+  { name: 'Mind, Body, Spirit', cards: 3, use: 'A quick reckoning of the whole self - where each level stands today.', positions: [
+    { n: 1, t: 'Mind', m: 'The thought pattern running the show.', x: 0.18, y: 0.5, rot: 0 },
+    { n: 2, t: 'Body', m: 'What the body is carrying or asking for.', x: 0.5, y: 0.5, rot: 0 },
+    { n: 3, t: 'Spirit', m: 'What is quietly feeding - or starving - underneath.', x: 0.82, y: 0.5, rot: 0 }
+  ] },
+  { name: 'The Week Ahead', cards: 7, use: 'Seven cards, seven days - a rhythm for the week, laid on Sunday night.', positions: [
+    { n: 1, t: 'Monday', m: 'The keynote of the day.', x: 0.11, y: 0.62, rot: 0 },
+    { n: 2, t: 'Tuesday', m: 'The keynote of the day.', x: 0.24, y: 0.47, rot: 0 },
+    { n: 3, t: 'Wednesday', m: 'The keynote of the day.', x: 0.37, y: 0.36, rot: 0 },
+    { n: 4, t: 'Thursday', m: 'The hinge of the week.', x: 0.5, y: 0.31, rot: 0 },
+    { n: 5, t: 'Friday', m: 'The keynote of the day.', x: 0.63, y: 0.36, rot: 0 },
+    { n: 6, t: 'Saturday', m: 'The keynote of the day.', x: 0.76, y: 0.47, rot: 0 },
+    { n: 7, t: 'Sunday', m: 'What the week leaves you with.', x: 0.89, y: 0.62, rot: 0 }
+  ] },
+  { name: 'Shadow Work', cards: 5, use: 'For the part of you that runs the show from offstage. Slow, honest, kind.', positions: [
+    { n: 1, t: 'The mask', m: 'What you show instead.', x: 0.5, y: 0.16, rot: 0 },
+    { n: 2, t: 'The shadow', m: 'The part kept off the record.', x: 0.5, y: 0.78, rot: 0 },
+    { n: 3, t: 'What feeds it', m: 'The habit or fear that keeps it strong.', x: 0.2, y: 0.5, rot: 0 },
+    { n: 4, t: 'What it protects', m: 'The soft thing underneath the whole arrangement.', x: 0.8, y: 0.5, rot: 0 },
+    { n: 5, t: 'The integration', m: 'How the shadow becomes strength - the work itself.', x: 0.5, y: 0.47, rot: 0 }
+  ] }
+);
