@@ -7040,10 +7040,52 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       // a quiet hint: tap to close
       if (infoA > 0.3) { var hn9 = still ? 1 : 0.55 + 0.45 * Math.sin(nowT() * 0.004); setFont(MONO, 9, INK, p.CENTER, p.BOTTOM, 130 * hn9); p.text('TAP TO CLOSE', W / 2, H - sb - NAVH - 10); }
     }
+    // The first view of a freshly-computed chart has heavy one-time work to do (the day's
+    // transits, the synthesis) — enough to block the main thread for a beat on a phone. So we
+    // don't paint a frozen chart: the chart's own planets breathe as a constellation while that
+    // work is done, spread across a few frames, then the wheel expands out of it.
+    function drawChartForming(c, b) {
+      if (!UI.chartFormT) UI.chartFormT = nowT();
+      var t = nowT(), still = reduced();
+      var cx = sx() + cw() / 2, cy = topY() + Math.min(cw(), 380) * 0.5;
+      var breath = still ? 0.7 : 0.5 + 0.5 * Math.sin(t * 0.0016);
+      var R = Math.min(cw(), 380) * 0.30 * (0.80 + 0.14 * breath);
+      p.noFill(); strokec(INK, 22 + 20 * breath); p.strokeWeight(1); p.ellipse(cx, cy, R * 2, R * 2);
+      var order = DATA.PLANET_ORDER, i, prev = null, asc0 = b.timeKnown ? c.asc : 0;
+      for (i = 0; i < order.length; i++) {
+        var pl = c.planets[order[i]]; if (!pl) continue;
+        var ang = (180 + (pl.lon - asc0)) * Math.PI / 180, rr = R * (0.52 + 0.42 * ((i % 3) / 3));
+        var px = cx + rr * Math.cos(ang) * (0.72 + 0.28 * breath), py = cy - rr * Math.sin(ang) * (0.72 + 0.28 * breath);
+        var col = BODYCOL[order[i]] || INK;
+        p.noStroke(); fillc(col, 34 + 40 * breath); p.ellipse(px, py, 8 + 4 * breath, 8 + 4 * breath);
+        fillc(col, 210); p.ellipse(px, py, 3, 3);
+        if (prev) { strokec(INK, 16 + 14 * breath); p.strokeWeight(0.8); p.line(prev.x, prev.y, px, py); }
+        prev = { x: px, y: py };
+      }
+      p.noStroke(); fillc(ACC, 18 + 20 * breath); p.ellipse(cx, cy, 10 + 8 * breath, 10 + 8 * breath);
+      setFont(MONO, 9, INK, p.CENTER, p.TOP, 90 + 70 * breath); p.text('READING YOUR SKY', cx, cy + R + 26);
+    }
     function drawChart() {
       var c = APP.STATE.chart, b = APP.STATE.birth; if (!c) { UI.screen = 'onboard'; return; }
       if (UI.walk) { drawWalkthrough(c, b); return; }
       if (UI.reel) { drawReel(c, b); return; }
+      // warm the heavy caches behind the breathing constellation, one step per frame, so the
+      // first paint is never a frozen chart. Each step is gated by a short breath so it animates.
+      if (!UI.chartWarm) {
+        drawChartForming(c, b);
+        if (nowT() - (UI.chartFormT || 0) > 80) {
+          var step = UI.warmStep || 0;
+          try {
+            if (step === 0) { walkTr(c); }                                                      // the day's transits (composeTransits)
+            else if (step === 1) { try { if (APP.determination) APP.determination(c, b, 'sun'); } catch (eW0) {} } // populates the condition cache (the ~8 ephemeris solves, once)
+            else if (step === 2) { try { if (APP.natalSynthesis) APP.natalSynthesis(c, b); } catch (eW1) {} }      // the synthesis
+            else if (step === 3) { try { if (b.timeKnown && APP.triggerReading) APP.triggerReading(c, b); } catch (eW2) {} } // the live-wire hook
+          } catch (eWs) {}
+          UI.warmStep = step + 1; UI.chartFormT = nowT();
+          if (UI.warmStep > 3) { UI.chartWarm = true; UI.fxT = nowT(); }             // reveal: the wheel expands in fresh
+        }
+        return;
+      }
       if (UI.pcard) { /* sheet drawn after content, below */ }
       if (UI.story) { drawStory(c, b); return; }
       var x = sx(), w = cw(), ly = 18;
@@ -11156,7 +11198,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       APP.STATE.birth = { name: '', y: d.y, mo: d.mo, d: d.d, hour: d.hour, min: d.min, tz: d.tz || 0, manualTz: !!d.manualTz, iana: iana, lat: lat, lon: lon, place: place, timeKnown: d.timeKnown };
       recompute(); UI.selPlanet = 'sun'; UI.popT = nowT(); UI.popFrom = 22; UI.scroll.chart = 0; UI.screen = 'chart'; hideSearchInput();
     }
-    function recompute() { APP.STATE.chart = APP.compute(APP.STATE.birth, APP.STATE.settings); APP.save(); UI.readCache = null; UI.readSig = null; UI.readTransit = null; UI.forecast = null; UI.promCache = null; UI.arcCache = null; UI.todayCache = null; UI.fmList = null; UI.lifeList = null; UI.calEvents = null; UI.calDay = null; UI.walkTr = null; UI.walkTheme = null; UI.bondCache = null; UI.bondFor = null; UI.plun = null; UI.ringsData = null; UI.ringSel = null; UI.vocW = null; UI.phCache = null; UI.synToneCache = null; UI.dailyEssay = null; UI.cycles = undefined; UI.cycOpen = {}; UI.weekWv = undefined; UI.tradCache = undefined; UI.dirCache = undefined; UI.liveWires = undefined; UI.sectDay = undefined; UI.pcProseFor = null; if (APP.clearPersonCharts) APP.clearPersonCharts(); UI.askAns = ''; UI.quip = null; UI.quipNext = 0; buildField(); }
+    function recompute() { APP.STATE.chart = APP.compute(APP.STATE.birth, APP.STATE.settings); APP.save(); UI.readCache = null; UI.readSig = null; UI.readTransit = null; UI.forecast = null; UI.promCache = null; UI.arcCache = null; UI.todayCache = null; UI.fmList = null; UI.lifeList = null; UI.calEvents = null; UI.calDay = null; UI.walkTr = null; UI.walkTheme = null; UI.bondCache = null; UI.bondFor = null; UI.plun = null; UI.ringsData = null; UI.ringSel = null; UI.vocW = null; UI.phCache = null; UI.synToneCache = null; UI.dailyEssay = null; UI.cycles = undefined; UI.cycOpen = {}; UI.weekWv = undefined; UI.tradCache = undefined; UI.dirCache = undefined; UI.liveWires = undefined; UI.sectDay = undefined; UI.pcProseFor = null; UI.chartWarm = false; UI.warmStep = 0; UI.chartFormT = 0; if (APP.clearPersonCharts) APP.clearPersonCharts(); UI.askAns = ''; UI.quip = null; UI.quipNext = 0; buildField(); }
 
     // ---------- share / export a clean chart card (own untainted canvas; the live one holds remote images) ----------
     // share a daily card (clean offscreen canvas) — moon phase + what's live on your chart today
@@ -11721,6 +11763,9 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     }
     // a slow, graceful cross-fade on screen change — the new screen rises from its own ground colour
     function drawTransition() {
+      // never play the black colour-block wipe during boot — on a cold open it caught mid-sweep
+      // and read as the screen "glitching". Real screen-to-screen navigation still wipes.
+      if (nowT() - (UI.bootT || 0) < 750) return;
       var prog = cl01((nowT() - UI.fxT) / 440); if (prog >= 1) return;
       // bold colour-block wipe: full-height band sweeps across, fully covering at midpoint (the original, loved transition)
       var dirT9 = UI.transDir || 1;
@@ -11845,12 +11890,15 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     // ---------- lifecycle ----------
     p.__setScreen = function (s) { UI.screen = s; }; p.__ui = UI; // test seam (unused in normal play)
     p.setup = function () {
-      measureInsets(); W = p.windowWidth; H = vpH(); var cnv = p.createCanvas(W, H); var el = cnv.elt;
+      // set the pixel density BEFORE creating the canvas, so the drawing buffer is built at the
+      // right resolution from frame one (setting it afterward left the first ~320ms rendering into
+      // a mismatched buffer — the black-edge glitch — until the load-time resize corrected it)
+      measureInsets(); W = p.windowWidth; H = vpH(); p.pixelDensity(Math.min(2, p.displayDensity())); var cnv = p.createCanvas(W, H); var el = cnv.elt;
       el.style.position = 'fixed'; el.style.top = '0'; el.style.left = '0'; el.style.zIndex = '5'; el.style.touchAction = 'none'; el.style.pointerEvents = 'auto'; el.setAttribute('aria-hidden', 'true');
       try { document.documentElement.style.overflow = 'hidden'; document.body.style.overflow = 'hidden'; document.body.style.margin = '0'; document.body.style.touchAction = 'none'; document.body.style.backgroundImage = 'none'; var ap = document.getElementById('app'); if (ap) ap.style.pointerEvents = 'none'; } catch (er) {}
-      p.frameRate(60); p.pixelDensity(Math.min(2, p.displayDensity()));
+      p.frameRate(60);
       bindInput(el);
-      UI.bg = GROUNDS[UI.screen]; UI.prevScreen = UI.screen; UI.fxT = nowT();
+      UI.bg = GROUNDS[UI.screen]; UI.prevScreen = UI.screen; UI.fxT = nowT(); UI.bootT = nowT();
       setBodyBg(UI.bg);
       if (!APP.STATE.chart && APP.STATE.birth) { try { APP.STATE.chart = APP.compute(APP.STATE.birth, APP.STATE.settings); } catch (e) {} }
       buildField();
@@ -11894,9 +11942,12 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     // battery: stop the draw loop entirely while the tab/app is hidden
     try { document.addEventListener('visibilitychange', function () { try { if (document.hidden) p.noLoop(); else { var d9 = new Date(), k9 = d9.getFullYear() * 10000 + (d9.getMonth() + 1) * 100 + d9.getDate(); if (UI.dayKey && UI.dayKey !== k9) { UI.todayCache = null; UI.calEvents = null; UI.walkTr = null; UI.fmList = null; UI.readCache = null; UI.oddPred = undefined; UI.profYear = undefined; UI.rdBeats = undefined; UI.rdI = 0; UI.ancient = undefined; UI.cycles = undefined; UI.cycOpen = {}; UI.weekWv = undefined; UI.tradCache = undefined; UI.dirCache = undefined; UI.liveWires = undefined; UI.sectDay = undefined; } UI.dayKey = k9; p.loop(); } } catch (e2) {} }); } catch (e3) {}
     p.draw = function () {
+      // self-heal any first-frame canvas-size mismatch immediately, rather than waiting for the
+      // load-time resize (this is what left the screen half-painted on a cold open)
+      if (p.width !== W || p.height !== H) { try { W = p.windowWidth; H = vpH(); p.resizeCanvas(W, H); } catch (eRz0) {} }
       // auto-dark-at-night: re-apply the theme when the effective key changes (time or accent)
       var ek = effectiveThemeKey() + '|' + ((APP.STATE.settings && APP.STATE.settings.accent) || 0); if (ek !== UI.appliedThemeKey) { applyTheme(); setBodyBg(GROUNDS[UI.screen] || GROUNDS.chart); }
-      if (UI.screen !== UI.prevScreen) { var wasFirst = !UI.prevScreen; UI.fxT = nowT(); UI.prevScreen = UI.screen; UI.story = null; if (UI.video) closeVideo(); if (UI.screen !== 'chart') { UI.walk = null; UI.pcard = null; UI.reel = null; } if (UI.screen !== 'tarot') UI.tarotRit = null; if (UI.screen !== 'read') { lifeWalkHush(); UI.lifeWalk = null; UI.rings = null; } if (UI.screen !== 'learn') { UI.tvActive = null; if (UI.learnSearch) { UI.learnSearch = false; try { if (UI.searchInput) UI.searchInput.setAttribute('placeholder', 'Search city or country'); } catch (eP4) {} } } setBodyBg(GROUNDS[UI.screen] || GROUNDS.chart); if (!wasFirst) chime(); }
+      if (UI.screen !== UI.prevScreen) { var wasFirst = !UI.prevScreen; UI.fxT = nowT(); UI.prevScreen = UI.screen; UI.story = null; if (UI.video) closeVideo(); if (UI.screen === 'chart' && !UI.walkTr) { UI.chartWarm = false; UI.warmStep = 0; UI.chartFormT = 0; } if (UI.screen !== 'chart') { UI.walk = null; UI.pcard = null; UI.reel = null; } if (UI.screen !== 'tarot') UI.tarotRit = null; if (UI.screen !== 'read') { lifeWalkHush(); UI.lifeWalk = null; UI.rings = null; } if (UI.screen !== 'learn') { UI.tvActive = null; if (UI.learnSearch) { UI.learnSearch = false; try { if (UI.searchInput) UI.searchInput.setAttribute('placeholder', 'Search city or country'); } catch (eP4) {} } } setBodyBg(GROUNDS[UI.screen] || GROUNDS.chart); if (!wasFirst) chime(); }
       try {
         var ckW9 = APP.activeChartKey ? (APP.activeChartKey() + '|' + (APP.STATE.settings ? APP.STATE.settings.house + APP.STATE.settings.zodiac : '')) : '';
         if (UI.ckW !== ckW9) {

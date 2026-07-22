@@ -1,5 +1,19 @@
 # Changelog
 
+## 3.52.0 — 2026-07-22 — the chart forms instead of freezing; the glitch is gone
+- **The chart no longer freezes on open.** The first view of a fresh chart has
+  real one-time work to do — the day's transits, the synthesis, the condition
+  scan (each several ephemeris solves) — enough to block the main thread for the
+  better part of a second on a phone. Now that work is done behind a **breathing
+  constellation** of your own planets ("reading your sky"), spread across a few
+  frames, and the wheel expands out of it when it's ready. No frozen screen.
+- **Fixed the first-screen glitch (black edge / half-painted open).** Two causes:
+  the pixel density was set *after* the canvas was created (so the first ~300ms
+  rendered into a mismatched buffer on high-DPI phones), and the black
+  colour-block screen-wipe was firing during boot and getting caught mid-sweep.
+  Density is now set before the canvas exists, and the wipe is suppressed during
+  the opening — real screen-to-screen navigation still wipes.
+
 ## 3.51.0 — 2026-07-22 — tap a placement, the chart zooms into it
 - **The placement zoom.** Tapping any planet on the chart now zooms the whole
   wheel down into that one circle: the body fills the centre, its sign rides the
