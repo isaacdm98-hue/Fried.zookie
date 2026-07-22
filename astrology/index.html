@@ -4157,6 +4157,45 @@ var APP = (function () {
       note: nak ? 'As a SEPARATE Jyotisha reading (not blended): your Moon’s nakshatra is ' + nak.name + ', pada ' + nak.pada + ' — ' + nak.gloss + (nak.dashaLord ? '; current Vimshottari lord ' + nameFor(nak.dashaLord) : '') + '.' : null,
       src: 'the honesty that tropical vs sidereal is a zodiac choice, and that Jyotisha is a distinct system — never blended with a Western judgment. Sonia: “Vedic is different. It’s not that simple.”' };
   }
+  // ===== PHASE 36 — THE VOICE BOOK, enforced: scan the live composers for banned register =====
+  // The house style is in plans/voice-book.md. Here it is made a guard: voiceCheck runs the main
+  // judged composers and returns any banned term, so the fortune-cookie register cannot creep back.
+  var VOICE_BANNED = [
+    { re: /\benergy\b/i, why: 'say what the planet does — presses, favours, restricts, burns, grows' },
+    { re: /\bthe universe\b/i, why: 'no appeals to a benevolent sky' },
+    { re: /\bcosmic\b/i, why: 'unearned mysticism' },
+    { re: /\bvibe(s|d)?\b/i, why: 'unquantifiable mood-word' },
+    { re: /\bmanifest(ation|ing)?\b/i, why: 'wellness import with no traditional content' },
+    { re: /\bsoulmate|twin flame\b/i, why: 'romance-industrial vocabulary' },
+    { re: /\bdivine timing\b/i, why: 'the chart is a map, not a message' },
+    { re: /\bhigh(er)? vibration\b/i, why: 'unquantifiable' },
+    { re: /\byour journey\b/i, why: 'self-help filler' },
+    { re: /the Sun (is|=|represents) your personality/i, why: 'pop-equation red flag' },
+    { re: /the Moon (is|=) how you (love|feel)/i, why: 'pop-equation red flag' },
+    { re: /Mercury (is|=) how you think/i, why: 'pop-equation red flag' }
+  ];
+  function voiceCheck(c, b) {
+    var texts = [];
+    function grab(fn) { try { var r = fn(); if (r) texts.push(r); } catch (e) {} }
+    grab(function () { return composeCore(c).join(' \n '); });
+    grab(function () { return natalSynthesis(c, b).movements.map(function (m) { return m.text; }).join(' \n '); });
+    grab(function () { return judgeHouses(c, b).houses.map(function (h) { return h.line; }).join(' \n '); });
+    grab(function () { return judgeAspects(c, b).map(function (a) { return a.line; }).join(' \n '); });
+    grab(function () { var t = triggerReading(c, b); return t ? t.doctrine + ' ' + t.loud.map(function (l) { return l.line; }).join(' \n ') : ''; });
+    grab(function () { var d = judgeDirections(c, b); return d ? d.next.concat(d.past).map(function (x) { return x.line; }).join(' \n ') : ''; });
+    grab(function () { return judgeCycles(c, b).cycles.map(function (cy) { return cy.line; }).join(' \n '); });
+    var all = texts.join(' \n '), hits = [], i;
+    for (i = 0; i < VOICE_BANNED.length; i++) { var m = all.match(VOICE_BANNED[i].re); if (m) hits.push({ term: m[0], why: VOICE_BANNED[i].why }); }
+    return { clean: hits.length === 0, hits: hits, chars: all.length, src: 'plans/voice-book.md' };
+  }
+  // ===== PHASE 37 — THE SOURCE REGISTRY: the doctrine's citations, machine-readable =====
+  function sourceRegistry() {
+    var S = (DATA && DATA.SOURCES) || {}, out = [], k;
+    for (k in S) if (S.hasOwnProperty(k)) out.push({ key: k, author: S[k].author, work: S[k].work, when: S[k].when, publicDomain: !!S[k].pd, on: S[k].on });
+    return out;
+  }
+  // the human citation for a registry key, e.g. citeSource('lilly') → "William Lilly, Christian Astrology (1647)"
+  function citeSource(key) { var s = DATA && DATA.SOURCES && DATA.SOURCES[key]; return s ? (s.author + ', ' + s.work + ' (' + s.when + ')') : key; }
   // ===== the full solar-return chart: the year's own horoscope, cast for the exact return instant at the birthplace =====
   function solarReturnChart(c, b, sum) {
     if (!sum) return null;
@@ -5460,7 +5499,7 @@ var APP = (function () {
     solarReturnChart: solarReturnChart, upcomingEclipses: upcomingEclipses, bestDaysFor: bestDaysFor, electIntents: electIntents, oddPredictions: oddPredictions, composeProfectionYear: composeProfectionYear, signHouseWeave: signHouseWeave,
     progressedTimeline: progressedTimeline, retroSeasons: retroSeasons,
     exportBook: exportBook, exportBackup: exportBackup, importBackup: importBackup, composeDailyEssay: composeDailyEssay, chartFP: chartFP, weaveNote: weaveNote, termOf: termOf, anA: anA, composeColleague: composeColleague, exportColleague: exportColleague,
-    microFor: microFor, tellsFor: tellsFor, weaveTransit: weaveTransit, traditionalRead: traditionalRead, determination: determination, determinationSheet: determinationSheet, derivedHouseOf: derivedHouseOf, derivedPhrase: derivedPhrase, conditionVerdict: conditionVerdict, sectProfile: sectProfile, judgeAscendant: judgeAscendant, judgeCaptain: judgeCaptain, rulershipWeb: rulershipWeb, zodiacMatrix: zodiacMatrix, cuspAlmuten: cuspAlmuten, judgeHouse: judgeHouse, judgeHouses: judgeHouses, judgeAspect: judgeAspect, judgeAspects: judgeAspects, fullReception: fullReception, receptionOnAspect: receptionOnAspect, receptionsInChart: receptionsInChart, testimonyAuthority: testimonyAuthority, contest: contest, rulingVoice: rulingVoice, contradictions: contradictions, natalSynthesis: natalSynthesis, housesThatMatter: housesThatMatter, noBirthTimeReading: noBirthTimeReading, judgeDirection: judgeDirection, judgeDirections: judgeDirections, directedAscendant: directedAscendant, directedSignificators: directedSignificators, significatorFor: significatorFor, directedChapter18: directedChapter18, boundsWalk: boundsWalk, lordOfYear: lordOfYear, profectionYear: profectionYear, triggerReading: triggerReading, liveWires21: liveWires21, judgeCycle: judgeCycle, judgeCycles: judgeCycles, judgeReturn: judgeReturn, eclipseTimers: eclipseTimers, glanceJudged: glanceJudged, weekJudged: weekJudged, lots: lots, starsJudged: starsJudged, hiddenPartnerships: hiddenPartnerships, patternsAsTestimony: patternsAsTestimony, vedicWall: vedicWall, bondSpine35: bondSpine35, bondOverlay35: bondOverlay35, symbolicDirections: symbolicDirections, directionLine: directionLine, directionReceipt: directionReceipt, aspectNature: aspectNature, transitCycles: transitCycles, weaveCycle: weaveCycle, weaveWeek: weaveWeek, receptionOf: receptionOf, chartSignature: chartSignature, lifeQuirks: lifeQuirks, interests: interests, emergingPull: emergingPull, spookyReads: spookyReads, combinationRead: combinationRead, sunMoonCharacter: sunMoonCharacter, guideCards: guideCards, ancientSky: ancientSky, addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, returnsAlmanac: returnsAlmanac, progressedLunation: progressedLunation, planetaryHours: planetaryHours, moonVoidWindow: moonVoidWindow, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
+    microFor: microFor, tellsFor: tellsFor, weaveTransit: weaveTransit, traditionalRead: traditionalRead, determination: determination, determinationSheet: determinationSheet, derivedHouseOf: derivedHouseOf, derivedPhrase: derivedPhrase, conditionVerdict: conditionVerdict, sectProfile: sectProfile, judgeAscendant: judgeAscendant, judgeCaptain: judgeCaptain, rulershipWeb: rulershipWeb, zodiacMatrix: zodiacMatrix, cuspAlmuten: cuspAlmuten, judgeHouse: judgeHouse, judgeHouses: judgeHouses, judgeAspect: judgeAspect, judgeAspects: judgeAspects, fullReception: fullReception, receptionOnAspect: receptionOnAspect, receptionsInChart: receptionsInChart, testimonyAuthority: testimonyAuthority, contest: contest, rulingVoice: rulingVoice, contradictions: contradictions, natalSynthesis: natalSynthesis, housesThatMatter: housesThatMatter, noBirthTimeReading: noBirthTimeReading, judgeDirection: judgeDirection, judgeDirections: judgeDirections, directedAscendant: directedAscendant, directedSignificators: directedSignificators, significatorFor: significatorFor, directedChapter18: directedChapter18, boundsWalk: boundsWalk, lordOfYear: lordOfYear, profectionYear: profectionYear, triggerReading: triggerReading, liveWires21: liveWires21, judgeCycle: judgeCycle, judgeCycles: judgeCycles, judgeReturn: judgeReturn, eclipseTimers: eclipseTimers, glanceJudged: glanceJudged, weekJudged: weekJudged, lots: lots, starsJudged: starsJudged, hiddenPartnerships: hiddenPartnerships, patternsAsTestimony: patternsAsTestimony, vedicWall: vedicWall, bondSpine35: bondSpine35, bondOverlay35: bondOverlay35, voiceCheck: voiceCheck, sourceRegistry: sourceRegistry, citeSource: citeSource, symbolicDirections: symbolicDirections, directionLine: directionLine, directionReceipt: directionReceipt, aspectNature: aspectNature, transitCycles: transitCycles, weaveCycle: weaveCycle, weaveWeek: weaveWeek, receptionOf: receptionOf, chartSignature: chartSignature, lifeQuirks: lifeQuirks, interests: interests, emergingPull: emergingPull, spookyReads: spookyReads, combinationRead: combinationRead, sunMoonCharacter: sunMoonCharacter, guideCards: guideCards, ancientSky: ancientSky, addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, returnsAlmanac: returnsAlmanac, progressedLunation: progressedLunation, planetaryHours: planetaryHours, moonVoidWindow: moonVoidWindow, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
     saveCurrentChart: saveCurrentChart, deleteSavedChart: deleteSavedChart, activateSavedChart: activateSavedChart, activeChartKey: activeChartKey, chartKey: chartKey, famousMatches: famousMatches, lifeTransits: lifeTransits, upcomingTransits: upcomingTransits, transitMotion: transitMotion, compositeChart: compositeChart,
     nameFor: nameFor, glyphFor: glyphFor, pad: pad,
     domElement: domElement, lowElement: lowElement, domMod: domMod, tzOffsetHours: tzOffsetHours

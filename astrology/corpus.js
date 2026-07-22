@@ -695,6 +695,27 @@ var DATA = (function () {
   // Maternus (Mathesis II, 4th c.), and the school's tables. In this school the FATHER is
   // read from the 4th and the MOTHER from the 10th. The grim houses (6th, 8th, 12th) are
   // flagged: benefics stand there in counter-analogy, as shields.
+  // ===== PHASE 37 — THE SOURCE REGISTRY: every doctrinal element grounded in a named work =====
+  // The transparency wedge completed: not just the math shown, but the doctrine. Each entry is
+  // the authority behind a part of the engine; receipts can cite them, and voiceCheck verifies
+  // that every composer's src line names a registered author.
+  var SOURCES = {
+    ptolemy: { author: 'Claudius Ptolemy', work: 'Tetrabiblos', when: '2nd c.', pd: true, on: 'aspect doctrine, planetary natures, the dignities frame' },
+    dorotheus: { author: 'Dorotheus of Sidon', work: 'Carmen Astrologicum', when: '1st c.', pd: true, on: 'triplicity rulers by sect, timing' },
+    firmicus: { author: 'Firmicus Maternus', work: 'Mathesis', when: '4th c.', pd: true, on: 'house delineations, antiscia' },
+    mashallah: { author: 'Māshā’allāh ibn Atharī', work: 'On Nativities / On Reception', when: '8th c.', pd: true, on: 'reception doctrine, the solar-return method' },
+    abumashar: { author: 'Abū Ma’shar', work: 'On the Revolutions of the Years of Nativities', when: '9th c.', pd: true, on: 'distribution through the bounds, the Persian returns' },
+    albiruni: { author: 'Al-Bīrūnī', work: 'The Book of Instruction in the Elements of the Art of Astrology', when: '1029', pd: true, on: 'significations and terminology' },
+    ibnezra: { author: 'Abraham Ibn Ezra', work: 'The Beginning of Wisdom', when: '12th c.', pd: true, on: 'the characters of the dignities, the almuten' },
+    bonatti: { author: 'Guido Bonatti', work: 'Liber Astronomiae', when: '13th c.', pd: true, on: 'the judgment hierarchy — ordering testimony by role, angularity, state and sect' },
+    morin: { author: 'Jean-Baptiste Morin de Villefranche', work: 'Astrologia Gallica', when: '1661', pd: true, on: 'Book 21 (determinations) — the spine of the rebuild; Book 22 (directions)' },
+    lilly: { author: 'William Lilly', work: 'Christian Astrology', when: '1647', pd: true, on: 'significations, the table of fortitudes and debilities, house method' },
+    robson: { author: 'Vivian E. Robson', work: 'The Fixed Stars and Constellations in Astrology', when: '1923', pd: true, on: 'the fixed-star catalogue (register rewritten to condition/behaviour)' },
+    paulus: { author: 'Paulus Alexandrinus', work: 'Introductory Matters', when: '378', pd: true, on: 'the Lots, the sect doctrine' },
+    valens: { author: 'Vettius Valens', work: 'Anthology', when: '2nd c.', pd: true, on: 'the Lots, zodiacal releasing' },
+    jones: { author: 'Marc Edmund Jones', work: 'The Guide to Horoscope Interpretation', when: '1941', pd: false, on: 'chart-shape patterns (summarised in our own words)' },
+    school: { author: 'the London-lineage traditional method', work: 'per Sonia’s course (Jordan Marion / Denis Labouré tradition)', when: 'modern', pd: false, on: 'the method: analogy as the selection key, state vs circumstance, the 12-step judgment — distilled in our own words, never copied' }
+  };
   var HOUSE_SIG = [
     { matters: 'The life itself: the body you arrived in, its vitality and temperament, your bearing and appearance, and the way every undertaking begins. Whatever touches this house touches the person, not one department of them.', persons: 'The native — you; and in any question, the one who asks it.', body: 'the head and the face', grim: false },
     { matters: 'What you own and can move: money, goods, resources and the security they buy; gain and loss; the close family that shares your table; the voice, and what speaking earns.', persons: 'Bankers, stewards and keepers of what is yours; the near family around the household purse.', body: 'the neck and the throat', grim: false },
@@ -831,7 +852,7 @@ var DATA = (function () {
   return {
     PLANETS: PLANETS, PLANET_ORDER: PLANET_ORDER, SIGNS: SIGNS, TRADITION: TRADITION,
     PLANET_TRAD: PLANET_TRAD, HOUSE_TRAD: HOUSE_TRAD, SIG: SIG,
-    HOUSE_SIG: HOUSE_SIG, HOUSE_SIG_SRC: HOUSE_SIG_SRC, ANALOGY_MATRIX: ANALOGY_MATRIX,
+    HOUSE_SIG: HOUSE_SIG, HOUSE_SIG_SRC: HOUSE_SIG_SRC, ANALOGY_MATRIX: ANALOGY_MATRIX, SOURCES: SOURCES,
     SUN_IN_SIGN: SUN_IN_SIGN, MOON_IN_SIGN: MOON_IN_SIGN, RISING_IN_SIGN: RISING_IN_SIGN, PLANET_SIGN_TEXT: PLANET_SIGN_TEXT,
     HOUSES: HOUSES, ASPECTS: ASPECTS, MINOR_ASPECTS: MINOR_ASPECTS, ELEMENTS: ELEMENTS, MODALITIES: MODALITIES,
     TAROT: TAROT, SUIT_KW: SUIT_KW, SPREADS: SPREADS, CITIES: CITIES
