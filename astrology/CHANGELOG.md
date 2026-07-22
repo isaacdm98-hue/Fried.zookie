@@ -1,5 +1,19 @@
 # Changelog
 
+## 3.51.0 — 2026-07-22 — tap a placement, the chart zooms into it
+- **The placement zoom.** Tapping any planet on the chart now zooms the whole
+  wheel down into that one circle: the body fills the centre, its sign rides the
+  crown, and its judgment is arranged *in and around* the circle — captain,
+  house, essential state, what it rules — with the full determination reading and
+  receipt beneath. One tap anywhere closes it; drag the text to read on. **The old
+  pop-up sheet is gone**, along with its code.
+- **The opening is a title card.** No seasons, no runner — a night sky, the
+  zodiac gathering into a ring, "Aqau Pluto · Astrology", one tap to begin.
+- **Fixed the chart-screen freeze.** `chartConditions()` (out-of-bounds and
+  station detection) ran ~8 full ephemeris solves and was called by
+  `determination()` on every frame the reading preview drew — the on-device
+  freeze. It is now cached on the chart and cleared only when the chart changes.
+
 ## 3.50.1 — 2026-07-22 — a four-second opening, and a smoother chart
 - **The opening is now four seconds.** The run through the four seasons of sky
   is compressed to a fast time-lapse — one second a season — so the *Aqau Pluto*

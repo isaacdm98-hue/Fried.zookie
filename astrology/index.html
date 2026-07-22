@@ -6239,6 +6239,8 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         var it0 = { key: key, x: ax(curLon, curR), y: ay(curLon, curR), base: base, beam: beam, rev: prv, lon: pl.lon }; pos.push(it0); posMap[key] = it0;
         if (prv < 0.999) { strokec(INK, 45 * (1 - prv)); p.strokeWeight(0.8); p.line(ax(curLon + 14 * (1 - prvE), curR), ay(curLon + 14 * (1 - prvE), curR), ax(curLon, curR), ay(curLon, curR)); }
       }
+      // the wheel's geometry, stashed so the placement-zoom can grow from the tapped planet
+      UI.posMap = posMap; UI.dialGeom = { cx: cx, cy: cy, R: R };
       // A2 — living aspect threads: the selected planet's aspects draw out as shimmering filaments
       if (rv > 0.9 && UI.selPlanet && posMap[UI.selPlanet]) {
         var sp = posMap[UI.selPlanet], ap = (still ? 1 : cl01((t - UI.popT) / 640)), apE = eCubic(ap), ai2;
@@ -6353,7 +6355,8 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     }
     // tapping a body just highlights it (magnify + aspect threads + bloom) and shows its meaning BELOW the
     // wheel — no full-screen takeover. (The cinematic story view stays in the code but is no longer triggered.)
-    function selectPlanet(key) { UI.popFrom = UI.pdia[key] || 22; UI.selPlanet = key; UI.popT = nowT(); buzz(10); UI.pcard = key; UI.pcScroll = 0; }
+    function selectPlanet(key) { UI.popFrom = UI.pdia[key] || 22; UI.selPlanet = key; UI.popT = nowT(); buzz(10); UI.pcard = key; UI.pcScroll = 0; UI.pcProseFor = null; UI.zoomFrom = (UI.posMap && UI.posMap[key]) ? { x: UI.posMap[key].x, y: UI.posMap[key].y } : null; }
+    function closeZoom() { UI.pcard = null; UI.selPlanet = null; UI.pcScroll = 0; UI.zoomFrom = null; buzz(6); }
     function tapPlanet(key) { selectPlanet(key); }
 
     // three reels
@@ -6964,55 +6967,78 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       tourBtn('Close', x + w - 76, top + 6, 70, 28, function () { UI.reel = null; }, false);
       UI.contentH.chart = 0;
     }
-    // the reading rises to meet the finger: a sprung sheet over the wheel, nothing forced to scroll
-    function drawPlanetCard(c, b) {
+    // TAP A PLACEMENT: the whole chart zooms into that one circle, and its judgment is told
+    // in and around it. Replaces the old pop-up sheet. One tap anywhere closes it; drag the
+    // text to read on. The determination is computed once per planet and cached.
+    function drawPlacementZoom(c, b) {
       if (!UI.pcard) return;
-      var key = UI.pcard, pl = (key === 'asc') ? c.ascBody : c.planets[key]; if (!pl) { UI.pcard = null; return; }
-      var mp = reduced() ? 1 : cl01((nowT() - UI.popT) / 380), me = reduced() ? 1 : eBack(mp); if (me > 1.03) me = 1.03;
-      var sb = UI.safeBottom || 0, shH = Math.round((H - topY()) * 0.42), shY = H - sb - shH * me, x = sx(), w = cw();
-      pushHit(0, 0, W, shY, function () { UI.pcard = null; }); // the wheel stays visible and tappable-away above the card
-      var gk = GROUNDS.chart;
-      fillc(shade(gk, -18)); p.rect(x - 8, shY + 4, w + 16, shH + sb, 18);
-      fillc(shade(gk, 6)); p.rect(x - 8, shY, w + 16, shH + sb, 18);
-      p.noFill(); strokec(INK, 70); p.strokeWeight(1); p.rect(x - 8, shY, w + 16, shH + sb, 18);
-      var nod9 = 0; if (!reduced() && !(UI.pcScroll > 0)) { var nt9 = nowT() - UI.popT; if (nt9 > 1400 && nt9 < 1900) nod9 = 3.5 * Math.sin((nt9 - 1400) / 500 * Math.PI); }
-      p.noStroke(); fillc(INK, 90); p.rect(x + w / 2 - 20, shY + 8 + nod9, 40, 4, 2);
-      pushHit(x - 8, shY, w + 16, 26, function () { UI.pcard = null; });
-      var dc = p.drawingContext; if (dc) { dc.save(); dc.beginPath(); dc.rect(x - 8, shY + 18, w + 16, shH + sb - 18); dc.clip(); }
-      var yy = shY + 30 - (UI.pcScroll || 0), hR = 27, tSel = nowT() - UI.popT;
-      var eBk = reduced() ? 1 : (0.6 + 0.4 * eBack(cl01(tSel / 460)));
-      p.push(); p.translate(x + hR + 4, yy + hR + 2); p.scale(eBk); celestialBody(key === 'asc' ? 'sun' : key, 0, 0, hR, nowT()); p.pop();
-      p.textStyle(p.BOLD); setFont(SERIF, 21, INK, p.LEFT, p.TOP); p.text(APP.nameFor(key) + ' in ' + pl.signName, x + hR * 2 + 18, yy + 6); normal();
-      UI.degShown += (pl.deg - UI.degShown) * 0.18;
-      var degStr2 = UI.degShown.toFixed(1) + '° ' + pl.signName + (b.timeKnown && pl.house ? '  H' + pl.house : '') + (pl.retro ? '  ℞' : '');
-      setFont(MONO, 10.5, ACCTX, p.LEFT, p.TOP, 235); p.text(degStr2, x + hR * 2 + 18, yy + 34);
-      var ly2 = yy + hR * 2 + 16 - shY; var lyAbs = shY + ly2;
-      if (pl.retro && key !== 'asc' && !reduced()) {
-        var u5 = (nowT() % 3200) / 3200, pos5 = u5 - 0.22 * Math.sin(2 * Math.PI * u5), rW5 = Math.min(w - 8, 290);
-        strokec(INK, 70); p.strokeWeight(1); p.line(x, lyAbs, x + rW5, lyAbs);
-        p.noStroke(); fillc(ACC, 40); p.rect(x + rW5 * 0.36, lyAbs - 5, rW5 * 0.28, 10, 5);
-        fillc(BODYCOL[key] || ACC, 235); p.ellipse(x + rW5 * (0.06 + 0.88 * pos5), lyAbs, 9, 9);
-        setFont(MONO, 8.5, INK, p.LEFT, p.TOP, 160); p.text('APPARENT MOTION: FORWARD · STALL · BACKWARD · RECOVER', x, lyAbs + 10);
-        lyAbs += 36;
-      }
-      // the placement, JUDGED: the engine's determination of this planet — its court, state,
-      // rulerships, Lilly verdict and sect — with the modern blurb kept for the outers/asc.
-      // determination() is heavy, so it's computed once per planet, not every frame (was the
-      // source of the chart-card jank): memoised on UI, invalidated when the chart recomputes.
+      var key = UI.pcard, isAsc = (key === 'asc'), pl = isAsc ? c.ascBody : c.planets[key];
+      if (!pl) { UI.pcard = null; return; }
+      var still = reduced(), sb = UI.safeBottom || 0;
+      var pz = still ? 1 : cl01((nowT() - UI.popT) / 520), pe = eCubic(pz);
+      var geom = UI.dialGeom || { cx: W / 2, cy: topY() + 180, R: 130 };
+      var from = UI.zoomFrom || { x: geom.cx, y: geom.cy };
+      var TCX = W / 2, TCY = topY() + 132, RB = Math.min(W * 0.26, 112);
+      var baseR = (key === 'sun' || key === 'moon') ? 26 : 21;
+      var curCX = from.x + (TCX - from.x) * pe, curCY = from.y + (TCY - from.y) * pe, curR = baseR + (RB - baseR) * pe;
+      var bcol = BODYCOL[key] || ACC;
+      // dim the rest of the wheel into a full wash — everything recedes but this one circle
+      p.noStroke(); fillc(shade(GROUNDS.chart, -3), 255 * pe); p.rect(0, 0, W, H);
+      // the chart 'opening up' into the circle: rings blooming out of the placement as it lands
+      if (!still && pz < 1) { var gr; for (gr = 0; gr < 3; gr++) { var grp = cl01(pe * 1.35 - gr * 0.2); if (grp <= 0 || grp >= 1) continue; p.noFill(); strokec(bcol, 55 * (1 - grp)); p.strokeWeight(1); var grr = curR + RB * 3 * grp; p.ellipse(curCX, curCY, grr * 2, grr * 2); } }
+      // tap anywhere to go back (registered first; the specific hits below win over it)
+      pushHit(0, 0, W, H, function () { closeZoom(); });
+      // --- the placement circle: aura, ring, the body large, the sign at the crown ---
+      p.noStroke(); fillc(bcol, 24 * pe); p.ellipse(curCX, curCY, (curR + 20) * 2, (curR + 20) * 2);
+      p.noFill(); strokec(INK, 150 * pe); p.strokeWeight(1.3); p.ellipse(curCX, curCY, (curR + 11) * 2, (curR + 11) * 2);
+      p.push(); p.translate(curCX, curCY); celestialBody(isAsc ? 'sun' : key, 0, 0, curR, nowT()); p.pop();
+      setFont(SANS, 17, INK, p.CENTER, p.CENTER, 220 * pe); p.text(DATA.SIGNS[pl.sign].glyph, curCX, curCY - (curR + 24));
+      // --- determination + prose, computed once per planet ---
       if (UI.pcProseFor !== key) {
         UI.pcProseFor = key;
-        try { UI.pcProse = (APP.placementProse && APP.placementProse(c, b, key)) || null; } catch (ePj9) { UI.pcProse = null; }
-        UI.pcBody = UI.pcProse ? UI.pcProse.text : planetBlurb(c, key);
+        try { UI.pcProse = (APP.placementProse && APP.placementProse(c, b, key)) || null; } catch (eZ1) { UI.pcProse = null; }
+        try { UI.zoomDet = APP.determination ? APP.determination(c, b, key) : null; } catch (eZ2) { UI.zoomDet = null; }
+        if (isAsc) { UI.pcBody = ''; try { var tr9 = APP.traditionalRead(c, b); UI.pcBody = (tr9 && tr9.asc) ? tr9.asc.line : ''; } catch (eZ3) {} if (!UI.pcBody) UI.pcBody = 'The Ascendant is the body you arrived in and the doorway every part of you walks through.'; }
+        else UI.pcBody = UI.pcProse ? UI.pcProse.text : planetBlurb(c, key);
       }
-      var pj9 = UI.pcProse, bodyTxt9 = UI.pcBody;
-      p.textFont(SERIF); p.textSize(15.5); var bl2 = wrapLines(bodyTxt9, w - 8);
-      setFont(SERIF, 15.5, INK, p.LEFT, p.TOP, 242); var bi2; for (bi2 = 0; bi2 < bl2.length; bi2++) p.text(bl2[bi2], x, lyAbs + bi2 * 23);
-      lyAbs += bl2.length * 23 + 12;
-      if (pj9) { var rc9 = wrapLines(pj9.receipt, w - 8); setFont(MONO, 8.5, ACCTX, p.LEFT, p.TOP, 200); for (var rj9 = 0; rj9 < rc9.length; rj9++) p.text(rc9[rj9], x, lyAbs + rj9 * 12); lyAbs += rc9.length * 12 + 12; }
-      lyAbs += 12;
+      var D = UI.zoomDet, pj = UI.pcProse;
+      var infoA = still ? 1 : cl01((pz - 0.5) / 0.5);
+      // --- a few facts arranged AROUND the circle, on short leader lines ---
+      if (infoA > 0.01 && D) {
+        var tags = [];
+        if (pj && pj.isCaptain) tags.push({ t: 'CAPTAIN', c: bcol });
+        if (b.timeKnown && D.house) tags.push({ t: ordinal(D.house).toUpperCase() + ' HOUSE', c: INK });
+        if (D.essential && D.essential.label && !D.essential.modern) tags.push({ t: String(D.essential.label).toUpperCase(), c: INK });
+        if (!isAsc && pl.retro) tags.push({ t: 'RETROGRADE', c: ACC });
+        if (D.rules && D.rules.length) { var rr2 = [], ri2; for (ri2 = 0; ri2 < Math.min(D.rules.length, 2); ri2++) rr2.push(ordinal(D.rules[ri2].house)); tags.push({ t: ('RULES ' + rr2.join(' · ')).toUpperCase(), c: INK }); }
+        var TA = [-Math.PI * 0.80, -Math.PI * 0.20, Math.PI * 0.97, Math.PI * 0.03], ti;
+        for (ti = 0; ti < Math.min(tags.length, 4); ti++) {
+          var ang = TA[ti], lx = curCX + Math.cos(ang) * (curR + 11), ly = curCY + Math.sin(ang) * (curR + 11);
+          var ex = curCX + Math.cos(ang) * (curR + 26), ey = curCY + Math.sin(ang) * (curR + 26);
+          var leftS = Math.cos(ang) < 0;
+          strokec(tags[ti].c, 85 * infoA); p.strokeWeight(1); p.line(lx, ly, ex, ey);
+          setFont(MONO, 8.5, tags[ti].c, leftS ? p.RIGHT : p.LEFT, p.CENTER, 225 * infoA);
+          p.text(tags[ti].t, ex + (leftS ? -4 : 4), ey);
+        }
+      }
+      // --- name, degree, and the full judged reading beneath the circle (scrollable) ---
+      var headY = TCY + RB + 30;
+      p.textStyle(p.BOLD); setFont(SERIF, 21, INK, p.CENTER, p.TOP, 255 * infoA);
+      p.text(APP.nameFor(key) + (isAsc ? '' : ' in ' + pl.signName), W / 2, headY); p.textStyle(p.NORMAL);
+      var degLine = pl.deg.toFixed(1) + '° ' + pl.signName + (b.timeKnown && pl.house ? ' · ' + ordinal(pl.house) + ' HOUSE' : '') + (!isAsc && pl.retro ? ' · ℞' : '');
+      setFont(MONO, 10, ACCTX, p.CENTER, p.TOP, 235 * infoA); p.text(degLine.toUpperCase(), W / 2, headY + 28);
+      var x = sx(), w = cw(), textTop = headY + 52, botLim = H - sb - NAVH - 30;
+      var dc = p.drawingContext; if (dc) { dc.save(); dc.beginPath(); dc.rect(0, textTop - 4, W, botLim - (textTop - 4)); dc.clip(); }
+      var yy = textTop - (UI.pcScroll || 0);
+      p.textFont(SERIF); p.textSize(15.5); var bl2 = wrapLines(UI.pcBody, w);
+      setFont(SERIF, 15.5, INK, p.LEFT, p.TOP, 245 * infoA); var bi2; for (bi2 = 0; bi2 < bl2.length; bi2++) p.text(bl2[bi2], x, yy + bi2 * 23);
+      var endY = yy + bl2.length * 23 + 14;
+      if (pj) { var rc = wrapLines(pj.receipt, w); setFont(MONO, 8.5, ACCTX, p.LEFT, p.TOP, 205 * infoA); var rj; for (rj = 0; rj < rc.length; rj++) p.text(rc[rj], x, endY + rj * 12); endY += rc.length * 12 + 10; }
       if (dc) dc.restore();
-      UI.pcMax = Math.max(0, (lyAbs + (UI.pcScroll || 0)) - (H - sb) + 20);
-      UI.pcRect = { x: x - 8, y: shY + 26, w: w + 16, h: shH + sb - 26 };
+      UI.pcMax = Math.max(0, (endY + (UI.pcScroll || 0)) - botLim + 16);
+      UI.pcRect = { x: 0, y: textTop, w: W, h: botLim - textTop };
+      // a quiet hint: tap to close
+      if (infoA > 0.3) { var hn9 = still ? 1 : 0.55 + 0.45 * Math.sin(nowT() * 0.004); setFont(MONO, 9, INK, p.CENTER, p.BOTTOM, 130 * hn9); p.text('TAP TO CLOSE', W / 2, H - sb - NAVH - 10); }
     }
     function drawChart() {
       var c = APP.STATE.chart, b = APP.STATE.birth; if (!c) { UI.screen = 'onboard'; return; }
@@ -11919,7 +11945,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (s === 'onboard') drawOnboard(); else { if (!(s === 'people' && UI.padd)) hideSearchInput(); if (s === 'chart') drawChart(); else if (s === 'read') drawRead(); else if (s === 'more') drawMore(); else if (s === 'learn') drawLearn(); else if (s === 'tarot') drawTarot(); else if (s === 'people') drawPeople(); else if (s === 'settings') { drawSettings(); drawSettingsGuide(); } }
       if (!UI.mediaDrawn) hideMediaFrame(); // the retro TV/radio iframe only lives on the Watch shelf
       drawQuip();
-      if (s === 'chart' && UI.pcard && APP.STATE.chart) drawPlanetCard(APP.STATE.chart, APP.STATE.birth);
+      if (s === 'chart' && UI.pcard && APP.STATE.chart) drawPlacementZoom(APP.STATE.chart, APP.STATE.birth);
       drawTopbar(); if (s !== 'onboard') drawNav();
       drawTodayPanel();
       drawVideoModal();
@@ -11969,7 +11995,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (UI.video) return; // the embedded player handles its own area
       if (UI.today) { if ((UI.tScrollStart || 0) <= 0 && dy > 90) { UI.today = false; buzz(6); return; } UI.tScroll = (UI.tScrollStart || 0) - dy; if (UI.tScroll < 0) UI.tScroll = 0; return; }
       if (UI.inReel) { UI.reel.f = Math.max(0.0002, Math.min(1, (x - UI.reelBar.x) / UI.reelBar.w)); return; }
-      if (UI.inPcard) { if ((UI.pcStart || 0) <= 0 && dy > 80) { UI.pcard = null; UI.inPcard = false; buzz(6); return; } UI.pcScroll = Math.max(0, Math.min(UI.pcMax || 0, UI.pcStart - dy)); return; }
+      if (UI.inPcard) { if ((UI.pcStart || 0) <= 0 && dy > 80) { closeZoom(); UI.inPcard = false; return; } UI.pcScroll = Math.max(0, Math.min(UI.pcMax || 0, UI.pcStart - dy)); return; }
       if (UI.inSlider) { var tt = (x - UI.sliderRect.x) / UI.sliderRect.w; tt = Math.max(0, Math.min(1, tt)); APP.STATE.settings.orbScale = Math.round((0.5 + tt * 1.5) * 10) / 10; recompute(); }
       else if (UI.inCity) { UI.cityScroll = UI.cityScrollStart - dy; if (UI.cityScroll < 0) UI.cityScroll = 0; if (UI.cityScroll > UI.cityBoxMax) UI.cityScroll = UI.cityBoxMax; }
       else { UI.chartScrollAnim = null; var nv9 = UI.scrollStart - dy, mx9 = Math.max(0, (UI.contentH[UI.screen] || 0) - viewH()); if (!reduced()) { if (nv9 < 0) nv9 *= 0.35; else if (nv9 > mx9) nv9 = mx9 + (nv9 - mx9) * 0.35; } UI.scroll[UI.screen] = nv9; if (reduced()) clampScroll(); UI.scrollT = nowT(); }
@@ -12034,7 +12060,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var k9 = p.keyCode;
       if (k9 === 27) {
         if (UI.dailyNews) { try { if (APP.STATE.settings) { APP.STATE.settings.newsDay = UI.dailyNews.day; APP.save(); } } catch (eDN) {} UI.dailyNews = null; UI.fxT = nowT(); lifeWalkHush(); return false; }
-        if (UI.pcard) { UI.pcard = null; return false; }
+        if (UI.pcard) { closeZoom(); return false; }
         if (UI.today) { UI.today = false; return false; }
         if (UI.rings) { UI.rings = null; return false; }
         if (UI.reel) { UI.reel = null; return false; }
