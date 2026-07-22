@@ -11815,7 +11815,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
           var bb9 = APP.STATE.birth || {};
           if (bb9.timeKnown && c.ascBody) {
             var T9 = null; try { T9 = APP.traditionalRead(c, bb9); } catch (eT8) {}
-            if (T9 && T9.ruler) return { k: 'sun', title: 'You rise in ' + c.ascBody.signName, body: 'A reading starts here, the way it has for two thousand years: the Ascendant is the body you arrived in and the doorway everything walks through. Its ruler \u2014 ' + APP.nameFor(T9.ruler.key) + ', the captain of this chart \u2014 stands in your ' + APP.ordinal(T9.ruler.house) + ' house. Where the captain stands, the life keeps docking.' };
+            if (T9 && T9.ruler) return { k: 'sun', title: 'You rise in ' + c.ascBody.signName, body: 'A reading starts here, the way it has for two thousand years: the Ascendant is the body you arrived in and the doorway everything walks through. Its ruler \u2014 ' + APP.nameFor(T9.ruler.key) + ', the captain of this chart \u2014 stands in your ' + ordinal(T9.ruler.house) + ' house. Where the captain stands, the life keeps docking.' };
           }
           return { k: 'sun', title: 'Your Sun is in ' + sunSg, body: 'The Sun is one of the two lights \u2014 not the whole of you, whatever the pop apps say. Without a birth time the traditional doorway (the Ascendant) stays shut, so the reading leans on the lights.' + (tSun ? ' ' + cap(tSun) + '.' : '') };
         })(),
@@ -12026,7 +12026,10 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       // a small, brief celestial wink on screen entry (kept subtle so it doesn't over-stimulate)
       if (!reduced() && s !== 'onboard') { var te = (nowT() - UI.fxT) / 520; if (te >= 0 && te < 1) { var al = (1 - te) * (1 - te); celestialEmblem(W / 2, topY() + viewH() * 0.26, Math.min(W, H) * 0.07 * (0.8 + 0.2 * eCubic(te)), al * 0.4); } }
       // first run: once a chart exists, gently guide the newcomer
-      if (!UI.tour && !UI.walk && APP.STATE.chart && APP.STATE.settings && !APP.STATE.settings.toured && s !== 'onboard') startTour();
+      // the first-run welcome walk no longer auto-plays (it forced an animated tour on top of the
+      // chart while it was still computing); just mark it seen so the flag-gated features work.
+      // Users can still replay it from Settings.
+      if (!UI.tour && !UI.walk && APP.STATE.chart && APP.STATE.settings && !APP.STATE.settings.toured && s !== 'onboard') { try { APP.STATE.settings.toured = true; APP.save(); } catch (eTour9) {} }
       drawTour();
       drawTransition();
       (function () {

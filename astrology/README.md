@@ -110,7 +110,7 @@ the whole chart and reading are computed locally.
 
 ## Version
 
-**4.0.1** — see `CHANGELOG.md`. Licensed MIT (`LICENSE`).
+**4.0.2** — see `CHANGELOG.md`. Licensed MIT (`LICENSE`).
 
 ## Deploy
 

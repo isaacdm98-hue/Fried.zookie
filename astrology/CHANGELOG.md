@@ -1,5 +1,23 @@
 # Changelog
 
+## 4.0.2 — 2026-07-22 — the real freeze: a crash in the first-run tour
+The persistent "freeze while calculating the chart" was an uncaught crash, not a
+slow computation. The first-run welcome-walk (the animated tour that teaches the
+app) called `APP.ordinal(...)` on its Ascendant slide, but `ordinal` is not
+exposed on `APP` — so it threw every single frame the tour was on screen, right
+after you entered your birth data. That is what locked the app up.
+
+- Fixed the crash (`APP.ordinal` -> the in-scope `ordinal`).
+- Removed the auto-playing first-run tour entirely, as requested — it no longer
+  starts on top of the freshly-computed chart. It can still be replayed from
+  Settings.
+- Swept every `APP.foo(...)` call against the actual export list to be sure no
+  other unexposed-function crash is lurking; none is.
+
+First-run now holds a steady 60fps (18-21ms frames) with zero console errors,
+where before it crashed every frame. Golden, doctrine, UI audit and voice all pass.
+
+
 ## 4.0.1 — 2026-07-22 — the rebuild freeze, fixed at the root
 Rebuilding a chart could hang for seconds. Profiling found the cause: the default
 Read view eagerly computed `oddPredictions` — a ~900ms, fifteen-month ephemeris
