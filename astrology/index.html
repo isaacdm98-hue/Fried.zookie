@@ -1645,7 +1645,7 @@ var APP = (function () {
       moon: 'your moods, sleep, eating and home life',
       mercury: 'your messages, plans, paperwork and conversations',
       venus: 'money, comfort, romance and the people you want around',
-      mars: 'your energy, your sex drive, workouts and your temper',
+      mars: 'your drive, your sex drive, workouts and your temper',
       jupiter: 'opportunities, travel, study and your bigger plans',
       saturn: 'work, money discipline, responsibilities and where you hit limits',
       uranus: 'sudden changes, tech, and your need for freedom',
@@ -7326,7 +7326,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     function dayPlan(ev) {
       var dom = NATAL_DOMAIN[ev.np] || 'this part of your life', q = ev.quality;
       if (q === 'flow' || q === 'opportunity') return { kind: 'open', col: ELHUE.air, tag: 'OPEN', line: 'An easy opening around ' + dom + ': a good day to lean in and act.' };
-      if (q === 'fusion') return { kind: 'charged', col: ACC, tag: 'CHARGED', line: 'A charged spotlight on ' + dom + ': big energy, so aim it on purpose.' };
+      if (q === 'fusion') return { kind: 'charged', col: ACC, tag: 'CHARGED', line: 'A charged contact concentrates on ' + dom + ': it presses hard, so aim it on purpose.' };
       return { kind: 'gentle', col: ELHUE.fire, tag: 'GENTLE', line: 'Friction around ' + dom + ': go gentle, and don’t force it.' };
     }
     // ---- today at a glance: the three-second layer over the full Today reading.
@@ -7384,7 +7384,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var wv = function (ev) { try { return (APP.weaveTransit && APP.weaveTransit(ev, c)) || null; } catch (eWv) { return null; } };
       var doL, doW;
       if (open) { doW = wv(open); var oj34 = judgedFor34(open); doL = { txt: gcap(gpick(GLANCE_DO[open.tp] || GLANCE_DO.sun, seed + open.tp + open.np)) + '. The tailwind sits on ' + (NATAL_DOMAIN[open.np] || 'you') + '.' + wireNote34(open), full: (oj34 && oj34.line) || (doW && doW.line), why: oj34 ? oj34.receipt : (doW ? doW.receipt : glanceWhy(open)) }; }
-      else if (charged) { doW = wv(charged); var cj34 = judgedFor34(charged); doL = { txt: 'Aim the spotlight on purpose: big energy lands on ' + (NATAL_DOMAIN[charged.np] || 'you') + ' today. Spend it, don’t leak it.' + wireNote34(charged), full: (cj34 && cj34.line) || (doW && doW.line), why: cj34 ? cj34.receipt : (doW ? doW.receipt : glanceWhy(charged)) }; }
+      else if (charged) { doW = wv(charged); var cj34 = judgedFor34(charged); doL = { txt: 'Aim it on purpose: a charged contact presses on ' + (NATAL_DOMAIN[charged.np] || 'you') + ' today. Spend it, don’t leak it.' + wireNote34(charged), full: (cj34 && cj34.line) || (doW && doW.line), why: cj34 ? cj34.receipt : (doW ? doW.receipt : glanceWhy(charged)) }; }
       else doL = { txt: 'No supportive transit lands on a live wire today: treat it as a maintenance day. The sky moves, but presses nothing the year has under tension — not every day is an omen.', why: 'NO SUPPORTIVE TRANSIT ON A LIVE WIRE TODAY' };
       // EASY ON — the strongest grind; or honest ease
       var easeL, eaW;
@@ -8203,8 +8203,8 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         UI.contentH.read = 0;
       } else {
       // ===== the full chapter menu (reached via "All"; return via "back to the reading") =====
-      eyebrow('You', x, ly, ACC); ly += 24;
-      if (UI.smCache) ly += paragraph(UI.smCache, x, ly, w, 16, INK, SERIF, 25) + 12;
+      eyebrow('Everything, in full', x, ly, ACC); ly += 24;
+      ly += paragraph('The whole chart, judged the traditional way — the twelve house-lords followed home, every planet in its state, and what carries the most weight. Each line shows its working.', x, ly, w, 14, INK, SERIF, 22, 220) + 12;
       flatBtn('‹  Back to the reading', x, ly, w, 40, function () { UI.readMode = 'flow'; UI.rdI = 0; UI.rdT = nowT(); UI.scroll.read = 0; buzz(8); }, false, true); ly += 50;
       flatBtn('▶  Play your chart as a film — the judgment, act by act', x, ly, w, 46, function () { startWalk(); buzz(12); }, true); ly += 54;
       flatBtn('◉  Or walk it card by card: does each ring true?', x, ly, w, 46, function () { UI.guide = { phase: 'intro', t0: nowT() }; UI.scroll.read = 0; buzz(12); }, false); ly += 58;
@@ -8226,32 +8226,6 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         for (bj = 0; bj < lim; bj++) { var ln = arr[bj]; if (capIt) ln = ln.charAt(0).toUpperCase() + ln.slice(1) + (/[.!?]$/.test(ln) ? '' : '.'); p.noStroke(); fillc(ACC, 200); p.ellipse(x + 4, sY(ly) + 9, 6, 6); ly += paragraph(ln, x + 18, ly, w - 18, 15, INK, SERIF, 23) + 9; }
         return lim;
       };
-      if (UI.comboCache === undefined) { try { UI.comboCache = APP.combinationRead(c); } catch (eCm9) { UI.comboCache = null; } }
-      if (UI.comboCache && chapterHead('wired', 'How you’re wired')) { ly += paragraph(UI.comboCache, x, ly, w, 15.5, INK, SERIF, 24) + 12; }
-      if (UI.quirkCache && UI.quirkCache.length && chapterHead('oddly', 'Oddly specific', UI.quirkCache.length + '')) {
-        ly += paragraph('Small, true things your chart seems to know about your actual life.', x, ly, w, 12.5, INK, SERIF, 18, 175) + 10;
-        bullets9(UI.quirkCache, 0, false); ly += 4;
-      }
-      if (UI.intCache && UI.intCache.length && chapterHead('drawn', 'What you’re drawn to')) {
-        bullets9(UI.intCache, 0, true);
-        if (UI.intPull) { ly += 4; ly += paragraph(UI.intPull, x, ly, w, 15, INK, SERIF, 23, 250) + 6; }
-        ly += 4;
-      }
-      if (UI.spookCache === undefined) { try { UI.spookCache = APP.spookyReads(c); } catch (eSp9) { UI.spookCache = []; } }
-      if (UI.spookCache && UI.spookCache.length && chapterHead('closely', 'Read closely', UI.spookCache.length + '')) {
-        var pool9 = UI.spookCache, n9 = pool9.length, showN9 = Math.min(6, n9);
-        var dSeed9 = 0; try { var dd9 = new Date(); dSeed9 = dd9.getFullYear() * 366 + dd9.getMonth() * 31 + dd9.getDate(); } catch (eDs9) {}
-        var st9 = n9 ? (dSeed9 % n9) : 0, sk9;
-        for (sk9 = 0; sk9 < showN9; sk9++) { var line9 = pool9[(st9 + sk9) % n9]; p.noStroke(); fillc(ACC, 200); p.ellipse(x + 4, sY(ly) + 9, 6, 6); ly += paragraph(line9.charAt(0).toUpperCase() + line9.slice(1) + '.', x + 18, ly, w - 18, 15, INK, SERIF, 23) + 9; }
-        if (n9 > showN9) { setFont(MONO, 8.5, INK, p.LEFT, p.TOP, 120); p.text('THESE ROTATE DAILY · ' + n9 + ' IN TOTAL FOR YOUR CHART', x, sY(ly + 2)); ly += 18; }
-        ly += 4;
-      }
-      if (UI.sigCache && chapterHead('mostyou', 'What’s most specifically you')) {
-        var ssz9 = 16.5, sgL9 = wrapLines2(UI.sigCache, w - 18, SERIF, ssz9), sgi9, sgh9 = ssz9 * 1.5;
-        strokec(ACC, 210); p.strokeWeight(3); p.line(x + 1.5, sY(ly) + 4, x + 1.5, sY(ly) + sgL9.length * sgh9 - 4); p.noStroke();
-        for (sgi9 = 0; sgi9 < sgL9.length; sgi9++) { p.textStyle(p.ITALIC); setFont(SERIF, ssz9, INK, p.LEFT, p.TOP, 250); p.text(sgL9[sgi9], x + 16, sY(ly) + sgi9 * sgh9); p.textStyle(p.NORMAL); }
-        ly += sgL9.length * sgh9 + 10;
-      }
       if (!UI.promCache) { try { UI.promCache = APP.prominence(c); } catch (epr) { UI.promCache = null; } }
       if (UI.promCache && chapterHead('weight', 'What carries the most weight')) {
         var pr = UI.promCache, pn; for (pn = 0; pn < 3; pn++) {
@@ -8262,11 +8236,6 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
           setFont(MONO, 9.5, ACCTX, p.LEFT, p.TOP, 215); p.text(why.toUpperCase(), x + 28, sY(ly) + 21); ly += 44;
         }
         ly += 6;
-      }
-      if (!UI.arcCache) { try { UI.arcCache = APP.composeArc(c, b); } catch (ea) { UI.arcCache = null; } }
-      if (UI.arcCache && UI.arcCache.length && chapterHead('arc', 'Your chart in four movements')) {
-        for (var ar = 0; ar < UI.arcCache.length; ar++) { var bt = UI.arcCache[ar]; setFont(MONO, 9.5, INK, p.LEFT, p.TOP, 210); bold(); p.text(bt.label.toUpperCase(), x, sY(ly)); normal(); ly += 18; ly += paragraph(bt.text, x, ly, w, 15.5, INK, SERIF, 24) + 12; }
-        ly += 4;
       }
       // ===== the traditional method, in full: every house's ruler followed home, every planet's state =====
       if (UI.tradCache === undefined) { try { UI.tradCache = APP.traditionalRead(c, b); } catch (eTr8) { UI.tradCache = null; } }
