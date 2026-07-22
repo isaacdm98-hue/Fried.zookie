@@ -1,5 +1,31 @@
 # Changelog
 
+## 4.3.0 — 2026-07-22 — the prose, tightened; a first-reading that teaches the method
+A pass over how the reading *reads*, plus an opt-in intro that teaches a beginner
+to read their own chart.
+
+**Prose — written better (meaning unchanged; golden passes on every change).**
+- Fixed a doubled-word bug: luminaries read "Sun is **the the** light of sect".
+- Unstacked the Lilly-fortitude sentence (was one run-on choked with dashes and
+  a redundant double-label) into two clean sentences.
+- Fixed a subject-verb clash in the house-lord lines ("the self and the body
+  **runs** through …") and a genuinely garbled directed-event sentence
+  ("…worth, **advancing comes to** …").
+- The live-wire (trigger) read named its matter phrase twice; now once, and it
+  leads the line so it survives Today's 340-char clip (the "so what" no longer
+  gets cut, the natal recap does).
+- Trimmed the layered dignity images in the deep synthesis so secondary
+  dignities show their vivid first clause instead of nesting a third semicolon.
+
+**A first-reading that teaches the method (opt-in).**
+- The welcome walk now follows the traditional order on the user's OWN chart:
+  the one sky → the captain (Ascendant + its lord) → the two lights → the
+  loudest conversation (the tightest personal aspect, judged by nature) → "now
+  you read it yourself: tap any planet, the app shows its working."
+- It never auto-plays (that was the old freeze). A gentle "✦ See how your chart
+  is read · 30s" offer sits on the chart screen for first-timers only, and
+  disappears once they take it or tap their first planet.
+
 ## 4.2.0 — 2026-07-22 — "Charts like you" removed; elements folded into signs
 More pop swept out, at your direction.
 
