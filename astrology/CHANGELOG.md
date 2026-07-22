@@ -1,5 +1,47 @@
 # Changelog
 
+## 3.49.0 — 2026-07-22 — the traditional rework, all forty phases
+The full engine rework from `plans/forty-phases.md`, distilled from Sonia's
+London-lineage method and the pre-modern authors (Ptolemy, Dorotheus, Firmicus,
+Mashallah, Abu Ma'shar, al-Biruni, Ibn Ezra, Bonatti, Morin, Lilly), is
+complete. The reading now **judges** rather than describes, from the ground up.
+
+- **The determination model (Morin, Book 21)** underlies everything: each
+  planet judged by its house, the houses it rules, its zodiacal state (five
+  dignity layers, each with its own character and Lilly point-score) held
+  *separately* from its terrestrial state (house, angularity), its nature (the
+  full benefic/malefic nuances — the Moon's light rule, Mercury convertible,
+  the Sun's 7°30′ burn, the Nodes), its receptions and aspects, and **analogy**
+  as the selection function (joys, Chaldean order, karakas) that decides which
+  signification a line voices.
+- **The natal reading** opens at the Ascendant and follows the house-lords
+  home: the constitution, the captain (lord of the Ascendant) as the keystone,
+  the rulership web with the almuten of every cusp, all twelve houses judged by
+  the school's twelve-step method, aspects judged pipe-and-liquid, reception
+  through all five dignities, Bonatti's judgment hierarchy (contradictions
+  named, never averaged), and a synthesis braided into one argument with the
+  final word.
+- **Prediction as doctrine, directions first**: significator/promittor
+  directions (Morin XXII) that reach a real interpretive register, read by
+  significator (Ascendant, MC, Sun, Moon), through the Egyptian bounds
+  (term-lord time-lords), and by profection (the lord of the year deciding
+  which directions speak loudest). Returns judged the Persian way; eclipses as
+  tight-orb timers. **Transits demoted to triggers** — they speak only where
+  they strike a live wire, and a quiet day is admitted honestly.
+- **The deeper tradition**: the Lots by sect, fixed stars in condition
+  register, antiscia and declination as hidden partnerships, patterns as
+  weighted testimony, and the Vedic honesty wall (the zodiac is a choice;
+  Jyotisha is a separate system, never blended).
+- **Every surface rewired** to the judged engine — Read, Patterns, Seasons,
+  Today, and People (synastry by the overlay method, the two captains' reception
+  as the bond's spine). The old "Sun = your personality" pop-equations are gone.
+- **Proof**: a voice book enforced by `voiceCheck` (the ~42k chars of judged
+  output pass clean), a machine-readable source registry (15 authorities), and
+  a golden-chart harness (`tests/golden.cjs`) that pins the judged *meaning* of
+  five reference nativities so interpretation can never drift silently. Engine
+  ALL 12 PASS; all screens clean at three widths.
+- Tarot untouched (beloved) beyond the five spreads added earlier.
+
 ## 3.48.0 — 2026-07-12
 - **The engine turns traditional — phase 1 of the Sonia rework.** A trained astrologer starts a chart at the Ascendant, follows its ruler home, walks the twelve houses by their rulers, judges every planet's state, and predicts by symbolic direction — so now the app does. The reading opens with **where a reading starts** (the Ascendant — the body and the doorway, not "your personality") and **the captain of your chart** (the Ascendant's traditional ruler: its house, sign, dignity, and its closest aspect judged by the *nature* of the planets — a trine between the two malefics is named for what it is). Two new chapters: **The twelve houses** (every cusp's traditional ruler — modern co-rulers named second — followed to where it stands, with the house-to-house link spelled out) and **The state of your planets** (dignity three layers deep: sign, decan/face, and the **Egyptian terms**). Seasons now leads with **Your directions** — every point advanced 1°/year against the natal chart, exact ages and years, geometry verified — and the day-to-day sky is explicitly demoted below, checked last, the traditional way. The welcome walk sheds the "Sun is the engine of you" framing for the traditional door. And the tarot room grows: **five new spreads** (Relationship Mirror, The Crossroads, Mind Body Spirit, The Week Ahead, Shadow Work — 11 total). Phases 2–4 (full corpus language sweep, sect, receptions, UI overlap audit) are laid out in plans/engine-rework.md.
 

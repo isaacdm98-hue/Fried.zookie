@@ -1,6 +1,27 @@
 # THE FORTY PHASES
 ## Rebuilding the reading engine to judge, not describe
 
+> **STATUS: ALL 40 PHASES COMPLETE (v3.49.0, 2026-07-22).** Movements I–VIII
+> shipped. The engine judges rather than describes; every surface is rewired;
+> the voice book is enforced, the sources registered, the meaning pinned by a
+> golden-chart harness. Phase 40 read-through below.
+>
+> **Phase 40 — the final read-through.** The whole judged output (~42k chars
+> across composeCore, the natal synthesis, the house and aspect judgments, the
+> directions, the trigger reading, the cycles and the Patterns tab) was read
+> against the voice book and the banned list: **clean** — no "energy", no
+> pop-equations, no transit-first fortune, no leaks. The golden-chart harness
+> holds the judged meaning of five reference nativities; the engine regression
+> is ALL 12 PASS; all seven screens render with no runtime errors at 320 / 390
+> / 768 px. What a human reviewer (Sonia) should still do, and no automated
+> pass can: confirm the *judgments themselves* read true on charts she knows.
+> The scaffolding for that is in place — `tests/golden.cjs` makes any future
+> drift explicit. The immersion/UI features the owner greenlit (live-wire wheel
+> glow, tap-a-placement zoom, the iPod-classic timeline, sect ambient light, the
+> 30-second intro, the Higgsfield living-sky art) are the next build track,
+> briefed in `plans/ui-direction.md`.
+
+
 **The problem, stated by the owner:** "Directed Ascendant squares your Venus —
 so what does that MEAN? You're not interpreting. You're telling us what it
 does." Correct. The engine currently produces ephemeris facts wearing prose.
