@@ -2102,7 +2102,7 @@ var APP = (function () {
     var out = [], i, sunLon = c.planets.sun ? c.planets.sun.lon : 0;
     var d = EPH.dayNumber(b.y, b.mo, b.d, b.timeKnown ? (b.hour + (b.min || 0) / 60) : 12);
     var cf = ['mercury', 'venus', 'mars']; for (i = 0; i < cf.length; i++) { var k = cf[i], p = c.planets[k]; if (!p) continue; var sep = angSep(p.lon, sunLon);
-      if (sep <= 0.283) out.push({ t: 'cazimi', k: k, v: sep }); else if (sep <= 8) out.push({ t: 'combust', k: k, v: sep }); else if (sep <= 15) out.push({ t: 'beams', k: k, v: sep }); }
+      if (sep <= 0.283) out.push({ t: 'cazimi', k: k, v: sep }); else if (sep <= 7.5) out.push({ t: 'combust', k: k, v: sep }); else if (sep <= 15) out.push({ t: 'beams', k: k, v: sep }); }
     var ob = ['moon', 'mercury', 'venus', 'mars', 'pluto']; for (i = 0; i < ob.length; i++) { var ok = ob[i]; if (!c.planets[ok]) continue; var dec = EPH.declOf(BODYNAME[ok], d); if (dec != null && Math.abs(dec) > 23.4366) out.push({ t: 'oob', k: ok, v: dec }); }
     try { var p0 = EPH.positions(d - 0.5), p1 = EPH.positions(d + 0.5), sp = ['mercury', 'venus', 'mars', 'jupiter', 'saturn']; for (i = 0; i < sp.length; i++) { var sk = sp[i]; if (!c.planets[sk]) continue; var spd = sdelta(p0[sk].lon, p1[sk].lon); if (Math.abs(spd) < 0.018) out.push({ t: 'stationary', k: sk, v: spd }); } } catch (e) {}
     if (c) c._condCache = out;
