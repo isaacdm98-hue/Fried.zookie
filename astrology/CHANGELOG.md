@@ -1,5 +1,19 @@
 # Changelog
 
+## 3.50.1 — 2026-07-22 — a four-second opening, and a smoother chart
+- **The opening is now four seconds.** The run through the four seasons of sky
+  is compressed to a fast time-lapse — one second a season — so the *Aqau Pluto*
+  title lands at about four seconds instead of twenty-five. Snappy, then straight
+  into the app.
+- **The run reads like running.** Reworked the run-cycle: a longer reach and
+  harder drive off the back foot, a higher knee through the recovery, a real
+  float between strides, more forward pitch in the torso and a bigger arm swing.
+- **Fixed the chart-card freeze.** Opening a placement's judged reading recomputed
+  the whole determination (dignities, receptions, aspects, directions) *every
+  frame* — heavy enough to stutter on a phone. It's now computed once per planet
+  and cached, invalidated only when the chart itself changes. The card is
+  identical; it just no longer re-derives itself sixty times a second.
+
 ## 3.50.0 — 2026-07-22 — immersion pass: the chart shows its own thinking
 Four cinematic touches, each carrying a piece of the new engine rather than
 decorating it:

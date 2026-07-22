@@ -6991,8 +6991,14 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       }
       // the placement, JUDGED: the engine's determination of this planet — its court, state,
       // rulerships, Lilly verdict and sect — with the modern blurb kept for the outers/asc.
-      var pj9 = null; try { pj9 = APP.placementProse && APP.placementProse(c, b, key); } catch (ePj9) {}
-      var bodyTxt9 = pj9 ? pj9.text : planetBlurb(c, key);
+      // determination() is heavy, so it's computed once per planet, not every frame (was the
+      // source of the chart-card jank): memoised on UI, invalidated when the chart recomputes.
+      if (UI.pcProseFor !== key) {
+        UI.pcProseFor = key;
+        try { UI.pcProse = (APP.placementProse && APP.placementProse(c, b, key)) || null; } catch (ePj9) { UI.pcProse = null; }
+        UI.pcBody = UI.pcProse ? UI.pcProse.text : planetBlurb(c, key);
+      }
+      var pj9 = UI.pcProse, bodyTxt9 = UI.pcBody;
       p.textFont(SERIF); p.textSize(15.5); var bl2 = wrapLines(bodyTxt9, w - 8);
       setFont(SERIF, 15.5, INK, p.LEFT, p.TOP, 242); var bi2; for (bi2 = 0; bi2 < bl2.length; bi2++) p.text(bl2[bi2], x, lyAbs + bi2 * 23);
       lyAbs += bl2.length * 23 + 12;
@@ -10527,9 +10533,9 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       return 15 + h;
     }
     // a brief animated welcome the very first time (skippable) — the app introducing itself
-    var RN_X = [0.20, 0.02, -0.16, -0.24, -0.18, -0.02, 0.16, 0.22];
-    var RN_Y = [0, 0, 0.03, 0.11, 0.19, 0.20, 0.12, 0.03];
-    var RN_T = [-0.20, 0.15, 0.50, 0.62, 0.50, 0.20, -0.15, -0.22];
+    var RN_X = [0.26, 0.06, -0.15, -0.27, -0.21, -0.03, 0.15, 0.26];   // reach out front, drive hard past the hip
+    var RN_Y = [0.02, 0, 0.02, 0.11, 0.24, 0.28, 0.17, 0.05];          // a real recovery: the knee/foot lifts high through the swing
+    var RN_T = [-0.30, 0.12, 0.54, 0.72, 0.56, 0.16, -0.20, -0.30];    // pointed toe-off, heel leading the next strike
     function runPose9(cx0, gy0, h, ph) {
       // the classic eight-frame run, continuous: contact, down, pass, peak (airborne),
       // forward lean, bent arms pumping opposite the legs
@@ -10542,13 +10548,13 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       return {
         fL: { x: cx0 + cy8(RN_X, u) * h, y: gy0 - Math.max(0, cy8(RN_Y, u)) * h, tilt: cy8(RN_T, u) },
         fR: { x: cx0 + cy8(RN_X, uR) * h, y: gy0 - Math.max(0, cy8(RN_Y, uR)) * h, tilt: cy8(RN_T, uR) },
-        // a stronger rise-and-fall: the body genuinely lifts through the float and drops at the strike
-        bob: -airb * h * 0.085 + h * 0.03,
-        // the torso breathes forward into the run, then eases, instead of a locked lean
-        lean: 0.30 + 0.055 * cyc,
-        // arms drive harder and higher, opposite the legs
-        hLdx: -cy8(RN_X, ua) * 0.72 * h, hLdy: h * 0.12 - cy8(RN_Y, ua) * h * 0.34,
-        hRdx: -cy8(RN_X, uaR) * 0.72 * h, hRdy: h * 0.12 - cy8(RN_Y, uaR) * h * 0.34 };
+        // a real rise-and-fall: the body floats up off the drive and drops onto the strike
+        bob: -airb * h * 0.11 + h * 0.02,
+        // the torso pitches forward into the run and rocks with each drive
+        lean: 0.35 + 0.07 * cyc,
+        // arms drive harder and higher, elbows bent, opposite the legs
+        hLdx: -cy8(RN_X, ua) * 0.82 * h, hLdy: h * 0.10 - cy8(RN_Y, ua) * h * 0.44,
+        hRdx: -cy8(RN_X, uaR) * 0.82 * h, hRdy: h * 0.10 - cy8(RN_Y, uaR) * h * 0.44 };
     }
     // ---- the daily bulletin: when the app opens, today's sky arrives as a short
     // animated news reel, not a list. Your persona walks today's weather scene by
@@ -10941,7 +10947,9 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       // arriving at night where the sky gathers itself into the wheel.
       if (!UI.introT) UI.introT = nowT();
       var e = (nowT() - UI.introT) / 1000, cx = W / 2, still = reduced(), dcI = p.drawingContext;
-      var DUR = [5, 5, 5, 5, 11], SPD = [96, 118, 142, 60, 0];
+      // a fast four-second run through the four seasons of sky, then the title. The seasons
+      // blur past like a time-lapse (one second each); the run reads faster and lighter for it.
+      var DUR = [1, 1, 1, 1, 10], SPD = [210, 230, 240, 150, 0];
       var bi = 0, acc = 0, lt = e;
       while (bi < 4 && lt >= DUR[bi]) { lt -= DUR[bi]; bi++; }
       if (still) { bi = 4; lt = 6; }
@@ -10954,7 +10962,8 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       // ---- sky: each season owns a palette; boundaries crossfade ----
       var SKYB = [ [[16, 20, 40], [54, 62, 94]], [[86, 74, 104], [244, 176, 138]], [[110, 160, 196], [244, 226, 168]], [[110, 82, 74], [232, 148, 84]], [[16, 20, 40], [58, 66, 98]] ];
       function mixC9(c1, c2, t9) { return [c1[0] + (c2[0] - c1[0]) * t9, c1[1] + (c2[1] - c1[1]) * t9, c1[2] + (c2[2] - c1[2]) * t9]; }
-      var xf = (bi < 4 && lt > DUR[bi] - 1.2) ? (lt - (DUR[bi] - 1.2)) / 1.2 : 0;
+      var xfW = Math.min(1.2, DUR[bi] * 0.8);
+      var xf = (bi < 4 && lt > DUR[bi] - xfW) ? (lt - (DUR[bi] - xfW)) / xfW : 0;
       var topC = SKYB[bi][0], botC = SKYB[bi][1];
       if (xf > 0) { topC = mixC9(topC, SKYB[bi + 1][0], xf); botC = mixC9(botC, SKYB[bi + 1][1], xf); }
       p.noStroke(); fillc(GROUNDS.chart); p.rect(0, 0, W, H);
@@ -11046,7 +11055,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       actorFigure(fig9, 1);
       // ---- the final beat: the zodiac gathers, the star descends, the name arrives ----
       if (bi === 4) {
-        var zg9 = eCubic(cl01((lt - 1.2) / 2.4)), zi9;
+        var zg9 = eCubic(cl01(lt / 1.8)), zi9;
         if (zg9 > 0.01) {
           for (zi9 = 0; zi9 < 12; zi9++) {
             var za9 = Math.PI + (zi9 / 11) * Math.PI, zr9 = W * 0.42;
@@ -11057,7 +11066,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
           p.noFill(); strokec([255, 244, 200], 40 * zg9); p.strokeWeight(1);
           p.arc(cx, H * 0.34, W * 0.84, H * 0.44, Math.PI * 1.02, Math.PI * 1.98);
         }
-        var dsc9 = still ? 1 : eCubic(cl01((lt - 3.6) / 1.4));
+        var dsc9 = still ? 1 : eCubic(cl01((lt - 1.2) / 1.2));
         if (dsc9 > 0.01) {
           var sty9 = (H * 0.12) + ((gy0 - fh0 - 20) - H * 0.12) * dsc9;
           var stT9 = still ? 0.8 : 0.55 + 0.45 * Math.sin(nowT() * 0.005);
@@ -11074,10 +11083,10 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
             if (arr9 > 0) friendOnStage(ppl9[fi9], rx, fi9, gy0, fh0 * 0.8, arr9, 0.94);
           }
         }
-        if (lt > 5 || still) riseText('Aqau Pluto', cx, gy0 + 82, 38, SANS, INK, UI.introT + (still ? 0 : (20000 + 5000)), 55);
-        var a2i = still ? 1 : cl01((lt - 6.2) / 0.8);
+        if (lt > 0.2 || still) riseText('Aqau Pluto', cx, gy0 + 82, 38, SANS, INK, UI.introT + (still ? 0 : 4000), 55);
+        var a2i = still ? 1 : cl01((lt - 1.6) / 0.8);
         if (a2i > 0) { p.textStyle(p.ITALIC); setFont(SERIF, 16.5, INK, p.CENTER, p.CENTER, 220 * a2i); p.text('your sky, read straight', cx, gy0 + 138); p.textStyle(p.NORMAL); }
-        var a3i = still ? 1 : cl01((lt - 7) / 0.8);
+        var a3i = still ? 1 : cl01((lt - 2.2) / 0.8);
         if (a3i > 0) { var pli = still ? 1 : 0.6 + 0.4 * Math.sin(nowT() * 0.004); setFont(MONO, 11, ACCTX, p.CENTER, p.CENTER, 255 * a3i * pli); p.text('TAP TO BEGIN', cx, H - (UI.safeBottom || 0) - 56); }
       }
       // ---- one caption per season: the long emotional line ----
@@ -11097,7 +11106,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         if (!UI.introSound) { UI.introSound = true; try { padStart([110, 164.81, 246.94, 329.63], 0.022); } catch (eP) {} return; }
         introOver9();
       });
-      if (e > 33) introOver9();
+      if (e > 14) introOver9();
     }
     function drawSettingsGuide() {
       var st = APP.STATE.settings; if (!st || st.setGuided) return;
@@ -11232,7 +11241,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       APP.STATE.birth = { name: '', y: d.y, mo: d.mo, d: d.d, hour: d.hour, min: d.min, tz: d.tz || 0, manualTz: !!d.manualTz, iana: iana, lat: lat, lon: lon, place: place, timeKnown: d.timeKnown };
       recompute(); UI.selPlanet = 'sun'; UI.popT = nowT(); UI.popFrom = 22; UI.scroll.chart = 0; UI.screen = 'chart'; hideSearchInput();
     }
-    function recompute() { APP.STATE.chart = APP.compute(APP.STATE.birth, APP.STATE.settings); APP.save(); UI.readCache = null; UI.readSig = null; UI.readTransit = null; UI.forecast = null; UI.promCache = null; UI.arcCache = null; UI.todayCache = null; UI.fmList = null; UI.lifeList = null; UI.calEvents = null; UI.calDay = null; UI.walkTr = null; UI.walkTheme = null; UI.bondCache = null; UI.bondFor = null; UI.plun = null; UI.ringsData = null; UI.ringSel = null; UI.vocW = null; UI.phCache = null; UI.synToneCache = null; UI.dailyEssay = null; UI.cycles = undefined; UI.cycOpen = {}; UI.weekWv = undefined; UI.tradCache = undefined; UI.dirCache = undefined; UI.liveWires = undefined; UI.sectDay = undefined; if (APP.clearPersonCharts) APP.clearPersonCharts(); UI.askAns = ''; UI.quip = null; UI.quipNext = 0; buildField(); }
+    function recompute() { APP.STATE.chart = APP.compute(APP.STATE.birth, APP.STATE.settings); APP.save(); UI.readCache = null; UI.readSig = null; UI.readTransit = null; UI.forecast = null; UI.promCache = null; UI.arcCache = null; UI.todayCache = null; UI.fmList = null; UI.lifeList = null; UI.calEvents = null; UI.calDay = null; UI.walkTr = null; UI.walkTheme = null; UI.bondCache = null; UI.bondFor = null; UI.plun = null; UI.ringsData = null; UI.ringSel = null; UI.vocW = null; UI.phCache = null; UI.synToneCache = null; UI.dailyEssay = null; UI.cycles = undefined; UI.cycOpen = {}; UI.weekWv = undefined; UI.tradCache = undefined; UI.dirCache = undefined; UI.liveWires = undefined; UI.sectDay = undefined; UI.pcProseFor = null; if (APP.clearPersonCharts) APP.clearPersonCharts(); UI.askAns = ''; UI.quip = null; UI.quipNext = 0; buildField(); }
 
     // ---------- share / export a clean chart card (own untainted canvas; the live one holds remote images) ----------
     // share a daily card (clean offscreen canvas) — moon phase + what's live on your chart today
