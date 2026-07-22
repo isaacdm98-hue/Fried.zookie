@@ -5338,21 +5338,23 @@ var APP = (function () {
   }
   function tarotGuide(card) {
     var up = joinKw(card.up), rev = joinKw(card.rev), out = {};
+    // hand-written, Labyrinthos-aligned meanings per card when present; the templates below are the fallback
+    var M = (DATA.TAROT_MEAN && DATA.TAROT_MEAN[card.name]) || null;
     if (card.arcana === 'major') {
       out.corr = 'Major Arcana · ' + (MAJOR_ASTRO[card.num] || '');
-      out.upright = card.ess + ' Upright it carries ' + up + ': a large, archetypal force, a chapter rather than a passing mood. As card ' + card.num + ' of the Fool’s journey, it marks a real turning point in the soul’s story.';
-      out.reversed = 'Reversed, the lesson is blocked, delayed or turned inward: ' + rev + '. The force hasn’t gone: it’s asking to be met more honestly.';
-      out.love = 'a defining theme rather than a detail: ' + card.up[0] + ' colours the whole connection.';
-      out.work = card.up[1 < card.up.length ? 1 : 0] + ' is the headline; treat it as structural, not a small task.';
+      out.upright = M ? M.um : (card.ess + ' Upright it carries ' + up + ': a large, archetypal force, a chapter rather than a passing mood. As card ' + card.num + ' of the Fool’s journey, it marks a real turning point in the soul’s story.');
+      out.reversed = M ? M.rm : ('Reversed, the lesson is blocked, delayed or turned inward: ' + rev + '. The force hasn’t gone: it’s asking to be met more honestly.');
+      out.love = M ? M.love : ('a defining theme rather than a detail: ' + card.up[0] + ' colours the whole connection.');
+      out.work = M ? M.work : (card.up[1 < card.up.length ? 1 : 0] + ' is the headline; treat it as structural, not a small task.');
       out.advice = 'lean into ' + card.up[0] + ', and watch for ' + card.rev[0] + '.';
     } else {
       var sf = DATA.SUIT_KW[card.arcana], el = sf ? sf.el : '', stage = (card.num <= 10) ? RANK_STAGE[card.num] : COURT_STAGE[card.num];
       var rank = String(card.name).split(' of ')[0];
       out.corr = el + ' · ' + card.arcana + ': ' + (sf ? sf.theme : '');
-      out.upright = card.ess + ' Upright it speaks of ' + up + '. As the ' + rank + ' of ' + card.arcana + ' it is ' + stage + ', played out in the realm of ' + (sf ? sf.theme : '') + '.';
-      out.reversed = 'Reversed: ' + rev + '. The same ' + (el ? el.toLowerCase() + ' ' : '') + 'energy, but stuck, overdone, or pointed the wrong way.';
-      out.love = loveFlavor(card.arcana, card.up[0]);
-      out.work = workFlavor(card.arcana, card.up[card.up.length > 1 ? 1 : 0]);
+      out.upright = M ? M.um : (card.ess + ' Upright it speaks of ' + up + '. As the ' + rank + ' of ' + card.arcana + ' it is ' + stage + ', played out in the realm of ' + (sf ? sf.theme : '') + '.');
+      out.reversed = M ? M.rm : ('Reversed: ' + rev + '. The same ' + (el ? el.toLowerCase() + ' ' : '') + 'energy, but stuck, overdone, or pointed the wrong way.');
+      out.love = M ? M.love : loveFlavor(card.arcana, card.up[0]);
+      out.work = M ? M.work : workFlavor(card.arcana, card.up[card.up.length > 1 ? 1 : 0]);
       out.advice = 'lean into ' + card.up[0] + '; mind the pull toward ' + card.rev[0] + '.';
     }
     return out;
