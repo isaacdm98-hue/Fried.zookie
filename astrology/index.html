@@ -2138,10 +2138,10 @@ var APP = (function () {
   function traditionFor(c) {
     var lines = [], pr; try { pr = prominence(c); } catch (e) { pr = null; }
     var top = (pr && pr.ranked && pr.ranked.length) ? pr.ranked[0] : 'sun', pt = DATA.PLANET_TRAD[top];
-    if (pt) { var lead = nameFor(top) + ' carries the most weight in your chart. ' + pt.sig; if (pt.q) lead += '  “' + pt.q + '” — ' + pt.src + '.'; lines.push(lead); }
+    if (pt) { var lead = nameFor(top) + ' carries the most weight in your chart. ' + pt.sig; if (pt.q) lead += ' “' + pt.q + '” — ' + pt.src + '.'; lines.push(lead); }
     if (STATE.birth.timeKnown) {
       var counts = {}, best = -1, bestH = -1, i; for (i = 0; i < DATA.PLANET_ORDER.length; i++) { var pl = c.planets[DATA.PLANET_ORDER[i]]; if (pl && pl.house) { counts[pl.house] = (counts[pl.house] || 0) + 1; if (counts[pl.house] > best) { best = counts[pl.house]; bestH = pl.house; } } }
-      if (bestH > 0 && best >= 2) { var ht = DATA.HOUSE_TRAD[bestH - 1]; if (ht) lines.push('Your busiest place is the ' + ordinal(bestH) + ' house, with ' + best + ' planets gathered there. ' + ht.sig + '  “' + ht.q + '” — ' + DATA.TRAD_SRC_LILLY + '.'); }
+      if (bestH > 0 && best >= 2) { var ht = DATA.HOUSE_TRAD[bestH - 1]; if (ht) lines.push('Your busiest place is the ' + ordinal(bestH) + ' house, with ' + best + ' planets gathered there. ' + ht.sig + (ht.q ? ' “' + ht.q + '” — ' + (DATA.TRAD_SRC_LILLY || 'Lilly, Christian Astrology (1647)') + '.' : '')); }
     }
     var joys = planetJoys(c); if (joys.length) { var j = joys[0]; lines.push(nameFor(j.key) + ' sits in its joy in the ' + ordinal(j.house) + ' house: ' + j.why + '. The Hellenistic astrologers held this the one place where it is most fully at home.'); }
     return lines;
@@ -3751,7 +3751,7 @@ var APP = (function () {
     var targetNat = pm.det ? pm.det.nature.verdict : 'point', targetScore = (pm.det && pm.det.condition) ? pm.det.condition.total : null;
     var rec = (pm.det && !pm.isPoint && c.planets[E.dp]) ? receptionOf(c, E.dp, E.np) : null;
     var verdict;
-    if (pm.isPoint) verdict = (hard ? 'a hard direction to an angle, marking a turning under strain, where something in the standing is renegotiated rather than handed over' : conj ? 'the two edges meeting body to body — a year the life and its ' + pm.short + ' move as one instrument' : 'an easy direction to an angle, a door opening with the grain rather than against it');
+    if (pm.isPoint) verdict = (hard ? 'a hard direction to an angle, marking a turning under strain, where something in the standing is renegotiated rather than handed over' : conj ? 'the two edges meeting body to body — a year the life and ' + pm.short + ' move as one instrument' : 'an easy direction to an angle, a door opening with the grain rather than against it');
     else if (hard && targetNat === 'benefic' && targetScore != null && targetScore >= 3) verdict = 'a ' + E.aspKey + ' is work — nothing flows straight — but a dignified benefic pays what it owes: expect the friction over ' + pm.matter + ' to end in a settlement, not a wound';
     else if (hard && targetNat === 'malefic' && targetScore != null && targetScore < 0) verdict = 'a ' + E.aspKey + ' to an afflicted malefic is the hard kind: the year exacts a real cost through ' + pm.matter + ' — brace, do not overreach, and let it pass';
     else if (hard && targetNat === 'malefic') verdict = 'a ' + E.aspKey + ' to a malefic, even a dignified one, brings its matter to a head: ' + pm.matter + ' presses, and the work is to meet it deliberately rather than be caught by it';
