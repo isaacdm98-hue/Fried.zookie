@@ -8113,21 +8113,45 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (UI.intCache === undefined) { try { UI.intCache = APP.interests(c); } catch (e4f) { UI.intCache = []; } if (UI.intPull === undefined) { try { UI.intPull = APP.emergingPull(c, b); } catch (e5f) { UI.intPull = null; } } }
       if (UI.tradCache === undefined) { try { UI.tradCache = APP.traditionalRead(c, b); } catch (eTr9) { UI.tradCache = null; } }
       if (UI.rdBeats === undefined) {
-        var bsF = [], qkF = UI.quirkCache || [], sdF = 0; try { var dqF = new Date(); sdF = dqF.getFullYear() * 366 + dqF.getMonth() * 31 + dqF.getDate(); } catch (e6f) {}
-        // the traditional door first: the Ascendant, then the ruler of the Ascendant.
-        // A trained astrologer starts here — not at the Sun.
-        if (UI.tradCache && UI.tradCache.asc) bsF.push({ lab: 'Where a reading starts', txt: UI.tradCache.asc.line });
-        if (UI.tradCache && UI.tradCache.ruler) bsF.push({ lab: 'The captain of your chart', txt: UI.tradCache.ruler.line });
-        if (UI.tradCache && !UI.tradCache.hasTime && UI.tradCache.note) bsF.push({ lab: 'Where a reading starts', txt: UI.tradCache.note });
-        if (qkF.length) bsF.push({ lab: '', txt: qkF[sdF % qkF.length] });
-        if (UI.smCache) bsF.push({ lab: 'The two lights', txt: UI.smCache });
-        if (UI.oddPred && UI.oddPred.length) bsF.push({ lab: 'Right now', txt: UI.oddPred[0].text });
-        if (qkF.length > 3) bsF.push({ lab: 'Also true', txt: qkF[(sdF + 4) % qkF.length] });
-        if (UI.sigCache) bsF.push({ lab: 'The sharpest thing about you', txt: UI.sigCache });
-        if (UI.intCache && UI.intCache.length) bsF.push({ lab: 'What you’re drawn to', txt: UI.intCache.map(function (t9) { return t9.charAt(0).toUpperCase() + t9.slice(1); }).join('. ') + '.' });
-        // the ancient sky: the pyramid-builders' astronomy on your exact chart — the strongest connections first
+        // THE READING IS THE JUDGMENT — Sonia's order, every beat chart-specific with its receipt:
+        // the Ascendant, then its lord (the captain), then each house-lord followed home, then the
+        // planets' states, the sharpest aspect judged by nature, the lord of the year, and LAST the
+        // transits — read only where they strike a live wire. The old element-first beats now live
+        // only under "All", never at the front.
+        var bsF = [], T9 = UI.tradCache;
+        var addB = function (lab, txt, rc) { if (txt) bsF.push({ lab: lab, txt: txt, receipt: rc || null }); };
+        var clip9 = function (t, n) { if (!t || t.length <= n) return t; var cut = t.slice(0, n), m = cut.lastIndexOf('. '); return m > n * 0.5 ? cut.slice(0, m + 1) : cut.replace(/\s+\S*$/, '') + '…'; };
+        if (T9 && T9.asc) addB('Where a reading starts', T9.asc.line, T9.asc.receipt);
+        if (T9 && T9.ruler) addB('The captain of your chart', T9.ruler.line, T9.ruler.receipt);
+        if (T9 && !T9.hasTime && T9.note) addB('Where a reading starts', T9.note, null);
+        // the house-lords, followed home — the angles first, then the fortunes
+        if (T9 && T9.houses && T9.houses.length) {
+          var hByN9 = {}, hq9; for (hq9 = 0; hq9 < T9.houses.length; hq9++) hByN9[T9.houses[hq9].house] = T9.houses[hq9];
+          var HPRI9 = [1, 10, 7, 4, 2, 5, 9, 11], hpi9, shown9 = 0;
+          for (hpi9 = 0; hpi9 < HPRI9.length && shown9 < 5; hpi9++) { var HH9 = hByN9[HPRI9[hpi9]]; if (!HH9) continue; addB('The ' + ordinal(HH9.house) + ' house · followed home', HH9.line, HH9.receipt); shown9++; }
+        }
+        // the planets' states — the soundest and the weakest, judged by dignity
+        if (T9 && T9.states && T9.states.length) {
+          var DRANK9 = { Domicile: 5, Exaltation: 4, Triplicity: 3, Term: 2, Terms: 2, Face: 1, Decan: 1, Peregrine: 0, Detriment: -5, Fall: -4 };
+          var sts9 = T9.states.slice(), rank9 = function (s) { return DRANK9[s.state] == null ? 0 : DRANK9[s.state]; };
+          sts9.sort(function (a, z) { return rank9(z) - rank9(a); });
+          var strong9 = sts9[0], weak9 = sts9[sts9.length - 1];
+          if (strong9) addB('The soundest planet in you', strong9.line, strong9.receipt);
+          if (weak9 && weak9.k !== strong9.k && rank9(weak9) < 0) addB('The planet that leans on others', weak9.line, weak9.receipt);
+        }
+        // the sharpest aspect — judged by the NATURE of the planets in it, not the angle alone
+        try {
+          var aspH9 = null, ai9; for (ai9 = 0; ai9 < c.aspects.length; ai9++) { var A9 = c.aspects[ai9]; if (A9.asp.key === 'square' || A9.asp.key === 'opposition') { aspH9 = A9; break; } }
+          if (!aspH9 && c.aspects.length) aspH9 = c.aspects[0];
+          if (aspH9) { var nat9 = APP.aspectNature(aspH9.a, aspH9.b, aspH9.asp.key); addB('The sharpest conversation', 'Your tightest hard contact is ' + APP.nameFor(aspH9.a) + ' ' + aspH9.asp.key + ' ' + APP.nameFor(aspH9.b) + ', ' + aspH9.orb.toFixed(1) + '° from exact. The tradition judges it by nature, not the angle alone: ' + nat9.line + '. Better a square from a benefic than a trine from a malefic.', (APP.nameFor(aspH9.a) + ' ' + aspH9.asp.key + ' ' + APP.nameFor(aspH9.b) + ' · ORB ' + aspH9.orb.toFixed(1) + '° · ' + nat9.tone).toUpperCase()); }
+        } catch (eA9) {}
+        // the timing: the lord of the year and the directions it lights — prediction, in order
+        try { var PY9 = APP.profectionYear(c, b); if (PY9 && PY9.line) addB('The lord of your year', clip9(PY9.line, 360), PY9.receipt); } catch (ePy9) {}
+        // and LAST of all — the transits, only where they strike a live wire
+        try { var TG9 = APP.triggerReading(c, b); if (TG9) { var tgTxt9 = TG9.doctrine + (TG9.loud && TG9.loud.length ? ' ' + TG9.loud[0].line : ''); addB('Last of all: what the sky triggers now', clip9(tgTxt9, 360), TG9.receipt); } } catch (eTg9) {}
+        // the ancient sky — real fixed-star / pyramid-era astronomy on your exact chart (a short tail)
         if (UI.ancient === undefined) { try { UI.ancient = APP.ancientSky(c, b); } catch (eAs9) { UI.ancient = []; } }
-        if (UI.ancient && UI.ancient.length) { var asF; for (asF = 0; asF < UI.ancient.length; asF++) bsF.push({ lab: UI.ancient[asF].lab, txt: UI.ancient[asF].txt, civ: UI.ancient[asF].civ }); }
+        if (UI.ancient && UI.ancient.length) { var asF; for (asF = 0; asF < Math.min(2, UI.ancient.length); asF++) bsF.push({ lab: UI.ancient[asF].lab, txt: UI.ancient[asF].txt, civ: UI.ancient[asF].civ }); }
         UI.rdBeats = bsF;
       }
       if (UI.readMode === undefined) UI.readMode = 'flow';
@@ -8139,13 +8163,15 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         flatBtn('≡ All', x + w - 60, ly + 24, 60, 30, function () { UI.readMode = 'menu'; UI.scroll.read = 0; buzz(6); }, false, true);
         var caF = reduced() ? 1 : cl01((nowT() - (UI.rdT || UI.fxT)) / 500), riseF = (1 - eCubic(caF)) * 14;
         var availTop = scrTop + 74, availBot = scrBot - 52;
-        var tszF = beat.txt.length > 230 ? 17 : (beat.txt.length > 140 ? 19 : 21);
+        var tszF = beat.txt.length > 340 ? 14 : beat.txt.length > 260 ? 15.5 : beat.txt.length > 200 ? 17 : (beat.txt.length > 140 ? 19 : 21);
         var wlF = wrapLines2(beat.txt, w, SERIF, tszF * 1.46), lhF = tszF * 1.46 * 1.5, thF = wlF.length * lhF;
+        // the receipt — the working and the source, on every judged beat (Sonia's rule)
+        var rcL9 = beat.receipt ? wrapLines2(beat.receipt, w, MONO, 8.5) : null, rcH9 = rcL9 ? rcL9.length * 12 + 14 : 0;
         // the Ancient Sky beats carry illustrated headers when the bundled art/ folder is present;
         // absence costs nothing — the beat simply centres its text the way it always did
         var artIm = beat.civ ? artImg('ancient-' + beat.civ) : null, artH = 0;
         if (artIm) { artH = Math.min(Math.round(w * 9 / 16), (availBot - availTop) - thF - 130); if (artH < 70) { artIm = null; artH = 0; } }
-        var tyF = availTop + Math.max(0, ((availBot - availTop) - thF - (artH ? artH + 24 : 0)) / 2) + (artH ? artH + 24 : 0);
+        var tyF = availTop + Math.max(0, ((availBot - availTop) - thF - rcH9 - (artH ? artH + 24 : 0)) / 2) + (artH ? artH + 24 : 0);
         if (artIm) {
           var artY = tyF - 34 - 18 - artH + riseF, dcArt = p.drawingContext;
           if (dcArt) { dcArt.save(); dcArt.globalAlpha = 0.92 * caF; }
@@ -8154,6 +8180,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         }
         if (beat.lab) { setFont(MONO, 10, ACCTX, p.LEFT, p.TOP, 230 * caF); p.text(beat.lab.toUpperCase(), x, tyF - 34 + riseF); }
         setFont(SERIF, tszF, INK, p.LEFT, p.TOP, 255 * caF); var wiF; for (wiF = 0; wiF < wlF.length; wiF++) p.text(wlF[wiF], x, tyF + wiF * lhF + riseF);
+        if (rcL9) { var ryF9 = tyF + thF + 12 + riseF, rri9; setFont(MONO, 8.5, ACCTX, p.LEFT, p.TOP, 180 * caF); for (rri9 = 0; rri9 < rcL9.length; rri9++) p.text(rcL9[rri9], x, ryF9 + rri9 * 12); }
         var lastF = bi >= beats.length - 1;
         setFont(MONO, 10.5, ACCTX, p.CENTER, p.BOTTOM, 175 + 55 * (reduced() ? 1 : (0.5 + 0.5 * Math.sin(nowT() * 0.003)))); p.text(lastF ? 'SEE EVERYTHING  ›' : 'TAP TO CONTINUE  ›', x + w / 2, scrBot);
         pushHit(x - 8, scrTop + 42, w + 16, (scrBot - 46) - (scrTop + 42), function () { if (lastF) { UI.readMode = 'menu'; UI.scroll.read = 0; } else { UI.rdI = bi + 1; } UI.rdT = nowT(); buzz(8); });
