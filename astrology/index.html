@@ -5912,7 +5912,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     }
     // tapping a body just highlights it (magnify + aspect threads + bloom) and shows its meaning BELOW the
     // wheel — no full-screen takeover. (The cinematic story view stays in the code but is no longer triggered.)
-    function selectPlanet(key) { UI.popFrom = UI.pdia[key] || 22; UI.selPlanet = key; UI.popT = nowT(); buzz(10); UI.pcard = key; UI.pcScroll = 0; UI.pcProseFor = null; UI.zoomFrom = (UI.posMap && UI.posMap[key]) ? { x: UI.posMap[key].x, y: UI.posMap[key].y } : null; }
+    function selectPlanet(key) { UI.popFrom = UI.pdia[key] || 22; UI.selPlanet = key; UI.popT = nowT(); buzz(10); UI.pcard = key; UI.pcScroll = 0; UI.pcProseFor = null; UI.zoomFrom = (UI.posMap && UI.posMap[key]) ? { x: UI.posMap[key].x, y: UI.posMap[key].y } : null; if (APP.STATE.settings && !APP.STATE.settings.sawIntro) { APP.STATE.settings.sawIntro = true; APP.save(); } }
     function closeZoom() { UI.pcard = null; UI.selPlanet = null; UI.pcScroll = 0; UI.zoomFrom = null; buzz(6); }
     function tapPlanet(key) { selectPlanet(key); }
 
@@ -6688,7 +6688,13 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         pushHit(x, sY(ly) - 6, w, 40, function () { openToday(); });
       })();
       ly += 40;
-      if (!(APP.STATE.settings && APP.STATE.settings.sawStory)) { setFont(MONO, 9.5, INK, p.CENTER, p.TOP, 130); p.text('TAP A PLANET TO OPEN IT', x + w / 2, sY(ly)); ly += 20; }
+      if (!(APP.STATE.settings && APP.STATE.settings.sawIntro)) {
+        // first visit: one gentle, opt-in offer to learn the method on your own chart. It never
+        // plays on its own (that was the old freeze); it disappears once you take it or tap a planet.
+        var pT9 = reduced() ? 1 : 0.6 + 0.4 * Math.sin(nowT() * 0.004);
+        setFont(MONO, 9.5, ACCTX, p.CENTER, p.TOP, 230 * pT9); p.text('✦  SEE HOW YOUR CHART IS READ · 30s ›', x + w / 2, sY(ly));
+        pushHit(x, sY(ly) - 8, w, 30, function () { startTour(); buzz(10); }); ly += 20;
+      } else if (!(APP.STATE.settings && APP.STATE.settings.sawStory)) { setFont(MONO, 9.5, INK, p.CENTER, p.TOP, 130); p.text('TAP A PLANET TO OPEN IT', x + w / 2, sY(ly)); ly += 20; }
 
       if (UI.pcard) UI.pcardDraw = true;
       // one frame, no scroll: tapping a planet opens the placement zoom (it grows from the
@@ -10903,12 +10909,24 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
           return { k: 'sun', title: 'Your Sun is in ' + sunSg, body: 'The Sun is one of the two lights \u2014 not the whole of you, whatever the pop apps say. Without a birth time the traditional doorway (the Ascendant) stays shut, so the reading leans on the lights.' + (tSun ? ' ' + cap(tSun) + '.' : '') };
         })(),
         { k: 'moon', title: 'The two lights', body: 'Sun in ' + sunSg + ', Moon in ' + moonSg + '. The lights are not \u201Cyour personality\u201D \u2014 they are the day-side and night-side of the chart, weighed together with everything else.' + (tMoon ? ' ' + cap(tMoon) + '.' : '') },
-        { k: 'weather', title: 'Weather, not fate', body: 'The planets never stopped moving. When one crosses a degree that matters in your chart, that is a transit: a season with a name and an end date, never a verdict. The wheel on Home shows today riding its rim.' },
-        { k: 'doors', title: 'Where everything lives', body: '' }
+        (function () {
+          // the loudest conversation: the tightest aspect between personal planets, judged by nature.
+          try {
+            var PS9 = { sun: 1, moon: 1, mercury: 1, venus: 1, mars: 1 }, cand9 = [], ai9;
+            for (ai9 = 0; ai9 < c.aspects.length; ai9++) { var A9 = c.aspects[ai9]; if (A9.minor) continue; if (!PS9[A9.a] && !PS9[A9.b]) continue; cand9.push(A9); }
+            cand9.sort(function (u, v) { return u.orb - v.orb; });
+            if (cand9.length) {
+              var a9 = cand9[0], nat9 = null; try { nat9 = APP.aspectNature(a9.a, a9.b, a9.asp.key); } catch (eN9) {}
+              return { k: 'weather', title: 'The loudest conversation', body: 'Planets talk to each other by angle. Your closest one is ' + APP.nameFor(a9.a) + ' ' + a9.asp.key + ' ' + APP.nameFor(a9.b) + ', only ' + a9.orb.toFixed(1) + '\u00B0 from exact.' + (nat9 ? ' ' + cap(nat9.line) + '.' : '') + ' The tradition judges these by the nature of the planets, not the angle alone \u2014 a square from a kind planet beats a trine from a harsh one.' };
+            }
+          } catch (eL9) {}
+          return { k: 'weather', title: 'Weather, not fate', body: 'The planets never stopped moving. When one crosses a degree that matters in your chart, that is a transit: a season with a name and an end date, never a verdict. The wheel on Home shows today riding its rim.' };
+        })(),
+        { k: 'doors', title: 'Now you read it yourself', body: 'Tap any planet on your wheel and it opens \u2014 the app shows its working every time.' }
       ];
     }
     function startTour() { UI.tour = { step: 0, t0: nowT() }; UI.screen = 'chart'; UI.scroll.chart = 0; }
-    function endTour() { UI.tour = null; try { padStop(1.6); } catch (eT9) {} if (APP.STATE.settings) { APP.STATE.settings.toured = true; APP.save(); } UI.fxT = nowT(); }
+    function endTour() { UI.tour = null; try { padStop(1.6); } catch (eT9) {} if (APP.STATE.settings) { APP.STATE.settings.toured = true; APP.STATE.settings.sawIntro = true; APP.save(); } UI.fxT = nowT(); }
     function tourBtn(label, bx, by, bw, bh, fn, primary) {
       var off = pressOff(bx, by, bw, bh, 3);
       p.noStroke(); fillc(primary ? INK : GROUNDS.chart); p.rect(bx, by + off, bw, bh, 7);
