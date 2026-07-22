@@ -176,20 +176,29 @@ removing pop won't move the baselines).
 
 ---
 
-## Sequencing (suggested)
+## Progress
 
-1. **Cleanup pass (fast, low-risk):** Workstream E — delete dead pop code and the
-   visible pop surfaces (element bar, watchCards, day-word, famous). Immediate
-   "the pop is gone" win; shrinks the app.
-2. **Chart screen fit (Workstream D):** with the element bar gone, refit Home to
-   one frame and delete the redundant inline reading.
-3. **The plain layer (Workstream A):** `plainRead` + wire it above the technical
+- **DONE (v4.1.0):** Workstream D (chart fits one frame, no scroll; depth via the
+  placement zoom) and the bulk of Workstream E (element bar, word-for-day, and all
+  the uncalled pop functions + the redundant inline reading, deleted). Verified at
+  320/390/768 + a short 320×568 viewport; golden/doctrine/audit/voice all pass.
+- **Still open in E (a choice, not a cleanup):** `famousMatches` on the People
+  screen (matches strangers by Sun sign) and the Learn "elements" category —
+  remove outright, or re-base on a real chart feature. Deferred to a decision.
+- **Internal only:** the dead corpus.js data tables (COMBO, SUNMOON, QUIRK,
+  SPOOKY, ASPECT_TELL) are now unreferenced but interleaved with live tables;
+  a careful strip would shrink the download. Not user-visible.
+
+## Sequencing (remaining)
+
+1. **Finish E:** decide `famousMatches` + Learn elements (remove vs re-base).
+2. **The plain layer (Workstream A):** `plainRead` + wire it above the technical
    line in the zoom card, Read flow, guide. The biggest single lift in
    novice-friendliness.
-4. **Teach-in-context (Workstream B):** extend the glossary to the tradition's
+3. **Teach-in-context (Workstream B):** extend the glossary to the tradition's
    vocabulary and light up tappable terms everywhere.
-5. **First-reading (Workstream C):** the gentle 3–4 beat method intro.
-6. **Difficulty tiers (Workstream F):** the Beginner/Learning/Astrologer setting,
+4. **First-reading (Workstream C):** the gentle 3–4 beat method intro.
+5. **Difficulty tiers (Workstream F):** the Beginner/Learning/Astrologer setting,
    tying A/B/C together, default Beginner.
 
 Each step ships behind the existing harness floor: golden (judged meaning),

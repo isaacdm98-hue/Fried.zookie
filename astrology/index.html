@@ -4991,92 +4991,6 @@ var APP = (function () {
     return out;
   }
 
-  // ================= famous charts like yours =================
-  // Curated public figures (exact Wikipedia titles → bio lead portrait; no open image search).
-  // Births 1700+ so the Sun sign is unambiguous; the engine computes Sun & Moon, we match by sign.
-  var FAMOUS = [
-    { n: 'Vincent van Gogh', w: 'Vincent_van_Gogh', y: 1853, mo: 3, d: 30, by: 'painter' },
-    { n: 'Maya Angelou', w: 'Maya_Angelou', y: 1928, mo: 4, d: 4, by: 'poet' },
-    { n: 'Charlie Chaplin', w: 'Charlie_Chaplin', y: 1889, mo: 4, d: 16, by: 'filmmaker' },
-    { n: 'Thomas Jefferson', w: 'Thomas_Jefferson', y: 1743, mo: 4, d: 13, by: 'statesman' },
-    { n: 'Sigmund Freud', w: 'Sigmund_Freud', y: 1856, mo: 5, d: 6, by: 'psychoanalyst' },
-    { n: 'Audrey Hepburn', w: 'Audrey_Hepburn', y: 1929, mo: 5, d: 4, by: 'actor' },
-    { n: 'Karl Marx', w: 'Karl_Marx', y: 1818, mo: 5, d: 5, by: 'philosopher' },
-    { n: 'Salvador Dalí', w: 'Salvador_Dalí', y: 1904, mo: 5, d: 11, by: 'painter' },
-    { n: 'Bob Dylan', w: 'Bob_Dylan', y: 1941, mo: 5, d: 24, by: 'songwriter' },
-    { n: 'Marilyn Monroe', w: 'Marilyn_Monroe', y: 1926, mo: 6, d: 1, by: 'actor' },
-    { n: 'John F. Kennedy', w: 'John_F._Kennedy', y: 1917, mo: 5, d: 29, by: 'US president' },
-    { n: 'Anne Frank', w: 'Anne_Frank', y: 1929, mo: 6, d: 12, by: 'diarist' },
-    { n: 'Frida Kahlo', w: 'Frida_Kahlo', y: 1907, mo: 7, d: 6, by: 'painter' },
-    { n: 'Nikola Tesla', w: 'Nikola_Tesla', y: 1856, mo: 7, d: 10, by: 'inventor' },
-    { n: 'Nelson Mandela', w: 'Nelson_Mandela', y: 1918, mo: 7, d: 18, by: 'statesman' },
-    { n: 'Ernest Hemingway', w: 'Ernest_Hemingway', y: 1899, mo: 7, d: 21, by: 'writer' },
-    { n: 'Barack Obama', w: 'Barack_Obama', y: 1961, mo: 8, d: 4, by: 'US president' },
-    { n: 'Coco Chanel', w: 'Coco_Chanel', y: 1883, mo: 8, d: 19, by: 'designer' },
-    { n: 'Carl Jung', w: 'Carl_Jung', y: 1875, mo: 7, d: 26, by: 'psychologist' },
-    { n: 'Amelia Earhart', w: 'Amelia_Earhart', y: 1897, mo: 7, d: 24, by: 'aviator' },
-    { n: 'Mother Teresa', w: 'Mother_Teresa', y: 1910, mo: 8, d: 26, by: 'missionary' },
-    { n: 'Michael Jackson', w: 'Michael_Jackson', y: 1958, mo: 8, d: 29, by: 'musician' },
-    { n: 'Freddie Mercury', w: 'Freddie_Mercury', y: 1946, mo: 9, d: 5, by: 'musician' },
-    { n: 'Leo Tolstoy', w: 'Leo_Tolstoy', y: 1828, mo: 9, d: 9, by: 'novelist' },
-    { n: 'Mahatma Gandhi', w: 'Mahatma_Gandhi', y: 1869, mo: 10, d: 2, by: 'independence leader' },
-    { n: 'John Lennon', w: 'John_Lennon', y: 1940, mo: 10, d: 9, by: 'musician' },
-    { n: 'Oscar Wilde', w: 'Oscar_Wilde', y: 1854, mo: 10, d: 16, by: 'writer' },
-    { n: 'Friedrich Nietzsche', w: 'Friedrich_Nietzsche', y: 1844, mo: 10, d: 15, by: 'philosopher' },
-    { n: 'Marie Curie', w: 'Marie_Curie', y: 1867, mo: 11, d: 7, by: 'physicist' },
-    { n: 'Pablo Picasso', w: 'Pablo_Picasso', y: 1881, mo: 10, d: 25, by: 'painter' },
-    { n: 'Theodore Roosevelt', w: 'Theodore_Roosevelt', y: 1858, mo: 10, d: 27, by: 'US president' },
-    { n: 'Indira Gandhi', w: 'Indira_Gandhi', y: 1917, mo: 11, d: 19, by: 'prime minister' },
-    { n: 'Ludwig van Beethoven', w: 'Ludwig_van_Beethoven', y: 1770, mo: 12, d: 17, by: 'composer' },
-    { n: 'Mark Twain', w: 'Mark_Twain', y: 1835, mo: 11, d: 30, by: 'writer' },
-    { n: 'Winston Churchill', w: 'Winston_Churchill', y: 1874, mo: 11, d: 30, by: 'prime minister' },
-    { n: 'Walt Disney', w: 'Walt_Disney', y: 1901, mo: 12, d: 5, by: 'animator' },
-    { n: 'Martin Luther King Jr.', w: 'Martin_Luther_King_Jr.', y: 1929, mo: 1, d: 15, by: 'civil-rights leader' },
-    { n: 'Stephen Hawking', w: 'Stephen_Hawking', y: 1942, mo: 1, d: 8, by: 'physicist' },
-    { n: 'Benjamin Franklin', w: 'Benjamin_Franklin', y: 1706, mo: 1, d: 17, by: 'polymath' },
-    { n: 'Muhammad Ali', w: 'Muhammad_Ali', y: 1942, mo: 1, d: 17, by: 'boxer' },
-    { n: 'Abraham Lincoln', w: 'Abraham_Lincoln', y: 1809, mo: 2, d: 12, by: 'US president' },
-    { n: 'Charles Darwin', w: 'Charles_Darwin', y: 1809, mo: 2, d: 12, by: 'naturalist' },
-    { n: 'Wolfgang Amadeus Mozart', w: 'Wolfgang_Amadeus_Mozart', y: 1756, mo: 1, d: 27, by: 'composer' },
-    { n: 'Oprah Winfrey', w: 'Oprah_Winfrey', y: 1954, mo: 1, d: 29, by: 'broadcaster' },
-    { n: 'Albert Einstein', w: 'Albert_Einstein', y: 1879, mo: 3, d: 14, by: 'physicist' },
-    { n: 'Steve Jobs', w: 'Steve_Jobs', y: 1955, mo: 2, d: 24, by: 'entrepreneur' },
-    { n: 'Kurt Cobain', w: 'Kurt_Cobain', y: 1967, mo: 2, d: 20, by: 'musician' },
-    { n: 'Rihanna', w: 'Rihanna', y: 1988, mo: 2, d: 20, by: 'musician' },
-    // modern icons across fields (science, sport, music, activism, letters)
-    { n: 'David Bowie', w: 'David_Bowie', y: 1947, mo: 1, d: 8, by: 'musician' },
-    { n: 'Greta Thunberg', w: 'Greta_Thunberg', y: 2003, mo: 1, d: 3, by: 'climate activist' },
-    { n: 'Ada Lovelace', w: 'Ada_Lovelace', y: 1815, mo: 12, d: 10, by: 'mathematician' },
-    { n: 'Taylor Swift', w: 'Taylor_Swift', y: 1989, mo: 12, d: 13, by: 'songwriter' },
-    { n: 'Toni Morrison', w: 'Toni_Morrison', y: 1931, mo: 2, d: 18, by: 'novelist' },
-    { n: 'Cristiano Ronaldo', w: 'Cristiano_Ronaldo', y: 1985, mo: 2, d: 5, by: 'footballer' },
-    { n: 'Ruth Bader Ginsburg', w: 'Ruth_Bader_Ginsburg', y: 1933, mo: 3, d: 15, by: 'jurist' },
-    { n: 'Jane Goodall', w: 'Jane_Goodall', y: 1934, mo: 4, d: 3, by: 'primatologist' },
-    { n: 'Aretha Franklin', w: 'Aretha_Franklin', y: 1942, mo: 3, d: 25, by: 'singer' },
-    { n: 'David Attenborough', w: 'David_Attenborough', y: 1926, mo: 5, d: 8, by: 'broadcaster' },
-    { n: 'Prince', w: 'Prince_(musician)', y: 1958, mo: 6, d: 7, by: 'musician' },
-    { n: 'Alan Turing', w: 'Alan_Turing', y: 1912, mo: 6, d: 23, by: 'computer scientist' },
-    { n: 'Lionel Messi', w: 'Lionel_Messi', y: 1987, mo: 6, d: 24, by: 'footballer' },
-    { n: 'Malala Yousafzai', w: 'Malala_Yousafzai', y: 1997, mo: 7, d: 12, by: 'activist' },
-    { n: 'Neil Armstrong', w: 'Neil_Armstrong', y: 1930, mo: 8, d: 5, by: 'astronaut' },
-    { n: 'Usain Bolt', w: 'Usain_Bolt', y: 1986, mo: 8, d: 21, by: 'sprinter' },
-    { n: 'Beyoncé', w: 'Beyoncé', y: 1981, mo: 9, d: 4, by: 'musician' },
-    { n: 'Keanu Reeves', w: 'Keanu_Reeves', y: 1964, mo: 9, d: 2, by: 'actor' },
-    { n: 'Stephen King', w: 'Stephen_King', y: 1947, mo: 9, d: 21, by: 'novelist' },
-    { n: 'Serena Williams', w: 'Serena_Williams', y: 1981, mo: 9, d: 26, by: 'tennis champion' }
-  ];
-  function famousMatches(c) {
-    var usun = c.planets.sun.sign, umoon = c.planets.moon.sign, uven = c.planets.venus ? c.planets.venus.sign : -1, ay = c.ayan || 0, out = [], i;
-    for (i = 0; i < FAMOUS.length; i++) {
-      var f = FAMOUS[i], dn = EPH.dayNumber(f.y, f.mo, f.d, 12), pos = EPH.positions(dn);
-      var ss = Math.floor(rev(pos.sun.lon - ay) / 30), ms = Math.floor(rev(pos.moon.lon - ay) / 30), vs = Math.floor(rev(pos.venus.lon - ay) / 30);
-      var sunM = (ss === usun), moonM = (ms === umoon), venM = (vs === uven && uven >= 0);
-      var score = (sunM ? 2 : 0) + (moonM ? 1 : 0) + (venM ? 1 : 0);
-      if (score > 0) out.push({ name: f.n, wiki: f.w, by: f.by, sun: ss, moon: ms, venus: vs, sunMatch: sunM, moonMatch: moonM, venusMatch: venM, score: score });
-    }
-    out.sort(function (a, b) { return b.score - a.score; });
-    return out;
-  }
 
 
   // ----- today / transits -----
@@ -5162,7 +5076,7 @@ var APP = (function () {
     progressedTimeline: progressedTimeline, retroSeasons: retroSeasons,
     exportBook: exportBook, exportBackup: exportBackup, importBackup: importBackup, composeDailyEssay: composeDailyEssay, chartFP: chartFP, weaveNote: weaveNote, termOf: termOf, anA: anA, composeColleague: composeColleague, exportColleague: exportColleague,
     microFor: microFor, tellsFor: tellsFor, weaveTransit: weaveTransit, traditionalRead: traditionalRead, determination: determination, determinationSheet: determinationSheet, derivedHouseOf: derivedHouseOf, derivedPhrase: derivedPhrase, conditionVerdict: conditionVerdict, sectProfile: sectProfile, judgeAscendant: judgeAscendant, judgeCaptain: judgeCaptain, rulershipWeb: rulershipWeb, zodiacMatrix: zodiacMatrix, cuspAlmuten: cuspAlmuten, judgeHouse: judgeHouse, judgeHouses: judgeHouses, judgeAspect: judgeAspect, judgeAspects: judgeAspects, fullReception: fullReception, receptionOnAspect: receptionOnAspect, receptionsInChart: receptionsInChart, testimonyAuthority: testimonyAuthority, contest: contest, rulingVoice: rulingVoice, contradictions: contradictions, natalSynthesis: natalSynthesis, housesThatMatter: housesThatMatter, noBirthTimeReading: noBirthTimeReading, judgeDirection: judgeDirection, judgeDirections: judgeDirections, directedAscendant: directedAscendant, directedSignificators: directedSignificators, significatorFor: significatorFor, directedChapter18: directedChapter18, boundsWalk: boundsWalk, lordOfYear: lordOfYear, profectionYear: profectionYear, triggerReading: triggerReading, liveWires21: liveWires21, judgeCycle: judgeCycle, judgeCycles: judgeCycles, judgeReturn: judgeReturn, eclipseTimers: eclipseTimers, glanceJudged: glanceJudged, weekJudged: weekJudged, lots: lots, starsJudged: starsJudged, hiddenPartnerships: hiddenPartnerships, patternsAsTestimony: patternsAsTestimony, vedicWall: vedicWall, bondSpine35: bondSpine35, bondOverlay35: bondOverlay35, voiceCheck: voiceCheck, sourceRegistry: sourceRegistry, citeSource: citeSource, placementProse: placementProse, symbolicDirections: symbolicDirections, directionLine: directionLine, directionReceipt: directionReceipt, aspectNature: aspectNature, transitCycles: transitCycles, weaveCycle: weaveCycle, weaveWeek: weaveWeek, receptionOf: receptionOf, guideCards: guideCards, ancientSky: ancientSky, addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, returnsAlmanac: returnsAlmanac, progressedLunation: progressedLunation, planetaryHours: planetaryHours, moonVoidWindow: moonVoidWindow, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
-    saveCurrentChart: saveCurrentChart, deleteSavedChart: deleteSavedChart, activateSavedChart: activateSavedChart, activeChartKey: activeChartKey, chartKey: chartKey, famousMatches: famousMatches, lifeTransits: lifeTransits, upcomingTransits: upcomingTransits, transitMotion: transitMotion, compositeChart: compositeChart,
+    saveCurrentChart: saveCurrentChart, deleteSavedChart: deleteSavedChart, activateSavedChart: activateSavedChart, activeChartKey: activeChartKey, chartKey: chartKey, lifeTransits: lifeTransits, upcomingTransits: upcomingTransits, transitMotion: transitMotion, compositeChart: compositeChart,
     nameFor: nameFor, glyphFor: glyphFor, pad: pad,
     domElement: domElement, lowElement: lowElement, domMod: domMod, tzOffsetHours: tzOffsetHours
   };
@@ -6212,7 +6126,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       s.push({ k: 'body', key: 'sun' }, { k: 'body', key: 'moon' });
       s.push({ k: 'body', key: 'mercury' }, { k: 'body', key: 'venus' }, { k: 'body', key: 'mars' });
       s.push({ k: 'body', key: 'jupiter' }, { k: 'body', key: 'saturn' }, { k: 'outer' });
-      s.push({ k: 'aspect' }, { k: 'theme' }, { k: 'famous' });
+      s.push({ k: 'aspect' }, { k: 'theme' });
       s.push({ k: 'today' }, { k: 'close' });
       return s;
     }
@@ -6271,7 +6185,6 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (sc.k === 'outer') return 'Beyond Saturn, three planets too slow to captain a life — a generation’s weather, not a ruler: ';
       if (sc.k === 'aspect') return 'You’ve met the players in their states. Now the closest conversation, judged by nature: ';
       if (sc.k === 'theme') return 'And the clock: the lord who runs this whole year: ';
-      if (sc.k === 'famous') return 'You are not the first to carry this sky: ';
       if (sc.k === 'today') return 'The tradition looks at the moving sky LAST, and only where it strikes a live wire: ';
       if (sc.k === 'close') return 'The judgment, whole: ';
       return '';
@@ -6310,16 +6223,6 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         var pyW = null; try { pyW = APP.profectionYear(c, b); } catch (ePyW) {}
         if (pyW && pyW.line) { var pl9 = pyW.line, cut9 = pl9.length > 340 ? (pl9.slice(0, 340).replace(/\s+\S*$/, '') + '…') : pl9; return { t: 'The lord of your year', x: cut9 }; }
         return { t: 'The throughline', x: walkTheme(c) };
-      }
-      if (sc.k === 'famous') {
-        var fm = APP.famousMatches(c), pick = [], i;
-        for (i = 0; i < fm.length && pick.length < 3; i++) if (fm[i].sunMatch) pick.push(fm[i]);
-        for (i = 0; i < fm.length && pick.length < 3; i++) if (pick.indexOf(fm[i]) < 0) pick.push(fm[i]);
-        if (!pick.length) return { t: 'Kindred charts', x: 'Your exact mix is rare in our gallery. Proof that the same sky never makes the same person twice.' };
-        var ns = pick.map(function (f) { return f.name + ' (' + f.by + ')'; });
-        var joined = ns.length > 1 ? (ns.slice(0, -1).join(', ') + ' and ' + ns[ns.length - 1]) : ns[0];
-        var shareWhat = pick[0].sunMatch ? ('your Sun in ' + c.planets.sun.signName) : 'a guiding light with you';
-        return { t: 'Kindred charts', x: joined + ' share ' + shareWhat + '. The same starting sky: and wildly different lives. Your chart is a map you read, never a verdict you obey.' };
       }
       if (sc.k === 'today') {
         var tgW = null; try { tgW = APP.triggerReading(c, b); } catch (eTgW) {}
@@ -6490,7 +6393,6 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       else if (sc.k === 'close') { sceneAssembly(c, b, 0, 0, r * 1.15, still ? 99999 : tt); }
       else {
         var hlk = null;
-        if (sc.k === 'famous') hlk = ['sun', 'moon', 'venus'];
         miniWheel(c, b, 0, 0, r, hlk, t, null);
         if (sc.k === 'today') drawTransitOverlay(c, b, 0, 0, r, walkTr(c));
       }
@@ -8890,7 +8792,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     // ===== live how-to tours: the guide actually takes you to the real screen for each step =====
     var HOWTO_GO = [
       [function () { UI.screen = 'chart'; }, function () { UI.screen = 'read'; }, function () { UI.screen = 'read'; }, function () { UI.screen = 'chart'; }, function () { UI.screen = 'read'; }],
-      [function () { UI.screen = 'chart'; }, function () { UI.screen = 'chart'; }, null, function () { UI.screen = 'learn'; UI.learnCat = 'elements'; UI.learnItem = null; }],
+      [function () { UI.screen = 'chart'; }, function () { UI.screen = 'chart'; }, null, function () { UI.screen = 'learn'; UI.learnCat = 'signs'; UI.learnItem = null; }],
       [null, function () { openToday(); }, null, function () { UI.today = false; UI.screen = 'read'; }, function () { UI.screen = 'read'; }],
       [function () { UI.screen = 'people'; }, null, null, null, null],
       [function () { UI.screen = 'read'; }, null, function () { UI.screen = 'chart'; }, null],
@@ -9153,34 +9055,6 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     // current artifact for a topic, advancing every ~4.5s
     function artNow(key) { var a = UI.artifacts && UI.artifacts[key]; if (!a || !a.length) return null; var idx = Math.floor(nowT() / 4500) % a.length; return a[idx]; }
 
-    // ---- famous-chart portraits: a specific public figure's Wikipedia bio lead image (no open search) ----
-    function loadFace(wiki) {
-      UI.faces = UI.faces || {}; if (UI.faces[wiki] !== undefined) return;
-      UI.faces[wiki] = null; // pending
-      if (typeof fetch !== 'function') { UI.faces[wiki] = false; return; }
-      fetch('https://en.wikipedia.org/api/rest_v1/page/summary/' + encodeURIComponent(wiki))
-        .then(function (r) { return r.json(); })
-        .then(function (j) {
-          var u = j && j.thumbnail && j.thumbnail.source;
-          if (u && /^https:\/\/upload\.wikimedia\.org\//.test(u)) { var im = new Image(); im.onload = function () { UI.faces[wiki] = im; }; im.onerror = function () { UI.faces[wiki] = false; }; im.src = u; }
-          else UI.faces[wiki] = false;
-        })['catch'](function () { UI.faces[wiki] = false; });
-    }
-    function drawFace(wiki, cx, cy, r) {
-      loadFace(wiki); var im = UI.faces && UI.faces[wiki];
-      p.noStroke();
-      if (im && im !== false && (im.naturalWidth || im.width)) {
-        var dc = p.drawingContext, iw = im.naturalWidth || im.width, ih = im.naturalHeight || im.height, sc = Math.max(2 * r / iw, 2 * r / ih), rw = iw * sc, rh = ih * sc;
-        dc.save(); dc.beginPath(); dc.arc(cx, cy, r, 0, Math.PI * 2); dc.clip();
-        try { dc.drawImage(im, cx - rw / 2, cy - rh / 2, rw, rh); } catch (e) {}
-        dc.restore();
-        p.noFill(); strokec(INK, 130); p.strokeWeight(1.4); p.ellipse(cx, cy, 2 * r, 2 * r);
-      } else {
-        fillc(shade(GROUNDS[UI.screen], -14)); p.ellipse(cx, cy, 2 * r, 2 * r);
-        p.noFill(); strokec(INK, 90); p.strokeWeight(1.2); p.ellipse(cx, cy, 2 * r, 2 * r);
-        setFont(SANS, r * 0.85, INK, p.CENTER, p.CENTER, 110); p.text('✦', cx, cy);
-      }
-    }
 
     function drawLesson() {
       var c = APP.STATE.chart, b = APP.STATE.birth;
@@ -9373,13 +9247,10 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       })();
       // the curriculum: Learn is levelled — foundations first, then reading a chart, then time & tradition
       var LEVELS = [
-        ['Level 1 · Foundations', [['elements', 'Elements'], ['signs', 'Signs'], ['planets', 'Planets']]],
+        ['Level 1 · Foundations', [['signs', 'Signs'], ['planets', 'Planets']]],
         ['Level 2 · Reading a chart', [['houses', 'Houses'], ['aspects', 'Aspects'], ['howto', 'How to']]],
-        ['Level 3 · Time & tradition', [['history', 'History'], ['myths', 'Myths'], ['glossary', 'Glossary']]],
-        ['Yours', [['famous', 'Like you']]]
+        ['Level 3 · Time & tradition', [['history', 'History'], ['myths', 'Myths'], ['glossary', 'Glossary']]]
       ];
-      // one personal door; everything else in the library answers to search only
-      flatBtn('\u2726  Charts like yours', x, ly, w, 44, function () { UI.learnCat = 'famous'; UI.learnItem = null; UI.scroll.learn = 0; UI.popT = nowT(); }, false); ly += 56;
       if (!UI.learnCat) { UI.contentH.learn = ly + 24; return; }
       chip('\u2715 Close', false, x, ly, function () { UI.learnCat = null; UI.learnItem = null; UI.scroll.learn = 0; }); ly += 48;
       // a gentle fade-in each time the category or item changes — a small storytelling beat
@@ -9389,251 +9260,13 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (ldc) ldc.restore();
       UI.contentH.learn = ly + 10;
     }
-    function openURL(u) { try { window.open(u, '_blank', 'noopener'); } catch (e) {} }
-    // ===== retro media: Bakelite TVs (YouTube channel playlists, muted + subtitles, sound knob) & radios (Spotify) =====
-    // ---- Internet Archive: public-domain film & audio, searched live to the user's chart ----
-    function iaKey(c, b) { return DATA.SIGNS[c.planets.sun.sign].name + ((b.timeKnown && c.ascBody) ? ('|' + DATA.SIGNS[c.ascBody.sign].name) : ''); }
-    function iaSearch(c, b) {
-      var key = iaKey(c, b); if (UI.iaFor === key) return; // fetched/fetching for this chart already
-      UI.iaFor = key; UI.iaResults = null; UI.iaErr = ''; UI.tvActive = null;
-      if (typeof fetch !== 'function') { UI.iaErr = 'offline'; return; }
-      var sun = DATA.SIGNS[c.planets.sun.sign].name, asc = (b.timeKnown && c.ascBody) ? DATA.SIGNS[c.ascBody.sign].name : '';
-      var signClause = '"' + sun + '"' + (asc && asc !== sun ? (' OR "' + asc + '"') : '');
-      var q = '(' + signClause + ') AND (astrology OR zodiac OR horoscope OR astrological) AND (mediatype:movies OR mediatype:audio)';
-      var url = 'https://archive.org/advancedsearch.php?q=' + encodeURIComponent(q) + '&fl[]=identifier&fl[]=title&fl[]=mediatype&rows=14&sort[]=downloads+desc&output=json';
-      fetch(url).then(function (r) { return r.json(); }).then(function (j) {
-        var docs = (j && j.response && j.response.docs) || [], out = [], i;
-        for (i = 0; i < docs.length; i++) if (docs[i].identifier) out.push({ id: docs[i].identifier, t: docs[i].title || docs[i].identifier, m: docs[i].mediatype });
-        UI.iaResults = out.slice(0, 12); if (!UI.iaResults.length) UI.iaErr = 'none';
-      })['catch'](function () { UI.iaErr = 'net'; });
-    }
-    function iaThumb(id) {
-      UI.iaImg = UI.iaImg || {}; if (UI.iaImg[id] !== undefined) return UI.iaImg[id];
-      UI.iaImg[id] = null; var im = new Image(); im.onload = function () { UI.iaImg[id] = im; }; im.onerror = function () { UI.iaImg[id] = false; }; im.src = 'https://archive.org/services/img/' + id; return null;
-    }
-    // ===== curated channels: a hand-tuned public-domain programme per chart (items resolved live from the Internet Archive, cached for offline) =====
-    var SIGN_FILM = [
-      { q: 'title:(great train robbery) AND mediatype:movies', t: 'The Great Train Robbery (1903)', why: 'Cinema’s first act of pure daring, twelve minutes that invented the action film. Aries energy, from frame one.', must: ['train robbery'] },
-      { q: 'title:(the gold rush) chaplin AND mediatype:movies', t: 'The Gold Rush (1925)', why: 'Chaplin turning hunger, gold and stubborn persistence into poetry, the Taurus appetites, on film.', must: ['gold rush'] },
-      { q: 'title:(his girl friday) AND mediatype:movies', t: 'His Girl Friday (1940)', why: 'The fastest talking ever filmed: two minds fencing at full speed. Your Mercury-ruled element, played as sport.', must: ['girl friday'] },
-      { q: 'title:(the kid) chaplin AND mediatype:movies', t: 'The Kid (1921)', why: 'A foundling, and a home made out of nothing. The Cancer story: family is whoever you decide to protect.', must: ['the kid'] },
-      { q: 'title:(the thief of bagdad) AND mediatype:movies', t: 'The Thief of Bagdad (1924)', why: 'Palaces, spectacle and a hero grinning through the grandest show of the silent era. Leo, in gold leaf.', must: ['thief of bagdad'] },
-      { q: 'title:(one week) keaton AND mediatype:movies', t: 'One Week (1920)', why: 'Buster Keaton assembling a build-it-yourself house, precisely, catastrophically, the Virgo comedy of craft meeting chaos.', must: ['one week'] },
-      { q: 'title:(my man godfrey) AND mediatype:movies', t: 'My Man Godfrey (1936)', why: 'Elegance, wit, and the weighing of love against fairness. A screwball romance with Libra’s scales at its heart.', must: ['godfrey'] },
-      { q: 'title:(nosferatu) AND mediatype:movies', t: 'Nosferatu (1922)', why: 'The first great film about what waits in the dark. Scorpio’s home ground: depth, dread and transformation.', must: ['nosferatu'] },
-      { q: 'title:(the lost world) AND date:[1925-01-01 TO 1926-01-01] AND mediatype:movies', t: 'The Lost World (1925)', why: 'An expedition past the edge of the map, dinosaurs included, the Sagittarian itch for the far horizon.', must: ['lost world'] },
-      { q: 'title:(metropolis) AND mediatype:movies', t: 'Metropolis (1927)', why: 'The towering city, the machinery of ambition, and what it costs, Saturn’s questions, built in art-deco stone.', must: ['metropolis'] },
-      { q: 'title:(a trip to the moon) melies OR title:(le voyage dans la lune)', t: 'A Trip to the Moon (1902)', why: 'Méliès firing a rocket into the Moon’s eye in 1902, the future imagined before its time. Aquarius is the patron sign of the strange tomorrow.', must: ['trip to the moon'] },
-      { q: 'title:(20,000 leagues under the sea) AND mediatype:movies', t: '20,000 Leagues Under the Sea (1916)', why: 'The first undersea epic: the screen dissolving into the deep, which is where Pisces lives.' }
-    ];
-    var RULER_FILM = {
-      Sun: { q: 'title:(our mr sun)', why: 'Your chart is ruled by the Sun: and this is the beloved 1956 Bell Science film that explained your ruling star to a generation, with cartoons and awe.', must: ['sun'] },
-      Moon: { q: 'apollo 11 moon nasa film', why: 'Your ruler is the Moon: here is humanity actually going there. The same light that runs your chart, with bootprints on it.', must: ['moon','apollo'] },
-      Mercury: { q: 'planet mercury nasa mariner', why: 'Mercury rules you: the smallest, fastest planet, first photographed up close by Mariner 10. Speed, in person.', must: ['mercury'] },
-      Venus: { q: 'planet venus nasa mariner film', why: 'Venus rules you: Earth’s veiled bright twin. The first missions to your ruling planet, on film.', must: ['venus'] },
-      Mars: { q: 'planet mars nasa mariner film', why: 'Mars rules you, and these are the first real looks humanity ever got at your ruling planet. The red world, no longer imagined.', must: ['mars'] },
-      Jupiter: { q: 'jupiter voyager nasa film', why: 'Jupiter rules you: the giant whose gravity shelters the whole solar system. Voyager’s grand tour past your ruling planet.', must: ['jupiter'] },
-      Saturn: { q: 'saturn voyager nasa film', why: 'Saturn rules you: the ringed timekeeper. The missions that turned your ruler from a telescope smudge into a world.', must: ['saturn'] },
-      Uranus: { q: 'uranus voyager nasa', why: 'Uranus rules you: the sideways planet, visited exactly once in all of history. Suitably contrary.', must: ['uranus'] },
-      Neptune: { q: 'neptune voyager nasa', why: 'Neptune rules you: the far blue dream at the edge of the map, seen close only once, in 1989.', must: ['neptune'] },
-      Pluto: { q: 'pluto planet nasa new horizons OR clyde tombaugh', why: 'Pluto rules you: found by a Kansas farm boy comparing photographs, and still the underworld’s quiet king.', must: ['pluto'] }
-    };
-    var MYTH_Q = ['jason argonauts golden fleece', 'zeus europa OR greek mythology bull', 'castor pollux OR gemini twins mythology', 'hercules hydra OR heracles labours', 'hercules nemean lion OR greek hero film', 'greek goddess harvest OR demeter mythology', 'scales of justice OR goddess justice film', 'orion mythology OR constellation orion film', 'centaur chiron OR greek centaur mythology', 'god pan mythology OR greek gods film', 'ganymede zeus OR greek cupbearer mythology', 'aphrodite eros OR venus goddess mythology'];
-    var FILM_SCHOOL = [
-      { k: 'fs1', q: 'title:(our mr sun)', must: ['sun'], t: 'Our Mr. Sun (1956)', why: 'The Bell Science classic: the star at the middle of every chart, explained with wit and animation.' },
-      { k: 'fs2', q: 'constellations astronomy educational film', must: ['constellation','star','astronomy'], t: 'Finding the constellations', why: 'How to actually locate the figures this app keeps naming, in your own night sky.' },
-      { k: 'fs3', q: 'title:(eclipse)', must: ['eclipse'], t: 'Eclipses, on film', why: 'Eclipses happen exactly at the Moon’s nodes. The same two points in your chart as your North and South Node.' }
-    ];
-    function watchChannels(c, b) {
-      var sun = c.planets.sun.sign, S = DATA.SIGNS[sun], ruler = S.ruler, rf = RULER_FILM[ruler] || RULER_FILM.Sun;
-      var ch = [];
-      ch.push({ h: 'CH 1 · YOUR SIGN’S PROGRAMME', intro: 'Two vetted picks tuned to ' + S.name + ': its character on film, and its ruling planet in the real sky. A result only airs if its title checks out.', items: [
-        { k: 'sf' + sun, q: SIGN_FILM[sun].q, t: SIGN_FILM[sun].t, why: SIGN_FILM[sun].why, must: SIGN_FILM[sun].must },
-        { k: 'rf' + ruler, q: rf.q, t: 'Your ruler: ' + ruler, why: rf.why, must: rf.must }
-      ] });
-      if (b && b.y) ch.push({ h: 'CH 2 · BORN UNDER THIS SKY', intro: 'What the world was watching in ' + b.y + ', beneath the same sky you arrived under.', items: [
-        { k: 'ny' + b.y, q: 'collection:(universal_newsreels) AND date:[' + b.y + '-01-01 TO ' + b.y + '-12-31]', t: 'Newsreels of ' + b.y, why: 'The headlines of your birth year, exactly as people first saw them.' },
-        { k: 'py' + b.y, q: 'collection:(prelinger) AND date:[' + b.y + '-01-01 TO ' + b.y + '-12-31]', t: 'Everyday life, ' + b.y, why: 'Ordinary days from your birth year, the texture of the world you joined.' }
-      ] });
-      ch.push({ h: 'CH 3 · FILM SCHOOL: THE REAL SKY', intro: 'Short public-domain science films: the actual objects behind the chart.', items: FILM_SCHOOL });
-      ch.push({ h: 'CH 4 · THE MYTH CHANNEL', intro: 'Every sign is a story before it is a symbol. This is the tale your constellation carries.', items: [
-        { k: 'my' + sun, q: MYTH_Q[sun], t: 'The myth behind ' + S.name, why: 'Astrology kept these stories in the sky. Knowing the tale is knowing why the sign behaves the way it does.' }
-      ] });
-      return ch;
-    }
-    // resolve one curated slot to a real archive item (memory + localStorage cache, so the guide renders offline)
-    function iaSlot(key, q, must) {
-      UI.iaSlot = UI.iaSlot || {};
-      if (UI.iaSlot[key] !== undefined) return UI.iaSlot[key];
-      var cached = watchCacheGet(key);
-      if (cached) { UI.iaSlot[key] = cached; return cached; }
-      if (typeof fetch !== 'function' || (typeof navigator !== 'undefined' && navigator.onLine === false)) { UI.iaSlot[key] = false; return false; }
-      UI.iaSlot[key] = null;
-      var url = 'https://archive.org/advancedsearch.php?q=' + encodeURIComponent('(' + q + ') AND mediatype:movies') + '&fl[]=identifier&fl[]=title&rows=6&sort[]=downloads+desc&output=json';
-      fetch(url).then(function (r) { return r.json(); }).then(function (j) {
-        var docs = (j && j.response && j.response.docs) || [], hit = false, i2, k2;
-        // the vet: a result only airs if its title actually contains one of the promised words
-        for (i2 = 0; i2 < docs.length && !hit; i2++) {
-          var tl2 = String(docs[i2].title || '').toLowerCase(), ok2 = !must || !must.length;
-          if (must) for (k2 = 0; k2 < must.length; k2++) if (tl2.indexOf(must[k2]) >= 0) { ok2 = true; break; }
-          if (ok2 && docs[i2].identifier) hit = { id: docs[i2].identifier, t: docs[i2].title || docs[i2].identifier };
-        }
-        UI.iaSlot[key] = hit; if (hit) watchCachePut(key, hit);
-      })['catch'](function () { UI.iaSlot[key] = false; });
-      return null;
-    }
-    function watchCacheGet(key) { try { var m = JSON.parse(localStorage.getItem('aqp_watch') || '{}'); return m[key] || null; } catch (e) { return null; } }
-    function watchCachePut(key, v) { try { var m = JSON.parse(localStorage.getItem('aqp_watch') || '{}'); m[key] = v; localStorage.setItem('aqp_watch', JSON.stringify(m)); } catch (e) {} }
-    // one Bakelite TV tile; returns a frameRect when this tile is the live one
-    function tvTile(it, res, cx0, rowTop, cw2, cardH) {
-      var sy0 = sY(rowTop), active = (UI.tvActive === it.k) && res;
-      var off = pressOff(cx0, sy0, cw2, cardH, 2), frameRect = null;
-      bakeliteBody(cx0, sy0 + off, cw2, cardH);
-      // a big square tube on the left, the control panel on the right
-      var scrS = Math.round(cw2 * 0.68), scrX = cx0 + 14, scrY = sy0 + off + 14, scrW = scrS, scrH = scrS;
-      var pnX = scrX + scrS + 12, pnW = cx0 + cw2 - 14 - pnX;
-      if (active) {
-        frameRect = { x: scrX + 3, y: scrY + 3, w: scrW - 6, h: scrH - 6 };
-        p.noStroke(); fillc([0, 0, 0]); p.rect(scrX, scrY, scrW, scrH, 8);
-        if (UI.tvOnK !== it.k) { UI.tvOnK = it.k; UI.tvOnT = nowT(); }
-        var onE = reduced() ? 1 : cl01((nowT() - (UI.tvOnT || 0)) / 460);
-        if (onE < 1) {
-          var lh2 = 2 + eCubic(onE) * (scrH - 6), la2 = onE < 0.22 ? onE / 0.22 : 1 - (onE - 0.22) / 0.78 * 0.75;
-          p.noStroke(); fillc([232, 238, 248], 70 + 150 * la2); p.rect(scrX + 2, scrY + scrH / 2 - lh2 / 2, scrW - 4, lh2, 4);
-          fillc([255, 255, 255], 210 * (1 - onE)); p.rect(scrX + 2, scrY + scrH / 2 - 1, scrW - 4, 2);
-        }
-      } else if (res) {
-        var im = iaThumb(res.id);
-        if (im && im !== false && (im.naturalWidth || im.width)) {
-          var dc = p.drawingContext, iw = im.naturalWidth || im.width, ih = im.naturalHeight || im.height, scc = Math.max(scrW / iw, scrH / ih), rw = iw * scc, rh2 = ih * scc;
-          dc.save(); dc.beginPath(); dc.rect(scrX, scrY, scrW, scrH); dc.clip(); try { dc.drawImage(im, scrX + scrW / 2 - rw / 2, scrY + scrH / 2 - rh2 / 2, rw, rh2); } catch (e) {} dc.restore();
-          if (!reduced()) { strokec([0, 0, 0], 45); p.strokeWeight(1); var sl9; for (sl9 = 0; sl9 < scrH; sl9 += 3) p.line(scrX, scrY + sl9, scrX + scrW, scrY + sl9); p.noStroke(); }
-          p.noStroke(); fillc([0, 0, 0], 130); p.rect(scrX, scrY + scrH - 22, scrW, 22); setFont(MONO, 8.5, [244, 238, 228], p.CENTER, p.BOTTOM, 235); p.text('TAP TO PLAY', scrX + scrW / 2, scrY + scrH - 7);
-        } else { tvStatic(scrX, scrY, scrW, scrH); setFont(MONO, 9, [214, 214, 224], p.CENTER, p.CENTER, 210); p.text(im === false ? 'NO PREVIEW: TAP TO PLAY' : '…', scrX + scrW / 2, scrY + scrH / 2); }
-      } else { tvStatic(scrX, scrY, scrW, scrH, it.k.length + it.k.charCodeAt(0)); setFont(MONO, 9, [214, 214, 224], p.CENTER, p.CENTER, 210); p.text(res === false ? 'OFF AIR: TAP TO RETUNE' : 'TUNING…', scrX + scrW / 2, scrY + scrH / 2); }
-      // the curved glass: a soft glare across the corner, and a bezel
-      if (!active) { var dcg = p.drawingContext; if (dcg && !reduced()) { dcg.save(); dcg.beginPath(); dcg.rect(scrX, scrY, scrW, scrH); dcg.clip(); var gl = dcg.createRadialGradient(scrX + scrW * 0.22, scrY + scrH * 0.16, 6, scrX + scrW * 0.22, scrY + scrH * 0.16, scrW * 0.75); gl.addColorStop(0, 'rgba(255,255,255,0.13)'); gl.addColorStop(0.4, 'rgba(255,255,255,0.04)'); gl.addColorStop(1, 'rgba(255,255,255,0)'); dcg.fillStyle = gl; dcg.fillRect(scrX, scrY, scrW, scrH); dcg.restore(); } }
-      p.noFill(); strokec([20, 14, 10], 255); p.strokeWeight(5); p.rect(scrX - 2, scrY - 2, scrW + 4, scrH + 4, 10);
-      strokec([132, 96, 68], 120); p.strokeWeight(1); p.rect(scrX - 4, scrY - 4, scrW + 8, scrH + 8, 12);
-      // the control panel: brand, two knobs, a speaker grille
-      setFont(MONO, 7.5, [212, 188, 156], p.CENTER, p.TOP, 210); p.text('AQAU·VISION', pnX + pnW / 2, scrY + 2);
-      tvKnob(pnX + pnW / 2, scrY + scrS * 0.24, Math.min(15, pnW * 0.24), !!active);
-      tvKnob(pnX + pnW / 2, scrY + scrS * 0.46, Math.min(11, pnW * 0.18), false);
-      var gr9; for (gr9 = 0; gr9 < 6; gr9++) { p.noStroke(); fillc([30, 20, 15], 220); p.rect(pnX + 4, scrY + scrS * 0.62 + gr9 * 7, pnW - 8, 3, 1.5); }
-      var tt = it.t; p.textFont(SANS); p.textSize(11.5); while (tt.length > 4 && p.textWidth(tt) > cw2 - 32) tt = tt.slice(0, -2);
-      setFont(SANS, 11.5, [240, 230, 216], p.LEFT, p.TOP); p.text(tt + (tt !== it.t ? '…' : ''), scrX, sy0 + off + cardH - 24);
-      (function (key) { pushHit(cx0, sy0, cw2, cardH, function () { if (UI.iaSlot && UI.iaSlot[key] === false) { delete UI.iaSlot[key]; try { var m9 = JSON.parse(localStorage.getItem('aqp_watch') || '{}'); delete m9[key]; localStorage.setItem('aqp_watch', JSON.stringify(m9)); } catch (e9) {} return; } UI.tvActive = (UI.tvActive === key ? null : key); UI.tvMuted = true; }); })(it.k);
-      return frameRect;
-    }
-    function watchShelf(c, b, x, w, ly) {
-      var chs = watchChannels(c, b), cw2 = w, cardH = Math.round(w * 0.68) + 44, frameRect = null, activeIt = null, ci, si;
-      ly += paragraph('Five channels, tuned to your chart. Public-domain film and audio from the Internet Archive, each pick explained. Tap a set to play it right here.', x, ly, w, 14.5, INK, SERIF, 22, 200) + 14;
-      for (ci = 0; ci < chs.length; ci++) {
-        var ch = chs[ci];
-        eyebrow(ch.h, x, ly, ACC); ly += 22;
-        ly += paragraph(ch.intro, x, ly, w, 13, INK, SERIF, 19, 190) + 10;
-        si = 0;
-        while (si < ch.items.length) {
-          var rowTop = ly, rowWhy = null;
-          var it = ch.items[si], res = iaSlot(it.k, it.q, it.must);
-          var fr = tvTile(it, res, x, rowTop, cw2, cardH);
-          if (fr) { frameRect = fr; activeIt = res; }
-          if (UI.tvActive === it.k) rowWhy = it.why;
-          si++;
-          ly = rowTop + cardH + 14;
-          if (rowWhy) { setFont(MONO, 8.5, ACCTX, p.LEFT, p.TOP, 235); p.text('WHY THIS IS YOURS', x, sY(ly)); ly += 16; ly += paragraph(rowWhy, x, ly, w, 13.5, INK, SERIF, 20, 225) + 10; }
-        }
-        ly += 8;
-      }
-      // CH 5 · the open dial — a live search on your sign, for serendipity
-      eyebrow('CH 5 · THE OPEN DIAL', x, ly, ACC); ly += 22;
-      var sunNm = DATA.SIGNS[c.planets.sun.sign].name, ascNm = (b.timeKnown && c.ascBody) ? DATA.SIGNS[c.ascBody.sign].name : '';
-      ly += paragraph('A live sweep of the archive for your ' + sunNm + ' Sun' + (ascNm && ascNm !== sunNm ? (' and ' + ascNm + ' rising') : '') + ': whatever is out there tonight.', x, ly, w, 13, INK, SERIF, 19, 190) + 10;
-      iaSearch(c, b);
-      var res2 = UI.iaResults;
-      if (UI.iaErr) {
-        var em = (UI.iaErr === 'net' || UI.iaErr === 'offline') ? 'Couldn’t reach the Internet Archive, the open dial needs a connection. Your curated channels above still show their guide from the last visit.' : 'No archive matches for your sign right now, tap to try again.';
-        ly += paragraph(em, x, ly, w, 14, INK, SERIF, 21, 200) + 12;
-        flatBtn('Try again', x, ly, 160, 42, function () { UI.iaFor = null; }, false); ly += 52;
-      } else if (!res2) {
-        setFont(MONO, 10, ACCTX, p.LEFT, p.TOP, 210); p.text('TUNING IN TO THE ARCHIVE…', x, sY(ly)); ly += 22;
-        var s0 = sY(ly); bakeliteBody(x, s0, cw2, cardH);
-        tvStatic(x + 14, s0 + 14, Math.round(cw2 * 0.68), Math.round(cw2 * 0.68));
-        ly += cardH + 14;
-      } else {
-        var di = 0;
-        while (di < Math.min(res2.length, 4)) {
-          var rowTop2 = ly, dit = res2[di], key2 = 'dial:' + dit.id;
-          var fr2 = tvTile({ k: key2, t: dit.t }, { id: dit.id, t: dit.t }, x, rowTop2, cw2, cardH);
-          if (fr2) { frameRect = fr2; activeIt = { id: dit.id, t: dit.t }; }
-          di++;
-          ly = rowTop2 + cardH + 14;
-        }
-      }
-      // the one live screen gets the real archive.org player, tracked as the shelf scrolls
-      if (frameRect && activeIt) {
-        var mf = ensureMediaFrame();
-        if (mf) {
-          var want = 'ia:' + activeIt.id; if (UI.mframeId !== want) { mf.src = mediaSrc(activeIt); UI.mframeId = want; }
-          var vis = (frameRect.y >= topY() - 2) && (frameRect.y + frameRect.h <= H - (UI.safeBottom || 0)) && (reduced() || nowT() - (UI.tvOnT || 0) > 440);
-          if (vis) { mf.style.display = 'block'; mf.style.left = frameRect.x + 'px'; mf.style.top = frameRect.y + 'px'; mf.style.width = frameRect.w + 'px'; mf.style.height = frameRect.h + 'px'; mf.style.borderRadius = '4px'; } else mf.style.display = 'none';
-          UI.mediaDrawn = true;
-        }
-      }
-      ly += 4; ly += paragraph('Streamed from the Internet Archive (archive.org): public-domain film and audio. The channel guide is remembered, so it appears even offline; playing needs a connection. Tap a playing screen again to stop.', x, ly, w, 11, INK, MONO, 16, 140) + 8;
-      return ly;
-    }
-    function ensureMediaFrame() {
-      if (UI.mframe || typeof document === 'undefined') return UI.mframe;
-      try { var f = document.createElement('iframe'); f.setAttribute('allow', 'autoplay; encrypted-media; picture-in-picture; fullscreen'); f.setAttribute('allowfullscreen', 'true'); f.setAttribute('aria-hidden', 'true'); var s = f.style; s.position = 'fixed'; s.zIndex = '7'; s.border = '0'; s.background = '#000'; s.display = 'none'; document.body.appendChild(f); UI.mframe = f; } catch (e) { UI.mframe = null; }
-      return UI.mframe;
-    }
-    function mediaSrc(it) { return 'https://archive.org/embed/' + it.id; }
-    function hideMediaFrame() { try { if (UI.mframe) { UI.mframe.style.display = 'none'; if (UI.mframe.src) UI.mframe.src = 'about:blank'; } } catch (e) {} UI.mframeId = null; }
-    function setMediaActive(idx) { UI.tvActive = idx; UI.tvMuted = true; }
-    function applyTvSound() { try { var mf = UI.mframe; if (mf && mf.contentWindow) mf.contentWindow.postMessage(JSON.stringify({ event: 'command', func: (UI.tvMuted === false ? 'unMute' : 'mute'), args: [] }), '*'); } catch (e) {} }
-    function bakeliteBody(x, y, w, h) {
-      // a walnut cabinet with depth: grain, bevel, and two small feet
-      var dc9 = p.drawingContext;
-      p.noStroke(); fillc([24, 16, 12], 190); p.rect(x + 4, y + 8, w - 8, h, 16);
-      fillc([34, 23, 17]); p.rect(x, y + 5, w, h, 16);
-      if (dc9) { var wg = dc9.createLinearGradient(x, y, x, y + h); wg.addColorStop(0, 'rgb(96,66,46)'); wg.addColorStop(0.5, 'rgb(74,51,37)'); wg.addColorStop(1, 'rgb(56,38,28)'); dc9.fillStyle = wg; dc9.beginPath(); if (dc9.roundRect) dc9.roundRect(x, y, w, h, 16); else dc9.rect(x, y, w, h); dc9.fill(); }
-      else { fillc([74, 51, 37]); p.rect(x, y, w, h, 16); }
-      if (!reduced()) { var gi9; strokec([46, 30, 22], 60); p.strokeWeight(1); for (gi9 = 0; gi9 < 5; gi9++) p.line(x + 8, y + 10 + gi9 * (h - 20) / 4 + Math.sin(gi9 * 3.1) * 3, x + w - 8, y + 12 + gi9 * (h - 20) / 4 + Math.sin(gi9 * 1.7) * 3); }
-      p.noFill(); strokec([120, 86, 62], 170); p.strokeWeight(1.4); p.rect(x + 3, y + 3, w - 6, h - 6, 13);
-      p.noStroke(); fillc([24, 16, 12]); p.rect(x + 14, y + h, 16, 6, 3); p.rect(x + w - 30, y + h, 16, 6, 3);
-    }
-    function tvKnob(cx, cy, r, lit) {
-      p.noStroke(); fillc([18, 13, 10]); p.ellipse(cx, cy + 1.5, r * 2 + 2, r * 2 + 2); fillc(lit ? ACC : [78, 58, 46]); p.ellipse(cx, cy, r * 2, r * 2);
-      strokec(lit ? [255, 240, 230] : [150, 120, 100], 230); p.strokeWeight(2); p.line(cx, cy, cx, cy - r * 0.75); p.noStroke();
-    }
-    // proper CRT static: drifting snow, a slow rolling band (a set that almost holds the picture), scanlines, tube vignette
-    function tvStatic(sx0, sy0, sw, sh, seed) {
-      p.noStroke(); fillc([12, 12, 16]); p.rect(sx0, sy0, sw, sh, 6);
-      var dc = p.drawingContext; if (dc) { dc.save(); dc.beginPath(); dc.rect(sx0, sy0, sw, sh); dc.clip(); }
-      if (!reduced()) {
-        var t = nowT(), ph = (seed || 0) * 47, i;
-        for (i = 0; i < 60; i++) { var rx = sx0 + ((i * 53.7 + ph + t * (0.08 + (i % 5) * 0.014)) % sw), ry = sy0 + ((i * 37.3 + ph + t * 0.045 * ((i % 3) + 1)) % sh); fillc([205, 205, 216], 14 + ((i * 13 + (t >> 4)) % 58)); p.rect(rx, ry, 2, 2); }
-        var band = sy0 + ((t * 0.02 + ph) % (sh + 40)) - 20;
-        fillc([225, 225, 235], 13); p.rect(sx0, band, sw, 16); fillc([225, 225, 235], 7); p.rect(sx0, band + 16, sw, 5);
-        strokec([0, 0, 0], 55); p.strokeWeight(1); for (i = 0; i < sh; i += 3) p.line(sx0, sy0 + i, sx0 + sw, sy0 + i); p.noStroke();
-        if (dc) { var vg = dc.createRadialGradient(sx0 + sw / 2, sy0 + sh / 2, sh * 0.3, sx0 + sw / 2, sy0 + sh / 2, sh * 0.8); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,0.45)'); dc.fillStyle = vg; dc.fillRect(sx0, sy0, sw, sh); }
-      }
-      if (dc) dc.restore();
-    }
     function learnList(c, x, w, ly) {
       var cat = UI.learnCat, rh = 52, i, b = APP.STATE.birth;
-      if (cat === 'elements') {
-        var els = ['fire', 'earth', 'air', 'water'];
-        for (i = 0; i < 4; i++) {
-          var e = els[i]; if (i) hairline(x, ly, x + w, 40);
-          setFont(SANS, 17, ELHUE[e], p.LEFT, p.CENTER); bold(); p.text(DATA.ELEMENTS[e].name, x, sY(ly + rh / 2)); normal();
-          var bx = x + 86, bw = w - 86 - 52; strokec(INK, 50); p.strokeWeight(1); p.noFill(); p.rect(bx, sY(ly + rh / 2) - 4, bw, 8, 4);
-          elementBar(e, bx, sY(ly + rh / 2) - 4, bw, c.elements[e]); // A13 — the element bars come alive
-          setFont(MONO, 11, INK, p.RIGHT, p.CENTER, 170); p.text(c.elements[e] + '%', x + w, sY(ly + rh / 2));
-          (function (ee, ay) { pushHit(x, sY(ay), w, rh, function () { UI.learnItem = ee; UI.scroll.learn = 0; UI.popT = nowT(); }); })(e, ly); ly += rh;
-        }
-      } else if (cat === 'signs') {
+      if (cat === 'signs') {
+        // the four qualities, taught the traditional way, at the head of the signs — fire is
+        // hot-and-dry, earth cold-and-dry, air hot-and-moist, water cold-and-moist; each sign
+        // below carries its own element and mode.
+        ly += paragraph('Every sign is one of four qualities: fire (hot and dry — drive), earth (cold and dry — substance), air (hot and moist — connection), water (cold and moist — feeling). Each sign below shows its element and mode.', x, ly, w, 13.5, INK, SERIF, 20, 190) + 12;
         for (i = 0; i < 12; i++) {
           if (i) hairline(x, ly, x + w, 40);
           setFont(SANS, 18, INK, p.LEFT, p.CENTER); p.text(DATA.SIGNS[i].glyph, x + 2, sY(ly + rh / 2));
@@ -9688,27 +9321,6 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
           setFont(SANS, 18, INK, p.RIGHT, p.CENTER, 120); p.text('›', x + w, sY(ly + rh / 2));
           (function (idx, ay) { pushHit(x, sY(ay), w, rh, function () { UI.learnItem = idx; UI.scroll.learn = 0; UI.popT = nowT(); }); })(i, ly); ly += rh;
         }
-      } else if (cat === 'famous') { // historical figures & icons who share your chart
-        if (!UI.fmList) UI.fmList = APP.famousMatches(c);
-        var fm = UI.fmList, sunName = DATA.SIGNS[c.planets.sun.sign].name;
-        ly += paragraph('People across history who share a placement with you. Your Sun (☉), your Moon (☽) or your Venus (♀). Same sky, very different lives.', x, ly, w, 14.5, INK, SERIF, 22, 200) + 14;
-        var frh = 64;
-        for (i = 0; i < fm.length; i++) {
-          var fp = fm[i]; if (i) hairline(x, ly, x + w, 40);
-          var fcy = sY(ly + frh / 2);
-          drawFace(fp.wiki, x + 24, fcy, 22);
-          setFont(SANS, 15, INK, p.LEFT, p.CENTER); bold(); p.text(fp.name, x + 56, fcy - 9); normal();
-          setFont(MONO, 9.5, INK, p.LEFT, p.CENTER, 150); p.text(fp.by.toUpperCase(), x + 56, fcy + 9);
-          // match badges (Sun / Moon / Venus), right-aligned
-          var bx2 = x + w;
-          if (fp.venusMatch) { setFont(SANS, 13, ACC, p.RIGHT, p.CENTER); p.text(APP.glyphFor('venus'), bx2, fcy); bx2 -= 18; }
-          if (fp.moonMatch) { setFont(SANS, 13, ACC, p.RIGHT, p.CENTER); p.text(APP.glyphFor('moon'), bx2, fcy); bx2 -= 18; }
-          if (fp.sunMatch) { setFont(SANS, 13, ACC, p.RIGHT, p.CENTER); p.text(APP.glyphFor('sun'), bx2, fcy); }
-          (function (idx, ay) { pushHit(x, sY(ay), w, frh, function () { UI.learnItem = idx; UI.scroll.learn = 0; UI.popT = nowT(); }); })(i, ly); ly += frh;
-        }
-        if (!fm.length) ly += paragraph('No close matches in the set: a rare sky.', x, ly, w, 15, INK, SERIF, 23, 180) + 10;
-      } else if (cat === 'watch') { // curated retro-TV channels: a hand-tuned public-domain programme per chart
-        ly = watchShelf(c, b, x, w, ly);
       } else if (cat === 'howto') { // hands-on guides
         ly += paragraph('Short, practical walk-throughs. How to actually do these things yourself, each with a little animation.', x, ly, w, 14.5, INK, SERIF, 22, 200) + 12;
         for (i = 0; i < HOWTO.length; i++) {
@@ -9730,21 +9342,11 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     }
     // animated explanation diagram per category: builds on entry, idles with life, replays on tap
     function learnDiagram(cat, it, c, x, w, ly) {
-      if (cat === 'history' || cat === 'glossary' || cat === 'famous' || cat === 'myths' || cat === 'howto' || cat === 'watch') return 0; // these draw their own content
+      if (cat === 'history' || cat === 'glossary' || cat === 'myths' || cat === 'howto') return 0; // these draw their own content
       var H0 = 152, cx = x + w / 2, top = sY(ly), cyc = top + H0 / 2;
       var ent = cl01((nowT() - UI.popT) / 1300), e = eExpo(ent), idle = nowT() * 0.001; // slower, more cinematic
       p.noStroke(); fillc(shade(GROUNDS[UI.screen], -10)); p.rect(x, top, w, H0, 10);
-      if (cat === 'elements') {
-        var els = ['fire', 'earth', 'air', 'water'], bw = (w - 32) / 4, i;
-        for (i = 0; i < 4; i++) {
-          var ee = els[i], sel = (ee === it), barH = (H0 - 52) * (c.elements[ee] / 100) * e, bx = x + 16 + i * bw;
-          var puff = sel ? Math.sin(idle * 2) * 2 : 0;
-          p.noStroke(); fillc(ELHUE[ee], sel ? 255 : 130); p.rect(bx + 7, top + H0 - 26 - barH - puff, bw - 14, barH + puff, 4);
-          if (sel) { p.noFill(); strokec(INK, 255); p.strokeWeight(2); p.rect(bx + 7, top + H0 - 26 - barH - puff, bw - 14, barH + puff, 4); }
-          setFont(MONO, 8.5, INK, p.CENTER, p.TOP, sel ? 255 : 140); p.text(DATA.ELEMENTS[ee].name.toUpperCase(), bx + bw / 2, top + H0 - 19);
-          setFont(MONO, 10, INK, p.CENTER, p.BOTTOM, sel ? 255 : 150); bold(); p.text(Math.round(c.elements[ee] * e) + '%', bx + bw / 2, top + H0 - 28 - barH - puff); normal();
-        }
-      } else if (cat === 'signs') {
+      if (cat === 'signs') {
         // the constellation draws itself, star by star, then the glyph rises \u2014 a small creation story
         var S = DATA.SIGNS[it], hue = ELHUE[S.element], cst = ZODIAC[it];
         p.noStroke(); fillc(hue, 42); p.rect(x, top, w, H0, 10);
@@ -9806,17 +9408,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var ddc = p.drawingContext, rev = reduced() ? 1 : eCubic(cl01((nowT() - UI.popT) / 1500));
       if (ddc && rev < 1) { ddc.save(); ddc.beginPath(); var ry = topY() + (viewH() + (UI.safeBottom || 0) + 60) * rev; ddc.rect(0, topY() - 44, W, ry - (topY() - 44)); ddc.clip(); }
       ly += learnDiagram(cat, it, c, x, w, ly);
-      if (cat === 'elements') {
-        var E = DATA.ELEMENTS[it];
-        p.textFont(SANS); p.textSize(32); p.fill(ELHUE[it][0], ELHUE[it][1], ELHUE[it][2]); p.textStyle(p.BOLD); p.noStroke(); p.text(E.name, x, sY(ly)); normal(); ly += 40;
-        eyebrow('Signs: ' + E.signs, x, ly, ACC); ly += 24;
-        eyebrow('Light', x, ly); ly += 18; ly += paragraph(E.high, x, ly, w, 16, INK, SERIF, 24) + 12;
-        eyebrow('Shadow', x, ly); ly += 18; ly += paragraph(E.low, x, ly, w, 16, INK, SERIF, 24) + 12;
-        ly += paragraph(E.need, x, ly, w, 15.5, INK, SERIF, 23, 210) + 16;
-        hairline(x, ly, x + w, 60); ly += 14; eyebrow('In your chart', x, ly); ly += 22;
-        var hook = (it === dm.max) ? (c.elements[it] + '%: this is your dominant element. It leads how you move through the world.') : (it === dm.min) ? (c.elements[it] + '%: this is your lightest element, the growth edge Silverman would have you cultivate.') : (c.elements[it] + '%: a supporting current in your makeup.');
-        ly += paragraph(hook, x, ly, w, 16, INK, SERIF, 24) + 12;
-      } else if (cat === 'signs') {
+      if (cat === 'signs') {
         var S = DATA.SIGNS[it];
         p.textFont(SANS); p.textSize(30); fillc(ACC); p.textStyle(p.BOLD); p.noStroke(); p.text(S.glyph + '  ', x, sY(ly)); var gw = p.textWidth(S.glyph + '  '); fillc(INK); p.text(S.name, x + gw, sY(ly)); normal(); ly += 40;
         eyebrow(S.element + ' \u00B7 ' + S.modality + ' \u00B7 ruled by ' + S.ruler, x, ly, ACC); ly += 24;
@@ -9870,25 +9462,6 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         ly += paragraph(my2.story, x, ly, w, 16.5, INK, SERIF, 25) + 12;
         var ps2 = planetsInSign(c, my2.s);
         if (ps2.length) ly += paragraph('In your chart, ' + ps2.map(function (k) { return APP.nameFor(k); }).join(', ') + ' ' + (ps2.length === 1 ? 'lives' : 'live') + ' in ' + S3.name + ': this myth is one of yours.', x, ly, w, 15, INK, SERIF, 23, 215) + 10;
-      } else if (cat === 'famous') {
-        var fm2 = UI.fmList || (UI.fmList = APP.famousMatches(c)), fp2 = fm2[it];
-        if (!fp2) { UI.learnItem = null; return ly; }
-        var fsun = DATA.SIGNS[fp2.sun], fmoon = DATA.SIGNS[fp2.moon], fven = DATA.SIGNS[fp2.venus];
-        drawFace(fp2.wiki, x + 46, sY(ly) + 46, 46); // big portrait, left
-        p.textFont(SANS); p.textSize(22); p.textStyle(p.BOLD); fillc(INK); p.noStroke(); var fnl = wrapLines(fp2.name, w - 108); var fni; for (fni = 0; fni < fnl.length; fni++) p.text(fnl[fni], x + 104, sY(ly + 6 + fni * 26)); normal();
-        setFont(MONO, 9.5, ACCTX, p.LEFT, p.TOP, 220); p.text(fp2.by.toUpperCase(), x + 104, sY(ly + 6 + fnl.length * 26 + 2));
-        var badge = ''; if (fp2.sunMatch) badge += APP.glyphFor('sun') + ' ' + fsun.name + '  '; if (fp2.moonMatch) badge += APP.glyphFor('moon') + ' ' + fmoon.name + '  '; if (fp2.venusMatch) badge += APP.glyphFor('venus') + ' ' + fven.name;
-        setFont(SANS, 12.5, INK, p.LEFT, p.TOP); p.text(badge, x + 104, sY(ly + 6 + fnl.length * 26 + 20));
-        ly += 104;
-        hairline(x, ly, x + w, 60); ly += 14; eyebrow('What you share', x, ly, ACC); ly += 22;
-        var shares = [];
-        if (fp2.sunMatch) shares.push('the Sun in ' + fsun.name + ': ' + fsun.style + ', the same core drive');
-        if (fp2.moonMatch) shares.push('a ' + fmoon.name + ' Moon: a kindred inner world and instinct for safety');
-        if (fp2.venusMatch) shares.push('Venus in ' + fven.name + ': a shared way of loving and finding beauty');
-        var shareTxt = 'Like you, ' + fp2.name + ' carries ' + (shares.length === 1 ? shares[0] : shares.slice(0, -1).join('; ') + '; and ' + shares[shares.length - 1]) + '. Lived out a world away, in a wholly different life.';
-        ly += paragraph(shareTxt, x, ly, w, 16.5, INK, SERIF, 25) + 12;
-        ly += paragraph('A shared placement is a shared theme, never a shared fate. The rest of a chart, and a life, makes each person utterly their own.', x, ly, w, 14, INK, SERIF, 21, 195) + 10;
-        setFont(MONO, 8.5, INK, p.LEFT, p.TOP, 140); ly += paragraph('Portrait via Wikipedia.', x, ly, w, 11, INK, MONO, 15, 140) + 8;
       } else if (cat === 'howto') {
         var HT = HOWTO[it];
         p.textFont(SANS); p.textSize(24); p.textStyle(p.BOLD); fillc(INK); p.noStroke(); var hl = wrapLines(HT.t, w); var hli; for (hli = 0; hli < hl.length; hli++) p.text(hl[hli], x, sY(ly + hli * 28)); normal(); ly += hl.length * 28 + 8;
@@ -11489,7 +11062,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       // readability scrim: on text-heavy screens, settle the constellations behind a calm ground so the
       // words always come first (the chart stays lively — it's the visual centrepiece).
       if (({ read: 1, learn: 1, settings: 1, people: 1, tarot: 1 })[UI.screen]) { p.noStroke(); p.fill(UI.bg[0], UI.bg[1], UI.bg[2], 158); p.rect(0, topY() - 8, W, H - (topY() - 8)); }
-      hits = []; phits = []; p.rectMode(p.CORNER); p.textStyle(p.NORMAL); UI.mediaDrawn = false; UI.jDrawn = false;
+      hits = []; phits = []; p.rectMode(p.CORNER); p.textStyle(p.NORMAL); UI.jDrawn = false;
       if (!UI.fontApplied) {
         UI.fontApplied = true; try { applyFontPref(); } catch (eFp) {} try { loadBrandFonts(); } catch (eFb) {}
         try { var stM = APP.STATE.settings; if (stM && !stM.soundMigrated) { stM.soundMigrated = true; if (stM.sound !== true) stM.sound = true; APP.save(); } } catch (eSM) {}
@@ -11510,7 +11083,6 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (UI.dailyNews && APP.STATE.chart && UI.screen !== 'onboard') { hideSearchInput(); drawDailyNews(); drawTopbar(); clampScroll(); return; }
       var s = UI.screen;
       if (s === 'onboard') drawOnboard(); else { if (!(s === 'people' && UI.padd)) hideSearchInput(); if (s === 'chart') drawChart(); else if (s === 'read') drawRead(); else if (s === 'more') drawMore(); else if (s === 'learn') drawLearn(); else if (s === 'tarot') drawTarot(); else if (s === 'people') drawPeople(); else if (s === 'settings') { drawSettings(); drawSettingsGuide(); } }
-      if (!UI.mediaDrawn) hideMediaFrame(); // the retro TV/radio iframe only lives on the Watch shelf
       drawQuip();
       if (s === 'chart' && UI.pcard && APP.STATE.chart) drawPlacementZoom(APP.STATE.chart, APP.STATE.birth);
       drawTopbar(); if (s !== 'onboard') drawNav();

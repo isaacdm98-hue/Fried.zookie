@@ -1,5 +1,29 @@
 # Changelog
 
+## 4.2.0 — 2026-07-22 — "Charts like you" removed; elements folded into signs
+More pop swept out, at your direction.
+
+- **Removed "Charts like you" entirely.** It matched public figures to you by
+  Sun/Moon/Venus *sign* — and the figures' charts are dateless (computed at
+  noon, no birth time), so nothing deeper than a sign could ever be right. Rather
+  than fake a "same captain / same sect" match on data that can't support it, the
+  whole feature is gone: the Learn "Charts like yours" category, the walkthrough's
+  "kindred charts" beat, the `famousMatches` engine, the `FAMOUS` gallery, and the
+  Wikipedia-portrait fetch (`loadFace`/`drawFace`).
+- **Folded the "elements" Learn category into "Signs."** The standalone
+  element-first topic — with its percentage bars and a "Silverman would have you
+  cultivate" line — is removed. The Signs chapter now opens with the four
+  qualities taught the traditional way (fire = hot-and-dry, earth = cold-and-dry,
+  air = hot-and-moist, water = cold-and-moist) and each sign already carries its
+  own element and mode, with its element's light and shadow.
+- **Removed the retro-TV / Internet-Archive "Watch" shelf** and its whole media
+  island (`watchShelf`, `watchChannels`, the Bakelite-TV tiles and static, the
+  live archive search) — off-brand external media, already unreachable, now gone.
+- Swept the fallout: the dead `hideMediaFrame` call and orphaned cache resets.
+
+Golden, doctrine, the 7-screen × 3-width UI audit and the voice-book check all
+pass; the chart, Learn and People screens render with zero runtime errors.
+
 ## 4.1.0 — 2026-07-22 — the chart fits one frame; the last pop is gone
 The novice rework begins with the two changes you asked for directly: the chart
 screen no longer scrolls, and the remnants of the old pop-astrology system are
