@@ -5437,7 +5437,8 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     function glossTapList() {
       if (GLOSS_TAP) return GLOSS_TAP;
       if (typeof GLOSSARY === 'undefined' || !GLOSSARY) return [];
-      var alias = { 'Ascendant (Rising)': ['ascendant'], 'Trine': ['trine'], 'Square': ['square'], 'Opposition': ['opposition'], 'Conjunction': ['conjunction'], 'Dignity': ['dignity', 'domicile', 'exaltation', 'detriment'], 'Retrograde': ['retrograde'], 'Progression': ['progression', 'progressed'], 'Profection': ['profection', 'profections'], 'Solar return': ['solar return'], 'Lunar node': ['north node', 'south node', 'lunar node'], 'Void of course': ['void of course'], 'Decan': ['decan'], 'Synastry': ['synastry'], 'Part of Fortune': ['part of fortune'], 'Sect': ['sect'], 'Ayanamsa': ['ayanamsa'], 'Applying vs separating': ['applying', 'separating'], 'Cazimi / combust': ['cazimi', 'combust'], 'Mutual reception': ['mutual reception'], 'Stellium': ['stellium'], 'Chart ruler': ['chart ruler'], 'Out of bounds': ['out of bounds', 'out-of-bounds'], 'Draconic chart': ['draconic'] };
+      var alias = { 'Ascendant (Rising)': ['ascendant'], 'Trine': ['trine'], 'Square': ['square'], 'Opposition': ['opposition'], 'Conjunction': ['conjunction'], 'Dignity': ['dignity', 'domicile', 'exaltation', 'detriment'], 'Retrograde': ['retrograde'], 'Progression': ['progression', 'progressed'], 'Profection': ['profection', 'profections'], 'Solar return': ['solar return'], 'Lunar node': ['north node', 'south node', 'lunar node'], 'Void of course': ['void of course'], 'Decan': ['decan'], 'Synastry': ['synastry'], 'Part of Fortune': ['part of fortune'], 'Sect': ['sect', 'in sect', 'out of sect'], 'Ayanamsa': ['ayanamsa'], 'Applying vs separating': ['applying', 'separating'], 'Cazimi / combust': ['cazimi', 'combust'], 'Mutual reception': ['mutual reception'], 'Stellium': ['stellium'], 'Chart ruler': ['chart ruler'], 'Out of bounds': ['out of bounds', 'out-of-bounds'], 'Draconic chart': ['draconic'],
+        'Captain': ['captain'], 'Peregrine': ['peregrine'], 'Triplicity': ['triplicity'], 'Term (bound)': ['bounds', 'bound'], 'Face (decan)': ['its own face', 'face of'], 'Almuten': ['almuten'], 'Dispositor': ['dispositor', 'disposited', 'disposits'], 'Reception': ['reception'], 'Benefic & malefic': ['benefics', 'malefics', 'benefic', 'malefic'], 'Lord of the year': ['lord of the year'], 'Direction': ['symbolic direction', 'primary direction', 'directed', 'directions'], 'Live wire': ['live wires', 'live wire'], 'Promittor & significator': ['promittor', 'significators', 'significator'] };
       GLOSS_TAP = []; var i, k;
       for (i = 0; i < GLOSSARY.length; i++) { var al = alias[GLOSSARY[i].t]; if (!al) continue; for (k = 0; k < al.length; k++) GLOSS_TAP.push({ a: al[k], gi: i }); }
       GLOSS_TAP.sort(function (u, v) { return v.a.length - u.a.length; });
@@ -5461,6 +5462,23 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       }
       UI.gscan[key] = out; UI.gscanN++;
       return out;
+    }
+    // draw the dotted underline + tap target for any glossary terms in already-wrapped lines,
+    // at an absolute screen position (for surfaces that render their own text, not via paragraph():
+    // the placement zoom and Today). Keeps teach-in-context working wherever the reading appears.
+    function glossUnderlineAt(lines, x0, yTop, lh, font, sz, alpha) {
+      if (!(sz >= 12) || !lines || !lines.length) return;
+      var gm = glossScan(lines), gj; if (!gm.length) return;
+      p.textFont(font || SERIF); p.textSize(sz);
+      for (gj = 0; gj < gm.length; gj++) {
+        var g = gm[gj], gln = lines[g.i];
+        var px0 = x0 + p.textWidth(gln.slice(0, g.ix)), gtw = p.textWidth(gln.substr(g.ix, g.len));
+        var uy = yTop + g.i * lh + sz * 1.06;
+        strokec(ACC, 130 * (alpha == null ? 1 : alpha)); p.strokeWeight(1);
+        for (var gd = 0; gd < gtw; gd += 5) p.line(px0 + gd, uy, px0 + Math.min(gd + 2.6, gtw), uy);
+        p.noStroke();
+        (function (gi) { pushHit(px0 - 2, uy - sz * 1.2, gtw + 4, sz * 1.5, function () { UI.gloss = { gi: gi, T: nowT() }; }); })(g.gi);
+      }
     }
     // long-press action card: take the words with you — copy the paragraph, or share it
     function copyText(tx) {
@@ -5559,15 +5577,6 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       else { fillc(shade(GROUNDS[UI.screen], -16)); p.rect(x, y + depth, w, h, r); fillc(GROUNDS[UI.screen]); p.rect(x, y + off, w, h, r); p.noFill(); strokec(INK, 150); p.strokeWeight(1.3); p.rect(x, y + off, w, h, r); }
       setFont(MONO, 11, INK, p.CENTER, p.CENTER, 255); p.text(label.toUpperCase(), x + w / 2, y + off + h / 2 + 0.5);
       pushHit(x, y, w, h + depth, fn); return w;
-    }
-    // A13 — element bars that behave like their element: fire flickers, water ripples, air drifts, earth settles
-    function elementBar(e, bx, by, bw, pct) {
-      var t = reduced() ? 0 : nowT(), full = bw * pct / 100; p.noStroke();
-      if (full < 1) return;
-      if (e === 'fire') { fillc(ELHUE.fire); p.rect(bx, by, full, 8, 4); fillc([255, 170, 80], 90 + 70 * (0.5 + 0.5 * Math.sin(t * 0.03))); p.rect(bx + full - 4, by, 4, 8, 2); }
-      else if (e === 'water') { fillc(ELHUE.water); p.rect(bx, by, full, 8, 4); var hp = ((t * 0.05) % (full + 30)) - 15, dc = p.drawingContext; dc.save(); dc.beginPath(); dc.rect(bx, by, full, 8); dc.clip(); p.noStroke(); fillc([175, 205, 255], 130); p.ellipse(bx + hp, by + 4, 16, 9); dc.restore(); }
-      else if (e === 'air') { fillc(ELHUE.air); p.rect(bx, by, full, 8, 4); var sp = ((t * 0.045) % (full + 24)) - 12, dc2 = p.drawingContext; dc2.save(); dc2.beginPath(); dc2.rect(bx, by, full, 8); dc2.clip(); p.noStroke(); fillc([205, 230, 255], 110); p.rect(bx + sp, by, 13, 8); dc2.restore(); }
-      else { var bob = reduced() ? 0 : Math.sin(t * 0.0018) * 0.6; fillc(ELHUE.earth); p.rect(bx, by - bob, full, 8 + bob, 4); }
     }
     function eyebrow(txt, x, ly, c) {
       setFont(MONO, 12.5, (c === ACC ? ACCTX : (c || INK)), p.LEFT, p.TOP, 220);
@@ -6591,6 +6600,8 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var yy = textTop - (UI.pcScroll || 0);
       p.textFont(SERIF); p.textSize(15.5); var bl2 = wrapLines(UI.pcBody, w);
       setFont(SERIF, 15.5, INK, p.LEFT, p.TOP, 245 * infoA); var bi2; for (bi2 = 0; bi2 < bl2.length; bi2++) p.text(bl2[bi2], x, yy + bi2 * 23);
+      // teach-in-context: the tradition's terms in this reading are tappable in place
+      if (infoA > 0.6) glossUnderlineAt(bl2, x, yy, 23, SERIF, 15.5, infoA);
       var endY = yy + bl2.length * 23 + 14;
       if (pj) { var rc = wrapLines(pj.receipt, w); setFont(MONO, 8.5, ACCTX, p.LEFT, p.TOP, 205 * infoA); var rj; for (rj = 0; rj < rc.length; rj++) p.text(rc[rj], x, endY + rj * 12); endY += rc.length * 12 + 10; }
       if (dc) dc.restore();
@@ -8669,12 +8680,25 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       { t: 'Stellium', d: 'Three or more planets bunched in one sign or house. A powerful concentration that dominates the chart.' },
       { t: 'Chart ruler', d: 'The planet that rules your rising sign, a kind of captain for the whole chart. Needs a birth time.' },
       { t: 'Out of bounds', d: 'A planet (often the Moon) beyond the Sun’s declination range, it acts unusually, off the leash.' },
-      { t: 'Draconic chart', d: 'A chart re-cast from the North Node. Read as the soul’s intentions beneath the everyday personality.' }
+      { t: 'Draconic chart', d: 'A chart re-cast from the North Node. Read as the soul’s intentions beneath the everyday personality.' },
+      { t: 'Captain', d: 'The lord of your Ascendant — the planet that rules your rising sign, and so runs the whole chart. Wherever it sits is where the life keeps docking. (Also called the chart ruler.)' },
+      { t: 'Peregrine', d: 'A planet with no essential dignity where it sits — no title in that territory. It tends to work through strangers and to give nothing durable on its own; its dispositor decides what it can finally deliver.' },
+      { t: 'Triplicity', d: 'A planet in one of the three signs of its own element for its sect (day or night): +3 dignity. Comfortable and regular, helped along by other people.' },
+      { t: 'Term (bound)', d: 'A named slice of a sign a planet can rule: +2 dignity. Tempered and contained — restricted but secure, never excessive. The Egyptian bounds are the ones used here.' },
+      { t: 'Face (decan)', d: 'The weakest essential dignity: +1, the Chaldean ruler of a 10° third of a sign. In its own face a planet is dignified in appearance but fragile in substance — in its fine clothes at the door.' },
+      { t: 'Almuten', d: 'The planet with the most essential dignity over a given degree — its strongest owner. The almuten of the whole chart is a leading candidate for the single ruling planet.' },
+      { t: 'Dispositor', d: 'The planet that rules the sign another planet sits in — its landlord. A weak or peregrine planet answers to its dispositor, which decides what it can finally deliver.' },
+      { t: 'Reception', d: 'When one planet sits in a sign or dignity another rules, the host receives it as a guest — giving an aspect somewhere to land. Mutual when each holds the other’s key.' },
+      { t: 'Benefic & malefic', d: 'The tradition sorts the planets by nature: Venus and Jupiter help (benefics), Mars and Saturn test (malefics) — judged for the matter touched, never for the person. Sect and dignity soften or sharpen both.' },
+      { t: 'Lord of the year', d: 'The ruling planet of your annual profection — the time-lord the whole year runs on. The directions and transits that touch it speak loudest that year.' },
+      { t: 'Direction', d: 'A symbolic clock — one degree advanced per year of life — that brings a significator to a promittor. It marks events by age, not by the week; a transit only triggers what a direction has already promised.' },
+      { t: 'Live wire', d: 'A natal point already lit — by a direction, the lord of the year, the captain, or the current distributor. The tradition reads a transit only where it strikes one; a transit on a dark point is just motion.' },
+      { t: 'Promittor & significator', d: 'In a direction, the significator is the moving point that carries the matter (the life, the captain, a planet); the promittor is the point it arrives at, which promises the event. The pair, judged by state, is the prediction.' }
     ];
     // hands-on guides — how to actually do these things yourself
     var HOWTO = [
       { t: 'Read your chart in 5 steps', anim: 'bigthree', steps: ['Start with the big three: your Sun (what you’re becoming), Moon (what you need) and rising (how you meet the world). That’s the headline.', 'Find your dominant element and mode (Read → Patterns), your basic temperament.', 'Note the loudest planet (the one with the most aspects) and where it sits.', 'Read the tight aspects (small orbs) first, they’re the strongest conversations.', 'Only then zoom into individual placements. Detail last, story first.'] },
-      { t: 'Find your dominant element', anim: 'elements', steps: ['Open Chart: the little four-colour bar (F/E/A/W) is your elemental balance.', 'The biggest slice is your dominant element; the smallest is your growth edge.', 'Fire = drive, Earth = substance, Air = thought, Water = feeling.', 'Tap Learn → Elements to read what leaning into the light element looks like.'] },
+      { t: 'Find your dominant element', anim: 'elements', steps: ['Your element is the balance of fire, earth, air and water across your planets — drive, substance, thought and feeling.', 'On your wheel, note which element the signs your planets sit in belong to; the one that repeats is your lean, the rarest is your growth edge.', 'Fire = drive, earth = substance, air = thought, water = feeling.', 'Tap Learn → Signs: each sign names its element, and the chapter opens with the four qualities the traditional way.'] },
       { t: 'Read a transit', anim: 'moving', steps: ['A transit is where a planet is *now* versus your birth chart.', 'Open the Today sheet (tap the moon, top-left) or Read → Live on your chart.', 'Note the transiting planet, the aspect, and your natal planet it touches.', 'Slow planets (Saturn–Pluto) = long, defining chapters; the Moon = a passing mood.', 'Use Read → Transit calendar to see the exact dates ahead.'] },
       { t: 'Compare two charts (synastry)', anim: 'synastry', steps: ['Add the other person in People (just their birthday; a birth time sharpens it).', 'Open their bond: the synastry bi-wheel shows both charts and the contact lines.', 'Flowing lines (trine/sextile, cool colour) = ease; hard lines (square/opposition) = friction with growth.', 'Switch to the Composite wheel to see the relationship as its own chart.', 'Check “Your year together” for the dates ahead.'] },
       { t: 'Spot a stellium or pattern', anim: 'stellium', steps: ['A stellium is 3+ planets crowded in one sign or house, a loud, concentrated theme.', 'Open Read → Patterns; the engine names any stellium, grand trine, T-square or yod for you.', 'On the wheel, look for a cluster of dots close together, that’s a stellium by eye.', 'Whatever sign/house it falls in is where a huge amount of your energy goes.'] },
@@ -10575,7 +10599,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var cx = x + w / 2, yy = 0;
       function ty() { return top + pad + yy - (UI.tScroll || 0); }
       function head(s) { setFont(MONO, 10.5, ACC, p.LEFT, p.TOP, 230); p.text(s.toUpperCase(), x + pad, ty()); yy += 18; }
-      function body(s, sz) { var fz = sz || 15; var ls = wrapLines2(s, w - pad * 2, SERIF, fz); setFont(SERIF, fz, INK, p.LEFT, p.TOP, 240); var i; for (i = 0; i < ls.length; i++) p.text(ls[i], x + pad, ty() + i * (fz * 1.42)); yy += ls.length * (fz * 1.42) + 4; }
+      function body(s, sz) { var fz = sz || 15; var ls = wrapLines2(s, w - pad * 2, SERIF, fz); setFont(SERIF, fz, INK, p.LEFT, p.TOP, 240); var i; var y0 = ty(); for (i = 0; i < ls.length; i++) p.text(ls[i], x + pad, y0 + i * (fz * 1.42)); if (fz >= 12) glossUnderlineAt(ls, x + pad, y0, fz * 1.42, SERIF, fz); yy += ls.length * (fz * 1.42) + 4; }
       function rule() { strokec(INK, 28); p.strokeWeight(1); p.line(x + pad, ty() + 4, x + w - pad, ty() + 4); yy += 14; }
       // title row + close
       setFont(SANS, 22, INK, p.LEFT, p.TOP); bold(); p.text('Today', x + pad, ty()); normal();

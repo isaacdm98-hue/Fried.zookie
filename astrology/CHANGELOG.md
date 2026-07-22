@@ -1,5 +1,25 @@
 # Changelog
 
+## 4.4.0 — 2026-07-22 — teach the words where you meet them
+The last novice workstream: the tradition's vocabulary is now tappable in place,
+wherever it appears in the reading — so a beginner learns the word at the moment
+they meet it, without leaving the page.
+
+- **Extended the glossary** to the whole traditional vocabulary the reading
+  actually uses: captain, peregrine, triplicity, term/bound, face/decan, almuten,
+  dispositor, reception, benefic & malefic, lord of the year, direction, live
+  wire, promittor & significator — each a plain two-line definition in the app's
+  own voice, with a tap through to the full Learn entry.
+- **Wired tappable terms into the two surfaces that render their own text** — the
+  placement zoom (the main thing a novice reads) and Today — via one shared
+  underline helper. They already worked in the Read flow and Learn; now the whole
+  reading teaches in context. Tapping a term (e.g. "its own face", "peregrine",
+  "live wire") opens its definition right where you are.
+- Reworded the "find your dominant element" how-to and removed the now-dead
+  `elementBar` helper (its two callers went with the pop cleanup).
+
+Version 4.4.0 (sw cache v101). Golden, doctrine, UI audit and voice all pass.
+
 ## 4.3.0 — 2026-07-22 — the prose, tightened; a first-reading that teaches the method
 A pass over how the reading *reads*, plus an opt-in intro that teaches a beginner
 to read their own chart.
