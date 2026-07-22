@@ -2513,11 +2513,11 @@ var APP = (function () {
     if (debN9 && out.score < 0) {
       // the debility outweighs any minor dignity it still holds — the debility leads
       out.label = debN9 + (have9.length ? ' (holding its own ' + have9.join(' and ') + ')' : '');
-      out.character = debC9 + (have9.length ? '; though ' + have9.map(function (n9) { return n9 + ' — ' + DIGNITY_CHAR9[n9]; }).join('; ') + ' — tempers the worst of it' : '');
+      out.character = debC9 + (have9.length ? '; though ' + have9.map(function (n9) { return n9 + ' — ' + DIGNITY_CHAR9[n9].split(';')[0]; }).join(', ') + ' — tempers the worst of it' : '');
     } else if (have9.length) {
       out.label = have9[0].charAt(0).toUpperCase() + have9[0].slice(1);
       out.character = DIGNITY_CHAR9[have9[0]];
-      if (have9.length > 1) out.character += '; also ' + have9.slice(1).map(function (n9) { return n9 + ' (' + DIGNITY_CHAR9[n9] + ')'; }).join('; ');
+      if (have9.length > 1) out.character += '; also ' + have9.slice(1).map(function (n9) { return n9 + ' (' + DIGNITY_CHAR9[n9].split(';')[0] + ')'; }).join(', ');
       if (debN9) out.character += '; yet in ' + debN9.toLowerCase() + ' — ' + debC9;
     } else { out.label = 'Peregrine'; out.character = DIGNITY_CHAR9.peregrine; }
     var tal9 = {}; addScore(tal9, led.domicile, 5); addScore(tal9, led.exaltation, 4); addScore(tal9, led.triplicity, 3); addScore(tal9, led.bound, 2); addScore(tal9, led.face, 1);
