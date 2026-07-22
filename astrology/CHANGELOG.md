@@ -1,5 +1,24 @@
 # Changelog
 
+## 4.0.1 — 2026-07-22 — the rebuild freeze, fixed at the root
+Rebuilding a chart could hang for seconds. Profiling found the cause: the default
+Read view eagerly computed `oddPredictions` — a ~900ms, fifteen-month ephemeris
+scan — on every open, even though only the timing tab uses it. Fixes:
+
+- Stop computing oddPredictions (and the other old pop caches) on the default
+  reading; the timing tab still computes it lazily when opened. The default Read
+  after a rebuild dropped from ~970ms to ~130ms.
+- Memoise the heavy ephemeris aggregators on the chart object for five minutes —
+  `composeTransits` (called by every triggerReading — the warm loader, the Read
+  flow, Today, the guide), `upcomingTransits` (by argument set) and
+  `oddPredictions` — so the many callers share one pass instead of each re-scanning
+  the sky. A fresh chart (a rebuild) starts with an empty cache.
+- Trimmed the transit scan (3-day sampling, 13-step bisection) so even the timing
+  tab is markedly faster.
+
+Golden, doctrine, three-width UI audit and voice-book all still pass.
+
+
 ## 4.0.0 — 2026-07-22 — the whole app speaks the traditional method
 A ground-up alignment of every surface to Sonia's London-lineage method and the
 two *Cours Préparatoires* ateliers. The 40-phase engine already judged; now the

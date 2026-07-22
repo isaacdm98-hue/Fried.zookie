@@ -1503,11 +1503,20 @@ var APP = (function () {
     return { elong: elong, illum: (1 - Math.cos(elong * Math.PI / 180)) / 2, waxing: elong < 180 };
   }
   function composeTransits(c) {
+    // this runs a full current-sky ephemeris pass (transitNow). It is called by walkTr,
+    // by EVERY triggerReading (the warm loader, the Read flow, Today, the guide) and by the
+    // forecast/cycles — many times per chart view. Uncached, those redundant passes stack up
+    // to a freeze on a phone. Cache the result on the chart for five minutes (transits barely
+    // move in that time); a fresh chart object (a rebuild) starts with an empty cache.
+    var nowMs = (typeof Date !== 'undefined' && Date.now) ? Date.now() : 0;
+    if (c && c._trCache && (nowMs - (c._trCacheT || 0)) < 300000) return c._trCache;
     var ctx = transitNow();
     var all = transitsToNatal(ctx.tp, ctx.ay, c);
     var daily = [], timed = [];
     for (var i = 0; i < all.length; i++) { (all[i].tp === 'moon' ? timed : daily).push(all[i]); }
-    return { ctx: ctx, all: all, daily: daily, timed: timed };
+    var res = { ctx: ctx, all: all, daily: daily, timed: timed };
+    if (c) { c._trCache = res; c._trCacheT = nowMs; }
+    return res;
   }
   function aspVerb(asp) {
     return ({ conjunction: 'sitting right on', opposition: 'opposite', trine: 'in easy flow with', square: 'squaring', sextile: 'making an opening to' })[asp.key] || 'aspecting';
@@ -2527,10 +2536,14 @@ var APP = (function () {
     return sdelta(rev(a - (ay || 0)), rev(b - (ay || 0)));
   }
   function upcomingTransits(c, months, cap, backMonths) {
+    // a heavy forward/back ephemeris scan; cache per chart per argument set for five minutes so
+    // the week strip, the calendar and the forecast don't each re-scan the sky (a rebuild = new c = fresh cache)
+    var _utk = months + '|' + cap + '|' + backMonths, _utn = (typeof Date !== 'undefined' && Date.now) ? Date.now() : 0;
+    if (c && c._utCache && c._utCache[_utk] && (_utn - c._utCache[_utk].t) < 300000) return c._utCache[_utk].v;
     var transiting = ['mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto'], natal = DATA.PLANET_ORDER;
     var SLOW = { jupiter: 1, saturn: 1, uranus: 1, neptune: 1, pluto: 1 };
     var nowD = new Date(), backD = Math.round((backMonths || 0) * 30.4), t0 = new Date(nowD.getTime() - backD * 86400000);
-    var days = Math.round((months || 8) * 30.4) + backD, step = 2, ay = c.ayan || 0, samples = [], k;
+    var days = Math.round((months || 8) * 30.4) + backD, step = 3, ay = c.ayan || 0, samples = [], k;
     for (k = 0; k <= days; k += step) { var dt = new Date(t0.getTime() + k * 86400000); samples.push({ dt: dt, pos: EPH.positions(jsDayNum(dt)) }); }
     var events = [], ti, ni, ai;
     for (ti = 0; ti < transiting.length; ti++) {
@@ -2545,7 +2558,7 @@ var APP = (function () {
               var sd = sdelta(np.lon, rev(samples[s].pos[tk].lon - ay)), hh = sdelta(T, sd);
               if (prev && ((prev.hh <= 0 && hh >= 0) || (prev.hh >= 0 && hh <= 0)) && Math.max(Math.abs(prev.hh), Math.abs(hh)) < 20) {
                 var lo = prev.dt.getTime(), hi = samples[s].dt.getTime(), loSign = prev.hh <= 0, it;
-                for (it = 0; it < 22; it++) { var mid = (lo + hi) / 2, sdm = sdelta(np.lon, rev(EPH.positions(jsDayNum(new Date(mid)))[tk].lon - ay)), hm = sdelta(T, sdm); if ((hm <= 0) === loSign) lo = mid; else hi = mid; }
+                for (it = 0; it < 13; it++) { var mid = (lo + hi) / 2, sdm = sdelta(np.lon, rev(EPH.positions(jsDayNum(new Date(mid)))[tk].lon - ay)), hm = sdelta(T, sdm); if ((hm <= 0) === loSign) lo = mid; else hi = mid; }
                 var exDate = new Date((lo + hi) / 2), mo = transitMotion(tk, exDate, ay);
                 events.push({ date: exDate, tp: tk, np: nk, aspKey: DATA.ASPECTS[ai].key, glyph: DATA.ASPECTS[ai].glyph, quality: DATA.ASPECTS[ai].quality, target: T, rx: mo < 0, slow: SLOW[tk] ? true : false });
               }
@@ -2578,7 +2591,9 @@ var APP = (function () {
     }
     for (g = 0; g < grouped.length; g++) { var GG = grouped[g]; if (GG.passes && GG.passes.length) { GG.passes.sort(function (x, y) { return x.date - y.date; }); GG.date = GG.passes[0].date; GG.rx = GG.passes[0].rx; GG.multi = GG.passes.length > 1; } }
     grouped.sort(function (x, y) { return x.date - y.date; });
-    return grouped.slice(0, cap || 10);
+    var _utres = grouped.slice(0, cap || 10);
+    if (c) { c._utCache = c._utCache || {}; c._utCache[_utk] = { t: _utn, v: _utres }; }
+    return _utres;
   }
   // ===== YOUR CYCLES: the long transits read as named chapters with a position inside them.
   // For each slow planet contacting a natal point right now, find the whole felt window
@@ -4816,6 +4831,8 @@ var APP = (function () {
   // planets are, said the way a reader across the table would say it: "you've recently
   // been through X", "you're likely to Y soon", tied to the exact house it touches.
   function oddPredictions(c, b) {
+    var _opn = (typeof Date !== 'undefined' && Date.now) ? Date.now() : 0;
+    if (c && c._opCache && (_opn - (c._opCacheT || 0)) < 300000) return c._opCache;
     var evs = [];
     try { evs = upcomingTransits(c, 11, 200, 4); } catch (eOp0) { return []; } // 4 months back, 11 ahead; large cap so future events survive the sort
     var MON9 = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -4867,6 +4884,7 @@ var APP = (function () {
     var out = [], used = {}, tpN = {};
     for (i = 0; i < past.length && out.length < 2; i++) { var kp = past[i].tp + past[i].np; if (used[kp]) continue; used[kp] = 1; out.push(build9(past[i], true)); }
     for (i = 0; i < future.length && out.length < 6; i++) { var kf = future[i].tp + future[i].np; if (used[kf] || (tpN[future[i].tp] || 0) >= 2) continue; used[kf] = 1; tpN[future[i].tp] = (tpN[future[i].tp] || 0) + 1; out.push(build9(future[i], false)); }
+    if (c) { c._opCache = out; c._opCacheT = _opn; }
     return out;
   }
   function composeForecast(c) {
@@ -8103,11 +8121,9 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (rt === 'story') {
       // ===== the reading: ONE insight at a time by default (calm, spacious, tap to continue),
       // with a quiet way out to the full chapter menu. No wall at the beginning. =====
-      if (UI.smCache === undefined) { try { UI.smCache = APP.sunMoonCharacter(c); } catch (e0f) { UI.smCache = null; } }
-      if (UI.quirkCache === undefined) { try { UI.quirkCache = APP.lifeQuirks(c); } catch (e1f) { UI.quirkCache = []; } }
-      if (UI.oddPred === undefined) { try { UI.oddPred = APP.oddPredictions(c, b); } catch (e2f) { UI.oddPred = []; } }
-      if (UI.sigCache === undefined) { try { UI.sigCache = APP.chartSignature(c); } catch (e3f) { UI.sigCache = null; } }
-      if (UI.intCache === undefined) { try { UI.intCache = APP.interests(c); } catch (e4f) { UI.intCache = []; } if (UI.intPull === undefined) { try { UI.intPull = APP.emergingPull(c, b); } catch (e5f) { UI.intPull = null; } } }
+      // the traditional judgment is all the default reading needs; the old pop caches
+      // (sun-moon character, quirks, oddPredictions — the last a ~900ms 15-month ephemeris scan)
+      // are no longer computed eagerly here. Any tab that still uses one computes it lazily.
       if (UI.tradCache === undefined) { try { UI.tradCache = APP.traditionalRead(c, b); } catch (eTr9) { UI.tradCache = null; } }
       if (UI.rdBeats === undefined) {
         // THE READING IS THE JUDGMENT — Sonia's order, every beat chart-specific with its receipt:
