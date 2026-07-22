@@ -1,5 +1,23 @@
 # Changelog
 
+## 3.50.0 — 2026-07-22 — immersion pass: the chart shows its own thinking
+Four cinematic touches, each carrying a piece of the new engine rather than
+decorating it:
+
+- **Live-wire glow.** The chart wheel now breathes along its active directions —
+  the significator→promittor lines the timing engine is judging *right now* pulse
+  in their planets' own colours, so you can see which parts of the sky are lit
+  this year before you read a word.
+- **Sect ambient light.** The whole app takes a warm sun-side wash for a day
+  chart and a cool moon-side wash for a night chart, so the light of sect — the
+  first thing a traditional astrologer settles — is felt, not just stated.
+- **Tap a placement, read its judgment.** Touching any planet on the wheel now
+  springs a card carrying its full determination reading — captain flag, court,
+  zodiacal state, rulerships, the Lilly verdict, its sect role — with the receipt
+  and citation, in a taller sheet sized for the richer content.
+- Regression floor held green throughout: golden-chart harness ALL PASS, the
+  three-width UI sweep and text-integrity scan clean.
+
 ## 3.49.0 — 2026-07-22 — the traditional rework, all forty phases
 The full engine rework from `plans/forty-phases.md`, distilled from Sonia's
 London-lineage method and the pre-modern authors (Ptolemy, Dorotheus, Firmicus,

@@ -6963,7 +6963,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (!UI.pcard) return;
       var key = UI.pcard, pl = (key === 'asc') ? c.ascBody : c.planets[key]; if (!pl) { UI.pcard = null; return; }
       var mp = reduced() ? 1 : cl01((nowT() - UI.popT) / 380), me = reduced() ? 1 : eBack(mp); if (me > 1.03) me = 1.03;
-      var sb = UI.safeBottom || 0, shH = Math.round((H - topY()) * 0.33), shY = H - sb - shH * me, x = sx(), w = cw();
+      var sb = UI.safeBottom || 0, shH = Math.round((H - topY()) * 0.42), shY = H - sb - shH * me, x = sx(), w = cw();
       pushHit(0, 0, W, shY, function () { UI.pcard = null; }); // the wheel stays visible and tappable-away above the card
       var gk = GROUNDS.chart;
       fillc(shade(gk, -18)); p.rect(x - 8, shY + 4, w + 16, shH + sb, 18);
