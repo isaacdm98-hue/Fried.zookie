@@ -2360,6 +2360,50 @@ var APP = (function () {
     try { var mA9 = DATA.ARCH && DATA.ARCH.sign[meSun.name], tA9 = DATA.ARCH && DATA.ARCH.sign[themSun.name]; if (mA9 && tA9) archT9 = mA9.n + ' meets ' + tA9.n.replace('The ', 'the ') + '. '; } catch (eBA9) {}
     return archT9 + 'Your ' + meSun.name + ' Sun meets their ' + themSun.name + ' Sun: ' + elementMix(meSun.element, themSun.element) + '. Across both charts, ' + tone + ' (' + flow + ' flowing, ' + fric + ' challenging contacts).';
   }
+  // ===== PHASE 35 — SYNASTRY BY THE OVERLAY METHOD =====
+  // Each person's planets are judged in the OTHER's houses (a benefic guest favours that
+  // corner of your life, a malefic presses it — the more so by its own state), and the two
+  // CAPTAINS — the lord of each Ascendant — and their reception across the charts are the
+  // spine of the bond. Needs both birth times for the houses.
+  function crossReceives35(hostK, guestLon, isDay) {
+    var led = dignityLedger(guestLon, isDay !== false);
+    return led.domicile === hostK || led.exaltation === hostK || led.triplicity === hostK || led.bound === hostK || led.face === hostK;
+  }
+  function bondSpine35(cMe, cThem, bMe, bThem) {
+    var tkMe = !!(bMe && bMe.timeKnown && cMe.ascBody && cMe.cusps), tkThem = !!(bThem && bThem.timeKnown && cThem.ascBody && cThem.cusps);
+    if (!tkMe || !tkThem) return { hasTime: false, note: 'The overlay method judges each person’s planets in the OTHER’s houses, and houses need the hour of birth. ' + (!tkMe ? 'Your time is missing' : 'Their time is missing') + ', so this bond is read only by the planet-to-planet contacts, without the house overlay or the captains’ spine.' };
+    var capMe = TRAD_RULER[cMe.ascBody.sign], capThem = TRAD_RULER[cThem.ascBody.sign];
+    var dMe = determination(cMe, bMe, capMe), dThem = determination(cThem, bThem, capThem);
+    var isDayMe = isDayChart9(cMe, bMe); if (isDayMe === null) isDayMe = true;
+    var isDayThem = isDayChart9(cThem, bThem); if (isDayThem === null) isDayThem = true;
+    var meRecThem = crossReceives35(capMe, cThem.planets[capThem].lon, isDayMe);
+    var themRecMe = crossReceives35(capThem, cMe.planets[capMe].lon, isDayThem);
+    var themCapHouse = EPH.houseOf(cThem.planets[capThem].lon, cMe.cusps), myCapHouse = EPH.houseOf(cMe.planets[capMe].lon, cThem.cusps);
+    var recLine = (meRecThem && themRecMe) ? 'And the strongest possible tie is present: the two captains receive each other — each stands in a sign the other’s captain rules or is exalted in. That is a bond that holds its own repairs; even the hard passages have somewhere to land.'
+      : meRecThem ? 'Your captain ' + nameFor(capMe) + ' receives theirs into your dignity: you tend to hold the door in this bond, and their ' + nameFor(capThem) + ' is at home in your territory.'
+        : themRecMe ? 'Their captain ' + nameFor(capThem) + ' receives yours: they tend to hold the door, and your ' + nameFor(capMe) + ' is a welcomed guest in theirs.'
+          : 'The captains do not receive each other — neither holds a natural key to the other’s door, so this bond runs on its aspects and overlays rather than on an underlying welcome.';
+    var line = 'The spine of any bond is the two captains — the lord of each Ascendant. Yours is ' + nameFor(capMe) + ' (' + stateAdj9(dMe.essential.label) + ' in ' + dMe.signName + (dMe.house ? ', your ' + ordinal(dMe.house) + ' house' : '') + '); theirs is ' + nameFor(capThem) + ' (' + stateAdj9(dThem.essential.label) + ' in ' + dThem.signName + (dThem.house ? ', their ' + ordinal(dThem.house) + ' house' : '') + '). '
+      + 'Their captain falls in your ' + ordinal(themCapHouse) + ' house — ' + HOUSE_AREA9[themCapHouse - 1] + ' — so who they most are lands, for you, on that corner of your life; and your captain falls in their ' + ordinal(myCapHouse) + ' — ' + HOUSE_AREA9[myCapHouse - 1] + '. ' + recLine;
+    return { hasTime: true, capMe: capMe, capThem: capThem, mutualReception: meRecThem && themRecMe, line: line,
+      receipt: ('captains ' + nameFor(capMe) + ' / ' + nameFor(capThem) + ' · theirs in your ' + ordinal(themCapHouse) + ' · yours in their ' + ordinal(myCapHouse) + (meRecThem && themRecMe ? ' · MUTUAL RECEPTION' : '')).toUpperCase() };
+  }
+  // judge visitC's planets landing in hostC's houses. visitPoss/hostPoss are the possessive
+  // words for the two people ("Their"/"your", or "Your"/"their"); visitWho names the visitor
+  // for the state clause ("their"/"your").
+  function bondOverlay35(visitC, visitB, hostC, visitPoss, hostPoss, visitWho) {
+    var out = [], K = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn'], i;
+    if (!hostC.cusps) return out;
+    for (i = 0; i < K.length; i++) {
+      var k = K[i], p = visitC.planets[k]; if (!p) continue;
+      var h = EPH.houseOf(p.lon, hostC.cusps); if (!h) continue;
+      var vis = determination(visitC, visitB, k), nat = vis.nature.verdict, area = HOUSE_AREA9[h - 1];
+      var judge = nat === 'benefic' ? 'a benefic guest — it favours that ground' : nat === 'malefic' ? 'a malefic guest — it presses that ground, and asks for care there' : 'a convertible guest, colouring that ground by whatever it brings';
+      var stateNote = (vis.essential && !vis.essential.modern) ? ' — the more so because in ' + visitWho + ' own chart it is ' + stateAdj9(vis.essential.label) + ' in ' + vis.signName : '';
+      out.push({ k: k, house: h, line: visitPoss + ' ' + nameFor(k) + ' falls in ' + hostPoss + ' ' + ordinal(h) + ' house of ' + area + ': ' + judge + stateNote + '.' });
+    }
+    return out;
+  }
   // a transit in today's sky touching BOTH charts at once
   function sharedTransits(cMe, cThem) {
     var ctx = transitNow(), a = transitsToNatal(ctx.tp, ctx.ay, cMe), b = transitsToNatal(ctx.tp, ctx.ay, cThem);
@@ -2411,39 +2455,17 @@ var APP = (function () {
     var top = syn.slice(0, 5).map(synLine); if (top.length) blocks.push({ label: 'Strongest contacts', lines: top });
     // the house overlays: their planets land in the rooms of YOUR life. The classic
     // reason someone feels like home, or like weather.
+    // PHASE 35 — the overlay method: the captains' spine, then each person's planets judged
+    // in the OTHER's houses (a benefic guest favours that corner, a malefic presses it).
     try {
-      var OVT9 = {
-        1: 'they change how you carry yourself; you are more visible, more yourself or more performed, around them',
-        2: 'they show up in questions of money, worth and what you keep; they make you weigh what you own and what owns you',
-        3: 'they live in your daily talk: errands, messages, the neighbourhood of your mind; conversation is the bloodstream here',
-        4: 'they get past the front door, into the private rooms; family-feeling, for better and worse',
-        5: 'they pull you toward play, romance and making things; around them you create more and perform less',
-        6: 'they enter the workshop: routines, work, health, the daily grind; this bond lives or dies by the everyday',
-        7: 'they read as partner material to your chart: the mirror seat, where your own missing pieces sit down',
-        8: 'they touch the deep accounts: trust, merging, what is shared and what it costs; nothing here stays shallow',
-        9: 'they stretch your map: belief, travel, the bigger picture; around them your world is literally larger',
-        10: 'they are tangled in your ambitions and your public name; they change what you aim at, or how visibly you aim',
-        11: 'they widen your future: friends, plans, the long hope; a bond that works best pointed at something ahead',
-        12: 'they reach the part of you that never quite makes it into words: tender, dreamlike, occasionally confusing'
-      };
-      if (STATE.birth && STATE.birth.timeKnown && cMe.cusps) {
-        var ovL9 = [], ovK9 = ['sun', 'moon', 'venus', 'mars', 'saturn'], oi9;
-        for (oi9 = 0; oi9 < ovK9.length && ovL9.length < 4; oi9++) {
-          var op9 = cThem.planets[ovK9[oi9]]; if (!op9) continue;
-          var oh9 = EPH.houseOf(op9.lon, cMe.cusps);
-          if (oh9 && OVT9[oh9]) ovL9.push('Their ' + nameFor(ovK9[oi9]) + ' lands in your ' + ordinal(oh9) + ' house: ' + OVT9[oh9] + '.');
-        }
-        if (ovL9.length) blocks.push({ label: 'Where they land in your life', lines: ovL9 });
-      }
-      if (person.timeKnown && cThem.cusps) {
-        var rvL9 = [], rvK9 = ['sun', 'moon', 'venus'], ri9;
-        for (ri9 = 0; ri9 < rvK9.length; ri9++) {
-          var rp9 = cMe.planets[rvK9[ri9]]; if (!rp9) continue;
-          var rh9 = EPH.houseOf(rp9.lon, cThem.cusps);
-          if (rh9 && DATA.HOUSES[rh9 - 1]) rvL9.push('Your ' + nameFor(rvK9[ri9]) + ' lands in their ' + ordinal(rh9) + ' house of ' + DATA.HOUSES[rh9 - 1].title.toLowerCase() + ': that is the room of their life you walk into.');
-        }
-        if (rvL9.length) blocks.push({ label: 'Where you land in theirs', lines: rvL9 });
-      }
+      var spine35 = bondSpine35(cMe, cThem, STATE.birth, person);
+      if (spine35.hasTime) blocks.push({ label: 'The spine: your two captains', text: spine35.line });
+      else blocks.push({ label: 'The overlay needs both birth times', text: spine35.note });
+      var theirPoss = (person.name ? person.name + '’s' : 'Their'), theirWho = (person.name ? person.name + '’s' : 'their');
+      var ovT9 = bondOverlay35(cThem, person, cMe, theirPoss, 'your', theirWho);
+      if (ovT9.length) blocks.push({ label: 'Their planets in your houses (judged)', lines: ovT9.slice(0, 5).map(function (o) { return o.line; }) });
+      var ovM9 = bondOverlay35(cMe, STATE.birth, cThem, 'Your', 'their', 'your');
+      if (ovM9.length) blocks.push({ label: 'Your planets in their houses (judged)', lines: ovM9.slice(0, 4).map(function (o) { return o.line; }) });
     } catch (eOV9) {}
     var comp = compositeChart(cMe, cThem), ctext = compositeText(comp); if (ctext) blocks.push({ label: 'Your composite: the relationship itself', text: ctext });
     var shared = sharedTransits(cMe, cThem); if (shared.length) blocks.push({ label: 'Live between you: today', text: shared.slice(0, 2).join(' ') });
@@ -5438,7 +5460,7 @@ var APP = (function () {
     solarReturnChart: solarReturnChart, upcomingEclipses: upcomingEclipses, bestDaysFor: bestDaysFor, electIntents: electIntents, oddPredictions: oddPredictions, composeProfectionYear: composeProfectionYear, signHouseWeave: signHouseWeave,
     progressedTimeline: progressedTimeline, retroSeasons: retroSeasons,
     exportBook: exportBook, exportBackup: exportBackup, importBackup: importBackup, composeDailyEssay: composeDailyEssay, chartFP: chartFP, weaveNote: weaveNote, termOf: termOf, anA: anA, composeColleague: composeColleague, exportColleague: exportColleague,
-    microFor: microFor, tellsFor: tellsFor, weaveTransit: weaveTransit, traditionalRead: traditionalRead, determination: determination, determinationSheet: determinationSheet, derivedHouseOf: derivedHouseOf, derivedPhrase: derivedPhrase, conditionVerdict: conditionVerdict, sectProfile: sectProfile, judgeAscendant: judgeAscendant, judgeCaptain: judgeCaptain, rulershipWeb: rulershipWeb, zodiacMatrix: zodiacMatrix, cuspAlmuten: cuspAlmuten, judgeHouse: judgeHouse, judgeHouses: judgeHouses, judgeAspect: judgeAspect, judgeAspects: judgeAspects, fullReception: fullReception, receptionOnAspect: receptionOnAspect, receptionsInChart: receptionsInChart, testimonyAuthority: testimonyAuthority, contest: contest, rulingVoice: rulingVoice, contradictions: contradictions, natalSynthesis: natalSynthesis, housesThatMatter: housesThatMatter, noBirthTimeReading: noBirthTimeReading, judgeDirection: judgeDirection, judgeDirections: judgeDirections, directedAscendant: directedAscendant, directedSignificators: directedSignificators, significatorFor: significatorFor, directedChapter18: directedChapter18, boundsWalk: boundsWalk, lordOfYear: lordOfYear, profectionYear: profectionYear, triggerReading: triggerReading, liveWires21: liveWires21, judgeCycle: judgeCycle, judgeCycles: judgeCycles, judgeReturn: judgeReturn, eclipseTimers: eclipseTimers, glanceJudged: glanceJudged, weekJudged: weekJudged, lots: lots, starsJudged: starsJudged, hiddenPartnerships: hiddenPartnerships, patternsAsTestimony: patternsAsTestimony, vedicWall: vedicWall, symbolicDirections: symbolicDirections, directionLine: directionLine, directionReceipt: directionReceipt, aspectNature: aspectNature, transitCycles: transitCycles, weaveCycle: weaveCycle, weaveWeek: weaveWeek, receptionOf: receptionOf, chartSignature: chartSignature, lifeQuirks: lifeQuirks, interests: interests, emergingPull: emergingPull, spookyReads: spookyReads, combinationRead: combinationRead, sunMoonCharacter: sunMoonCharacter, guideCards: guideCards, ancientSky: ancientSky, addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, returnsAlmanac: returnsAlmanac, progressedLunation: progressedLunation, planetaryHours: planetaryHours, moonVoidWindow: moonVoidWindow, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
+    microFor: microFor, tellsFor: tellsFor, weaveTransit: weaveTransit, traditionalRead: traditionalRead, determination: determination, determinationSheet: determinationSheet, derivedHouseOf: derivedHouseOf, derivedPhrase: derivedPhrase, conditionVerdict: conditionVerdict, sectProfile: sectProfile, judgeAscendant: judgeAscendant, judgeCaptain: judgeCaptain, rulershipWeb: rulershipWeb, zodiacMatrix: zodiacMatrix, cuspAlmuten: cuspAlmuten, judgeHouse: judgeHouse, judgeHouses: judgeHouses, judgeAspect: judgeAspect, judgeAspects: judgeAspects, fullReception: fullReception, receptionOnAspect: receptionOnAspect, receptionsInChart: receptionsInChart, testimonyAuthority: testimonyAuthority, contest: contest, rulingVoice: rulingVoice, contradictions: contradictions, natalSynthesis: natalSynthesis, housesThatMatter: housesThatMatter, noBirthTimeReading: noBirthTimeReading, judgeDirection: judgeDirection, judgeDirections: judgeDirections, directedAscendant: directedAscendant, directedSignificators: directedSignificators, significatorFor: significatorFor, directedChapter18: directedChapter18, boundsWalk: boundsWalk, lordOfYear: lordOfYear, profectionYear: profectionYear, triggerReading: triggerReading, liveWires21: liveWires21, judgeCycle: judgeCycle, judgeCycles: judgeCycles, judgeReturn: judgeReturn, eclipseTimers: eclipseTimers, glanceJudged: glanceJudged, weekJudged: weekJudged, lots: lots, starsJudged: starsJudged, hiddenPartnerships: hiddenPartnerships, patternsAsTestimony: patternsAsTestimony, vedicWall: vedicWall, bondSpine35: bondSpine35, bondOverlay35: bondOverlay35, symbolicDirections: symbolicDirections, directionLine: directionLine, directionReceipt: directionReceipt, aspectNature: aspectNature, transitCycles: transitCycles, weaveCycle: weaveCycle, weaveWeek: weaveWeek, receptionOf: receptionOf, chartSignature: chartSignature, lifeQuirks: lifeQuirks, interests: interests, emergingPull: emergingPull, spookyReads: spookyReads, combinationRead: combinationRead, sunMoonCharacter: sunMoonCharacter, guideCards: guideCards, ancientSky: ancientSky, addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, returnsAlmanac: returnsAlmanac, progressedLunation: progressedLunation, planetaryHours: planetaryHours, moonVoidWindow: moonVoidWindow, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
     saveCurrentChart: saveCurrentChart, deleteSavedChart: deleteSavedChart, activateSavedChart: activateSavedChart, activeChartKey: activeChartKey, chartKey: chartKey, famousMatches: famousMatches, lifeTransits: lifeTransits, upcomingTransits: upcomingTransits, transitMotion: transitMotion, compositeChart: compositeChart,
     nameFor: nameFor, glyphFor: glyphFor, pad: pad,
     domElement: domElement, lowElement: lowElement, domMod: domMod, tzOffsetHours: tzOffsetHours
