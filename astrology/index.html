@@ -11203,7 +11203,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       APP.STATE.birth = { name: '', y: d.y, mo: d.mo, d: d.d, hour: d.hour, min: d.min, tz: d.tz || 0, manualTz: !!d.manualTz, iana: iana, lat: lat, lon: lon, place: place, timeKnown: d.timeKnown };
       recompute(); UI.selPlanet = 'sun'; UI.popT = nowT(); UI.popFrom = 22; UI.scroll.chart = 0; UI.screen = 'chart'; hideSearchInput();
     }
-    function recompute() { APP.STATE.chart = APP.compute(APP.STATE.birth, APP.STATE.settings); APP.save(); UI.readCache = null; UI.readSig = null; UI.readTransit = null; UI.forecast = null; UI.promCache = null; UI.arcCache = null; UI.todayCache = null; UI.fmList = null; UI.lifeList = null; UI.calEvents = null; UI.calDay = null; UI.walkTr = null; UI.walkTheme = null; UI.bondCache = null; UI.bondFor = null; UI.plun = null; UI.ringsData = null; UI.ringSel = null; UI.vocW = null; UI.phCache = null; UI.synToneCache = null; UI.dailyEssay = null; UI.cycles = undefined; UI.cycOpen = {}; UI.weekWv = undefined; UI.tradCache = undefined; UI.dirCache = undefined; UI.liveWires = undefined; if (APP.clearPersonCharts) APP.clearPersonCharts(); UI.askAns = ''; UI.quip = null; UI.quipNext = 0; buildField(); }
+    function recompute() { APP.STATE.chart = APP.compute(APP.STATE.birth, APP.STATE.settings); APP.save(); UI.readCache = null; UI.readSig = null; UI.readTransit = null; UI.forecast = null; UI.promCache = null; UI.arcCache = null; UI.todayCache = null; UI.fmList = null; UI.lifeList = null; UI.calEvents = null; UI.calDay = null; UI.walkTr = null; UI.walkTheme = null; UI.bondCache = null; UI.bondFor = null; UI.plun = null; UI.ringsData = null; UI.ringSel = null; UI.vocW = null; UI.phCache = null; UI.synToneCache = null; UI.dailyEssay = null; UI.cycles = undefined; UI.cycOpen = {}; UI.weekWv = undefined; UI.tradCache = undefined; UI.dirCache = undefined; UI.liveWires = undefined; UI.sectDay = undefined; if (APP.clearPersonCharts) APP.clearPersonCharts(); UI.askAns = ''; UI.quip = null; UI.quipNext = 0; buildField(); }
 
     // ---------- share / export a clean chart card (own untainted canvas; the live one holds remote images) ----------
     // share a daily card (clean offscreen canvas) — moon phase + what's live on your chart today
@@ -11939,7 +11939,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       } catch (e) {}
     }
     // battery: stop the draw loop entirely while the tab/app is hidden
-    try { document.addEventListener('visibilitychange', function () { try { if (document.hidden) p.noLoop(); else { var d9 = new Date(), k9 = d9.getFullYear() * 10000 + (d9.getMonth() + 1) * 100 + d9.getDate(); if (UI.dayKey && UI.dayKey !== k9) { UI.todayCache = null; UI.calEvents = null; UI.walkTr = null; UI.fmList = null; UI.readCache = null; UI.oddPred = undefined; UI.profYear = undefined; UI.rdBeats = undefined; UI.rdI = 0; UI.ancient = undefined; UI.cycles = undefined; UI.cycOpen = {}; UI.weekWv = undefined; UI.tradCache = undefined; UI.dirCache = undefined; UI.liveWires = undefined; } UI.dayKey = k9; p.loop(); } } catch (e2) {} }); } catch (e3) {}
+    try { document.addEventListener('visibilitychange', function () { try { if (document.hidden) p.noLoop(); else { var d9 = new Date(), k9 = d9.getFullYear() * 10000 + (d9.getMonth() + 1) * 100 + d9.getDate(); if (UI.dayKey && UI.dayKey !== k9) { UI.todayCache = null; UI.calEvents = null; UI.walkTr = null; UI.fmList = null; UI.readCache = null; UI.oddPred = undefined; UI.profYear = undefined; UI.rdBeats = undefined; UI.rdI = 0; UI.ancient = undefined; UI.cycles = undefined; UI.cycOpen = {}; UI.weekWv = undefined; UI.tradCache = undefined; UI.dirCache = undefined; UI.liveWires = undefined; UI.sectDay = undefined; } UI.dayKey = k9; p.loop(); } } catch (e2) {} }); } catch (e3) {}
     p.draw = function () {
       // auto-dark-at-night: re-apply the theme when the effective key changes (time or accent)
       var ek = effectiveThemeKey() + '|' + ((APP.STATE.settings && APP.STATE.settings.accent) || 0); if (ek !== UI.appliedThemeKey) { applyTheme(); setBodyBg(GROUNDS[UI.screen] || GROUNDS.chart); }
@@ -11947,12 +11947,24 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       try {
         var ckW9 = APP.activeChartKey ? (APP.activeChartKey() + '|' + (APP.STATE.settings ? APP.STATE.settings.house + APP.STATE.settings.zodiac : '')) : '';
         if (UI.ckW !== ckW9) {
-          if (UI.ckW != null) { UI.readSig = null; UI.walkTr = null; UI.walkTheme = null; UI.plun = null; UI.forecast = null; UI.readCache = null; UI.todayCache = null; UI.calEvents = null; UI.fmList = null; UI.lbCache = null; UI.lqzCache = null; UI.lwSky = null; UI.progTL = null; UI.retroS = null; UI.sigCache = undefined; UI.arcCache = null; UI.promCache = null; UI.oddPred = undefined; UI.profYear = undefined; UI.quirkCache = undefined; UI.intCache = undefined; UI.intPull = undefined; UI.spookCache = undefined; UI.comboCache = undefined; UI.smCache = undefined; UI.guide = null; UI.rdBeats = undefined; UI.rdI = 0; UI.ancient = undefined; UI.cycles = undefined; UI.cycOpen = {}; UI.weekWv = undefined; UI.tradCache = undefined; UI.dirCache = undefined; UI.liveWires = undefined; }
+          if (UI.ckW != null) { UI.readSig = null; UI.walkTr = null; UI.walkTheme = null; UI.plun = null; UI.forecast = null; UI.readCache = null; UI.todayCache = null; UI.calEvents = null; UI.fmList = null; UI.lbCache = null; UI.lqzCache = null; UI.lwSky = null; UI.progTL = null; UI.retroS = null; UI.sigCache = undefined; UI.arcCache = null; UI.promCache = null; UI.oddPred = undefined; UI.profYear = undefined; UI.quirkCache = undefined; UI.intCache = undefined; UI.intPull = undefined; UI.spookCache = undefined; UI.comboCache = undefined; UI.smCache = undefined; UI.guide = null; UI.rdBeats = undefined; UI.rdI = 0; UI.ancient = undefined; UI.cycles = undefined; UI.cycOpen = {}; UI.weekWv = undefined; UI.tradCache = undefined; UI.dirCache = undefined; UI.liveWires = undefined; UI.sectDay = undefined; }
           UI.ckW = ckW9;
         }
       } catch (eCk9) {}
       UI.bg = (GROUNDS[UI.screen] || GROUNDS.chart); // HARD block-colour cut between sections
       p.background(UI.bg[0], UI.bg[1], UI.bg[2]);
+      // SECT AMBIENT — a day chart lifts the whole app a touch warmer, a night chart cools it.
+      // Very subtle (~3.5% wash, palette unchanged): the existing look is preserved, the chart's
+      // own light of sect just tints the air. Computed once per chart (see the ckW clear site).
+      try {
+        var cSA9 = APP.STATE.chart, bSA9 = APP.STATE.birth;
+        if (cSA9 && bSA9 && bSA9.timeKnown && UI.screen !== 'onboard') {
+          if (UI.sectDay === undefined) { try { var spSA9 = APP.sectProfile(cSA9, bSA9); UI.sectDay = (spSA9 && spSA9.hasTime) ? spSA9.day : null; } catch (eSc9) { UI.sectDay = null; } }
+          p.noStroke();
+          if (UI.sectDay === true) { p.fill(255, 212, 148, 9); p.rect(0, 0, W, H); }
+          else if (UI.sectDay === false) { p.fill(96, 122, 196, 9); p.rect(0, 0, W, H); }
+        }
+      } catch (eSA9) {}
       drawField(); drawRipples();
       // readability scrim: on text-heavy screens, settle the constellations behind a calm ground so the
       // words always come first (the chart stays lively — it's the visual centrepiece).
