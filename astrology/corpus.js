@@ -364,6 +364,477 @@ var DATA = (function () {
     return deck;
   }
   var TAROT = buildTarot();
+  // ---- TAROT (Labyrinthos-aligned per-card meanings: upright/reversed/love/work) ----
+  var TAROT_MEAN = {
+    'The Fool': {
+      um: 'A fresh start stands in front of you, full of possibility and open road. This card asks you to take the leap with an open heart, trusting yourself even without a guaranteed outcome. Say yes to the new adventure and let go of the need to have it all figured out.',
+      rm: 'Reversed, the leap feels reckless or you are frozen at the edge, afraid to move. You may be acting without thinking, or holding back on something you secretly know you should try. Weigh the risk honestly rather than letting fear or foolishness drive.',
+      love: 'A spontaneous new romance or a fresh chapter in an existing one, best met with openness and a light heart.',
+      work: 'A new job, project, or venture that rewards courage over caution, though you should still watch where you step.'
+    },
+    'The Magician': {
+      um: 'You already hold everything you need to make your vision real. This card is about focus, willpower, and turning intention into concrete action by channeling your talents toward one clear goal. It is a signal that you can manifest what you want when you commit fully.',
+      rm: 'Reversed, your power is scattered, blocked, or turned toward manipulation. You may be full of ideas but stalling on action, or doubting skills you truly have. Reconnect with your intention and use your abilities honestly.',
+      love: 'The chance to actively create the relationship you want through clear communication and genuine effort.',
+      work: 'You have the skills and resources to launch something successful, so stop hesitating and put them to work.'
+    },
+    'The High Priestess': {
+      um: 'The answer you seek lives below the surface, in intuition rather than logic. This card invites you to go quiet, trust your inner voice, and pay attention to dreams, symbols, and gut feelings. Some things are not ready to be revealed yet, so allow the mystery to unfold.',
+      rm: 'Reversed, you are ignoring your intuition or drowning it out with noise and other people\'s opinions. Secrets may be surfacing, or you feel disconnected from your inner knowing. Get still and listen to yourself again.',
+      love: 'A relationship with unspoken depths, where paying attention to your intuition matters more than surface signals.',
+      work: 'Trust your instincts about a situation even when you cannot fully explain them, and watch for what is hidden.'
+    },
+    'The Empress': {
+      um: 'Abundance, creativity, and nurturing energy surround you now. This card celebrates growth of all kinds, whether a project, a relationship, or your own sense of comfort and pleasure. Slow down and let yourself receive, create, and tend to what you love.',
+      rm: 'Reversed, you may be neglecting yourself or smothering others with too much care. Creative blocks, insecurity, or dependence can appear, along with a loss of connection to your own needs. Refill your own cup before pouring into anyone else.',
+      love: 'A warm, sensual, and nurturing bond that may be deepening, growing, or ready to blossom.',
+      work: 'A fertile time for creative projects and steady growth, where nurturing your ideas pays off.'
+    },
+    'The Emperor': {
+      um: 'Structure, authority, and stability are the theme here. This card asks you to lead with discipline, set clear boundaries, and build something lasting through order and steady rules. It is time to take charge and create solid foundations.',
+      rm: 'Reversed, authority becomes rigidity, control, or domination, whether yours or someone else\'s. You may be struggling against a controlling figure or resisting the structure you actually need. Find the balance between firmness and flexibility.',
+      love: 'A stable, committed partnership that thrives on reliability, though watch for rigidity or a need to control.',
+      work: 'Leadership, structure, and disciplined planning bring success, so establish clear systems and stick to them.'
+    },
+    'The Hierophant': {
+      um: 'Tradition, shared belief, and established institutions come into focus. This card points to learning through a mentor, following a proven path, or finding meaning within a group or spiritual framework. There is value in convention and time-tested wisdom right now.',
+      rm: 'Reversed, you are questioning the rules and ready to forge your own path. This can mean healthy rebellion against dogma or a struggle with belonging. Trust your own values over borrowed ones, but do not throw out wisdom simply because it is old.',
+      love: 'A conventional, committed relationship, possibly marked by tradition such as engagement, marriage, or shared beliefs.',
+      work: 'Success comes through established structures, mentorship, or learning the proper way of doing things.'
+    },
+    'The Lovers': {
+      um: 'A meaningful choice about love, values, or alignment stands before you. This card speaks to deep connection, harmony, and the union of two people or two parts of yourself. It also asks you to choose in line with what you truly believe.',
+      rm: 'Reversed, there is disharmony, misalignment, or a choice made against your values. Relationships may feel out of balance, or you are struggling to commit to a decision. Return to your core values to find where things went off track.',
+      love: 'A powerful, soulful connection or an important choice that will define the relationship.',
+      work: 'A significant decision where staying true to your values matters more than the easy option.'
+    },
+    'The Chariot': {
+      um: 'Determination and willpower carry you toward victory. This card is about harnessing opposing forces, staying focused, and driving forward through sheer control and confidence. Keep your eyes on the goal and you will overcome the obstacles.',
+      rm: 'Reversed, you have lost direction or control, pulled in too many directions to move forward. Aggression, self-doubt, or scattered focus may be stalling you. Regain your center and steer with intention again.',
+      love: 'Moving a relationship forward with commitment and drive, overcoming obstacles through shared determination.',
+      work: 'Focused ambition and self-discipline push a goal to success, so stay the course.'
+    },
+    'Strength': {
+      um: 'True strength here is gentle, patient, and inward. This card is about mastering your impulses with compassion rather than force, and facing challenges with calm courage. Lead with a soft hand and quiet confidence to tame whatever feels wild.',
+      rm: 'Reversed, you may feel self-doubt, low confidence, or a loss of inner control. Raw emotion or insecurity could be running the show. Be gentle with yourself and rebuild your inner steadiness from within.',
+      love: 'A relationship held together by patience, compassion, and quiet emotional strength.',
+      work: 'Persistence and a calm, steady approach win out over force or aggression.'
+    },
+    'The Hermit': {
+      um: 'A time for solitude, reflection, and inner searching. This card invites you to step back from the noise, look inward, and seek your own truth or wisdom. The answers you need come from within, so give yourself space to find them.',
+      rm: 'Reversed, solitude has tipped into isolation or you are avoiding necessary self-reflection. You may feel lonely, withdrawn, or unwilling to hear your own inner guidance. Reconnect, whether with yourself or with others, in a healthier balance.',
+      love: 'A period of introspection about what you want, or a relationship that needs space and honest self-examination.',
+      work: 'Step back to reflect on your true direction rather than rushing, and seek guidance if you need it.'
+    },
+    'Wheel of Fortune': {
+      um: 'The wheel is turning and change is arriving, often for the better. This card speaks to cycles, luck, fate, and the natural ups and downs of life. Go with the momentum, because a turning point is at hand and what goes around comes around.',
+      rm: 'Reversed, the cycle feels stuck, or luck seems to be running against you. You may be resisting change or caught in a downturn of the wheel. Ride it out and look for the lesson, knowing the wheel always keeps turning.',
+      love: 'A shift in the relationship driven by fate or timing, reminding you that cycles are natural.',
+      work: 'An unexpected turn of luck or a change in circumstances, often an opportunity if you stay adaptable.'
+    },
+    'Justice': {
+      um: 'Truth, fairness, and accountability are central now. This card asks you to act with honesty and integrity, knowing that cause and effect are catching up with your choices. A fair outcome or important decision is being weighed.',
+      rm: 'Reversed, there is unfairness, dishonesty, or an avoidance of responsibility. You may be dodging accountability or facing a situation that feels unjust. Face the truth and own your part before balance can be restored.',
+      love: 'A relationship that depends on fairness, honesty, and both people pulling their weight.',
+      work: 'Legal matters, contracts, or decisions resolve according to what is fair, so keep everything honest and above board.'
+    },
+    'The Hanged Man': {
+      um: 'Pause, surrender, and a shift in perspective are called for. This card asks you to let go of control, see things from a new angle, and accept a period of waiting. Release resistance and a fresh understanding will come from the stillness.',
+      rm: 'Reversed, you are stalling, resisting the pause, or clinging to a stuck situation. Needless delay or a refusal to let go keeps you spinning your wheels. Either surrender fully or take the action you have been avoiding.',
+      love: 'A relationship on pause that benefits from patience and seeing your partner\'s point of view.',
+      work: 'A holding pattern where letting go and rethinking your approach serves you better than forcing progress.'
+    },
+    'Death': {
+      um: 'An ending is clearing the way for a new beginning. This card marks profound transformation, the closing of one chapter so another can open. Let go of what has run its course, because holding on only delays the renewal ahead.',
+      rm: 'Reversed, you are resisting a necessary ending and clinging to what is already over. This stalls transformation and keeps you stuck in a chapter that no longer serves you. Loosen your grip so change can finally move through.',
+      love: 'The transformation of a relationship, whether a painful ending or a deep shift into something new.',
+      work: 'The close of one phase making room for something better, so release what is no longer working.'
+    },
+    'Temperance': {
+      um: 'Balance, patience, and moderation bring harmony. This card blends opposites into something greater, asking you to find the middle path and move at a measured pace. Steady, thoughtful integration is the way forward now.',
+      rm: 'Reversed, there is imbalance, excess, or impatience throwing things off. You may be overdoing it in some area or rushing what needs time. Restore moderation and let things flow at their natural pace.',
+      love: 'A harmonious, balanced relationship built on patience, compromise, and steady growth.',
+      work: 'Success comes from a balanced, patient approach and blending different elements skillfully.'
+    },
+    'The Devil': {
+      um: 'This card exposes attachments, unhealthy patterns, and the chains you feel bound by. It points to addiction, materialism, or self-limiting habits that keep you stuck, often ones you could walk away from if you chose. Notice where you have given away your power.',
+      rm: 'Reversed, you are breaking free, confronting your shadow, and releasing what once controlled you. Chains are loosening as you reclaim your freedom and independence. Keep going, because the hardest part of letting go is nearly behind you.',
+      love: 'An intense but possibly unhealthy attraction or attachment, where dependence or bad patterns need honest attention.',
+      work: 'Feeling trapped by money, status, or a job you have outgrown, and a reminder that the chains may be looser than they seem.'
+    },
+    'The Tower': {
+      um: 'Sudden upheaval shakes a structure built on false foundations. This card brings shocking change, revelation, and the collapse of what was not built to last. Though it feels destabilizing, the destruction clears away illusion and makes room for truth.',
+      rm: 'Reversed, you are bracing against a change you sense coming, or moving through the aftermath of upheaval. You may be avoiding a needed collapse or fearing disaster. Let the false structures fall so you can rebuild on something real.',
+      love: 'A sudden disruption or revelation that shakes the relationship and exposes what was not solid.',
+      work: 'An unexpected upheaval or collapse that, though jarring, breaks down what was never built to last.'
+    },
+    'The Star': {
+      um: 'Hope, healing, and renewal shine through after hardship. This card restores your faith and reminds you that calm and inspiration are returning. Trust the process, tend to your dreams, and let yourself be guided by quiet optimism.',
+      rm: 'Reversed, hope feels distant and you may be struggling with discouragement or lost faith. Self-doubt or exhaustion can dim your sense of possibility. Reconnect with what inspires you and let healing come slowly back.',
+      love: 'A hopeful, healing period in love that renews faith and opens the heart.',
+      work: 'Renewed inspiration and optimism about your path, with brighter possibilities coming into view.'
+    },
+    'The Moon': {
+      um: 'Illusion, intuition, and the unknown color this moment. This card points to uncertainty, hidden truths, and fears surfacing from the subconscious. Not everything is as it appears, so move gently and trust your intuition through the fog.',
+      rm: 'Reversed, confusion is lifting and hidden truths are coming to light. You are releasing fear or seeing through a deception that once clouded you. Clarity returns as the illusions fade.',
+      love: 'A relationship clouded by uncertainty or unspoken fears, asking you to trust intuition over anxious assumptions.',
+      work: 'A situation where things are not fully clear, so proceed carefully and watch for what is hidden.'
+    },
+    'The Sun': {
+      um: 'Joy, success, and radiant clarity light everything up. This card is one of the most positive, promising happiness, vitality, and things going well. Embrace the warmth, celebrate your wins, and let your optimism shine.',
+      rm: 'Reversed, the light is temporarily dimmed by doubt, delays, or a lack of enthusiasm. Happiness is still within reach but may feel just out of view. Look for the small bright spots and let your natural optimism return.',
+      love: 'A warm, happy, and thriving relationship full of joy and genuine connection.',
+      work: 'Success, recognition, and positive results, with things coming together brightly.'
+    },
+    'Judgement': {
+      um: 'A moment of reckoning, awakening, and honest self-evaluation arrives. This card calls you to reflect on the past, forgive, and rise to a higher calling. Answer the wake-up call, release old baggage, and step into a renewed sense of purpose.',
+      rm: 'Reversed, you are being too self-critical, ignoring the call, or struggling to forgive yourself or others. Doubt keeps you from moving forward into your next chapter. Release harsh judgment and listen for what is truly calling you.',
+      love: 'A relationship reaching a moment of honest reckoning, forgiveness, or renewal.',
+      work: 'A turning point that calls you toward your true purpose, often after reflecting on the past.'
+    },
+    'The World': {
+      um: 'Completion, fulfillment, and wholeness crown this card. A major cycle is closing on a high note, bringing accomplishment and a sense of coming full circle. Celebrate how far you have come before stepping into the next journey.',
+      rm: 'Reversed, you are close to completion but something remains unfinished. A goal feels just out of reach, or you are avoiding the final step needed to close the chapter. Tie up the loose ends so you can truly move on.',
+      love: 'A whole, fulfilling relationship reaching a meaningful sense of completion or a happy milestone.',
+      work: 'The successful completion of a major goal or project, bringing well-earned accomplishment.'
+    },
+    'Ace of Wands': {
+      um: 'A spark of inspiration and raw creative energy ignites. This card offers the seed of a new passion, project, or bold venture bursting with potential. Seize the impulse and let your enthusiasm carry it into action.',
+      rm: 'Reversed, that spark is stalling, delayed, or lacking direction. You may feel creatively blocked or hesitant to begin. Reconnect with what excites you and fan the flame before it fades.',
+      love: 'A passionate new attraction or a fresh burst of energy and desire in an existing relationship.',
+      work: 'An exciting new opportunity or creative venture with real potential, if you act on the spark.'
+    },
+    'Two of Wands': {
+      um: 'You are planning your next move and looking toward a wider horizon. This card is about vision, choice, and stepping beyond your comfort zone to pursue something bigger. Map out your future and make a bold decision about where to go.',
+      rm: 'Reversed, fear of the unknown or poor planning is keeping you stuck. You may be playing it too safe or struggling to commit to a direction. Face the uncertainty and choose a path rather than staying frozen.',
+      love: 'Deciding where a relationship is headed, or weighing whether to step into something new.',
+      work: 'Long-term planning and a bold choice about your future direction, with the world opening up.'
+    },
+    'Three of Wands': {
+      um: 'Your plans are in motion and expansion is on the way. This card shows foresight paying off as you look out toward opportunities on the horizon. Keep the momentum going, because growth and progress are arriving.',
+      rm: 'Reversed, there are delays, setbacks, or a lack of foresight slowing your progress. Plans may not be unfolding as hoped, or you did not look far enough ahead. Reassess, be patient, and adjust your approach.',
+      love: 'A relationship growing and expanding, possibly through travel, distance, or looking ahead together.',
+      work: 'Progress and expansion as your earlier efforts begin to pay off and opportunities widen.'
+    },
+    'Four of Wands': {
+      um: 'Celebration, harmony, and a sense of home fill this card. It marks a joyful milestone, a stable foundation, and community coming together. Enjoy the achievement and the warmth of belonging you have built.',
+      rm: 'Reversed, the celebration feels muted, or there is tension in the home or community. A transition may be unsettling your sense of stability. Seek harmony within before looking for it outside.',
+      love: 'A joyful milestone such as moving in together, engagement, or celebrating a stable, happy union.',
+      work: 'A moment to celebrate a completed stage and enjoy the stable foundation you have created.'
+    },
+    'Five of Wands': {
+      um: 'Conflict, competition, and clashing energies stir things up. This card reflects disagreements, rivalry, or the friction of many voices pulling in different directions. Channel the tension into productive competition rather than pointless squabbling.',
+      rm: 'Reversed, conflict is winding down, being avoided, or turning inward. You may be dodging a needed confrontation or finding your way toward resolution. Address the tension directly so it can settle.',
+      love: 'Minor clashes and disagreements that need honest handling to keep the relationship healthy.',
+      work: 'Competition or conflicting agendas in the workplace, which can sharpen you if managed well.'
+    },
+    'Six of Wands': {
+      um: 'Victory, recognition, and public success are yours. This card celebrates a well-earned win and the acknowledgment that comes with it. Hold your head high and accept the praise for a job well done.',
+      rm: 'Reversed, recognition is delayed, or you are battling self-doubt and fear of failure. A win may feel unacknowledged, or ego is getting in the way. Reconnect with your own sense of accomplishment regardless of applause.',
+      love: 'A confident, thriving relationship where you feel appreciated and admired.',
+      work: 'Public recognition, a promotion, or a visible success that rewards your hard work.'
+    },
+    'Seven of Wands': {
+      um: 'Stand your ground and defend what you have built. This card is about perseverance in the face of challenge, holding your position when others push back. Believe in yourself and keep defending your beliefs even under pressure.',
+      rm: 'Reversed, you feel overwhelmed, defensive, or ready to give up the fight. The constant pressure may be wearing you down. Decide which battles are worth it and protect your energy.',
+      love: 'Defending or fighting for a relationship, or standing firm on your needs and boundaries.',
+      work: 'Holding your position against competition or challenges, where persistence pays off.'
+    },
+    'Eight of Wands': {
+      um: 'Swift movement and rapid progress take over. This card brings fast developments, quick decisions, and messages arriving in a rush. Things are finally moving, so keep up with the momentum and act promptly.',
+      rm: 'Reversed, there are delays, frustration, or a chaotic scramble as things slow or tangle. Miscommunication or scattered energy may be holding you up. Slow down enough to get organized before pushing forward again.',
+      love: 'Fast-moving developments in love, such as a whirlwind romance or a sudden turning point.',
+      work: 'Rapid progress and quick results, with events moving quickly once things get going.'
+    },
+    'Nine of Wands': {
+      um: 'You are battle-worn but still standing, close to the finish. This card speaks to resilience, persistence, and one last push despite exhaustion. Do not give up now, because you are stronger and nearer to success than you feel.',
+      rm: 'Reversed, you feel depleted, defensive, or ready to quit under the strain. Old wounds may be making you overly guarded. Rest and lower your defenses enough to accept help, then find the strength to continue.',
+      love: 'Persevering through challenges, possibly with your guard up from past hurts that need healing.',
+      work: 'Pushing through the final stretch of a demanding effort, where resilience carries you to the end.'
+    },
+    'Ten of Wands': {
+      um: 'You are carrying a heavy load, burdened by too many responsibilities. This card shows the weight of taking on more than you can comfortably hold. Recognize the burden, and consider what you can put down or delegate.',
+      rm: 'Reversed, you are finally releasing burdens or realizing you cannot carry it all alone. This can mean letting go, delegating, or collapsing under an unsustainable weight. Set down what is not yours to carry.',
+      love: 'A relationship weighed down by responsibilities or stress, needing you to share the load.',
+      work: 'Feeling overloaded and overworked, a sign to delegate or release some of what you are carrying.'
+    },
+    'Page of Wands': {
+      um: 'Youthful enthusiasm and a spirit of exploration light this card. It brings the excitement of a new idea, a creative spark, or an adventurous impulse worth chasing. Follow your curiosity and let your passion lead the way.',
+      rm: 'Reversed, that enthusiasm is scattered, blocked, or fizzling out. You may be procrastinating, chasing too many things, or afraid to start. Ground your excitement into one clear direction.',
+      love: 'A playful, exciting spark or the fun early stage of a flirtation full of possibility.',
+      work: 'An exciting new idea or opportunity to explore, best met with curiosity and energy.'
+    },
+    'Knight of Wands': {
+      um: 'Bold, passionate action drives this card forward. The Knight of Wands charges after his goals with energy, charm, and fearless enthusiasm. Pursue what excites you with confidence, but keep an eye on the follow-through.',
+      rm: 'Reversed, that fiery energy tips into impulsiveness, recklessness, or all talk and no action. You may be rushing ahead without a plan or losing steam quickly. Temper your passion with a bit more patience and focus.',
+      love: 'A passionate, adventurous romance that moves fast, though it may lack staying power without depth.',
+      work: 'Charging ahead on a project with bold energy, effective when balanced with follow-through.'
+    },
+    'Queen of Wands': {
+      um: 'Confident, warm, and magnetic, this card radiates self-assured energy. The Queen of Wands is charismatic, independent, and unafraid to shine. Own your worth, lead with passion, and let your natural warmth draw others in.',
+      rm: 'Reversed, that confidence wavers into insecurity, jealousy, or a demanding streak. You may be doubting yourself or seeking validation from others. Reconnect with your inner fire and self-belief.',
+      love: 'A vibrant, passionate connection led with confidence, warmth, and genuine self-assurance.',
+      work: 'Leading boldly and drawing people in with charisma and determination.'
+    },
+    'King of Wands': {
+      um: 'A visionary leader full of bold, creative drive defines this card. The King of Wands turns big ideas into reality through charisma, confidence, and decisive action. Step into your leadership and pursue your vision with authority.',
+      rm: 'Reversed, leadership becomes impatience, arrogance, or a domineering temper. You may be forcing your vision on others or acting hastily. Lead with vision and respect rather than pressure.',
+      love: 'A passionate, dynamic partner or a relationship led with confidence and bold vision.',
+      work: 'Visionary leadership and the drive to turn big ideas into real success.'
+    },
+    'Ace of Cups': {
+      um: 'A wellspring of new emotion and love overflows. This card offers the beginning of deep feeling, connection, compassion, or spiritual fulfillment. Open your heart and let the love and intuition flow in and out freely.',
+      rm: 'Reversed, emotions are blocked, repressed, or you feel closed off. You may be holding back feelings or struggling with emptiness. Reconnect with your heart and allow yourself to feel again.',
+      love: 'The start of a deep, loving connection or a beautiful renewal of emotional intimacy.',
+      work: 'A creatively or emotionally fulfilling new beginning that feeds your heart as well as your goals.'
+    },
+    'Two of Cups': {
+      um: 'A meaningful mutual connection forms between two people. This card is about partnership, attraction, and the harmony of two hearts meeting as equals. Cherish the bond and the balanced give-and-take it offers.',
+      rm: 'Reversed, there is imbalance, tension, or a disconnect in a partnership. Miscommunication or one-sided effort may be straining the harmony. Restore honesty and equality to bring the connection back into balance.',
+      love: 'A beautiful mutual attraction or a deeply harmonious, balanced partnership.',
+      work: 'A strong, cooperative partnership or a mutually beneficial working relationship.'
+    },
+    'Three of Cups': {
+      um: 'Friendship, celebration, and community bring joy. This card gathers people together in happiness, support, and shared good times. Enjoy the company of those you love and celebrate what is going right.',
+      rm: 'Reversed, social life feels off, whether through gossip, overindulgence, or a falling-out. You may feel left out or spread too thin socially. Tend to your true friendships and step back from draining ones.',
+      love: 'A joyful, social phase of love, or a relationship supported by friends and shared celebration.',
+      work: 'Successful collaboration and a supportive team worth celebrating.'
+    },
+    'Four of Cups': {
+      um: 'Apathy, boredom, and emotional withdrawal set in. This card shows you looking inward, discontented, and possibly missing an opportunity right in front of you. Notice what you are overlooking before you let it pass by.',
+      rm: 'Reversed, you are emerging from a period of withdrawal and re-engaging with life. New motivation or a fresh perspective is pulling you out of the fog. Say yes to the opportunities you had been ignoring.',
+      love: 'Feeling bored or disconnected in love, or overlooking an offer of affection worth noticing.',
+      work: 'Dissatisfaction or lack of motivation, along with a nudge to notice opportunities you are dismissing.'
+    },
+    'Five of Cups': {
+      um: 'Loss, grief, and disappointment weigh on the heart. This card sits with sorrow while quietly reminding you that not everything has been lost. Allow yourself to grieve, then turn to see what still remains standing.',
+      rm: 'Reversed, you are moving through grief toward acceptance and healing. Forgiveness and renewed hope are within reach as you turn to face the future. Let go of what is gone and reclaim what remains.',
+      love: 'Heartache or regret in love, with a reminder that hope and connection still remain.',
+      work: 'Disappointment over a setback, balanced by the reminder that not all is lost.'
+    },
+    'Six of Cups': {
+      um: 'Nostalgia, innocence, and sweet memories surface. This card brings warmth from the past, reunions, and simple, genuine kindness. Reconnect with what once brought you joy and let its comfort in.',
+      rm: 'Reversed, you may be stuck in the past or clinging to nostalgia that keeps you from moving forward. Old memories can pull too strongly. Honor the past but bring your focus back to the present.',
+      love: 'A nostalgic reconnection, a reunion, or a tender, innocent affection.',
+      work: 'Reconnecting with past contacts or drawing on familiar, trusted foundations.'
+    },
+    'Seven of Cups': {
+      um: 'Many choices and tempting possibilities swirl around you. This card warns of illusion, wishful thinking, and getting lost in too many options. Look past the fantasy and focus on what is real and truly worth pursuing.',
+      rm: 'Reversed, clarity returns and you can finally commit to one path. The fog of too many options lifts as you cut through illusion. Choose decisively and follow through.',
+      love: 'Confusing choices or idealized fantasies in love that need a grounded, realistic look.',
+      work: 'Many options on the table, calling for clear focus rather than scattered wishful thinking.'
+    },
+    'Eight of Cups': {
+      um: 'You are walking away from something that no longer fulfills you. This card is about leaving behind what has emotionally run its course to seek deeper meaning. Trust that stepping away is the brave and right choice.',
+      rm: 'Reversed, you are torn between staying and leaving, afraid to walk away or drifting aimlessly. You may be clinging to something empty or unsure of your direction. Get honest about whether it is time to go.',
+      love: 'Leaving a relationship that no longer fulfills you, or seeking deeper emotional meaning.',
+      work: 'Walking away from a job or situation that leaves you unfulfilled to pursue something more meaningful.'
+    },
+    'Nine of Cups': {
+      um: 'Contentment, satisfaction, and wishes fulfilled define this card. Often called the wish card, it promises emotional happiness and getting what your heart desires. Savor the comfort and enjoy this well-earned sense of fulfillment.',
+      rm: 'Reversed, satisfaction feels hollow, or you are chasing pleasure that does not truly fulfill. Overindulgence or unmet inner needs may be showing. Look beyond surface comforts to what really makes you happy.',
+      love: 'Emotional fulfillment and happiness, with your heart\'s wishes coming true.',
+      work: 'Satisfaction and success, enjoying the rewards of what you have accomplished.'
+    },
+    'Ten of Cups': {
+      um: 'Lasting emotional fulfillment and harmony crown this card. It pictures a happy home, loving family, and deep, shared contentment. Cherish the joy of genuine connection and the bonds that make life whole.',
+      rm: 'Reversed, harmony is disrupted by conflict, disconnection, or a gap between the dream and reality. Home or family tensions may be surfacing. Address what is broken to restore true connection.',
+      love: 'Deep, lasting love and emotional harmony, often within a happy family or committed home life.',
+      work: 'A fulfilling situation aligned with your values, where work supports a happy overall life.'
+    },
+    'Page of Cups': {
+      um: 'Emotional openness, imagination, and gentle surprises appear. This card brings creative inspiration, sweet messages, and a tender, intuitive heart. Stay open to unexpected feelings and let your imagination play.',
+      rm: 'Reversed, you may feel emotionally immature, oversensitive, or creatively blocked. Moodiness or escapism could be getting in the way. Reconnect with your feelings in a grounded, healthy way.',
+      love: 'A sweet, tender new romance or an unexpected, heartfelt message.',
+      work: 'A creative idea or intuitive nudge worth exploring with an open heart.'
+    },
+    'Knight of Cups': {
+      um: 'A romantic dreamer who follows the heart defines this card. The Knight of Cups arrives with charm, idealism, and an offer of love or creative pursuit. Follow your feelings, but keep one foot grounded in reality.',
+      rm: 'Reversed, emotion becomes moodiness, unrealistic fantasy, or empty promises. You may be led by illusion or unreliable feelings. Balance your romantic ideals with honesty and follow-through.',
+      love: 'A charming, romantic suitor or a sweep-you-off-your-feet gesture, ideally grounded in sincerity.',
+      work: 'Following your heart toward a creative or meaningful pursuit, tempered with realism.'
+    },
+    'Queen of Cups': {
+      um: 'Deep compassion, emotional wisdom, and intuition flow through this card. The Queen of Cups nurtures with empathy and holds space for others with a caring heart. Lead with kindness and trust your intuitive understanding.',
+      rm: 'Reversed, emotions become overwhelming, and you may feel drained, oversensitive, or lost in others\' needs. Poor boundaries can leave you depleted. Care for yourself as generously as you care for others.',
+      love: 'A deeply caring, emotionally attuned relationship rich in empathy and nurturing.',
+      work: 'Leading with emotional intelligence and supporting others with genuine compassion.'
+    },
+    'King of Cups': {
+      um: 'Emotional balance, calm, and mature compassion define this card. The King of Cups masters his feelings, offering steady support and wise, level-headed counsel. Stay composed and lead with a warm but balanced heart.',
+      rm: 'Reversed, emotions are suppressed, volatile, or manipulated. You may be bottling feelings or letting moodiness spill over. Reconnect with your emotions honestly and regain your inner steadiness.',
+      love: 'A caring, emotionally mature partner who offers stability and heartfelt support.',
+      work: 'Handling pressure with calm and diplomacy, guiding others with steady emotional wisdom.'
+    },
+    'Ace of Swords': {
+      um: 'A breakthrough of clarity and truth cuts through the fog. This card offers a fresh idea, mental sharpness, and a moment of decisive insight. Seize the clarity and speak or act on the truth you now see.',
+      rm: 'Reversed, clarity is clouded by confusion, misinformation, or muddled thinking. You may be struggling to see the truth or communicating poorly. Cut through the noise and get to the heart of the matter.',
+      love: 'A moment of honest truth or clear communication that cuts through confusion in a relationship.',
+      work: 'A clear new idea or breakthrough that brings focus and decisive direction.'
+    },
+    'Two of Swords': {
+      um: 'A difficult decision leaves you at a stalemate. This card shows avoidance, indecision, and a mind blindfolded to the truth. Take off the blindfold, weigh the facts, and make the choice you have been putting off.',
+      rm: 'Reversed, the impasse breaks as you finally face the decision or the truth you avoided. Information comes to light, or the stalemate resolves. Choose a direction and release the tension of being stuck.',
+      love: 'An avoided decision or emotional standoff that needs you to face the truth and choose.',
+      work: 'A tough choice you have been putting off, calling for honest weighing rather than avoidance.'
+    },
+    'Three of Swords': {
+      um: 'Heartbreak, grief, and painful truth pierce this card. It marks sorrow, betrayal, or the sharp hurt of a difficult reality. Let yourself feel the pain honestly, because acknowledging it is the start of healing.',
+      rm: 'Reversed, you are moving through heartbreak toward recovery and release. The worst of the pain is easing as you begin to heal and forgive. Let go of lingering hurt and allow yourself to mend.',
+      love: 'Heartbreak, painful conflict, or a hurtful truth that needs to be felt and worked through.',
+      work: 'A painful setback, disappointment, or hard truth at work that you must process to move on.'
+    },
+    'Four of Swords': {
+      um: 'Rest, recovery, and quiet retreat are needed now. This card calls for a pause to recharge your mind and body after strain. Step back, restore yourself, and return stronger rather than pushing through exhaustion.',
+      rm: 'Reversed, you are either resisting needed rest or slowly emerging from a period of recovery. Burnout may be looming, or you are ready to re-engage. Honor your need to recharge before diving back in.',
+      love: 'A relationship in a resting phase, or a need to step back and recharge before reconnecting.',
+      work: 'A pause to recover from stress or burnout, so you can return refreshed and focused.'
+    },
+    'Five of Swords': {
+      um: 'Conflict, tension, and hollow victory mark this card. It shows winning at a cost, discord, or the aftermath of a fight where no one truly wins. Consider whether the battle is worth the damage it causes.',
+      rm: 'Reversed, you are ready to make amends, release resentment, and move past conflict. Reconciliation or a decision to walk away from a pointless fight is at hand. Choose peace over being right.',
+      love: 'Damaging arguments or a win-lose dynamic that leaves resentment, calling for repair or release.',
+      work: 'Tension, rivalry, or conflict where winning may cost you more than it is worth.'
+    },
+    'Six of Swords': {
+      um: 'A transition toward calmer waters is underway. This card moves you away from difficulty toward recovery and a more peaceful place. Trust the journey forward, even if it means leaving something behind.',
+      rm: 'Reversed, you are resisting a needed transition or struggling to leave the past behind. You may feel stuck in troubled waters, unable to move on. Find the courage to move toward calmer ground.',
+      love: 'Moving past a rough patch toward smoother, more peaceful times together.',
+      work: 'A transition away from a difficult situation toward steadier, more stable circumstances.'
+    },
+    'Seven of Swords': {
+      um: 'Strategy, cunning, and getting away with something color this card. It can mean acting alone, being clever, or watching for deception. Move thoughtfully and honestly, and stay alert to anyone not playing fair.',
+      rm: 'Reversed, deception is coming to light, or you are ready to come clean and act with integrity. Secrets may unravel, or you decide to stop cutting corners. Choose honesty and face things directly.',
+      love: 'Watch for dishonesty or things left unsaid, and choose transparency over keeping secrets.',
+      work: 'A situation calling for strategy or a warning to watch for deception and cut corners at your peril.'
+    },
+    'Eight of Swords': {
+      um: 'You feel trapped, restricted, and powerless. This card shows a self-imposed prison built largely from fear and limiting beliefs. Recognize that the way out is closer than it looks once you shift your thinking.',
+      rm: 'Reversed, you are freeing yourself from mental traps and self-imposed limits. New perspective reveals that you had more power than you realized. Step out of the fear and reclaim your freedom.',
+      love: 'Feeling stuck or powerless in a relationship, though the restrictions may be more mental than real.',
+      work: 'Feeling trapped in a situation, with a reminder that limiting beliefs are keeping you stuck more than reality.'
+    },
+    'Nine of Swords': {
+      um: 'Anxiety, worry, and sleepless nights haunt this card. It reflects fear, guilt, and a mind spiraling in the dark, often worse in your head than in reality. Face the fears in the light of day and reach out for support.',
+      rm: 'Reversed, the grip of anxiety is loosening as you begin to release worry and fear. Hope returns as you confront what has been haunting you. Seek help and let the dread ease its hold.',
+      love: 'Anxiety or fear about a relationship that may be exaggerated by a worried mind.',
+      work: 'Stress and worry that feel overwhelming, though facing them directly often shrinks them.'
+    },
+    'Ten of Swords': {
+      um: 'A painful ending has hit rock bottom, but the worst is now over. This card marks betrayal, collapse, or a final blow that leaves you at your lowest point. Take comfort that from here, the only way is up.',
+      rm: 'Reversed, you are recovering and rising after hitting bottom. The pain is releasing its grip as you heal and rebuild. Resist the fear of a relapse and keep moving toward the new dawn.',
+      love: 'A painful ending or betrayal that, though it hurts deeply, clears the way for a fresh start.',
+      work: 'A rough conclusion or setback that marks rock bottom, with recovery and renewal ahead.'
+    },
+    'Page of Swords': {
+      um: 'Curiosity, sharp thinking, and a thirst for truth define this card. It brings new ideas, mental energy, and the drive to speak up and learn. Stay curious and communicate honestly, but choose your words with care.',
+      rm: 'Reversed, that mental energy turns into gossip, scattered thoughts, or all talk and no substance. You may be acting hastily or speaking without thinking. Slow down and ground your ideas before broadcasting them.',
+      love: 'Open, curious communication in love, or the need to speak honestly and think before you speak.',
+      work: 'A sharp new idea or the drive to learn and communicate, best paired with careful follow-through.'
+    },
+    'Knight of Swords': {
+      um: 'Fast, ambitious, and direct, this card charges toward its goal. The Knight of Swords acts with sharp intellect and fearless determination, cutting straight to the point. Pursue your aim boldly, but watch for haste.',
+      rm: 'Reversed, that drive becomes impulsiveness, aggression, or reckless haste. You may be rushing in without thinking or steamrolling others. Slow down and temper your force with foresight.',
+      love: 'A fast-moving, intense connection that benefits from patience and thoughtful communication.',
+      work: 'Charging boldly toward a goal with sharp focus, effective when tempered with care.'
+    },
+    'Queen of Swords': {
+      um: 'Clear-eyed, honest, and independent, this card values truth above all. The Queen of Swords thinks with sharp perception and speaks with candor, unclouded by illusion. Lead with clarity, set firm boundaries, and trust your judgment.',
+      rm: 'Reversed, that clarity hardens into coldness, harsh criticism, or bitterness. You may be overly guarded or cutting with your words. Soften your edges and let compassion balance your honesty.',
+      love: 'A relationship grounded in honesty, clear boundaries, and direct communication.',
+      work: 'Making decisions with clarity and objectivity, cutting through noise to the truth.'
+    },
+    'King of Swords': {
+      um: 'Intellectual authority, clarity, and fair judgment define this card. The King of Swords leads with reason, ethics, and disciplined thought, offering wise and impartial counsel. Think clearly, act with integrity, and let logic guide you.',
+      rm: 'Reversed, that authority becomes cold, controlling, or manipulative. You may be overly rigid, harsh, or using intellect to dominate. Balance your reason with fairness and genuine compassion.',
+      love: 'A partner or dynamic guided by honesty, reason, and clear, respectful communication.',
+      work: 'Leading with clear thinking, sound judgment, and ethical, well-reasoned decisions.'
+    },
+    'Ace of Pentacles': {
+      um: 'A new opportunity for prosperity and stability takes root. This card offers the seed of material abundance, whether a job, money, or a fresh venture. Plant it wisely and nurture its steady, grounded potential.',
+      rm: 'Reversed, a financial opportunity is delayed, missed, or built on shaky ground. You may be feeling insecure or making poor material choices. Reassess your resources and lay a firmer foundation.',
+      love: 'The grounded beginning of a stable, secure relationship with real potential to grow.',
+      work: 'A promising new job, opportunity, or investment that can bring lasting prosperity.'
+    },
+    'Two of Pentacles': {
+      um: 'You are juggling multiple demands and staying adaptable. This card is about balance, priorities, and managing competing responsibilities with flexibility. Keep the plates spinning, but do not overextend yourself.',
+      rm: 'Reversed, you are overwhelmed, disorganized, or dropping the ball. Too many commitments may be throwing your life out of balance. Simplify, prioritize, and let some things go before you burn out.',
+      love: 'Balancing a relationship with other demands, needing flexibility and good time management.',
+      work: 'Juggling several projects or financial demands, staying adaptable without overextending.'
+    },
+    'Three of Pentacles': {
+      um: 'Collaboration, skill, and teamwork build something solid. This card celebrates working well with others and earning recognition for quality work. Combine your talents with others and take pride in the craftsmanship.',
+      rm: 'Reversed, teamwork breaks down through poor cooperation, misaligned goals, or unrecognized effort. Quality may be slipping without collaboration. Realign the team and value everyone\'s contribution.',
+      love: 'A relationship built through teamwork, mutual effort, and shared goals.',
+      work: 'Successful collaboration where combining skills earns recognition and strong results.'
+    },
+    'Four of Pentacles': {
+      um: 'Holding on tightly to security and resources defines this card. It reflects control, saving, and a strong desire for stability, sometimes tipping into possessiveness. Value your security, but do not grip so hard that you block the flow.',
+      rm: 'Reversed, you are either loosening your grip and releasing control, or clinging too tightly out of fear. Financial anxiety or generosity may both be in play. Find a healthier balance between holding and letting go.',
+      love: 'Holding on for security, which can bring stability but may edge into possessiveness or guardedness.',
+      work: 'Guarding your finances and resources carefully, with a caution against being too controlling or stingy.'
+    },
+    'Five of Pentacles': {
+      um: 'Hardship, loss, and feeling left out in the cold weigh on this card. It points to financial strain, insecurity, or isolation during a tough stretch. Remember that help is available if you are willing to reach for it.',
+      rm: 'Reversed, you are recovering from hardship and moving toward stability again. Support arrives, or a difficult financial or emotional period begins to lift. Accept help and let hope return.',
+      love: 'Feeling insecure, unsupported, or left out in the cold, with a reminder to reach for connection.',
+      work: 'Financial hardship or job insecurity, along with the reminder that support is available.'
+    },
+    'Six of Pentacles': {
+      um: 'Generosity, giving, and balanced exchange flow through this card. It shows the healthy give-and-take of support, charity, and sharing resources fairly. Whether giving or receiving, keep the flow generous and balanced.',
+      rm: 'Reversed, the balance of giving and receiving is off, whether through strings attached, debt, or one-sided generosity. Power imbalances around money may appear. Restore fairness and honest exchange.',
+      love: 'A relationship with a healthy, balanced give-and-take of support and care.',
+      work: 'Fair exchange, generosity, or receiving help, with attention to keeping things balanced.'
+    },
+    'Seven of Pentacles': {
+      um: 'Patience, assessment, and the long game define this card. It is a moment to pause and evaluate your progress, waiting for your investments to mature. Trust that steady effort will pay off, even if the harvest is slow.',
+      rm: 'Reversed, you feel impatient, frustrated, or worried your effort is not paying off. You may be tempted to give up or question a long-term investment. Reassess honestly, then decide whether to persevere or pivot.',
+      love: 'Evaluating whether a relationship is worth the long-term investment, with patience for slow growth.',
+      work: 'Assessing progress on a long-term effort and trusting that patient work will bear fruit.'
+    },
+    'Eight of Pentacles': {
+      um: 'Dedication, skill-building, and diligent work shine here. This card is about honing your craft through focused, repeated effort and taking pride in doing quality work. Keep at it, because mastery comes from steady practice.',
+      rm: 'Reversed, you may be losing focus, cutting corners, or grinding without purpose. Perfectionism or lack of motivation could be draining the joy from your work. Reconnect with why the effort matters.',
+      love: 'Putting genuine, consistent effort into building a strong relationship.',
+      work: 'Developing your skills through dedicated practice, with mastery and quality as the reward.'
+    },
+    'Nine of Pentacles': {
+      um: 'Independence, luxury, and well-earned self-sufficiency define this card. It celebrates the comfort and abundance that come from your own disciplined effort. Enjoy the fruits of your labor and the freedom of standing on your own.',
+      rm: 'Reversed, you may feel financially dependent, overworked, or hollow despite material success. A gap between money and true contentment can show. Reconnect with what genuinely fulfills you beyond possessions.',
+      love: 'Enjoying love from a place of independence and self-worth rather than need.',
+      work: 'Financial independence and comfort earned through your own disciplined effort.'
+    },
+    'Ten of Pentacles': {
+      um: 'Lasting wealth, legacy, and family security crown this card. It represents long-term abundance, stability, and the prosperity that endures across generations. Build for the future and enjoy the solid foundation you have created.',
+      rm: 'Reversed, there is financial instability, family tension, or a legacy in question. Short-term thinking or money conflicts may threaten long-term security. Tend to your foundations and think beyond the immediate.',
+      love: 'A stable, committed relationship built for the long term, often tied to family and shared security.',
+      work: 'Long-term financial success, stability, and building lasting wealth or legacy.'
+    },
+    'Page of Pentacles': {
+      um: 'A studious, grounded new beginning takes shape. This card brings the seed of opportunity in work, study, or finances, met with focus and dedication. Set a practical goal and commit to learning the skills to reach it.',
+      rm: 'Reversed, you may be procrastinating, unfocused, or unrealistic about your goals. Plans stall when follow-through is missing. Get grounded, make a real plan, and take the first practical step.',
+      love: 'A slow, steady, and sincere new connection worth nurturing with patience.',
+      work: 'A promising opportunity to learn, study, or start something new with dedication.'
+    },
+    'Knight of Pentacles': {
+      um: 'Reliable, patient, and hardworking, this card values steady progress. The Knight of Pentacles gets things done through diligence, routine, and dependable effort. Stay the course methodically and trust that consistency pays off.',
+      rm: 'Reversed, that steadiness stalls into stagnation, boredom, or being stuck in a rut. You may be too rigid or resistant to change. Introduce some flexibility so reliability does not become inertia.',
+      love: 'A steady, dependable, and committed relationship that builds slowly but surely.',
+      work: 'Diligent, methodical effort that brings reliable, lasting results.'
+    },
+    'Queen of Pentacles': {
+      um: 'Nurturing, practical, and grounded, this card balances care with capability. The Queen of Pentacles tends to home, work, and loved ones with warmth and resourcefulness. Provide for others while staying rooted in your own needs.',
+      rm: 'Reversed, you may be overextended, neglecting self-care, or out of balance between work and home. Financial or domestic stress can leave you depleted. Nurture yourself as well as everyone else.',
+      love: 'A warm, nurturing, and dependable relationship grounded in practical care.',
+      work: 'Balancing responsibilities with warmth and resourcefulness, providing steady, practical support.'
+    },
+    'King of Pentacles': {
+      um: 'Abundance, security, and successful mastery of the material world define this card. The King of Pentacles is disciplined, generous, and a reliable provider who has built lasting prosperity. Lead with steady confidence and enjoy the wealth you have earned.',
+      rm: 'Reversed, that success turns to greed, materialism, or a stubborn obsession with control. Money or status may be crowding out what really matters. Reconnect with generosity and values beyond wealth.',
+      love: 'A stable, generous, and dependable partner who offers real security.',
+      work: 'Financial success and mastery, leading with discipline, generosity, and sound judgment.'
+    }
+  };
 
   // ---- SPREADS (Labyrinthos / Biddy Tarot standard layouts) ----
   // x,y are normalised 0..1 inside the layout board; rot in degrees.
@@ -855,7 +1326,7 @@ var DATA = (function () {
     HOUSE_SIG: HOUSE_SIG, HOUSE_SIG_SRC: HOUSE_SIG_SRC, ANALOGY_MATRIX: ANALOGY_MATRIX, SOURCES: SOURCES,
     SUN_IN_SIGN: SUN_IN_SIGN, MOON_IN_SIGN: MOON_IN_SIGN, RISING_IN_SIGN: RISING_IN_SIGN, PLANET_SIGN_TEXT: PLANET_SIGN_TEXT,
     HOUSES: HOUSES, ASPECTS: ASPECTS, MINOR_ASPECTS: MINOR_ASPECTS, ELEMENTS: ELEMENTS, MODALITIES: MODALITIES,
-    TAROT: TAROT, SUIT_KW: SUIT_KW, SPREADS: SPREADS, CITIES: CITIES
+    TAROT: TAROT, TAROT_MEAN: TAROT_MEAN, SUIT_KW: SUIT_KW, SPREADS: SPREADS, CITIES: CITIES
   };
 })();
 
