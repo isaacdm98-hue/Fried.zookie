@@ -1,19 +1,26 @@
 # Aqau Pluto
 
 A single-file, offline-first astrology + tarot PWA. Computed natal charts
-(planets, houses, aspects, elemental balance), deterministic element-first
-readings, an educational **Learn** screen, and a tarot reference — all
-on-device, no server, no API keys. Your birth data never leaves your phone;
-the whole chart and reading are computed locally.
+(planets, houses, aspects), a reading that judges the chart the way a trained
+astrologer does — the Ascendant and its lord, the house-lords followed home,
+essential dignities, aspects by nature, and the year's time-lord — an
+educational **Learn** screen, and a tarot reference. All on-device, no server,
+no API keys. Your birth data never leaves your phone; the whole chart and
+reading are computed locally.
+
+The chart screen fits one frame: the wheel is the hero, with your Sun, Moon and
+Rising as tappable anchors. Tap any planet and the chart zooms into that
+placement's circle and reads it — in and around the circle — showing its
+working (dignity, house, and the Lilly score) every time.
 
 ### In the Read screen
 
-- **Your chart in four movements** — the reading leads with a synthesised arc:
-  the *spine* (Sun/Moon/Ascendant + dominant element & mode), *what runs the
-  chart* (where the prominence engine, the almuten and the dispositor chains
-  converge on one keystone planet), *your growing edge* (the tightest hard
-  aspect + the out-of-sect malefic + any rare condition), and *where it's
-  heading* (North Node + the current profection time-lord).
+- **Read as an astrologer reads** — the reading begins at the Ascendant and its
+  lord (the *captain* that runs the whole chart), follows the house-lords home,
+  judges each planet in its essential state (the five dignities, scored), weighs
+  the sharpest aspect by the *nature* of the planets involved, and closes on the
+  year's time-lord (the annual profection) — transits read last, and only where
+  they strike a wire already under tension. Every line shows its receipt.
 - **The prominence engine** — instead of a flat list, placements are *ranked*
   by a transparent scorer (essential dignity, angularity, sect, chart-rulership,
   almuten, aspect activity, stelliums) so the reading leads with what actually
@@ -110,7 +117,7 @@ the whole chart and reading are computed locally.
 
 ## Version
 
-**4.0.2** — see `CHANGELOG.md`. Licensed MIT (`LICENSE`).
+**4.1.0** — see `CHANGELOG.md`. Licensed MIT (`LICENSE`).
 
 ## Deploy
 

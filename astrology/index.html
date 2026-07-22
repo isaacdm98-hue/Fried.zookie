@@ -964,79 +964,6 @@ var APP = (function () {
     NMN_CACHE[ck] = res;
     return res;
   }
-  // the sharpest, rarest, most specific true thing about this exact chart. Each candidate
-  // carries a rarity weight (how few charts have it); the strongest becomes the opening hook.
-  // the oddly-specific layer: concrete life-details the chart implies (taste, home,
-  // pace, mind, first impression). No hedging, no app-talk: things about their actual life.
-  // the combination synthesiser: composes a bespoke read of how a chart's core placements
-  // interact. Not a lookup of 1,728 combos: it reasons from element, modality and role, so
-  // any Sun/Moon/Mars/rising mix gets its own specific paragraph.
-  function combinationRead(c) {
-    var E = DATA.COMBO, P = c.planets, tk = STATE.birth.timeKnown;
-    if (!E || !P.sun || !P.moon || !P.mars) return null;
-    var su = P.sun.sign, mo = P.moon.sign, ma = P.mars.sign, asc = (tk && c.ascBody) ? c.ascBody.sign : null;
-    var SG = DATA.SIGNS, suE = SG[su].element, moE = SG[mo].element, maE = SG[ma].element;
-    var cap = function (t) { return t ? t.charAt(0).toUpperCase() + t.slice(1) : ''; };
-    var parts = [];
-    var head = anA(SG[su].name, true) + ' Sun, ' + anA(SG[mo].name) + ' Moon and ' + anA(SG[ma].name) + ' Mars' + (asc != null ? ', rising in ' + SG[asc].name : '');
-    parts.push(head + '. You are ' + E.sun[su] + '. Underneath, you need ' + (E.moon[mo].replace(/^underneath, you need /, '')) + '. When you want something, ' + E.mars[ma] + (asc != null ? ', ' + E.rising[asc] : '') + '.');
-    // the actual aspect between the two lights: what makes all 144 Sun/Moon pairings read differently
-    if (E.lights) {
-      var dLM = ((mo - su) % 12 + 12) % 12;
-      var lKey = (dLM === 0) ? 'conjunction' : (dLM === 6) ? 'opposition' : (dLM === 1 || dLM === 11) ? 'semisextile' : (dLM === 2 || dLM === 10) ? 'sextile' : (dLM === 3 || dLM === 9) ? 'square' : (dLM === 4 || dLM === 8) ? 'trine' : 'quincunx';
-      if (E.lights[lKey]) parts.push(cap(E.lights[lKey]) + '.');
-    }
-    // element synthesis
-    if (suE === moE && moE === maE) {
-      parts.push('All three run ' + suE + ', which makes you an unusually pure, undiluted ' + suE + ' type: ' + (E.elemPure[suE] || '') + '. What you are, what you need and how you chase it all speak one language, for better and worse.');
-    } else {
-      parts.push('Where your core (' + suE + ') meets your needs (' + moE + '), ' + elementMix(suE, moE) + '.');
-      if (maE !== suE && maE !== moE) parts.push('Your ' + SG[ma].name + ' Mars is the wildcard here: your drive runs on ' + maE + ' while the rest of you does not, so how you go after things keeps surprising people who thought they had you read.');
-      else if (maE === suE) parts.push('Your Mars pulls in the same direction as your Sun, so you chase things in the same key as who you are, which makes you decisive and genuinely hard to deflect.');
-      else parts.push('Your Mars answers to your Moon, so you fight hardest for what you need and who you love, rather than for anything abstract.');
-    }
-    // modality synthesis
-    var mods = [SG[su].modality, SG[mo].modality, SG[ma].modality], names = { sun: SG[su].name + ' Sun', moon: SG[mo].name + ' Moon', mars: SG[ma].name + ' Mars' }, keys = ['sun', 'moon', 'mars'];
-    if (mods[0] === mods[1] && mods[1] === mods[2]) {
-      parts.push('And all three share the same mode: ' + (E.modPure[mods[0]] || '') + '.');
-    } else {
-      var cnt = {}, mi; for (mi = 0; mi < 3; mi++) cnt[mods[mi]] = (cnt[mods[mi]] || 0) + 1;
-      if (cnt.cardinal === 1 && cnt.fixed === 1 && cnt.mutable === 1) {
-        parts.push('You carry one of each mode: something in you to start, something to hold, and something to adapt, which is a rare, self-balancing engine that rarely stays stuck for long.');
-      } else {
-        var lone = null, loneMod = null; for (mi = 0; mi < 3; mi++) if (cnt[mods[mi]] === 1) { lone = keys[mi]; loneMod = mods[mi]; }
-        if (lone) parts.push('Two of you run ' + mods[(lone === 'sun') ? 1 : 0] + ', but your ' + names[lone] + ' is ' + loneMod + ': ' + (E.modRole[loneMod] || '') + ', the one part of you that behaves differently, and often the most important to understand.');
-      }
-    }
-    // Venus: how you love, read against what you need (the Moon)
-    if (P.venus && E.venus && E.venus[P.venus.sign]) {
-      var ve = P.venus.sign, veE = SG[ve].element;
-      var vsent = 'In love, ' + E.venus[ve] + '.';
-      if (ve === mo) vsent += ' It sits in the same sign as your Moon, so what you need and how you love are one thing: you tend to know a real bond the moment you feel it.';
-      else if (veE === moE) vsent += ' How you love and what you need speak the same ' + veE + ' language, so your heart and your comfort rarely pull against each other.';
-      else vsent += ' But what you love (' + veE + ') and what you need (' + moE + ') run on different currents, so you are sometimes drawn to people who do not, in the end, settle you.';
-      parts.push(vsent);
-    }
-    // Mercury: how you think, read against who you are (the Sun)
-    if (P.mercury && E.mercury && E.mercury[P.mercury.sign]) {
-      var me = P.mercury.sign, meE = SG[me].element;
-      var msent = 'And ' + E.mercury[me] + '.';
-      if (me === su) msent += ' Your mind and your identity share a sign, so you think in the same voice you live in: what you say is who you are, with no translation layer.';
-      else if (meE === suE) msent += ' Your thinking runs in the same ' + meE + ' key as your core, so you tend to sound exactly like yourself.';
-      else msent += ' Your mind runs on ' + meE + ' while you run on ' + suE + ', so you often think in one register and act in another, which can read as a person still deciding what they mean.';
-      parts.push(msent);
-    }
-    return parts.join(' ');
-  }
-  // the flagship: the crafted character of your exact Sun x Moon pairing (all 144 written distinctly)
-  function sunMoonCharacter(c) {
-    var SM = DATA.SUNMOON, P = c.planets;
-    if (!SM || !P.sun || !P.moon) return null;
-    var su = P.sun.sign, mo = P.moon.sign, line = SM[su] && SM[su][mo];
-    if (!line) return null;
-    var SG = DATA.SIGNS;
-    return anA(SG[su].name, true) + ' Sun with ' + anA(SG[mo].name) + ' Moon: ' + line + '.';
-  }
   // the guided reading: real, chart-derived observations the user can affirm one at a time,
   // and for each one they recognise, the genuine astrology underneath it. Cold-reading's fork
   // structure, made honest: nothing is fished for, the user simply steers which real thread to
@@ -1083,301 +1010,6 @@ var APP = (function () {
     } catch (eG79) {}
     // 10. where the year has you — the lord of the year and its directions
     try { var py9 = profectionYear(c, b); if (py9 && py9.line) { var d19 = py9.line.indexOf('. '); push('Where the year has you', py9.receipt, d19 > 0 ? py9.line.slice(0, d19) : py9.line.slice(0, 180), py9.line); } } catch (ePy9) {}
-    return out;
-  }
-  function lifeQuirks(c) {
-    var Q = DATA.QUIRK, QM = DATA.QUIRK_MOD || {}; if (!Q) return [];
-    var out = [], tk = STATE.birth.timeKnown;
-    // the shading: the driving planet's tightest aspect to a social/outer body (or its
-    // retrograde) colours the line, so the same sign reads differently chart to chart
-    var MODP = ['pluto', 'neptune', 'uranus', 'saturn', 'jupiter', 'mars'];
-    function capMod9(m9) { m9 = m9.replace(/^(and|though) /, ''); return m9.charAt(0).toUpperCase() + m9.slice(1); }
-    function modFor(drive, table) {
-      var M = table || {}, best = null, bestOrb = 99, i;
-      for (i = 0; i < c.aspects.length; i++) {
-        var A = c.aspects[i]; if (A.minor) continue;
-        var other = (A.a === drive) ? A.b : (A.b === drive) ? A.a : null;
-        if (!other || other === drive || MODP.indexOf(other) < 0) continue;
-        if (M[other] && A.orb < bestOrb) { bestOrb = A.orb; best = M[other]; }
-      }
-      if (best) return best;
-      var pl = c.planets[drive]; if (pl && pl.retro && M.retro) return M.retro;
-      return '';
-    }
-    function add(lead, drive, base) {
-      if (!base) return;
-      var mod = modFor(drive, QM[drive] || {});
-      out.push(lead + base + (mod ? '. ' + capMod9(mod) : '') + '.');
-    }
-    if (c.planets.sun && Q.sun) add('Day to day, ', 'sun', Q.sun[c.planets.sun.sign]);
-    if (c.planets.venus && Q.venus) add('At the table, ', 'venus', Q.venus[c.planets.venus.sign]);
-    if (c.planets.moon && Q.moon) add('At home, ', 'moon', Q.moon[c.planets.moon.sign]);
-    if (c.planets.mars && Q.mars) add('For pace and temper, ', 'mars', Q.mars[c.planets.mars.sign]);
-    if (c.planets.mercury && Q.mercury) add('In how your mind runs, ', 'mercury', Q.mercury[c.planets.mercury.sign]);
-    if (c.planets.jupiter && Q.jupiter) add('When you overdo it, ', 'jupiter', Q.jupiter[c.planets.jupiter.sign]);
-    if (c.planets.saturn && Q.saturn) add('The weight you carry: ', 'saturn', Q.saturn[c.planets.saturn.sign]);
-    // the rising takes no aspect itself, so it is shaded by its ruling planet's tightest aspect
-    if (tk && c.ascBody && Q.rising) {
-      var rbase = Q.rising[c.ascBody.sign], rlr = RULERKEY[DATA.SIGNS[c.ascBody.sign].ruler];
-      if (rbase) { var rmod = (rlr && QM.rising) ? modFor(rlr, QM.rising) : ''; out.push('And on first meeting you, ' + rbase + (rmod ? '. ' + capMod9(rmod) : '') + '.'); }
-    }
-    // where your drive and your love actually live — the house, not just the sign (your exact chart)
-    var QH = DATA.QUIRK_HOUSE || {};
-    if (tk && c.planets.mars && c.planets.mars.house && QH.mars) out.push('Out in the world, ' + QH.mars[c.planets.mars.house - 1] + '.');
-    if (tk && c.planets.venus && c.planets.venus.house && QH.venus) out.push('In love, specifically, ' + QH.venus[c.planets.venus.house - 1] + '.');
-    // the two tightest hard aspects your chart actually holds, as concrete behaviour (Moon square Saturn → "I'm fine")
-    var AT = DATA.ASPECT_TELL;
-    if (AT) {
-      var PSET = { sun: 1, moon: 1, mercury: 1, venus: 1, mars: 1, jupiter: 1, saturn: 1 }, PORD = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto'], acc = [], ci;
-      for (ci = 0; ci < c.aspects.length; ci++) {
-        var A = c.aspects[ci]; if (A.minor) continue;
-        var q = A.asp.quality; if (q !== 'fusion' && q !== 'tension' && q !== 'friction') continue;
-        if (!PSET[A.a] && !PSET[A.b]) continue;
-        var ia = PORD.indexOf(A.a), ib = PORD.indexOf(A.b); if (ia < 0 || ib < 0) continue;
-        var key = ia < ib ? (A.a + '-' + A.b) : (A.b + '-' + A.a);
-        if (AT[key]) acc.push({ orb: A.orb, t: AT[key] });
-      }
-      acc.sort(function (u, v) { return u.orb - v.orb; });
-      var ATLEAD = ['And this one is oddly close to the bone: ', 'And, honestly: '], ax;
-      for (ax = 0; ax < Math.min(2, acc.length); ax++) out.push(ATLEAD[ax] + acc[ax].t + '.');
-    }
-    return out;
-  }
-  // interests & passions: what this person is actually drawn to do, scored from the
-  // real placements. The "you love playing guitar and long walks" layer.
-  function interests(c) {
-    var tk = STATE.birth.timeKnown, P = c.planets, el = c.elements;
-    var WATER = [3, 7, 11], EARTH = [1, 5, 9], AIR = [2, 6, 10];
-    function inS(k, arr) { return P[k] && arr.indexOf(P[k].sign) >= 0; }
-    function inH(k, arr) { return tk && P[k] && P[k].house && arr.indexOf(P[k].house) >= 0; }
-    function asp(a, b) { var i; for (i = 0; i < c.aspects.length; i++) { var A = c.aspects[i]; if ((A.a === a && A.b === b) || (A.a === b && A.b === a)) return true; } return false; }
-    var D = [
-      { say: 'you play an instrument, or you badly want to — music reaches you deeper and faster than it reaches most people',
-        t: (inS('venus', WATER) ? 2 : 0) + (inS('moon', WATER) ? 2 : 0) + (asp('venus', 'neptune') ? 2 : 0) + (asp('moon', 'neptune') ? 1 : 0) + (inS('venus', [1]) ? 1 : 0) + (inH('neptune', [5, 3]) ? 1 : 0) + (el.water >= 35 ? 1 : 0) },
-      { say: 'long walks, running or some steady physical outlet is how you actually think — you solve things with your body, not sitting at a desk',
-        t: (inS('mars', EARTH) ? 1 : 0) + (inS('moon', EARTH) ? 1 : 0) + (inS('sun', [0, 8]) ? 1 : 0) + (inS('mars', [0, 8]) ? 2 : 0) + (inH('mars', [1, 6]) ? 1 : 0) + (el.earth >= 35 ? 1 : 0) + (el.fire >= 40 ? 1 : 0) },
-      { say: 'you write, journal, or think in words — and you are quietly good at it, whether or not anyone has read a line',
-        t: (inS('mercury', [2, 5]) ? 2 : 0) + (inH('mercury', [3, 9]) ? 1 : 0) + (asp('mercury', 'moon') ? 1 : 0) + (inH('mercury', [1]) ? 1 : 0) + (el.air >= 35 ? 1 : 0) },
-      { say: 'you have an eye — photography, film, drawing or design keeps pulling at you, and you catch framing and light that others walk straight past',
-        t: (asp('venus', 'neptune') ? 2 : 0) + (inS('venus', [11]) ? 1 : 0) + (inS('sun', [11]) ? 1 : 0) + (inH('neptune', [3, 5, 1]) ? 1 : 0) + (inS('moon', [11]) ? 1 : 0) + (asp('mercury', 'neptune') ? 1 : 0) },
-      { say: 'you make things with your hands — cooking, growing, building, mending — and a day with nothing tangible to show for it leaves you restless',
-        t: (inS('venus', [1, 5]) ? 2 : 0) + (inS('moon', [1, 5]) ? 1 : 0) + (inH('venus', [2, 6]) ? 1 : 0) + (inS('mars', EARTH) ? 1 : 0) + (el.earth >= 40 ? 2 : 0) },
-      { say: 'you need the horizon — travel, languages, other cultures, big questions — and you get low and small when you stay in one place too long',
-        t: (inS('jupiter', [8]) ? 1 : 0) + (inH('jupiter', [9]) ? 2 : 0) + (inS('sun', [8]) ? 2 : 0) + (inS('moon', [8]) ? 1 : 0) + (inH('sun', [9]) ? 1 : 0) },
-      { say: 'you are a maker or a performer — you come alive making something and showing it, and you need an audience of at least one',
-        t: (inS('sun', [4]) ? 2 : 0) + (inH('sun', [5]) ? 1 : 0) + (inH('venus', [5]) ? 1 : 0) + (inH('moon', [5]) ? 1 : 0) + (inS('venus', [4]) ? 1 : 0) },
-      { say: 'you like systems, puzzles and the odd corners of knowledge — you are the type who reads a real ephemeris for fun (hello)',
-        t: (inS('sun', [10]) ? 1 : 0) + (inS('mercury', [10]) ? 1 : 0) + (asp('mercury', 'uranus') ? 2 : 0) + (inH('uranus', [3, 11]) ? 1 : 0) + (el.air >= 40 ? 1 : 0) },
-      { say: 'you are pulled toward the hidden — psychology, mysteries, the real story under the surface — you cannot leave a locked door alone',
-        t: (inS('sun', [7]) ? 1 : 0) + (inS('moon', [7]) ? 1 : 0) + (inH('pluto', [8, 1]) ? 1 : 0) + (inS('mercury', [7]) ? 1 : 0) + (asp('mercury', 'pluto') ? 2 : 0) + (inH('sun', [8]) ? 1 : 0) },
-      { say: 'you like building something that lasts, and getting genuinely, unglamorously good at one hard thing over years',
-        t: (inS('sun', [9]) ? 1 : 0) + (inS('saturn', [9, 10]) ? 1 : 0) + (inH('saturn', [10, 1]) ? 1 : 0) + (inS('mars', [9]) ? 1 : 0) + (inH('sun', [10]) ? 1 : 0) }
-    ];
-    D.sort(function (a, b) { return b.t - a.t; });
-    var out = [], i;
-    for (i = 0; i < D.length && out.length < 3; i++) if (D[i].t >= 2) out.push(D[i].say);
-    if (!out.length && D[0]) out.push(D[0].say);
-    return out;
-  }
-  // the current pull: what has lately been calling louder, from a live transit to a
-  // creative / mental / restless planet. The "something is pulling you toward photography" line.
-  function emergingPull(c, b) {
-    if (!b) return null;
-    var PULL = {
-      venus: 'making things beautiful — a new look, a creative outlet, or someone new',
-      mercury: 'a new subject or skill — a course, writing, something you keep reading about',
-      neptune: 'something artistic or spiritual — photography, film, music, or a quiet practice',
-      moon: 'home, roots, and taking better care of yourself',
-      jupiter: 'a bigger horizon — travel, study, or a belief quietly shifting',
-      mars: 'a physical challenge — a sport, or a project worth fighting for',
-      sun: 'a louder, more visible version of yourself',
-      saturn: 'getting serious about one craft or one commitment'
-    };
-    try {
-      var evs = upcomingTransits(c, 5, 120), best = null, now = (new Date()).getTime(), i;
-      for (i = 0; i < evs.length; i++) { var e = evs[i]; if (!PULL[e.np]) continue; var dd = (e.date.getTime() - now) / 86400000; if (dd < -20 || dd > 150) continue; if (!best || Math.abs(dd) < best.dd) best = { e: e, dd: Math.abs(dd) }; }
-      if (best) return 'And lately, something has been pulling you toward ' + PULL[best.e.np] + '. That is transiting ' + nameFor(best.e.tp) + ' waking up your ' + nameFor(best.e.np) + ' — a genuine new thread, worth following.';
-    } catch (ePl9) {}
-    return null;
-  }
-  // grand cross: two oppositions whose axes square each other, four planets in mutual tension
-  function detectGrandCross9(c) {
-    var bs; try { bs = presentBodies(c); } catch (eGC0) { return null; }
-    var opps = [], i, j;
-    for (i = 0; i < bs.length; i++) for (j = i + 1; j < bs.length; j++) if (hasAsp(bs[i].lon, bs[j].lon, 180, 7)) opps.push([bs[i], bs[j]]);
-    for (i = 0; i < opps.length; i++) for (j = i + 1; j < opps.length; j++) {
-      var a = opps[i], b = opps[j];
-      if (a[0] === b[0] || a[0] === b[1] || a[1] === b[0] || a[1] === b[1]) continue;
-      if (hasAsp(a[0].lon, b[0].lon, 90, 6) && hasAsp(a[0].lon, b[1].lon, 90, 6) && hasAsp(a[1].lon, b[0].lon, 90, 6) && hasAsp(a[1].lon, b[1].lon, 90, 6))
-        return DATA.SIGNS[a[0].sign].modality;
-    }
-    return null;
-  }
-  // the clever layer: whole-chart configurations and syntheses a real astrologer reads
-  function cleverReads(c) {
-    var out = [], S = DATA.SPOOKY || {}, i;
-    function nm9(k) { return (k === 'sun' || k === 'moon') ? ('the ' + nameFor(k)) : nameFor(k); }
-    var pats = []; try { pats = aspectPatterns(c); } catch (eCR0) {}
-    for (i = 0; i < pats.length; i++) {
-      var pt = pats[i];
-      if (pt.type === 'Grand Trine' && S.grandTrine && S.grandTrine[pt.where]) out.push(S.grandTrine[pt.where]);
-      else if (pt.type === 'T-Square') out.push('you have a T-square with your ' + nameFor(pt.apex) + ' at the apex: two planets pull against each other and dump all the pressure onto ' + nameFor(pt.apex) + '. It is your hardest-working, most-tested point, and, paradoxically, exactly where you achieve the most, because you are forced to; aim it on purpose and the whole tension resolves through it');
-      else if (pt.type === 'Yod') out.push('you have a yod, the "finger of fate", pointing at your ' + nameFor(pt.apex) + ': two planets strain toward it from awkward angles, giving it a fated, adjust-or-else quality; it can feel like a mission you did not choose, and it usually clicks into purpose somewhere in your thirties');
-    }
-    try { var gcm = detectGrandCross9(c); if (gcm && S.grandCross && S.grandCross[gcm]) out.push(S.grandCross[gcm]); } catch (eCR1) {}
-    // the chart ruler: the single keystone of a traditional reading
-    try {
-      if (STATE.birth.timeKnown && c.ascBody) {
-        var rlr = RULERKEY[DATA.SIGNS[c.ascBody.sign].ruler], rp = rlr && c.planets[rlr];
-        if (rp) {
-          var dgc = dignityOf(rlr, rp.signName), th = (HOUSE_LIFE[rp.house - 1] ? HOUSE_LIFE[rp.house - 1].th : 'that area of life');
-          out.push('your chart ruler is ' + nm9(rlr) + ', the planet that runs your whole chart because it rules your ' + c.ascBody.signName + ' rising; it sits in ' + rp.signName + ' in your ' + ordinal(rp.house) + ' house' + (dgc ? ' (' + dgc.toLowerCase() + ')' : '') + ', so the captain of your life steers toward ' + th + ' — wherever ' + nm9(rlr) + ' goes, you go');
-        }
-      }
-    } catch (eCR2) {}
-    // hemispheres: where the weight of the chart falls
-    try {
-      if (STATE.birth.timeKnown && c.cusps) {
-        var ks = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto'], up = 0, dn = 0, ea = 0, we = 0, kk;
-        for (kk = 0; kk < ks.length; kk++) { var pl = c.planets[ks[kk]]; if (!pl || !pl.house) continue; if (pl.house >= 7 && pl.house <= 12) up++; else dn++; if (pl.house >= 10 || pl.house <= 3) ea++; else we++; }
-        if (S.hemisphere) {
-          if (up >= 7) out.push(S.hemisphere.above); else if (dn >= 7) out.push(S.hemisphere.below);
-          if (ea >= 7) out.push(S.hemisphere.east); else if (we >= 7) out.push(S.hemisphere.west);
-        }
-      }
-    } catch (eCR3) {}
-    // the busiest and the unaspected planet
-    try {
-      var CNT = {}, ks2 = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto'], a2, k2;
-      for (k2 = 0; k2 < ks2.length; k2++) CNT[ks2[k2]] = 0;
-      for (a2 = 0; a2 < c.aspects.length; a2++) { var A2 = c.aspects[a2]; if (A2.minor) continue; if (CNT[A2.a] != null) CNT[A2.a]++; if (CNT[A2.b] != null) CNT[A2.b]++; }
-      var busy = null, bn = 0, un = null, core = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn'];
-      for (k2 = 0; k2 < ks2.length; k2++) { if (!c.planets[ks2[k2]]) continue; if (CNT[ks2[k2]] > bn) { bn = CNT[ks2[k2]]; busy = ks2[k2]; } if (CNT[ks2[k2]] === 0 && !un && core.indexOf(ks2[k2]) >= 0) un = ks2[k2]; }
-      if (busy && bn >= 4) out.push('your busiest planet is ' + nm9(busy) + ', wired into more of your chart than any other; it is the switchboard everything routes through, so when ' + nm9(busy) + ' is lit, your whole system lights with it');
-      if (un) out.push('your ' + nm9(un) + ' makes no major aspect to anything: an unaspected planet that runs unmoderated and all-or-nothing; it is often the most striking, least integrated thing about you, brilliant and a little wild');
-    } catch (eCR4) {}
-    return out;
-  }
-  // the placement library, read onto this exact chart: every "a rising Gemini often
-  // means..." line that applies, collected. Sign lines for everyone; house lines with a time.
-  function spookyReads(c) {
-    var S = DATA.SPOOKY; if (!S) return [];
-    var tk = STATE.birth.timeKnown, P = c.planets, out = [];
-    function sgn(k, tbl) { if (P[k] && S[tbl] && S[tbl][P[k].sign]) out.push(S[tbl][P[k].sign]); }
-    function hse(k, tbl) { if (tk && P[k] && P[k].house && S[tbl] && S[tbl][P[k].house - 1]) out.push(S[tbl][P[k].house - 1]); }
-    if (tk && c.ascBody && S.rising) out.push(S.rising[c.ascBody.sign]);
-    sgn('moon', 'moonSign'); hse('moon', 'moonHouse');
-    sgn('venus', 'venusSign'); hse('venus', 'venusHouse');
-    sgn('mars', 'marsSign'); hse('mars', 'marsHouse');
-    sgn('mercury', 'mercurySign'); hse('mercury', 'mercuryHouse');
-    sgn('sun', 'sunSign'); hse('sun', 'sunHouse');
-    sgn('jupiter', 'jupiterSign'); hse('jupiter', 'jupiterHouse');
-    sgn('saturn', 'saturnSign'); hse('saturn', 'saturnHouse');
-    hse('pluto', 'plutoHouse'); hse('uranus', 'uranusHouse'); hse('neptune', 'neptuneHouse');
-    if (P.node && S.nodeSign && S.nodeSign[P.node.sign]) out.push(S.nodeSign[P.node.sign]);
-    if (tk && P.node && P.node.house && S.nodeHouse && S.nodeHouse[P.node.house - 1]) out.push(S.nodeHouse[P.node.house - 1]);
-    // the Sun x Moon element blend: who you are vs what you need
-    if (S.sunMoon && P.sun && P.moon) { var smk = DATA.SIGNS[P.sun.sign].element + '-' + DATA.SIGNS[P.moon.sign].element; if (S.sunMoon[smk]) out.push(S.sunMoon[smk]); }
-    // the Sun's decan: the sub-flavour of the sign
-    if (S.decan && P.sun) { var dcIdx = P.sun.sign * 3 + Math.min(2, Math.floor((P.sun.deg != null ? P.sun.deg : (P.sun.lon % 30)) / 10)); if (S.decan[dcIdx]) out.push(S.decan[dcIdx]); }
-    // the Moon phase you were born under
-    if (S.phase && P.sun && P.moon) { var elong = (((P.moon.lon - P.sun.lon) % 360) + 360) % 360, phi = Math.min(7, Math.floor(elong / 45)); if (S.phase[phi]) out.push(S.phase[phi]); }
-    // element and modality balance
-    if (c.elements) {
-      var els9 = ['fire', 'earth', 'air', 'water'], ei9, hiE = 'fire', loE = 'fire';
-      for (ei9 = 0; ei9 < 4; ei9++) { if (c.elements[els9[ei9]] > c.elements[hiE]) hiE = els9[ei9]; if (c.elements[els9[ei9]] < c.elements[loE]) loE = els9[ei9]; }
-      if (S.elDom && c.elements[hiE] >= 40 && S.elDom[hiE]) out.push(S.elDom[hiE]);
-      if (S.elLack && c.elements[loE] <= 8 && S.elLack[loE]) out.push(S.elLack[loE]);
-    }
-    if (c.modalities && S.modDom) {
-      var mods9 = ['cardinal', 'fixed', 'mutable'], mi9, hiM = 'cardinal';
-      for (mi9 = 0; mi9 < 3; mi9++) if (c.modalities[mods9[mi9]] > c.modalities[hiM]) hiM = mods9[mi9];
-      if (c.modalities[hiM] >= 45 && S.modDom[hiM]) out.push(S.modDom[hiM]);
-    }
-    // a planet on the Ascendant or Midheaven: the strongest, most visible placements
-    if (tk && c.ascBody) {
-      var PL9 = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto'], pi9;
-      for (pi9 = 0; pi9 < PL9.length; pi9++) {
-        var plp = P[PL9[pi9]]; if (!plp) continue;
-        if (S.ascPlanet && Math.abs(((plp.lon - c.ascBody.lon + 540) % 360) - 180) < 8 && S.ascPlanet[PL9[pi9]]) out.push(S.ascPlanet[PL9[pi9]]);
-        if (S.mcPlanet && c.mc != null && Math.abs(((plp.lon - c.mc + 540) % 360) - 180) < 8 && S.mcPlanet[PL9[pi9]]) out.push(S.mcPlanet[PL9[pi9]]);
-      }
-    }
-    // the chart ruler's house: where your captain sits
-    if (tk && S.rulerHouse && c.ascBody) { var rlrK = RULERKEY[DATA.SIGNS[c.ascBody.sign].ruler], rlrP = rlrK && P[rlrK]; if (rlrP && rlrP.house && S.rulerHouse[rlrP.house - 1]) out.push(S.rulerHouse[rlrP.house - 1]); }
-    // retrograde life-patterns
-    if (S.retro) { var rk; for (rk in S.retro) if (S.retro.hasOwnProperty(rk) && P[rk] && P[rk].retro) out.push(S.retro[rk]); }
-    // the spookiest layer: hard-aspect backstories (the "your father was hard on you" reads),
-    // and the soft-aspect layer: trines and sextiles read as the natural gifts you were born with
-    var SA = DATA.SPOOKY_ASPECT, SAS = DATA.SPOOKY_ASPECT_SOFT;
-    if (SA || SAS) {
-      var PO = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto'], ai;
-      for (ai = 0; ai < c.aspects.length; ai++) {
-        var A = c.aspects[ai]; if (A.minor) continue;
-        var q = A.asp.quality, hard = (q === 'fusion' || q === 'tension' || q === 'friction'), soft = (q === 'flow' || q === 'opportunity');
-        if (!hard && !soft) continue; // only conjunction/opposition/square (hard) and trine/sextile (soft)
-        var ia = PO.indexOf(A.a), ib = PO.indexOf(A.b); if (ia < 0 || ib < 0) continue;
-        var key = ia < ib ? (A.a + '-' + A.b) : (A.b + '-' + A.a);
-        if (hard && SA && SA[key]) out.push(SA[key]);
-        else if (soft && SAS && SAS[key]) out.push(SAS[key]);
-      }
-    }
-    // the clever layer: whole-chart configurations
-    try { var cv = cleverReads(c), ci; for (ci = 0; ci < cv.length; ci++) out.push(cv[ci]); } catch (eCV9) {}
-    return out;
-  }
-  function chartSignature(c) {
-    var cands = [], i, k;
-    var PC9 = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto'];
-    // 1. cazimi: a planet within 0.283 deg of the Sun's exact centre — rarest
-    try {
-      var suL9 = c.planets.sun.lon;
-      var cz9 = ['mercury', 'venus', 'mars'];
-      for (i = 0; i < cz9.length; i++) { var cp9 = c.planets[cz9[i]]; if (cp9) { var dz9 = Math.abs(sdelta(suL9, cp9.lon)); if (dz9 <= 0.283) cands.push({ w: 97, s: 'Your ' + nameFor(cz9[i]) + ' rides in the exact heart of your Sun, within a sixth of a degree \u2014 cazimi, "in the chariot of the king." What it means for you: ' + shortFn(cz9[i]) + ' is not a separate part of you to be managed. It is fused to your identity and moves with your full authority. When it acts, that is not a side of you talking, it is you.' }); } }
-    } catch (e1) {}
-    // 2. an aspect exact to under a third of a degree — a locked wire
-    try {
-      var a0 = c.aspects && c.aspects[0];
-      if (a0 && a0.orb <= 0.5 && a0.a !== 'asc' && a0.a !== 'mc' && a0.b !== 'asc' && a0.b !== 'mc') cands.push({ w: 80 - a0.orb * 40, s: 'The load-bearing join in your chart is ' + nameFor(a0.a) + ' ' + a0.asp.key + ' ' + nameFor(a0.b) + ', exact to within ' + a0.orb.toFixed(2) + ' of a degree. Held that close, these two never operate apart in you: your ' + shortFn(a0.a) + ' and your ' + shortFn(a0.b) + ' are one instrument, and most of what you do routes through that single join. Learn it and you have the key to the whole chart.' });
-    } catch (e2) {}
-    // 3. a stellium: three or more planets crowded in one sign
-    try {
-      var sc9 = {}, best9 = 0, bsg9 = -1;
-      for (k = 0; k < PC9.length; k++) { var sp9 = c.planets[PC9[k]]; if (!sp9) continue; sc9[sp9.sign] = (sc9[sp9.sign] || 0) + 1; if (sc9[sp9.sign] > best9) { best9 = sc9[sp9.sign]; bsg9 = sp9.sign; } }
-      if (best9 >= 3 && bsg9 >= 0) cands.push({ w: 62 + best9 * 6, s: best9 + ' of your planets gather in ' + DATA.SIGNS[bsg9].name + ' \u2014 a stellium. What it means for you: ' + DATA.SIGNS[bsg9].name + '\u2019s way of moving is not one room of your life, it is the gravity the rest of you orbits. You do not visit this theme; you live inside it, and the people close to you learned that early.' });
-    } catch (e3) {}
-    // 4. a singleton: exactly one planet in an entire element, which then runs the show for that element
-    try {
-      var ec9 = { fire: [], earth: [], air: [], water: [] };
-      for (k = 0; k < PC9.length; k++) { var ep9 = c.planets[PC9[k]]; if (ep9) ec9[DATA.SIGNS[ep9.sign].element].push(PC9[k]); }
-      var elN9 = ['fire', 'earth', 'air', 'water'];
-      for (i = 0; i < 4; i++) if (ec9[elN9[i]].length === 1) { var sk9 = ec9[elN9[i]][0]; cands.push({ w: 58, s: 'Your ' + nameFor(sk9) + ' is the only planet you own in ' + elN9[i] + '. What that does to you: every time life asks for ' + ({ fire: 'drive, courage or heat', earth: 'the practical and the tangible', air: 'ideas or perspective', water: 'feeling or depth' })[elN9[i]] + ', it is always ' + shortFn(sk9) + ' answering the call \u2014 over-worked, over-trusted, and the first place you feel stretched.' }); }
-    } catch (e4) {}
-    // 5. a planet on a critical degree (0 or 29)
-    try {
-      for (k = 0; k < PC9.length; k++) { var dp9 = c.planets[PC9[k]]; if (!dp9) continue; var dd9 = Math.floor(dp9.deg);
-        if (dd9 === 29) { cands.push({ w: 52, s: 'Your ' + nameFor(PC9[k]) + ' sits at the 29th degree, the anaretic degree, the last breath of ' + dp9.signName + '. Planets here carry urgency and a sense of a lesson running out of time; this part of you is always slightly ahead of itself, finishing what the sign started.' }); break; }
-        if (dd9 === 0) { cands.push({ w: 50, s: 'Your ' + nameFor(PC9[k]) + ' sits at the very first degree of ' + dp9.signName + ', the raw, unschooled edge of the sign. This part of you meets its territory fresh every time, all beginner\u2019s fire and none of the caution that comes later.' }); break; } }
-    } catch (e5) {}
-    if (!cands.length) return null;
-    cands.sort(function (a, b) { return b.w - a.w; });
-    return cands[0].s;
-  }
-  function crossSynthesis(c) {
-    var out = [], pairs = [
-      { a: 'mercury', b: 'moon', t: 'how you think and how you feel', sub: 'Head and heart', end: 'Either way, you are most yourself when your head narrates what your gut already knew.' },
-      { a: 'venus', b: 'mars', t: 'what draws you and how you chase it', sub: 'Desire and pursuit', end: 'Either way, your love life makes the most sense on the days the thing you want and the way you go after it finally point the same direction.' },
-      { a: 'sun', b: 'saturn', t: 'who you are and where you fear you fall short', sub: 'Your pride and your fear', end: 'Either way, the places you privately feel "not enough" are exactly where you end up building the most solid thing.' },
-      { a: 'mercury', b: 'mars', t: 'how you think and how you act', sub: 'Thinking and doing', end: 'Either way, the gap between deciding and doing is where you get either sharp or reckless.' }
-    ], i;
-    function agree(ea, eb) { return ea === eb; }
-    function friendly(ea, eb) { return (ea === 'fire' && eb === 'air') || (ea === 'air' && eb === 'fire') || (ea === 'earth' && eb === 'water') || (ea === 'water' && eb === 'earth'); }
-    for (i = 0; i < pairs.length && out.length < 2; i++) {
-      var P = pairs[i], pa = c.planets[P.a], pb = c.planets[P.b]; if (!pa || !pb) continue;
-      var ea = DATA.SIGNS[pa.sign].element, eb = DATA.SIGNS[pb.sign].element;
-      var rel = agree(ea, eb) ? 'pull in the same direction, for better and worse' : friendly(ea, eb) ? 'get on and quietly feed each other' : 'want different things and have to be reconciled in you';
-      out.push('On ' + P.t + ': your ' + nameFor(P.a) + ' in ' + pa.signName + ' works ' + SIGN_MANNER[pa.sign] + ', while your ' + nameFor(P.b) + ' in ' + pb.signName + ' works ' + SIGN_MANNER[pb.sign] + '. ' + P.sub + ' ' + rel + '. ' + P.end);
-    }
     return out;
   }
   // PHASE 31 — the Read → You reading, re-sourced from the judged engine (Movements II–III).
@@ -5529,7 +5161,7 @@ var APP = (function () {
     solarReturnChart: solarReturnChart, upcomingEclipses: upcomingEclipses, bestDaysFor: bestDaysFor, electIntents: electIntents, oddPredictions: oddPredictions, composeProfectionYear: composeProfectionYear, signHouseWeave: signHouseWeave,
     progressedTimeline: progressedTimeline, retroSeasons: retroSeasons,
     exportBook: exportBook, exportBackup: exportBackup, importBackup: importBackup, composeDailyEssay: composeDailyEssay, chartFP: chartFP, weaveNote: weaveNote, termOf: termOf, anA: anA, composeColleague: composeColleague, exportColleague: exportColleague,
-    microFor: microFor, tellsFor: tellsFor, weaveTransit: weaveTransit, traditionalRead: traditionalRead, determination: determination, determinationSheet: determinationSheet, derivedHouseOf: derivedHouseOf, derivedPhrase: derivedPhrase, conditionVerdict: conditionVerdict, sectProfile: sectProfile, judgeAscendant: judgeAscendant, judgeCaptain: judgeCaptain, rulershipWeb: rulershipWeb, zodiacMatrix: zodiacMatrix, cuspAlmuten: cuspAlmuten, judgeHouse: judgeHouse, judgeHouses: judgeHouses, judgeAspect: judgeAspect, judgeAspects: judgeAspects, fullReception: fullReception, receptionOnAspect: receptionOnAspect, receptionsInChart: receptionsInChart, testimonyAuthority: testimonyAuthority, contest: contest, rulingVoice: rulingVoice, contradictions: contradictions, natalSynthesis: natalSynthesis, housesThatMatter: housesThatMatter, noBirthTimeReading: noBirthTimeReading, judgeDirection: judgeDirection, judgeDirections: judgeDirections, directedAscendant: directedAscendant, directedSignificators: directedSignificators, significatorFor: significatorFor, directedChapter18: directedChapter18, boundsWalk: boundsWalk, lordOfYear: lordOfYear, profectionYear: profectionYear, triggerReading: triggerReading, liveWires21: liveWires21, judgeCycle: judgeCycle, judgeCycles: judgeCycles, judgeReturn: judgeReturn, eclipseTimers: eclipseTimers, glanceJudged: glanceJudged, weekJudged: weekJudged, lots: lots, starsJudged: starsJudged, hiddenPartnerships: hiddenPartnerships, patternsAsTestimony: patternsAsTestimony, vedicWall: vedicWall, bondSpine35: bondSpine35, bondOverlay35: bondOverlay35, voiceCheck: voiceCheck, sourceRegistry: sourceRegistry, citeSource: citeSource, placementProse: placementProse, symbolicDirections: symbolicDirections, directionLine: directionLine, directionReceipt: directionReceipt, aspectNature: aspectNature, transitCycles: transitCycles, weaveCycle: weaveCycle, weaveWeek: weaveWeek, receptionOf: receptionOf, chartSignature: chartSignature, lifeQuirks: lifeQuirks, interests: interests, emergingPull: emergingPull, spookyReads: spookyReads, combinationRead: combinationRead, sunMoonCharacter: sunMoonCharacter, guideCards: guideCards, ancientSky: ancientSky, addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, returnsAlmanac: returnsAlmanac, progressedLunation: progressedLunation, planetaryHours: planetaryHours, moonVoidWindow: moonVoidWindow, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
+    microFor: microFor, tellsFor: tellsFor, weaveTransit: weaveTransit, traditionalRead: traditionalRead, determination: determination, determinationSheet: determinationSheet, derivedHouseOf: derivedHouseOf, derivedPhrase: derivedPhrase, conditionVerdict: conditionVerdict, sectProfile: sectProfile, judgeAscendant: judgeAscendant, judgeCaptain: judgeCaptain, rulershipWeb: rulershipWeb, zodiacMatrix: zodiacMatrix, cuspAlmuten: cuspAlmuten, judgeHouse: judgeHouse, judgeHouses: judgeHouses, judgeAspect: judgeAspect, judgeAspects: judgeAspects, fullReception: fullReception, receptionOnAspect: receptionOnAspect, receptionsInChart: receptionsInChart, testimonyAuthority: testimonyAuthority, contest: contest, rulingVoice: rulingVoice, contradictions: contradictions, natalSynthesis: natalSynthesis, housesThatMatter: housesThatMatter, noBirthTimeReading: noBirthTimeReading, judgeDirection: judgeDirection, judgeDirections: judgeDirections, directedAscendant: directedAscendant, directedSignificators: directedSignificators, significatorFor: significatorFor, directedChapter18: directedChapter18, boundsWalk: boundsWalk, lordOfYear: lordOfYear, profectionYear: profectionYear, triggerReading: triggerReading, liveWires21: liveWires21, judgeCycle: judgeCycle, judgeCycles: judgeCycles, judgeReturn: judgeReturn, eclipseTimers: eclipseTimers, glanceJudged: glanceJudged, weekJudged: weekJudged, lots: lots, starsJudged: starsJudged, hiddenPartnerships: hiddenPartnerships, patternsAsTestimony: patternsAsTestimony, vedicWall: vedicWall, bondSpine35: bondSpine35, bondOverlay35: bondOverlay35, voiceCheck: voiceCheck, sourceRegistry: sourceRegistry, citeSource: citeSource, placementProse: placementProse, symbolicDirections: symbolicDirections, directionLine: directionLine, directionReceipt: directionReceipt, aspectNature: aspectNature, transitCycles: transitCycles, weaveCycle: weaveCycle, weaveWeek: weaveWeek, receptionOf: receptionOf, guideCards: guideCards, ancientSky: ancientSky, addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, returnsAlmanac: returnsAlmanac, progressedLunation: progressedLunation, planetaryHours: planetaryHours, moonVoidWindow: moonVoidWindow, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
     saveCurrentChart: saveCurrentChart, deleteSavedChart: deleteSavedChart, activateSavedChart: activateSavedChart, activeChartKey: activeChartKey, chartKey: chartKey, famousMatches: famousMatches, lifeTransits: lifeTransits, upcomingTransits: upcomingTransits, transitMotion: transitMotion, compositeChart: compositeChart,
     nameFor: nameFor, glyphFor: glyphFor, pad: pad,
     domElement: domElement, lowElement: lowElement, domMod: domMod, tzOffsetHours: tzOffsetHours
@@ -6166,8 +5798,8 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     }
 
     // ============ HERO DIAL with MAGNIFY-ON-TAP ============
-    function dial(c, b, ly) {
-      var size = Math.min(cw(), 380), still = reduced(), fc = p.frameCount, t = nowT();
+    function dial(c, b, ly, cap) {
+      var size = Math.min(cw(), 380, cap || 1e9), still = reduced(), fc = p.frameCount, t = nowT();
       var cx = sx() + cw() / 2, cy = sY(ly + size / 2);
       var sv9 = scrollOf() - (UI.sPrev == null ? scrollOf() : UI.sPrev); UI.sPrev = scrollOf();
       UI.wLag = ((UI.wLag || 0) + sv9 * 0.22) * 0.86;
@@ -7104,12 +6736,6 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (UI.pcard) { /* sheet drawn after content, below */ }
       if (UI.story) { drawStory(c, b); return; }
       var x = sx(), w = cw(), ly = 18;
-      // the glide: after a planet is chosen, the page travels to its reading (a drag cancels it)
-      if (UI.chartScrollAnim) {
-        var an2 = UI.chartScrollAnim;
-        if (an2.to == null && UI.selMetaLy != null) an2.to = Math.max(0, UI.selMetaLy - 84);
-        if (an2.to != null) { var pA = reduced() ? 1 : cl01((nowT() - an2.t0) / 520); UI.scroll.chart = an2.from + (an2.to - an2.from) * eCubic(pA); if (pA >= 1) UI.chartScrollAnim = null; }
-      }
       // the chosen body's light washes the page for a breath: the decision is visible before the words are
       if (UI.selPlanet && !reduced()) { var washA = cl01(1 - (nowT() - UI.popT) / 900); if (washA > 0.01) { var wc2 = BODYCOL[UI.selPlanet]; if (wc2) { p.noStroke(); fillc(wc2, 30 * washA); p.rect(0, 0, W, H); } } }
       eyebrow('Birth chart \u00B7 ' + b.d + '.' + b.mo + '.' + b.y, x, ly); ly += 22;
@@ -7124,135 +6750,39 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         dcC5.fillText(b.timeKnown ? ' rising' : ' sun', x + dcC5.measureText(titleSign).width, sY(ly));
         dcC5.restore();
       }
-      normal(); ly += 48;
-      // the element bar: how much fire, earth, air and water you are, in one glance.
-      // Segments in the elements' own colours, sized to the real balance; tap for Patterns.
-      (function () {
-        var els9 = ['fire', 'earth', 'air', 'water'], eb9 = sY(ly), bx9 = x, bh9 = 11, run9 = 0, ei9;
-        var grow9 = reduced() ? 1 : eCubic(cl01((nowT() - UI.fxT) / 900));
-        for (ei9 = 0; ei9 < 4; ei9++) {
-          var pw9 = w * (c.elements[els9[ei9]] / 100) * grow9;
-          p.noStroke(); fillc(ELHUE[els9[ei9]], 235);
-          p.rect(bx9 + run9, eb9, Math.max(0, pw9 - 2), bh9, 5.5);
-          run9 += pw9;
-        }
-        // labels on their own line, centred under each segment, skipped where a segment is too narrow to hold one cleanly
-        var run2 = 0, lab9;
-        for (ei9 = 0; ei9 < 4; ei9++) {
-          var pw2 = w * (c.elements[els9[ei9]] / 100) * grow9;
-          if (pw2 >= 52) {
-            lab9 = els9[ei9].toUpperCase() + ' ' + c.elements[els9[ei9]];
-            p.textFont(SANS); p.textSize(9);
-            if (p.textWidth(lab9) <= pw2 - 8) { setFont(SANS, 9, INK, p.CENTER, p.TOP, 190); p.text(lab9, bx9 + run2 + pw2 / 2, eb9 + bh9 + 6); }
-          }
-          run2 += pw2;
-        }
-        pushHit(x, eb9 - 4, w, bh9 + 26, function () { UI.screen = 'read'; UI.readTab = 'wiring'; UI.scroll.read = 0; UI.actT = nowT(); });
-      })();
-      ly += 40;
-      // (the Today teaser and headline sat here; the moon button up top is the one door to Today)
-      ly += dial(c, b, ly) + 4;
+      normal(); ly += 44;
+      // FIT ONE FRAME \u2014 the wheel is the hero; the reels are the anchor row; a single live
+      // line for today sits under it. Nothing scrolls: depth is reached by tapping a planet
+      // (the placement zoom grows from it), never by scrolling down. The wheel is sized to
+      // whatever height is left after the fixed rows, so the whole screen sits inside one view.
+      var reelsH9 = 104, todayH9 = 38, hintH9 = 18, ntH9 = b.timeKnown ? 0 : 26;
+      var avail9 = viewH() - ly - (reelsH9 + todayH9 + hintH9 + ntH9 + 22);
+      var wheelCap9 = Math.max(188, Math.min(380, avail9));
+      ly += dial(c, b, ly, wheelCap9) + 6;
       if (!b.timeKnown) {
         setFont(MONO, 9, ACCTX, p.CENTER, p.TOP, 215); p.text('NO BIRTH TIME: RISING & HOUSES OFF \u00B7 SET A ROUGH ONE \u203A', x + w / 2, sY(ly));
         pushHit(x, sY(ly) - 8, w, 28, function () { UI.screen = 'settings'; UI.scroll.settings = 0; UI.actT = nowT(); });
         ly += 26;
       }
-      // one word for the day, under the compass; tap it and Today opens
+      // the three anchors \u2014 your Sun, Moon and Rising \u2014 each tappable to open its placement
+      ly += reels(c, b, ly) + 8;
+      // one live line for today: the loudest contact the sky makes on your chart right now,
+      // tappable straight into Today. The real transit, not a "word of the day" theme.
       (function () {
         var trd9 = walkTr(c), t09 = trd9.daily && trd9.daily[0];
-        var THEME9 = { sun: 'Visibility', moon: 'Feelings', mercury: 'Conversations', venus: 'Sweetness', mars: 'Drive', jupiter: 'Growth', saturn: 'Structure', uranus: 'Surprises', neptune: 'Dreams', pluto: 'Depth' };
-        var word9 = t09 ? (THEME9[t09.tp] || 'Weather') : 'Stillness';
-        p.textStyle(p.ITALIC); setFont(SERIF, 17, INK, p.CENTER, p.TOP, 235); p.text('\u201C' + word9 + '\u201D', x + w / 2, sY(ly)); p.textStyle(p.NORMAL);
-        if (t09) { setFont(MONO, 8.5, INK, p.CENTER, p.TOP, 165); p.text((APP.nameFor(t09.tp) + ' ' + t09.asp.key + ' your ' + APP.nameFor(t09.np)).toUpperCase(), x + w / 2, sY(ly) + 25); }
-        setFont(MONO, 8.5, ACCTX, p.CENTER, p.TOP, 200); p.text('TODAY \u203A', x + w / 2, sY(ly) + (t09 ? 41 : 24));
-        pushHit(x, sY(ly) - 4, w, t09 ? 58 : 42, function () { openToday(); });
+        var line9 = t09 ? ('Today \u2014 ' + APP.nameFor(t09.tp) + ' ' + t09.asp.key + ' your ' + APP.nameFor(t09.np)) : 'Today \u2014 the sky is quiet on your chart';
+        p.textStyle(p.ITALIC); setFont(SERIF, 14.5, INK, p.CENTER, p.TOP, 235); p.text(line9, x + w / 2, sY(ly)); p.textStyle(p.NORMAL);
+        setFont(MONO, 8.5, ACCTX, p.CENTER, p.TOP, 200); p.text('OPEN TODAY \u203A', x + w / 2, sY(ly) + 20);
+        pushHit(x, sY(ly) - 6, w, 40, function () { openToday(); });
       })();
-      ly += 62;
-      if (!(APP.STATE.settings && APP.STATE.settings.sawStory)) { setFont(MONO, 9.5, INK, p.CENTER, p.TOP, 130); p.text('TAP A PLANET TO READ IT', x + w / 2, sY(ly)); ly += 22; }
-      ly += reels(c, b, ly) + 14;
-
-      // selected reading - animated, ticking degree
-      var key = UI.selPlanet, pl = (key === 'asc') ? c.ascBody : c.planets[key];
-      if (pl) {
-        UI.selMetaLy = ly; // the glide's destination, recorded every frame
-        UI.degShown += (pl.deg - UI.degShown) * 0.18; if (Math.abs(UI.degShown - pl.deg) < 0.05) UI.degShown = pl.deg;
-        var inten = cl01(1 - (nowT() - UI.popT) / 320), tSel = nowT() - UI.popT;
-        var eBk = reduced() ? 1 : (0.6 + 0.4 * eBack(cl01(tSel / 460)));
-        hairline(x, ly, x + w, 70); ly += 16;
-        // the body itself presides over its reading: the engraved globe, entering with weight
-        var hR = 26, hx0 = x + hR, hy0 = sY(ly + hR + 2);
-        p.push(); p.translate(hx0, hy0); p.scale(eBk); celestialBody(key === 'asc' ? 'sun' : key, 0, 0, hR, nowT()); p.pop();
-        p.textStyle(p.BOLD);
-        glitchText(APP.nameFor(key) + ' in ' + pl.signName, x + hR * 2 + 16, sY(ly + 4), 21, SERIF, INK, p.LEFT, p.TOP, inten); normal();
-        // AN9 \u2014 the degree counts up with a soft glow that fades as it settles
-        var ticking = Math.abs(UI.degShown - pl.deg) > 0.05, degStr = UI.degShown.toFixed(1) + '\u00B0 ' + pl.signName + (b.timeKnown ? ' \u00B7 ' + ordinal(pl.house) + ' house' : '');
-        p.textFont(MONO); p.textSize(10.5); var degW = p.textWidth(degStr), glowA = ticking ? 1 : cl01(1 - (nowT() - UI.popT) / 700);
-        if (glowA > 0.02 && !reduced()) { var gp = 0.5 + 0.5 * Math.sin(nowT() * 0.012); p.noStroke(); fillc(ACC, 42 * glowA * gp); p.ellipse(x + w - degW / 2, sY(ly) + 9, degW + 20, 22); }
-        setFont(MONO, 10.5, ticking ? ACCTX : INK, p.LEFT, p.TOP, ticking ? 230 : 165); p.text(degStr, x + hR * 2 + 16, sY(ly) + 30);
-        ly += hR * 2 + 12;
-        if (pl.retro && key !== 'asc' && !reduced()) {
-          // apparent motion, acted out: forward, stall, backward, recover
-          var u5 = (nowT() % 3200) / 3200, pos5 = u5 - 0.22 * Math.sin(2 * Math.PI * u5);
-          var rW5 = Math.min(w, 300), ry5 = sY(ly) + 10;
-          strokec(INK, 70); p.strokeWeight(1); p.line(x, ry5, x + rW5, ry5);
-          p.noStroke(); fillc(ACC, 40); p.rect(x + rW5 * 0.36, ry5 - 5, rW5 * 0.28, 10, 5);
-          fillc(BODYCOL[key] || ACC, 235); p.ellipse(x + rW5 * (0.06 + 0.88 * pos5), ry5, 9, 9);
-          setFont(MONO, 8.5, INK, p.LEFT, p.TOP, 160); p.text('APPARENT MOTION: FORWARD \u00B7 STALL \u00B7 BACKWARD \u00B7 RECOVER', x, ry5 + 10);
-          ly += 34;
-        }
-        var blurbA = reduced() ? 1 : cl01((tSel - 180) / 420);
-        // a hairline draws itself under the header, left to right
-        var hlw9 = reduced() ? 1 : eCubic(cl01((tSel - 240) / 620));
-        if (hlw9 > 0.01) { strokec(ACC, 170); p.strokeWeight(1.6); p.line(x, sY(ly) - 4, x + w * hlw9, sY(ly) - 4); p.noStroke(); }
-        ly += 8;
-        // the figure this planet cuts, in costume
-        try {
-          var ARt9 = DATA.ARCH;
-          if (ARt9 && key !== 'asc' && ARt9.planet[key] && ARt9.sign[pl.signName]) {
-            setFont(MONO, 8.5, ACCTX, p.LEFT, p.TOP, 215 * blurbA);
-            p.text((ARt9.planet[key].n + ' \u00B7 wearing ' + ARt9.sign[pl.signName].n.replace('The ', 'the ') + '\u2019s colours').toUpperCase(), x, sY(ly) + (1 - blurbA) * 6);
-            ly += 20;
-          }
-        } catch (eFg9) {}
-        // the giveaway, pulled out like a quote with its own accent rule
-        try {
-          var tq9 = APP.tellsFor ? APP.tellsFor(c, key) : [];
-          if (tq9.length) {
-            var tqA9 = reduced() ? 1 : cl01((tSel - 420) / 480);
-            if (tqA9 > 0.01) {
-              var qsz9 = 15.5 * ((APP.STATE.settings && APP.STATE.settings.textScale) || 1), qlh9 = qsz9 * 1.5;
-              p.textStyle(p.ITALIC); p.textFont(SERIF); p.textSize(qsz9);
-              var tqL9 = wrapLines2('The giveaway: ' + tq9[0] + '.', w - 20, SERIF, qsz9), tqi9;
-              strokec(ACC, 210 * tqA9); p.strokeWeight(2.5); p.line(x + 1, sY(ly) + 3, x + 1, sY(ly) + tqL9.length * qlh9 - 2); p.noStroke();
-              for (tqi9 = 0; tqi9 < tqL9.length; tqi9++) { setFont(SERIF, qsz9, INK, p.LEFT, p.TOP, 240 * tqA9); p.textStyle(p.ITALIC); p.text(tqL9[tqi9], x + 14, sY(ly) + tqi9 * qlh9 + (1 - eCubic(tqA9)) * 8); }
-              p.textStyle(p.NORMAL);
-              ly += tqL9.length * qlh9 + 12;
-            } else { ly += 22; }
-          }
-        } catch (eTq9) {}
-        // the reading itself arrives like a tide, line by line, at the reader's chosen size
-        (function () {
-          var fsc9 = (APP.STATE.settings && APP.STATE.settings.textScale) || 1;
-          var rsz9 = 15.5 * fsc9, rlh9 = rsz9 * 1.58;
-          var rdL9 = wrapLines2(planetBlurb(c, key), w, SERIF, rsz9), ri9;
-          for (ri9 = 0; ri9 < rdL9.length; ri9++) {
-            var rlA9 = reduced() ? 1 : cl01((tSel - 640 - ri9 * 90) / 420);
-            if (rlA9 <= 0.01) { ly += (rdL9.length - ri9) * rlh9; break; }
-            setFont(SERIF, rsz9, INK, p.LEFT, p.TOP, 246 * rlA9);
-            p.text(rdL9[ri9], x, sY(ly) + (1 - eCubic(rlA9)) * 9);
-            ly += rlh9;
-          }
-        })();
-        ly += 14;
-        setFont(MONO, 9.5, ACCTX, p.LEFT, p.TOP, 225); p.text('READ THE FULL STORY \u203A', x, sY(ly));
-        (function (kk9) { pushHit(x, sY(ly) - 6, 220, 30, function () { openStory(kk9); }); })(key);
-        ly += 34;
-      }
+      ly += 40;
+      if (!(APP.STATE.settings && APP.STATE.settings.sawStory)) { setFont(MONO, 9.5, INK, p.CENTER, p.TOP, 130); p.text('TAP A PLANET TO OPEN IT', x + w / 2, sY(ly)); ly += 20; }
 
       if (UI.pcard) UI.pcardDraw = true;
-      // the raw data tables (placements / aspects / balance / points) came out in 3.46:
-      // the wheel, the chip reel and the planet stories carry the same facts, told properly.
-      ly += 30; UI.contentH.chart = ly;
+      // one frame, no scroll: tapping a planet opens the placement zoom (it grows from the
+      // planet and tells you about it in and around the circle), so the reading lives there,
+      // not in a strip below the wheel. The screen height is clamped to the view.
+      UI.contentH.chart = Math.min(ly + 12, viewH());
     }
 
     // bundled illustration loader: local files only (art/<key>.webp), loaded once,
@@ -9860,36 +9390,6 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       UI.contentH.learn = ly + 10;
     }
     function openURL(u) { try { window.open(u, '_blank', 'noopener'); } catch (e) {} }
-    // lessons on YOUR placements, scoped to named, reputable astrology teachers (opens YouTube; needs a connection).
-    // We anchor each search to a well-known educator + your placement rather than blind video IDs — curated, safe.
-    function watchCards(c, b) {
-      var S = DATA.SIGNS, out = [], sun = S[c.planets.sun.sign].name, moon = S[c.planets.moon.sign].name;
-      var dom = APP.domElement(c.elements), domName = DATA.ELEMENTS[dom].name;
-      var rsign = (b.timeKnown && c.ascBody) ? c.ascBody.sign : c.planets.sun.sign, rk = S[rsign].ruler;
-      var mer = S[c.planets.mercury.sign].name, ven = S[c.planets.venus.sign].name, mar = S[c.planets.mars.sign].name;
-      // tuned to your chart
-      out.push({ t: 'Your Sun in ' + sun, who: 'Chris Brennan', q: 'Chris Brennan ' + sun + ' sun sign astrology' });
-      out.push({ t: 'Your Moon in ' + moon, who: 'Debra Silverman', q: 'Debra Silverman ' + moon + ' moon astrology' });
-      if (b.timeKnown && c.ascBody) out.push({ t: 'Your ' + S[c.ascBody.sign].name + ' rising', who: 'The Astrology Podcast', q: S[c.ascBody.sign].name + ' rising ascendant astrology' });
-      out.push({ t: 'Your Mercury in ' + mer, who: 'Astrology lecture', q: mer + ' mercury mind astrology' });
-      out.push({ t: 'Your Venus in ' + ven, who: 'Astrology lecture', q: ven + ' venus love astrology' });
-      out.push({ t: 'Your Mars in ' + mar, who: 'Astrology lecture', q: mar + ' mars drive astrology' });
-      out.push({ t: 'The four elements in you', who: 'Debra Silverman', q: 'Debra Silverman four elements quadrants astrology' });
-      out.push({ t: 'Your dominant element: ' + domName, who: 'Astrology lecture', q: domName + ' element astrology' });
-      out.push({ t: 'Your chart ruler: ' + rk, who: 'Astrology lecture', q: rk + ' planet astrology meaning' });
-      // foundations & how-to
-      out.push({ t: 'How to read a birth chart', who: 'Chris Brennan', q: 'how to read birth chart astrology beginners' });
-      out.push({ t: 'The twelve houses', who: 'Astrology lecture', q: 'astrology twelve houses meaning lecture' });
-      out.push({ t: 'Aspects explained', who: 'Astrology lecture', q: 'astrology aspects conjunction trine square lecture' });
-      out.push({ t: 'Elements & modalities', who: 'Astrology lecture', q: 'astrology elements modalities cardinal fixed mutable' });
-      out.push({ t: 'The planets, one by one', who: 'Astrology lecture', q: 'planets in astrology meaning lecture' });
-      // history & the real sky
-      out.push({ t: 'A history of astrology', who: 'Documentary', q: 'history of astrology documentary' });
-      out.push({ t: 'Babylonian & Hellenistic roots', who: 'Lecture', q: 'history of western astrology Hellenistic Babylonian' });
-      out.push({ t: 'The zodiac & precession', who: 'Astronomy talk', q: 'zodiac precession of the equinoxes astronomy' });
-      out.push({ t: 'The Moon and its phases', who: 'Astronomy film', q: 'the moon phases astronomy educational film' });
-      return out;
-    }
     // ===== retro media: Bakelite TVs (YouTube channel playlists, muted + subtitles, sound knob) & radios (Spotify) =====
     // ---- Internet Archive: public-domain film & audio, searched live to the user's chart ----
     function iaKey(c, b) { return DATA.SIGNS[c.planets.sun.sign].name + ((b.timeKnown && c.ascBody) ? ('|' + DATA.SIGNS[c.ascBody.sign].name) : ''); }

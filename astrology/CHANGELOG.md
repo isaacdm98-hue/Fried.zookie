@@ -1,5 +1,33 @@
 # Changelog
 
+## 4.1.0 — 2026-07-22 — the chart fits one frame; the last pop is gone
+The novice rework begins with the two changes you asked for directly: the chart
+screen no longer scrolls, and the remnants of the old pop-astrology system are
+removed from the app.
+
+- **Chart screen fits one frame.** The wheel is the hero, sized to whatever
+  height is left after the anchor row, so nothing scrolls. Under it: your Sun,
+  Moon and Rising as tappable anchors, one live line for today, and the tap hint.
+  Depth is reached by tapping a planet — the placement zoom grows from it and
+  tells you about it in and around the circle — not by scrolling down. Verified
+  at 320/390/768 and on a short 320×568 viewport, with and without a birth time.
+- **Removed the element bar** (element-first "how much fire/earth/air/water you
+  are") and the **"word for the day"** theme map (Sun = Visibility, Venus =
+  Sweetness…) from the chart screen. In their place, one honest line: the loudest
+  real transit on your chart today, tappable into Today.
+- **Deleted the dead pop engine.** `combinationRead`, `sunMoonCharacter`,
+  `lifeQuirks`, `interests`, `emergingPull`, `spookyReads`, `chartSignature`,
+  `cleverReads`, `crossSynthesis`, `detectGrandCross9` and `watchCards`
+  (the YouTube-by-Sun-sign shelf) — all uncalled since the judged-engine rebuild —
+  are gone, with their exports.
+- The below-wheel inline planet reading is removed too: it duplicated the
+  placement zoom, which is now the single way to read a placement.
+
+Golden, doctrine, the 7-screen × 3-width UI audit and the voice-book check all
+pass; tapping a planet opens the zoom with zero errors.
+
+See `plans/novice-rework.md` for the full six-workstream plan this begins.
+
 ## 4.0.2 — 2026-07-22 — the real freeze: a crash in the first-run tour
 The persistent "freeze while calculating the chart" was an uncaught crash, not a
 slow computation. The first-run welcome-walk (the animated tour that teaches the
