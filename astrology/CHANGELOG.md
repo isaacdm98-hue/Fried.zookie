@@ -1,5 +1,42 @@
 # Changelog
 
+## 4.0.0 — 2026-07-22 — the whole app speaks the traditional method
+A ground-up alignment of every surface to Sonia's London-lineage method and the
+two *Cours Préparatoires* ateliers. The 40-phase engine already judged; now the
+whole app leads with that judgment, and every judged line is chart-specific and
+carries its receipt.
+
+- **Learn** is rebuilt as the traditional curriculum: two states → the twelve
+  territories → benefic/malefic by nature → a sign read through its lord → the
+  captain → the four dignities → triplicity/terms/decans → the almuten &
+  reception → aspects by nature → sect → promise-first/transits-last → your own
+  sky judged. Every chapter closes inside your actual chart, judged by the engine.
+- **Read** now *is* the judgment: the Ascendant, the captain followed home, the
+  house-lords followed home, the soundest and weakest planet by dignity, the
+  sharpest aspect judged by nature, the lord of the year, and — last — the
+  transits, only where they strike a live wire. The old element-first beats are
+  gone; each beat shows its receipt.
+- **Today** leads with the lord of the year and the trigger doctrine — transits
+  read last, only on a live wire, each judged through its full determination —
+  before any practical glance.
+- **The walkthrough** (revived as a cinematic film) performs the method act by
+  act: the door and its captain, the two lights and the wandering stars each in
+  its state, the sharpest aspect by nature, the lord of the year, transits last.
+- **The card-by-card guide** now draws its "does this ring true?" cards from the
+  judgment — the door, the captain, each planet in its state, aspects by nature,
+  the year's lord — each with its receipt.
+- **Tarot**: all 78 cards given hand-written, Labyrinthos-aligned upright /
+  reversed / love / career meanings (the beloved deck UI and ritual untouched).
+- **Engine audit**: every doctrine table cross-checked against the ateliers —
+  dignities, domicile rulers, exaltations, Dorothean triplicities by sect,
+  Egyptian terms (five non-luminaries only), Chaldean faces, almuten scoring,
+  joys, Chaldean co-significators, house significations (father=IV, mother=X),
+  the nature model. The engine reproduces both worked almuten examples from
+  Atelier 2 exactly. Combustion aligned to the school's 7°30′ throughout.
+- New `tests/doctrine.cjs` pins the almuten worked examples and the term/face
+  luminary rules. Golden, doctrine, three-width UI audit, voice-book (clean
+  across charts) and edge-case robustness (no-time, polar, 1720–2099) all pass.
+
 ## 3.52.0 — 2026-07-22 — the chart forms instead of freezing; the glitch is gone
 - **The chart no longer freezes on open.** The first view of a fresh chart has
   real one-time work to do — the day's transits, the synthesis, the condition
