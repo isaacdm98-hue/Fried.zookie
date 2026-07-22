@@ -1,0 +1,15 @@
+{
+  "_note": "Phase 38 — the golden-chart harness. Time-INVARIANT judged meaning pinned for five reference nativities. Age-dependent fields (lord of the year, profection house) are deliberately excluded, since they drift with today's date. A change to any pinned value means the ENGINE'S INTERPRETATION drifted — investigate before accepting. Regenerate only on a deliberate doctrine change, and record why.",
+  "charts": {
+    "A": { "birth": { "y": 1990, "mo": 6, "d": 15, "hour": 14, "min": 30, "tz": 1, "iana": "Europe/London", "lat": 51.5074, "lon": -0.1278, "timeKnown": true },
+      "asc": "Libra", "captain": "venus", "captainState": "Domicile", "captainLilly": 11, "captainHouse": 8, "day": true, "helper": "jupiter", "tooth": "mars", "ruling": "venus", "h1": "promised", "h7": "promised", "h10": "promised" },
+    "B": { "birth": { "y": 1985, "mo": 1, "d": 7, "hour": 3, "min": 20, "tz": -5, "iana": "America/New_York", "lat": 40.7128, "lon": -74.006, "timeKnown": true },
+      "asc": "Scorpio", "captain": "mars", "captainState": "Triplicity", "captainLilly": 16, "captainHouse": 4, "day": false, "helper": "venus", "tooth": "saturn", "ruling": "mars", "h1": "promised", "h7": "promised", "h10": "withheld" },
+    "C": { "birth": { "y": 1962, "mo": 2, "d": 5, "hour": 12, "min": 0, "tz": 7, "iana": "Asia/Jakarta", "lat": -6.2088, "lon": 106.8456, "timeKnown": true },
+      "asc": "Taurus", "captain": "venus", "captainState": "Peregrine", "captainLilly": 4, "captainHouse": 10, "day": true, "helper": "jupiter", "tooth": "mars", "ruling": "venus", "h1": "promised", "h7": "withheld", "h10": "promised" },
+    "D": { "birth": { "y": 2000, "mo": 12, "d": 25, "hour": 18, "min": 45, "tz": 11, "iana": "Australia/Sydney", "lat": -33.8688, "lon": 151.2093, "timeKnown": true },
+      "asc": "Gemini", "captain": "mercury", "captainState": "Term", "captainLilly": 15, "captainHouse": 7, "day": true, "helper": "jupiter", "tooth": "mars", "ruling": "mercury", "h1": "promised", "h7": "repaired", "h10": "promised" },
+    "E": { "birth": { "y": 1975, "mo": 9, "d": 30, "hour": 12, "min": 0, "tz": 1, "iana": "Europe/Paris", "lat": 48.8566, "lon": 2.3522, "timeKnown": false },
+      "noTime": true, "sunState": "Fall" }
+  }
+}
