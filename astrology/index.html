@@ -830,7 +830,7 @@ var APP = (function () {
     },
     venus: {
       Aries: 'you know within one coffee whether it is a yes, and no amount of advice changes it',
-      Taurus: 'your love language is the good chair, the good meal, and not having to leave the house',
+      Taurus: 'you show love in the good chair, the good meal, and never having to leave the house',
       Gemini: 'you fall for the conversation first; the rest of the person arrives later',
       Cancer: 'you feed people you love and worry about them on the way home',
       Leo: 'you want the grand gesture and pretend you would settle for less; you would not',
@@ -2559,8 +2559,8 @@ var APP = (function () {
       else if (k === 'venus') det.sectRole = d9 ? 'benefic out of sect — generous, but it over-promises' : 'benefic of sect — its help arrives cleanly';
       else if (k === 'saturn') det.sectRole = d9 ? 'malefic of sect — strict, but ultimately constructive' : 'malefic out of sect — the chart’s sharpest tooth';
       else if (k === 'mars') det.sectRole = d9 ? 'malefic out of sect — the chart’s sharpest tooth' : 'malefic of sect — strict, but ultimately constructive';
-      else if (k === 'sun') det.sectRole = d9 ? 'the light of sect — the chart leads by it' : 'the off-duty light';
-      else if (k === 'moon') det.sectRole = d9 ? 'the off-duty light' : 'the light of sect — the chart leads by it';
+      else if (k === 'sun') det.sectRole = d9 ? 'light of sect — the chart leads by it' : 'off-duty light — the night belongs to the Moon';
+      else if (k === 'moon') det.sectRole = d9 ? 'off-duty light — the day belongs to the Sun' : 'light of sect — the chart leads by it';
     }
     // terrestrial state (état terrestre): the circumstances — kept apart from the zodiacal state
     det.terrestrial = { house: det.house, area: det.house ? HOUSE_AREA9[det.house - 1] : null, houseClass: det.house ? HOUSECLASS9[(det.house - 1) % 3] : null, retro: !!p.retro };
@@ -2698,14 +2698,20 @@ var APP = (function () {
     for (i9 = 0; i9 < acc.length; i9++) aT9 += acc[i9][1];
     var tot9 = eT9 + aT9;
     var band9 = tot9 >= 10 ? 'commanding' : tot9 >= 5 ? 'sound' : tot9 >= 0 ? 'mixed' : tot9 >= -5 ? 'strained' : 'afflicted';
-    var bandLine9 = { commanding: 'it can deliver what it signifies, and add interest', sound: 'able — what it promises, it can mostly perform', mixed: 'divided — real strengths, real handicaps, and the outcome turns on which is triggered', strained: 'hampered — it acts, but late, at cost, or through others', afflicted: 'overmatched — what it signifies struggles to arrive without repair from elsewhere' }[band9];
+    var bandLine9 = { commanding: 'it can deliver what it signifies, and add interest', sound: 'what it promises, it can mostly perform', mixed: 'real strengths and real handicaps both, and the outcome turns on which one gets triggered', strained: 'it acts, but late, at cost, or through others', afflicted: 'what it signifies struggles to arrive without repair from elsewhere' }[band9];
     var best9 = null, worst9 = null, all9 = ess.concat(acc);
     for (i9 = 0; i9 < all9.length; i9++) { if (!best9 || all9[i9][1] > best9[1]) best9 = all9[i9]; if (!worst9 || all9[i9][1] < worst9[1]) worst9 = all9[i9]; }
     return {
       key: k, essential: { rows: ess, total: eT9 }, accidental: { rows: acc, total: aT9 }, total: tot9, band: band9,
-      line: 'By Lilly’s reckoning ' + nameFor(k) + ' scores ' + (eT9 >= 0 ? '+' : '') + eT9 + ' essential and ' + (aT9 >= 0 ? '+' : '') + aT9 + ' accidental — ' + (tot9 >= 0 ? '+' : '') + tot9 + ' in all, ' + band9 + ': ' + bandLine9
-        + (best9 && best9[1] > 0 ? ' — the strongest testimony ' + best9[0] + ' (+' + best9[1] + ')' : '')
-        + (worst9 && worst9[1] < 0 ? (best9 && best9[1] > 0 ? ', the heaviest ' : ' — the heaviest testimony ') + worst9[0] + ' (' + worst9[1] + ')' : '') + '.',
+      line: (function () {
+        var sgn9 = function (n) { return (n >= 0 ? '+' : '') + n; };
+        var s = 'By Lilly’s reckoning ' + nameFor(k) + ' scores ' + sgn9(eT9) + ' essential and ' + sgn9(aT9) + ' accidental, ' + sgn9(tot9) + ' in all — ' + band9 + ': ' + bandLine9 + '.';
+        var hasB = best9 && best9[1] > 0, hasW = worst9 && worst9[1] < 0;
+        if (hasB && hasW) s += ' Its strongest support is ' + best9[0] + ' (' + sgn9(best9[1]) + '); its heaviest drag, ' + worst9[0] + ' (' + worst9[1] + ').';
+        else if (hasB) s += ' Its strongest support is ' + best9[0] + ' (' + sgn9(best9[1]) + ').';
+        else if (hasW) s += ' Its heaviest drag is ' + worst9[0] + ' (' + worst9[1] + ').';
+        return s;
+      })(),
       src: 'Lilly, Christian Astrology I, the table of fortitudes and debilities (1647)'
     };
   }
