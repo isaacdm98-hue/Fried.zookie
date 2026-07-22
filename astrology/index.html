@@ -3263,7 +3263,7 @@ var APP = (function () {
     var st = dignityOf(rk, rp.signName);
     var line = 'Your ' + ordinal(hn) + ' house — ' + HOUSE_AREA9[hn - 1] + ' — has ' + csName + ' on the cusp, so it answers to ' + nameFor(rk) + (co ? ' (with ' + nameFor(co) + ' as modern co-ruler)' : '') + '. ' + nameFor(rk) + ' stands in your ' + ordinal(rp.house) + ' house in ' + rp.signName + ', ' + dignityPhrase(st) + '. ';
     line += (rp.house === hn) ? 'The ruler sits in its own house: this part of life runs on its own ground, answering to nobody else.'
-      : 'So the affairs of the ' + ordinal(hn) + ' are settled on the ' + ordinal(rp.house) + '\u2019s ground: ' + HOUSE_AREA9[hn - 1] + ' runs through ' + HOUSE_AREA9[rp.house - 1] + '.';
+      : 'So the ' + ordinal(hn) + '\u2019s matters \u2014 ' + HOUSE_AREA9[hn - 1] + ' \u2014 are settled on the ' + ordinal(rp.house) + '\u2019s ground: ' + HOUSE_AREA9[rp.house - 1] + '.';
     return { house: hn, cuspSign: csName, ruler: rk, co: co, rulerHouse: rp.house, rulerSign: rp.signName, state: st, line: line, receipt: (ordinal(hn) + ' cusp ' + degStr(cuspLon % 30) + ' ' + csName + ' · ruler ' + nameFor(rk) + ' → ' + ordinal(rp.house) + ', ' + rp.signName + (st ? ' · ' + st : ' · peregrine')).toUpperCase() };
   }
   function traditionalRead(c, b) {
@@ -3377,19 +3377,21 @@ var APP = (function () {
   // promittor (a natal point in its FULL determination). "Directed A to natal B" is not
   // "A does something to B" — it is A's domain arriving at what B IS in this chart, judged
   // by B's state and their reception.
+  // n = the mover's name (subject of the sentence); g = its gloss, moved to the sentence's tail
+  // so the verb never collides with a trailing participle ("…worth, advancing comes to…").
   var DIRECTED_DOMAIN16 = {
-    asc: { short: 'the life itself', full: 'the moving edge of the life — the body, the vitality, the advancing years' },
-    mc: { short: 'the career and the name', full: 'the moving edge of the career and the public name — honour, office and the aim' },
-    sun: { short: 'the vital will', full: 'the directed vital light — vitality, honour and the father' },
-    moon: { short: 'the felt life', full: 'the directed Moon — the felt life, the body’s tides and the mother' },
-    mercury: { short: 'the mind and its dealings', full: 'directed Mercury — the mind, the word and the daily commerce, advancing' },
-    venus: { short: 'love and union', full: 'directed Venus — love, union, pleasure and worth, advancing' },
-    mars: { short: 'drive and contest', full: 'directed Mars — drive, the cut and the contest, advancing' },
-    jupiter: { short: 'increase and fortune', full: 'directed Jupiter — increase, faith and fortune, advancing' },
-    saturn: { short: 'limit and time', full: 'directed Saturn — time, limit and loss, advancing' },
-    uranus: { short: 'the sudden turn', full: 'directed Uranus (a modern point) — rupture and the break for freedom, advancing' },
-    neptune: { short: 'the dissolving ideal', full: 'directed Neptune (a modern point) — longing and the softening of edges, advancing' },
-    pluto: { short: 'buried power', full: 'directed Pluto (a modern point) — compulsion and irreversible change, advancing' }
+    asc: { short: 'the life itself', n: 'the moving edge of the life', g: 'the body, the vitality, the advancing years' },
+    mc: { short: 'the career and the name', n: 'the moving edge of the career and the public name', g: 'honour, office and the aim' },
+    sun: { short: 'the vital will', n: 'the directed vital light', g: 'vitality, honour and the father' },
+    moon: { short: 'the felt life', n: 'the directed Moon', g: 'the felt life, the body’s tides and the mother' },
+    mercury: { short: 'the mind and its dealings', n: 'directed Mercury', g: 'the mind, the word and the daily commerce' },
+    venus: { short: 'love and union', n: 'directed Venus', g: 'love, union, pleasure and worth' },
+    mars: { short: 'drive and contest', n: 'directed Mars', g: 'drive, the cut and the contest' },
+    jupiter: { short: 'increase and fortune', n: 'directed Jupiter', g: 'increase, faith and fortune' },
+    saturn: { short: 'limit and time', n: 'directed Saturn', g: 'time, limit and loss' },
+    uranus: { short: 'the sudden turn', n: 'directed Uranus (a modern point)', g: 'rupture and the break for freedom' },
+    neptune: { short: 'the dissolving ideal', n: 'directed Neptune (a modern point)', g: 'longing and the softening of edges' },
+    pluto: { short: 'buried power', n: 'directed Pluto (a modern point)', g: 'compulsion and irreversible change' }
   };
   function promittorDomain16(c, b, np) {
     if (np === 'asc') return { isPoint: true, name: 'Ascendant', short: 'the life and body', matter: 'the life and the body itself', det: null };
@@ -3399,7 +3401,7 @@ var APP = (function () {
   }
   function judgeDirection(c, b, E) {
     if (!E) return null;
-    var dd = DIRECTED_DOMAIN16[E.dp] || { short: nameFor(E.dp), full: 'directed ' + nameFor(E.dp) };
+    var dd = DIRECTED_DOMAIN16[E.dp] || { short: nameFor(E.dp), n: 'directed ' + nameFor(E.dp), g: '' };
     var pm = promittorDomain16(c, b, E.np); if (!pm) return null;
     var when = 'Around ' + Math.round(E.age) + ' (' + E.year + ')', ageHalf = Math.round(E.age * 2) / 2;
     var hard = (E.aspKey === 'square' || E.aspKey === 'opposition'), conj = (E.aspKey === 'conjunction'), soft = (E.aspKey === 'trine' || E.aspKey === 'sextile');
@@ -3423,7 +3425,7 @@ var APP = (function () {
     else if (conj) verdict = 'the directed point comes to the very body of ' + nameFor(E.np) + ': for this stretch, ' + dd.short + ' and ' + pm.short + ' are one instrument, for better and worse';
     else verdict = 'the manner is a ' + E.aspKey + ', the matter is ' + pm.matter + ', and ' + (targetScore != null && targetScore >= 0 ? 'the promittor is sound enough to make it count' : 'the promittor’s weak state keeps the effect modest');
     if (rec) verdict += ' — and there is reception between them: ' + (rec.kind === 'mutual' ? 'they hold each other’s keys, which eases the whole passage' : nameFor(rec.host) + ' receives the mover as a guest, giving the year somewhere to land');
-    var line = when + ', ' + dd.full + ' ' + pipe + ' your natal ' + nameFor(E.np) + '. ' + whatB + ' So this is the year ' + dd.short + ' meets ' + pm.short + ': ' + verdict + '. (Morin, Astrologia Gallica XXII: a direction is the significator’s domain arriving at the promittor in its full determination, judged by its state.)';
+    var line = when + ', ' + dd.n + ' ' + pipe + ' your natal ' + nameFor(E.np) + (dd.g ? ' — the year brings ' + dd.g + ' to bear' : '') + '. ' + whatB + ' So this is the year ' + dd.short + ' meets ' + pm.short + ': ' + verdict + '. (Morin, Astrologia Gallica XXII: a direction is the significator’s domain arriving at the promittor in its full determination, judged by its state.)';
     return {
       dp: E.dp, np: E.np, aspKey: E.aspKey, age: E.age, year: E.year, ageHalf: ageHalf,
       captain: (!pm.isPoint && c.ascBody && pm.det.key === TRAD_RULER[c.ascBody.sign]), promittorState: targetScore, line: line,
@@ -3609,7 +3611,7 @@ var APP = (function () {
       var hard = (ev.asp.key === 'square' || ev.asp.key === 'opposition'), soft = (ev.asp.key === 'trine' || ev.asp.key === 'sextile');
       var manner = tben && soft ? 'A benefic in a soft aspect: a window to move on ' + promise + ' while the wire is warm.' : tben && hard ? 'A benefic under strain: help around ' + promise + ' is there, but you must reach for it.' : tmal && hard ? 'A malefic in a hard aspect: ' + promise + ' is where the pressure lands now — meet it deliberately, do not overreach.' : tmal && soft ? 'A malefic, even in an easy aspect, still runs its own water: ' + promise + ' moves, but with weight.' : 'The passing sky touches ' + promise + ' now — read it as timing on the live wire, not as a verdict of its own.';
       var houseClause = (D.house ? 'In your chart ' + nameFor(ev.np) + ' keeps its court in your ' + ordinal(D.house) + ' house, ' + stateAdj9(D.essential.label) + ' in ' + D.signName + '. ' : '');
-      var line = 'Transiting ' + nameFor(ev.tp) + ' is ' + aspVerb(ev.asp) + ' your natal ' + nameFor(ev.np) + ' (orb ' + ev.orb.toFixed(1) + '°' + (ev.applying === true ? ', closing' : ev.applying === false ? ', separating' : '') + '), and ' + nameFor(ev.np) + ' is a live wire right now — ' + ev._wire.join('; ') + '. ' + houseClause + 'So the sky is pressing where the year is already under tension: ' + promise + '. ' + manner;
+      var line = 'Transiting ' + nameFor(ev.tp) + ' is ' + aspVerb(ev.asp) + ' your natal ' + nameFor(ev.np) + ' (orb ' + ev.orb.toFixed(1) + '°' + (ev.applying === true ? ', closing' : ev.applying === false ? ', separating' : '') + '), and ' + nameFor(ev.np) + ' is a live wire right now — ' + ev._wire.join('; ') + '. ' + houseClause + 'So the sky is pressing where the year is already under tension. ' + manner;
       return { tp: ev.tp, np: ev.np, asp: ev.asp.key, orb: ev.orb, wire: ev._wire, line: line, receipt: ('transiting ' + nameFor(ev.tp) + ' ' + ev.asp.key + ' natal ' + nameFor(ev.np) + ' · LIVE WIRE · orb ' + ev.orb.toFixed(1) + '°').toUpperCase() };
     });
     var doctrine = 'The tradition looks at transits last, and only where they strike a live wire — a natal promise already lit by direction, by the lord of the year, by the captain, or by the current distributor. '
