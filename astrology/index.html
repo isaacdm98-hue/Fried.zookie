@@ -6571,12 +6571,16 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     function walkTheme(c) { if (UI.walkTheme == null) { try { var s = APP.composeSignatures(c), f = '', i; for (i = 0; i < s.length; i++) if (s[i].label === 'The throughline') { f = s[i].text; break; } UI.walkTheme = f || (s[0] ? s[0].text : ''); } catch (e) { UI.walkTheme = ''; } } return UI.walkTheme; }
     function walkCap(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
     function walkScenesArr(b) {
-      var s = [{ k: 'intro' }, { k: 'body', key: 'sun' }, { k: 'body', key: 'moon' }];
+      // the walkthrough performs Sonia's method in order: the door (Ascendant) and its lord (the
+      // captain) FIRST, then the two lights and the five wandering stars each in its true state,
+      // the sharpest aspect judged by nature, the lord of the year, and the transits LAST.
+      var s = [{ k: 'intro' }];
       if (b.timeKnown) s.push({ k: 'rising' });
+      s.push({ k: 'body', key: 'sun' }, { k: 'body', key: 'moon' });
       s.push({ k: 'body', key: 'mercury' }, { k: 'body', key: 'venus' }, { k: 'body', key: 'mars' });
       s.push({ k: 'body', key: 'jupiter' }, { k: 'body', key: 'saturn' }, { k: 'outer' });
-      s.push({ k: 'elements' }, { k: 'aspect' }, { k: 'theme' }, { k: 'famous' });
-      s.push({ k: 'today' }, { k: 'hour' }, { k: 'close' });
+      s.push({ k: 'aspect' }, { k: 'theme' }, { k: 'famous' });
+      s.push({ k: 'today' }, { k: 'close' });
       return s;
     }
     // stage direction per act: the ground light it washes the stage in, how it enters, how the camera holds it, how it idles
@@ -6620,38 +6624,40 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     // the hand-off: a short connective line that carries the story from the last act into this one
     function walkPre(c, b, sc) {
       if (sc.k === 'body') {
-        var sunNm = DATA.SIGNS[c.planets.sun.sign].name;
         return {
-          sun: 'Every chart has a centre of gravity. Yours: ',
-          moon: 'That was your ' + sunNm + ' daylight. Now the night side: ',
-          mercury: 'Sun and Moon set the key. Now the voice: ',
-          venus: 'And when the talking softens: ',
-          mars: 'Venus draws you toward things. This is what goes and gets them: ',
-          jupiter: 'The personal planets are cast. Enter the first great teacher: ',
-          saturn: 'Jupiter says yes. This one says: prove it.'
+          sun: 'The two lights first. The light of the day-side: ',
+          moon: 'And the light of the night-side: ',
+          mercury: 'Now the five wandering stars, each judged in its own state. The messenger: ',
+          venus: 'The lesser benefic: ',
+          mars: 'The lesser malefic: ',
+          jupiter: 'The greater benefic: ',
+          saturn: 'And the greater malefic — the one that asks the most: '
         }[sc.key] || '';
       }
-      if (sc.k === 'rising') return 'Who you are is cast. This is the door the world knocks on: ';
-      if (sc.k === 'outer') return 'Beyond Saturn, three planets so slow they belong to your whole generation: ';
-      if (sc.k === 'elements') return 'Step back. Seen from above, the whole cast resolves into four colours: ';
-      if (sc.k === 'aspect') return 'You’ve met the players one by one. Now hear the two closest of them talk: ';
-      if (sc.k === 'theme') return 'If this whole sky said only one thing: ';
-      if (sc.k === 'famous') return 'You are not the first to carry this arrangement: ';
-      if (sc.k === 'today') return 'Your chart is the stage. This is what’s crossing it right now: ';
-      if (sc.k === 'hour') return 'And faster still: ';
-      if (sc.k === 'close') return 'Curtain call: ';
+      if (sc.k === 'rising') return 'Where a trained astrologer always begins — the doorway, and the lord it answers to: ';
+      if (sc.k === 'outer') return 'Beyond Saturn, three planets too slow to captain a life — a generation’s weather, not a ruler: ';
+      if (sc.k === 'aspect') return 'You’ve met the players in their states. Now the closest conversation, judged by nature: ';
+      if (sc.k === 'theme') return 'And the clock: the lord who runs this whole year: ';
+      if (sc.k === 'famous') return 'You are not the first to carry this sky: ';
+      if (sc.k === 'today') return 'The tradition looks at the moving sky LAST, and only where it strikes a live wire: ';
+      if (sc.k === 'close') return 'The judgment, whole: ';
       return '';
     }
     function walkContent(c, b, sc) {
       if (sc.k === 'intro') return { t: 'Here is your sky', x: 'The minute you took your first breath, the sky froze into this exact pattern, and no one has ever had it since. In the next two minutes you will know it better than most people ever know theirs.' };
       if (sc.k === 'body') {
         var pl = c.planets[sc.key];
-        var roles = { sun: 'Your core', moon: 'Your inner world', mercury: 'Your mind', venus: 'How you love', mars: 'Your drive', jupiter: 'Where you grow', saturn: 'Where you build' };
-        var role = roles[sc.key] || ('Your ' + APP.nameFor(sc.key));
-        var hx = (b.timeKnown && pl.house) ? (' It sits in your ' + ordinal(pl.house) + ' house: ' + DATA.HOUSES[pl.house - 1].title.toLowerCase() + ', where this energy plays out.') : '';
-        return { t: role + ': ' + APP.nameFor(sc.key) + ' in ' + pl.signName, x: planetBlurb(c, sc.key) + hx };
+        var titles = { sun: 'The day-side light', moon: 'The night-side light', mercury: 'The mind and messenger', venus: 'The lesser benefic', mars: 'The lesser malefic', jupiter: 'The greater benefic', saturn: 'The greater malefic' };
+        var ttl = titles[sc.key] || APP.nameFor(sc.key);
+        var pjW = null; try { pjW = APP.placementProse && APP.placementProse(c, b, sc.key); } catch (ePw9) {}
+        return { t: ttl + ': ' + APP.nameFor(sc.key) + ' in ' + pl.signName, x: pjW ? pjW.text : planetBlurb(c, sc.key) };
       }
-      if (sc.k === 'rising') return { t: 'Your surface: ' + c.ascBody.signName + ' rising', x: DATA.RISING_IN_SIGN[c.ascBody.sign] + ' This is the mask people meet first, before they know the rest of you.' };
+      if (sc.k === 'rising') {
+        var trW = null; try { trW = APP.traditionalRead(c, b); } catch (eTrW) {}
+        var asc9 = (trW && trW.asc) ? trW.asc.line : (DATA.RISING_IN_SIGN[c.ascBody.sign] + ' This is the body you arrived in and the doorway every part of you walks through.');
+        var cap9 = (trW && trW.ruler) ? (' Its lord — the captain of the whole chart — is ' + APP.nameFor(trW.ruler.key) + ', standing in your ' + ordinal(trW.ruler.house) + ' house in ' + trW.ruler.sign + (trW.ruler.state ? ', ' + trW.ruler.state : '') + '. Wherever it stands, the whole life keeps docking.') : '';
+        return { t: 'Where a reading starts: ' + c.ascBody.signName + ' rising', x: asc9 + cap9 };
+      }
       if (sc.k === 'outer') {
         var u = c.planets.uranus, n = c.planets.neptune, pp = c.planets.pluto;
         return { t: 'Your generation: the slow planets', x: 'Uranus in ' + u.signName + ', Neptune in ' + n.signName + ', Pluto in ' + pp.signName + '. These three move so slowly that a whole generation shares them. They colour the era you were born into more than your day-to-day self. Where they fall in your chart is where that bigger story touches your own life.' };
@@ -6662,11 +6668,16 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       }
       if (sc.k === 'aspect') {
         var a0 = c.aspects && c.aspects[0];
-        if (!a0) return { t: 'Your aspects', x: 'Your placements sit largely apart from one another. A chart that runs on separate engines rather than one loud conversation. That independence is its own kind of signature.' };
-        var txt = (APP.pairAspectText && APP.pairAspectText(a0.a, a0.b, a0.asp.key)) || (walkCap(APP.nameFor(a0.a)) + ' and ' + APP.nameFor(a0.b) + ' are ' + a0.asp.phrase + '.');
-        return { t: 'Your tightest aspect: ' + APP.nameFor(a0.a) + ' ' + a0.asp.glyph + ' ' + APP.nameFor(a0.b), x: txt + ' Within ' + a0.orb.toFixed(1) + '°: the closest conversation in your chart, so you feel it strongly.' };
+        if (!a0) return { t: 'Few conversations', x: 'Your placements sit largely apart — a chart that runs on separate engines rather than one loud conversation. That independence is its own signature.' };
+        var natW = null; try { natW = APP.aspectNature(a0.a, a0.b, a0.asp.key); } catch (eNw9) {}
+        var natLine9 = natW ? natW.line : (a0.asp.phrase || 'a close contact');
+        return { t: 'The sharpest conversation: ' + APP.nameFor(a0.a) + ' ' + a0.asp.glyph + ' ' + APP.nameFor(a0.b), x: 'Your tightest contact is ' + APP.nameFor(a0.a) + ' ' + a0.asp.key + ' ' + APP.nameFor(a0.b) + ', ' + a0.orb.toFixed(1) + '° from exact. The tradition judges it by nature, not the angle alone: ' + natLine9 + '. Better a square from a benefic than a trine from a malefic.' };
       }
-      if (sc.k === 'theme') return { t: 'The throughline', x: walkTheme(c) };
+      if (sc.k === 'theme') {
+        var pyW = null; try { pyW = APP.profectionYear(c, b); } catch (ePyW) {}
+        if (pyW && pyW.line) { var pl9 = pyW.line, cut9 = pl9.length > 340 ? (pl9.slice(0, 340).replace(/\s+\S*$/, '') + '…') : pl9; return { t: 'The lord of your year', x: cut9 }; }
+        return { t: 'The throughline', x: walkTheme(c) };
+      }
       if (sc.k === 'famous') {
         var fm = APP.famousMatches(c), pick = [], i;
         for (i = 0; i < fm.length && pick.length < 3; i++) if (fm[i].sunMatch) pick.push(fm[i]);
@@ -6677,9 +6688,12 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         var shareWhat = pick[0].sunMatch ? ('your Sun in ' + c.planets.sun.signName) : 'a guiding light with you';
         return { t: 'Kindred charts', x: joined + ' share ' + shareWhat + '. The same starting sky: and wildly different lives. Your chart is a map you read, never a verdict you obey.' };
       }
-      if (sc.k === 'today') { var tr = walkTr(c); return { t: 'Live on your chart: today', x: tr.daily.length ? ('Right now the moving sky is touching you here: ' + tr.daily.slice(0, 2).map(APP.transitSentence).join(' ')) : 'A quiet sky today: your natal pattern is running undisturbed.' }; }
-      if (sc.k === 'hour') { var tr2 = walkTr(c); return { t: 'Right now: this passing hour', x: 'The Moon is the fast hand of the clock. ' + (tr2.timed.length ? tr2.timed.slice(0, 1).map(APP.transitSentence).join(' ') : 'It isn’t closely touching your chart this hour, it moves fast, so look again later.') }; }
-      return { t: 'This is you', x: 'Every piece you just met, back in its true place, one sky, one arrangement, yours alone. Tap any body on the wheel any time to revisit its meaning, and come back to Read for what’s live each day.' };
+      if (sc.k === 'today') {
+        var tgW = null; try { tgW = APP.triggerReading(c, b); } catch (eTgW) {}
+        if (tgW) { var td9 = tgW.doctrine + (tgW.loud && tgW.loud.length ? ' ' + tgW.loud[0].line : ''); if (td9.length > 360) td9 = td9.slice(0, 360).replace(/\s+\S*$/, '') + '…'; return { t: 'Last of all: the transits', x: td9 }; }
+        var tr = walkTr(c); return { t: 'Last of all: the transits', x: tr.daily.length ? ('The moving sky touches you here now: ' + tr.daily.slice(0, 1).map(APP.transitSentence).join(' ')) : 'A quiet sky today: nothing strikes a live wire, so your natal pattern runs undisturbed.' };
+      }
+      return { t: 'This is you, judged', x: 'The Ascendant, its lord, every planet in its true state, the sharpest aspect by its nature, and the lord of the year — one sky, judged, yours alone. Tap any body on the wheel to see it judged again, with its working and its source; come back to Read for what the year has lit.' };
     }
     function miniWheel(c, b, cx, cy, r, hl, t, chord) {
       var RAD = Math.PI / 180, asc = b.timeKnown ? c.asc : 0, z, k;
@@ -6851,7 +6865,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (dc) dc.restore();
       // the words arrive in beats, timed to the staging: the hand-off line, then the title, then the body line by line
       var ty = top + vh * 0.415;
-      if (pre) { var pa2 = still ? 1 : cl01((tt - 60) / 380); setFont(SERIF, 14.5, ACCTX, p.CENTER, p.TOP, 225 * pa2); p.textStyle(p.ITALIC); p.text(pre, cx, ty + (1 - pa2) * 8); p.textStyle(p.NORMAL); ty += 26; }
+      if (pre) { var pa2 = still ? 1 : cl01((tt - 60) / 380); p.textStyle(p.ITALIC); var pel9 = wrapLines2(pre, w - 24, SERIF, 14.5); setFont(SERIF, 14.5, ACCTX, p.CENTER, p.TOP, 225 * pa2); var pei9; for (pei9 = 0; pei9 < pel9.length; pei9++) p.text(pel9[pei9], cx, ty + (1 - pa2) * 8 + pei9 * 21); p.textStyle(p.NORMAL); ty += pel9.length * 21 + 4; }
       var ta2 = still ? 1 : cl01((tt - 260) / 430);
       var tl = wrapLines2(ct.t, w - 16, SANS, 27); setFont(SANS, 27, INK, p.CENTER, p.TOP, 255 * ta2); bold(); for (i = 0; i < tl.length; i++) p.text(tl[i], cx, ty + (1 - ta2) * 12 + i * 33); normal(); ty += tl.length * 33 + 12;
       var bl = wrapLines2(ct.x, w - 24, SERIF, 18.5);
@@ -8190,7 +8204,8 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       eyebrow('You', x, ly, ACC); ly += 24;
       if (UI.smCache) ly += paragraph(UI.smCache, x, ly, w, 16, INK, SERIF, 25) + 12;
       flatBtn('‹  Back to the reading', x, ly, w, 40, function () { UI.readMode = 'flow'; UI.rdI = 0; UI.rdT = nowT(); UI.scroll.read = 0; buzz(8); }, false, true); ly += 50;
-      flatBtn('◉  Walk through your chart, one piece at a time', x, ly, w, 46, function () { UI.guide = { phase: 'intro', t0: nowT() }; UI.scroll.read = 0; buzz(12); }, false); ly += 58;
+      flatBtn('▶  Play your chart as a film — the judgment, act by act', x, ly, w, 46, function () { startWalk(); buzz(12); }, true); ly += 54;
+      flatBtn('◉  Or walk it card by card: does each ring true?', x, ly, w, 46, function () { UI.guide = { phase: 'intro', t0: nowT() }; UI.scroll.read = 0; buzz(12); }, false); ly += 58;
       setFont(MONO, 9, INK, p.LEFT, p.TOP, 140); p.text('CHAPTERS', x, sY(ly)); ly += 20;
       UI.sec = UI.sec || {};
       var chapterHead = function (id, label, sub) {
@@ -11528,7 +11543,20 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         (function (kk3) { pushHit(wx - 16, wyc - 13, 32, 38, function () { UI.today = false; UI.screen = 'read'; UI.calView = true; UI.calDay = kk3; UI.calEvents = null; UI.jMap = null; UI.scroll.read = 0; }); })(wkey);
       }
       yy += 46; rule();
-      // at a glance — the three-second layer: do / easy on / watch, each with its working on tap
+      // ===== SONIA'S ORDER LEADS THE SHEET: first the lord of the year (what the year has lit),
+      // then the transits — read LAST, and only where they strike a live wire. =====
+      if (UI.trigTodayT !== UI.todayCacheT) { try { UI.trigToday = APP.triggerReading(APP.STATE.chart, APP.STATE.birth); } catch (eTt9) { UI.trigToday = null; } try { UI.pyToday = APP.profectionYear(APP.STATE.chart, APP.STATE.birth); } catch (ePt9) { UI.pyToday = null; } UI.trigTodayT = UI.todayCacheT; }
+      var citeT9 = function (s) { if (!s) return; var cl9 = wrapLines2(s, w - pad * 2, MONO, 9), ci9; setFont(MONO, 9, ACC, p.LEFT, p.TOP, 205); for (ci9 = 0; ci9 < cl9.length; ci9++) p.text(cl9[ci9], x + pad, ty() + ci9 * 12); yy += cl9.length * 12 + 8; };
+      var clipT9 = function (t, n) { if (!t || t.length <= n) return t; var cut = t.slice(0, n), m = cut.lastIndexOf('. '); return m > n * 0.5 ? cut.slice(0, m + 1) : cut.replace(/\s+\S*$/, '') + '…'; };
+      if (UI.pyToday && UI.pyToday.line) { head('The lord of your year'); body(clipT9(UI.pyToday.line, 300), 14.5); citeT9(UI.pyToday.receipt); rule(); }
+      if (UI.trigToday) {
+        head('Transits — read last, and only on a live wire');
+        body(UI.trigToday.doctrine, 14.5);
+        if (UI.trigToday.loud && UI.trigToday.loud.length) { var tli9; for (tli9 = 0; tli9 < Math.min(3, UI.trigToday.loud.length); tli9++) { var LD9 = UI.trigToday.loud[tli9]; body(clipT9(LD9.line, 340), 13.5); citeT9(LD9.receipt); } }
+        if (UI.trigToday.backgroundLine) { body(UI.trigToday.backgroundLine, 12.5); yy += 2; }
+        rule();
+      }
+      // at a glance — the three-second practical layer beneath the judgment: do / easy on / watch
       if (!UI.glance || UI.glanceT !== UI.todayCacheT) { try { UI.glance = glanceToday(d); } catch (eGl) { UI.glance = null; } UI.glanceT = UI.todayCacheT; UI.glanceOpen = {}; }
       if (UI.glance) {
         head('At a glance');
@@ -11609,8 +11637,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         setFont(MONO, 8.5, INK, p.LEFT, p.TOP, 130); p.text(('DAY OF ' + APP.nameFor(PH.dayRuler) + ' \u00B7 ' + (PH.isDay ? 'DAY' : 'NIGHT') + ' HOUR ' + (PH.isDay ? PH.hourNum : PH.hourNum - 12) + '/12 \u00B7 AT ' + ((APP.STATE.birth.place || 'your chart\u2019s place').split(',')[0])).toUpperCase(), x + pad, ty()); yy += 20;
         rule();
       }
-      // your year (profection)
-      if (d.f && d.f.profection) { var pf = d.f.profection; head('Your year'); body(APP.nameFor(pf.lord) + ' rules your year: you’re profected to ' + pf.signName + ' (house ' + pf.house + '). Wherever ' + APP.nameFor(pf.lord) + ' sits and what it touches is unusually loud this year.', 14); }
+      // (the lord of the year now leads the sheet, above — no need to repeat it here)
       // retrogrades now
       var rr = d.f && d.f.sky ? d.f.sky.retros : [];
       head('Retrogrades now');
