@@ -12,6 +12,11 @@ The school reads a life-topic across **all** its houses at once, not one in isol
   work" = lord of the 2nd in the 6th), occupants weighed by nature, and one verdict
   struck (well-promised / mixed / hard-won). Surfaced under the Money domain, receipts
   a tap under.
+- **The synthesis verdict — your life at a glance (`lifeAtAGlance`).** The domain
+  chapter now opens with a scannable verdict row: the constitution, then each life-
+  domain's one-word judgement (well-promised / mixed / hard-won), colour-coded, with a
+  one-line synthesis naming the ground the chart pays easily and the ground it asks
+  effort for — the overview before the detail.
 - **Four more topical readings on the same engine — Love, Career, Family** (plus
   Money): each reads across its own cluster of houses, weighed by its karaka —
   **Love** across the 7th (the committed partner) and 5th (romance), by Venus;
