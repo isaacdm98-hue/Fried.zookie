@@ -10,6 +10,26 @@ Every task ships behind the harness floor (golden, doctrine, 3-width UI audit,
 voice-book) and is committed only when green. Golden pins the JUDGED MEANING, so
 the words get far more specific while the underlying judgment stays fixed.
 
+## Governing law — Sonia's methodology and the books (non-negotiable)
+
+Every sentence this engine composes follows **Sonia's method and the Cours
+Préparatoires** (Jordan Marion's ateliers), not modern cookbook astrology:
+- **Read in her order:** the Ascendant first → its lord, the *captain* → the
+  house-lords followed home → each planet in its true state (the five dignities) →
+  aspects judged by the *nature* of the planets, not the angle → prediction by
+  symbolic **directions first**, transits **last** as triggers on live wires.
+- **Determinants, not decoration:** ≥2 chart-specific determinants per composed
+  sentence; a line that could be said to anyone is a defect.
+- **Sources, always:** every delineation traces to the tradition (Lilly, Morin,
+  al-Biruni, Ptolemy) and the ateliers, in our own public-domain-safe words, with
+  a receipt. The banks (SIG, HOUSE_SIG, ANALOGY_MATRIX, dignities, almuten) were
+  already built to this doctrine and verified against the two PDFs.
+- **Voice book:** concrete but not fatalist; no energy/universe/cosmic/vibes/
+  manifest/soulmate/"your journey"/pop-equations. Inclination, not decree.
+
+Where a task below says "delineate", it means *delineate the way she teaches it* —
+from the state, in that order, with the receipt.
+
 ---
 
 ## Part I — the language & interpretation engine (the core)
