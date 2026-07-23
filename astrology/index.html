@@ -2244,19 +2244,36 @@ var APP = (function () {
     if (!b.timeKnown || !c.ascBody) return null;
     var sct = sect(c), day = sct ? sct.day : (c.planets.sun.house >= 7 && c.planets.sun.house <= 12);
     var asc = c.ascBody.lon, su = c.planets.sun.lon, mo = c.planets.moon.lon;
-    var spiritLon = day ? rev(asc + su - mo) : rev(asc + mo - su);          // Lot of Spirit
+    var spiritLon = day ? rev(asc + su - mo) : rev(asc + mo - su);          // Lot of Spirit (the release)
+    var fortuneLon = day ? rev(asc + mo - su) : rev(asc + su - mo);         // Lot of Fortune (the peak reference)
+    var fortuneSign = Math.floor(fortuneLon / 30);
     var startSign = Math.floor(spiritLon / 30), ageNow = ageYearsNow(b); if (ageNow < 0) ageNow = 0;
+    // a released sign's whole-sign house FROM FORTUNE (Valens): the angular triad 1/4/7/10 are the
+    // peaks (times of eminence, esp. the 10th); the cadent 3/6/9/12 are the quiet valleys
+    function fromFortune(s) { return ((s - fortuneSign + 12) % 12) + 1; }
+    function peakOf(s) { var h = fromFortune(s); return (h === 10) ? 'peak' : (h === 1 || h === 4 || h === 7) ? 'angular' : (h === 3 || h === 6 || h === 9 || h === 12) ? 'valley' : null; }
+    // --- L1 (unit = years): sign by sign in zodiacal order, each its own period-years ---
     var cursor = 0, sign = startSign, l1 = null, guard = 0;
     while (guard < 240) { var yrs = ZR_YEARS[sign];
-      if (ageNow < cursor + yrs || guard === 239) { l1 = { sign: sign, ruler: ZR_RULER[sign], signName: DATA.SIGNS[sign].name, startAge: cursor, endAge: cursor + yrs, years: yrs }; break; }
+      if (ageNow < cursor + yrs || guard === 239) { l1 = { sign: sign, ruler: ZR_RULER[sign], signName: DATA.SIGNS[sign].name, startAge: cursor, endAge: cursor + yrs, years: yrs, fromFortune: fromFortune(sign), peak: peakOf(sign) }; break; }
       cursor += yrs; sign = (sign + 1) % 12; guard++; }
     if (!l1) return null;
-    var totalWeight = 0, w; for (w = 0; w < 12; w++) totalWeight += ZR_YEARS[(l1.sign + w) % 12];
-    var l1len = l1.endAge - l1.startAge, subCursor = l1.startAge, l2 = null;
-    for (w = 0; w < 12; w++) { var s2 = (l1.sign + w) % 12, subLen = l1len * (ZR_YEARS[s2] / totalWeight);
-      if (ageNow < subCursor + subLen || w === 11) { l2 = { sign: s2, ruler: ZR_RULER[s2], signName: DATA.SIGNS[s2].name, startAge: subCursor, endAge: subCursor + subLen }; break; }
-      subCursor += subLen; }
-    return { spiritSign: startSign, spiritSignName: DATA.SIGNS[startSign].name, day: day, ageNow: ageNow, l1: l1, l2: l2 };
+    // --- L2 (Valens' true unit-shrink: each sub = its sign's period in MONTHS, sign by sign; on a
+    //     completed 12-sign circuit inside the L1 span, LOOSING OF THE BOND — jump to the opposite sign) ---
+    var spanMonths = l1.years * 12, subs = [], mCur = 0, s2 = l1.sign, g2 = 0, nextIsLB = false;
+    while (mCur < spanMonths - 1e-6 && g2 < 60) {
+      var subLen = ZR_YEARS[s2]; if (mCur + subLen > spanMonths) subLen = spanMonths - mCur;
+      subs.push({ sign: s2, ruler: ZR_RULER[s2], signName: DATA.SIGNS[s2].name,
+        startAge: l1.startAge + mCur / 12, endAge: l1.startAge + (mCur + subLen) / 12,
+        lb: nextIsLB, fromFortune: fromFortune(s2), peak: peakOf(s2) });
+      nextIsLB = false; mCur += subLen; g2++;
+      var nxt = (s2 + 1) % 12;
+      if (nxt === l1.sign && mCur < spanMonths - 1e-6) { nxt = (l1.sign + 6) % 12; nextIsLB = true; } // loosing of the bond
+      s2 = nxt;
+    }
+    var l2 = subs.length ? subs[subs.length - 1] : null, si;
+    for (si = 0; si < subs.length; si++) { if (ageNow < subs[si].endAge) { l2 = subs[si]; break; } }
+    return { spiritSign: startSign, spiritSignName: DATA.SIGNS[startSign].name, fortuneSign: fortuneSign, day: day, ageNow: ageNow, l1: l1, l2: l2, subs: subs };
   }
   function progressed(c, b) {
     var pos = EPH.positions(c.d + ageYearsNow(b)), ay = c.ayan || 0;
@@ -4356,7 +4373,8 @@ var APP = (function () {
   // ===== Firdaria: the Persian time-lords — a third, independent clock beside profections and ZR =====
   var FIRD_YEARS = { sun: 10, venus: 8, mercury: 13, moon: 9, saturn: 11, jupiter: 12, mars: 7, node: 3, snode: 2 };
   var FIRD_DAY = ['sun', 'venus', 'mercury', 'moon', 'saturn', 'jupiter', 'mars', 'node', 'snode'];
-  var FIRD_NIGHT = ['moon', 'saturn', 'jupiter', 'mars', 'node', 'snode', 'sun', 'venus', 'mercury'];
+  // the seven planets run first in the sect-entry ring, then the Nodes LAST (as in the day order) — 75-yr total
+  var FIRD_NIGHT = ['moon', 'saturn', 'jupiter', 'mars', 'sun', 'venus', 'mercury', 'node', 'snode'];
   function firdaria(c, b) {
     var sc = sect(c), isDay = sc ? sc.day : true;
     var seq = isDay ? FIRD_DAY : FIRD_NIGHT, age = ageYearsNow(b) % 75, acc = 0, i;
@@ -8306,7 +8324,14 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
           ly += paragraph('You’re in a ' + DATA.SIGNS[pf.sign].name + ' profection year (age ' + pf.age + '): your ' + ordinal(pf.house) + ' house is lit up, and ' + APP.nameFor(pf.lord) + ' is your time‑lord: the planet steering this year.', x, ly, w, 15.5, INK, SERIF, 24) + 10;
         }
         if (fc2.monthly && fc2.monthly.sign !== pf.sign) { var mp = fc2.monthly; ly += paragraph('Within that, this month profects to ' + mp.signName + ' (your ' + ordinal(mp.house) + ' house), so ' + APP.nameFor(mp.lord) + ' carries the next few weeks specifically.', x, ly, w, 14.5, INK, SERIF, 22) + 10; }
-        if (fc2.zr && fc2.zr.l1) { var z = fc2.zr, zr2 = z.l2 ? (' Inside it you’re in a ' + z.l2.signName + ' sub-chapter (ruled by ' + APP.nameFor(z.l2.ruler) + ').') : ''; ly += paragraph('Zodiacal Releasing from your Lot of Spirit puts you in a ' + z.l1.signName + ' life-chapter (roughly age ' + Math.round(z.l1.startAge) + '–' + Math.round(z.l1.endAge) + '), ruled by ' + APP.nameFor(z.l1.ruler) + ': the long arc of where your purpose is unfolding.' + zr2, x, ly, w, 14.5, INK, SERIF, 22) + 10; }
+        if (fc2.zr && fc2.zr.l1) { var z = fc2.zr, zr2 = z.l2 ? (' Inside it you’re in a ' + z.l2.signName + ' sub-chapter (ruled by ' + APP.nameFor(z.l2.ruler) + ').') : '';
+          // Valens' "times of eminence": the released sign angular to Fortune is a peak; loosing of the bond is a reset
+          var emi = '', pk = (z.l2 && z.l2.peak) || z.l1.peak;
+          if (pk === 'peak') emi = ' This is a PEAK period — the release stands in the tenth from your Lot of Fortune, the stretch the tradition marks most strongly for visibility, action and advancement.';
+          else if (pk === 'angular') emi = ' This is a high stretch — the release is angular to your Lot of Fortune, a time of activity and consequence.';
+          else if (pk === 'valley') emi = ' This is a quieter, more inward stretch — the release is cadent to your Lot of Fortune, a season for the background work rather than the stage.';
+          if (z.l2 && z.l2.lb) emi += ' And this sub-chapter opens on a loosing of the bond — the release completes its circuit and jumps to the opposite sign: the tradition reads it as a decisive turn, a change of place or direction.';
+          ly += paragraph('Zodiacal Releasing from your Lot of Spirit puts you in a ' + z.l1.signName + ' life-chapter (roughly age ' + Math.round(z.l1.startAge) + '–' + Math.round(z.l1.endAge) + '), ruled by ' + APP.nameFor(z.l1.ruler) + ': the long arc of where your purpose is unfolding.' + zr2 + emi, x, ly, w, 14.5, INK, SERIF, 22) + 10; }
         if (fc2.convergence) {
           var CV = fc2.convergence;
           ly += 2; eyebrow('Where the clocks agree', x, ly, ACC); ly += 24;

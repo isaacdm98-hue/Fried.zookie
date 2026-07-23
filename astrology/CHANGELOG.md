@@ -27,6 +27,17 @@ constitution** (Cours 4), the ground the domains stand on.
   tendencies the old physicians watched, never a forecast. New corpus tables: the
   sign→body-zone melothesia, the planet→affliction qualities, and the Saturn/Mars/
   Jupiter planet-in-sign disease matrix (paraphrase after Raphael, Medical Astrology).
+- **Timing engine, made faithful to the sources.** Two corrections found by checking
+  the code against the deep research: (1) **Zodiacal Releasing** now subdivides L2 by
+  Valens' true unit-shrink (each sub is its sign's period in *months*, sign by sign)
+  instead of a proportional approximation — which makes the **loosing of the bond**
+  (the jump to the opposite sign when the 12-sign circuit completes inside a long
+  period) emerge correctly, and adds Valens' **times of eminence**: the release
+  angular to the Lot of Fortune (the 10th especially) is flagged a *peak*, the cadent
+  places a *valley*, surfaced in the year-ahead reading. (2) The **Firdaria** night
+  sequence is corrected — the seven planets run first, then the Nodes *last* (as in
+  the day order), fixing a mid-sequence node placement that misassigned the
+  time-lord across the back half of a night-birth life.
 - **Deep-research doctrine notes** (`plans/doctrine-notes-timing-medical.md`):
   the temperament method, the medical reading (hyleg life-forces, the morbid forces,
   the sign→zone / planet→affliction / Raphael planet-in-sign disease tables), and the
