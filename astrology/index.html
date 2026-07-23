@@ -3857,7 +3857,11 @@ var APP = (function () {
     var ascSign = (b && b.timeKnown && c.ascBody) ? c.ascBody.sign : c.planets.sun.sign;
     var profSign = (ascSign + age) % 12, profHouse = (age % 12) + 1, lordK = TRAD_RULER[profSign];
     var D = determination(c, b, lordK);
-    return { age: age, profSign: profSign, profSignName: DATA.SIGNS[profSign].name, profHouse: profHouse, lord: lordK, det: D, fromAsc: !!(b && b.timeKnown && c.ascBody) };
+    // Valens/Abu Ma'shar's priority-1: a natal planet standing IN the profected sign is powerfully
+    // activated for the year — it co-rules the time with the sign's lord. Surfaced, not overriding.
+    var CLp = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn'], activated = [], ap;
+    for (ap = 0; ap < CLp.length; ap++) { var pp = c.planets[CLp[ap]]; if (pp && pp.sign === profSign && CLp[ap] !== lordK) activated.push(CLp[ap]); }
+    return { age: age, profSign: profSign, profSignName: DATA.SIGNS[profSign].name, profHouse: profHouse, lord: lordK, det: D, activated: activated, fromAsc: !!(b && b.timeKnown && c.ascBody) };
   }
   function profectionYear(c, b) {
     if (!b || !b.y) return null;
@@ -3872,6 +3876,7 @@ var APP = (function () {
     var D = loy.det, natTxt = nameFor(loy.lord) + ' is ' + stateAdj9(D.essential.label) + ' in ' + D.signName + (D.house ? ' in your ' + ordinal(D.house) + ' house, speaking first of ' + (D.analogy.speaksFirst ? D.analogy.speaksFirst.matter : (D.natural ? D.natural.karakas[0] : nameFor(loy.lord))) : '') + (D.condition ? ', ' + D.condition.band + ' at ' + (D.condition.total >= 0 ? '+' : '') + D.condition.total + ' by Lilly’s count' : '');
     var line = 'You are in your ' + ordinal(loy.profHouse) + '-house profection year: the Ascendant has advanced by ' + loy.age + ' whole signs to ' + loy.profSignName + ', so ' + nameFor(loy.lord) + ' is your lord of the year — the planet the whole year runs on. ' + natTxt + '. '
       + (D.condition && D.condition.total >= 5 ? 'A well-placed lord of the year promises a year that mostly pays: what ' + nameFor(loy.lord) + ' governs is favoured now. ' : D.condition && D.condition.total < 0 ? 'A weak lord of the year warns of a demanding one: the matters ' + nameFor(loy.lord) + ' governs are where the year asks the most. ' : 'A mixed lord of the year makes a mixed one, turning on which of its testimonies is triggered. ')
+      + (loy.activated && loy.activated.length ? 'And a planet of yours stands in that very sign: ' + loy.activated.map(nameFor).join(' and ') + ' — natally in ' + loy.profSignName + ', so the year switches ' + (loy.activated.length > 1 ? 'them' : 'it') + ' on with special force, co-ruling the time with ' + nameFor(loy.lord) + '. ' : '')
       + (loud.length ? 'And this is the doctrine that puts prediction in order: of all the directions now in force, those that touch ' + nameFor(loy.lord) + ' speak loudest this year — first among them, ' + loud[0].line.split(/(?<=[.!?])\s+/)[0].replace(/^Around \d+ \(\d+\), /, '') + ' ' : 'No direction touches the lord of the year within this year’s window, so the year activates the natal promise of ' + nameFor(loy.lord) + ' quietly, without a sharp directional trigger. ')
       + 'The solar return is this year’s trigger-chart: cast it, but read it against the natal and against ' + nameFor(loy.lord) + ' — where the lord of the year falls in the return sets the year’s tone. Never read the return alone.';
     return { hasTime: !!(b.timeKnown && c.ascBody), ageNow: ageNow, lordOfYear: loy, loud: loud, natLine: natTxt, line: line,
