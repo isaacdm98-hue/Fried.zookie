@@ -1308,6 +1308,67 @@ var DATA = (function () {
     ]
   };
   var PLANET_IN_HOUSE_SRC = 'after Lilly, Christian Astrology I (1647), the house chapters; Morin, Astrologia Gallica XXI (1661); al-Biruni (1029) — our words';
+
+  // ===== THE MEDICAL READING (Cours 6): the body's fragile zones, in the tradition's own =====
+  // descriptive words — NEVER a diagnosis. The app says "the tradition watches this zone", never
+  // "you have". Promises are life-long potentials, never certainties, never all at once.
+  // TABLE A — sign to body zone (the melothesia / "man of signs"), after Lilly & Sepharial.
+  var SIGN_ZONE = [
+    { zone: 'the head, face and brain', within: 'the head — headaches, the eyes, the sinuses' },
+    { zone: 'the throat, neck and thyroid', within: 'the throat — the neck, the vocal cords, the tonsils' },
+    { zone: 'the shoulders, arms, hands and lungs', within: 'the lungs and nerves — the breath, the airways' },
+    { zone: 'the chest, breast and stomach', within: 'the stomach and chest — the digestion, the breast' },
+    { zone: 'the heart, the upper back and the spine', within: 'the heart and back — the circulation, the spine' },
+    { zone: 'the bowels and the digestion', within: 'the belly — the intestines, assimilation, the nerves of digestion' },
+    { zone: 'the kidneys, the lower back and the loins', within: 'the kidneys and lumbar back — the filtering, the balance' },
+    { zone: 'the bladder, the pelvis and the generative organs', within: 'the pelvic organs — the bladder, elimination' },
+    { zone: 'the hips, the thighs and the sciatic nerve', within: 'the hips and thighs — the liver, the great nerve of the leg' },
+    { zone: 'the knees, the bones, the joints and the skin', within: 'the knees, bones and skin — the structure, the joints, the teeth' },
+    { zone: 'the lower legs, the ankles and the circulation', within: 'the shins and ankles — the returning blood, the nerves' },
+    { zone: 'the feet and the body’s fluids', within: 'the feet and the lymph — the moisture, the extremities' }
+  ];
+  // TABLE B — planet to affliction quality (Lilly, CA; Culpeper). watches = what the tradition
+  // watches for; chronic true = deep/slow/organic, false = acute/functional/passing.
+  var PLANET_AFFLICT = {
+    saturn:  { quality: 'cold and slow', chronic: true,  watches: 'the chronic, the obstructed and the cold — stiffness, congestion, the complaint that settles in and lingers' },
+    mars:    { quality: 'hot and sharp', chronic: false, watches: 'the acute and the inflammatory — fevers, heat, the sudden sharp complaint that flares and passes' },
+    sun:     { quality: 'the vital heat', chronic: true,  watches: 'the constitution itself — the heart, the vitality, the deep-set thread carried from the start' },
+    moon:    { quality: 'cool and fluid', chronic: false, watches: 'the fluids and the functional — the stomach, the moisture, the complaint that comes and goes with a rhythm' },
+    mercury: { quality: 'nervous and mixed', chronic: false, watches: 'the nerves and the mind — restlessness, the breath, sleep and the speed of thought' },
+    venus:   { quality: 'soft and moist', chronic: false, watches: 'the throat, the kidneys and the sweetness of excess — the complaint of too much ease' },
+    jupiter: { quality: 'full and warm', chronic: true,  watches: 'the liver and the blood — the plethora of abundance, the complaint of surfeit and richness' }
+  };
+  // TABLE C — the planet-in-sign matrix (after Raphael, Medical Astrology): the planet's quality
+  // (B) applied to the sign's zone (A). PARAPHRASE, framed as what the tradition watches — never a
+  // verbatim quotation, never a diagnosis. Only Saturn/Mars/Jupiter run the full zodiac (the classic
+  // "malefic + the plethora" set); the others fall back to zone x quality, composed in the engine.
+  var DISEASE_MATRIX = {
+    saturn: [
+      'colds and congestion settling in the head, with the slow ache that lingers',
+      'a stubborn throat and stiffness in the neck', 'the lungs held cold — the long cough, the shortened breath',
+      'a slow, cold stomach and the damp that gathers in the chest', 'the heart and back carrying weight, low and slow',
+      'the bowels obstructed, the cold colic, digestion grown sluggish', 'the lower back and kidneys stiff, the filtering slowed',
+      'the pelvic organs held cold and retentive', 'stiffness and rheumatism settling in the hips',
+      'the knees, bones and skin — the cold that hardens the joints', 'the circulation slowed, the ankles heavy',
+      'the feet cold and tender, the moisture pooling low'
+    ],
+    mars: [
+      'heat and sharp aches in the head, the flushed face', 'a hot, inflamed throat, quick and fierce',
+      'the lungs and airways inflamed, the sharp fever', 'a hot, disordered stomach, the sudden gripe',
+      'the heart racing, the high fever, heat in the blood', 'the bowels inflamed, the sharp colic, the sudden gripe',
+      'the kidneys and lower back inflamed, the burning', 'heat and irritation in the pelvic organs',
+      'strains and sharp pains in the hips and thighs', 'grazes, cuts and inflammation about the knees and skin',
+      'heat and cramp in the legs, the quick spasm', 'inflammation and chilblains in the feet, aches from damp cold'
+    ],
+    jupiter: [
+      'fullness and congestion of blood in the head, the flushed heaviness', 'swelling and richness in the throat',
+      'the lungs full, the blood-heavy chest', 'surfeits of the stomach, the too-rich meal', 'a full heart, the plethora carried high',
+      'the liver taxed through the bowels, the richness that clogs', 'the kidneys taxed by sweetness and excess',
+      'excess carried in the pelvic organs', 'the hips and thighs heavy, the liver’s overflow',
+      'the skin and knees marked by rich blood', 'the blood thick and slow in the legs', 'fluid and surfeit pooling in the feet'
+    ]
+  };
+  var MEDICAL_SRC = 'the body zones after Lilly, Christian Astrology (1647) & Sepharial; the affliction qualities after Culpeper; the planet-in-sign watch-list after Raphael, Medical Astrology — our paraphrase, descriptive of the tradition, never a diagnosis';
   // ===== the planet-in-house ANALOGY MATRIX: which of the house's matters each classical =====
   // planet voices FIRST when placed there, and by what right (joy / Chaldean order / karaka /
   // plain analogy / counter-analogy). This is the composer's selection function, complete:
@@ -1430,6 +1491,7 @@ var DATA = (function () {
     PLANETS: PLANETS, PLANET_ORDER: PLANET_ORDER, SIGNS: SIGNS, TRADITION: TRADITION,
     PLANET_TRAD: PLANET_TRAD, HOUSE_TRAD: HOUSE_TRAD, SIG: SIG,
     HOUSE_SIG: HOUSE_SIG, HOUSE_SIG_SRC: HOUSE_SIG_SRC, PLANET_IN_HOUSE: PLANET_IN_HOUSE, PLANET_IN_HOUSE_SRC: PLANET_IN_HOUSE_SRC, ANALOGY_MATRIX: ANALOGY_MATRIX, SOURCES: SOURCES,
+    SIGN_ZONE: SIGN_ZONE, PLANET_AFFLICT: PLANET_AFFLICT, DISEASE_MATRIX: DISEASE_MATRIX, MEDICAL_SRC: MEDICAL_SRC,
     SUN_IN_SIGN: SUN_IN_SIGN, MOON_IN_SIGN: MOON_IN_SIGN, RISING_IN_SIGN: RISING_IN_SIGN, PLANET_SIGN_TEXT: PLANET_SIGN_TEXT,
     HOUSES: HOUSES, ASPECTS: ASPECTS, MINOR_ASPECTS: MINOR_ASPECTS, ELEMENTS: ELEMENTS, MODALITIES: MODALITIES,
     TAROT: TAROT, TAROT_MEAN: TAROT_MEAN, SUIT_KW: SUIT_KW, SPREADS: SPREADS, CITIES: CITIES

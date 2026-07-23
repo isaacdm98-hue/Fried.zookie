@@ -16,6 +16,17 @@ constitution** (Cours 4), the ground the domains stand on.
   The synthesis now **opens** with "Your constitution" — the humour, its physical
   tendencies (frame, metabolism, where it is tested), and its second note — in the
   tradition's own descriptive register, never a diagnosis or a character read.
+- **The medical reading (Cours 6), in the reassurance register (`judgeHealth`).**
+  Under *Work & health* the reading now judges the body the way the tradition does —
+  never a diagnosis. It weighs the **life-forces** (the Ascendant and its lord, the
+  Sun, the Moon) against the **morbid forces** (Saturn, Mars, and the lords of the
+  6th, 8th and 12th), finds where a morbid force actually strikes a life-force, and —
+  by the **maximum of concordant testimonies** — names the body zone the tradition
+  *watches*, in Raphael's own descriptive terms. Fired only where a life-force is
+  genuinely afflicted, and always closed with the reminder that these are lifelong
+  tendencies the old physicians watched, never a forecast. New corpus tables: the
+  sign→body-zone melothesia, the planet→affliction qualities, and the Saturn/Mars/
+  Jupiter planet-in-sign disease matrix (paraphrase after Raphael, Medical Astrology).
 - **Deep-research doctrine notes** (`plans/doctrine-notes-timing-medical.md`):
   the temperament method, the medical reading (hyleg life-forces, the morbid forces,
   the sign→zone / planet→affliction / Raphael planet-in-sign disease tables), and the

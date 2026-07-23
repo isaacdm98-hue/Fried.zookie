@@ -3082,6 +3082,87 @@ var APP = (function () {
     var out = [], h; for (h = 1; h <= 12; h++) { var j = judgeHouse(c, b, h); if (j) out.push(j); }
     return { hasTime: true, houses: out };
   }
+  // ===== THE MEDICAL READING (Cours 6): life-forces vs morbid forces, then the watched zones =====
+  // Never a diagnosis — descriptive of the tradition, in the reassurance register. Method: judge the
+  // hyleg pool (Asc + its lord, Sun, Moon), the morbid forces (Saturn, Mars, lords of VI/VIII/XII),
+  // whether a morbid force afflicts a life-force, and — by the maximum of concordant testimonies —
+  // which body zone the tradition watches. Fired only where a life-force is actually afflicted.
+  function judgeHealth(c, b) {
+    if (!(b && b.timeKnown && c.ascBody && c.cusps)) return null;
+    var Z = DATA.SIGN_ZONE, PA = DATA.PLANET_AFFLICT, DM = DATA.DISEASE_MATRIX;
+    if (!Z || !PA) return null;
+    var ascSign = c.ascBody.sign, ascLordK = TRAD_RULER[ascSign];
+    // --- the forces of life (the hyleg pool) ---
+    var lifeSigs = [], pool = 0, i;
+    function addLife(k, label) { var d = determination(c, b, k); if (!d) return; var t = d.condition ? d.condition.total : 0; lifeSigs.push({ k: k, label: label, det: d, score: t }); pool += (t >= 3 ? 2 : t >= 0 ? 1 : -1); }
+    addLife(ascLordK, 'the lord of the Ascendant');
+    addLife('sun', 'the Sun'); addLife('moon', 'the Moon');
+    var el = DATA.SIGNS[ascSign].element;
+    pool += (el === 'fire') ? 2 : (el === 'air') ? 1 : (el === 'earth') ? 0 : -1; // vigorous / robust / steady / tender signs
+    var mNat = natureOf9(c, 'moon'); pool += (mNat.verdict === 'benefic') ? 1 : -1; // the Moon's light
+    var vitality = pool >= 5 ? 'well-supported' : pool >= 2 ? 'sound' : 'under some strain';
+    // --- the morbid forces: the two malefics, plus the lords of the houses of trouble ---
+    var badHouses = [6, 8, 12], morbidLordOf = {};
+    for (i = 0; i < badHouses.length; i++) { var hh = badHouses[i], lk = TRAD_RULER[Math.floor(rev(c.cusps[hh]) / 30)]; if (!morbidLordOf[lk]) morbidLordOf[lk] = []; morbidLordOf[lk].push(hh); }
+    function isMorbid(k) { return k === 'saturn' || k === 'mars' || !!morbidLordOf[k]; }
+    // --- find the afflictions: a morbid force striking a life-force ---
+    var afflictions = [], zoneVote = {};
+    function voteZone(sign, weight) { zoneVote[sign] = (zoneVote[sign] || 0) + weight; }
+    for (i = 0; i < lifeSigs.length; i++) {
+      var LS = lifeSigs[i], D = LS.det;
+      // the significator's own sign is a standing testimony for its zone (weak)
+      voteZone(D.sign, 0.5);
+      for (var ai = 0; ai < D.aspects.length; ai++) {
+        var A = D.aspects[ai], o = A.other; if (o === LS.k || !isMorbid(o)) continue;
+        var natMal = (o === 'saturn' || o === 'mars');
+        var hard = (A.aspect === 'square' || A.aspect === 'opposition');
+        var conj = (A.aspect === 'conjunction');
+        // a malefic afflicts by conjunction/parallel/hard aspect; a benefic morbid-lord only by hard aspect
+        var hits = natMal ? (conj || hard) : hard;
+        if (!hits) continue;
+        var op = c.planets[o]; if (!op) continue;
+        afflictions.push({ afflictor: o, sign: op.sign, target: LS.k, targetLabel: LS.label, aspect: A.aspect, orb: A.orb, reception: A.reception, natMal: natMal, ruledBad: morbidLordOf[o] || null });
+        voteZone(op.sign, natMal ? 2 : 1); // the afflictor's sign carries the strongest testimony
+      }
+      // combustion of a life-force is itself an affliction (the Sun burning it)
+      if (D.terrestrial && D.terrestrial.conditions) for (var ci = 0; ci < D.terrestrial.conditions.length; ci++) { if (D.terrestrial.conditions[ci].t === 'combust') { afflictions.push({ afflictor: 'sun', sign: D.sign, target: LS.k, targetLabel: LS.label, aspect: 'combustion', orb: D.terrestrial.conditions[ci].v, reception: null, natMal: false, ruledBad: null, combust: true }); voteZone(D.sign, 1); } }
+    }
+    // the 6th house itself (the house of sickness): its cusp sign, and any malefic occupant, testify
+    var sixSign = Math.floor(rev(c.cusps[6]) / 30); voteZone(sixSign, 1);
+    // --- the watched zones, by the maximum of concordant testimonies ---
+    var zones = []; for (var s in zoneVote) if (zoneVote.hasOwnProperty(s)) zones.push({ sign: +s, w: zoneVote[s] });
+    zones.sort(function (x, y) { return y.w - x.w; });
+    afflictions.sort(function (x, y) { return (x.orb || 9) - (y.orb || 9); });
+    // --- compose, in the reassurance register ---
+    var S = [], watched = [];
+    S.push('The tradition reads the body by its forces. It weighs the life-forces — your Ascendant in ' + DATA.SIGNS[ascSign].name + ', its lord ' + nameFor(ascLordK) + ', the Sun and the Moon — against the forces that disturb: ' + nameFor('saturn') + ' and ' + nameFor('mars') + (Object.keys(morbidLordOf).length ? ', and the lords of your 6th, 8th and 12th' : '') + '. Here the life-forces read ' + vitality + '.');
+    if (!afflictions.length) {
+      S.push('No morbid force strikes a life-force cleanly — the tradition finds no zone especially flagged, and reads the constitution as free-running. What it would watch, in a body of this make, is only the general tendency of the temperament.');
+    } else {
+      // the top 1-2 afflictions, and the most-confirmed zone
+      var used = {}, shown = 0;
+      for (i = 0; i < afflictions.length && shown < 2; i++) {
+        var af = afflictions[i]; if (used[af.afflictor + af.sign]) continue; used[af.afflictor + af.sign] = 1; shown++;
+        var zoneTxt = Z[af.sign].zone, quality = PA[af.afflictor] ? PA[af.afflictor].quality : 'mixed';
+        var watchTxt = (DM && DM[af.afflictor]) ? DM[af.afflictor][af.sign] : Z[af.sign].within;
+        if (af.combust) {
+          // a life-force burnt by the Sun: read as lowered vitality in the target's own zone
+          S.push('It watches ' + zoneTxt + ': ' + af.targetLabel + ' stands burnt close to the Sun in ' + DATA.SIGNS[af.sign].name + ', which the tradition reads as vitality drawn thin — and there watches ' + watchTxt + '.');
+        } else {
+          var afName = nameFor(af.afflictor) + (af.ruledBad ? ' (lord of your ' + af.ruledBad.map(ordinal).join(' and ') + ')' : ', ' + quality);
+          S.push('It watches ' + zoneTxt + ': ' + afName + ' meets ' + af.targetLabel + ' by ' + af.aspect + (af.reception ? ', though reception softens it' : '') + ', and in ' + DATA.SIGNS[af.sign].name + ' the tradition watches ' + watchTxt + '.');
+        }
+        watched.push({ zone: zoneTxt, afflictor: af.afflictor, sign: DATA.SIGNS[af.sign].name, chronic: PA[af.afflictor] ? PA[af.afflictor].chronic : false });
+      }
+      if (zones.length && zones[0].w >= 3) S.push('Two testimonies agree on ' + Z[zones[0].sign].zone + ', which the tradition therefore watches most closely.');
+      S.push('Read this gently: these are lifelong tendencies the old physicians watched, never a forecast and never a diagnosis — the strong side of the same constitution is its long, ordinary health.');
+    }
+    return {
+      hasTime: true, vitality: vitality, pool: pool, afflictions: afflictions, watched: watched, line: S.join(' '),
+      receipt: ('life-forces: Asc ' + DATA.SIGNS[ascSign].name + ', lord ' + nameFor(ascLordK) + ' · pool ' + pool + ' (' + vitality + ') · morbid: saturn, mars' + (Object.keys(morbidLordOf).length ? ', lords of ' + Object.keys(morbidLordOf).map(function (k) { return nameFor(k); }).join('/') : '') + ' · ' + afflictions.length + ' affliction' + (afflictions.length === 1 ? '' : 's')).toUpperCase(),
+      src: DATA.MEDICAL_SRC || 'the medical reading after Lilly (1647), Culpeper, Raphael — our paraphrase, never a diagnosis'
+    };
+  }
   // ===== PHASE 10 — ASPECT DOCTRINE, PAIR-SPECIFIC: the pipe and the liquid, judged =====
   // Every aspect judged from BOTH planets' full determinations: the aspect gives the pipe,
   // the planets give the liquid, the states give its quality, reception gives the repair,
@@ -5286,7 +5367,7 @@ var APP = (function () {
     solarReturnChart: solarReturnChart, upcomingEclipses: upcomingEclipses, bestDaysFor: bestDaysFor, electIntents: electIntents, oddPredictions: oddPredictions, composeProfectionYear: composeProfectionYear, signHouseWeave: signHouseWeave,
     progressedTimeline: progressedTimeline, retroSeasons: retroSeasons,
     exportBook: exportBook, exportBackup: exportBackup, importBackup: importBackup, composeDailyEssay: composeDailyEssay, chartFP: chartFP, weaveNote: weaveNote, termOf: termOf, anA: anA, composeColleague: composeColleague, exportColleague: exportColleague,
-    microFor: microFor, tellsFor: tellsFor, weaveTransit: weaveTransit, traditionalRead: traditionalRead, determination: determination, determinationSheet: determinationSheet, derivedHouseOf: derivedHouseOf, derivedPhrase: derivedPhrase, conditionVerdict: conditionVerdict, sectProfile: sectProfile, judgeAscendant: judgeAscendant, judgeCaptain: judgeCaptain, rulershipWeb: rulershipWeb, zodiacMatrix: zodiacMatrix, cuspAlmuten: cuspAlmuten, judgeHouse: judgeHouse, judgeHouses: judgeHouses, judgeAspect: judgeAspect, judgeAspects: judgeAspects, fullReception: fullReception, receptionOnAspect: receptionOnAspect, receptionsInChart: receptionsInChart, testimonyAuthority: testimonyAuthority, contest: contest, rulingVoice: rulingVoice, contradictions: contradictions, natalSynthesis: natalSynthesis, housesThatMatter: housesThatMatter, noBirthTimeReading: noBirthTimeReading, judgeDirection: judgeDirection, judgeDirections: judgeDirections, directedAscendant: directedAscendant, directedSignificators: directedSignificators, significatorFor: significatorFor, directedChapter18: directedChapter18, boundsWalk: boundsWalk, lordOfYear: lordOfYear, profectionYear: profectionYear, triggerReading: triggerReading, liveWires21: liveWires21, judgeCycle: judgeCycle, judgeCycles: judgeCycles, judgeReturn: judgeReturn, eclipseTimers: eclipseTimers, glanceJudged: glanceJudged, weekJudged: weekJudged, lots: lots, starsJudged: starsJudged, hiddenPartnerships: hiddenPartnerships, patternsAsTestimony: patternsAsTestimony, vedicWall: vedicWall, bondSpine35: bondSpine35, bondOverlay35: bondOverlay35, voiceCheck: voiceCheck, sourceRegistry: sourceRegistry, citeSource: citeSource, placementProse: placementProse, interpret: interpret, temperament: temperament, temperamentProse: temperamentProse, symbolicDirections: symbolicDirections, castFromDirection: castFromDirection, directionLine: directionLine, directionReceipt: directionReceipt, aspectNature: aspectNature, transitCycles: transitCycles, weaveCycle: weaveCycle, weaveWeek: weaveWeek, receptionOf: receptionOf, guideCards: guideCards, ancientSky: ancientSky, addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, returnsAlmanac: returnsAlmanac, progressedLunation: progressedLunation, planetaryHours: planetaryHours, moonVoidWindow: moonVoidWindow, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
+    microFor: microFor, tellsFor: tellsFor, weaveTransit: weaveTransit, traditionalRead: traditionalRead, determination: determination, determinationSheet: determinationSheet, derivedHouseOf: derivedHouseOf, derivedPhrase: derivedPhrase, conditionVerdict: conditionVerdict, sectProfile: sectProfile, judgeAscendant: judgeAscendant, judgeCaptain: judgeCaptain, rulershipWeb: rulershipWeb, zodiacMatrix: zodiacMatrix, cuspAlmuten: cuspAlmuten, judgeHouse: judgeHouse, judgeHouses: judgeHouses, judgeHealth: judgeHealth, judgeAspect: judgeAspect, judgeAspects: judgeAspects, fullReception: fullReception, receptionOnAspect: receptionOnAspect, receptionsInChart: receptionsInChart, testimonyAuthority: testimonyAuthority, contest: contest, rulingVoice: rulingVoice, contradictions: contradictions, natalSynthesis: natalSynthesis, housesThatMatter: housesThatMatter, noBirthTimeReading: noBirthTimeReading, judgeDirection: judgeDirection, judgeDirections: judgeDirections, directedAscendant: directedAscendant, directedSignificators: directedSignificators, significatorFor: significatorFor, directedChapter18: directedChapter18, boundsWalk: boundsWalk, lordOfYear: lordOfYear, profectionYear: profectionYear, triggerReading: triggerReading, liveWires21: liveWires21, judgeCycle: judgeCycle, judgeCycles: judgeCycles, judgeReturn: judgeReturn, eclipseTimers: eclipseTimers, glanceJudged: glanceJudged, weekJudged: weekJudged, lots: lots, starsJudged: starsJudged, hiddenPartnerships: hiddenPartnerships, patternsAsTestimony: patternsAsTestimony, vedicWall: vedicWall, bondSpine35: bondSpine35, bondOverlay35: bondOverlay35, voiceCheck: voiceCheck, sourceRegistry: sourceRegistry, citeSource: citeSource, placementProse: placementProse, interpret: interpret, temperament: temperament, temperamentProse: temperamentProse, symbolicDirections: symbolicDirections, castFromDirection: castFromDirection, directionLine: directionLine, directionReceipt: directionReceipt, aspectNature: aspectNature, transitCycles: transitCycles, weaveCycle: weaveCycle, weaveWeek: weaveWeek, receptionOf: receptionOf, guideCards: guideCards, ancientSky: ancientSky, addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, returnsAlmanac: returnsAlmanac, progressedLunation: progressedLunation, planetaryHours: planetaryHours, moonVoidWindow: moonVoidWindow, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
     saveCurrentChart: saveCurrentChart, deleteSavedChart: deleteSavedChart, activateSavedChart: activateSavedChart, activeChartKey: activeChartKey, chartKey: chartKey, lifeTransits: lifeTransits, upcomingTransits: upcomingTransits, transitMotion: transitMotion, compositeChart: compositeChart,
     nameFor: nameFor, glyphFor: glyphFor, pad: pad,
     domElement: domElement, lowElement: lowElement, domMod: domMod, tzOffsetHours: tzOffsetHours
@@ -7943,11 +8024,18 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
           } catch (eDom9) { UI.domCache = []; }
         }
         var DOMLAB9 = ['You & your body', 'Money & resources', 'Mind, siblings & the near world', 'Home, father & roots', 'Children, love & joy', 'Work, health & service', 'Marriage & partnership', 'Intimacy, death & shared money', 'Belief, travel & higher learning', 'Career, standing & the mother', 'Friends, allies & hopes', 'The hidden, solitude & undoing'];
+        if (UI.healthCache === undefined) { try { UI.healthCache = APP.judgeHealth(c, b) || null; } catch (eH8) { UI.healthCache = null; } }
         var dk9; for (dk9 = 0; dk9 < UI.domCache.length; dk9++) {
           var DC9 = UI.domCache[dk9];
           eyebrow(DOMLAB9[DC9.h - 1], x, ly, ACC); ly += 22;
           ly += paragraph(DC9.jh.line, x, ly, w, 15, INK, SERIF, 23) + 6;
           ly += paragraph(DC9.jh.receipt, x, ly, w, 8.5, ACCTX, MONO, 12, 190) + 14;
+          // under Work & health, the tradition's medical reading — the body's watched zones
+          if (DC9.h === 6 && UI.healthCache) {
+            setFont(MONO, 9.5, ACCTX, p.LEFT, p.TOP, 215); p.text('THE BODY, AS THE TRADITION WATCHES IT', x, sY(ly)); ly += 17;
+            ly += paragraph(UI.healthCache.line, x, ly, w, 15, INK, SERIF, 23) + 6;
+            ly += paragraph(UI.healthCache.receipt, x, ly, w, 8.5, ACCTX, MONO, 12, 190) + 14;
+          }
         }
         ly += 4;
       }
@@ -10573,7 +10661,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       APP.STATE.birth = { name: '', y: d.y, mo: d.mo, d: d.d, hour: d.hour, min: d.min, tz: d.tz || 0, manualTz: !!d.manualTz, iana: iana, lat: lat, lon: lon, place: place, timeKnown: d.timeKnown };
       recompute(); UI.selPlanet = 'sun'; UI.popT = nowT(); UI.popFrom = 22; UI.scroll.chart = 0; UI.screen = 'chart'; hideSearchInput();
     }
-    function recompute() { APP.STATE.chart = APP.compute(APP.STATE.birth, APP.STATE.settings); APP.save(); UI.readCache = null; UI.readSig = null; UI.readTransit = null; UI.forecast = null; UI.promCache = null; UI.arcCache = null; UI.todayCache = null; UI.fmList = null; UI.lifeList = null; UI.calEvents = null; UI.calDay = null; UI.walkTr = null; UI.walkTheme = null; UI.bondCache = null; UI.bondFor = null; UI.plun = null; UI.ringsData = null; UI.ringSel = null; UI.vocW = null; UI.phCache = null; UI.synToneCache = null; UI.dailyEssay = null; UI.cycles = undefined; UI.cycOpen = {}; UI.weekWv = undefined; UI.tradCache = undefined; UI.domCache = undefined; UI.dirCache = undefined; UI.liveWires = undefined; UI.sectDay = undefined; UI.pcProseFor = null; UI.chartWarm = false; UI.warmStep = 0; UI.chartFormT = 0; if (APP.clearPersonCharts) APP.clearPersonCharts(); UI.askAns = ''; UI.quip = null; UI.quipNext = 0; buildField(); }
+    function recompute() { APP.STATE.chart = APP.compute(APP.STATE.birth, APP.STATE.settings); APP.save(); UI.readCache = null; UI.readSig = null; UI.readTransit = null; UI.forecast = null; UI.promCache = null; UI.arcCache = null; UI.todayCache = null; UI.fmList = null; UI.lifeList = null; UI.calEvents = null; UI.calDay = null; UI.walkTr = null; UI.walkTheme = null; UI.bondCache = null; UI.bondFor = null; UI.plun = null; UI.ringsData = null; UI.ringSel = null; UI.vocW = null; UI.phCache = null; UI.synToneCache = null; UI.dailyEssay = null; UI.cycles = undefined; UI.cycOpen = {}; UI.weekWv = undefined; UI.tradCache = undefined; UI.domCache = undefined; UI.healthCache = undefined; UI.dirCache = undefined; UI.liveWires = undefined; UI.sectDay = undefined; UI.pcProseFor = null; UI.chartWarm = false; UI.warmStep = 0; UI.chartFormT = 0; if (APP.clearPersonCharts) APP.clearPersonCharts(); UI.askAns = ''; UI.quip = null; UI.quipNext = 0; buildField(); }
 
     // ---------- share / export a clean chart card (own untainted canvas; the live one holds remote images) ----------
     // share a daily card (clean offscreen canvas) — moon phase + what's live on your chart today
@@ -11339,7 +11427,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       } catch (e) {}
     }
     // battery: stop the draw loop entirely while the tab/app is hidden
-    try { document.addEventListener('visibilitychange', function () { try { if (document.hidden) p.noLoop(); else { var d9 = new Date(), k9 = d9.getFullYear() * 10000 + (d9.getMonth() + 1) * 100 + d9.getDate(); if (UI.dayKey && UI.dayKey !== k9) { UI.todayCache = null; UI.calEvents = null; UI.walkTr = null; UI.fmList = null; UI.readCache = null; UI.oddPred = undefined; UI.profYear = undefined; UI.rdBeats = undefined; UI.rdI = 0; UI.ancient = undefined; UI.cycles = undefined; UI.cycOpen = {}; UI.weekWv = undefined; UI.tradCache = undefined; UI.domCache = undefined; UI.dirCache = undefined; UI.liveWires = undefined; UI.sectDay = undefined; } UI.dayKey = k9; p.loop(); } } catch (e2) {} }); } catch (e3) {}
+    try { document.addEventListener('visibilitychange', function () { try { if (document.hidden) p.noLoop(); else { var d9 = new Date(), k9 = d9.getFullYear() * 10000 + (d9.getMonth() + 1) * 100 + d9.getDate(); if (UI.dayKey && UI.dayKey !== k9) { UI.todayCache = null; UI.calEvents = null; UI.walkTr = null; UI.fmList = null; UI.readCache = null; UI.oddPred = undefined; UI.profYear = undefined; UI.rdBeats = undefined; UI.rdI = 0; UI.ancient = undefined; UI.cycles = undefined; UI.cycOpen = {}; UI.weekWv = undefined; UI.tradCache = undefined; UI.domCache = undefined; UI.healthCache = undefined; UI.dirCache = undefined; UI.liveWires = undefined; UI.sectDay = undefined; } UI.dayKey = k9; p.loop(); } } catch (e2) {} }); } catch (e3) {}
     p.draw = function () {
       // self-heal any first-frame canvas-size mismatch immediately, rather than waiting for the
       // load-time resize (this is what left the screen half-painted on a cold open)
@@ -11350,7 +11438,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       try {
         var ckW9 = APP.activeChartKey ? (APP.activeChartKey() + '|' + (APP.STATE.settings ? APP.STATE.settings.house + APP.STATE.settings.zodiac : '')) : '';
         if (UI.ckW !== ckW9) {
-          if (UI.ckW != null) { UI.readSig = null; UI.walkTr = null; UI.walkTheme = null; UI.plun = null; UI.forecast = null; UI.readCache = null; UI.todayCache = null; UI.calEvents = null; UI.fmList = null; UI.lbCache = null; UI.lqzCache = null; UI.lwSky = null; UI.progTL = null; UI.retroS = null; UI.sigCache = undefined; UI.arcCache = null; UI.promCache = null; UI.oddPred = undefined; UI.profYear = undefined; UI.quirkCache = undefined; UI.intCache = undefined; UI.intPull = undefined; UI.spookCache = undefined; UI.comboCache = undefined; UI.smCache = undefined; UI.guide = null; UI.rdBeats = undefined; UI.rdI = 0; UI.ancient = undefined; UI.cycles = undefined; UI.cycOpen = {}; UI.weekWv = undefined; UI.tradCache = undefined; UI.domCache = undefined; UI.dirCache = undefined; UI.liveWires = undefined; UI.sectDay = undefined; }
+          if (UI.ckW != null) { UI.readSig = null; UI.walkTr = null; UI.walkTheme = null; UI.plun = null; UI.forecast = null; UI.readCache = null; UI.todayCache = null; UI.calEvents = null; UI.fmList = null; UI.lbCache = null; UI.lqzCache = null; UI.lwSky = null; UI.progTL = null; UI.retroS = null; UI.sigCache = undefined; UI.arcCache = null; UI.promCache = null; UI.oddPred = undefined; UI.profYear = undefined; UI.quirkCache = undefined; UI.intCache = undefined; UI.intPull = undefined; UI.spookCache = undefined; UI.comboCache = undefined; UI.smCache = undefined; UI.guide = null; UI.rdBeats = undefined; UI.rdI = 0; UI.ancient = undefined; UI.cycles = undefined; UI.cycOpen = {}; UI.weekWv = undefined; UI.tradCache = undefined; UI.domCache = undefined; UI.healthCache = undefined; UI.dirCache = undefined; UI.liveWires = undefined; UI.sectDay = undefined; }
           UI.ckW = ckW9;
         }
       } catch (eCk9) {}
