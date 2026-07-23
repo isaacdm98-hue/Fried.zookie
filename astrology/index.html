@@ -1445,6 +1445,121 @@ var APP = (function () {
     for (k in tally) if (tally.hasOwnProperty(k) && tally[k] === bm) list.push(k);
     return { lead: best, score: bm, tie: list, tally: tally, isDay: isDay, points: pts.length };
   }
+  // ===== THE FOUR TEMPERAMENTS — the humoral constitution (Cours 4; Frawley, "The Real Astrology") =====
+  // Not a personality label: the traditional physicians' reading of the body's COMPLEXION — the balance of
+  // hot/cold and wet/dry that colours the vitality and the fragile zones. It is the OPENER of a reading:
+  // the ground the domains stand on. Weighted testimonies (Ptolemy, Tetr. III.11; Frawley's applied method):
+  //   Ascendant sign (2) · lord of the Ascendant by nature (1) · almuten of the Asc degree by nature (1) ·
+  //   the Sun by SEASON at birth (2) · the Moon by sign (2) · the Moon by phase-quarter (1) ·
+  //   the Lord of the Geniture / almuten figuris by nature (1).
+  // Each testimony votes on two axes — thermal (hot|cold) and humid (wet|dry). The winners name the humour:
+  //   hot+wet = SANGUINE (air/blood) · hot+dry = CHOLERIC (fire/yellow bile) ·
+  //   cold+wet = PHLEGMATIC (water/phlegm) · cold+dry = MELANCHOLIC (earth/black bile).
+  var HUMOR_ELEM = { fire: ['hot', 'dry'], air: ['hot', 'wet'], water: ['cold', 'wet'], earth: ['cold', 'dry'] };
+  // each classical planet's own complexion (Lilly, CA p.57ff; Sun & Mars hot/dry, Saturn cold/dry, etc.)
+  var HUMOR_PLANET = {
+    saturn: ['cold', 'dry'], jupiter: ['hot', 'wet'], mars: ['hot', 'dry'], sun: ['hot', 'dry'],
+    venus: ['cold', 'wet'], mercury: ['cold', 'dry'], moon: ['cold', 'wet']
+  };
+  var HUMOR_NAME = { hotwet: 'sanguine', hotdry: 'choleric', coldwet: 'phlegmatic', colddry: 'melancholic' };
+  var HUMOR_HUMOUR = { sanguine: 'blood', choleric: 'yellow bile', phlegmatic: 'phlegm', melancholic: 'black bile' };
+  // Mercury takes its complexion from orientality (Greenbaum): oriental (rising before the Sun) is
+  // warm & moist; occidental (rising after) is cold & dry. Every other planet has a fixed complexion.
+  function planetHumor(c, k) {
+    if (k === 'mercury' && c && c.planets && c.planets.mercury && c.planets.sun) {
+      var oriental = rev(c.planets.sun.lon - c.planets.mercury.lon) < 180; // Mercury behind the Sun → morning star
+      return oriental ? ['hot', 'wet'] : ['cold', 'dry'];
+    }
+    return HUMOR_PLANET[k];
+  }
+  // the true almuten of one degree: the planet winning the most essential dignity exactly there (5/4/3/2/1)
+  function almutenOfDegree(lon, isDay) {
+    var L = dignityLedger(lon, isDay), tally = {};
+    addScore(tally, L.domicile, 5); addScore(tally, L.exaltation, 4); addScore(tally, L.triplicity, 3); addScore(tally, L.bound, 2); addScore(tally, L.face, 1);
+    var best = null, bm = -1, kk; for (kk in tally) if (tally.hasOwnProperty(kk) && tally[kk] > bm) { bm = tally[kk]; best = kk; }
+    return best;
+  }
+  function temperament(c, b) {
+    if (!c || !c.planets || !c.planets.sun || !c.planets.moon) return null;
+    var hasTime = !!(b && b.timeKnown && c.ascBody);
+    var isDay = isDayChart9(c, b); if (isDay === null) isDay = true;
+    var axis = { hot: 0, cold: 0, wet: 0, dry: 0 }, votes = [];
+    function cast(pair, wt, label) {
+      if (!pair) return;
+      axis[pair[0]] += wt; axis[pair[1]] += wt;
+      votes.push({ label: label, quality: pair[0] + ' & ' + pair[1], weight: wt });
+    }
+    // 1 — the Ascendant sign (the strongest single testimony: the rising sign is the body itself)
+    if (hasTime) cast(HUMOR_ELEM[DATA.SIGNS[c.ascBody.sign].element], 2, 'the Ascendant in ' + DATA.SIGNS[c.ascBody.sign].name);
+    // 2 — the lord of the Ascendant, by its own nature (Mercury orientality-sensitive)
+    if (hasTime) { var lord = TRAD_RULER[c.ascBody.sign]; cast(planetHumor(c, lord), 1, 'its ruler ' + nameFor(lord)); }
+    // 3 — the true almuten of the exact Ascendant degree (most dignity there), by its nature
+    if (hasTime) { var alm = almutenOfDegree(c.ascBody.lon, isDay); if (alm) cast(planetHumor(c, alm), 1, 'the almuten of the rising degree, ' + nameFor(alm)); }
+    // 4 — the Sun by the SEASON of birth (its warmth is seasonal, not its own nature here)
+    var sSign = c.planets.sun.sign, quad = Math.floor(sSign / 3); // 0 spring,1 summer,2 autumn,3 winter (N. hemisphere)
+    var southern = (b && typeof b.lat === 'number' && b.lat < 0);
+    if (southern) quad = (quad + 2) % 4; // the seasons invert below the equator
+    var SEASON = [['hot', 'wet'], ['hot', 'dry'], ['cold', 'dry'], ['cold', 'wet']]; // spring/summer/autumn/winter
+    var seasonName = ['spring', 'summer', 'autumn', 'winter'][quad];
+    cast(SEASON[quad], 2, 'the Sun born in ' + seasonName);
+    // 5 — the Moon by sign
+    cast(HUMOR_ELEM[DATA.SIGNS[c.planets.moon.sign].element], 2, 'the Moon in ' + DATA.SIGNS[c.planets.moon.sign].name);
+    // 6 — the Moon by phase-quarter (waxing-to-first = hot/wet, then hot/dry, cold/dry, cold/wet)
+    var elong = rev(c.planets.moon.lon - c.planets.sun.lon), mq = Math.floor(elong / 90) % 4;
+    var MOONQ = [['hot', 'wet'], ['hot', 'dry'], ['cold', 'dry'], ['cold', 'wet']];
+    var mqName = ['new and waxing', 'gibbous and waxing', 'waning past the full', 'old and waning'][mq];
+    cast(MOONQ[mq], 1, 'the Moon ' + mqName);
+    // 7 — the Moon's dispositor, by the ELEMENT of the sign it occupies (Greenbaum's seventh testimony)
+    var mDisp = TRAD_RULER[c.planets.moon.sign], mdp = c.planets[mDisp];
+    if (mdp) cast(HUMOR_ELEM[DATA.SIGNS[mdp.sign].element], 1, 'the Moon’s ruler ' + nameFor(mDisp) + ' in ' + DATA.SIGNS[mdp.sign].name);
+    var thermal = axis.hot >= axis.cold ? 'hot' : 'cold';
+    var humid = axis.wet >= axis.dry ? 'wet' : 'dry';
+    var name = HUMOR_NAME[thermal + humid];
+    var thermalGap = Math.abs(axis.hot - axis.cold), humidGap = Math.abs(axis.wet - axis.dry);
+    // the secondary humour: flip the weaker axis
+    var secName = thermalGap <= humidGap ? HUMOR_NAME[(thermal === 'hot' ? 'cold' : 'hot') + humid] : HUMOR_NAME[thermal + (humid === 'wet' ? 'dry' : 'wet')];
+    var balanced = (thermalGap <= 1 && humidGap <= 1);
+    return {
+      name: name, humour: HUMOR_HUMOUR[name], secondary: secName,
+      thermal: thermal, humid: humid, axis: axis,
+      thermalGap: thermalGap, humidGap: humidGap, balanced: balanced,
+      season: seasonName, votes: votes, hasTime: hasTime,
+      // how decisively one humour wins — for the prose register (marked / leaning / mixed)
+      strength: (thermalGap + humidGap >= 6) ? 'marked' : (thermalGap + humidGap >= 3) ? 'clear' : 'mixed'
+    };
+  }
+  // the constitution read aloud — the body's complexion (never a personality label). Two registers:
+  // objective (what the humour IS, physically) and inspired (how it tends to run). No faked counsel.
+  var HUMOR_BODY = {
+    sanguine: { warm: 'warm and moist', build: 'a full, well-fed frame and a ready colour', runs: 'quick to warm, generous with vitality, and slow to tire', excess: 'when it overfills — a plethora: the blood runs high, the body over-full', keeps: 'an even, abundant vitality' },
+    choleric: { warm: 'hot and dry', build: 'a lean, taut frame and a strong, fast appetite', runs: 'quick to heat, quick to act, and quick to burn its fuel', excess: 'when it overheats — the dry heat that inflames, parches and hurries', keeps: 'a fast, forceful vitality' },
+    phlegmatic: { warm: 'cool and moist', build: 'a soft, rounded frame and an unhurried metabolism', runs: 'calm, steady, and slow to rouse or to alarm', excess: 'when the damp gathers — congestion, cold, a heaviness that settles', keeps: 'a placid, conserving vitality' },
+    melancholic: { warm: 'cool and dry', build: 'a spare, firm frame and a retentive, enduring constitution', runs: 'steady, self-contained, and slow but long-lasting', excess: 'when the dryness sets — obstruction, stiffness, the cold that lingers', keeps: 'a durable, hard-wearing vitality' }
+  };
+  function temperamentProse(t) {
+    if (!t) return null;
+    var B = HUMOR_BODY[t.name], out = [], receipts = [];
+    // the two loudest testimonies name it — the ≥2-determinant rule
+    var top = t.votes.slice().sort(function (x, y) { return y.weight - x.weight; }).slice(0, 2).map(function (v) { return v.label; });
+    if (t.balanced) {
+      out.push('A well-tempered constitution: no single humour rules it. Heat and cold, wet and dry sit close to even (' + t.axis.hot + '/' + t.axis.cold + ' and ' + t.axis.wet + '/' + t.axis.dry + '), which the tradition counts a fortunate balance — a body not easily tipped.');
+      out.push('If it leans, it leans ' + t.name + ' — ' + B.warm + ' — by ' + top.join(' and ') + '.');
+    } else {
+      var lead = t.strength === 'marked' ? 'strongly' : t.strength === 'clear' ? 'clearly' : 'on balance';
+      out.push('The constitution reads ' + lead + ' ' + t.name + ' — ' + B.warm + ', the humour of ' + t.humour + ' — set by ' + top.join(' and ') + '.');
+      out.push('That gives ' + B.build + ': a body that runs ' + B.runs + ', keeping ' + B.keeps + '. Where it is tested, it is ' + B.excess + '.');
+      if (t.strength !== 'marked' && t.secondary && t.secondary !== t.name) {
+        out.push('A second note of ' + t.secondary + ' (' + HUMOR_BODY[t.secondary].warm + ') runs under it, softening the pure type.');
+      }
+    }
+    for (var i = 0; i < t.votes.length; i++) receipts.push(t.votes[i].label + ' — ' + t.votes[i].quality);
+    return {
+      title: 'Your constitution', text: out.join(' '),
+      receipt: 'The humoral testimonies, weighted: ' + receipts.join('; ') + '. Thermal ' + t.axis.hot + ' hot / ' + t.axis.cold + ' cold; humid ' + t.axis.wet + ' wet / ' + t.axis.dry + ' dry.',
+      src: 'Ptolemy, Tetrabiblos III.11–12 (the temperament of the soul and body); Lilly, Christian Astrology (1647) on the complexions; the weighted method after Frawley, The Real Astrology Applied.',
+      name: t.name, hasTime: t.hasTime
+    };
+  }
   // dispositor chains (modern rulers): follow each planet to the ruler of its sign until a loop or a planet in its own sign
   function dispositorEnd(c, k) {
     var cur = k, path = {}, steps = 0;
@@ -3199,10 +3314,12 @@ var APP = (function () {
       return { hasTime: false, movements: [], note: 'The full traditional synthesis begins at the Ascendant and follows the house-lords home, so it needs a birth time. Without the hour the reading holds to the two lights, the planets in their signs, and their aspects — see the determinations and the aspect judgments, which ask no houses.' };
     }
     var M = [];
+    // the opener, the way the school opens: the humoral constitution — the ground the domains stand on
+    try { var tmp = temperamentProse(temperament(c, b)); if (tmp && tmp.hasTime) M.push({ title: tmp.title, text: tmp.text, receipt: tmp.receipt, src: tmp.src }); } catch (eTp) {}
     var cap = judgeCaptain(c, b); if (cap && cap.hasTime) M.push({ title: 'The keystone', text: cap.line, receipt: cap.receipt, src: cap.src });
     var asc = judgeAscendant(c, b); if (asc && asc.hasTime) {
       var aLine = asc.line.split(/(?<=[.!?])\s+/).slice(0, 3).join(' ');
-      M.push({ title: 'The constitution', text: aLine, receipt: asc.receipt, src: asc.src });
+      M.push({ title: 'The rising sign', text: aLine, receipt: asc.receipt, src: asc.src });
     }
     // what runs strong: the best planet by Lilly condition (not the captain, to avoid repeating)
     var CL = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn'], dets = [], i;
@@ -5169,7 +5286,7 @@ var APP = (function () {
     solarReturnChart: solarReturnChart, upcomingEclipses: upcomingEclipses, bestDaysFor: bestDaysFor, electIntents: electIntents, oddPredictions: oddPredictions, composeProfectionYear: composeProfectionYear, signHouseWeave: signHouseWeave,
     progressedTimeline: progressedTimeline, retroSeasons: retroSeasons,
     exportBook: exportBook, exportBackup: exportBackup, importBackup: importBackup, composeDailyEssay: composeDailyEssay, chartFP: chartFP, weaveNote: weaveNote, termOf: termOf, anA: anA, composeColleague: composeColleague, exportColleague: exportColleague,
-    microFor: microFor, tellsFor: tellsFor, weaveTransit: weaveTransit, traditionalRead: traditionalRead, determination: determination, determinationSheet: determinationSheet, derivedHouseOf: derivedHouseOf, derivedPhrase: derivedPhrase, conditionVerdict: conditionVerdict, sectProfile: sectProfile, judgeAscendant: judgeAscendant, judgeCaptain: judgeCaptain, rulershipWeb: rulershipWeb, zodiacMatrix: zodiacMatrix, cuspAlmuten: cuspAlmuten, judgeHouse: judgeHouse, judgeHouses: judgeHouses, judgeAspect: judgeAspect, judgeAspects: judgeAspects, fullReception: fullReception, receptionOnAspect: receptionOnAspect, receptionsInChart: receptionsInChart, testimonyAuthority: testimonyAuthority, contest: contest, rulingVoice: rulingVoice, contradictions: contradictions, natalSynthesis: natalSynthesis, housesThatMatter: housesThatMatter, noBirthTimeReading: noBirthTimeReading, judgeDirection: judgeDirection, judgeDirections: judgeDirections, directedAscendant: directedAscendant, directedSignificators: directedSignificators, significatorFor: significatorFor, directedChapter18: directedChapter18, boundsWalk: boundsWalk, lordOfYear: lordOfYear, profectionYear: profectionYear, triggerReading: triggerReading, liveWires21: liveWires21, judgeCycle: judgeCycle, judgeCycles: judgeCycles, judgeReturn: judgeReturn, eclipseTimers: eclipseTimers, glanceJudged: glanceJudged, weekJudged: weekJudged, lots: lots, starsJudged: starsJudged, hiddenPartnerships: hiddenPartnerships, patternsAsTestimony: patternsAsTestimony, vedicWall: vedicWall, bondSpine35: bondSpine35, bondOverlay35: bondOverlay35, voiceCheck: voiceCheck, sourceRegistry: sourceRegistry, citeSource: citeSource, placementProse: placementProse, interpret: interpret, symbolicDirections: symbolicDirections, castFromDirection: castFromDirection, directionLine: directionLine, directionReceipt: directionReceipt, aspectNature: aspectNature, transitCycles: transitCycles, weaveCycle: weaveCycle, weaveWeek: weaveWeek, receptionOf: receptionOf, guideCards: guideCards, ancientSky: ancientSky, addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, returnsAlmanac: returnsAlmanac, progressedLunation: progressedLunation, planetaryHours: planetaryHours, moonVoidWindow: moonVoidWindow, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
+    microFor: microFor, tellsFor: tellsFor, weaveTransit: weaveTransit, traditionalRead: traditionalRead, determination: determination, determinationSheet: determinationSheet, derivedHouseOf: derivedHouseOf, derivedPhrase: derivedPhrase, conditionVerdict: conditionVerdict, sectProfile: sectProfile, judgeAscendant: judgeAscendant, judgeCaptain: judgeCaptain, rulershipWeb: rulershipWeb, zodiacMatrix: zodiacMatrix, cuspAlmuten: cuspAlmuten, judgeHouse: judgeHouse, judgeHouses: judgeHouses, judgeAspect: judgeAspect, judgeAspects: judgeAspects, fullReception: fullReception, receptionOnAspect: receptionOnAspect, receptionsInChart: receptionsInChart, testimonyAuthority: testimonyAuthority, contest: contest, rulingVoice: rulingVoice, contradictions: contradictions, natalSynthesis: natalSynthesis, housesThatMatter: housesThatMatter, noBirthTimeReading: noBirthTimeReading, judgeDirection: judgeDirection, judgeDirections: judgeDirections, directedAscendant: directedAscendant, directedSignificators: directedSignificators, significatorFor: significatorFor, directedChapter18: directedChapter18, boundsWalk: boundsWalk, lordOfYear: lordOfYear, profectionYear: profectionYear, triggerReading: triggerReading, liveWires21: liveWires21, judgeCycle: judgeCycle, judgeCycles: judgeCycles, judgeReturn: judgeReturn, eclipseTimers: eclipseTimers, glanceJudged: glanceJudged, weekJudged: weekJudged, lots: lots, starsJudged: starsJudged, hiddenPartnerships: hiddenPartnerships, patternsAsTestimony: patternsAsTestimony, vedicWall: vedicWall, bondSpine35: bondSpine35, bondOverlay35: bondOverlay35, voiceCheck: voiceCheck, sourceRegistry: sourceRegistry, citeSource: citeSource, placementProse: placementProse, interpret: interpret, temperament: temperament, temperamentProse: temperamentProse, symbolicDirections: symbolicDirections, castFromDirection: castFromDirection, directionLine: directionLine, directionReceipt: directionReceipt, aspectNature: aspectNature, transitCycles: transitCycles, weaveCycle: weaveCycle, weaveWeek: weaveWeek, receptionOf: receptionOf, guideCards: guideCards, ancientSky: ancientSky, addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, returnsAlmanac: returnsAlmanac, progressedLunation: progressedLunation, planetaryHours: planetaryHours, moonVoidWindow: moonVoidWindow, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
     saveCurrentChart: saveCurrentChart, deleteSavedChart: deleteSavedChart, activateSavedChart: activateSavedChart, activeChartKey: activeChartKey, chartKey: chartKey, lifeTransits: lifeTransits, upcomingTransits: upcomingTransits, transitMotion: transitMotion, compositeChart: compositeChart,
     nameFor: nameFor, glyphFor: glyphFor, pad: pad,
     domElement: domElement, lowElement: lowElement, domMod: domMod, tzOffsetHours: tzOffsetHours

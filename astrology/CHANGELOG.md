@@ -1,5 +1,27 @@
 # Changelog
 
+## 4.7.0 — 2026-07-23 — the constitution: the four temperaments, the way the school opens
+The reading now opens where a traditional astrologer opens — on the **humoral
+constitution** (Cours 4), the ground the domains stand on.
+
+- **The four-temperaments engine (`temperament`).** A weighted seven-testimony
+  reading of the body's complexion after Greenbaum's method (Ptolemy *Tetrabiblos*
+  III.11): the Ascendant sign, its ruler and the true almuten of the rising degree,
+  the Sun by the **season** of birth, the Moon by sign and by phase-quarter, and the
+  Moon's dispositor — each voting on the two humoral axes (hot|cold, wet|dry). The
+  winners name the humour: sanguine, choleric, phlegmatic or melancholic; a close
+  balance is read as a well-tempered constitution. Mercury is judged by orientality;
+  the seasons invert below the equator. Every vote carries its receipt.
+- **Read as the body's complexion, never a personality label (`temperamentProse`).**
+  The synthesis now **opens** with "Your constitution" — the humour, its physical
+  tendencies (frame, metabolism, where it is tested), and its second note — in the
+  tradition's own descriptive register, never a diagnosis or a character read.
+- **Deep-research doctrine notes** (`plans/doctrine-notes-timing-medical.md`):
+  the temperament method, the medical reading (hyleg life-forces, the morbid forces,
+  the sign→zone / planet→affliction / Raphael planet-in-sign disease tables), and the
+  timing engine (directions' three rates, the transit trigger doctrine, firdaria, and
+  zodiacal releasing) — public-domain facts in our own words, for the domains ahead.
+
 ## 4.6.0 — 2026-07-23 — the reading reads like Sonia: domains, and the whole cast
 Two structural moves toward the ateliers' actual method (grounded in the Cours
 préparatoires the way Sonia teaches).
