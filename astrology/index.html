@@ -3180,6 +3180,48 @@ var APP = (function () {
       src: DATA.MEDICAL_SRC || 'the medical reading after Lilly (1647), Culpeper, Raphael — our paraphrase, never a diagnosis'
     };
   }
+  // ===== TOPICAL SYNTHESIS: a life-domain read across its SEVERAL houses, not just one =====
+  // The way the school actually reads a topic: money is not only the 2nd — it is the 2nd (your
+  // substance) AND the 11th (gain) AND the Lot of Fortune AND the 8th (others' money), each
+  // significator judged by its state and followed to where it sits (the source), the natural
+  // significator (karaka) weighed, and one verdict struck. The engine behind Money/Love/Family.
+  function judgeTopic(c, b, spec) {
+    if (!(b && b.timeKnown && c.ascBody && c.cusps)) return null;
+    var CL = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn'];
+    var S = [spec.opener], receipts = [], favor = 0, weight = 0, i, oi, k;
+    for (i = 0; i < spec.houses.length; i++) {
+      var hs = spec.houses[i], h = hs.h, cs = Math.floor(rev(c.cusps[h]) / 30);
+      var lordK = TRAD_RULER[cs], lordD = determination(c, b, lordK); if (!lordD) continue;
+      var srcH = lordD.house, t = lordD.condition ? lordD.condition.total : 0;
+      favor += (t >= 3 ? 1 : t < 0 ? -1 : 0); weight++;
+      var occTxt = '';
+      for (oi = 0; oi < CL.length; oi++) { k = CL[oi]; var pp = c.planets[k]; if (pp && pp.house === h && k !== lordK) { var v = determination(c, b, k); occTxt = ' ' + nameFor(k) + ' stands in it, ' + (v.nature.verdict === 'benefic' ? 'a benefic favouring' : v.nature.verdict === 'malefic' ? 'a malefic troubling' : 'a mixed hand on') + ' ' + hs.role + '.'; if (v.nature.verdict === 'benefic') favor += 0.5; else if (v.nature.verdict === 'malefic') favor -= 0.5; break; } }
+      var promise = (t >= 3 ? 'held strong, the promise holds' : t < 0 ? 'held weak, the promise strains' : 'held middling, the promise is mixed');
+      var link = (srcH && srcH !== h) ? ', and sits in your ' + ordinal(srcH) + ' — so ' + (CAUSE_LINK9[h] || ('the ' + ordinal(h) + '’s matters run through')) + ' ' + HOUSE_AREA9[srcH - 1] : '';
+      S.push(capit(hs.role) + ' answers to ' + nameFor(lordK) + ', ' + stateAdj9(lordD.essential.label) + ' in ' + lordD.signName + link + ' — ' + promise + '.' + occTxt);
+      receipts.push(ordinal(h) + ' lord ' + nameFor(lordK) + '→' + ordinal(srcH || 0) + ' lilly' + (t >= 0 ? '+' : '') + t);
+    }
+    if (spec.lot && c.points && c.points[spec.lot]) {
+      var lp = c.points[spec.lot], lh = lp.house || natalHouseOf(c, lp.lon), ls = Math.floor(rev(lp.lon) / 30), llK = TRAD_RULER[ls], llD = determination(c, b, llK);
+      S.push('Your ' + spec.lotName + ' falls in your ' + ordinal(lh) + ' (' + HOUSE_AREA9[lh - 1] + '), ruled by ' + nameFor(llK) + (llD && llD.house ? ' from your ' + ordinal(llD.house) : '') + ' — where the good of it actually flows.');
+      receipts.push(spec.lotName + ' ' + ordinal(lh) + ' lord ' + nameFor(llK));
+    }
+    if (spec.karaka) { var kd = determination(c, b, spec.karaka); if (kd) { var kt = kd.condition ? kd.condition.total : 0; favor += (kt >= 3 ? 0.5 : kt < 0 ? -0.5 : 0);
+      S.push(nameFor(spec.karaka) + ', the natural significator of ' + spec.karWord + ', is ' + stateAdj9(kd.essential.label) + ' in ' + kd.signName + (kd.house ? ' in your ' + ordinal(kd.house) : '') + ' — ' + (kt >= 3 ? 'strong, it underwrites the whole matter' : kt < 0 ? 'weak, it withholds where it should give' : 'mixed, neither sealing nor sinking it') + '.');
+      receipts.push(spec.karaka + ' karaka lilly' + (kt >= 0 ? '+' : '') + kt); } }
+    var verdict = favor >= 1.5 ? 'well-promised' : favor <= -1.5 ? 'hard-won' : 'mixed';
+    S.push(spec.title + ', on balance: ' + (verdict === 'well-promised' ? 'well promised — the testimonies mostly favour it, and it tends to come without being wrung for.' : verdict === 'hard-won' ? 'hard-won — the testimonies lean against, so it is built by effort and second attempts rather than handed over.' : 'mixed — real strengths and real taxes, and timing decides which speaks in a given year.'));
+    return { hasTime: true, topic: spec.key, verdict: verdict, favor: favor, line: S.join(' '),
+      receipt: (spec.key + ': ' + receipts.join(' · ') + ' · ' + verdict).toUpperCase(),
+      src: 'the topical synthesis across the domain’s houses, its Lot and its karaka; Lilly, Christian Astrology (1647); Morin, Astrologia Gallica XXI' };
+  }
+  function judgeMoney(c, b) {
+    return judgeTopic(c, b, {
+      key: 'money', title: 'Money', karaka: 'jupiter', karWord: 'wealth', lot: 'pof', lotName: 'Lot of Fortune',
+      opener: 'Wealth is read across more than one house — your own substance, what your work and allies return, and the money that flows through others.',
+      houses: [ { h: 2, role: 'your own movable wealth and income' }, { h: 11, role: 'gain, and what your work, friends and patrons return' }, { h: 8, role: 'other people’s money — debt, inheritance, and what you share' } ]
+    });
+  }
   // ===== PHASE 10 — ASPECT DOCTRINE, PAIR-SPECIFIC: the pipe and the liquid, judged =====
   // Every aspect judged from BOTH planets' full determinations: the aspect gives the pipe,
   // the planets give the liquid, the states give its quality, reception gives the repair,
@@ -5404,7 +5446,7 @@ var APP = (function () {
     solarReturnChart: solarReturnChart, upcomingEclipses: upcomingEclipses, bestDaysFor: bestDaysFor, electIntents: electIntents, oddPredictions: oddPredictions, composeProfectionYear: composeProfectionYear, signHouseWeave: signHouseWeave,
     progressedTimeline: progressedTimeline, retroSeasons: retroSeasons,
     exportBook: exportBook, exportBackup: exportBackup, importBackup: importBackup, composeDailyEssay: composeDailyEssay, chartFP: chartFP, weaveNote: weaveNote, termOf: termOf, anA: anA, composeColleague: composeColleague, exportColleague: exportColleague,
-    microFor: microFor, tellsFor: tellsFor, weaveTransit: weaveTransit, traditionalRead: traditionalRead, determination: determination, determinationSheet: determinationSheet, derivedHouseOf: derivedHouseOf, derivedPhrase: derivedPhrase, conditionVerdict: conditionVerdict, sectProfile: sectProfile, judgeAscendant: judgeAscendant, judgeCaptain: judgeCaptain, rulershipWeb: rulershipWeb, zodiacMatrix: zodiacMatrix, cuspAlmuten: cuspAlmuten, judgeHouse: judgeHouse, judgeHouses: judgeHouses, judgeHealth: judgeHealth, judgeAspect: judgeAspect, judgeAspects: judgeAspects, fullReception: fullReception, receptionOnAspect: receptionOnAspect, receptionsInChart: receptionsInChart, testimonyAuthority: testimonyAuthority, contest: contest, rulingVoice: rulingVoice, contradictions: contradictions, natalSynthesis: natalSynthesis, housesThatMatter: housesThatMatter, noBirthTimeReading: noBirthTimeReading, judgeDirection: judgeDirection, judgeDirections: judgeDirections, directedAscendant: directedAscendant, directedSignificators: directedSignificators, significatorFor: significatorFor, directedChapter18: directedChapter18, boundsWalk: boundsWalk, lordOfYear: lordOfYear, profectionYear: profectionYear, triggerReading: triggerReading, liveWires21: liveWires21, judgeCycle: judgeCycle, judgeCycles: judgeCycles, judgeReturn: judgeReturn, eclipseTimers: eclipseTimers, glanceJudged: glanceJudged, weekJudged: weekJudged, lots: lots, starsJudged: starsJudged, hiddenPartnerships: hiddenPartnerships, patternsAsTestimony: patternsAsTestimony, vedicWall: vedicWall, bondSpine35: bondSpine35, bondOverlay35: bondOverlay35, voiceCheck: voiceCheck, sourceRegistry: sourceRegistry, citeSource: citeSource, placementProse: placementProse, interpret: interpret, temperament: temperament, temperamentProse: temperamentProse, symbolicDirections: symbolicDirections, castFromDirection: castFromDirection, directionLine: directionLine, directionReceipt: directionReceipt, aspectNature: aspectNature, transitCycles: transitCycles, weaveCycle: weaveCycle, weaveWeek: weaveWeek, receptionOf: receptionOf, guideCards: guideCards, ancientSky: ancientSky, addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, returnsAlmanac: returnsAlmanac, progressedLunation: progressedLunation, planetaryHours: planetaryHours, moonVoidWindow: moonVoidWindow, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
+    microFor: microFor, tellsFor: tellsFor, weaveTransit: weaveTransit, traditionalRead: traditionalRead, determination: determination, determinationSheet: determinationSheet, derivedHouseOf: derivedHouseOf, derivedPhrase: derivedPhrase, conditionVerdict: conditionVerdict, sectProfile: sectProfile, judgeAscendant: judgeAscendant, judgeCaptain: judgeCaptain, rulershipWeb: rulershipWeb, zodiacMatrix: zodiacMatrix, cuspAlmuten: cuspAlmuten, judgeHouse: judgeHouse, judgeHouses: judgeHouses, judgeHealth: judgeHealth, judgeTopic: judgeTopic, judgeMoney: judgeMoney, judgeAspect: judgeAspect, judgeAspects: judgeAspects, fullReception: fullReception, receptionOnAspect: receptionOnAspect, receptionsInChart: receptionsInChart, testimonyAuthority: testimonyAuthority, contest: contest, rulingVoice: rulingVoice, contradictions: contradictions, natalSynthesis: natalSynthesis, housesThatMatter: housesThatMatter, noBirthTimeReading: noBirthTimeReading, judgeDirection: judgeDirection, judgeDirections: judgeDirections, directedAscendant: directedAscendant, directedSignificators: directedSignificators, significatorFor: significatorFor, directedChapter18: directedChapter18, boundsWalk: boundsWalk, lordOfYear: lordOfYear, profectionYear: profectionYear, triggerReading: triggerReading, liveWires21: liveWires21, judgeCycle: judgeCycle, judgeCycles: judgeCycles, judgeReturn: judgeReturn, eclipseTimers: eclipseTimers, glanceJudged: glanceJudged, weekJudged: weekJudged, lots: lots, starsJudged: starsJudged, hiddenPartnerships: hiddenPartnerships, patternsAsTestimony: patternsAsTestimony, vedicWall: vedicWall, bondSpine35: bondSpine35, bondOverlay35: bondOverlay35, voiceCheck: voiceCheck, sourceRegistry: sourceRegistry, citeSource: citeSource, placementProse: placementProse, interpret: interpret, temperament: temperament, temperamentProse: temperamentProse, symbolicDirections: symbolicDirections, castFromDirection: castFromDirection, directionLine: directionLine, directionReceipt: directionReceipt, aspectNature: aspectNature, transitCycles: transitCycles, weaveCycle: weaveCycle, weaveWeek: weaveWeek, receptionOf: receptionOf, guideCards: guideCards, ancientSky: ancientSky, addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, returnsAlmanac: returnsAlmanac, progressedLunation: progressedLunation, planetaryHours: planetaryHours, moonVoidWindow: moonVoidWindow, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
     saveCurrentChart: saveCurrentChart, deleteSavedChart: deleteSavedChart, activateSavedChart: activateSavedChart, activeChartKey: activeChartKey, chartKey: chartKey, lifeTransits: lifeTransits, upcomingTransits: upcomingTransits, transitMotion: transitMotion, compositeChart: compositeChart,
     nameFor: nameFor, glyphFor: glyphFor, pad: pad,
     domElement: domElement, lowElement: lowElement, domMod: domMod, tzOffsetHours: tzOffsetHours
@@ -8062,6 +8104,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         }
         var DOMLAB9 = ['You & your body', 'Money & resources', 'Mind, siblings & the near world', 'Home, father & roots', 'Children, love & joy', 'Work, health & service', 'Marriage & partnership', 'Intimacy, death & shared money', 'Belief, travel & higher learning', 'Career, standing & the mother', 'Friends, allies & hopes', 'The hidden, solitude & undoing'];
         if (UI.healthCache === undefined) { try { UI.healthCache = APP.judgeHealth(c, b) || null; } catch (eH8) { UI.healthCache = null; } }
+        if (UI.moneyCache === undefined) { try { UI.moneyCache = APP.judgeMoney(c, b) || null; } catch (eM8) { UI.moneyCache = null; } }
         var dk9; for (dk9 = 0; dk9 < UI.domCache.length; dk9++) {
           var DC9 = UI.domCache[dk9];
           eyebrow(DOMLAB9[DC9.h - 1], x, ly, ACC); ly += 22;
@@ -8072,6 +8115,12 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
             setFont(MONO, 9.5, ACCTX, p.LEFT, p.TOP, 215); p.text('THE BODY, AS THE TRADITION WATCHES IT', x, sY(ly)); ly += 17;
             ly += paragraph(UI.healthCache.line, x, ly, w, 15, INK, SERIF, 23) + 6;
             ly += paragraph(UI.healthCache.receipt, x, ly, w, 8.5, ACCTX, MONO, 12, 190) + 14;
+          }
+          // under Money, the topical synthesis across the 2nd, 11th, 8th, Fortune and Jupiter
+          if (DC9.h === 2 && UI.moneyCache) {
+            setFont(MONO, 9.5, ACCTX, p.LEFT, p.TOP, 215); p.text('WEALTH, READ ACROSS ITS HOUSES', x, sY(ly)); ly += 17;
+            ly += paragraph(UI.moneyCache.line, x, ly, w, 15, INK, SERIF, 23) + 6;
+            ly += paragraph(UI.moneyCache.receipt, x, ly, w, 8.5, ACCTX, MONO, 12, 190) + 14;
           }
         }
         ly += 4;
@@ -10710,7 +10759,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       APP.STATE.birth = { name: '', y: d.y, mo: d.mo, d: d.d, hour: d.hour, min: d.min, tz: d.tz || 0, manualTz: !!d.manualTz, iana: iana, lat: lat, lon: lon, place: place, timeKnown: d.timeKnown };
       recompute(); UI.selPlanet = 'sun'; UI.popT = nowT(); UI.popFrom = 22; UI.scroll.chart = 0; UI.screen = 'chart'; hideSearchInput();
     }
-    function recompute() { APP.STATE.chart = APP.compute(APP.STATE.birth, APP.STATE.settings); APP.save(); UI.readCache = null; UI.readSig = null; UI.readTransit = null; UI.forecast = null; UI.promCache = null; UI.arcCache = null; UI.todayCache = null; UI.fmList = null; UI.lifeList = null; UI.calEvents = null; UI.calDay = null; UI.walkTr = null; UI.walkTheme = null; UI.bondCache = null; UI.bondFor = null; UI.plun = null; UI.ringsData = null; UI.ringSel = null; UI.vocW = null; UI.phCache = null; UI.synToneCache = null; UI.dailyEssay = null; UI.cycles = undefined; UI.cycOpen = {}; UI.weekWv = undefined; UI.tradCache = undefined; UI.domCache = undefined; UI.healthCache = undefined; UI.dirCache = undefined; UI.liveWires = undefined; UI.sectDay = undefined; UI.pcProseFor = null; UI.chartWarm = false; UI.warmStep = 0; UI.chartFormT = 0; if (APP.clearPersonCharts) APP.clearPersonCharts(); UI.askAns = ''; UI.quip = null; UI.quipNext = 0; buildField(); }
+    function recompute() { APP.STATE.chart = APP.compute(APP.STATE.birth, APP.STATE.settings); APP.save(); UI.readCache = null; UI.readSig = null; UI.readTransit = null; UI.forecast = null; UI.promCache = null; UI.arcCache = null; UI.todayCache = null; UI.fmList = null; UI.lifeList = null; UI.calEvents = null; UI.calDay = null; UI.walkTr = null; UI.walkTheme = null; UI.bondCache = null; UI.bondFor = null; UI.plun = null; UI.ringsData = null; UI.ringSel = null; UI.vocW = null; UI.phCache = null; UI.synToneCache = null; UI.dailyEssay = null; UI.cycles = undefined; UI.cycOpen = {}; UI.weekWv = undefined; UI.tradCache = undefined; UI.domCache = undefined; UI.healthCache = undefined; UI.moneyCache = undefined; UI.dirCache = undefined; UI.liveWires = undefined; UI.sectDay = undefined; UI.pcProseFor = null; UI.chartWarm = false; UI.warmStep = 0; UI.chartFormT = 0; if (APP.clearPersonCharts) APP.clearPersonCharts(); UI.askAns = ''; UI.quip = null; UI.quipNext = 0; buildField(); }
 
     // ---------- share / export a clean chart card (own untainted canvas; the live one holds remote images) ----------
     // share a daily card (clean offscreen canvas) — moon phase + what's live on your chart today
@@ -11476,7 +11525,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       } catch (e) {}
     }
     // battery: stop the draw loop entirely while the tab/app is hidden
-    try { document.addEventListener('visibilitychange', function () { try { if (document.hidden) p.noLoop(); else { var d9 = new Date(), k9 = d9.getFullYear() * 10000 + (d9.getMonth() + 1) * 100 + d9.getDate(); if (UI.dayKey && UI.dayKey !== k9) { UI.todayCache = null; UI.calEvents = null; UI.walkTr = null; UI.fmList = null; UI.readCache = null; UI.oddPred = undefined; UI.profYear = undefined; UI.rdBeats = undefined; UI.rdI = 0; UI.ancient = undefined; UI.cycles = undefined; UI.cycOpen = {}; UI.weekWv = undefined; UI.tradCache = undefined; UI.domCache = undefined; UI.healthCache = undefined; UI.dirCache = undefined; UI.liveWires = undefined; UI.sectDay = undefined; } UI.dayKey = k9; p.loop(); } } catch (e2) {} }); } catch (e3) {}
+    try { document.addEventListener('visibilitychange', function () { try { if (document.hidden) p.noLoop(); else { var d9 = new Date(), k9 = d9.getFullYear() * 10000 + (d9.getMonth() + 1) * 100 + d9.getDate(); if (UI.dayKey && UI.dayKey !== k9) { UI.todayCache = null; UI.calEvents = null; UI.walkTr = null; UI.fmList = null; UI.readCache = null; UI.oddPred = undefined; UI.profYear = undefined; UI.rdBeats = undefined; UI.rdI = 0; UI.ancient = undefined; UI.cycles = undefined; UI.cycOpen = {}; UI.weekWv = undefined; UI.tradCache = undefined; UI.domCache = undefined; UI.healthCache = undefined; UI.moneyCache = undefined; UI.dirCache = undefined; UI.liveWires = undefined; UI.sectDay = undefined; } UI.dayKey = k9; p.loop(); } } catch (e2) {} }); } catch (e3) {}
     p.draw = function () {
       // self-heal any first-frame canvas-size mismatch immediately, rather than waiting for the
       // load-time resize (this is what left the screen half-painted on a cold open)
@@ -11487,7 +11536,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       try {
         var ckW9 = APP.activeChartKey ? (APP.activeChartKey() + '|' + (APP.STATE.settings ? APP.STATE.settings.house + APP.STATE.settings.zodiac : '')) : '';
         if (UI.ckW !== ckW9) {
-          if (UI.ckW != null) { UI.readSig = null; UI.walkTr = null; UI.walkTheme = null; UI.plun = null; UI.forecast = null; UI.readCache = null; UI.todayCache = null; UI.calEvents = null; UI.fmList = null; UI.lbCache = null; UI.lqzCache = null; UI.lwSky = null; UI.progTL = null; UI.retroS = null; UI.sigCache = undefined; UI.arcCache = null; UI.promCache = null; UI.oddPred = undefined; UI.profYear = undefined; UI.quirkCache = undefined; UI.intCache = undefined; UI.intPull = undefined; UI.spookCache = undefined; UI.comboCache = undefined; UI.smCache = undefined; UI.guide = null; UI.rdBeats = undefined; UI.rdI = 0; UI.ancient = undefined; UI.cycles = undefined; UI.cycOpen = {}; UI.weekWv = undefined; UI.tradCache = undefined; UI.domCache = undefined; UI.healthCache = undefined; UI.dirCache = undefined; UI.liveWires = undefined; UI.sectDay = undefined; }
+          if (UI.ckW != null) { UI.readSig = null; UI.walkTr = null; UI.walkTheme = null; UI.plun = null; UI.forecast = null; UI.readCache = null; UI.todayCache = null; UI.calEvents = null; UI.fmList = null; UI.lbCache = null; UI.lqzCache = null; UI.lwSky = null; UI.progTL = null; UI.retroS = null; UI.sigCache = undefined; UI.arcCache = null; UI.promCache = null; UI.oddPred = undefined; UI.profYear = undefined; UI.quirkCache = undefined; UI.intCache = undefined; UI.intPull = undefined; UI.spookCache = undefined; UI.comboCache = undefined; UI.smCache = undefined; UI.guide = null; UI.rdBeats = undefined; UI.rdI = 0; UI.ancient = undefined; UI.cycles = undefined; UI.cycOpen = {}; UI.weekWv = undefined; UI.tradCache = undefined; UI.domCache = undefined; UI.healthCache = undefined; UI.moneyCache = undefined; UI.dirCache = undefined; UI.liveWires = undefined; UI.sectDay = undefined; }
           UI.ckW = ckW9;
         }
       } catch (eCk9) {}

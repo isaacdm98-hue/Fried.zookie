@@ -1,5 +1,18 @@
 # Changelog
 
+## 4.8.0 — 2026-07-23 — topical synthesis: a domain read across its several houses
+The school reads a life-topic across **all** its houses at once, not one in isolation.
+
+- **The topical-synthesis engine (`judgeTopic`) and the Money reading (`judgeMoney`).**
+  Wealth is now read the way a traditional astrologer reads it — across the **2nd**
+  (your own substance), the **11th** (gain, what work and allies return), the **8th**
+  (others' money, debt, inheritance), the **Lot of Fortune** (where the good of it
+  flows), and **Jupiter** (the natural significator) — each significator judged by its
+  state and *followed to the house it sits in* (the source: "money arrives through
+  work" = lord of the 2nd in the 6th), occupants weighed by nature, and one verdict
+  struck (well-promised / mixed / hard-won). Surfaced under the Money domain, receipts
+  a tap under. The same engine will carry Love, Family and Career next.
+
 ## 4.7.0 — 2026-07-23 — the constitution: the four temperaments, the way the school opens
 The reading now opens where a traditional astrologer opens — on the **humoral
 constitution** (Cours 4), the ground the domains stand on.
