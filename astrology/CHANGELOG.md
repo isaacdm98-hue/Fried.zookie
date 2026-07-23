@@ -1,5 +1,29 @@
 # Changelog
 
+## 4.6.0 — 2026-07-23 — the reading reads like Sonia: domains, and the whole cast
+Two structural moves toward the ateliers' actual method (grounded in the Cours
+préparatoires the way Sonia teaches).
+
+- **Domains, not personality.** The Read screen's house chapter now leads with the
+  rich four-testimony judgment (`judgeHouse`) instead of the simpler ruler-chain —
+  occupant judged by nature and what it rules, the lord's state as the promise, the
+  cause-effect house-link ("the partner is met through work"), the karaka checked
+  last, a verdict — organized **by life-domain in priority order** (Marriage,
+  Career, Money, Health, Family), each under its own header. This is the
+  domains-of-a-life reading the school teaches, now the primary house view.
+- **The derived-houses fan-out (Cours 5) — one direction, the whole cast's year.**
+  A new `castFromDirection` turns the chart to each person of your life as their
+  own Ascendant (sibling, father, child, partner, teacher, mother, friend, rival)
+  and re-reads the same symbolic direction from their vantage — where the touched
+  significator falls in *their* houses and what it rules there, coloured by the
+  mover's nature. One motion becomes a distinct dated event for each person, shown
+  under your directions: the tradition's way of reading a whole family from a
+  single arc, and the engine of countless time-based narratives.
+
+Reverted an earlier modern-psychology experiment that read planets as "you" and
+faked counsel (against doctrine-notes §1/§11). Golden pins the judgement, still
+green; doctrine, UI audit and voice all pass.
+
 ## 4.5.0 — 2026-07-22 — the reading finally says what an astrologer would tell you
 The interpretation engine begins: the reading crosses from describing the
 mechanism to delivering the delineation — grounded in the tradition, selected by

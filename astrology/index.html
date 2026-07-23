@@ -7957,6 +7957,17 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
             ly += paragraph(drA.next[drI].line, x, ly, w, 14.5, INK, SERIF, 22) + 4;
             ly += paragraph(drA.next[drI].receipt, x, ly, w, 8.5, ACCTX, MONO, 12, 185) + 10;
           }
+          // the derived-houses fan-out (Cours 5): the nearest direction, read across the whole cast —
+          // one motion, a distinct dated event for each person in the native's life
+          if (drA.next.length) {
+            var fan9 = []; try { fan9 = APP.castFromDirection(c, b, drA.next[0]); } catch (eFn9) {}
+            if (fan9.length) {
+              ly += 4; setFont(MONO, 9, ACCTX, p.LEFT, p.TOP, 205); p.text('ONE DIRECTION, MANY LIVES', x, sY(ly)); ly += 18;
+              ly += paragraph('Turn the chart to each person in your life and the same direction reaches them too, each in their own domain — the tradition’s way of reading a whole family from one motion:', x, ly, w, 12.5, INK, SERIF, 18, 180) + 10;
+              var fi9; for (fi9 = 0; fi9 < fan9.length; fi9++) { ly += paragraph(fan9[fi9].line, x, ly, w, 13.5, INK, SERIF, 20, 230) + 6; }
+              ly += 4;
+            }
+          }
           ly += 8; hairline(x, ly, x + w, 40); ly += 24;
         }
         // oddly specific, dated, and computed straight from where the planets will actually be
