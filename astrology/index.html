@@ -7790,12 +7790,22 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       }
       // ===== the traditional method, in full: every house's ruler followed home, every planet's state =====
       if (UI.tradCache === undefined) { try { UI.tradCache = APP.traditionalRead(c, b); } catch (eTr8) { UI.tradCache = null; } }
-      if (UI.tradCache && UI.tradCache.houses && UI.tradCache.houses.length && chapterHead('houses12', 'The twelve houses', 'Rulers')) {
-        ly += paragraph('The traditional method: each house is an area of life, each answers to the planet that rules its cusp sign, and the reading is where that ruler stands and in what state. Follow each ruler home.', x, ly, w, 12.5, INK, SERIF, 18, 175) + 12;
-        var thI; for (thI = 0; thI < UI.tradCache.houses.length; thI++) {
-          var TH9 = UI.tradCache.houses[thI];
-          ly += paragraph(TH9.line, x, ly, w, 15, INK, SERIF, 23) + 6;
-          ly += paragraph(TH9.receipt, x, ly, w, 8.5, ACCTX, MONO, 12, 190) + 12;
+      if (UI.tradCache && UI.tradCache.houses && UI.tradCache.houses.length && chapterHead('houses12', 'Your life, domain by domain', 'The houses judged')) {
+        ly += paragraph('The reading a traditional astrologer gives — not a personality profile but the domains of a life: money, marriage, work, family, children, health. Each is judged by the planet that rules it, where that planet stands and in what state, what seconds the promise and what taxes it. The domains that carry the most weight in your chart come first.', x, ly, w, 12.5, INK, SERIF, 18, 175) + 14;
+        // the rich four-testimony domain reading (judgeHouse), in Sonia's priority order, cached once
+        if (UI.domCache === undefined) {
+          UI.domCache = [];
+          try {
+            var htm9 = APP.housesThatMatter(c, b), order9 = (htm9 && htm9.length) ? htm9.map(function (hh) { return hh.house; }) : [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], dj9;
+            for (dj9 = 0; dj9 < order9.length; dj9++) { var JH9 = APP.judgeHouse(c, b, order9[dj9]); if (JH9) UI.domCache.push({ h: order9[dj9], jh: JH9 }); }
+          } catch (eDom9) { UI.domCache = []; }
+        }
+        var DOMLAB9 = ['You & your body', 'Money & resources', 'Mind, siblings & the near world', 'Home, father & roots', 'Children, love & joy', 'Work, health & service', 'Marriage & partnership', 'Intimacy, death & shared money', 'Belief, travel & higher learning', 'Career, standing & the mother', 'Friends, allies & hopes', 'The hidden, solitude & undoing'];
+        var dk9; for (dk9 = 0; dk9 < UI.domCache.length; dk9++) {
+          var DC9 = UI.domCache[dk9];
+          eyebrow(DOMLAB9[DC9.h - 1], x, ly, ACC); ly += 22;
+          ly += paragraph(DC9.jh.line, x, ly, w, 15, INK, SERIF, 23) + 6;
+          ly += paragraph(DC9.jh.receipt, x, ly, w, 8.5, ACCTX, MONO, 12, 190) + 14;
         }
         ly += 4;
       }
@@ -10410,7 +10420,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       APP.STATE.birth = { name: '', y: d.y, mo: d.mo, d: d.d, hour: d.hour, min: d.min, tz: d.tz || 0, manualTz: !!d.manualTz, iana: iana, lat: lat, lon: lon, place: place, timeKnown: d.timeKnown };
       recompute(); UI.selPlanet = 'sun'; UI.popT = nowT(); UI.popFrom = 22; UI.scroll.chart = 0; UI.screen = 'chart'; hideSearchInput();
     }
-    function recompute() { APP.STATE.chart = APP.compute(APP.STATE.birth, APP.STATE.settings); APP.save(); UI.readCache = null; UI.readSig = null; UI.readTransit = null; UI.forecast = null; UI.promCache = null; UI.arcCache = null; UI.todayCache = null; UI.fmList = null; UI.lifeList = null; UI.calEvents = null; UI.calDay = null; UI.walkTr = null; UI.walkTheme = null; UI.bondCache = null; UI.bondFor = null; UI.plun = null; UI.ringsData = null; UI.ringSel = null; UI.vocW = null; UI.phCache = null; UI.synToneCache = null; UI.dailyEssay = null; UI.cycles = undefined; UI.cycOpen = {}; UI.weekWv = undefined; UI.tradCache = undefined; UI.dirCache = undefined; UI.liveWires = undefined; UI.sectDay = undefined; UI.pcProseFor = null; UI.chartWarm = false; UI.warmStep = 0; UI.chartFormT = 0; if (APP.clearPersonCharts) APP.clearPersonCharts(); UI.askAns = ''; UI.quip = null; UI.quipNext = 0; buildField(); }
+    function recompute() { APP.STATE.chart = APP.compute(APP.STATE.birth, APP.STATE.settings); APP.save(); UI.readCache = null; UI.readSig = null; UI.readTransit = null; UI.forecast = null; UI.promCache = null; UI.arcCache = null; UI.todayCache = null; UI.fmList = null; UI.lifeList = null; UI.calEvents = null; UI.calDay = null; UI.walkTr = null; UI.walkTheme = null; UI.bondCache = null; UI.bondFor = null; UI.plun = null; UI.ringsData = null; UI.ringSel = null; UI.vocW = null; UI.phCache = null; UI.synToneCache = null; UI.dailyEssay = null; UI.cycles = undefined; UI.cycOpen = {}; UI.weekWv = undefined; UI.tradCache = undefined; UI.domCache = undefined; UI.dirCache = undefined; UI.liveWires = undefined; UI.sectDay = undefined; UI.pcProseFor = null; UI.chartWarm = false; UI.warmStep = 0; UI.chartFormT = 0; if (APP.clearPersonCharts) APP.clearPersonCharts(); UI.askAns = ''; UI.quip = null; UI.quipNext = 0; buildField(); }
 
     // ---------- share / export a clean chart card (own untainted canvas; the live one holds remote images) ----------
     // share a daily card (clean offscreen canvas) — moon phase + what's live on your chart today
@@ -11176,7 +11186,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       } catch (e) {}
     }
     // battery: stop the draw loop entirely while the tab/app is hidden
-    try { document.addEventListener('visibilitychange', function () { try { if (document.hidden) p.noLoop(); else { var d9 = new Date(), k9 = d9.getFullYear() * 10000 + (d9.getMonth() + 1) * 100 + d9.getDate(); if (UI.dayKey && UI.dayKey !== k9) { UI.todayCache = null; UI.calEvents = null; UI.walkTr = null; UI.fmList = null; UI.readCache = null; UI.oddPred = undefined; UI.profYear = undefined; UI.rdBeats = undefined; UI.rdI = 0; UI.ancient = undefined; UI.cycles = undefined; UI.cycOpen = {}; UI.weekWv = undefined; UI.tradCache = undefined; UI.dirCache = undefined; UI.liveWires = undefined; UI.sectDay = undefined; } UI.dayKey = k9; p.loop(); } } catch (e2) {} }); } catch (e3) {}
+    try { document.addEventListener('visibilitychange', function () { try { if (document.hidden) p.noLoop(); else { var d9 = new Date(), k9 = d9.getFullYear() * 10000 + (d9.getMonth() + 1) * 100 + d9.getDate(); if (UI.dayKey && UI.dayKey !== k9) { UI.todayCache = null; UI.calEvents = null; UI.walkTr = null; UI.fmList = null; UI.readCache = null; UI.oddPred = undefined; UI.profYear = undefined; UI.rdBeats = undefined; UI.rdI = 0; UI.ancient = undefined; UI.cycles = undefined; UI.cycOpen = {}; UI.weekWv = undefined; UI.tradCache = undefined; UI.domCache = undefined; UI.dirCache = undefined; UI.liveWires = undefined; UI.sectDay = undefined; } UI.dayKey = k9; p.loop(); } } catch (e2) {} }); } catch (e3) {}
     p.draw = function () {
       // self-heal any first-frame canvas-size mismatch immediately, rather than waiting for the
       // load-time resize (this is what left the screen half-painted on a cold open)
@@ -11187,7 +11197,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       try {
         var ckW9 = APP.activeChartKey ? (APP.activeChartKey() + '|' + (APP.STATE.settings ? APP.STATE.settings.house + APP.STATE.settings.zodiac : '')) : '';
         if (UI.ckW !== ckW9) {
-          if (UI.ckW != null) { UI.readSig = null; UI.walkTr = null; UI.walkTheme = null; UI.plun = null; UI.forecast = null; UI.readCache = null; UI.todayCache = null; UI.calEvents = null; UI.fmList = null; UI.lbCache = null; UI.lqzCache = null; UI.lwSky = null; UI.progTL = null; UI.retroS = null; UI.sigCache = undefined; UI.arcCache = null; UI.promCache = null; UI.oddPred = undefined; UI.profYear = undefined; UI.quirkCache = undefined; UI.intCache = undefined; UI.intPull = undefined; UI.spookCache = undefined; UI.comboCache = undefined; UI.smCache = undefined; UI.guide = null; UI.rdBeats = undefined; UI.rdI = 0; UI.ancient = undefined; UI.cycles = undefined; UI.cycOpen = {}; UI.weekWv = undefined; UI.tradCache = undefined; UI.dirCache = undefined; UI.liveWires = undefined; UI.sectDay = undefined; }
+          if (UI.ckW != null) { UI.readSig = null; UI.walkTr = null; UI.walkTheme = null; UI.plun = null; UI.forecast = null; UI.readCache = null; UI.todayCache = null; UI.calEvents = null; UI.fmList = null; UI.lbCache = null; UI.lqzCache = null; UI.lwSky = null; UI.progTL = null; UI.retroS = null; UI.sigCache = undefined; UI.arcCache = null; UI.promCache = null; UI.oddPred = undefined; UI.profYear = undefined; UI.quirkCache = undefined; UI.intCache = undefined; UI.intPull = undefined; UI.spookCache = undefined; UI.comboCache = undefined; UI.smCache = undefined; UI.guide = null; UI.rdBeats = undefined; UI.rdI = 0; UI.ancient = undefined; UI.cycles = undefined; UI.cycOpen = {}; UI.weekWv = undefined; UI.tradCache = undefined; UI.domCache = undefined; UI.dirCache = undefined; UI.liveWires = undefined; UI.sectDay = undefined; }
           UI.ckW = ckW9;
         }
       } catch (eCk9) {}
