@@ -27,6 +27,11 @@ constitution** (Cours 4), the ground the domains stand on.
   tendencies the old physicians watched, never a forecast. New corpus tables: the
   sign→body-zone melothesia, the planet→affliction qualities, and the Saturn/Mars/
   Jupiter planet-in-sign disease matrix (paraphrase after Raphael, Medical Astrology).
+- **Retrograde seasons now name your triple-passed points.** A retrograde season's
+  arc crosses any natal planet inside it **three times** (in, back, forward again) —
+  the most emphatic station-trigger. The retrograde-seasons reading now names exactly
+  which of *your* natal points fall in each arc, and flags any that is a **live wire**
+  the year already has under tension ("a station worth marking").
 - **Timing engine, made faithful to the sources.** Two corrections found by checking
   the code against the deep research: (1) **Zodiacal Releasing** now subdivides L2 by
   Valens' true unit-shrink (each sub is its sign's period in *months*, sign by sign)

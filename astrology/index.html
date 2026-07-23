@@ -4353,7 +4353,21 @@ var APP = (function () {
       for (j2 = 0; j2 < stations.length; j2++) if (stations[j2].planet === ev.planet && stations[j2].kind === 'd' && stations[j2].date > ev.date) { end = stations[j2]; break; }
       var lonRx = rev(EPH.positions(jsDayNum(ev.date))[ev.planet].lon - ayC);
       var lonD = end ? rev(EPH.positions(jsDayNum(end.date))[ev.planet].lon - ayC) : null;
-      seasons.push({ planet: ev.planet, from: ev.date, to: end ? end.date : null, signRx: Math.floor(lonRx / 30), signD: (lonD != null) ? Math.floor(lonD / 30) : null, house: natalHouseOf(c, lonRx) });
+      // the triple-pass zone: natal points inside the retrograde arc [lonD, lonRx] are crossed THREE
+      // times (in, back, and forward again) — the most emphatic station-trigger, esp. on a live wire
+      var triple = [];
+      if (lonD != null) {
+        var arcSpan = rev(lonRx - lonD), wires = null;
+        try { wires = liveWires21(c, STATE.birth).wires; } catch (eLw) { wires = {}; }
+        var tks = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn'], tp;
+        if (STATE.birth.timeKnown && c.ascBody) tks = tks.concat(['asc', 'mc']);
+        for (tp = 0; tp < tks.length; tp++) {
+          var pk = tks[tp], plon = pk === 'asc' ? (c.ascBody && c.ascBody.lon) : pk === 'mc' ? (c.mcBody && c.mcBody.lon) : (c.planets[pk] ? c.planets[pk].lon : null);
+          if (plon == null) continue;
+          if (rev(rev(plon) - lonD) <= arcSpan) triple.push({ key: pk, house: natalHouseOf(c, plon), live: !!(wires && wires[pk]) });
+        }
+      }
+      seasons.push({ planet: ev.planet, from: ev.date, to: end ? end.date : null, signRx: Math.floor(lonRx / 30), signD: (lonD != null) ? Math.floor(lonD / 30) : null, house: natalHouseOf(c, lonRx), triple: triple });
     }
     return seasons;
   }
@@ -8372,6 +8386,11 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
             setFont(SANS, 13.5, INK, p.LEFT, p.TOP); bold(); p.text(APP.nameFor(RS.planet) + ' retrograde', x, sY(ly)); normal();
             setFont(MONO, 9.5, ACCTX, p.RIGHT, p.TOP, 230); p.text((fmtShort(RS.from) + (RS.to ? (' – ' + fmtShort(RS.to)) : ' →')).toUpperCase(), x + w, sY(ly + 2)); ly += 20;
             ly += paragraph('Walking back ' + (RS.signD != null && RS.signD !== RS.signRx ? ('from ' + DATA.SIGNS[RS.signRx].name + ' into ' + DATA.SIGNS[RS.signD].name) : ('through ' + DATA.SIGNS[RS.signRx].name)) + (RS.house ? (': your ' + ordinal(RS.house) + ' house, so the revisions land in ' + DATA.HOUSES[RS.house - 1].title.toLowerCase() + '.') : '.'), x, ly, w, 12.5, INK, SERIF, 18, 215) + 10;
+            if (RS.triple && RS.triple.length) {
+              var tlive = [], tqui = [], tqi; for (tqi = 0; tqi < RS.triple.length; tqi++) (RS.triple[tqi].live ? tlive : tqui).push(RS.triple[tqi]);
+              var tTxt = 'It crosses your natal ' + RS.triple.map(function (t) { return APP.nameFor(t.key); }).join(', ') + ' three times over — in, back, and forward again' + (tlive.length ? ', and ' + tlive.map(function (t) { return APP.nameFor(t.key); }).join(' and ') + (tlive.length > 1 ? ' are' : ' is') + ' a live wire this year, so this is a station worth marking.' : ' — a drawn-out, three-beat revisiting of what it holds.');
+              ly += paragraph(tTxt, x, ly, w, 12, tlive.length ? INK : ACCTX, SERIF, 17, tlive.length ? 235 : 200) + 10;
+            }
           }
           ly += 8;
         }
