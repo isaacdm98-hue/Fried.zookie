@@ -3238,6 +3238,37 @@ var APP = (function () {
   // speaks-first, rulerships, the Lilly verdict, nature and sect. Returns null for the
   // Ascendant (it has its own judgeAscendant) and for the outer planets (they keep the
   // modern blurb, since they hold no traditional determination).
+  // T1 — the state-interpreter. Turn a determination into the delineation CHOICES its real
+  // condition dictates: which half of the planet's character (well- vs poorly-placed, from the
+  // tradition's own qualities text) speaks; how the band colours delivery; whether it delivers
+  // THROUGH its dispositor. Pure data — every composer downstream reads from this, so the same
+  // placement reads generously when strong and cautiously when weak, exactly as a reader judges.
+  function interpret(D) {
+    if (!D) return null;
+    var out = { total: D.condition ? D.condition.total : 0, band: D.condition ? D.condition.band : 'mixed', tone: 'mixed' };
+    // tone: dignified/high-band → its gifts show; debilitated/low-band/peregrine → its faults show; else mixed
+    var lab = (D.essential && D.essential.label) || '';
+    if (/Domicile|Exaltation/.test(lab) || out.band === 'commanding' || out.band === 'sound') out.tone = 'well';
+    else if (/Detriment|Fall/.test(lab) || D.peregrine || out.band === 'strained' || out.band === 'afflicted') out.tone = 'poor';
+    // split the tradition's qualities text — "temperament. Well placed X. Poorly placed Y." — and
+    // pick the half this state actually earns.
+    if (D.natural && D.natural.qualities) {
+      var q = D.natural.qualities, wi = q.indexOf('Well placed');
+      // the shadow half is marked "Poorly placed" or "Ill placed" depending on the entry
+      var pm = q.indexOf('Poorly placed'), im = q.indexOf('Ill placed');
+      var pi = (pm >= 0 && im >= 0) ? Math.min(pm, im) : (pm >= 0 ? pm : im);
+      var plen = (pi === pm) ? 13 : 10; // length of the marker phrase to strip
+      var clean = function (s) { return s ? s.replace(/^[\s:.—-]+/, '').replace(/[\s.]+$/, '').trim() : ''; };
+      out.temperament = clean(wi > 0 ? q.slice(0, wi) : q);
+      out.well = clean(wi >= 0 ? q.slice(wi + 11, pi > wi ? pi : q.length) : '');
+      out.poor = clean(pi >= 0 ? q.slice(pi + plen) : '');
+      out.character = out.tone === 'poor' ? out.poor : out.well;
+    }
+    // delivery: a weak/peregrine planet is handed to its dispositor — name it, for "through X" reads
+    out.dispositor = (D.dispositor && D.dispositor !== D.key) ? D.dispositor : null;
+    out.deliversThrough = (out.tone !== 'well' && out.dispositor) ? out.dispositor : null;
+    return out;
+  }
   function placementProse(c, b, key) {
     if (key === 'asc' || !c.planets[key]) return null;
     var D = determination(c, b, key); if (!D || !D.essential || D.essential.modern) return null;
@@ -3249,6 +3280,17 @@ var APP = (function () {
     var place = D.house ? (Cap + ' keeps ' + his + ' court in your ' + ordinal(D.house) + ' house of ' + HOUSE_AREA9[D.house - 1] + ', ' + stateAdj9(D.essential.label) + ' in ' + D.signName) : (nameFor(key) + ' stands ' + stateAdj9(D.essential.label) + ' in ' + D.signName + ' (your birth time would place it in a house)');
     if (D.house && D.analogy.speaksFirst) place += ', and here speaks first of ' + D.analogy.speaksFirst.matter;
     L.push(place + '. ' + stChar.charAt(0).toUpperCase() + stChar.slice(1) + '.');
+    // T2 — the character this planet gives, in the half its state has earned. The temperament is
+    // named first (it anchors the "same fire/fluidity…" the poorly-placed clause refers to), then
+    // the state asserts which half of the nature actually shows — the tradition's own qualities.
+    var interp = interpret(D);
+    if (interp && interp.temperament && interp.character) {
+      var temp9 = interp.temperament.charAt(0).toLowerCase() + interp.temperament.slice(1);
+      var verdict9 = interp.tone === 'well' ? 'Held this strong, at its best — '
+        : interp.tone === 'poor' ? 'Held this weak — '
+        : 'Held mixed as it is, the gift is real but comes and goes — ';
+      L.push('By nature ' + temp9 + '. ' + verdict9 + interp.character + '.');
+    }
     var ruled = []; for (var i = 0; i < D.rules.length; i++) ruled.push(ordinal(D.rules[i].house));
     if (ruled.length) L.push(Cap + ' answers for your ' + ruled.join(' and your ') + (ruled.length > 1 ? ', so those departments dock wherever ' + he + ' stands' : '') + '.');
     if (D.condition) L.push(D.condition.line);
@@ -5085,7 +5127,7 @@ var APP = (function () {
     solarReturnChart: solarReturnChart, upcomingEclipses: upcomingEclipses, bestDaysFor: bestDaysFor, electIntents: electIntents, oddPredictions: oddPredictions, composeProfectionYear: composeProfectionYear, signHouseWeave: signHouseWeave,
     progressedTimeline: progressedTimeline, retroSeasons: retroSeasons,
     exportBook: exportBook, exportBackup: exportBackup, importBackup: importBackup, composeDailyEssay: composeDailyEssay, chartFP: chartFP, weaveNote: weaveNote, termOf: termOf, anA: anA, composeColleague: composeColleague, exportColleague: exportColleague,
-    microFor: microFor, tellsFor: tellsFor, weaveTransit: weaveTransit, traditionalRead: traditionalRead, determination: determination, determinationSheet: determinationSheet, derivedHouseOf: derivedHouseOf, derivedPhrase: derivedPhrase, conditionVerdict: conditionVerdict, sectProfile: sectProfile, judgeAscendant: judgeAscendant, judgeCaptain: judgeCaptain, rulershipWeb: rulershipWeb, zodiacMatrix: zodiacMatrix, cuspAlmuten: cuspAlmuten, judgeHouse: judgeHouse, judgeHouses: judgeHouses, judgeAspect: judgeAspect, judgeAspects: judgeAspects, fullReception: fullReception, receptionOnAspect: receptionOnAspect, receptionsInChart: receptionsInChart, testimonyAuthority: testimonyAuthority, contest: contest, rulingVoice: rulingVoice, contradictions: contradictions, natalSynthesis: natalSynthesis, housesThatMatter: housesThatMatter, noBirthTimeReading: noBirthTimeReading, judgeDirection: judgeDirection, judgeDirections: judgeDirections, directedAscendant: directedAscendant, directedSignificators: directedSignificators, significatorFor: significatorFor, directedChapter18: directedChapter18, boundsWalk: boundsWalk, lordOfYear: lordOfYear, profectionYear: profectionYear, triggerReading: triggerReading, liveWires21: liveWires21, judgeCycle: judgeCycle, judgeCycles: judgeCycles, judgeReturn: judgeReturn, eclipseTimers: eclipseTimers, glanceJudged: glanceJudged, weekJudged: weekJudged, lots: lots, starsJudged: starsJudged, hiddenPartnerships: hiddenPartnerships, patternsAsTestimony: patternsAsTestimony, vedicWall: vedicWall, bondSpine35: bondSpine35, bondOverlay35: bondOverlay35, voiceCheck: voiceCheck, sourceRegistry: sourceRegistry, citeSource: citeSource, placementProse: placementProse, symbolicDirections: symbolicDirections, directionLine: directionLine, directionReceipt: directionReceipt, aspectNature: aspectNature, transitCycles: transitCycles, weaveCycle: weaveCycle, weaveWeek: weaveWeek, receptionOf: receptionOf, guideCards: guideCards, ancientSky: ancientSky, addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, returnsAlmanac: returnsAlmanac, progressedLunation: progressedLunation, planetaryHours: planetaryHours, moonVoidWindow: moonVoidWindow, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
+    microFor: microFor, tellsFor: tellsFor, weaveTransit: weaveTransit, traditionalRead: traditionalRead, determination: determination, determinationSheet: determinationSheet, derivedHouseOf: derivedHouseOf, derivedPhrase: derivedPhrase, conditionVerdict: conditionVerdict, sectProfile: sectProfile, judgeAscendant: judgeAscendant, judgeCaptain: judgeCaptain, rulershipWeb: rulershipWeb, zodiacMatrix: zodiacMatrix, cuspAlmuten: cuspAlmuten, judgeHouse: judgeHouse, judgeHouses: judgeHouses, judgeAspect: judgeAspect, judgeAspects: judgeAspects, fullReception: fullReception, receptionOnAspect: receptionOnAspect, receptionsInChart: receptionsInChart, testimonyAuthority: testimonyAuthority, contest: contest, rulingVoice: rulingVoice, contradictions: contradictions, natalSynthesis: natalSynthesis, housesThatMatter: housesThatMatter, noBirthTimeReading: noBirthTimeReading, judgeDirection: judgeDirection, judgeDirections: judgeDirections, directedAscendant: directedAscendant, directedSignificators: directedSignificators, significatorFor: significatorFor, directedChapter18: directedChapter18, boundsWalk: boundsWalk, lordOfYear: lordOfYear, profectionYear: profectionYear, triggerReading: triggerReading, liveWires21: liveWires21, judgeCycle: judgeCycle, judgeCycles: judgeCycles, judgeReturn: judgeReturn, eclipseTimers: eclipseTimers, glanceJudged: glanceJudged, weekJudged: weekJudged, lots: lots, starsJudged: starsJudged, hiddenPartnerships: hiddenPartnerships, patternsAsTestimony: patternsAsTestimony, vedicWall: vedicWall, bondSpine35: bondSpine35, bondOverlay35: bondOverlay35, voiceCheck: voiceCheck, sourceRegistry: sourceRegistry, citeSource: citeSource, placementProse: placementProse, interpret: interpret, symbolicDirections: symbolicDirections, directionLine: directionLine, directionReceipt: directionReceipt, aspectNature: aspectNature, transitCycles: transitCycles, weaveCycle: weaveCycle, weaveWeek: weaveWeek, receptionOf: receptionOf, guideCards: guideCards, ancientSky: ancientSky, addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, returnsAlmanac: returnsAlmanac, progressedLunation: progressedLunation, planetaryHours: planetaryHours, moonVoidWindow: moonVoidWindow, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
     saveCurrentChart: saveCurrentChart, deleteSavedChart: deleteSavedChart, activateSavedChart: activateSavedChart, activeChartKey: activeChartKey, chartKey: chartKey, lifeTransits: lifeTransits, upcomingTransits: upcomingTransits, transitMotion: transitMotion, compositeChart: compositeChart,
     nameFor: nameFor, glyphFor: glyphFor, pad: pad,
     domElement: domElement, lowElement: lowElement, domMod: domMod, tzOffsetHours: tzOffsetHours
