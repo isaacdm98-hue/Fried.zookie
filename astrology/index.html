@@ -3278,7 +3278,6 @@ var APP = (function () {
     if (isCap) L.push(nameFor(key) + ' is the captain of your chart — the lord of your ' + DATA.SIGNS[c.ascBody.sign].name + ' Ascendant, the planet the whole life reports to.');
     var stChar = D.essential.character ? D.essential.character.split(';')[0] : stateAdj9(D.essential.label);
     var place = D.house ? (Cap + ' keeps ' + his + ' court in your ' + ordinal(D.house) + ' house of ' + HOUSE_AREA9[D.house - 1] + ', ' + stateAdj9(D.essential.label) + ' in ' + D.signName) : (nameFor(key) + ' stands ' + stateAdj9(D.essential.label) + ' in ' + D.signName + ' (your birth time would place it in a house)');
-    if (D.house && D.analogy.speaksFirst) place += ', and here speaks first of ' + D.analogy.speaksFirst.matter;
     L.push(place + '. ' + stChar.charAt(0).toUpperCase() + stChar.slice(1) + '.');
     // T2 — the character this planet gives, in the half its state has earned. The temperament is
     // named first (it anchors the "same fire/fluidity…" the poorly-placed clause refers to), then
@@ -3290,6 +3289,15 @@ var APP = (function () {
         : interp.tone === 'poor' ? 'Held this weak — '
         : 'Held mixed as it is, the gift is real but comes and goes — ';
       L.push('By nature ' + temp9 + '. ' + verdict9 + interp.character + '.');
+    }
+    // T5 — the concrete planet-in-house life-read: what this exact placement classically means
+    // for the life, delivered plainly and shaded by state (strong gives it; weak struggles to).
+    if (D.house && DATA.PLANET_IN_HOUSE && DATA.PLANET_IN_HOUSE[key] && DATA.PLANET_IN_HOUSE[key][D.house - 1]) {
+      var pih9 = DATA.PLANET_IN_HOUSE[key][D.house - 1];
+      var frame9 = (interp && interp.tone === 'poor')
+        ? 'In your ' + ordinal(D.house) + ', the classical reading, at its harder edge: ' + pih9 + '. Weak here, that arrives late, at cost, or through others'
+        : 'In your ' + ordinal(D.house) + ', concretely: ' + pih9;
+      L.push(frame9 + '.');
     }
     var ruled = []; for (var i = 0; i < D.rules.length; i++) ruled.push(ordinal(D.rules[i].house));
     if (ruled.length) L.push(Cap + ' answers for your ' + ruled.join(' and your ') + (ruled.length > 1 ? ', so those departments dock wherever ' + he + ' stands' : '') + '.');

@@ -1202,6 +1202,112 @@ var DATA = (function () {
     { matters: 'The hidden life: solitude and retreat; sorrow, confinement and exile; hidden enemies and quiet sabotage; self-undoing — the ways a life defeats itself; chronic illness; large animals; everything done behind the scenes, including the good.', persons: 'Hidden enemies and secret friends; prisoners and exiles; monks and recluses; those who work unseen.', body: 'the feet', grim: true }
   ];
   var HOUSE_SIG_SRC = 'after Lilly, Christian Astrology I (1647), the house chapters; Firmicus Maternus, Mathesis II (4th c.); and the school’s tables — our words';
+  // ===== PLANET-IN-HOUSE: the concrete life-reading of each of the seven classical planets in =====
+  // each of the twelve houses — the single most-used lookup a traditional astrologer carries.
+  // 7 x 12 = 84 delineations, after Lilly (Christian Astrology I, the house chapters), Morin
+  // (Astrologia Gallica XXI), al-Biruni and Firmicus — our own words. Read as INCLINATION, shaded
+  // by the planet's actual state (a strong planet gives the benefit, a weak one the difficulty).
+  var PLANET_IN_HOUSE = {
+    sun: [
+      'a commanding presence and a life lived in its own name; strong vitality and pride, with arrogance the standing risk',
+      'wealth pursued as a matter of honour — gain through office and the great, and a purse that spends to be seen',
+      'esteem among siblings and neighbours, a mind set on rank, and short journeys taken for advancement',
+      'honour that arrives late or through the father and the land; a prominent father and a strong, dignified end',
+      'joy and pride in children and display; gain by pleasure, speculation and the stage; a proud parent',
+      'daily work and servants ruled with authority; the health touched at the heart, with fevers the weak point',
+      'a marriage to someone of standing, or open contest with the eminent; a proud partner either way',
+      'matters of death, legacy and the great faced openly; fear met head-on, and gain by the goods of the dead',
+      'a pull toward religion, higher learning and long journeys; honour won abroad, or by the church and the school',
+      'the classic seat of honour: office, command, reputation and a public name — ambition realised in the open',
+      'friends among the powerful and hopes met through patrons; gain from office and the favours it hands out',
+      'honour hidden or undone, powerful secret enemies, and a life lived behind the scenes — or an eclipse to survive'
+    ],
+    moon: [
+      'a changeable, popular nature the public warms to; body and mood that shift, and a life that moves and travels',
+      'an income that ebbs and flows, often by trade with the public or by water; money that never sits still',
+      'a busy mind and many short journeys, lived close to siblings and neighbours; the everyday always in motion',
+      'a deep tie to home, mother and land, with frequent moves of house and the past strongly felt',
+      'fertility in children and in pleasures; a fond parent, and gain by the public in matters of joy',
+      'a health of the stomach and the humours; work with the public, food or nursing; servants who come and go',
+      'a marriage to the popular or the changeable — the partner much in public, the crowd itself a kind of spouse',
+      'fears that come and go, and legacies through women or the mother; the body’s tides felt near matters of loss',
+      'restlessness in belief and travel, drawn over water and to far places; a wandering, changeable faith',
+      'a public career, often before a crowd; the mother prominent, and a reputation that rises and falls with favour',
+      'many friends, especially women and the common people; hopes carried on the public’s changing favour',
+      'private sorrows that come and go, hidden matters of women, and a pull to retreat — hospitals, water, the quiet'
+    ],
+    mercury: [
+      'a quick, curious, talkative nature, young in manner, with identity built in the mind and the word',
+      'money made by wit, words, trade and reckoning — gain that comes through the tongue and the hands',
+      'the mind’s own seat: sharp with siblings, letters, learning and short trips; a restless, busy thinker',
+      'the mind turned toward home, records and ancestry; private study, and the papers and lore of the family',
+      'clever children or few; gain by games, teaching and writing for pleasure, carried by a playful wit',
+      'real skill in craft, medicine or service, with a worrying, detail-driven health; the nerves and lungs the weak point',
+      'partnership in business and in words; a young, clever or bookish spouse, and disputes argued sharply',
+      'a mind fixed on other people’s money, taxes, secrets and research — drawn to the hidden and the taboo',
+      'the philosopher and teacher: law, languages, publishing and long study; a far-travelled, questioning mind',
+      'a career of the mind — writing, trade, teaching, agency — and a reputation built on cleverness',
+      'friends among the young and clever, and hopes pursued by counsel, contacts and good advice',
+      'a secretive or self-doubting mind, work done unseen, and the nerves as the weak point; study in solitude'
+    ],
+    venus: [
+      'a charming, well-favoured presence and a life inclined to ease, affection and the pleasant things',
+      'gain by pleasant means — by women, by art, and by the pleasures other people pay for',
+      'affection among siblings and neighbours, sweet speech, and pleasant, sociable short journeys',
+      'a beautiful home and happy roots; gain by land and by the mother, and ease in later life',
+      'much love, children, pleasure and art; gain by entertainment, and good fortune as a lover',
+      'love among colleagues and servants, pleasure taken in service and small animals; the kidneys or throat the weak point',
+      'a favoured, loving marriage that is often the making of the life, to a desirable and sociable partner',
+      'gain by marriage, dowry and legacy, with desire drawn to the intense and the hidden — pleasure close to loss',
+      'a love of beauty in religion, art and travel; a foreign or philosophical love, and harmony found abroad',
+      'honour won by art, by women and by pleasing manners; a graceful reputation and gain through patrons’ favour',
+      'friends who love and help, and hopes met sweetly — often through women; a genuinely fortunate circle',
+      'secret loves and pleasures, sorrow through women or indulgence, and kindness quietly done unseen'
+    ],
+    mars: [
+      'a bold, forceful, quick-tempered nature met head-on; often a scar or ruddy mark, with the risk of hurt',
+      'money fought for and spent fast; gain by iron, fire, arms or hard labour, and wealth that burns quickly',
+      'quarrels with siblings and neighbours, a sharp combative tongue, and bold short journeys with accidents on the road',
+      'strife in the home and with the father, danger by fire to the house, and a hard end unless the planet is well placed',
+      'risk in children and pleasures; passionate and reckless in love and speculation, alive to sport and daring',
+      'real skill with iron and fire (surgery, tools, arms), with fevers and inflammations, and strife with those who serve',
+      'a marriage of heat — passion and conflict both — a forceful partner, and open enemies and lawsuits',
+      'danger of a violent or sudden end unless well helped, and strife over legacies and other people’s money',
+      'a fighting faith or a martial calling abroad, danger on long journeys, and zeal that can turn to conflict',
+      'a career of arms, tools, surgery or command; ambition driven hard, a name won and risked by force',
+      'friends among soldiers and the bold, hopes pursued by force, with false or fiery friends the standing risk',
+      'hidden enemies and self-sabotage through anger, danger that works unseen, and secret work with fire or blades'
+    ],
+    jupiter: [
+      'a generous, well-liked, fortunate bearing and a hopeful, expansive life, with excess the only real risk',
+      'wealth that comes easily and honourably — gain by the law, the church, and trade with the great',
+      'good relations with siblings and neighbours, fortunate short journeys, and a broad, principled mind',
+      'a prosperous home and good land, fortune from the father and inheritance, and a comfortable end',
+      'many or fortunate children; gain by pleasure, speculation and generosity, and luck as a lover',
+      'good health and swift recovery; gain by service, medicine or the law, and kindness toward servants',
+      'a fortunate, honourable marriage to a generous partner, with success in contracts and open dealings',
+      'gain by marriage, legacy and other people’s wealth, an easy death, and good fortune in hidden matters',
+      'Jupiter’s best seat: religion, law, philosophy and long travel; honour won abroad, and a wise, broad faith',
+      'honour, office and preferment, a respected public name, and success carried by principle and patronage',
+      'powerful, helpful friends and patrons, and hopes generously met; gain by office and by favour',
+      'fortune that comes quietly or stays hidden, good done unseen, and faith found in solitude — with over-trust the risk'
+    ],
+    saturn: [
+      'a grave, patient, self-doubting nature and a hard or delayed start; the body dry, the life slow to bloom',
+      'money got slowly and by labour, a fear of want, and gain by land, mines, patience and age',
+      'estrangement or heavy duty with siblings, a careful sombre mind, and hard or few short journeys',
+      'burdens from father, home and roots, property that binds, and a heavy end unless well placed — the family’s weight carried',
+      'few or late children, or heavy ones; caution in pleasure, and gain by patient investment rather than play',
+      'chronic illness and the cold, dry complaints; hard service and labour, and steady, unglamorous work',
+      'a marriage late, dutiful, or to an older, graver partner — enduring but heavy, with lasting enemies',
+      'a fear of death and of long endings, slow legacies, and gain by the dead, by land, and by patience with loss',
+      'a serious, doubting or orthodox faith, hard long journeys, and wisdom earned only by time and trial',
+      'ambition that climbs slowly and can fall hard, authority won by endurance, and a reputation for gravity',
+      'few but lasting friends, often older; hopes deferred and won by patience, and duty carried in the circle',
+      'old sorrows, confinement and hidden fears, enemies who work by time, and solitude as the great teacher'
+    ]
+  };
+  var PLANET_IN_HOUSE_SRC = 'after Lilly, Christian Astrology I (1647), the house chapters; Morin, Astrologia Gallica XXI (1661); al-Biruni (1029) — our words';
   // ===== the planet-in-house ANALOGY MATRIX: which of the house's matters each classical =====
   // planet voices FIRST when placed there, and by what right (joy / Chaldean order / karaka /
   // plain analogy / counter-analogy). This is the composer's selection function, complete:
@@ -1323,7 +1429,7 @@ var DATA = (function () {
   return {
     PLANETS: PLANETS, PLANET_ORDER: PLANET_ORDER, SIGNS: SIGNS, TRADITION: TRADITION,
     PLANET_TRAD: PLANET_TRAD, HOUSE_TRAD: HOUSE_TRAD, SIG: SIG,
-    HOUSE_SIG: HOUSE_SIG, HOUSE_SIG_SRC: HOUSE_SIG_SRC, ANALOGY_MATRIX: ANALOGY_MATRIX, SOURCES: SOURCES,
+    HOUSE_SIG: HOUSE_SIG, HOUSE_SIG_SRC: HOUSE_SIG_SRC, PLANET_IN_HOUSE: PLANET_IN_HOUSE, PLANET_IN_HOUSE_SRC: PLANET_IN_HOUSE_SRC, ANALOGY_MATRIX: ANALOGY_MATRIX, SOURCES: SOURCES,
     SUN_IN_SIGN: SUN_IN_SIGN, MOON_IN_SIGN: MOON_IN_SIGN, RISING_IN_SIGN: RISING_IN_SIGN, PLANET_SIGN_TEXT: PLANET_SIGN_TEXT,
     HOUSES: HOUSES, ASPECTS: ASPECTS, MINOR_ASPECTS: MINOR_ASPECTS, ELEMENTS: ELEMENTS, MODALITIES: MODALITIES,
     TAROT: TAROT, TAROT_MEAN: TAROT_MEAN, SUIT_KW: SUIT_KW, SPREADS: SPREADS, CITIES: CITIES

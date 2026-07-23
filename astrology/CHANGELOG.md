@@ -1,5 +1,32 @@
 # Changelog
 
+## 4.5.0 — 2026-07-22 — the reading finally says what an astrologer would tell you
+The interpretation engine begins: the reading crosses from describing the
+mechanism to delivering the delineation — grounded in the tradition, selected by
+the chart's own state.
+
+- **`interpret(D)` — the state-selector (T1).** Turns a determination into the
+  delineation choices its real condition earns: which half of a planet's
+  character (well- vs poorly-placed) speaks, the band's confidence, whether it
+  delivers through its dispositor. Everything downstream composes from it.
+- **Character, delivered (T2).** Each placement now names its temperament and
+  asserts the earned half of its nature, from the tradition's own words:
+  "By nature hot and dry, the choleric fire at full. Held this strong, at its
+  best — unafraid, decisive, prudent in danger — a hardness that protects what it
+  loves." Strong planets show their gifts; weak or peregrine ones show their
+  faults.
+- **A new 84-entry PLANET-IN-HOUSE database (T5).** The single most-used lookup a
+  traditional astrologer carries — each of the seven classical planets in each of
+  the twelve houses, a concrete life-read after Lilly's house chapters, Morin and
+  al-Biruni, in our own words. Wired into every placement and shaded by state:
+  "In your 8th, concretely: gain by marriage, dowry and legacy, with desire drawn
+  to the intense and the hidden — pleasure close to loss." A weak planet gets the
+  harder edge, with the note that it arrives late, at cost, or through others.
+
+Unlike Astro.com's licensed cookbook, every line is composed from THIS chart's
+computed state and carries its receipt. The judgment is unchanged (golden still
+pins it); the reading is far more specific. Doctrine, audit, voice all pass.
+
 ## 4.4.0 — 2026-07-22 — teach the words where you meet them
 The last novice workstream: the tradition's vocabulary is now tappable in place,
 wherever it appears in the reading — so a beginner learns the word at the moment
