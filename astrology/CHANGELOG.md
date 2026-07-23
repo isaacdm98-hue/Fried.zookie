@@ -11,7 +11,13 @@ The school reads a life-topic across **all** its houses at once, not one in isol
   state and *followed to the house it sits in* (the source: "money arrives through
   work" = lord of the 2nd in the 6th), occupants weighed by nature, and one verdict
   struck (well-promised / mixed / hard-won). Surfaced under the Money domain, receipts
-  a tap under. The same engine will carry Love, Family and Career next.
+  a tap under.
+- **Four more topical readings on the same engine — Love, Career, Family** (plus
+  Money): each reads across its own cluster of houses, weighed by its karaka —
+  **Love** across the 7th (the committed partner) and 5th (romance), by Venus;
+  **Career** across the 10th (standing) and 6th (daily work), by the Sun; **Family**
+  across the 4th (home, roots, parents) and 3rd (siblings), by the Moon. Each is
+  surfaced under its life-domain in the reading, its verdict and receipts a tap under.
 
 ## 4.7.0 — 2026-07-23 — the constitution: the four temperaments, the way the school opens
 The reading now opens where a traditional astrologer opens — on the **humoral
