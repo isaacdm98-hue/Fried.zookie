@@ -5578,6 +5578,32 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       setFont(MONO, 11, INK, p.CENTER, p.CENTER, 255); p.text(label.toUpperCase(), x + w / 2, y + off + h / 2 + 0.5);
       pushHit(x, y, w, h + depth, fn); return w;
     }
+    // the element stick's living segments: fire flickers, water ripples, air drifts, earth settles.
+    // Draws one element's segment of width bw at (bx,by); pct scales it (100 = full width).
+    function elementBar(e, bx, by, bw, pct) {
+      var t = reduced() ? 0 : nowT(), full = bw * pct / 100; p.noStroke();
+      if (full < 1) return;
+      if (e === 'fire') { fillc(ELHUE.fire); p.rect(bx, by, full, 9, 4); fillc([255, 170, 80], 90 + 70 * (0.5 + 0.5 * Math.sin(t * 0.03))); p.rect(bx + full - 4, by, 4, 9, 2); }
+      else if (e === 'water') { fillc(ELHUE.water); p.rect(bx, by, full, 9, 4); var hp = ((t * 0.05) % (full + 30)) - 15, dc = p.drawingContext; dc.save(); dc.beginPath(); dc.rect(bx, by, full, 9); dc.clip(); p.noStroke(); fillc([175, 205, 255], 130); p.ellipse(bx + hp, by + 4.5, 16, 9); dc.restore(); }
+      else if (e === 'air') { fillc(ELHUE.air); p.rect(bx, by, full, 9, 4); var sp = ((t * 0.045) % (full + 24)) - 12, dc2 = p.drawingContext; dc2.save(); dc2.beginPath(); dc2.rect(bx, by, full, 9); dc2.clip(); p.noStroke(); fillc([205, 230, 255], 110); p.rect(bx + sp, by, 13, 9); dc2.restore(); }
+      else { var bob = reduced() ? 0 : Math.sin(t * 0.0018) * 0.6; fillc(ELHUE.earth); p.rect(bx, by - bob, full, 9 + bob, 4); }
+    }
+    // the whole element stick under the chart title: the four qualities in their own colours,
+    // sized to the real balance, each segment alive; tap it for the wiring in Read. Returns height.
+    function elementStick(c, x, w, ly) {
+      var els9 = ['fire', 'earth', 'air', 'water'], eb9 = sY(ly), bh9 = 9, run9 = 0, ei9;
+      var grow9 = reduced() ? 1 : eCubic(cl01((nowT() - UI.fxT) / 900));
+      p.noStroke(); fillc(shade(GROUNDS.chart, -7), 255); p.rect(x, eb9, w, bh9, 5);
+      for (ei9 = 0; ei9 < 4; ei9++) { var pw9 = w * (c.elements[els9[ei9]] / 100) * grow9; elementBar(els9[ei9], x + run9, eb9, pw9, 100); run9 += pw9; }
+      var run2 = 0, ei2, LAB9 = { fire: 'FIRE', earth: 'EARTH', air: 'AIR', water: 'WATER' };
+      for (ei2 = 0; ei2 < 4; ei2++) {
+        var pw2 = w * (c.elements[els9[ei2]] / 100) * grow9;
+        if (pw2 >= 46) { var lab9 = LAB9[els9[ei2]] + ' ' + c.elements[els9[ei2]]; p.textFont(MONO); p.textSize(8.5); if (p.textWidth(lab9) <= pw2 - 6) { setFont(MONO, 8.5, INK, p.CENTER, p.TOP, 170); p.text(lab9, x + run2 + pw2 / 2, eb9 + bh9 + 5); } }
+        run2 += pw2;
+      }
+      pushHit(x, eb9 - 4, w, bh9 + 22, function () { UI.screen = 'read'; UI.readTab = 'wiring'; UI.scroll.read = 0; UI.actT = nowT(); });
+      return bh9 + 22;
+    }
     function eyebrow(txt, x, ly, c) {
       setFont(MONO, 12.5, (c === ACC ? ACCTX : (c || INK)), p.LEFT, p.TOP, 220);
       var s = txt.toUpperCase(), cx = x; for (var i = 0; i < s.length; i++) { p.text(s[i], cx, sY(ly)); cx += p.textWidth(s[i]) + 2; }
@@ -5935,8 +5961,16 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         if (it[1]) { var degA9 = -Math.PI / 2 + (it[1].deg / 30) * p.TWO_PI; strokec(on ? ACC : INK, on ? 220 : 150); p.strokeWeight(on ? 2 : 1.4); p.line(cxp + Math.cos(degA9) * (R - 4), cyy + Math.sin(degA9) * (R - 4), cxp + Math.cos(degA9) * (R + 2), cyy + Math.sin(degA9) * (R + 2)); }
         p.noFill(); strokec(on ? ACC : INK, on ? 255 : 175); p.strokeWeight(on ? 2 : 1.3); p.ellipse(cxp, cyy, R * 2, R * 2);
         if (it[2] === 'sun' || it[2] === 'moon') { celestialBody(it[2], cxp, cyy, R * 0.82, nowT()); }
-        else if (it[1]) { p.push(); p.translate(cxp, cyy); if (!reduced()) p.rotate(Math.sin(nowT() * 0.0004) * 0.06); setFont(SANS, 24, on ? ACC : INK, p.CENTER, p.CENTER); p.text(DATA.SIGNS[it[1].sign].glyph, 0, 1); p.pop(); }
-        else { setFont(SANS, 12, INK, p.CENTER, p.CENTER, 120); p.text('?', cxp, cyy); }
+        else {
+          // the Ascendant gets its own emblem: the degree cresting the eastern horizon — a rising
+          // sun over a horizon line — with the sign that rises shown above it (or ASC without a time).
+          var col9 = on ? ACC : INK, hz9 = cyy + 7;
+          p.noStroke(); fillc(col9, on ? 60 : 42); p.arc(cxp, hz9, 19, 19, Math.PI, p.TWO_PI, p.PIE);
+          p.noFill(); strokec(col9, on ? 235 : 185); p.strokeWeight(1.5); p.arc(cxp, hz9, 19, 19, Math.PI, p.TWO_PI);
+          strokec(col9, on ? 215 : 150); p.strokeWeight(1.5); p.line(cxp - 17, hz9, cxp + 17, hz9);
+          if (it[1]) { p.noStroke(); setFont(SANS, 14, col9, p.CENTER, p.CENTER, 230); p.text(DATA.SIGNS[it[1].sign].glyph, cxp, cyy - 10); }
+          else { p.noStroke(); setFont(MONO, 8, INK, p.CENTER, p.CENTER, 150); p.text('ASC', cxp, cyy - 10); }
+        }
         setFont(SANS, 9, INK, p.CENTER, p.TOP, 150); p.text(it[0], cxp, cyy + R + 9);
         setFont(SANS, 11.5, INK, p.CENTER, p.TOP); bold(); p.text(it[1] ? it[1].signName : 'add time', cxp, cyy + R + 22); normal();
         if (it[1]) (function (kk, ex, ey) { pushHit(ex - R, ey - R, R * 2, R * 2 + 32, function () { selectPlanet(kk); spawnRipple(ex, ey); }); })(it[2], cxp, cyy);
@@ -6673,14 +6707,16 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         dcC5.fillText(b.timeKnown ? ' rising' : ' sun', x + dcC5.measureText(titleSign).width, sY(ly));
         dcC5.restore();
       }
-      normal(); ly += 44;
+      normal(); ly += 42;
+      // the element stick, back by request \u2014 the four qualities at a glance, under the title
+      ly += elementStick(c, x, w, ly) + 8;
       // FIT ONE FRAME \u2014 the wheel is the hero; the reels are the anchor row; a single live
       // line for today sits under it. Nothing scrolls: depth is reached by tapping a planet
       // (the placement zoom grows from it), never by scrolling down. The wheel is sized to
       // whatever height is left after the fixed rows, so the whole screen sits inside one view.
       var reelsH9 = 104, todayH9 = 38, hintH9 = 18, ntH9 = b.timeKnown ? 0 : 26;
       var avail9 = viewH() - ly - (reelsH9 + todayH9 + hintH9 + ntH9 + 22);
-      var wheelCap9 = Math.max(188, Math.min(380, avail9));
+      var wheelCap9 = Math.max(182, Math.min(360, avail9));
       ly += dial(c, b, ly, wheelCap9) + 6;
       if (!b.timeKnown) {
         setFont(MONO, 9, ACCTX, p.CENTER, p.TOP, 215); p.text('NO BIRTH TIME: RISING & HOUSES OFF \u00B7 SET A ROUGH ONE \u203A', x + w / 2, sY(ly));
