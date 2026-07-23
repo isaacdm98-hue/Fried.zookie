@@ -3290,6 +3290,15 @@ var APP = (function () {
         : 'Held mixed as it is, the gift is real but comes and goes — ';
       L.push('By nature ' + temp9 + '. ' + verdict9 + interp.character + '.');
     }
+    // T4 — how the SIGN shapes this planet (its manner): the tradition's planet-in-sign read,
+    // the style and temper it acts in here, distinct from its inherent nature above.
+    var sgIdx9 = c.planets[key] ? c.planets[key].sign : null, signM9 = null;
+    if (sgIdx9 != null) {
+      if (key === 'sun' && DATA.SUN_IN_SIGN) signM9 = DATA.SUN_IN_SIGN[sgIdx9];
+      else if (key === 'moon' && DATA.MOON_IN_SIGN) signM9 = DATA.MOON_IN_SIGN[sgIdx9];
+      else if (DATA.PLANET_SIGN_TEXT && DATA.PLANET_SIGN_TEXT[key]) signM9 = DATA.PLANET_SIGN_TEXT[key][sgIdx9];
+    }
+    if (signM9) L.push('In ' + D.signName + ', ' + signM9.charAt(0).toLowerCase() + signM9.slice(1) + (/[.!?]$/.test(signM9) ? '' : '.'));
     // T5 — the concrete planet-in-house life-read: what this exact placement classically means
     // for the life, delivered plainly and shaded by state (strong gives it; weak struggles to).
     if (D.house && DATA.PLANET_IN_HOUSE && DATA.PLANET_IN_HOUSE[key] && DATA.PLANET_IN_HOUSE[key][D.house - 1]) {
