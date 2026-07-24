@@ -9,13 +9,13 @@
 var DATA = (function () {
 
   var PLANETS = {
-    sun:     { glyph: '\u2609\uFE0E', name: 'Sun',     fn: 'your core identity and what you came here to develop' },
-    moon:    { glyph: '\u263D\uFE0E', name: 'Moon',    fn: 'your emotional needs, instincts and what makes you feel safe' },
-    mercury: { glyph: '\u263F\uFE0E', name: 'Mercury', fn: 'how you think, talk, learn and process information' },
-    venus:   { glyph: '\u2640\uFE0E', name: 'Venus',   fn: 'what you value, how you love and what you find beautiful' },
-    mars:    { glyph: '\u2642\uFE0E', name: 'Mars',    fn: 'your drive, anger and how you go after what you want' },
-    jupiter: { glyph: '\u2643\uFE0E', name: 'Jupiter', fn: 'where you expand, take risks and look for meaning' },
-    saturn:  { glyph: '\u2644\uFE0E', name: 'Saturn',  fn: 'where you meet limits, do the work and build something real' },
+    sun:     { glyph: '\u2609\uFE0E', name: 'Sun',     fn: 'the vital force, honour and authority, and the father' },
+    moon:    { glyph: '\u263D\uFE0E', name: 'Moon',    fn: 'the body’s tides and daily life, the common people, and the mother' },
+    mercury: { glyph: '\u263F\uFE0E', name: 'Mercury', fn: 'speech and writing, reckoning and trade, and every kind of messenger' },
+    venus:   { glyph: '\u2640\uFE0E', name: 'Venus',   fn: 'love and union, pleasure and ornament, and what is held dear' },
+    mars:    { glyph: '\u2642\uFE0E', name: 'Mars',    fn: 'heat and iron, conflict and surgery, and everything done by force' },
+    jupiter: { glyph: '\u2643\uFE0E', name: 'Jupiter', fn: 'increase and abundance, judgement and faith, and the patron who helps' },
+    saturn:  { glyph: '\u2644\uFE0E', name: 'Saturn',  fn: 'time and limit, endurance and labour, the old, and what is buried' },
     uranus:  { glyph: '\u2645\uFE0E', name: 'Uranus',  fn: 'where you break the rules and need freedom' },
     neptune: { glyph: '\u2646\uFE0E', name: 'Neptune', fn: 'where you dissolve, dream and look for the transcendent' },
     pluto:   { glyph: '\u2647\uFE0E', name: 'Pluto',   fn: 'where you face power, loss and deep transformation' },

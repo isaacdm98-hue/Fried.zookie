@@ -8172,7 +8172,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       riseText('Read', x, sY(ly), 34, SANS, INK, UI.fxT + 120, 34, 255, true); ly += 48;
       // the reading is a book now: four chapters instead of one endless scroll
       if (!UI.readTab) UI.readTab = (APP.STATE.settings && APP.STATE.settings.readTab) || 'story';
-      var RTABS = [['story', 'You'], ['wiring', 'Patterns'], ['timing', 'Seasons'], ['days', 'Today']], rti0, rtx0 = x;
+      var RTABS = [['story', 'You'], ['wiring', 'Structure'], ['timing', 'Seasons'], ['days', 'Today']], rti0, rtx0 = x;
       for (rti0 = 0; rti0 < RTABS.length; rti0++) { p.textFont(MONO); p.textSize(11); var rtw = p.textWidth(RTABS[rti0][1].toUpperCase()) + 28; chip(RTABS[rti0][1], UI.readTab === RTABS[rti0][0], rtx0, ly, (function (tk) { return function () { if (UI.readTab !== tk) UI.actT = nowT(); UI.rtScroll = UI.rtScroll || {}; UI.rtScroll[UI.readTab] = UI.scroll.read; UI.readTab = tk; UI.scroll.read = UI.rtScroll[tk] || 0; UI.popT = nowT(); try { if (APP.STATE.settings) { APP.STATE.settings.readTab = tk; APP.save(); } } catch (eRT9) {} }; })(RTABS[rti0][0])); rtx0 += rtw + 8; }
       ly += 50;
       var rt = UI.readTab;
@@ -8333,6 +8333,14 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         var dk9; for (dk9 = 0; dk9 < UI.domCache.length; dk9++) {
           var DC9 = UI.domCache[dk9], TC9 = UI.topicCache[DC9.h], subsumes = !!(TC9 && TC9.r && !TC9.additive);
           eyebrow(DOMLAB9[DC9.h - 1], x, ly, ACC); ly += 22;
+          // T3 — the house in its REAL matters. The tradition's own list of what this domain
+          // covers (Lilly's house chapters), set lighter than the judgment so it teaches what is
+          // being judged without competing with it.
+          try {
+            var HS9 = DATA.HOUSE_SIG && DATA.HOUSE_SIG[DC9.h - 1];
+            // one line by default, the tradition's full list of matters on tap: depth without a wall
+            if (HS9 && HS9.matters) ly += expandPara(HS9.matters, x, ly, w, 'hsig' + DC9.h, 12.5, 18) + 10;
+          } catch (eHs9) {}
           if (!subsumes) { // the single-house four-testimony reading, unless a topical replaces it here
             ly += paragraph(DC9.jh.line, x, ly, w, 15, INK, SERIF, 23) + 6;
             ly += paragraph(DC9.jh.receipt, x, ly, w, 8.5, ACCTX, MONO, 12, 190) + 14;
@@ -8459,7 +8467,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       // ---- on-device chart intelligence: patterns & signatures (no AI) ----
       if (!UI.readSig) { try { UI.readSig = APP.composeSignatures(c); } catch (e) { UI.readSig = []; } }
       if (UI.readSig && UI.readSig.length) {
-        eyebrow('The shapes in you', x, ly, ACC); ly += 26;
+        eyebrow('How the chart is built', x, ly, ACC); ly += 26;
         ly += paragraph('The structures woven through your whole chart — the shapes underneath everything else.', x, ly, w, 14.5, INK, SERIF, 23, 225) + 16;
         for (var sgi = 0; sgi < UI.readSig.length; sgi++) {
           var blk = UI.readSig[sgi];
@@ -11830,7 +11838,10 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         UI.newsChecked = true;
         try {
           var ndN = new Date(), nkN = ndN.getFullYear() + '-' + APP.pad(ndN.getMonth() + 1) + '-' + APP.pad(ndN.getDate());
-          if (APP.STATE.settings.news !== false && APP.STATE.settings.newsDay !== nkN) UI.dailyNews = { i: 0, t0: nowT(), day: nkN, scenes: null };
+          // the daily story is a front-door greeting, so it must not hijack a screen the user asked
+          // for: skip it when a ?go= destination was given, or when they are already reading
+          var askedFor9 = false; try { askedFor9 = /[?&]go=/.test(location.search); } catch (eAf9) {}
+          if (APP.STATE.settings.news !== false && APP.STATE.settings.newsDay !== nkN && !askedFor9 && UI.screen === 'chart') UI.dailyNews = { i: 0, t0: nowT(), day: nkN, scenes: null };
         } catch (eNC) {}
       }
       if (UI.dailyNews && APP.STATE.chart && UI.screen !== 'onboard') { hideSearchInput(); drawDailyNews(); drawTopbar(); clampScroll(); return; }
