@@ -3404,7 +3404,7 @@ var APP = (function () {
       else if (aspectsCusp) { w += 2; role = 'aspector'; why.push('aspects the lord of the ' + ordinal(matterHouse)); }
       else return null; // not a testimony about this matter
     } else { w += 2; }
-    if (det.house) { var cl = det.terrestrial.houseClass; if (cl === 'angular') { w += 4; why.push('angular'); } else if (cl === 'succedent') { w += 2; why.push('succedent'); } else { why.push('cadent — a fainter voice'); } }
+    if (det.house) { var cl = det.terrestrial.houseClass; if (cl === 'angular') { w += 4; why.push('angular'); } else if (cl === 'succedent') { w += 2; why.push('in a succedent house'); } else { why.push('cadent — a fainter voice'); } }
     var sc = det.condition ? det.condition.total : (det.essential ? det.essential.score : 0);
     if (sc >= 10) { w += 3; why.push('commanding in state'); } else if (sc >= 5) { w += 2; why.push('sound in state'); } else if (sc < -5) { why.push('afflicted — it testifies, but from a sickbed'); }
     var sct = sectProfile(c, b);
@@ -3449,8 +3449,15 @@ var APP = (function () {
       if (!best || t.authority > best.authority) best = t;
     }
     if (!best) return null;
-    best.line = 'The final word in this chart belongs to ' + nameFor(best.key) + ': by ' + best.why.slice(0, 3).join(', ') + ' it outranks every other testimony (authority ' + best.authority + '). When the chart is divided, this is the voice to trust last.';
-    best.receipt = ('ruling voice ' + nameFor(best.key) + ' · authority ' + best.authority).toUpperCase();
+    // the reasons are a list, so they need a connector before the verb, and "trust last" read as
+    // "trust least" — the opposite of the meaning
+    // the two strongest reasons are the ROLES (lord of the Ascendant, the chart's almuten); the rest
+    // are placement and state, which read badly in the same list, so they stay in the receipt
+    var whyL9 = best.why.slice(0, 2), whyTxt9 = whyL9.length > 1
+      ? (whyL9.slice(0, -1).join(', ') + ' and ' + whyL9[whyL9.length - 1])
+      : (whyL9[0] || 'its standing');
+    best.line = capit(nameTh(best.key)) + ' has the final word in this chart: it is ' + whyTxt9 + ', and outranks every other testimony (authority ' + best.authority + '). Where the chart is divided against itself, this is the voice that decides.';
+    best.receipt = ('ruling voice ' + nameFor(best.key) + ' · authority ' + best.authority + ' · ' + best.why.join(', ')).toUpperCase();
     return best;
   }
   // ===== PHASE 13 — CONTRADICTION AS CONTENT: the chart argues with itself, said plainly =====
