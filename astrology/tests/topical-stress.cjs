@@ -50,7 +50,7 @@ const GRAMMAR = [/\s\s/, /\b(a|an|the|in|of|to|your)\s+\1\b/i, /\byour 0\b/, /un
 
   const charts = buildCharts();
   const out = await pg.evaluate((charts) => {
-    const FNS = ['temperament', 'temperamentProse', 'judgeHealth', 'judgeMoney', 'judgeLove', 'judgeCareer', 'judgeFamily', 'lifeAtAGlance', 'zodiacalReleasing'];
+    const FNS = ['temperament', 'temperamentProse', 'judgeHealth', 'judgeMoney', 'judgeLove', 'judgeCareer', 'judgeFamily', 'lifeAtAGlance', 'zodiacalReleasing', 'yearAhead'];
     const results = [];
     for (const ch of charts) {
       const bb = ch.birth; APP.STATE.birth = bb;
