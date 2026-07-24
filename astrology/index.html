@@ -1017,7 +1017,7 @@ var APP = (function () {
   // astrologer would; the old "Sun = your core, Moon = your night side" pop-equations and
   // element-percentage identities are gone. Without a birth time it holds to the honest
   // no-time doctrine. Falls back to a minimal safe reading only if the engine throws.
-  function composeCore(c) {
+  function composeCore(c) { // paragraphs are tidied at the end of this function
     var b = STATE.birth, parts = [];
     if (!b.timeKnown || !c.ascBody) {
       try {
@@ -1908,7 +1908,6 @@ var APP = (function () {
           : 'You were born on a waning tide: the last lunation before your birth was a Full Moon at ' + pszDg9 + '\u00B0 ' + pszSg9.name + (pszH9 ? ', in what became your ' + ordinal(pszH9) + ' house' : '') + '. The old doctrine reads that degree as your harvest: things come to light around you, and you do your best work finishing, revealing and handing on, rather than seeding.' });
       }
     } catch (ePz9) {}
-    var sh = chartShape(c); if (sh) out.push({ label: 'Chart shape', text: sh.text });
     var dn = dignityNotes(c);
     if (dn.length) {
       var strong = [], weak = [], i2;
@@ -1922,12 +1921,11 @@ var APP = (function () {
     }
     if (mrc9.length) out.push({ label: 'Mutual reception', lines: mrc9 });
     // PHASE 32 — patterns as weighted testimony, tied to the planets' determinations
-    try {
-      var pT9 = patternsAsTestimony(c, STATE.birth);
-      if (pT9.testimonies.length) { for (var i = 0; i < Math.min(pT9.testimonies.length, 4); i++) out.push({ label: pT9.testimonies[i].type + ' — testimony weight ' + pT9.testimonies[i].weight, text: pT9.testimonies[i].line }); }
-      else out.push({ label: 'Aspect patterns', text: 'No tight major aspect patterns: your planets work as individuals rather than locking into one geometric configuration — a chart read planet by planet, not by its shape.' });
-      if (pT9.shape) out.push({ label: 'Chart shape', text: pT9.shape.line });
-    } catch (ePt9) { var pats = aspectPatterns(c); if (pats.length) for (var i = 0; i < Math.min(pats.length, 4); i++) out.push({ label: pats[i].type, text: patternText(pats[i]) }); }
+    // (Named aspect FIGURES — T-square, grand trine, yod — and Marc-Edmund-Jones chart SHAPES are
+    // 20th-century additions, not the Cours Préparatoires method. The tradition reads the same
+    // geometry as aspects between two planets, each judged by its own determination; judgeAspect
+    // does exactly that. Presenting the modern figures as "testimony weight" dressed them in
+    // borrowed authority, so they are no longer part of the reading.)
     var rr = natalRetros(c);
     if (rr.length) out.push({ label: 'Born retrograde', text: rr.map(nameFor).join(', ') + ' ' + (rr.length === 1 ? 'was' : 'were') + ' retrograde at your birth: what ' + (rr.length === 1 ? 'it works' : 'they work') + ' turns inward first — reflective, reworked, personal before it shows outwardly.' });
     // PHASE 32 — fixed stars in condition/behaviour register, tied to the carrier's determination
@@ -3313,27 +3311,27 @@ var APP = (function () {
     }
     // what one planet's current does to the OTHER's departments
     function currentClause9(from, to) {
-      var fv = from.nature.verdict, toRules = rulesTxt9(to), toTxt = toRules ? ('what ' + nameFor(to.key) + ' rules in your chart — the ' + toRules) : (nameFor(to.key) + '’s matters');
+      var fv = from.nature.verdict, toRules = rulesTxt9(to), toTxt = toRules ? ('what ' + nameTh(to.key) + ' rules in your chart, the ' + toRules) : (nameTh(to.key) + '’s matters');
       var verb = fv === 'benefic' ? (from.key === 'jupiter' ? 'feeds and grows' : 'sweetens and steadies') : fv === 'malefic' ? (from.key === 'saturn' ? 'weighs down and slows' : 'heats and hurries') : 'colours';
-      var clause = nameFor(from.key) + '’s current ' + verb + ' ' + toTxt;
-      if (fv === 'benefic' && from.essential.score < 0) clause += ' — though ' + stateAdj9(from.essential.label) + ', ' + pron9(from.key, 0) + ' gives less than ' + pron9(from.key, 0) + ' promises';
-      if (fv === 'malefic' && from.essential.score >= 3) clause += ' — though dignified, so the edge cuts to measure, not in anger';
+      var clause = capit(nameTh(from.key)) + '’s current ' + verb + ' ' + toTxt;
+      if (fv === 'benefic' && from.essential.score < 0) clause += ', though being ' + stateAdj9(from.essential.label) + ' it gives less than it promises';
+      if (fv === 'malefic' && from.essential.score >= 3) clause += ', though being dignified the edge cuts to measure rather than in anger';
       return clause;
     }
     var S = [];
-    S.push(nameFor(aK) + ' and ' + nameFor(bK) + ' hold ' + art9(key) + ' ' + key + ' at ' + A.orb.toFixed(1) + '° — ' + pipe + ': ' + nat.line + '.');
-    S.push(currentClause9(da, db) + '; and back along the same pipe, ' + currentClause9(db, da) + '.');
+    S.push(capit(nameTh(aK)) + ' and ' + nameTh(bK) + ' hold ' + art9(key) + ' ' + key + ' at ' + A.orb.toFixed(1) + '°, ' + pipe + '. ' + capit(nat.line) + '.');
+    S.push(currentClause9(da, db) + '. Back along the same pipe, ' + currentClause9(db, da).charAt(0).toLowerCase() + currentClause9(db, da).slice(1) + '.');
     if (rec) {
-      S.push(rec.kind === 'mutual' ? nameFor(aK) + ' and ' + nameFor(bK) + ' also receive each other — each stands in a sign the other owns — so ' + (hard ? 'this friction repairs itself faster than it breaks: both hold a key to the other’s door.' : 'the ease runs deeper than charm: each keeps the other’s promises.')
-        : nameFor(rec.host) + ' receives ' + nameFor(rec.guest) + ' as a guest, so ' + (hard ? 'even this friction has somewhere warm to land.' : 'the help flows host-to-guest first.'));
+      S.push(rec.kind === 'mutual' ? capit(nameTh(aK)) + ' and ' + nameTh(bK) + ' also receive each other, each standing in a sign the other owns, so ' + (hard ? 'this friction repairs itself faster than it breaks: both hold a key to the other’s door.' : 'the ease runs deeper than charm: each keeps the other’s promises.')
+        : capit(nameTh(rec.host)) + ' receives ' + nameTh(rec.guest) + ' as a guest, so ' + (hard ? 'even this friction has somewhere warm to land.' : 'the help flows host-to-guest first.'));
     }
     // the motion clause rides on the last sentence, never stands alone
     var motion = A.applying === true ? 'still tightening at the minute of birth, so it grows louder with age'
-      : (A.applying === false && A.orb > 1) ? 'already easing at birth — familiar early, more memory than pressure' : null;
+      : (A.applying === false && A.orb > 1) ? 'already easing at birth, so it was familiar early, more memory than pressure' : null;
     if (motion) S[S.length - 1] = S[S.length - 1].replace(/\.$/, '') + '; and it was ' + motion + '.';
     var line = S.join(' ');
     return {
-      a: aK, b: bK, aspect: key, orb: A.orb, tone: nat.tone, reception: rec ? rec.kind : null, line: line,
+      a: aK, b: bK, aspect: key, orb: A.orb, tone: nat.tone, reception: rec ? rec.kind : null, line: tidyProse(line),
       receipt: (nameFor(aK) + ' ' + key + ' ' + nameFor(bK) + ' · orb ' + A.orb.toFixed(1) + '°' + (A.applying === true ? ' · applying' : A.applying === false ? ' · separating' : '') + (rec ? ' · reception (' + rec.kind + ')' : '') + ' · ' + nat.tone).toUpperCase(),
       src: 'aspect natures per the tradition (sextile venusian, trine jupiterian, square martial, opposition saturnian); judgment by both planets’ determinations — Morin XXI; the school’s pipe-and-liquid rule'
     };
@@ -3531,7 +3529,7 @@ var APP = (function () {
     var M = [];
     // the opener, the way the school opens: the humoral constitution — the ground the domains stand on
     try { var tmp = temperamentProse(temperament(c, b)); if (tmp && tmp.hasTime) M.push({ title: tmp.title, text: tmp.text, receipt: tmp.receipt, src: tmp.src }); } catch (eTp) {}
-    var cap = judgeCaptain(c, b); if (cap && cap.hasTime) M.push({ title: 'The keystone', text: cap.line, receipt: cap.receipt, src: cap.src });
+    var cap = judgeCaptain(c, b); if (cap && cap.hasTime) M.push({ title: 'The keystone', text: tidyProse(cap.line), receipt: cap.receipt, src: cap.src });
     var asc = judgeAscendant(c, b); if (asc && asc.hasTime) {
       var aLine = asc.line.split(/(?<=[.!?])\s+/).slice(0, 3).join(' ');
       M.push({ title: 'The rising sign', text: aLine, receipt: asc.receipt, src: asc.src });
@@ -3563,6 +3561,7 @@ var APP = (function () {
     }
     // the final word
     var rv = rulingVoice(c, b); if (rv) M.push({ title: 'The final word', text: rv.line, receipt: rv.receipt, src: 'Bonatti, Liber Astronomiae: the judgment hierarchy' });
+    M.forEach(function (m9) { if (m9 && m9.text) m9.text = tidyProse(m9.text); });
     return { hasTime: true, movements: M, src: 'the natal synthesis, assembled from Movements II–III in the register of the school’s worked example' };
   }
   // a compact judged reading of ONE placement — for the tap-a-planet card on the wheel.
@@ -3615,7 +3614,11 @@ var APP = (function () {
     opts = opts || {};
     var perSent = (opts.dashPerSentence != null) ? opts.dashPerSentence : 0.34; // ~1 in 3 sentences
     var s = String(text).replace(/\s+/g, ' ').trim();
-    var sents = s.split(/(?<=[.!?])\s+/);
+    // ES5-safe sentence split (no lookbehind — old Safari throws on those), and decimals such as
+    // "0.3°" or "+11" must not be treated as sentence ends
+    var sents = (s.replace(/(\d)\.(\d)/g, '$1\u0001$2').match(/[^.!?]+[.!?]*\s*/g) || [s]).map(function (x) {
+      return x.replace(/\u0001/g, '.').replace(/^\s+|\s+$/g, '');
+    }).filter(function (x) { return x.length; });
     var budget = Math.max(1, Math.round(sents.length * perSent));
     var out = [], i, seenClause = {};
     for (i = 0; i < sents.length; i++) {
@@ -4126,7 +4129,8 @@ var APP = (function () {
     var doctrine = 'The tradition looks at transits last, and only where they strike a live wire — a natal promise already lit by direction, by the lord of the year, by the captain, or by the current distributor. '
       + (loud.length ? 'Right now ' + loud.length + ' transit' + (loud.length > 1 ? 's land' : ' lands') + ' on a live wire; everything else in the sky is real motion, not a verdict.' : 'Right now no transit lands on a live wire: the sky is moving, but it presses nothing the year has under tension. The honest reading is that today is quiet on your chart — not every day is an omen.');
     var backgroundLine = background.length ? 'Also moving, but touching nothing currently promised or directed — real motion, not fortune: ' + background.slice(0, 5).map(function (ev) { return nameFor(ev.tp) + ' ' + ev.asp.key + ' ' + nameFor(ev.np); }).join(', ') + '.' : 'Nothing else of note is in orb.';
-    return { doctrine: doctrine, loud: loudLines, background: background, backgroundLine: backgroundLine, wires: wires,
+    loudLines.forEach(function (L9) { if (L9 && L9.line) L9.line = tidyProse(L9.line); });
+    return { doctrine: tidyProse(doctrine), loud: loudLines, background: background, backgroundLine: backgroundLine, wires: wires,
       receipt: (loud.length + ' live-wire transits · ' + background.length + ' background').toUpperCase(),
       src: 'Sonia’s rule that transits are read last and only as triggers; the Persian doctrine of the time-lord activating natal promise' };
   }
@@ -4147,7 +4151,7 @@ var APP = (function () {
     var judgment = tmal && hard ? 'a genuine test on ' + promise + ' — the years of this passage ask real work there, and reward only the durable version' : tmal && soft ? 'a slow, weighty rework of ' + promise + ' — not painful, but not to be coasted through either' : tben && hard ? 'a stretch that grows ' + promise + ' through some friction — expansion that has to be steered' : tben && soft ? 'a supported season for ' + promise + ' — the door on those matters stands unusually open' : 'a long reshaping of ' + promise + ', neutral in itself and coloured by what it rules for you';
     var houseClause = hasTime && Dn.house ? 'sits in your ' + ordinal(Dn.house) + ' house, ' : '';
     var line = 'Transiting ' + nameFor(ev.tp) + ' is ' + aspVerb({ key: ev.aspKey }) + ' your natal ' + nameFor(ev.np) + ' — ' + pct + '% through this passage, ' + passesTxt + '. This is not a generic ' + nameFor(ev.tp) + ' transit: in your chart ' + nameFor(ev.tp) + ' ' + tDomain + '; and your natal ' + nameFor(ev.np) + ' ' + houseClause + stateAdj9(Dn.essential.label) + ' in ' + Dn.signName + ', speaking first of ' + promise + '. So for you specifically, this is ' + judgment + '.';
-    return { tp: ev.tp, np: ev.np, aspKey: ev.aspKey, progress: ev.progress, passes: ev.passes, tRules: tRules, line: line,
+    return { tp: ev.tp, np: ev.np, aspKey: ev.aspKey, progress: ev.progress, passes: ev.passes, tRules: tRules, line: tidyProse(line),
       receipt: (nameFor(ev.tp) + ' ' + ev.aspKey + ' natal ' + nameFor(ev.np) + ' · ' + pct + '% · ' + (tRules.length ? 'rules ' + Dt.rules.map(function (r) { return ordinal(r.house); }).join(',') : 'no house rulership') + (ev.passes && ev.passes.length ? ' · exact ' + fmtDate21(ev.passes[0]) : '')).toUpperCase(),
       src: 'Morin XXI–XXII: a transit is judged through both planets’ determinations in the natal chart, never as a generic aspect' };
   }
@@ -4216,11 +4220,13 @@ var APP = (function () {
     for (i = 0; i < hits.length; i++) { (lw[hits[i].np] ? live : back).push(hits[i]); }
     var liveLines = live.slice(0, 6).map(function (h) {
       var D = determination(c, b, h.np), promise = (D.analogy && D.analogy.speaksFirst) ? D.analogy.speaksFirst.matter : (D.natural ? D.natural.karakas[0] : nameFor(h.np));
-      return { tp: h.tp, np: h.np, asp: h.asp.key, date: h.exactDate, line: fmtDate21(h.exactDate) + ': transiting ' + nameFor(h.tp) + ' perfects its ' + h.asp.key + ' to your natal ' + nameFor(h.np) + ', a live wire (' + (lw[h.np][0]) + ') — the week times ' + promise + '.', receipt: (fmtDate21(h.exactDate) + ' · ' + nameFor(h.tp) + ' ' + h.asp.key + ' natal ' + nameFor(h.np) + ' · LIVE').toUpperCase() };
+      // plainly: the date, what perfects, why that planet is already live, and what it brings forward
+      return { tp: h.tp, np: h.np, asp: h.asp.key, date: h.exactDate, line: fmtDate21(h.exactDate) + ': transiting ' + nameTh(h.tp) + ' perfects its ' + h.asp.key + ' to your natal ' + nameTh(h.np) + '. That planet is already live this year, as ' + (lw[h.np][0]) + ', so this is the week its matter comes forward: ' + promise + '.', receipt: (fmtDate21(h.exactDate) + ' · ' + nameFor(h.tp) + ' ' + h.asp.key + ' natal ' + nameFor(h.np) + ' · LIVE').toUpperCase() };
     });
+    liveLines.forEach(function (L9) { L9.line = tidyProse(L9.line); });
     return { live: liveLines, backgroundCount: back.length,
       line: (liveLines.length ? 'This week, ' + liveLines.length + ' of the sky’s exact hits land on live wires; they are the ones worth diarising. ' : 'This week the sky perfects no aspect on a live wire of yours: a quiet week on the chart, whatever the general forecasts say. ')
-        + (back.length ? 'The other ' + back.length + ' exact hit' + (back.length > 1 ? 's are' : ' is') + ' real motion but touch nothing promised or directed — noted, not weighted.' : ''),
+        + (back.length ? 'The other ' + back.length + ' exact hit' + (back.length > 1 ? 's are' : ' is') + ' real motion, but touch nothing the chart has promised or a direction has lit, so they are noted rather than weighted.' : ''),
       src: 'the week rebuilt on the trigger doctrine (phase 21): exact hits weighted only where they strike a live wire' };
   }
   // ===== PHASE 26 — THE LOTS: Fortune, Spirit and a small canon, delineated by their lords =====
@@ -4260,7 +4266,7 @@ var APP = (function () {
       var carrier = isPt ? (pk === 'asc' ? 'your Ascendant — the life and body itself' : 'your Midheaven — the career and the name') : ('your natal ' + nameFor(pk) + (D && D.house ? ', which keeps its court in your ' + ordinal(D.house) + ' house and speaks first of ' + ((D.analogy && D.analogy.speaksFirst) ? D.analogy.speaksFirst.matter : (D.natural ? D.natural.karakas[0] : nameFor(pk))) : ''));
       var falls = isPt ? '' : 'Because it rides ' + nameFor(pk) + ', that colour falls on ' + (D && D.house ? HOUSE_AREA9[D.house - 1] : nameFor(pk) + '’s significations') + '. ';
       var line = 'The fixed star ' + st.star + ' sits within ' + st.orb.toFixed(1) + '° of ' + carrier + ', of the nature of ' + st.nat + '. A fixed star is not a fortune but a colouring of the point it touches — read here as behaviour, not omen: ' + st.m + '. ' + falls + 'Tight orbs only: past about a degree the star is not truly carried.';
-      return { star: st.star, planet: pk, orb: st.orb, nature: st.nat, line: line, receipt: ('fixed star ' + st.star + ' on ' + nameFor(pk) + ' · orb ' + st.orb.toFixed(1) + '° · nature ' + st.nat).toUpperCase() };
+      return { star: st.star, planet: pk, orb: st.orb, nature: st.nat, line: tidyProse(line), receipt: ('fixed star ' + st.star + ' on ' + nameFor(pk) + ' · orb ' + st.orb.toFixed(1) + '° · nature ' + st.nat).toUpperCase() };
     });
     return { stars: out, doctrine: 'A fixed star is read only where a planet or angle carries one within about a degree, and it is a colouring of that point’s condition — behaviour, not prophecy.', src: 'Robson, The Fixed Stars and Constellations in Astrology (1923) as catalogue; the register rewritten to condition/behaviour; Ptolemy on stellar natures' };
   }
@@ -4311,7 +4317,7 @@ var APP = (function () {
       else if (pt.type === 'Grand Trine') line = 'A grand trine in ' + pt.where + ' — ' + pt.bodies.map(nameFor).join(', ') + ' — testifies to a closed circuit of natural gift in ' + pt.where + ' matters: fluent enough to be taken for granted, and to go unexercised.';
       else if (pt.type === 'Yod') line = 'A yod points at ' + apexClause + ': two sextiled planets both strain toward it, a testimony of a fated, adjust-or-else pressure on ' + (apexD && apexD.house ? 'your ' + HOUSE_AREA9[apexD.house - 1] : nameFor(pt.apex) + '’s matters') + '.';
       else line = patternText(pt);
-      return { type: pt.type, apex: pt.apex || null, bodies: pt.bodies, weight: WEIGHT29[pt.type] || 2, line: line, receipt: (pt.type + (pt.apex ? ' apex ' + nameFor(pt.apex) : ' in ' + (pt.where || '')) + ' · testimony weight ' + (WEIGHT29[pt.type] || 2)).toUpperCase() };
+      return { type: pt.type, apex: pt.apex || null, bodies: pt.bodies, weight: WEIGHT29[pt.type] || 2, line: tidyProse(line), receipt: (pt.type + (pt.apex ? ' apex ' + nameFor(pt.apex) : ' in ' + (pt.where || '')) + ' · testimony weight ' + (WEIGHT29[pt.type] || 2)).toUpperCase() };
     });
     out.sort(function (x, y) { return y.weight - x.weight; });
     var shape = null; try { shape = chartShape(c); } catch (e) {}
