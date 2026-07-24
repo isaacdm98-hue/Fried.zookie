@@ -3682,6 +3682,22 @@ var APP = (function () {
     }
     var ruled = []; for (var i = 0; i < D.rules.length; i++) ruled.push(ordinal(D.rules[i].house));
     if (ruled.length) L.push('It answers for your ' + ruled.join(' and your ') + (ruled.length > 1 ? ', so those matters dock wherever it stands' : '') + '.');
+    // T10 — the degree itself. Two chart-specific details that separate two planets in the same
+    // sign: the anaretic 29th and the raw 0th (a degree the tradition marks), and any fixed star
+    // within orb (Ptolemy; natures after Robson, 1923). Both are why one Venus in Taurus is not
+    // another Venus in Taurus.
+    try {
+      var dgN9 = degreeNote(D.deg);
+      if (dgN9) L.push('It sits ' + dgN9 + '.');
+    } catch (eDg9) {}
+    try {
+      var stO9 = starsOn(c), si9;
+      for (si9 = 0; si9 < stO9.length; si9++) {
+        if (stO9[si9].planet !== key || stO9[si9].orb > 1.4) continue;
+        L.push('The fixed star ' + stO9[si9].star + ' sits within ' + stO9[si9].orb.toFixed(1) + '\u00B0 of it, of the nature of ' + stO9[si9].nat + ', which colours what this planet signifies: ' + stO9[si9].m + '.');
+        break;
+      }
+    } catch (eSt9) {}
     if (D.condition) L.push(D.condition.line);
     if (D.sectRole) L.push('By sect, ' + nameFor(key) + ' is the ' + D.sectRole.replace(' — ', ': ') + '.');
     if (D.feral) L.push(D.feralNote.charAt(0).toUpperCase() + D.feralNote.slice(1) + '.');
