@@ -1,5 +1,38 @@
 # Changelog
 
+## 4.10.0 — 2026-07-24 — it reads like an astrologer wrote it, and only what she uses
+
+A pass driven by one complaint: the text was full of AI tells and did not make
+sense. It was both, and the two were the same job.
+
+**Sentences that meant nothing, fixed.** The week reading said "the week times
+investigation" — "times" as a verb with a bare noun. The aspect composer ran at
+2.71 em-dashes per sentence with three in its opening line. Across every
+composed surface: aspects 2.71 → under ceiling, week 1.20 → under, cycles 0.94 →
+0.56, money 1.33 → 0.40, placement 0.42 → 0.10. A new `tidyProse` clause-grammar
+pass enforces it, and `tests/prose-lint.cjs` fails the build on the machine-text
+signature: em-dash density, unclosed asides, fragments, repeated formulas,
+second-person counsel, bare luminaries.
+
+**Cut, because the school does not use it.** Named aspect figures (T-square,
+grand trine, yod) and Marc-Edmund-Jones chart shapes, which were presented as
+"testimony weight"; the behavioural "tells" ("in a room, the giveaway: you
+remember exactly who was kind to you in 2014"); the archetype lines; the
+second-person sign text ("you came here to connect ideas and people"), which was
+still reaching the sign screen, the walkthrough and the printed book even after
+being cut from the main reading. 112KB of dead pop data deleted — corpus.js is
+31.5% smaller.
+
+**Added or repaired, because she does use it.** Reception now has its own
+chapter, "Who holds whose keys" — the doctrine that explains why a square
+resolves and an easy angle disappoints. The dispositor chain was walking MODERN
+rulers (Pluto disposing Scorpio in a seven-planet tradition) and now walks the
+seven; where every chain ends at one planet, the reading says so. The ruling
+voice — the almuten adjudicating a divided chart — is stated plainly instead of
+in a broken list. And the degree itself now speaks: the anaretic 29th, the raw
+0th, and any fixed star within orb, so two planets in the same sign no longer
+read alike.
+
 ## 4.9.1 — 2026-07-24 — production polish: audit fixes across the whole app
 A multi-agent production audit (voice, doctrine, layout, dead-code) plus a
 headless screen audit (7 screens × 3 widths, no runtime errors) drove a cohesion
