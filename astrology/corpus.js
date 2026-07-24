@@ -1366,6 +1366,36 @@ var DATA = (function () {
       'the liver taxed through the bowels, the richness that clogs', 'the kidneys taxed by sweetness and excess',
       'excess carried in the pelvic organs', 'the hips and thighs heavy, the liver’s overflow',
       'the skin and knees marked by rich blood', 'the blood thick and slow in the legs', 'fluid and surfeit pooling in the feet'
+    ],
+    sun: [ // the vital heat threaded through the sign's zone — always back to heart/vitality
+      'the vital heat pressing at the head, heat-headaches and the eyes', 'the throat and the vital spirits taxed',
+      'the breath and the vitality, the heart’s reach into the chest', 'the stomach’s heat and the heart’s tide',
+      'the heart itself, palpitation and the spine — the sign of its own house', 'the heat carried into the bowels, the vitality spent low',
+      'the reins and the vital balance, the back’s strength', 'the vital heat low in the pelvic organs',
+      'the hips and the arterial blood, the great nerve', 'the heart’s strength against the bones and the years',
+      'the circulation and the heart’s far reach (its exile — the weakest vitality)', 'the vital spirits and the fluids, low at the feet'
+    ],
+    venus: [ // surfeit, the reins, throat and generative organs — the complaint of too much ease
+      'flushing and heat of the face from indulgence', 'the throat itself, quinsy and the swollen gland',
+      'the breath thickened by rich living', 'the stomach cloyed, the sweet surfeit', 'the heart softened by ease',
+      'the bowels and the sweetness that clogs', 'the reins and kidneys, gravel and the sugar of excess',
+      'the generative organs and the venereal complaint', 'the hips and thighs slackened', 'the skin’s eruptions from rich blood',
+      'the circulation slow and sweet', 'the feet and the fluids, dropsy from soft living'
+    ],
+    mercury: [ // nerves, mind, breath and speech — restless and mutable through the zone
+      'the nerves of the head, the racing mind, giddiness', 'the speech and the throat’s nerves',
+      'the lungs and the breath, the nervous cough (its own house)', 'the nervous stomach, worry lodged in the gut',
+      'the heart’s flutter from nerves', 'the nervous bowels and the strained digestion (its own house)',
+      'the reins’ nerves and a restless back', 'the nerves of the pelvic organs', 'the sciatic nerve and the restless leg',
+      'the nervous skin and the twitching joint', 'the nerves of the lower leg, the tic and the cramp', 'the coordination of the feet, the fluid nerves (its fall)'
+    ],
+    moon: [ // fluids, stomach, the functional and periodic — watery and changeable through the zone
+      'the fluids of the head, catarrh and the watery eye', 'the throat’s phlegm and the swollen gland',
+      'the phlegm on the lungs, the wet cough', 'the stomach and the breast, the watery digestion (its own house)',
+      'the heart’s tide and the fluid around it', 'the bowels loose and cold, the watery colic',
+      'the reins and the water they pass', 'the bladder’s fluids and the periodic complaint (its fall)',
+      'the fluids of the hips and thighs', 'the cold damp settling in the knees and joints',
+      'the fluid legs and the swollen ankle', 'dropsy and the pooling of fluids in the feet'
     ]
   };
   var MEDICAL_SRC = 'the body zones after Lilly, Christian Astrology (1647) & Sepharial; the affliction qualities after Culpeper; the planet-in-sign watch-list after Raphael, Medical Astrology — our paraphrase, descriptive of the tradition, never a diagnosis';
