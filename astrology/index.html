@@ -3208,12 +3208,15 @@ var APP = (function () {
   function judgeTopic(c, b, spec) {
     if (!(b && b.timeKnown && c.ascBody && c.cusps)) return null;
     var CL = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn'];
-    var S = [spec.opener], receipts = [], favor = 0, weight = 0, i, oi, k;
+    var S = [spec.opener], receipts = [], favor = 0, weight = 0, i, oi, k, lordSeen = {};
     for (i = 0; i < spec.houses.length; i++) {
       var hs = spec.houses[i], h = hs.h, cs = Math.floor(rev(c.cusps[h]) / 30);
       var lordK = TRAD_RULER[cs], lordD = determination(c, b, lordK); if (!lordD) continue;
       var srcH = lordD.house, t = lordD.condition ? lordD.condition.total : 0;
-      favor += (t >= 3 ? 1 : t < 0 ? -1 : 0); weight++;
+      var firstLord = !lordSeen[lordK]; lordSeen[lordK] = true; weight++;
+      // one planet ruling two of the topic's houses is ONE significator — count its state once, and
+      // note the second house briefly rather than re-deriving the whole delineation
+      if (firstLord) favor += (t >= 3 ? 1 : t < 0 ? -1 : 0);
       var occTxt = '';
       for (oi = 0; oi < CL.length; oi++) { k = CL[oi]; var pp = c.planets[k]; if (pp && pp.house === h && k !== lordK) { var v = determination(c, b, k); occTxt = ' ' + nameFor(k) + ' stands in it, ' + (v.nature.verdict === 'benefic' ? 'a benefic favouring' : v.nature.verdict === 'malefic' ? 'a malefic troubling' : 'a mixed hand on') + ' ' + hs.role + '.'; if (v.nature.verdict === 'benefic') favor += 0.5; else if (v.nature.verdict === 'malefic') favor -= 0.5; break; } }
       // the aspects TO the lord — a benefic seconds the promise by soft aspect/conjunction, a malefic
@@ -3226,15 +3229,20 @@ var APP = (function () {
         if (!counts) continue;
         if (!bestAsp || Ap.orb < bestAsp.orb) bestAsp = { oth: oth, aspect: Ap.aspect, orb: Ap.orb, ben: ben, rec: !!Ap.reception };
       }
-      if (bestAsp) {
+      if (bestAsp && firstLord) { // only fold the lord's aspect once — the same planet, not a new testimony
         favor += bestAsp.ben ? (bestAsp.rec ? 0.75 : 0.5) : (bestAsp.rec ? -0.25 : -0.5);
         aspTxt = ' ' + capit(nameFor(bestAsp.oth)) + (bestAsp.ben ? ' seconds it by ' : ' presses on it by ') + art9(bestAsp.aspect) + ' ' + bestAsp.aspect + (bestAsp.rec ? ', though reception eases the exchange' : '') + '.';
         receipts.push(nameFor(lordK) + (bestAsp.ben ? '+' : '−') + nameFor(bestAsp.oth) + ' ' + bestAsp.aspect.slice(0, 3));
       }
       var promise = (t >= 3 ? 'held strong, the promise holds' : t < 0 ? 'held weak, the promise strains' : 'held middling, the promise is mixed');
-      var link = (srcH && srcH !== h) ? ', and sits in your ' + ordinal(srcH) + ' — so ' + (CAUSE_LINK9[h] || ('the ' + ordinal(h) + '’s matters run through')) + ' ' + HOUSE_AREA9[srcH - 1] : '';
-      S.push(capit(hs.role) + ' answers to ' + nameFor(lordK) + ', ' + stateAdj9(lordD.essential.label) + ' in ' + lordD.signName + link + ' — ' + promise + '.' + occTxt + aspTxt);
-      receipts.push(ordinal(h) + ' lord ' + nameFor(lordK) + '→' + ordinal(srcH || 0) + ' lilly' + (t >= 0 ? '+' : '') + t);
+      if (firstLord) {
+        var link = (srcH && srcH !== h) ? ', and sits in your ' + ordinal(srcH) + ' — so ' + (CAUSE_LINK9[h] || ('the ' + ordinal(h) + '’s matters run through')) + ' ' + HOUSE_AREA9[srcH - 1] : '';
+        S.push(capit(hs.role) + ' answers to ' + nameFor(lordK) + ', ' + stateAdj9(lordD.essential.label) + ' in ' + lordD.signName + link + ' — ' + promise + '.' + occTxt + aspTxt);
+        receipts.push(ordinal(h) + ' lord ' + nameFor(lordK) + '→' + ordinal(srcH || 0) + ' lilly' + (t >= 0 ? '+' : '') + t);
+      } else {
+        // same planet already read for this topic — note the second house briefly, not the whole delineation
+        S.push(capit(hs.role) + ' answers to the same hand, ' + nameFor(lordK) + ' — so both stand or fall together.' + occTxt);
+      }
     }
     if (spec.lot && c.points && c.points[spec.lot]) {
       var lp = c.points[spec.lot], lh = lp.house || natalHouseOf(c, lp.lon), ls = Math.floor(rev(lp.lon) / 30), llK = TRAD_RULER[ls], llD = determination(c, b, llK);
