@@ -1544,10 +1544,10 @@ var APP = (function () {
     var top = t.votes.slice().sort(function (x, y) { return y.weight - x.weight; }).slice(0, 2).map(function (v) { return v.label; });
     if (t.balanced) {
       out.push('A well-tempered constitution: no single humour rules it. Heat and cold, wet and dry sit close to even (' + t.axis.hot + '/' + t.axis.cold + ' and ' + t.axis.wet + '/' + t.axis.dry + '), which the tradition counts a fortunate balance — a body not easily tipped.');
-      out.push('If it leans, it leans ' + t.name + ' — ' + B.warm + ' — by ' + top.join(' and ') + '.');
+      out.push('If it leans, it leans ' + t.name + ' (' + B.warm + '), by ' + top.join(' and ') + '.');
     } else {
       var lead = t.strength === 'marked' ? 'strongly' : t.strength === 'clear' ? 'clearly' : 'on balance';
-      out.push('The constitution reads ' + lead + ' ' + t.name + ' — ' + B.warm + ', the humour of ' + t.humour + ' — set by ' + top.join(' and ') + '.');
+      out.push('The constitution reads ' + lead + ' ' + t.name + ' (' + B.warm + ', the humour of ' + t.humour + '), set by ' + top.join(' and ') + '.');
       out.push('That gives ' + B.build + ': a body that runs ' + B.runs + ', keeping ' + B.keeps + '. Where it is tested, it is ' + B.excess + '.');
       if (t.strength !== 'marked' && t.secondary && t.secondary !== t.name) {
         out.push('A second note of ' + t.secondary + ' (' + HUMOR_BODY[t.secondary].warm + ') runs under it, softening the pure type.');
@@ -1555,7 +1555,7 @@ var APP = (function () {
     }
     for (var i = 0; i < t.votes.length; i++) receipts.push(t.votes[i].label + ' — ' + t.votes[i].quality);
     return {
-      title: 'Your constitution', text: out.join(' '),
+      title: 'Your constitution', text: tidyProse(out.join(' ')),
       receipt: 'The humoral testimonies, weighted: ' + receipts.join('; ') + '. Thermal ' + t.axis.hot + ' hot / ' + t.axis.cold + ' cold; humid ' + t.axis.wet + ' wet / ' + t.axis.dry + ' dry.',
       src: 'Ptolemy, Tetrabiblos III.11–12 (the temperament of the soul and body); Lilly, Christian Astrology (1647) on the complexions; the weighted method after Frawley, The Real Astrology Applied.',
       name: t.name, hasTime: t.hasTime
@@ -2640,7 +2640,8 @@ var APP = (function () {
     } else if (have9.length) {
       out.label = have9[0].charAt(0).toUpperCase() + have9[0].slice(1);
       out.character = DIGNITY_CHAR9[have9[0]];
-      if (have9.length > 1) out.character += '; also ' + have9.slice(1).map(function (n9) { return n9 + ' (' + DIGNITY_CHAR9[n9].split(';')[0] + ')'; }).join(', ');
+      // the secondary layers are named plainly; their full images would bury the primary one
+      if (have9.length > 1) out.character += '. It holds ' + have9.slice(1).join(' and ') + ' here as well';
       if (debN9) out.character += '; yet in ' + debN9.toLowerCase() + ' — ' + debC9;
     } else { out.label = 'Peregrine'; out.character = DIGNITY_CHAR9.peregrine; }
     var tal9 = {}; addScore(tal9, led.domicile, 5); addScore(tal9, led.exaltation, 4); addScore(tal9, led.triplicity, 3); addScore(tal9, led.bound, 2); addScore(tal9, led.face, 1);
@@ -2828,7 +2829,7 @@ var APP = (function () {
       key: k, essential: { rows: ess, total: eT9 }, accidental: { rows: acc, total: aT9 }, total: tot9, band: band9,
       line: (function () {
         var sgn9 = function (n) { return (n >= 0 ? '+' : '') + n; };
-        var s = 'By Lilly’s reckoning ' + nameFor(k) + ' scores ' + sgn9(eT9) + ' essential and ' + sgn9(aT9) + ' accidental, ' + sgn9(tot9) + ' in all — ' + band9 + ': ' + bandLine9 + '.';
+        var s = 'By Lilly’s reckoning ' + nameTh(k) + ' scores ' + sgn9(eT9) + ' essential and ' + sgn9(aT9) + ' accidental, ' + sgn9(tot9) + ' in all. That is ' + band9 + ': ' + bandLine9 + '.';
         var hasB = best9 && best9[1] > 0, hasW = worst9 && worst9[1] < 0;
         if (hasB && hasW) s += ' Its strongest support is ' + best9[0] + ' (' + sgn9(best9[1]) + '); its heaviest drag, ' + worst9[0] + ' (' + worst9[1] + ').';
         else if (hasB) s += ' Its strongest support is ' + best9[0] + ' (' + sgn9(best9[1]) + ').';
@@ -3038,49 +3039,49 @@ var APP = (function () {
     var helps = 0, harms = 0, testimony = [];
     for (i = 0; i < occs.length; i++) {
       var O = occs[i], v = O.nature.verdict;
-      if (v === 'benefic') { helps += (O.essential.score >= 3 ? 2 : 1); testimony.push(nameFor(O.key) + ' in the house, ' + (O.essential.score >= 3 ? 'dignified — a strong shield' : 'a friendly hand')); }
-      else if (v === 'malefic') { var hw = (O.essential.score >= 3 ? 1 : 2); harms += hw; testimony.push(nameFor(O.key) + ' in the house' + (O.essential.score >= 3 ? ', dignified — a hard builder, not a wrecker' : ', afflicted — a real tax')); }
+      if (v === 'benefic') { helps += (O.essential.score >= 3 ? 2 : 1); testimony.push(nameTh(O.key) + ' in the house, ' + (O.essential.score >= 3 ? 'dignified, a strong shield' : 'a friendly hand')); }
+      else if (v === 'malefic') { var hw = (O.essential.score >= 3 ? 1 : 2); harms += hw; testimony.push(nameTh(O.key) + ' in the house' + (O.essential.score >= 3 ? ', dignified, a hard builder rather than a wrecker' : ', afflicted, a real tax')); }
     }
     var bond = null;
     for (i = 0; i < lordD.aspects.length; i++) {
       var A = lordD.aspects[i], o = A.other; if (CL9.indexOf(o) < 0) continue;
       var hard = (A.aspect === 'square' || A.aspect === 'opposition');
-      if (o === 'venus' || o === 'jupiter') { helps += (A.reception ? 2 : 1); if (!bond) bond = A; testimony.push(nameFor(o) + '’s ' + A.aspect + ' to the lord' + (A.reception ? ', with reception — real repair' : '')); }
-      else if ((o === 'mars' || o === 'saturn') && hard) { harms += (A.reception ? 1 : 2); if (!bond) bond = A; testimony.push(nameFor(o) + '’s ' + A.aspect + ' to the lord' + (A.reception ? ', though reception softens it' : ' — friction at the root')); }
+      if (o === 'venus' || o === 'jupiter') { helps += (A.reception ? 2 : 1); if (!bond) bond = A; testimony.push(nameTh(o) + '’s ' + A.aspect + ' to the lord' + (A.reception ? ', with reception, a real repair' : '')); }
+      else if ((o === 'mars' || o === 'saturn') && hard) { harms += (A.reception ? 1 : 2); if (!bond) bond = A; testimony.push(nameTh(o) + '’s ' + A.aspect + ' to the lord' + (A.reception ? ', though reception softens it' : ', friction at the root')); }
     }
     var lscore = lordD.condition ? lordD.condition.total : 0;
     var verdict = (lscore >= 3) ? (harms > helps ? 'taxed' : 'promised') : (helps > 0 ? 'repaired' : 'withheld');
     // --- compose the paragraph ---
     var S = [];
-    S.push('Your ' + ordinal(h) + ' house — ' + HOUSE_AREA9[h - 1] + ' — has ' + csName + ' on the cusp, so it answers to ' + nameFor(lordK) + (alm && alm.differs ? ', though at the cusp’s exact degree ' + nameFor(alm.lead) + ' out-dignifies ' + nameFor(lordK) + ' (' + alm.score + ' against ' + (alm.tally[lordK] || 0) + ') — both get a say' : '') + '.');
+    S.push('Your ' + ordinal(h) + ' house of ' + HOUSE_AREA9[h - 1] + ' has ' + csName + ' on the cusp, so it answers to ' + nameTh(lordK) + (alm && alm.differs ? ', though at the cusp’s exact degree ' + nameFor(alm.lead) + ' out-dignifies ' + nameFor(lordK) + ' (' + alm.score + ' against ' + (alm.tally[lordK] || 0) + '), so both get a say' : '') + '.');
     if (occs.length >= 3) S.push('This house is crowded — ' + occs.length + ' planets stand in your ' + ordinal(h) + ', a stellium: whatever else the chart says, this is where the life gathers.');
     for (i = 0; i < occs.length; i++) {
-      var O2 = occs[i], vw = O2.nature.verdict === 'benefic' ? 'a benefic — it favours this ground' : O2.nature.verdict === 'malefic' ? 'a malefic — it disturbs this ground' : 'convertible here';
+      var O2 = occs[i], vw = O2.nature.verdict === 'benefic' ? 'a benefic that favours this ground' : O2.nature.verdict === 'malefic' ? 'a malefic that disturbs this ground' : 'convertible here';
       var imports = [], ri;
       for (ri = 0; ri < O2.rules.length; ri++) if (O2.rules[ri].house !== h) imports.push(ordinal(O2.rules[ri].house));
-      S.push(nameFor(O2.key) + ' occupies the ' + ordinal(h) + ', ' + vw + ', speaking first of ' + O2.analogy.speaksFirst.matter + (imports.length ? '; and as lord of your ' + imports.join(' and ') + ' ' + pron9(O2.key, 0) + ' brings their business in with ' + pron9(O2.key, 2) : '') + ', standing ' + stateAdj9(O2.essential.label) + ' in ' + O2.signName + '.');
+      S.push(capit(nameTh(O2.key)) + ' occupies the ' + ordinal(h) + ', ' + vw + ', speaking first of ' + O2.analogy.speaksFirst.matter + (imports.length ? '; and as lord of your ' + imports.join(' and ') + ' ' + pron9(O2.key, 0) + ' brings their business in with ' + pron9(O2.key, 2) : '') + ', standing ' + stateAdj9(O2.essential.label) + ' in ' + O2.signName + '.');
     }
-    if (!occs.length && !lordHere) S.push('No planet occupies the ' + ordinal(h) + ': the domain is answered entirely by its lord, ' + nameFor(lordK) + ', from where ' + pron9(lordK, 0) + ' stands.');
+    if (!occs.length && !lordHere) S.push('No planet occupies the ' + ordinal(h) + ': the domain is answered entirely by its lord, ' + nameTh(lordK) + ', from where ' + pron9(lordK, 0) + ' stands.');
     if (lordHere) S.push(nameFor(lordK) + ' stands in ' + pron9(lordK, 1) + ' own house, ' + stateAdj9(lordD.essential.label) + ' in ' + lordD.signName + ': the ' + ordinal(h) + ' runs on its own ground, answering to nobody else.');
-    else S.push('The promise itself is read from the lord: ' + nameFor(lordK) + ' stands ' + stateAdj9(lordD.essential.label) + ' in ' + lordD.signName + ' in your ' + ordinal(lordD.house) + ' — so ' + CAUSE_LINK9[h] + ' ' + HOUSE_AREA9[lordD.house - 1] + (lscore >= 5 ? ', and being well disposed there, the link pays' : lscore < 0 ? ', and being poorly disposed there, the link costs more than it pays' : '') + '.');
+    else S.push('The promise itself is read from the lord: ' + capit(nameTh(lordK)) + ' stands ' + stateAdj9(lordD.essential.label) + ' in ' + lordD.signName + ' in your ' + ordinal(lordD.house) + ', so ' + CAUSE_LINK9[h] + ' ' + HOUSE_AREA9[lordD.house - 1] + (lscore >= 5 ? ', and being well disposed there, the link pays' : lscore < 0 ? ', and being poorly disposed there, the link costs more than it pays' : '') + '.');
     if (lordD.condition) S.push(lordD.condition.line);
     var conj = null;
     for (i = 0; i < lordD.aspects.length; i++) if (lordD.aspects[i].aspect === 'conjunction' && CL9.indexOf(lordD.aspects[i].other) >= 0) { conj = lordD.aspects[i]; break; }
-    if (conj) S.push('Standing with the lord is ' + nameFor(conj.other) + ' (' + conj.orb.toFixed(1) + '°), ' + ((conj.other === 'venus' || conj.other === 'jupiter') ? 'a benefic at ' + pron9(lordK, 1) + ' elbow — what the ' + ordinal(h) + ' needs, it gets help asking for' : (conj.other === 'mars' || conj.other === 'saturn') ? 'a malefic at ' + pron9(lordK, 1) + ' elbow — the ' + ordinal(h) + '’s business carries that edge everywhere' : 'colouring everything the ' + ordinal(h) + ' asks of ' + pron9(lordK, 2)) + '.');
+    if (conj) S.push('Standing with the lord is ' + nameTh(conj.other) + ' (' + conj.orb.toFixed(1) + '°), ' + ((conj.other === 'venus' || conj.other === 'jupiter') ? 'a benefic at ' + pron9(lordK, 1) + ' elbow, so what the ' + ordinal(h) + ' needs, it gets help asking for' : (conj.other === 'mars' || conj.other === 'saturn') ? 'a malefic at ' + pron9(lordK, 1) + ' elbow, so the ' + ordinal(h) + '’s business carries that edge everywhere' : 'colouring everything the ' + ordinal(h) + ' asks of ' + pron9(lordK, 2)) + '.');
     var kk = KARAKA_OF_HOUSE9[h], kD = (kk === lordK) ? lordD : determination(c, b, kk);
-    if (kD && kD.feral) S.push('Checked last, ' + nameFor(kk) + ' — the universal significator of ' + KARAKA_WORD9[h] + ' — is feral, aspected by no classical planet: what ' + pron9(kk, 0) + ' stands for here stands unsupported and alone.');
-    else if (kD && kD.condition) S.push('Checked last, ' + nameFor(kk) + ' — the universal significator of ' + KARAKA_WORD9[h] + ' — is ' + kD.condition.band + ' at ' + (kD.condition.total >= 0 ? '+' : '') + kD.condition.total + ', which ' + (kD.condition.total >= 5 ? 'seconds the promise' : kD.condition.total < 0 ? 'withholds its second' : 'neither helps nor hinders') + '.');
+    if (kD && kD.feral) S.push('Checked last, ' + nameTh(kk) + ', the universal significator of ' + KARAKA_WORD9[h] + ', is feral, aspected by no classical planet: what ' + pron9(kk, 0) + ' stands for here stands unsupported and alone.');
+    else if (kD && kD.condition) S.push('Checked last, ' + nameTh(kk) + ', the universal significator of ' + KARAKA_WORD9[h] + ', is ' + kD.condition.band + ' at ' + (kD.condition.total >= 0 ? '+' : '') + kD.condition.total + ', which ' + (kD.condition.total >= 5 ? 'seconds the promise' : kD.condition.total < 0 ? 'withholds its second' : 'neither helps nor hinders') + '.');
     var lsTxt = (lscore >= 0 ? '+' : '') + lscore;
     var vLine = {
-      promised: 'promised — ' + nameFor(lordK) + ' at ' + lsTxt + ' can pay, and what this house offers arrives and holds',
-      taxed: 'promised but taxed — ' + nameFor(lordK) + ' at ' + lsTxt + ' can pay, yet something in the house keeps taking its cut',
-      repaired: 'shaky at the root but repaired — ' + nameFor(lordK) + ' stands at ' + lsTxt + ', and only help from outside keeps this domain standing',
-      withheld: 'withheld — ' + nameFor(lordK) + ' at ' + lsTxt + ' pays late, through others, or not in full; expect second attempts here'
+      promised: 'promised — ' + nameTh(lordK) + ' at ' + lsTxt + ' can pay, and what this house offers arrives and holds',
+      taxed: 'promised but taxed — ' + nameTh(lordK) + ' at ' + lsTxt + ' can pay, yet something in the house keeps taking its cut',
+      repaired: 'shaky at the root but repaired — ' + nameTh(lordK) + ' stands at ' + lsTxt + ', and only help from outside keeps this domain standing',
+      withheld: 'withheld — ' + nameTh(lordK) + ' at ' + lsTxt + ' pays late, through others, or not in full; expect second attempts here'
     }[verdict];
-    S.push('The verdict on your ' + ordinal(h) + ': ' + vLine + '; decided by ' + (testimony.length ? testimony.slice(0, 3).join('; ') : nameFor(lordK) + '’s own state, with no planet interfering') + '.');
+    S.push('The verdict on your ' + ordinal(h) + ': ' + vLine + '; decided by ' + (testimony.length ? testimony.slice(0, 3).join('; ') : nameTh(lordK) + '’s own state, with no planet interfering') + '.');
     return {
       house: h, cuspSign: csName, lord: lordK, almuten: alm, occupants: occs.map(function (o) { return o.key; }), lordScore: lscore, helps: helps, harms: harms,
-      verdict: verdict, testimony: testimony, line: S.join(' '),
+      verdict: verdict, testimony: testimony, line: tidyProse(S.join(' ')),
       receipt: (ordinal(h) + ' cusp ' + degStr(cuspLon % 30) + ' ' + csName + ' · lord ' + nameFor(lordK) + ' → ' + ordinal(lordD.house) + ', ' + lordD.signName + ' · lilly ' + (lscore >= 0 ? '+' : '') + lscore + ' · ' + verdict).toUpperCase(),
       src: 'the school’s twelve-step judgment; Morin, Astrologia Gallica XXI (1661); Lilly, Christian Astrology (1647)'
     };
@@ -3162,7 +3163,7 @@ var APP = (function () {
     afflictions.sort(function (x, y) { return (x.orb || 9) - (y.orb || 9); });
     // --- compose, in the reassurance register ---
     var S = [], watched = [];
-    S.push('The tradition reads the body by its forces. It weighs the life-forces — your Ascendant in ' + DATA.SIGNS[ascSign].name + ', its lord ' + nameFor(ascLordK) + ', the Sun and the Moon — against the forces that disturb: ' + nameFor('saturn') + ' and ' + nameFor('mars') + (Object.keys(morbidLordOf).length ? ', and the lords of your 6th, 8th and 12th' : '') + '. Here the life-forces read ' + vitality + '.');
+    S.push('The tradition reads the body by its forces. It weighs the life-forces (your Ascendant in ' + DATA.SIGNS[ascSign].name + ', its lord ' + nameTh(ascLordK) + ', the Sun and the Moon) against the forces that disturb: ' + nameFor('saturn') + ' and ' + nameFor('mars') + (Object.keys(morbidLordOf).length ? ', and the lords of your 6th, 8th and 12th' : '') + '. Here the life-forces read ' + vitality + '.');
     if (!afflictions.length) {
       S.push('No morbid force strikes a life-force cleanly — the tradition finds no zone especially flagged, and reads the constitution as free-running. What it would watch, in a body of this make, is only the general tendency of the temperament.');
     } else {
@@ -3176,7 +3177,7 @@ var APP = (function () {
           // a life-force burnt by the Sun: read as lowered vitality in the target's own zone
           S.push('It watches ' + zoneTxt + ': ' + af.targetLabel + ' stands burnt close to the Sun in ' + DATA.SIGNS[af.sign].name + ', which the tradition reads as vitality drawn thin — and there watches ' + watchTxt + '.');
         } else {
-          var afName = nameFor(af.afflictor) + (af.ruledBad ? ' (lord of your ' + af.ruledBad.map(ordinal).join(' and ') + ')' : ', ' + quality);
+          var afName = nameFor(af.afflictor) + (af.ruledBad ? ' (lord of your ' + af.ruledBad.map(ordinal).join(' and ') + ')' : ' (' + quality + ')');
           S.push('It watches ' + zoneTxt + ': ' + afName + ' meets ' + af.targetLabel + ' by ' + af.aspect + (af.reception ? ', though reception softens it' : '') + ', and in ' + DATA.SIGNS[af.sign].name + ' the tradition watches ' + watchTxt + '.');
         }
         watched.push({ zone: zoneTxt, afflictor: af.afflictor, sign: DATA.SIGNS[af.sign].name, chronic: PA[af.afflictor] ? PA[af.afflictor].chronic : false });
@@ -3185,7 +3186,7 @@ var APP = (function () {
       S.push('Read this gently: these are lifelong tendencies the old physicians watched, never a forecast and never a diagnosis — the strong side of the same constitution is its long, ordinary health.');
     }
     return {
-      hasTime: true, vitality: vitality, pool: pool, afflictions: afflictions, watched: watched, line: S.join(' '),
+      hasTime: true, vitality: vitality, pool: pool, afflictions: afflictions, watched: watched, line: tidyProse(S.join(' ')),
       receipt: ('life-forces: Asc ' + DATA.SIGNS[ascSign].name + ', lord ' + nameFor(ascLordK) + ' · pool ' + pool + ' (' + vitality + ') · morbid: saturn, mars' + (Object.keys(morbidLordOf).length ? ', lords of ' + Object.keys(morbidLordOf).map(function (k) { return nameFor(k); }).join('/') : '') + ' · ' + afflictions.length + ' affliction' + (afflictions.length === 1 ? '' : 's')).toUpperCase(),
       src: DATA.MEDICAL_SRC || 'the medical reading after Lilly (1647), Culpeper, Raphael — our paraphrase, never a diagnosis'
     };
@@ -3208,7 +3209,7 @@ var APP = (function () {
       // note the second house briefly rather than re-deriving the whole delineation
       if (firstLord) favor += (t >= 3 ? 1 : t < 0 ? -1 : 0);
       var occTxt = '';
-      for (oi = 0; oi < CL.length; oi++) { k = CL[oi]; var pp = c.planets[k]; if (pp && pp.house === h && k !== lordK) { var v = determination(c, b, k); occTxt = ' ' + nameFor(k) + ' stands in it, ' + (v.nature.verdict === 'benefic' ? 'a benefic favouring' : v.nature.verdict === 'malefic' ? 'a malefic troubling' : 'a mixed hand on') + ' ' + hs.role + '.'; if (v.nature.verdict === 'benefic') favor += 0.5; else if (v.nature.verdict === 'malefic') favor -= 0.5; break; } }
+      for (oi = 0; oi < CL.length; oi++) { k = CL[oi]; var pp = c.planets[k]; if (pp && pp.house === h && k !== lordK) { var v = determination(c, b, k); occTxt = ' ' + nameFor(k) + ' stands in that house, ' + (v.nature.verdict === 'benefic' ? 'a benefic favouring it' : v.nature.verdict === 'malefic' ? 'a malefic troubling it' : 'a mixed hand on it') + '.'; if (v.nature.verdict === 'benefic') favor += 0.5; else if (v.nature.verdict === 'malefic') favor -= 0.5; break; } }
       // the aspects TO the lord — a benefic seconds the promise by soft aspect/conjunction, a malefic
       // taxes it by conjunction/hard aspect, reception softening (Lilly's testimony of the lord's friends)
       var aspTxt = '', bestAsp = null, api;
@@ -3227,54 +3228,54 @@ var APP = (function () {
       var promise = (t >= 3 ? 'held strong, the promise holds' : t < 0 ? 'held weak, the promise strains' : 'held middling, the promise is mixed');
       if (firstLord) {
         var link = (srcH && srcH !== h) ? ', and sits in your ' + ordinal(srcH) + ' — so ' + (CAUSE_LINK9[h] || ('the ' + ordinal(h) + '’s matters run through')) + ' ' + HOUSE_AREA9[srcH - 1] : '';
-        S.push(capit(hs.role) + ' answers to ' + nameFor(lordK) + ', ' + stateAdj9(lordD.essential.label) + ' in ' + lordD.signName + link + ' — ' + promise + '.' + occTxt + aspTxt);
+        S.push(capit(hs.role) + ' answers to ' + nameTh(lordK) + ', ' + stateAdj9(lordD.essential.label) + ' in ' + lordD.signName + link + '. ' + capit(promise) + '.' + occTxt + aspTxt);
         receipts.push(ordinal(h) + ' lord ' + nameFor(lordK) + '→' + ordinal(srcH || 0) + ' lilly' + (t >= 0 ? '+' : '') + t);
       } else {
         // same planet already read for this topic — note the second house briefly, not the whole delineation
-        S.push(capit(hs.role) + ' answers to the same hand, ' + nameFor(lordK) + ' — so both stand or fall together.' + occTxt);
+        S.push(capit(hs.role) + ' answers to the same hand, ' + nameTh(lordK) + ' — so both stand or fall together.' + occTxt);
       }
     }
     if (spec.lot && c.points && c.points[spec.lot]) {
       var lp = c.points[spec.lot], lh = lp.house || natalHouseOf(c, lp.lon), ls = Math.floor(rev(lp.lon) / 30), llK = TRAD_RULER[ls], llD = determination(c, b, llK);
       var llt = llD && llD.condition ? llD.condition.total : 0; favor += (llt >= 3 ? 0.5 : llt < 0 ? -0.5 : 0); // the Lot's state weighs into the verdict, not just the prose
-      S.push('Your ' + spec.lotName + ' falls in your ' + ordinal(lh) + ' (' + HOUSE_AREA9[lh - 1] + '), ruled by ' + nameFor(llK) + (llD && llD.house ? ' from your ' + ordinal(llD.house) : '') + (llt >= 3 ? ', strong — the good of it flows freely' : llt < 0 ? ', but weak — the good of it comes grudgingly' : '') + ' — where the good of it actually flows.');
+      S.push('Your ' + spec.lotName + ' falls in your ' + ordinal(lh) + ' (' + HOUSE_AREA9[lh - 1] + '), ruled by ' + nameTh(llK) + (llD && llD.house ? ' from your ' + ordinal(llD.house) : '') + (llt >= 3 ? ': strong, so the good of it flows freely.' : llt < 0 ? ': weak, so the good of it comes grudgingly.' : ', which is where the good of it flows.'));
       receipts.push(spec.lotName + ' ' + ordinal(lh) + ' lord ' + nameFor(llK) + ' lilly' + (llt >= 0 ? '+' : '') + llt);
     }
     if (spec.karaka) { var kd = determination(c, b, spec.karaka); if (kd) { var kt = kd.condition ? kd.condition.total : 0; favor += (kt >= 3 ? 0.5 : kt < 0 ? -0.5 : 0);
-      S.push(nameFor(spec.karaka) + ', the natural significator of ' + spec.karWord + ', is ' + stateAdj9(kd.essential.label) + ' in ' + kd.signName + (kd.house ? ' in your ' + ordinal(kd.house) : '') + ' — ' + (kt >= 3 ? 'strong, it underwrites the whole matter' : kt < 0 ? 'weak, it withholds where it should give' : 'mixed, neither sealing nor sinking it') + '.');
+      S.push(capit(nameTh(spec.karaka)) + ', the natural significator of ' + spec.karWord + ', is ' + stateAdj9(kd.essential.label) + ' in ' + kd.signName + (kd.house ? ' in your ' + ordinal(kd.house) : '') + ' — ' + (kt >= 3 ? 'strong, it underwrites the whole matter' : kt < 0 ? 'weak, it withholds where it should give' : 'mixed, neither sealing nor sinking it') + '.');
       receipts.push(spec.karaka + ' karaka lilly' + (kt >= 0 ? '+' : '') + kt); } }
     var verdict = favor >= 1.5 ? 'well-promised' : favor <= -1.5 ? 'hard-won' : 'mixed';
     S.push(spec.title + ', on balance: ' + (verdict === 'well-promised' ? 'well promised — the testimonies mostly favour it, and it tends to come without being wrung for.' : verdict === 'hard-won' ? 'hard-won — the testimonies lean against, so it is built by effort and second attempts rather than handed over.' : 'mixed — real strengths and real taxes, and timing decides which speaks in a given year.'));
-    return { hasTime: true, topic: spec.key, verdict: verdict, favor: favor, line: S.join(' '),
+    return { hasTime: true, topic: spec.key, verdict: verdict, favor: favor, line: tidyProse(S.join(' ')),
       receipt: (spec.key + ': ' + receipts.join(' · ') + ' · ' + verdict).toUpperCase(),
       src: 'the topical synthesis across the domain’s houses, its Lot and its karaka; Lilly, Christian Astrology (1647); Morin, Astrologia Gallica XXI' };
   }
   function judgeMoney(c, b) {
     return judgeTopic(c, b, {
       key: 'money', title: 'Money', karaka: 'jupiter', karWord: 'wealth', lot: 'pof', lotName: 'Lot of Fortune',
-      opener: 'Wealth is read across more than one house — your own substance, what your work and allies return, and the money that flows through others.',
-      houses: [ { h: 2, role: 'your own movable wealth and income' }, { h: 11, role: 'gain, and what your work, friends and patrons return' }, { h: 8, role: 'other people’s money — debt, inheritance, and what you share' } ]
+      opener: 'Wealth is read across more than one house: your own substance, what your work and allies return, and the money that flows through others.',
+      houses: [ { h: 2, role: 'your own wealth and income' }, { h: 11, role: 'what your work and allies return' }, { h: 8, role: 'other people’s money, debt and inheritance' } ]
     });
   }
   function judgeLove(c, b) {
     return judgeTopic(c, b, {
       key: 'love', title: 'Love and marriage', karaka: 'venus', karWord: 'love and union',
       opener: 'Union is read across the house of the open partner and the house of romance, weighed by Venus, the natural significator of love.',
-      houses: [ { h: 7, role: 'marriage and the committed partner' }, { h: 5, role: 'romance, courtship and pleasure' } ]
+      houses: [ { h: 7, role: 'marriage and the committed partner' }, { h: 5, role: 'romance and pleasure' } ]
     });
   }
   function judgeCareer(c, b) {
     return judgeTopic(c, b, {
       key: 'career', title: 'Work and calling', karaka: 'sun', karWord: 'honour and standing',
       opener: 'A calling is read across the house of public standing and the house of daily work, weighed by the Sun, the natural significator of honour.',
-      houses: [ { h: 10, role: 'career, reputation and your public name' }, { h: 6, role: 'the daily work, service and craft' } ]
+      houses: [ { h: 10, role: 'your career and public name' }, { h: 6, role: 'the daily work and the craft' } ]
     });
   }
   function judgeFamily(c, b) {
     return judgeTopic(c, b, {
       key: 'family', title: 'Home and family', karaka: 'moon', karWord: 'home and kin',
       opener: 'Family is read across the house of home and roots and the house of the near family, weighed by the Moon, the natural significator of home and mother.',
-      houses: [ { h: 4, role: 'home, your roots and the parents' }, { h: 3, role: 'siblings and the near family' } ]
+      houses: [ { h: 4, role: 'home and your roots' }, { h: 3, role: 'siblings and the near family' } ]
     });
   }
   // the synthesis verdict: the whole life at a glance — each domain's judgement in one word, the
@@ -3600,6 +3601,52 @@ var APP = (function () {
     out.deliversThrough = (out.tone !== 'well' && out.dispositor) ? out.dispositor : null;
     return out;
   }
+  // ===== T7 — THE CLAUSE GRAMMAR: make the assembled judgments read as written prose =====
+  // The reading is composed by layering independent judgments, and every layer is authored to
+  // stand alone. Unchecked, they pile up: an em-dash aside in every clause, the same formula
+  // three times a paragraph, a pronoun that drifts between "he" and "it". That reads as machine
+  // output, however sound the astrology under it. This is the sentence-level pass that fixes it:
+  // an em-dash budget (they are for the ONE aside that earns it, not for every join), no repeated
+  // formula inside a paragraph, and clean punctuation at the seams.
+  // the luminaries take the definite article in running prose: "answers to the Sun", not "to Sun"
+  function nameTh(k) { return ((k === 'sun' || k === 'moon') ? 'the ' : '') + nameFor(k); }
+  function tidyProse(text, opts) {
+    if (!text) return text;
+    opts = opts || {};
+    var perSent = (opts.dashPerSentence != null) ? opts.dashPerSentence : 0.34; // ~1 in 3 sentences
+    var s = String(text).replace(/\s+/g, ' ').trim();
+    var sents = s.split(/(?<=[.!?])\s+/);
+    var budget = Math.max(1, Math.round(sents.length * perSent));
+    var out = [], i, seenClause = {};
+    for (i = 0; i < sents.length; i++) {
+      var sent = sents[i];
+      // drop a sentence that repeats one already said in this paragraph (same first 40 chars)
+      var sig = sent.toLowerCase().replace(/[^a-z0-9 ]/g, '').slice(0, 40);
+      if (sig.length > 12 && seenClause[sig]) continue;
+      seenClause[sig] = 1;
+      var n = (sent.match(/—/g) || []).length;
+      if (n > 0 && budget <= 0) {
+        // Over budget, so this sentence loses its dashes — but ONLY where that leaves valid grammar.
+        if (n >= 2) {
+          // a matched pair encloses an aside: both must go together, and only when the aside carries
+          // no comma of its own (otherwise the phrase boundary is lost and the sentence breaks)
+          var parts = sent.split('—');
+          var inner = (parts[1] || '').replace(/^\s+|\s+$/g, ''), head = parts[0].replace(/\s+$/, ''), tail = parts.slice(2).join('—').replace(/^\s+/, '');
+          // commas can carry an aside only when it has none of its own; otherwise parentheses do,
+          // and they keep the phrase boundary the reader needs
+          sent = (inner.indexOf(',') < 0) ? (head + ', ' + inner + ', ' + tail) : (head + ' (' + inner + ') ' + tail);
+        } else if (sent.indexOf(':') < 0) {
+          // a single trailing dash introduces the payoff: a colon carries that without a splice
+          sent = sent.replace(/\s*—\s*/, ': ');
+        }
+      }
+      budget -= (sent.match(/—/g) || []).length; // charge for the dashes actually kept, pairs included
+      out.push(sent);
+    }
+    return out.join(' ')
+      .replace(/,\s*,/g, ',').replace(/,\s*([.;:])/g, '$1').replace(/\s+([.,;:])/g, '$1')
+      .replace(/([,;:])\s*—/g, ' —').replace(/\s{2,}/g, ' ').trim();
+  }
   function placementProse(c, b, key) {
     if (key === 'asc' || !c.planets[key]) return null;
     var D = determination(c, b, key); if (!D || !D.essential || D.essential.modern) return null;
@@ -3607,29 +3654,28 @@ var APP = (function () {
     var isCap = !!(c.ascBody && b && b.timeKnown && key === TRAD_RULER[c.ascBody.sign]);
     var L = [];
     if (isCap) L.push(nameFor(key) + ' is the captain of your chart — the lord of your ' + DATA.SIGNS[c.ascBody.sign].name + ' Ascendant, the planet the whole life reports to.');
-    var stChar = D.essential.character ? D.essential.character.split(';')[0] : stateAdj9(D.essential.label);
-    var place = D.house ? (Cap + ' keeps ' + his + ' court in your ' + ordinal(D.house) + ' house of ' + HOUSE_AREA9[D.house - 1] + ', ' + stateAdj9(D.essential.label) + ' in ' + D.signName) : (nameFor(key) + ' stands ' + stateAdj9(D.essential.label) + ' in ' + D.signName + ' (your birth time would place it in a house)');
-    L.push(place + '. ' + stChar.charAt(0).toUpperCase() + stChar.slice(1) + '.');
+    // the dignity image is an appositive phrase in the sources ("at home — pure, constant action");
+    // give it a subject and a verb so it lands as a sentence rather than a caption
+    var stChar = D.essential.character ? ('By dignity it is ' + D.essential.character.replace(' — ', ': ')) : null;
+    var artP9 = (key === 'sun' || key === 'moon') ? 'The ' : '';
+    var place = D.house ? (artP9 + nameFor(key) + ' keeps its court in your ' + ordinal(D.house) + ' house of ' + HOUSE_AREA9[D.house - 1] + ', ' + stateAdj9(D.essential.label) + ' in ' + D.signName) : (artP9 + nameFor(key) + ' stands ' + stateAdj9(D.essential.label) + ' in ' + D.signName + ' (your birth time would place it in a house)');
+    L.push(place + '.' + (stChar ? ' ' + stChar + '.' : ''));
     // T2 — the character this planet gives, in the half its state has earned. The temperament is
     // named first (it anchors the "same fire/fluidity…" the poorly-placed clause refers to), then
     // the state asserts which half of the nature actually shows — the tradition's own qualities.
     var interp = interpret(D);
     if (interp && interp.temperament && interp.character) {
       var temp9 = interp.temperament.charAt(0).toLowerCase() + interp.temperament.slice(1);
-      var verdict9 = interp.tone === 'well' ? 'Held this strong, at its best — '
-        : interp.tone === 'poor' ? 'Held this weak — '
-        : 'Held mixed as it is, the gift is real but comes and goes — ';
-      L.push('By nature ' + temp9 + '. ' + verdict9 + interp.character + '.');
+      var verdict9 = interp.tone === 'well' ? 'Held this strong, it shows its best: '
+        : interp.tone === 'poor' ? 'Held this weak, it shows the other half: '
+        : 'Held mixed, the gift is real but intermittent: ';
+      if (interp.character.indexOf(':') >= 0) verdict9 = verdict9.replace(/: $/, '; ');
+      L.push('By nature it is ' + temp9 + '. ' + verdict9 + interp.character + '.');
     }
-    // T4 — how the SIGN shapes this planet (its manner): the tradition's planet-in-sign read,
-    // the style and temper it acts in here, distinct from its inherent nature above.
-    var sgIdx9 = c.planets[key] ? c.planets[key].sign : null, signM9 = null;
-    if (sgIdx9 != null) {
-      if (key === 'sun' && DATA.SUN_IN_SIGN) signM9 = DATA.SUN_IN_SIGN[sgIdx9];
-      else if (key === 'moon' && DATA.MOON_IN_SIGN) signM9 = DATA.MOON_IN_SIGN[sgIdx9];
-      else if (DATA.PLANET_SIGN_TEXT && DATA.PLANET_SIGN_TEXT[key]) signM9 = DATA.PLANET_SIGN_TEXT[key][sgIdx9];
-    }
-    if (signM9) L.push('In ' + D.signName + ', ' + signM9.charAt(0).toLowerCase() + signM9.slice(1) + (/[.!?]$/.test(signM9) ? '' : '.'));
+    // (The planet-in-sign "manner" layer was cut here. Those tables are modern second-person
+    // self-help — "you came here to connect ideas", "your job is to enjoy what you have",
+    // "the skill to build" — i.e. personality profiling plus counsel the chart cannot warrant.
+    // The sign is already judged above, as STATE: which half of the planet's nature it can show.)
     // T5 — the concrete planet-in-house life-read: what this exact placement classically means
     // for the life, delivered plainly and shaded by state (strong gives it; weak struggles to).
     if (D.house && DATA.PLANET_IN_HOUSE && DATA.PLANET_IN_HOUSE[key] && DATA.PLANET_IN_HOUSE[key][D.house - 1]) {
@@ -3640,11 +3686,11 @@ var APP = (function () {
       L.push(frame9 + '.');
     }
     var ruled = []; for (var i = 0; i < D.rules.length; i++) ruled.push(ordinal(D.rules[i].house));
-    if (ruled.length) L.push(Cap + ' answers for your ' + ruled.join(' and your ') + (ruled.length > 1 ? ', so those departments dock wherever ' + he + ' stands' : '') + '.');
+    if (ruled.length) L.push('It answers for your ' + ruled.join(' and your ') + (ruled.length > 1 ? ', so those matters dock wherever it stands' : '') + '.');
     if (D.condition) L.push(D.condition.line);
-    if (D.sectRole) L.push('By sect, ' + nameFor(key) + ' is the ' + D.sectRole + '.');
+    if (D.sectRole) L.push('By sect, ' + nameFor(key) + ' is the ' + D.sectRole.replace(' — ', ': ') + '.');
     if (D.feral) L.push(D.feralNote.charAt(0).toUpperCase() + D.feralNote.slice(1) + '.');
-    return { key: key, isCaptain: isCap, text: L.join(' '), receipt: (nameFor(key) + ' · ' + degStr(D.lon % 30) + ' ' + D.signName + (D.house ? ' · ' + ordinal(D.house) + ' house' : '') + ' · ' + D.essential.label + (D.condition ? ' · lilly ' + (D.condition.total >= 0 ? '+' : '') + D.condition.total : '')).toUpperCase(), src: 'Morin, Astrologia Gallica XXI (1661); Lilly, Christian Astrology (1647)' };
+    return { key: key, isCaptain: isCap, text: tidyProse(L.join(' ')), receipt: (nameFor(key) + ' · ' + degStr(D.lon % 30) + ' ' + D.signName + (D.house ? ' · ' + ordinal(D.house) + ' house' : '') + ' · ' + D.essential.label + (D.condition ? ' · lilly ' + (D.condition.total >= 0 ? '+' : '') + D.condition.total : '')).toUpperCase(), src: 'Morin, Astrologia Gallica XXI (1661); Lilly, Christian Astrology (1647)' };
   }
   function houseChain(c, hn) {
     var cuspLon = c.cusps[hn]; if (cuspLon == null) return null;
@@ -3906,7 +3952,7 @@ var APP = (function () {
       var tone = (zr.l2 && zr.l2.peak) || zr.l1.peak;
       var toneTxt = tone === 'peak' ? 'a peak stretch of your life — the years the tradition marks most strongly for visibility and action' : tone === 'angular' ? 'a high, active stretch of your life' : tone === 'valley' ? 'a quieter, more inward stretch, better for the background work than the stage' : 'a steady stretch of your life';
       var artZ = /^[AEIOU]/.test(zr.l1.signName) ? 'an ' : 'a ';
-      S.push('You are in ' + toneTxt + ' — by Zodiacal Releasing, ' + artZ + zr.l1.signName + ' chapter ruled by ' + nameFor(zr.l1.ruler) + (zr.l2 ? ', now in its ' + zr.l2.signName + ' turn' : '') + (zr.l2 && zr.l2.lb ? ', which opens on a loosing of the bond: a decisive change of place or direction' : '') + '.');
+      S.push('You are in ' + toneTxt + '. By Zodiacal Releasing, this is ' + artZ + zr.l1.signName + ' chapter ruled by ' + nameTh(zr.l1.ruler) + (zr.l2 ? ', now in its ' + zr.l2.signName + ' turn' : '') + (zr.l2 && zr.l2.lb ? ', which opens on a loosing of the bond: a decisive change of place or direction' : '') + '.');
     }
     // 2 — the protagonist (the lord of the profection year)
     S.push('This year the wheel turns on ' + nameFor(loy.lord) + ', lord of your ' + ordinal(loy.profHouse) + '-house profection — ' + stateAdj9(loyD.essential.label) + ' in ' + loyD.signName + (loyD.house ? ' in your ' + ordinal(loyD.house) : '') + ', so ' + HOUSE_AREA9[loy.profHouse - 1] + ' is where the year gathers.' + (loy.activated && loy.activated.length ? ' Your ' + loy.activated.map(nameFor).join(' and ') + ', standing in that very sign, is switched on with it.' : ''));
@@ -3927,7 +3973,7 @@ var APP = (function () {
     // 5 — the trigger doctrine closes it
     S.push('Read the passing sky last, and only where it strikes one of these live wires: that is where a given week earns its weight, and where it does not, real motion is still only weather.');
     return {
-      hasTime: true, line: S.join(' '), tone: (zr && ((zr.l2 && zr.l2.peak) || zr.l1.peak)) || null, lord: loy.lord, event: event ? { dp: event.dp, np: event.np, year: event.year } : null,
+      hasTime: true, line: tidyProse(S.join(' ')), tone: (zr && ((zr.l2 && zr.l2.peak) || zr.l1.peak)) || null, lord: loy.lord, event: event ? { dp: event.dp, np: event.np, year: event.year } : null,
       receipt: (ordinal(loy.profHouse) + '-profection · lord ' + nameFor(loy.lord) + (zr && zr.l1 ? ' · ZR ' + zr.l1.signName + (((zr.l2 && zr.l2.peak) || zr.l1.peak) ? ' ' + ((zr.l2 && zr.l2.peak) || zr.l1.peak) : '') : '') + (event ? ' · ' + nameFor(event.dp) + ' ' + event.aspKey + ' ' + nameFor(event.np) + ' ~' + event.year : '')).toUpperCase(),
       src: 'the year woven from profection (the lord of the year), Zodiacal Releasing (the chapter and its peaks), symbolic directions (the dated event) and the derived-houses fan-out (the cast); the trigger doctrine puts transits last'
     };
