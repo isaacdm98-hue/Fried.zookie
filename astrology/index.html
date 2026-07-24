@@ -1495,8 +1495,9 @@ var APP = (function () {
     if (hasTime) { var lord = TRAD_RULER[c.ascBody.sign]; cast(planetHumor(c, lord), 1, 'its ruler ' + nameFor(lord)); }
     // 3 — the true almuten of the exact Ascendant degree (most dignity there), by its nature
     if (hasTime) { var alm = almutenOfDegree(c.ascBody.lon, isDay); if (alm) cast(planetHumor(c, alm), 1, 'the almuten of the rising degree, ' + nameFor(alm)); }
-    // 4 — the Sun by the SEASON of birth (its warmth is seasonal, not its own nature here)
-    var sSign = c.planets.sun.sign, quad = Math.floor(sSign / 3); // 0 spring,1 summer,2 autumn,3 winter (N. hemisphere)
+    // 4 — the Sun by the SEASON of birth (its warmth is seasonal, not its own nature here). The season
+    // is astronomical — always tropical — so read it from the TROPICAL Sun even in sidereal mode.
+    var sunTrop = rev(c.planets.sun.lon + (c.ayan || 0)), sSign = Math.floor(sunTrop / 30), quad = Math.floor(sSign / 3); // 0 spring,1 summer,2 autumn,3 winter (N. hemisphere)
     var southern = (b && typeof b.lat === 'number' && b.lat < 0);
     if (southern) quad = (quad + 2) % 4; // the seasons invert below the equator
     var SEASON = [['hot', 'wet'], ['hot', 'dry'], ['cold', 'dry'], ['cold', 'wet']]; // spring/summer/autumn/winter
@@ -3110,8 +3111,10 @@ var APP = (function () {
     if (!Z || !PA) return null;
     var ascSign = c.ascBody.sign, ascLordK = TRAD_RULER[ascSign];
     // --- the forces of life (the hyleg pool) ---
-    var lifeSigs = [], pool = 0, i;
-    function addLife(k, label) { var d = determination(c, b, k); if (!d) return; var t = d.condition ? d.condition.total : 0; lifeSigs.push({ k: k, label: label, det: d, score: t }); pool += (t >= 3 ? 2 : t >= 0 ? 1 : -1); }
+    var lifeSigs = [], pool = 0, i, seenLife = {};
+    // dedup by key: when the Ascendant's lord IS a luminary (Leo→Sun, Cancer→Moon) it must be counted
+    // ONCE, not twice, or the pool and the affliction votes double for that body.
+    function addLife(k, label) { if (seenLife[k]) return; var d = determination(c, b, k); if (!d) return; seenLife[k] = 1; var t = d.condition ? d.condition.total : 0; lifeSigs.push({ k: k, label: label, det: d, score: t }); pool += (t >= 3 ? 2 : t >= 0 ? 1 : -1); }
     addLife(ascLordK, 'the lord of the Ascendant');
     addLife('sun', 'the Sun'); addLife('moon', 'the Moon');
     var el = DATA.SIGNS[ascSign].element;
@@ -3144,6 +3147,23 @@ var APP = (function () {
       // combustion of a life-force is itself an affliction (the Sun burning it)
       if (D.terrestrial && D.terrestrial.conditions) for (var ci = 0; ci < D.terrestrial.conditions.length; ci++) { if (D.terrestrial.conditions[ci].t === 'combust') { afflictions.push({ afflictor: 'sun', sign: D.sign, target: LS.k, targetLabel: LS.label, aspect: 'combustion', orb: D.terrestrial.conditions[ci].v, reception: null, natMal: false, ruledBad: null, combust: true }); voteZone(D.sign, 1); } }
     }
+    // the Ascendant point ITSELF is a life-force (Asc + its lord + Sun + Moon): scan the morbid forces
+    // for a hard hit to the rising degree — a malefic conjunct/square/opposite the Ascendant is a
+    // classic bodily affliction the lord-only scan would miss
+    (function () {
+      voteZone(ascSign, 0.5);
+      var mlist = ['saturn', 'mars'], mk3; for (mk3 in morbidLordOf) if (morbidLordOf.hasOwnProperty(mk3) && mlist.indexOf(mk3) < 0) mlist.push(mk3);
+      var ASPS = [['conjunction', 0, 8], ['square', 90, 7], ['opposition', 180, 8]], mi3;
+      for (mi3 = 0; mi3 < mlist.length; mi3++) {
+        var mk = mlist[mi3], mp = c.planets[mk]; if (!mp) continue;
+        var natMal3 = (mk === 'saturn' || mk === 'mars'), sep = angSep(mp.lon, c.ascBody.lon), best = null, aj;
+        for (aj = 0; aj < ASPS.length; aj++) { var off = Math.abs(sep - ASPS[aj][1]); if (off <= ASPS[aj][2] && (best === null || off < best.off)) best = { name: ASPS[aj][0], off: off, hard: ASPS[aj][1] !== 0 }; }
+        if (!best) continue;
+        if (!natMal3 && !best.hard) continue; // a benefic morbid-lord afflicts only by hard aspect, never by conjunction
+        afflictions.push({ afflictor: mk, sign: mp.sign, target: 'ascendant', targetLabel: 'the Ascendant itself', aspect: best.name, orb: best.off, reception: null, natMal: natMal3, ruledBad: morbidLordOf[mk] || null });
+        voteZone(mp.sign, natMal3 ? 2 : 1);
+      }
+    })();
     // the 6th house itself (the house of sickness): its cusp sign, and any malefic occupant, testify
     var sixSign = Math.floor(rev(c.cusps[6]) / 30); voteZone(sixSign, 1);
     // --- the watched zones, by the maximum of concordant testimonies ---
@@ -3203,8 +3223,9 @@ var APP = (function () {
     }
     if (spec.lot && c.points && c.points[spec.lot]) {
       var lp = c.points[spec.lot], lh = lp.house || natalHouseOf(c, lp.lon), ls = Math.floor(rev(lp.lon) / 30), llK = TRAD_RULER[ls], llD = determination(c, b, llK);
-      S.push('Your ' + spec.lotName + ' falls in your ' + ordinal(lh) + ' (' + HOUSE_AREA9[lh - 1] + '), ruled by ' + nameFor(llK) + (llD && llD.house ? ' from your ' + ordinal(llD.house) : '') + ' — where the good of it actually flows.');
-      receipts.push(spec.lotName + ' ' + ordinal(lh) + ' lord ' + nameFor(llK));
+      var llt = llD && llD.condition ? llD.condition.total : 0; favor += (llt >= 3 ? 0.5 : llt < 0 ? -0.5 : 0); // the Lot's state weighs into the verdict, not just the prose
+      S.push('Your ' + spec.lotName + ' falls in your ' + ordinal(lh) + ' (' + HOUSE_AREA9[lh - 1] + '), ruled by ' + nameFor(llK) + (llD && llD.house ? ' from your ' + ordinal(llD.house) : '') + (llt >= 3 ? ', strong — the good of it flows freely' : llt < 0 ? ', but weak — the good of it comes grudgingly' : '') + ' — where the good of it actually flows.');
+      receipts.push(spec.lotName + ' ' + ordinal(lh) + ' lord ' + nameFor(llK) + ' lilly' + (llt >= 0 ? '+' : '') + llt);
     }
     if (spec.karaka) { var kd = determination(c, b, spec.karaka); if (kd) { var kt = kd.condition ? kd.condition.total : 0; favor += (kt >= 3 ? 0.5 : kt < 0 ? -0.5 : 0);
       S.push(nameFor(spec.karaka) + ', the natural significator of ' + spec.karWord + ', is ' + stateAdj9(kd.essential.label) + ' in ' + kd.signName + (kd.house ? ' in your ' + ordinal(kd.house) : '') + ' — ' + (kt >= 3 ? 'strong, it underwrites the whole matter' : kt < 0 ? 'weak, it withholds where it should give' : 'mixed, neither sealing nor sinking it') + '.');
