@@ -1,5 +1,18 @@
 # Changelog
 
+## 4.9.0 — 2026-07-23 — the year as one story: the ephemeris drives the narrative
+The timing engine, now audited and corrected, woven into a single dated arc.
+
+- **"Your year, as one story" (`yearAhead`).** The year-ahead reading now opens
+  with one flowing, dated narrative instead of separate technique blocks: the
+  **Zodiacal Releasing** chapter and its peak set the tone (a peak/high/quiet
+  stretch, a loosing of the bond); the **profection lord of the year** is the
+  protagonist, with any planet activated in the profected sign switched on beside
+  it; the loudest **symbolic direction** now in force is the dated event; and the
+  **derived-houses fan-out** turns that one motion into what it means for a person
+  of your life ("and for your father, this reaches his career"). Transits are read
+  last, on live wires only. The individual clocks then follow as the detail.
+
 ## 4.8.0 — 2026-07-23 — topical synthesis: a domain read across its several houses
 The school reads a life-topic across **all** its houses at once, not one in isolation.
 
