@@ -1,5 +1,32 @@
 # Changelog
 
+## 4.9.1 — 2026-07-24 — production polish: audit fixes across the whole app
+A multi-agent production audit (voice, doctrine, layout, dead-code) plus a
+headless screen audit (7 screens × 3 widths, no runtime errors) drove a cohesion
+pass over the entire app.
+
+- **Removed a personality-profile block.** The Sun/Moon/rising "archetypes"
+  sketch (after Greene/Rudhyar, with sign-keyed prescriptions like "hire an
+  editor") read the SELF as a character profile — the exact modern register the
+  school and the voice-book reject, and it contradicted the domain reading on the
+  same screen. Gone; the domains-of-a-life reading carries the self, judged.
+- **Swept the banned word "energy" from every astrology-reading surface** — the
+  aspect-pair table, the "tells", the born-retrograde and Mars-return lines, the
+  Today prediction, the arc lines, the Learn glossary, the sign screen, and the
+  sign/ascendant/chart-ruler descriptions — each reworded to name what the planet
+  DOES (drive, presses, the will), per the voice-book. Tarot keeps its own
+  Rider-Waite-Smith vocabulary.
+- **Closed the voice-guard's coverage gap.** voiceCheck now scans the new engine
+  (temperament, medical, the topical domains, the glance, the year story) and
+  composeSignatures, so the banned register can no longer ship unscanned. Clean
+  across every reference chart.
+- **Layout cohesion.** The subsumed domains no longer draw a double header (the
+  domain eyebrow now leads the block alone); the "at a glance" verdict note is
+  uppercased to match its all-caps row.
+- **Hygiene.** Fixed a dead DATA.TRAD_SRC_LILLY reference. (Several inert,
+  never-called helper functions remain documented for a later cleanup; they do
+  not render and never execute.)
+
 ## 4.9.0 — 2026-07-23 — the year as one story: the ephemeris drives the narrative
 The timing engine, now audited and corrected, woven into a single dated arc.
 

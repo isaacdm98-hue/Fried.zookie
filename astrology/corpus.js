@@ -1475,7 +1475,7 @@ var DATA = (function () {
       12: { m: 'confinement, and anger swallowed', by: 'analogy' }
     },
     jupiter: {
-      1: { m: 'good health and energy — the body protected', by: 'analogy' },
+      1: { m: 'good health and vigour — the body protected', by: 'analogy' },
       2: { m: 'abundance and plenty', by: 'chaldean' },
       3: { m: 'ease of language and learning; the pleasure of the word', by: 'analogy' },
       4: { m: 'the family patrimony; happiness at home', by: 'karaka' },
@@ -1827,7 +1827,7 @@ DATA.TELLS.aspect = {
   'mars-jupiter': { fuse: 'your effort comes in surplus; you do not do small pushes, only campaigns', hard: 'you bet the whole tank on the first mile; ration the fire and you win the distance', soft: 'action and luck cooperate for you; momentum, once started, brings friends' },
   'mars-saturn': { fuse: 'your drive runs through a governor: slower than rage, more final than enthusiasm', hard: 'you accelerate and brake at once, then wonder about the smoke; alternate the pedals', soft: 'your effort is metered and relentless; you outlast everyone who out-sprinted you' },
   'mars-uranus': { fuse: 'your actions arrive without preamble; even your patience ends suddenly', hard: 'your restlessness picks fights with your plans; give it a physical job before it freelances', soft: 'you act on the new thing while others are still forwarding the article' },
-  'mars-neptune': { fuse: 'your drive needs a cause with a soul; money alone cannot get you out of bed', hard: 'your energy leaks through vagueness; a written goal doubles your horsepower, measurably', soft: 'you pursue dreams with practical footwork: the rare mystic with laced boots' },
+  'mars-neptune': { fuse: 'your drive needs a cause with a soul; money alone cannot get you out of bed', hard: 'your drive leaks through vagueness; a written goal doubles your horsepower, measurably', soft: 'you pursue dreams with practical footwork: the rare mystic with laced boots' },
   'mars-pluto': { fuse: 'your will has a second, deeper tank most people never find in themselves', hard: 'you do not lose arguments so much as postpone victories; check the cost sheet sometimes', soft: 'your persistence is geological; you move obstacles by out-existing them' },
   'jupiter-saturn': { fuse: 'you are the accelerator and the brake in one body: rare, and employable anywhere', hard: 'optimism and caution alternate custody of your plans; let them co-sign instead', soft: 'you grow inside structures and structure your growth; institutions secretly run on people like you' },
   'jupiter-uranus': { fuse: 'your breakthroughs cluster: nothing for a year, then three doors in a week', hard: 'freedom and more-of-everything egg each other on; pick which revolution gets funded', soft: 'your luck favours the unconventional route; the shortcut exists and you keep finding it' },
@@ -1877,7 +1877,7 @@ DATA.TELLS.transit = {
   'neptune-moon': { hard: 'the tell: you absorb every room you enter; salt baths, closed doors, early nights are medicine', soft: 'the tell: your compassion deepens without cost; you forgive something old in your sleep' },
   'neptune-mercury': { hard: 'the tell: details dissolve: double-book, misread, misplace; lists are your lifeboat this season', soft: 'the tell: your words gain water: people say you should write, and they are right' },
   'neptune-venus': { hard: 'the tell: the glow around someone may be projector light: check who is holding the projector', soft: 'the tell: beauty ambushes you: art, faces, weather; the heart\u2019s aperture opens a stop' },
-  'neptune-mars': { hard: 'the tell: your drive mists over; smaller goals, written down, restore the engine', soft: 'the tell: you act on ideals smoothly; the cause and the energy finally in one body' },
+  'neptune-mars': { hard: 'the tell: your drive mists over; smaller goals, written down, restore the engine', soft: 'the tell: you act on ideals smoothly; the cause and the drive finally in one body' },
   'neptune-jupiter': { hard: 'the tell: hope inflates beyond the facts; enjoy the balloon, keep a hand on the string', soft: 'the tell: faith returns without a reason; the reason arrives later, on foot' },
   'neptune-saturn': { hard: 'the tell: the fog rolls over your rulebook; steer by instruments: routines, dates, honest friends', soft: 'the tell: you make peace with imperfect structures; grace enters the schedule' },
   'neptune-uranus': { hard: 'the tell: visions arrive faster than forms; sketch everything, build one', soft: 'the tell: the collective mood moves your way; your odd idea suddenly has a public' },
@@ -1929,8 +1929,8 @@ DATA.TELLS.retro = {
   pluto: 'Pluto retrograde at birth: your transformations happen underground; even close friends only meet the after'
 };
 DATA.TELLS.degree = {
-  ana: { sun: 'your Sun at the final degree: identity as last exam; you carry a mastery you did not enrol for', moon: 'your Moon at the final degree: feelings arrive urgent, as if time were short; they are wiser than they are calm', mercury: 'your Mercury at the final degree: your mind summarises whole subjects; people get your conclusions and miss the working', venus: 'your Venus at the final degree: you love like a closing chapter: fully, and with an eye on the whole story', mars: 'your Mars at the final degree: your actions carry deadline energy always; brilliant in crises, restless in peace', jupiter: 'your Jupiter at the final degree: your growth completes cycles others abandon', saturn: 'your Saturn at the final degree: an old mastery of limits; you were born already tired of excuses, including yours', uranus: 'your Uranus at the final degree: your generation\u2019s change concludes in you; you close doors that needed closing', neptune: 'your Neptune at the final degree: the dream is ending and you can feel the house lights; you translate for both sides', pluto: 'your Pluto at the final degree: deep endings are your inheritance; you compost eras' },
-  zero: { sun: 'your Sun at zero degrees: raw first-day energy; you meet your sign like wet paint, all potential, no manual', moon: 'your Moon at zero degrees: your feelings are newborn each time: undiluted, unprecedented, honest', mercury: 'your Mercury at zero degrees: beginner\u2019s mind, permanently; your questions embarrass experts usefully', venus: 'your Venus at zero degrees: you love like the first person to ever try it; conventions arrive later, if at all', mars: 'your Mars at zero degrees: your drive fires on fresh ignition: no scar tissue on the courage', jupiter: 'your Jupiter at zero degrees: your optimism is unqualified: the good kind of naive, repeatedly proven right', saturn: 'your Saturn at zero degrees: you build from first principles; inherited blueprints never fit you', uranus: 'your Uranus at zero degrees: you are an early edition of your generation\u2019s change', neptune: 'your Neptune at zero degrees: the new dream starts near you; artists downstream will drink this water', pluto: 'your Pluto at zero degrees: a new depth begins in your cohort, and you are close to the source' }
+  ana: { sun: 'your Sun at the final degree: identity as last exam; you carry a mastery you did not enrol for', moon: 'your Moon at the final degree: feelings arrive urgent, as if time were short; they are wiser than they are calm', mercury: 'your Mercury at the final degree: your mind summarises whole subjects; people get your conclusions and miss the working', venus: 'your Venus at the final degree: you love like a closing chapter: fully, and with an eye on the whole story', mars: 'your Mars at the final degree: your actions carry a deadline’s urgency always; brilliant in crises, restless in peace', jupiter: 'your Jupiter at the final degree: your growth completes cycles others abandon', saturn: 'your Saturn at the final degree: an old mastery of limits; you were born already tired of excuses, including yours', uranus: 'your Uranus at the final degree: your generation\u2019s change concludes in you; you close doors that needed closing', neptune: 'your Neptune at the final degree: the dream is ending and you can feel the house lights; you translate for both sides', pluto: 'your Pluto at the final degree: deep endings are your inheritance; you compost eras' },
+  zero: { sun: 'your Sun at zero degrees: raw first-day freshness; you meet your sign like wet paint, all potential, no manual', moon: 'your Moon at zero degrees: your feelings are newborn each time: undiluted, unprecedented, honest', mercury: 'your Mercury at zero degrees: beginner\u2019s mind, permanently; your questions embarrass experts usefully', venus: 'your Venus at zero degrees: you love like the first person to ever try it; conventions arrive later, if at all', mars: 'your Mars at zero degrees: your drive fires on fresh ignition: no scar tissue on the courage', jupiter: 'your Jupiter at zero degrees: your optimism is unqualified: the good kind of naive, repeatedly proven right', saturn: 'your Saturn at zero degrees: you build from first principles; inherited blueprints never fit you', uranus: 'your Uranus at zero degrees: you are an early edition of your generation\u2019s change', neptune: 'your Neptune at zero degrees: the new dream starts near you; artists downstream will drink this water', pluto: 'your Pluto at zero degrees: a new depth begins in your cohort, and you are close to the source' }
 };
 DATA.TELLS.stellium = { 1: 'a crowd gathers in your 1st house: you arrive in rooms like a delegation', 2: 'a crowd in your 2nd: your relationship with security is a full-time cabinet meeting', 3: 'a crowd in your 3rd: your mind is a busy junction; the local IS your universe', 4: 'a crowd in your 4th: home is your parliament; every mood of the house sits in you', 5: 'a crowd in your 5th: you were built for making things; unexpressed weeks turn toxic', 6: 'a crowd in your 6th: the daily grind is your orchestra; routines play you like scores', 7: 'a crowd in your 7th: your life happens in twos; every mirror is a person', 8: 'a crowd in your 8th: intensity is your address; you live where others visit', 9: 'a crowd in your 9th: you are mid-pilgrimage at all times, even at your desk', 10: 'a crowd in your 10th: your calling recruited extra staff; ambition is a house guest that pays rent', 11: 'a crowd in your 11th: your people are your project; the future is a group assignment you accepted', 12: 'a crowd in your 12th: your inner life outnumbers your outer; solitude is a crowded, productive room' };
 DATA.TELLS.blend = {
@@ -2024,7 +2024,7 @@ DATA.QUIRK = {
     'you are slow to start but nearly impossible to stop once you go, and being rushed makes you dig in harder',
     'you do three things at once, you lose interest the moment it gets boring, and you argue for fun',
     'you go quiet and clipped rather than loud when you are angry, and you defend your people faster than yourself',
-    'you need it to be a bit of a performance, you hate being ignored, and your energy fills whatever room you walk into',
+    'you need it to be a bit of a performance, you hate being ignored, and your presence fills whatever room you walk into',
     'you channel stress into a task, you are precise under pressure, and half your anger is really just frustration at a mess',
     'you avoid the direct fight, you win by being reasonable, and passive tension bothers you more than an open row',
     'you do not forget, you play a long game, and your calm surface has a very deep engine under it',
@@ -2051,7 +2051,7 @@ DATA.QUIRK = {
     'people read you as more confident and more up-for-it than you feel, and strangers ask you to go first',
     'you come across calm and hard to rush, people find you steadying, and they comment on your voice or your taste',
     'you seem younger and quicker than your age, people talk to you easily, and they never quite know which version they will get',
-    'you give off a soft, approachable, look-after-you energy, and strangers tell you their problems unprompted',
+    'you give off a soft, approachable, look-after-you air, and strangers tell you their problems unprompted',
     'you walk into a room and it registers, people assume you are the confident one, and you dress with at least one bold choice',
     'you read as neat, capable and a little reserved, people bring you their problems to fix, and they underestimate how funny you are',
     'people find you easy on the eye and easy to be around, you are the diplomatic one, and you are better at first impressions than you think',
@@ -2151,7 +2151,7 @@ DATA.SPOOKY = {
   marsSign: [
     'you act on impulse and ask questions later; you are brave and impatient, and you would rather do the wrong thing than nothing',
     'you are slow to anger and impossible to move once set; you work with steady, stubborn force and you finish what you start',
-    'your energy is mental and scattered; you fight with words, start ten things, and lose interest unless it stays interesting',
+    'your drive is mental and scattered; you fight with words, start ten things, and lose interest unless it stays interesting',
     'you act to protect and go sideways rather than head-on; your anger shows up as moods, withdrawal, or fierce defence of your people',
     'you act with pride and flair and need your effort seen; your anger is loud, brief and dramatic rather than cold',
     'you drive through precision and hard work; you criticise when you are angry, and you wear yourself out chasing the right detail',
@@ -2163,15 +2163,15 @@ DATA.SPOOKY = {
     'your drive runs on feeling and inspiration; you dodge direct confrontation, and anger turns into escape, art or quiet resentment'
   ],
   marsHouse: [
-    'you come at life head-first; you are physically direct, quick to act, and people feel your energy the second you arrive',
+    'you come at life head-first; you are physically direct, quick to act, and people feel your force the second you arrive',
     'you put real drive into earning and fight for security; you are competitive about money and you defend what is yours',
     'you have a sharp, quick, combative mind; you argue for sport, you drive fast, and your words can cut before you mean them to',
-    'your drive is rooted at home; there is heat in the family story, and you put fierce energy into your base and its people',
+    'your drive is rooted at home; there is heat in the family story, and you put fierce drive into your base and its people',
     'you go after romance, creativity and pleasure hard; you are competitive at play and you pour real force into what you make',
-    'you are a workhorse; you put relentless energy into the daily grind and your health, and inefficiency makes you irritable',
-    'your energy comes alive with a partner or an opponent; you attract fiery relationships and you fight and make up with equal heat',
+    'you are a workhorse; you put relentless drive into the daily grind and your health, and inefficiency makes you irritable',
+    'your drive comes alive with a partner or an opponent; you attract fiery relationships and you fight and make up with equal heat',
     'you have deep, driving intensity around sex, power and shared money; you go all in, and crisis brings out your real strength',
-    'you chase meaning, travel and truth with a crusader\u2019s energy; you fight for what you believe and you need a cause to aim at',
+    'you chase meaning, travel and truth with a crusader\u2019s zeal; you fight for what you believe and you need a cause to aim at',
     'you are visibly ambitious; you go hard for status and career, and you clash with any authority you do not respect',
     'you put your fight into groups, causes and the future; you mobilise the friends, and you battle for what should be',
     'your drive is hidden and indirect, sometimes turned against yourself; you fight best behind the scenes and for others'
@@ -2339,7 +2339,7 @@ DATA.SPOOKY.uranusHouse = [
   'your mind is original and electric; you think in leaps, you stay restless, and you learn in bursts rather than straight lines',
   'your home life was unusual or unstable; you may move often, and you quietly rebel against how you were raised',
   'you create and love in unconventional ways; you need freedom in romance, and your creativity is original and a little shocking',
-  'you cannot do a conventional routine or job for long; you need freedom in your work, and your energy can be erratic and nerve-driven',
+  'you cannot do a conventional routine or job for long; you need freedom in your work, and your drive can be erratic and nerve-driven',
   'you need freedom inside partnership; you attract unusual partners, and you resist the traditional relationship script',
   'your bond with shared money, intimacy and endings is unconventional; you meet sudden reversals and free others by facing the taboo',
   'your beliefs are original and independent; you reject inherited dogma, and study or travel arrives in sudden, life-changing bursts',
@@ -2391,7 +2391,7 @@ DATA.SPOOKY_ASPECT = {
   'venus-pluto': 'love and intensity fused young; you love all-or-nothing, and you have known jealousy, obsession, or a love that genuinely transformed you',
   'mars-jupiter': 'you go big when you go; you were the one who bet the whole tank on the first mile, and you win the distance only once you learn to ration the fire',
   'mars-saturn': 'your drive met resistance early; you learned to work hard and hold back, and anger and fear can lock you up until you give them a real job',
-  'mars-uranus': 'your temper or your energy fires without warning; you are accident-prone when rushed, and you rebel hard against anyone trying to control you',
+  'mars-uranus': 'your temper or your drive fires without warning; you are accident-prone when rushed, and you rebel hard against anyone trying to control you',
   'mars-neptune': 'your drive can leak away into vagueness or escape; you learned your engine runs on inspiration rather than orders, and a written goal doubles your horsepower',
   'mars-pluto': 'you carry a deep, sometimes frightening will; power struggles marked you, and you either master your own intensity or it quietly masters you',
   'jupiter-saturn': 'you swing between hope and hard realism; you were taught both to dream and to doubt, and you build slowly toward something that actually lasts',
@@ -2430,18 +2430,18 @@ DATA.SPOOKY.sunMoon = {
   'water-water': 'you are pure ocean: what you are and what you need both run on feeling and depth, so you are profoundly empathic, intuitive, and need real solitude to not drown'
 };
 DATA.SPOOKY.rulerHouse = [
-  'the ruler of your chart sits in your 1st house, so your energy pours straight into being yourself; you are self-directed, and your life is unusually your own to steer',
-  'the ruler of your chart sits in your 2nd house, so your life energy goes into money, security and self-worth; building a stable base is a lifelong throughline',
+  'the ruler of your chart sits in your 1st house, so you pour straight into being yourself; you are self-directed, and your life is unusually your own to steer',
+  'the ruler of your chart sits in your 2nd house, so your life goes into money, security and self-worth; building a stable base is a lifelong throughline',
   'the ruler of your chart sits in your 3rd house, so your life runs on communication, learning and your local world; words, siblings and short journeys shape your path',
-  'the ruler of your chart sits in your 4th house, so your energy centres on home, family and roots; your private life and your origins are the real stage of your story',
+  'the ruler of your chart sits in your 4th house, so your life centres on home, family and roots; your private life and your origins are the real stage of your story',
   'the ruler of your chart sits in your 5th house, so your life pours into creativity, romance and play; self-expression and joy are not extras for you, they are the point',
-  'the ruler of your chart sits in your 6th house, so your energy goes into work, health and being useful; the daily craft of your life is where you actually live',
+  'the ruler of your chart sits in your 6th house, so your life goes into work, health and being useful; the daily craft of your life is where you actually live',
   'the ruler of your chart sits in your 7th house, so your life runs through relationships; you find yourself in partnership, and other people are the making of you',
-  'the ruler of your chart sits in your 8th house, so your energy goes into depth, intimacy and transformation; you live close to the big stuff and are remade by it',
+  'the ruler of your chart sits in your 8th house, so your life goes into depth, intimacy and transformation; you live close to the big stuff and are remade by it',
   'the ruler of your chart sits in your 9th house, so your life pulls toward meaning, travel and the wider world; you are here to expand, and staying small suffocates you',
-  'the ruler of your chart sits in your 10th house, so your energy goes into career and the public world; you are meant to be seen and to leave a mark out there',
-  'the ruler of your chart sits in your 11th house, so your life runs through friends, groups and the future; your people and your hopes are where your energy really goes',
-  'the ruler of your chart sits in your 12th house, so your energy flows toward the hidden, the spiritual and the behind-the-scenes; much of your real life happens where others cannot see'
+  'the ruler of your chart sits in your 10th house, so your life goes into career and the public world; you are meant to be seen and to leave a mark out there',
+  'the ruler of your chart sits in your 11th house, so your life runs through friends, groups and the future; your people and your hopes are where your life really goes',
+  'the ruler of your chart sits in your 12th house, so your life flows toward the hidden, the spiritual and the behind-the-scenes; much of your real life happens where others cannot see'
 ];
 
 // ===== decans, moon phase, element/modality balance, rising & MC planets =====
@@ -2527,7 +2527,7 @@ DATA.SPOOKY.mcPlanet = {
   'moon': 'your Moon sits on the Midheaven: your career is emotional and public-facing, you are drawn to caring or public work, and the public feels they know you',
   'mercury': 'your Mercury sits on the Midheaven: you are known for your mind and your voice, and writing, speaking or teaching sits at the centre of your path',
   'venus': 'your Venus sits on the Midheaven: you are known for charm, beauty or diplomacy, and your career runs through relationships, art, or making things pleasant',
-  'mars': 'your Mars sits on the Midheaven: you are driven and ambitious in the world, known for your energy or your fight, and you push hard toward status',
+  'mars': 'your Mars sits on the Midheaven: you are driven and ambitious in the world, known for your drive or your fight, and you push hard toward status',
   'jupiter': 'your Jupiter sits on the Midheaven: you are meant to grow big in the world, luck follows your reputation, and teaching, law or travel may call you',
   'saturn': 'your Saturn sits on the Midheaven: your career is a long, serious climb, you carry real authority, and you reach genuine standing later and then keep it',
   'uranus': 'your Uranus sits on the Midheaven: your path is unconventional and full of sudden turns, you innovate in public, and an ordinary career would suffocate you',
@@ -2701,10 +2701,10 @@ DATA.SPOOKY_ASPECT_SOFT = {
   'venus-uranus': 'you love freely and originally: excitement, spark, unconventional taste, so your relationships and your art refuse to run on other people\u2019s rules',
   'venus-neptune': 'you love romantically and boundlessly: a genuine artist\u2019s or a genuine devotee\u2019s heart, so beauty moves you deeply and you give without keeping score',
   'venus-pluto': 'you love intensely and transformatively: you do not do shallow, so the people you love change you and you change them, and your art carries real weight',
-  'mars-jupiter': 'you act boldly and it tends to pay off: energy, timing and confidence together, so you take the big swing at the right moment and land more of them than you should',
+  'mars-jupiter': 'you act boldly and it tends to pay off: drive, timing and confidence together, so you take the big swing at the right moment and land more of them than you should',
   'mars-saturn': 'your drive has discipline behind it: controlled, enduring effort, so you outlast people with more raw talent and build things that stay built',
   'mars-uranus': 'you move fast and inventively: quick reflexes and a nerve for the unexpected, so you thrive exactly where others freeze',
-  'mars-neptune': 'you act from inspiration: your energy serves an ideal or an art, so you fight best for something larger than yourself and move with a grace that looks easy',
+  'mars-neptune': 'you act from inspiration: your drive serves an ideal or an art, so you fight best for something larger than yourself and move with a grace that looks easy',
   'mars-pluto': 'you have deep, controllable power: stamina and will that do not quit, so you can rebuild from nothing and outwork anyone once you decide it matters'
 };
 
@@ -2949,7 +2949,7 @@ DATA.ASPECT_TELL = {
   'venus-pluto': 'you do not do casual, you have googled an ex at 2am, and love rearranges you or it is not love',
   'mars-saturn': 'you push then stop, you will not start until you are sure, and your anger goes cold rather than hot',
   'mars-uranus': 'you act on the impulse before you have decided, and you do your best work under sudden pressure',
-  'mars-neptune': 'your energy comes and goes for no clear reason, and you fight hardest for something bigger than yourself',
+  'mars-neptune': 'your drive comes and goes for no clear reason, and you fight hardest for something bigger than yourself',
   'mars-pluto': 'you go all the way or not at all, you do not forget a slight, and you would rather win quietly than loudly'
 };
 DATA.QUIRK_HOUSE = {
@@ -2985,7 +2985,7 @@ DATA.QUIRK_HOUSE = {
 
 // ===== the 27 nakshatras: the Moon's mansions of Vedic astrology (Lahiri) =====
 DATA.NAKSHATRA = [
-  { n: 'Ashwini', m: 'the healers on horseback — swift starts, fresh energy, and a gift for getting things moving' },
+  { n: 'Ashwini', m: 'the healers on horseback — swift starts, fresh drive, and a gift for getting things moving' },
   { n: 'Bharani', m: 'the bearer — intensity, endurance, and the strength to hold both life and death' },
   { n: 'Krittika', m: 'the flame that cuts — sharp, purifying, ambitious, and not to be underestimated' },
   { n: 'Rohini', m: 'the red one — growth, beauty, sensuality, and a magnetic pull others feel' },

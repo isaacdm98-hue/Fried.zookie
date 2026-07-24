@@ -1706,9 +1706,9 @@ var APP = (function () {
     'jupiter|venus': { conj: 'warmth, generosity and a love of pleasure and beauty', soft: 'love, money and goodwill flow easily', hard: 'overindulgence and over-promising in love and spending' },
     'uranus|venus': { conj: 'unconventional love and sudden attractions, freedom in relating', soft: 'you love the unusual and keep relationships fresh', hard: 'on-off attractions and a fear of being tied down' },
     'neptune|venus': { conj: 'romantic, idealising, compassionate love, beauty as transcendence', soft: 'tender, artistic, spiritual affection', hard: 'rose-tinted love and disappointment when the ideal meets the person' },
-    'jupiter|mars': { conj: 'bold, confident, expansive drive, you go big', soft: 'energy and opportunity align; enterprising and lucky in action', hard: 'overreach and rashness; you bite off more than you can chew' },
+    'jupiter|mars': { conj: 'bold, confident, expansive drive, you go big', soft: 'drive and opportunity align; enterprising and lucky in action', hard: 'overreach and rashness; you bite off more than you can chew' },
     'mars|uranus': { conj: 'explosive, electric, rebellious drive, fast and unpredictable', soft: 'inventive, independent action; you move in original bursts', hard: 'impulsive, accident-prone haste; channel the voltage' },
-    'mars|neptune': { conj: 'desire and imagination fused: inspired, or directionless', soft: 'you act on intuition and ideals; quietly creative drive', hard: 'energy that leaks or misfires; act on the real, not the mirage' },
+    'mars|neptune': { conj: 'desire and imagination fused: inspired, or directionless', soft: 'you act on intuition and ideals; quietly creative drive', hard: 'drive that leaks or misfires; act on the real, not the mirage' },
     'jupiter|uranus': { conj: 'sudden luck, breakthroughs and a restless reach for freedom', soft: 'fortunate timing and inventive growth', hard: 'reckless leaps and over-confident gambles' },
     'jupiter|neptune': { conj: 'visionary faith, idealism and spiritual longing', soft: 'compassion and imagination expand together', hard: 'wishful overreach and impractical dreams' },
     'jupiter|pluto': { conj: 'a drive for power, depth and large-scale transformation', soft: 'you grow through intensity and rebuild bigger', hard: 'obsessive ambition and the urge to control the outcome' },
@@ -1885,7 +1885,7 @@ var APP = (function () {
     if (pt) { var lead = nameFor(top) + ' carries the most weight in your chart. ' + pt.sig; if (pt.q) lead += ' “' + pt.q + '” — ' + pt.src + '.'; lines.push(lead); }
     if (STATE.birth.timeKnown) {
       var counts = {}, best = -1, bestH = -1, i; for (i = 0; i < DATA.PLANET_ORDER.length; i++) { var pl = c.planets[DATA.PLANET_ORDER[i]]; if (pl && pl.house) { counts[pl.house] = (counts[pl.house] || 0) + 1; if (counts[pl.house] > best) { best = counts[pl.house]; bestH = pl.house; } } }
-      if (bestH > 0 && best >= 2) { var ht = DATA.HOUSE_TRAD[bestH - 1]; if (ht) lines.push('Your busiest place is the ' + ordinal(bestH) + ' house, with ' + best + ' planets gathered there. ' + ht.sig + (ht.q ? ' “' + ht.q + '” — ' + (DATA.TRAD_SRC_LILLY || 'Lilly, Christian Astrology (1647)') + '.' : '')); }
+      if (bestH > 0 && best >= 2) { var ht = DATA.HOUSE_TRAD[bestH - 1]; if (ht) lines.push('Your busiest place is the ' + ordinal(bestH) + ' house, with ' + best + ' planets gathered there. ' + ht.sig + (ht.q ? ' “' + ht.q + '” — Lilly, Christian Astrology (1647).' : '')); }
     }
     var joys = planetJoys(c); if (joys.length) { var j = joys[0]; lines.push(nameFor(j.key) + ' sits in its joy in the ' + ordinal(j.house) + ' house: ' + j.why + '. The Hellenistic astrologers held this the one place where it is most fully at home.'); }
     return lines;
@@ -1893,19 +1893,9 @@ var APP = (function () {
   function composeSignatures(c) {
     var out = [], th = composeThemes(c), ti;
     for (ti = 0; ti < th.length; ti++) out.push({ label: ti === 0 ? 'The throughline' : 'Also running through you', text: th[ti] });
-    try {
-      var AR9 = DATA.ARCH;
-      if (AR9) {
-        var sunA9 = AR9.sign[c.planets.sun.signName], moonA9 = AR9.sign[c.planets.moon.signName], arL9 = [];
-        if (sunA9) arL9.push('Your Sun: ' + sunA9.n + '. ' + capit(sunA9.core) + '.');
-        if (moonA9) arL9.push('Your Moon: ' + moonA9.n + '. ' + capit(moonA9.core) + '.');
-        var risA9 = (STATE.birth.timeKnown && c.ascBody) ? AR9.sign[c.ascBody.signName] : null;
-        if (risA9) arL9.push('Your rising: ' + risA9.n + ': the door you answer the world through.');
-        try { var prA9 = prominence(c), topA9 = prA9.ranked[0]; if (topA9 && AR9.planet[topA9]) arL9.push('The keystone planet: ' + AR9.planet[topA9].n + ': ' + AR9.planet[topA9].line + '.'); } catch (ePA9) {}
-        if (sunA9 && moonA9) arL9.push('One figure, three rooms. At work: ' + sunA9.work + '. Off duty: ' + moonA9.play + '. As a practice: ' + (risA9 || moonA9).rite + '.');
-        if (arL9.length) out.push({ label: 'The archetypes: after Greene, Rudhyar and the myths', lines: arL9 });
-      }
-    } catch (eAR9) {}
+    // (The Sun/Moon/rising "archetype" character-sketch block was removed: it read the SELF as a
+    // personality profile with sign-keyed prescriptions — the exact modern register the school and
+    // the voice-book reject. The domains-of-a-life reading carries the self, judged, with receipts.)
     var lp = lunarPhase(c);
     out.push({ label: 'Lunar phase at birth', text: 'You were born on the ' + lp.name + ': ' + lp.text });
     try {
@@ -1939,7 +1929,7 @@ var APP = (function () {
       if (pT9.shape) out.push({ label: 'Chart shape', text: pT9.shape.line });
     } catch (ePt9) { var pats = aspectPatterns(c); if (pats.length) for (var i = 0; i < Math.min(pats.length, 4); i++) out.push({ label: pats[i].type, text: patternText(pats[i]) }); }
     var rr = natalRetros(c);
-    if (rr.length) out.push({ label: 'Born retrograde', text: rr.map(nameFor).join(', ') + ' ' + (rr.length === 1 ? 'was' : 'were') + ' retrograde at your birth: that energy turns inward first: more reflective, reworked, personal before it’s expressed outwardly.' });
+    if (rr.length) out.push({ label: 'Born retrograde', text: rr.map(nameFor).join(', ') + ' ' + (rr.length === 1 ? 'was' : 'were') + ' retrograde at your birth: what ' + (rr.length === 1 ? 'it works' : 'they work') + ' turns inward first — reflective, reworked, personal before it shows outwardly.' });
     // PHASE 32 — fixed stars in condition/behaviour register, tied to the carrier's determination
     try { var sJ9 = starsJudged(c, STATE.birth); if (sJ9.stars.length) out.push({ label: 'Fixed stars carried (Robson)', lines: sJ9.stars.map(function (s) { return s.line; }) }); } catch (eFs9) { var fs = starsOn(c); if (fs.length) out.push({ label: 'Fixed stars', text: fs.map(function (s) { return nameFor(s.planet) + ' on ' + s.star + ': ' + s.m; }).join('; ') }); }
     if (c.extras) {
@@ -4322,6 +4312,13 @@ var APP = (function () {
     grab(function () { var t = triggerReading(c, b); return t ? t.doctrine + ' ' + t.loud.map(function (l) { return l.line; }).join(' \n ') : ''; });
     grab(function () { var d = judgeDirections(c, b); return d ? d.next.concat(d.past).map(function (x) { return x.line; }).join(' \n ') : ''; });
     grab(function () { return judgeCycles(c, b).cycles.map(function (cy) { return cy.line; }).join(' \n '); });
+    // the new engine (this session): temperament, medical, the topical domains, the glance, the year story
+    grab(function () { var t = temperamentProse(temperament(c, b)); return t ? t.text : ''; });
+    grab(function () { var h = judgeHealth(c, b); return h ? h.line : ''; });
+    grab(function () { return [judgeMoney(c, b), judgeLove(c, b), judgeCareer(c, b), judgeFamily(c, b)].map(function (r) { return r ? r.line : ''; }).join(' \n '); });
+    grab(function () { var g = lifeAtAGlance(c, b); return g ? g.line : ''; });
+    grab(function () { var y = yearAhead(c, b); return y ? y.line : ''; });
+    grab(function () { return composeSignatures(c).map(function (s) { return (s.text || '') + ' ' + ((s.lines || []).join(' ')); }).join(' \n '); });
     var all = texts.join(' \n '), hits = [], i;
     for (i = 0; i < VOICE_BANNED.length; i++) { var m = all.match(VOICE_BANNED[i].re); if (m) hits.push({ term: m[0], why: VOICE_BANNED[i].why }); }
     return { clean: hits.length === 0, hits: hits, chars: all.length, src: 'plans/voice-book.md' };
@@ -4702,8 +4699,8 @@ var APP = (function () {
     'Sprint the openings: start now, correct course out loud, ship the first version before doubt organises itself.',
     'A powerful, even pull. No thrash: choose, then keep walking. Nothing gets dropped.',
     'Fast, forked, parallel. Short bursts across threads, with quick written state so nothing is lost between them.',
-    'Tidal: push while the energy is in, consolidate when it is out, and never mistake the consolidation for stalling.',
-    'Performance energy: the work builds toward showings. Set small stages, demos and reviews, and pace takes care of itself.',
+    'Tidal: push while the tide is in, consolidate when it is out, and never mistake the consolidation for stalling.',
+    'Performance drive: the work builds toward showings. Set small stages, demos and reviews, and pace takes care of itself.',
     'Methodical passes, each one measurably better than the last. The tenth improvement matters as much as the first.',
     'Momentum through agreement: the hard calls land in twos. Pair on them and the speed doubles.',
     'Obsessive depth: long, silent dives that surface carrying the whole answer. Do not interrupt the dive for status.',
@@ -4969,7 +4966,7 @@ var APP = (function () {
     var DOM9 = ['your sense of self, your body, or how you show up', 'money and what you value', 'your everyday communication, a sibling, or learning', 'home and family', 'romance, children, or a creative project', 'work and your health', 'a close relationship or partnership', 'shared money, deep intimacy, or an ending', 'travel, study, or what you believe', 'your career and public standing', 'friends, a group, or a long-held goal', 'a retreat, a closure, or something behind the scenes'];
     // per transiting planet: the event it brings, in past and future voice, hard and soft
     var EVT9 = {
-      mars: { hp: 'come through some friction around {d} \u2014 a conflict, a hard push, or something you had to fight for', hf: 'to hit friction around {d} \u2014 a confrontation, a rush, or a decision that will not wait', sp: 'had a real burst of drive around {d} and got something moving', sf: 'to get a surge of energy around {d}: a strong window to start and to act', why: 'Mars {t} lighting up' },
+      mars: { hp: 'come through some friction around {d} \u2014 a conflict, a hard push, or something you had to fight for', hf: 'to hit friction around {d} \u2014 a confrontation, a rush, or a decision that will not wait', sp: 'had a real burst of drive around {d} and got something moving', sf: 'to get a surge of drive around {d}: a strong window to start and to act', why: 'Mars {t} lighting up' },
       jupiter: { hp: 'seen things around {d} grow faster than you expected', hf: 'to be handed a big opportunity around {d} that is worth a second, careful look', sp: 'had a genuine opening around {d} \u2014 an offer, a yes, or room to grow', sf: 'to be offered an opportunity around {d}: an offer, an invitation, or a door opening', why: 'Jupiter {t} crossing' },
       saturn: { hp: 'been through a real test around {d} \u2014 something got heavier, a limit showed up, or a chapter you had outgrown finally ended', hf: 'to face a test around {d} \u2014 a commitment that gets serious, a weight you cannot dodge, or an ending you have seen coming', sp: 'been steadily building something solid and lasting around {d}', sf: 'to lock in something lasting around {d}: a commitment that finally holds', why: 'Saturn {t} sitting on' },
       uranus: { hp: 'had something around {d} change or break suddenly, in a way you did not plan', hf: 'to hit a sudden change around {d} \u2014 a break, an exit, or a rule you stop following', sp: 'had a refreshing shake-up around {d}: a new angle, or a freedom you reached for', sf: 'to break a rut around {d}: an unexpected opening or a new kind of freedom', why: 'Uranus {t} crossing' },
@@ -7942,7 +7939,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         case 'sun': return e.count + ' circuits complete. This is the wheel you already keep: your birthday is the Sun retaking its natal degree, exact to the minute, next on ' + fmtShort(e.next) + '.';
         case 'mercury': return 'About a year to the lap, wobbling with retrogrades. The next return, ' + fmtShort(e.next) + ', is the yearly reset of how you think, speak and connect.';
         case 'venus': return 'About a year to the lap. The next return, ' + fmtShort(e.next) + ', brings taste, love and worth back to their starting note: a good week to remember what you actually like.';
-        case 'mars': return 'Two years to the lap: the will resets. Next return ' + fmtShort(e.next) + ': energy comes home to its natal signature. Classical practice restarts campaigns and training here.';
+        case 'mars': return 'Two years to the lap: the will resets. Next return ' + fmtShort(e.next) + ': the drive comes home to its natal signature. Classical practice restarts campaigns and training here.';
         case 'jupiter': return 'Jupiter has lapped your chart ' + (e.count === 1 ? 'once' : e.count === 2 ? 'twice' : e.count + ' times') + (e.last ? ', most recently ' + fmtShort(e.last) : '') + '. The next return is exact ' + fmtShort(e.next) + ', at age ' + ageAt9(e.next) + ': every twelve years growth knocks on the same door. Answer it bigger this time.';
         case 'saturn': return (e.count ? ('Your first Saturn return was exact ' + fmtShort(e.last) + '; you are ' + Math.round(e.frac * 100) + '% into the ring\u2019s ' + (e.count === 1 ? 'second' : 'next') + ' lap.') : ('Your first Saturn return, adulthood\u2019s formal signature, lands ' + fmtShort(e.next) + ', age ' + ageAt9(e.next) + '.')) + (e.half ? (' The opposition, the mid-lap reckoning, comes ' + fmtShort(e.half) + '.') : '') + (e.count && e.next ? (' The ' + (e.count === 1 ? 'second' : 'next') + ' return: ' + fmtShort(e.next) + ', age ' + ageAt9(e.next) + '.') : '') + ' Saturn pays in structure for whatever was honestly built.';
         case 'node': return 'The nodes run backward: an 18.6-year compass. ' + (e.last ? ('Your last nodal return was ' + fmtShort(e.last) + '; the next comes ' + fmtShort(e.next) + ', age ' + ageAt9(e.next) + '.') : ('Your first nodal return comes ' + fmtShort(e.next) + ', age ' + ageAt9(e.next) + '.')) + ' Choices made near a nodal return steer the whole lap.';
@@ -8227,7 +8224,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
             var GI = UI.glanceCache.items[gci];
             setFont(SANS, 12.5, INK, p.LEFT, p.CENTER, 235); p.text(GI.domain, x, sY(ly + 8));
             var gv = GI.verdict, gcol = (gv === 'well-promised' || gv === 'well-supported') ? ELHUE.air : (gv === 'hard-won' || gv === 'watched') ? ACC : INK;
-            setFont(MONO, 10.5, gcol, p.RIGHT, p.CENTER, 235); p.text(gv.toUpperCase() + (GI.note ? '  (' + GI.note + ')' : ''), x + w, sY(ly + 8)); ly += 20;
+            setFont(MONO, 10.5, gcol, p.RIGHT, p.CENTER, 235); p.text(gv.toUpperCase() + (GI.note ? '  (' + GI.note.toUpperCase() + ')' : ''), x + w, sY(ly + 8)); ly += 20;
             if (gci < UI.glanceCache.items.length - 1) hairline(x, ly - 4, x + w, 24);
           }
           ly += 8; ly += paragraph(UI.glanceCache.line, x, ly, w, 13.5, INK, SERIF, 21, 235) + 16;
@@ -8261,7 +8258,10 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
             ly += paragraph(DC9.jh.receipt, x, ly, w, 8.5, ACCTX, MONO, 12, 190) + 14;
           }
           if (TC9 && TC9.r) {
-            setFont(MONO, 9.5, ACCTX, p.LEFT, p.TOP, 215); p.text(TC9.lab, x, sY(ly)); ly += 17;
+            // when the topical REPLACES the single-house reading, the domain eyebrow above already
+            // names it — so skip the second (label) header. Only the ADDITIVE case (health under its
+            // house reading) needs its own label to mark a genuinely distinct second reading.
+            if (!subsumes) { setFont(MONO, 9.5, ACCTX, p.LEFT, p.TOP, 215); p.text(TC9.lab, x, sY(ly)); ly += 17; }
             ly += paragraph(TC9.r.line, x, ly, w, 15, INK, SERIF, 23) + 6;
             ly += paragraph(TC9.r.receipt, x, ly, w, 8.5, ACCTX, MONO, 12, 190) + 14;
           }
@@ -9254,7 +9254,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       { t: 'Element', d: 'Fire, Earth, Air, Water, drive, substance, thought, feeling. Their balance is your temperament.' },
       { t: 'Modality', d: 'Cardinal (starts), Fixed (sustains), Mutable (adapts), how you tend to move.' },
       { t: 'Dignity', d: 'A planet’s comfort by sign: domicile/exaltation (strong) vs detriment/fall (challenged).' },
-      { t: 'Retrograde', d: 'A planet appearing to move backward. Its energy turns inward, revisited rather than rushed.' },
+      { t: 'Retrograde', d: 'A planet appearing to move backward. Its working turns inward, revisited rather than rushed.' },
       { t: 'Transit', d: 'Where a planet is *now* versus your birth chart, what the moving sky is doing to you today.' },
       { t: 'Progression', d: 'A symbolic clock (a day after birth = a year of life) showing your slow inner seasons.' },
       { t: 'Profection', d: 'An annual time-lord system: each year activates a new house and its ruling planet.' },
@@ -9271,7 +9271,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       { t: 'Cazimi / combust', d: 'A planet within ~0.3° of the Sun is cazimi (“in the heart”. Empowered); a little further out it is combust (burned up, weakened).' },
       { t: 'Mutual reception', d: 'Two planets each sitting in the sign the other rules. A helpful exchange, like guests in each other’s homes.' },
       { t: 'Out of sign', d: 'Two planets at the right distance in degrees, but not in the signs that usually make that aspect. Real, but it fires in flashes and is easy to miss.' },
-      { t: 'House overlays', d: 'In synastry, someone else\u2019s planet falls into one of YOUR houses: their energy moves into that room of your life. The classic reason a person feels like home, or like weather.' },
+      { t: 'House overlays', d: 'In synastry, someone else\u2019s planet falls into one of YOUR houses: their planet moves into that room of your life. The classic reason a person feels like home, or like weather.' },
       { t: 'Stellium', d: 'Three or more planets bunched in one sign or house. A powerful concentration that dominates the chart.' },
       { t: 'Chart ruler', d: 'The planet that rules your rising sign, a kind of captain for the whole chart. Needs a birth time.' },
       { t: 'Out of bounds', d: 'A planet (often the Moon) beyond the Sun’s declination range, it acts unusually, off the leash.' },
@@ -9296,7 +9296,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       { t: 'Find your dominant element', anim: 'elements', steps: ['Your element is the balance of fire, earth, air and water across your planets — drive, substance, thought and feeling.', 'On your wheel, note which element the signs your planets sit in belong to; the one that repeats is your lean, the rarest is your growth edge.', 'Fire = drive, earth = substance, air = thought, water = feeling.', 'Tap Learn → Signs: each sign names its element, and the chapter opens with the four qualities the traditional way.'] },
       { t: 'Read a transit', anim: 'moving', steps: ['A transit is where a planet is *now* versus your birth chart.', 'Open the Today sheet (tap the moon, top-left) or Read → Live on your chart.', 'Note the transiting planet, the aspect, and your natal planet it touches.', 'Slow planets (Saturn–Pluto) = long, defining chapters; the Moon = a passing mood.', 'Use Read → Transit calendar to see the exact dates ahead.'] },
       { t: 'Compare two charts (synastry)', anim: 'synastry', steps: ['Add the other person in People (just their birthday; a birth time sharpens it).', 'Open their bond: the synastry bi-wheel shows both charts and the contact lines.', 'Flowing lines (trine/sextile, cool colour) = ease; hard lines (square/opposition) = friction with growth.', 'Switch to the Composite wheel to see the relationship as its own chart.', 'Check “Your year together” for the dates ahead.'] },
-      { t: 'Spot a stellium or pattern', anim: 'stellium', steps: ['A stellium is 3+ planets crowded in one sign or house, a loud, concentrated theme.', 'Open Read → Patterns; the engine names any stellium, grand trine, T-square or yod for you.', 'On the wheel, look for a cluster of dots close together, that’s a stellium by eye.', 'Whatever sign/house it falls in is where a huge amount of your energy goes.'] },
+      { t: 'Spot a stellium or pattern', anim: 'stellium', steps: ['A stellium is 3+ planets crowded in one sign or house, a loud, concentrated theme.', 'Open Read → Patterns; the engine names any stellium, grand trine, T-square or yod for you.', 'On the wheel, look for a cluster of dots close together, that’s a stellium by eye.', 'Whatever sign/house it falls in is where a huge amount of your chart’s weight goes.'] },
       { t: 'Use the tarot as a companion', anim: 'tarot', steps: ['Pull your cards in real life: this app is a reference, not a random draw.', 'Open Tarot → Card meanings and look up each card you drew.', 'Read upright or reversed to match how the card landed, plus In Love / At Work.', 'Note the astrological correspondence, each card ties to a planet or sign.', 'Lay a spread (Tarot → Spreads) to see what each position is asking.'] }
     ];
     // glossary terms that have a matching explanatory animation
@@ -10052,7 +10052,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         eyebrow('Shadow', x, ly); ly += 18; ly += paragraph(DATA.ELEMENTS[S.element].low, x, ly, w, 15, INK, SERIF, 22, 220) + 14;
         hairline(x, ly, x + w, 60); ly += 14; eyebrow('In your chart', x, ly); ly += 22;
         var ps = planetsInSign(c, it);
-        var msg = ps.length ? ('You carry ' + ps.length + (ps.length === 1 ? ' placement' : ' placements') + ' in ' + S.name + ': ' + ps.map(function (k) { return APP.nameFor(k); }).join(', ') + '. This sign is loud in you.') : ('You have no planets in ' + S.name + ': you meet this energy through the house it rules in your chart.');
+        var msg = ps.length ? ('You carry ' + ps.length + (ps.length === 1 ? ' placement' : ' placements') + ' in ' + S.name + ': ' + ps.map(function (k) { return APP.nameFor(k); }).join(', ') + '. This sign is loud in you.') : ('You have no planets in ' + S.name + ': you meet this sign through the house it rules in your chart.');
         ly += paragraph(msg, x, ly, w, 16, INK, SERIF, 24) + 12;
       } else if (cat === 'planets') {
         var k = it, pl = c.planets[k];
