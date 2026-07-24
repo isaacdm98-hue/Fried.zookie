@@ -3208,7 +3208,13 @@ var APP = (function () {
         aspTxt = ' ' + capit(nameFor(bestAsp.oth)) + (bestAsp.ben ? ' seconds it by ' : ' presses on it by ') + art9(bestAsp.aspect) + ' ' + bestAsp.aspect + (bestAsp.rec ? ', though reception eases the exchange' : '') + '.';
         receipts.push(nameFor(lordK) + (bestAsp.ben ? '+' : '−') + nameFor(bestAsp.oth) + ' ' + bestAsp.aspect.slice(0, 3));
       }
-      var promise = (t >= 3 ? 'held strong, the promise holds' : t < 0 ? 'held weak, the promise strains' : 'held middling, the promise is mixed');
+      // state (the sign) and circumstance (the house) are held apart, never blended: a lord weak in
+      // its own sign but well placed reads as a promise carried by circumstance, not as "held strong"
+      var es9 = (lordD.essential && typeof lordD.essential.score === 'number') ? lordD.essential.score : 0;
+      var promise;
+      if (es9 < 0 && t >= 3) promise = 'weak in its own sign but well placed, so the promise is carried by circumstance rather than by its own strength';
+      else if (es9 >= 3 && t < 0) promise = 'sound in itself but poorly circumstanced, so the promise strains in spite of its strength';
+      else promise = (t >= 3 ? 'held strong, the promise holds' : t < 0 ? 'held weak, the promise strains' : 'held middling, the promise is mixed');
       if (firstLord) {
         var link = (srcH && srcH !== h) ? ', and sits in your ' + ordinal(srcH) + ' — so ' + (CAUSE_LINK9[h] || ('the ' + ordinal(h) + '’s matters run through')) + ' ' + HOUSE_AREA9[srcH - 1] : '';
         S.push(capit(hs.role) + ' answers to ' + nameTh(lordK) + ', ' + stateAdj9(lordD.essential.label) + ' in ' + lordD.signName + link + '. ' + capit(promise) + '.' + occTxt + aspTxt);
@@ -6114,7 +6120,11 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         p.noFill(); strokec(INK, 200); p.strokeWeight(1.5); p.rect(x, y + off, w, h, r);
         setFont(MONO, small ? 10.5 : 12, INK, p.CENTER, p.CENTER);
       }
-      p.text(label.toUpperCase(), x + w / 2, y + off + h / 2 + 0.5);
+      // shrink to fit rather than overflow: a long label on a narrow phone was running past both
+      // edges of the button and being clipped mid-word
+      var lbl9 = label.toUpperCase(), base9 = small ? 10.5 : 12, sz9 = base9, pad9 = 18;
+      while (sz9 > 8 && p.textWidth(lbl9) > w - pad9) { sz9 -= 0.5; p.textSize(sz9); }
+      p.text(lbl9, x + w / 2, y + off + h / 2 + 0.5);
       pushHit(x, y, w, h + depth, fn);
     }
     function chip(label, on, x, ly, fn) {
@@ -8261,8 +8271,8 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       eyebrow('Everything, in full', x, ly, ACC); ly += 24;
       ly += paragraph('The whole chart, judged the traditional way — the twelve house-lords followed home, every planet in its state, and what carries the most weight. Each line shows its working.', x, ly, w, 14, INK, SERIF, 22, 220) + 12;
       flatBtn('‹  Back to the reading', x, ly, w, 40, function () { UI.readMode = 'flow'; UI.rdI = 0; UI.rdT = nowT(); UI.scroll.read = 0; buzz(8); }, false, true); ly += 50;
-      flatBtn('▶  Play your chart as a film — the judgment, act by act', x, ly, w, 46, function () { startWalk(); buzz(12); }, true); ly += 54;
-      flatBtn('◉  Or walk it card by card: does each ring true?', x, ly, w, 46, function () { UI.guide = { phase: 'intro', t0: nowT() }; UI.scroll.read = 0; buzz(12); }, false); ly += 58;
+      flatBtn('▶  Play your chart as a film', x, ly, w, 46, function () { startWalk(); buzz(12); }, true); ly += 54;
+      flatBtn('◉  Or walk it card by card', x, ly, w, 46, function () { UI.guide = { phase: 'intro', t0: nowT() }; UI.scroll.read = 0; buzz(12); }, false); ly += 58;
       setFont(MONO, 9, INK, p.LEFT, p.TOP, 140); p.text('CHAPTERS', x, sY(ly)); ly += 20;
       UI.sec = UI.sec || {};
       var chapterHead = function (id, label, sub) {
