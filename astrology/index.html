@@ -7069,14 +7069,38 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var bcol = BODYCOL[key] || ACC;
       // dim the rest of the wheel into a full wash — everything recedes but this one circle
       p.noStroke(); fillc(shade(GROUNDS.chart, -3), 255 * pe); p.rect(0, 0, W, H);
+      // magic: faint rays radiating from the placement, slowly turning — the chart's light gathered here
+      if (pe > 0.12) {
+        var rayA = still ? -0.6 : nowT() * 0.00018, nRay = 18, ri3;
+        p.push(); p.translate(curCX, curCY);
+        for (ri3 = 0; ri3 < nRay; ri3++) {
+          var ra3 = rayA + ri3 * (Math.PI * 2 / nRay), rlen = curR + RB * (1.35 + (still ? 0 : 0.22 * Math.sin(nowT() * 0.001 + ri3)));
+          strokec(bcol, 15 * pe * (0.45 + 0.55 * (still ? 0.6 : Math.abs(Math.sin(nowT() * 0.0016 + ri3 * 1.7)))));
+          p.strokeWeight(1.1); p.line(Math.cos(ra3) * (curR + 14), Math.sin(ra3) * (curR + 14), Math.cos(ra3) * rlen, Math.sin(ra3) * rlen);
+        }
+        p.pop();
+      }
       // the chart 'opening up' into the circle: rings blooming out of the placement as it lands
       if (!still && pz < 1) { var gr; for (gr = 0; gr < 3; gr++) { var grp = cl01(pe * 1.35 - gr * 0.2); if (grp <= 0 || grp >= 1) continue; p.noFill(); strokec(bcol, 55 * (1 - grp)); p.strokeWeight(1); var grr = curR + RB * 3 * grp; p.ellipse(curCX, curCY, grr * 2, grr * 2); } }
       // tap anywhere to go back (registered first; the specific hits below win over it)
       pushHit(0, 0, W, H, function () { closeZoom(); });
-      // --- the placement circle: aura, ring, the body large, the sign at the crown ---
-      p.noStroke(); fillc(bcol, 24 * pe); p.ellipse(curCX, curCY, (curR + 20) * 2, (curR + 20) * 2);
+      // --- the placement circle: aura (breathing), ring, the body large, the sign at the crown ---
+      var auraB = still ? 1 : (0.82 + 0.18 * Math.sin(nowT() * 0.0022)); // a slow glow, like a held breath
+      p.noStroke(); fillc(bcol, 26 * pe * auraB); p.ellipse(curCX, curCY, (curR + 20 + (still ? 0 : 2.5 * Math.sin(nowT() * 0.0022))) * 2, (curR + 20 + (still ? 0 : 2.5 * Math.sin(nowT() * 0.0022))) * 2);
       p.noFill(); strokec(INK, 150 * pe); p.strokeWeight(1.3); p.ellipse(curCX, curCY, (curR + 11) * 2, (curR + 11) * 2);
       p.push(); p.translate(curCX, curCY); celestialBody(isAsc ? 'sun' : key, 0, 0, curR, nowT()); p.pop();
+      // magic: slow motes of light orbiting the placement, twinkling — settle in as the zoom lands
+      if (pe > 0.4) {
+        var nMote = 11, mi3, mBase = still ? 0 : nowT();
+        for (mi3 = 0; mi3 < nMote; mi3++) {
+          var mph = mi3 * 2.399963, msp = 0.00022 + (mi3 % 3) * 0.00009, mang = mph + mBase * msp * (mi3 % 2 ? 1 : -1);
+          var mrad = curR + 26 + (mi3 % 4) * 11 + (still ? 0 : Math.sin(mBase * 0.0011 + mi3) * 5);
+          var mx = curCX + Math.cos(mang) * mrad, my = curCY + Math.sin(mang) * mrad;
+          var mtw = still ? 0.7 : (0.32 + 0.68 * Math.abs(Math.sin(mBase * 0.002 + mi3 * 1.3)));
+          p.noStroke(); fillc(bcol, 150 * pe * mtw); p.ellipse(mx, my, 2.6, 2.6);
+          fillc([245, 240, 225], 95 * pe * mtw); p.ellipse(mx, my, 1.2, 1.2);
+        }
+      }
       setFont(SANS, 17, INK, p.CENTER, p.CENTER, 220 * pe); p.text(DATA.SIGNS[pl.sign].glyph, curCX, curCY - (curR + 24));
       // --- determination + prose, computed once per planet ---
       if (UI.pcProseFor !== key) {
