@@ -1235,10 +1235,8 @@ var APP = (function () {
       ' at ' + degStr(pl.lon % 30) + ' ' + sName + (pl.house ? ' in your ' + ordinal(pl.house) + ' house' : '') + role + '.';
     // quote the person's own behavioural tell — but only where it reads as grammar:
     // clauses that start "you …" or "people …" and carry no colon slot in cleanly.
-    var tells = tellsFor(c, ev.np), fits = [], tf9;
-    for (tf9 = 0; tf9 < tells.length; tf9++) if (/^(you|people)\b/i.test(tells[tf9]) && tells[tf9].indexOf(':') < 0 && tells[tf9].indexOf(';') < 0) fits.push(tells[tf9]);
-    var tell = fits.length ? vpick(fits, seed + 't') : '';
-    if (tell && (vpick([0, 1, 1, 1], seed + 'ti'))) line += ' The same ' + nameFor(ev.np) + ' is behind the fact that ' + tell.charAt(0).toLowerCase() + tell.slice(1).replace(/\.$/, '') + '.';
+    // (no behavioural 'tell' is appended: the transit is judged by what it touches, not by a
+    // character observation about the person)
     line += ' It is ' + weaveTiming(ev, seed + 'w') + '.';
     line += ' ' + vpick((WV_ADV[fam] || WV_ADV.lift)[ev.tp] || WV_ADV[fam].sun, seed + 'a') + '.';
     var receipt = ('transiting ' + nameFor(ev.tp) + ' ' + ev.asp.key + ' natal ' + nameFor(ev.np) + ' · ' + degStr(pl.lon % 30) + ' ' + sName + (pl.house ? ' · ' + ordinal(pl.house) + ' house' : '') + ' · orb ' + ev.orb.toFixed(1) + '°' + (ev.applying === true ? ' closing' : (ev.applying === false ? ' separating' : ''))).toUpperCase();
@@ -1335,14 +1333,7 @@ var APP = (function () {
         else sctA = sc9.day ? ' Mars runs hot in a day chart like yours: burn it as exercise before it becomes an argument.' : ' In your night chart Mars fights cleaner: the drive is usable if you aim it early.';
       }
     } catch (eSct) {}
-    var seas9 = '';
-    try {
-      var TT9 = DATA.TELLS && DATA.TELLS.transit;
-      if (TT9 && TT9[t.tp + '-' + t.np]) {
-        var sf9 = (t.asp.quality === 'flow' || t.asp.quality === 'opportunity') ? 'soft' : 'hard';
-        if (TT9[t.tp + '-' + t.np][sf9]) seas9 = ' ' + capT(TT9[t.tp + '-' + t.np][sf9]) + '.';
-      }
-    } catch (eTT9) {}
+    var seas9 = ''; // (the modern transit "tell" is not appended: see the note on aspect tells)
     var tail = eco + ' In daily life: ' + practicalDomain(t.np) + '; ' + practicalTilt(t.asp.quality, seed) + '.' + seas9 + sctA;
     if (t.applying === true && t.exact) {
       var ex9 = t.exact, now9 = new Date(), sameDay9 = ex9.getDate() === now9.getDate() && ex9.getMonth() === now9.getMonth();
@@ -1745,15 +1736,9 @@ var APP = (function () {
     if (op9 && /\.$/.test(base9)) base9 = base9.slice(0, -1); // the orb clause continues the sentence
     var body9 = base9 + op9;
     if (!/[.!?]$/.test(body9)) body9 += '.';
-    try {
-      var TA9 = DATA.TELLS && DATA.TELLS.aspect, PO9 = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto'];
-      var ia9 = PO9.indexOf(as.a), ib9 = PO9.indexOf(as.b);
-      if (TA9 && ia9 >= 0 && ib9 >= 0) {
-        var pk9 = ia9 < ib9 ? (as.a + '-' + as.b) : (as.b + '-' + as.a);
-        var fam9 = as.asp.quality === 'fusion' ? 'fuse' : (as.asp.quality === 'flow' || as.asp.quality === 'opportunity') ? 'soft' : 'hard';
-        if (TA9[pk9] && TA9[pk9][fam9]) body9 += ' The tell: ' + TA9[pk9][fam9] + '.';
-      }
-    } catch (eAT9) {}
+    // (The appended "tell" was a modern character observation — "you ARE your opinions", "charm is
+    // something you are" — a personality read bolted onto a traditional judgment that contradicts
+    // it. The aspect is judged by both planets' determinations, and stands without the aside.)
     // the fine print a working astrologer checks: reception, then direction of motion at birth, then sign geometry
     try {
       var rc9 = receptionOf(c, as.a, as.b), hardQ9 = (as.asp.quality === 'tension' || as.asp.quality === 'friction');
@@ -2420,9 +2405,7 @@ var APP = (function () {
     if (c.ascBody && DATA.SIGNS[c.ascBody.sign]) { var rk9 = RULERKEY[DATA.SIGNS[c.ascBody.sign].ruler]; if (rk9 === cy.np) role = ' — the planet that runs your whole chart'; }
     var line = 'Since ' + cycMonYr(cy.start) + (cy.openStart ? ' at the latest' : '') + ', transiting ' + nameFor(cy.tp) + ' has been ' + mech + ', ' + aspVerb({ key: cy.aspKey }) + ' your natal ' + nameFor(cy.np) +
       ' at ' + degStr(pl.lon % 30) + ' ' + sName + (pl.house ? ' in your ' + ordinal(pl.house) + ' house' : '') + role + '.';
-    var tells = tellsFor(c, cy.np), fits = [], tf9;
-    for (tf9 = 0; tf9 < tells.length; tf9++) if (/^(you|people)\b/i.test(tells[tf9]) && tells[tf9].indexOf(':') < 0 && tells[tf9].indexOf(';') < 0) fits.push(tells[tf9]);
-    if (fits.length) { var tell = vpick(fits, seed + 't'); line += ' It is working on the ' + nameFor(cy.np) + ' behind the fact that ' + tell.charAt(0).toLowerCase() + tell.slice(1).replace(/\.$/, '') + '.'; }
+    // (no behavioural 'tell' appended here either)
     if (cy.passes.length > 1) {
       var pd = [], pi9; for (pi9 = 0; pi9 < cy.passes.length; pi9++) pd.push(cy.passes[pi9].getDate() + ' ' + CYC_MON3[cy.passes[pi9].getMonth()] + ' ' + cy.passes[pi9].getFullYear());
       line += ' It touches exact ' + (cy.passes.length === 2 ? 'twice' : cy.passes.length + ' times') + ' — ' + pd.slice(0, -1).join(', ') + ' and ' + pd[pd.length - 1] + ' — the retrograde double-back that makes this a season, not an event.';
@@ -6671,24 +6654,11 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (dnote) ly += paragraph(dnote, x, ly, w, 13.5, INK, SERIF, 20, 210 * ca) + 4;
       ly += 8;
       ly += paragraph(planetBlurb(c, key), x, ly, w, 16.5, INK, SERIF, 26, 255 * ca) + 16;
-      // the tells: every giveaway this placement carries: sign, house, dignity,
-      // retrograde, edge degrees. This is where the chart gets personal.
-      (function () {
-        var tl9 = (APP.tellsFor ? APP.tellsFor(c, key) : []), ti9;
-        if (tl9.length) {
-          eyebrow(tl9.length > 1 ? 'The tells' : 'The tell', x, ly, ACC); ly += 20;
-          for (ti9 = 0; ti9 < Math.min(tl9.length, 4); ti9++) {
-            ly += paragraph((ti9 === 0 ? 'In a room, the giveaway: ' : '\u2726 ') + tl9[ti9] + '.', x, ly, w, 15.5, INK, SERIF, 24, 245 * ca) + 10;
-          }
-          ly += 8;
-        }
-      })();
-      try {
-        var ARs9 = DATA.ARCH;
-        if (ARs9 && key !== 'asc' && pl && ARs9.planet[key] && ARs9.sign[pl.signName]) {
-          ly += paragraph('In the older language: ' + ARs9.planet[key].n + ' wearing ' + ARs9.sign[pl.signName].n.replace('The ', 'the ') + '\u2019s colours.', x, ly, w, 13.5, INK, SERIF, 21, 200 * ca) + 12;
-        }
-      } catch (eASt9) {}
+      // (The "tells" section and the archetype line were removed. They read the chart as a
+      // personality — "in a room, the giveaway: you remember exactly who was kind to you in 2014",
+      // "Mars wearing the Warrior's colours" — which is the modern character sketch the school
+      // rejects, not a domain of a life. The traditional judgment above already says what this
+      // placement signifies, in what state, and for which matters, with its receipt.)
       var asps = storyAspects(c, key);
       if (asps.length) {
         eyebrow('How it connects', x, ly, ACC); ly += 24;
