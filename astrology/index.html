@@ -790,9 +790,28 @@ var APP = (function () {
     };
     return m[[a, b].sort().join('-')] || 'they balance each other out';
   }
+  // ============ AN ASPECT IS A CONTACT BETWEEN DEPARTMENTS, NOT A CHARACTER NOTE ============
+  // "Your head and heart cooperate; you put feelings into words easily" is a personality profile,
+  // which is the one thing the method forbids. A planet's meaning in a chart is the DOMAINS it
+  // answers for, so an aspect is read as one nature applied to another's departments. Both sides
+  // come from the engine's own rulership map — no table of psychological readings anywhere.
+  function deptOf9(c, k) {
+    if (k === 'asc') return 'the life itself';
+    if (k === 'mc') return 'your standing and career';
+    var D = null; try { D = determination(c, STATE.birth, k); } catch (e9) {}
+    if (D && D.rules && D.rules.length) {
+      var hs = [], i9; for (i9 = 0; i9 < D.rules.length && i9 < 2; i9++) hs.push('your ' + ordinal(D.rules[i9].house));
+      return andList9(hs);
+    }
+    return (DATA.PLANETS[k] && DATA.PLANETS[k].fn) || (nameFor(k) + '’s own matters');
+  }
   function aspectMeaning(c, as) {
-    function role(k) { if (k === 'asc') return 'your outward self'; if (k === 'mc') return 'your public direction'; return DATA.PLANETS[k].fn; }
-    return capit(role(as.a)) + ' and ' + role(as.b) + ' are ' + as.asp.phrase + '. ' + capit(practicalTilt(as.asp.quality)) + ': you’ll feel it most in ' + practicalDomain(as.a) + '.';
+    var nat9 = aspectNature(as.a, as.b, as.asp.key);
+    var da9 = deptOf9(c, as.a), db9 = deptOf9(c, as.b);
+    var body9 = capit(nat9.line);
+    if (da9 && db9 && da9 !== db9) body9 += '. It runs between ' + da9 + ' and ' + db9 + ', so those are the matters that trade';
+    else if (db9) body9 += '. It presses on ' + db9;
+    return body9 + '.';
   }
   function bodyLine(c, key) {
     var p = c.planets[key]; if (!p) return '';
@@ -1259,31 +1278,8 @@ var APP = (function () {
     return DATA.PLANETS[key] ? DATA.PLANETS[key].fn : '';
   }
   // ground every dynamic in concrete, everyday life — not abstractions
-  function practicalDomain(key) {
-    return ({
-      sun: 'your confidence, your health and what you get recognised for',
-      moon: 'your moods, sleep, eating and home life',
-      mercury: 'your messages, plans, paperwork and conversations',
-      venus: 'money, comfort, romance and the people you want around',
-      mars: 'your drive, your sex drive, workouts and your temper',
-      jupiter: 'opportunities, travel, study and your bigger plans',
-      saturn: 'work, money discipline, responsibilities and where you hit limits',
-      uranus: 'sudden changes, tech, and your need for freedom',
-      neptune: 'sleep, imagination, escapism and what you idealise',
-      pluto: 'control, power struggles and what you can’t let go of',
-      asc: 'how you come across and the first impression you make',
-      mc: 'your job, reputation and public standing',
-      node: 'the direction life keeps nudging you to grow'
-    })[key] || 'this part of your life';
-  }
-  var TILT_V = {
-    fusion: ['this area gets loud, so put your attention here on purpose', 'turn the volume of this part of life up, don’t fight it', 'lean in; whatever is here today wants centre stage'],
-    tension: ['expect a tug-of-war; the fix is a deliberate compromise', 'two needs pull at once, so name both, then split the difference', 'don’t pick a side too fast; the answer is the balance point'],
-    flow: ['things move with little effort, a good place to push your luck', 'momentum is free here; spend it on something that matters', 'say yes to the easy yes today, it’s genuinely supported'],
-    friction: ['expect snags, so slow down and take them one at a time', 'force won’t work; patience and a second pass will', 'the resistance is information, so adjust rather than shove'],
-    opportunity: ['a small, real opening, but only if you actually act on it', 'a door is ajar; one concrete step walks you through it', 'low-cost experiment territory, so try the thing, lightly']
-  };
-  function practicalTilt(quality, seed) { var v = TILT_V[quality]; return v ? vpick(v, seed) : 'worth a little conscious attention'; }
+  // practicalDomain / practicalTilt / TILT_V removed with the pair-library: "your sex drive,
+  // workouts and your temper" is not a domain of a life, it is a horoscope column.
   function relDomain(key) {
     return ({
       sun: 'whose plans and pride lead', moon: 'comfort, moods and feeling cared for',
@@ -1334,7 +1330,11 @@ var APP = (function () {
       }
     } catch (eSct) {}
     var seas9 = ''; // (the modern transit "tell" is not appended: see the note on aspect tells)
-    var tail = eco + ' In daily life: ' + practicalDomain(t.np) + '; ' + practicalTilt(t.asp.quality, seed) + '.' + seas9 + sctA;
+    // where it lands: the departments the NATAL planet answers for, plus the house the contact
+    // falls in. That is the "so what" the tradition actually licenses.
+    var dom9 = deptOf9(c9 || APP.STATE.chart, t.np);
+    var hs9 = ''; try { var np9 = (c9 || APP.STATE.chart).planets[t.np]; if (np9 && np9.house) hs9 = ', and it falls in your ' + ordinal(np9.house) + ' — ' + HOUSE_AREA9[np9.house - 1]; } catch (eH9) {}
+    var tail = eco + ' It presses on ' + dom9 + hs9 + '.' + seas9 + sctA;
     if (t.applying === true && t.exact) {
       var ex9 = t.exact, now9 = new Date(), sameDay9 = ex9.getDate() === now9.getDate() && ex9.getMonth() === now9.getMonth();
       var DN9 = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -1662,57 +1662,10 @@ var APP = (function () {
   // top-level: returns labelled blocks for the Read screen
   // per-pair aspect meanings (a high-value subset; generic phrasing is the fallback).
   // keyed by alphabetical pair -> { conj, soft (trine/sextile), hard (square/opp) }
-  var PAIRLIB = {
-    'moon|sun': { conj: 'your will and your needs fuse: whole-hearted, though you can lack distance on yourself', soft: 'heart and purpose pull the same way; you act in tune with how you feel', hard: 'what you want and what you need keep disagreeing, a lifelong inner negotiation' },
-    'sun|venus': { conj: 'warmth, charm and a love of beauty are woven into who you are', soft: 'you connect and create easily; people warm to you', hard: 'your wants and your values can tug against each other, vanity vs worth' },
-    'mars|sun': { conj: 'drive and identity fuse: forceful, courageous, sometimes too hot', soft: 'will and action align; you go after things cleanly', hard: 'a hot temper or a fight between ego and effort, channel it or it burns' },
-    'saturn|sun': { conj: 'a serious, self-disciplined core; authority is a lifelong theme', soft: 'you build steadily and earn what you get', hard: 'an early sense of not-enough that hardens into real competence over time' },
-    'pluto|sun': { conj: 'intensity and power radiate from your core, all-or-nothing', soft: 'you regenerate and deepen with each chapter', hard: 'power struggles and a drive to transform that can overwhelm, or remake, you' },
-    'sun|uranus': { conj: 'an original, electric identity, you need to be free to be yourself', soft: 'your individuality flows; you innovate without forcing it', hard: 'a restlessness with authority and a need to break out, sometimes abruptly' },
-    'neptune|sun': { conj: 'a dreamy, porous, artistic self, identity can blur', soft: 'imagination and compassion colour who you are', hard: 'confusion about who you really are; idealism that needs grounding' },
-    'jupiter|sun': { conj: 'big-hearted, optimistic, larger than life', soft: 'luck, faith and growth come naturally', hard: 'over-promising and overreach: your reach exceeds your grasp' },
-    'moon|venus': { conj: 'tender, affectionate, drawn to comfort and beauty', soft: 'you love and are loved with ease; warmth comes naturally', hard: 'a pull between what soothes you and what you value, over-giving' },
-    'mars|moon': { conj: 'feelings come out hot and fast: passionate, reactive', soft: 'you act on your feelings cleanly; instinct and drive cooperate', hard: 'moodiness and a short fuse; feelings and aggression get tangled' },
-    'moon|saturn': { conj: 'emotionally self-contained; you learned early to manage your own needs', soft: 'steady feelings; you give and receive care responsibly', hard: 'a hard-won emotional resilience built over an early sense of lack' },
-    'moon|pluto': { conj: 'feelings run deep and absolute: nothing by halves', soft: 'you bond profoundly and heal through emotional depth', hard: 'emotional intensity, jealousy and a fear of loss to work through' },
-    'moon|neptune': { conj: 'exquisitely sensitive and psychic; boundaries are thin', soft: 'compassion and imagination flow through your feeling life', hard: 'you absorb everyone’s moods; escapism is the trap' },
-    'mars|venus': { conj: 'magnetism and desire fuse: you love and pursue with heat', soft: 'attraction and action flow; you make things happen in love', hard: 'love and desire pull against each other, friction in relating' },
-    'saturn|venus': { conj: 'love is serious business; loyalty over sparkle', soft: 'committed, durable affection and good values', hard: 'a fear of rejection or scarcity around love and worth' },
-    'pluto|venus': { conj: 'love is transformative and all-consuming', soft: 'deep, regenerative bonds; you love profoundly', hard: 'obsessive or power-laden attractions to grow through' },
-    'mars|saturn': { conj: 'controlled, disciplined drive, or the brake and accelerator at once', soft: 'you work hard and persist; effort meets endurance', hard: 'frustration: drive meets blockage until you learn patient, deliberate force' },
-    'mars|pluto': { conj: 'formidable, relentless willpower', soft: 'deep stamina; you push through anything', hard: 'force and power struggles; rage to master rather than be mastered by' },
-    'mars|mercury': { conj: 'a sharp, fast, forceful mind; you argue to win', soft: 'quick thinking turns straight into action', hard: 'a hasty, cutting tongue; think before you fire' },
-    'mercury|saturn': { conj: 'a serious, structured, careful mind; slow but deep', soft: 'disciplined thinking; you build solid knowledge', hard: 'self-doubt about your intelligence that hides real rigour' },
-    'mercury|uranus': { conj: 'a fast, original, electric mind, insight in flashes', soft: 'inventive thinking comes easily', hard: 'a restless, scattered mind that jumps ahead of itself' },
-    'jupiter|saturn': { conj: 'ambition tempered by realism: you build big things slowly', soft: 'growth and structure cooperate; sustainable success', hard: 'a swing between optimism and doubt, expansion and limit' },
-    'pluto|saturn': { conj: 'iron endurance; you rebuild what breaks', soft: 'you transform through patient, structural work', hard: 'heavy, fated pressure that forges deep resilience' },
-    'mercury|sun': { conj: 'you think and identify as one: articulate, but you can lack distance on your own ideas', soft: 'your mind and your purpose pull together; you explain yourself well', hard: 'a busy mind that races ahead of, or argues with, your own intentions' },
-    'mercury|moon': { conj: 'thought and feeling fuse: you talk through what you feel and feel what you think', soft: 'your head and heart cooperate; you put feelings into words easily', hard: 'logic and mood pull against each other; you rationalise what you actually feel' },
-    'mercury|venus': { conj: 'a charming, tasteful, harmonising voice, you make ideas pleasant', soft: 'you speak warmly and find the graceful word; good with people', hard: 'you smooth things over in words rather than say the harder true thing' },
-    'jupiter|mercury': { conj: 'a big, optimistic, idea-hungry mind, vision over detail', soft: 'you learn and teach easily; the broad view comes naturally', hard: 'you over-promise, exaggerate or skip the fine print' },
-    'mercury|neptune': { conj: 'an imaginative, poetic, impressionable mind, intuition over fact', soft: 'inspired, image-rich thinking; you sense what is unsaid', hard: 'foggy thinking and self-deception; pin the dream to something concrete' },
-    'mercury|pluto': { conj: 'a penetrating, investigative, all-or-nothing mind', soft: 'you see beneath the surface and research relentlessly', hard: 'obsessive thoughts and a tongue that can wound, use the depth, don’t weaponise it' },
-    'mercury|uranus': { conj: 'a fast, original, electric mind, insight in flashes', soft: 'inventive thinking comes easily', hard: 'a restless, scattered mind that jumps ahead of itself' },
-    'mercury|saturn': { conj: 'a serious, structured, careful mind; slow but deep', soft: 'disciplined thinking; you build solid knowledge', hard: 'self-doubt about your intelligence that hides real rigour' },
-    'jupiter|moon': { conj: 'a warm, generous, emotionally expansive heart, feeling on a big scale', soft: 'you feel hopeful and look after people abundantly', hard: 'moods that balloon, and over-giving you later resent' },
-    'moon|uranus': { conj: 'feelings come in sudden jolts: you need emotional freedom', soft: 'an original emotional life; you’re at ease with the unconventional', hard: 'restlessness and detachment; you bolt when feelings get close' },
-    'jupiter|venus': { conj: 'warmth, generosity and a love of pleasure and beauty', soft: 'love, money and goodwill flow easily', hard: 'overindulgence and over-promising in love and spending' },
-    'uranus|venus': { conj: 'unconventional love and sudden attractions, freedom in relating', soft: 'you love the unusual and keep relationships fresh', hard: 'on-off attractions and a fear of being tied down' },
-    'neptune|venus': { conj: 'romantic, idealising, compassionate love, beauty as transcendence', soft: 'tender, artistic, spiritual affection', hard: 'rose-tinted love and disappointment when the ideal meets the person' },
-    'jupiter|mars': { conj: 'bold, confident, expansive drive, you go big', soft: 'drive and opportunity align; enterprising and lucky in action', hard: 'overreach and rashness; you bite off more than you can chew' },
-    'mars|uranus': { conj: 'explosive, electric, rebellious drive, fast and unpredictable', soft: 'inventive, independent action; you move in original bursts', hard: 'impulsive, accident-prone haste; channel the voltage' },
-    'mars|neptune': { conj: 'desire and imagination fused: inspired, or directionless', soft: 'you act on intuition and ideals; quietly creative drive', hard: 'drive that leaks or misfires; act on the real, not the mirage' },
-    'jupiter|uranus': { conj: 'sudden luck, breakthroughs and a restless reach for freedom', soft: 'fortunate timing and inventive growth', hard: 'reckless leaps and over-confident gambles' },
-    'jupiter|neptune': { conj: 'visionary faith, idealism and spiritual longing', soft: 'compassion and imagination expand together', hard: 'wishful overreach and impractical dreams' },
-    'jupiter|pluto': { conj: 'a drive for power, depth and large-scale transformation', soft: 'you grow through intensity and rebuild bigger', hard: 'obsessive ambition and the urge to control the outcome' },
-    'saturn|uranus': { conj: 'tradition vs revolution held in one hand, disciplined innovation', soft: 'you reform structures patiently and make change stick', hard: 'a tug-of-war between security and freedom, old and new' },
-    'neptune|saturn': { conj: 'the dream meets the wall: you give form to the formless, slowly', soft: 'you ground ideals into something real and lasting', hard: 'doubt and disillusion; build the vision brick by brick anyway' },
-    'neptune|uranus': { conj: 'a generation where awakening meets dissolution, old certainties melt', soft: 'intuitive innovation; the new arrives gently', hard: 'unstable ideals and confusing change' },
-    'pluto|uranus': { conj: 'a generation of radical, sometimes violent transformation and revolt', soft: 'deep change arrives through innovation and reform', hard: 'upheaval and the breaking of what won’t bend' },
-    'neptune|pluto': { conj: 'a deep generational undertow: collective ideals and power slowly remade', soft: 'subtle, era-shaping regeneration of the collective dream', hard: 'profound, slow-grinding transformation beneath the surface' }
-  };
-  function aspClass(k) { return (k === 'conjunction') ? 'conj' : (k === 'trine' || k === 'sextile') ? 'soft' : 'hard'; }
-  function pairAspectText(a, b, aspKey) { var e = PAIRLIB[[a, b].sort().join('|')]; if (e) { var t = e[aspClass(aspKey)]; if (t) return t; } return null; }
+  // The psychological pair-library that used to live here ("thought and feeling fuse", "an early
+  // sense of not-enough") was a personality bank, and it fed the reading. It is gone. Aspects are
+  // judged by aspectMeaning above (natures applied to departments) and by judgeAspect in full.
+  function pairAspectText() { return null; }
   // orb tightness woven into the sentence — exactness is information, not decoration
   // reception on an aspect: a planet standing in the other's domicile or exaltation has a host there
   function receptionOf(c, aK, bK) {
@@ -2621,7 +2574,14 @@ var APP = (function () {
     var dg9 = dignityOf(k, p.signName);
     out.layers.detriment = dg9 === 'Detriment'; out.layers.fall = dg9 === 'Fall';
     if (out.layers.detriment) out.score -= 5; if (out.layers.fall) out.score -= 4;
-    out.peregrine = have9.length === 0;
+    // PEREGRINE IS THE NEUTRAL CASE, NOT A SECOND CHARGE ON A DEBILITY. A planet in its detriment
+    // was being marked peregrine as well, so Lilly's column charged it twice: the Moon in Capricorn
+    // came out −10 essential (detriment −5 plus peregrine −5) where a genuinely peregrine planet
+    // came out −5. The label logic below already treats them as alternatives — a planet in
+    // detriment is labelled "Detriment", never "Peregrine" — and the app's own gloss says peregrine
+    // is "neither helped nor harmed by its sign", which cannot be true of a planet in its fall.
+    // Lilly's debilities are alternatives on one table, so the debility stands alone.
+    out.peregrine = have9.length === 0 && !out.layers.detriment && !out.layers.fall;
     var debN9 = out.layers.detriment && out.layers.fall ? 'Detriment and Fall' : out.layers.detriment ? 'Detriment' : out.layers.fall ? 'Fall' : null;
     var debC9 = out.layers.detriment ? DIGNITY_CHAR9.detriment + (out.layers.fall ? '; and ' + DIGNITY_CHAR9.fall : '') : out.layers.fall ? DIGNITY_CHAR9.fall : null;
     if (debN9 && out.score < 0) {
@@ -2900,7 +2860,7 @@ var APP = (function () {
     function stClause9(D) {
       var bits = [stateAdj9(D.essential.label) + ' in ' + D.signName];
       if (D.house) bits.push('in your ' + ordinal(D.house) + ' house');
-      if (D.condition) bits.push(D.condition.band + ' at ' + (D.condition.total >= 0 ? '+' : '') + D.condition.total + ' by Lilly’s count');
+      if (D.condition) bits.push('in ' + D.condition.band + ' condition');   // the score itself rides the receipt
       return bits.join(', ');
     }
     var line = 'You were born by ' + (isDay ? 'day, with the Sun above the horizon' : 'night, with the Sun below the horizon') + ', and the tradition sorts the planets by that one fact. '
@@ -3041,7 +3001,7 @@ var APP = (function () {
       var lineTxt = 'Your ' + ordinal(h) + ' — ' + HOUSE_AREA9[h - 1] + ' — answers to ' + nameFor(ca.lord)
         + (steps.length ? '; ' + steps.join('; ') : '; ' + nameFor(ca.lord) + ' stands in its own sign — the chain ends at its own desk')
         + (endK === captain && ca.lord !== captain ? ' — so this department ultimately reports to the captain.' : (ca.lord === captain ? ' — the captain’s own department.' : '.'));
-      if (ca.differs) lineTxt += ' And at the cusp’s exact degree ' + nameFor(ca.lead) + ' holds more dignity than ' + nameFor(ca.lord) + ' (' + ca.score + ' points against ' + (ca.tally[ca.lord] || 0) + '): the true lord of this house is ' + nameFor(ca.lead) + ' — judge it by both.';
+      if (ca.differs) lineTxt += ' And at the exact degree that house opens, ' + nameTh(ca.lead) + ' holds a stronger claim than ' + nameTh(ca.lord) + ' does, so the real lord of the house is ' + nameTh(ca.lead) + ' and it is judged by both.';
       lines.push({ house: h, text: lineTxt });
     }
     var fbest = null, fb = -1, fk;
@@ -3059,6 +3019,22 @@ var APP = (function () {
   // repaired / withheld — with the testimony that decided it. Doctrine: doctrine-notes §10.
   var KARAKA_OF_HOUSE9 = { 1: 'sun', 2: 'jupiter', 3: 'mars', 4: 'sun', 5: 'jupiter', 6: 'saturn', 7: 'venus', 8: 'saturn', 9: 'jupiter', 10: 'sun', 11: 'jupiter', 12: 'saturn' };
   var KARAKA_WORD9 = { 1: 'the vital force', 2: 'wealth', 3: 'brothers', 4: 'the father', 5: 'children', 6: 'chronic illness', 7: 'marriage', 8: 'death and legacy', 9: 'faith and teachers', 10: 'career and the father’s standing', 11: 'help and allies', 12: 'the hidden and the chronic' };
+  // Mercury is not a Fortune or an Infortune: the tradition calls it convertible, and the Moon is
+  // judged by her light. Printing "a benefic favouring it" throws away the reason the engine has
+  // already worked out, and states as a fact about the planet what is really a fact about its company.
+  function occNature9(v) {
+    var nat = v && v.nature ? v.nature : null, vd = nat ? nat.verdict : null;
+    var why = (nat && nat.why && nat.why.length) ? String(nat.why[0]) : '';
+    if (nat && nat.base === 'convertible') {
+      var by = nat.by ? nameFor(nat.by) : null;
+      return 'a hand that takes its colour from its company, and here it leans ' + (vd === 'malefic' ? 'against the matter' : 'in its favour')
+        + (by ? ', on the testimony of ' + by : ', with nothing yet claiming it');
+    }
+    if (nat && nat.base === 'light-ruled') {
+      return 'and she is judged as the tradition judges her, by her light: ' + (vd === 'benefic' ? 'bright enough here to help the matter' : 'too dark here to lend it anything');
+    }
+    return vd === 'benefic' ? 'a kind planet favouring it' : vd === 'malefic' ? 'a hard planet troubling it' : 'a mixed hand on it';
+  }
   var PROMISE9 = {
     strong: ['strongly placed, so what this house offers, it can actually pay',
              'well set up, so the promise here holds under pressure',
@@ -3070,7 +3046,7 @@ var APP = (function () {
              'neither strong nor weak, so timing decides which half of it speaks',
              'mixed, so the gift and the cost here tend to arrive in the same parcel']
   };
-  var CAUSE_LINK9 = { 1: 'the body and its undertakings are spent on', 2: 'money arrives through', 3: 'the everyday mind and its errands are shaped by', 4: 'home and the family’s story are settled through', 5: 'children and joy come through', 6: 'illness and service take their shape from', 7: 'the partner is met through', 8: 'loss and legacy arrive through', 9: 'belief and the far road are fed by', 10: 'the career runs through', 11: 'friends and hopes are won through', 12: 'the hidden life drains or restores through' };
+  var CAUSE_LINK9 = { 1: 'the body and its undertakings are spent on', 2: 'money arrives through', 3: 'the everyday mind and its errands are shaped by', 4: 'home and the family’s story are settled through', 5: 'children and joy come through', 6: 'your daily work and your health both take their shape from', 7: 'the partner is met through', 8: 'loss and legacy arrive through', 9: 'belief and the far road are fed by', 10: 'the career runs through', 11: 'friends and hopes are won through', 12: 'the hidden life drains or restores through' };
   function judgeHouse(c, b, h) {
     if (!(b && b.timeKnown && c.ascBody && c.cusps)) return null;
     var cuspLon = c.cusps[h], cs = Math.floor(rev(cuspLon) / 30), csName = DATA.SIGNS[cs].name;
@@ -3098,7 +3074,11 @@ var APP = (function () {
     var verdict = (lscore >= 3) ? (harms > helps ? 'taxed' : 'promised') : (helps > 0 ? 'repaired' : 'withheld');
     // --- compose the paragraph ---
     var S = [];
-    S.push('Your ' + ordinal(h) + ' house of ' + HOUSE_AREA9[h - 1] + ' has ' + csName + ' on the cusp, so it answers to ' + nameTh(lordK) + (alm && alm.differs ? ', though at the cusp’s exact degree ' + nameFor(alm.lead) + ' holds more dignity than ' + nameFor(lordK) + ' (' + alm.score + ' against ' + (alm.tally[lordK] || 0) + '), so both get a say' : '') + '.');
+    // "has Libra on the cusp" and a bare "(9 against 5)" are three barriers in one line: the cusp,
+    // the comparison and two numbers on an undisclosed scale. The sentence says it in English and
+    // the tally rides the receipt, where the numbers belong.
+    S.push(csName + ' begins your ' + ordinal(h) + ' house of ' + HOUSE_AREA9[h - 1] + ', so it answers to ' + nameTh(lordK) + '.');
+    if (alm && alm.differs) S.push('At the exact degree the house opens, though, ' + nameTh(alm.lead) + ' holds a stronger claim on that degree than ' + nameTh(lordK) + ' does, so both have a voice here and both are read below.');
     if (occs.length >= 3) S.push('This house is crowded — ' + occs.length + ' planets stand in your ' + ordinal(h) + ', a stellium: whatever else the chart says, this is where the life gathers.');
     for (i = 0; i < occs.length; i++) {
       var O2 = occs[i], vw = O2.nature.verdict === 'benefic' ? 'a benefic that favours this ground' : O2.nature.verdict === 'malefic' ? 'a malefic that disturbs this ground' : 'convertible here';
@@ -3115,19 +3095,19 @@ var APP = (function () {
     if (conj) S.push('Standing with the lord is ' + nameTh(conj.other) + ' (' + conj.orb.toFixed(1) + '°), ' + ((conj.other === 'venus' || conj.other === 'jupiter') ? 'a benefic at ' + pron9(lordK, 1) + ' elbow, so what the ' + ordinal(h) + ' needs, it gets help asking for' : (conj.other === 'mars' || conj.other === 'saturn') ? 'a malefic at ' + pron9(lordK, 1) + ' elbow, so the ' + ordinal(h) + '’s business carries that edge everywhere' : 'colouring everything the ' + ordinal(h) + ' asks of ' + pron9(lordK, 2)) + '.');
     var kk = KARAKA_OF_HOUSE9[h], kD = (kk === lordK) ? lordD : determination(c, b, kk);
     if (kD && kD.feral) S.push('Checked last, ' + nameTh(kk) + ', the planet the tradition gives to ' + KARAKA_WORD9[h] + ', is feral, aspected by no classical planet: what ' + pron9(kk, 0) + ' stands for here stands unsupported and alone.');
-    else if (kD && kD.condition) S.push('Checked last, ' + nameTh(kk) + ', the planet the tradition gives to ' + KARAKA_WORD9[h] + ', is ' + kD.condition.band + ' at ' + (kD.condition.total >= 0 ? '+' : '') + kD.condition.total + ', which ' + (kD.condition.total >= 5 ? 'seconds the promise' : kD.condition.total < 0 ? 'withholds its second' : 'neither helps nor hinders') + '.');
-    var lsTxt = (lscore >= 0 ? '+' : '') + lscore;
+    else if (kD && kD.condition) S.push('Checked last, ' + nameTh(kk) + ', the planet the tradition gives to ' + KARAKA_WORD9[h] + ', stands in ' + kD.condition.band + ' condition, which ' + (kD.condition.total >= 5 ? 'seconds the promise' : kD.condition.total < 0 ? 'withholds its second' : 'neither helps nor hinders') + '.');
+    var lsTxt = (lscore >= 0 ? '+' : '') + lscore;   // the number itself rides the receipt line, not the prose
     var vLine = {
-      promised: 'promised — ' + nameTh(lordK) + ' at ' + lsTxt + ' can pay, and what this house offers arrives and holds',
-      taxed: 'promised but taxed — ' + nameTh(lordK) + ' at ' + lsTxt + ' can pay, yet something in the house keeps taking its cut',
-      repaired: 'shaky at the root but repaired — ' + nameTh(lordK) + ' stands at ' + lsTxt + ', and only help from outside keeps this domain standing',
-      withheld: 'withheld — ' + nameTh(lordK) + ' at ' + lsTxt + ' pays late, through others, or not in full; expect second attempts here'
+      promised: 'promised — ' + nameTh(lordK) + ' is strong enough to pay, and what this house offers arrives and holds',
+      taxed: 'promised but taxed — ' + nameTh(lordK) + ' is strong enough to pay, yet something in the house keeps taking its cut',
+      repaired: 'shaky at the root but repaired — ' + nameTh(lordK) + ' is not strong enough on its own, and only help from outside keeps this domain standing',
+      withheld: 'withheld — ' + nameTh(lordK) + ' is too weak here to pay outright, so it pays late, through others, or not in full; expect second attempts'
     }[verdict];
     S.push('The verdict on your ' + ordinal(h) + ': ' + vLine + '; decided by ' + (testimony.length ? testimony.slice(0, 3).join('; ') : nameTh(lordK) + '’s own state, with no planet interfering') + '.');
     return {
       house: h, cuspSign: csName, lord: lordK, almuten: alm, occupants: occs.map(function (o) { return o.key; }), lordScore: lscore, helps: helps, harms: harms,
       verdict: verdict, testimony: testimony, line: tidyProse(S.join(' ')),
-      receipt: (ordinal(h) + ' cusp ' + degStr(cuspLon % 30) + ' ' + csName + ' · lord ' + nameFor(lordK) + ' → ' + ordinal(lordD.house) + ', ' + lordD.signName + ' · lilly ' + (lscore >= 0 ? '+' : '') + lscore + ' · ' + verdict).toUpperCase(),
+      receipt: (ordinal(h) + ' cusp ' + degStr(cuspLon % 30) + ' ' + csName + ' · lord ' + nameFor(lordK) + ' → ' + ordinal(lordD.house) + ', ' + lordD.signName + (alm && alm.differs ? ' · cusp almuten ' + nameFor(alm.lead) + ' ' + alm.score + ' v ' + (alm.tally[lordK] || 0) : '') + ' · lilly ' + (lscore >= 0 ? '+' : '') + lscore + ' · ' + verdict).toUpperCase(),
       src: 'the school’s twelve-step judgment; Morin, Astrologia Gallica XXI (1661); Lilly, Christian Astrology (1647)'
     };
   }
@@ -3218,12 +3198,17 @@ var APP = (function () {
         var af = afflictions[i]; if (used[af.afflictor + af.sign]) continue; used[af.afflictor + af.sign] = 1; shown++;
         var zoneTxt = Z[af.sign].zone, quality = PA[af.afflictor] ? PA[af.afflictor].quality : 'mixed';
         var watchTxt = (DM && DM[af.afflictor]) ? DM[af.afflictor][af.sign] : Z[af.sign].within;
+        // "It watches ... the tradition watches" put the same verb twice in one sentence with two
+        // different subjects; the opener also names its subject rather than leaning on a stale "it"
+        var lead9 = (shown === 1) ? 'The zone the old physicians would watch first is ' : 'They would also watch ';
         if (af.combust) {
           // a life-force burnt by the Sun: read as lowered vitality in the target's own zone
-          S.push('It watches ' + zoneTxt + ': ' + af.targetLabel + ' stands burnt close to the Sun in ' + DATA.SIGNS[af.sign].name + ', which the tradition reads as vitality drawn thin — and there watches ' + watchTxt + '.');
+          S.push(lead9 + zoneTxt + ': ' + af.targetLabel + ' stands burnt close to the Sun in ' + DATA.SIGNS[af.sign].name + ', which the tradition reads as vitality drawn thin, and there it looks for ' + watchTxt + '.');
         } else {
-          var afName = nameFor(af.afflictor) + (af.ruledBad ? ' (lord of your ' + af.ruledBad.map(ordinal).join(' and ') + ')' : ' (' + quality + ')');
-          S.push('It watches ' + zoneTxt + ': ' + afName + ' meets ' + af.targetLabel + ' by ' + af.aspect + (af.reception ? ', though reception softens it' : '') + ', and in ' + DATA.SIGNS[af.sign].name + ' the tradition watches ' + watchTxt + '.');
+          // the sign belongs to the AFFLICTOR, and must say so: "and in Capricorn" on its own reads
+          // as the Ascendant being in Capricorn, three words after the Ascendant was called Libra
+          var afName = nameFor(af.afflictor) + (af.ruledBad ? ', lord of your ' + andList9(af.ruledBad.map(ordinal)) + ',' : ' (' + quality + ')');
+          S.push(lead9 + zoneTxt + ': ' + afName + ' meets ' + af.targetLabel + ' by ' + af.aspect + (af.reception ? ', though reception softens it' : '') + ', and with ' + nameFor(af.afflictor) + ' standing in ' + DATA.SIGNS[af.sign].name + ' what it looks for there is ' + watchTxt + '.');
         }
         watched.push({ zone: zoneTxt, afflictor: af.afflictor, sign: DATA.SIGNS[af.sign].name, chronic: PA[af.afflictor] ? PA[af.afflictor].chronic : false });
       }
@@ -3254,7 +3239,7 @@ var APP = (function () {
       // note the second house briefly rather than re-deriving the whole delineation
       if (firstLord) favor += (t >= 3 ? 1 : t < 0 ? -1 : 0);
       var occTxt = '';
-      for (oi = 0; oi < CL.length; oi++) { k = CL[oi]; var pp = c.planets[k]; if (pp && pp.house === h && k !== lordK) { var v = determination(c, b, k); occTxt = ' ' + capit(nameTh(k)) + ' stands in the ' + ordinal(h) + ' itself, ' + (v.nature.verdict === 'benefic' ? 'a benefic favouring it' : v.nature.verdict === 'malefic' ? 'a malefic troubling it' : 'a mixed hand on it') + '.'; if (v.nature.verdict === 'benefic') favor += 0.5; else if (v.nature.verdict === 'malefic') favor -= 0.5; break; } }
+      for (oi = 0; oi < CL.length; oi++) { k = CL[oi]; var pp = c.planets[k]; if (pp && pp.house === h && k !== lordK) { var v = determination(c, b, k); occTxt = ' ' + capit(nameTh(k)) + ' stands in the ' + ordinal(h) + ' itself, ' + occNature9(v) + '.'; if (v.nature.verdict === 'benefic') favor += 0.5; else if (v.nature.verdict === 'malefic') favor -= 0.5; break; } }
       // the aspects TO the lord — a benefic seconds the promise by soft aspect/conjunction, a malefic
       // taxes it by conjunction/hard aspect, reception softening (Lilly's testimony of the lord's friends)
       var aspTxt = '', bestAsp = null, api;
@@ -3273,8 +3258,17 @@ var APP = (function () {
       // state (the sign) and circumstance (the house) are held apart, never blended: a lord weak in
       // its own sign but well placed reads as a promise carried by circumstance, not as "held strong"
       var es9 = (lordD.essential && typeof lordD.essential.score === 'number') ? lordD.essential.score : 0;
+      var per9 = !!(lordD.essential && lordD.essential.peregrine);
       var promise;
-      if (es9 < 0 && t >= 3) promise = 'weak in its own sign but well placed, so the promise is carried by circumstance rather than by its own strength';
+      // A PEREGRINE LORD SCORES EXACTLY ZERO, not below it, so the state/circumstance split had a
+      // hole at the boundary: a stranger in its sign fell through to "held strong" whenever its
+      // house was good. It never has strength of its own to be strong WITH — by the tradition's own
+      // rule its house and its aspects decide — so it takes its own branch, in its own words.
+      if (per9) promise = (t >= 3) ? 'it owns nothing in this sign, so it has no strength of its own to draw on; what it delivers here it delivers on the strength of where it sits'
+        : (t < 0) ? 'it owns nothing in this sign and stands badly besides, so nothing here arrives on its own account'
+        : 'it owns nothing in this sign, so this matter is decided entirely by where it stands and what reaches it';
+      else if (es9 < 0 && t >= 3) promise = 'weak in its own sign but well placed, so the promise is carried by circumstance rather than by its own strength';
+      else if (es9 <= 0 && t >= 3) promise = 'its dignities and its debilities here cancel out, so the promise rests on its placement rather than on its state';
       else if (es9 >= 3 && t < 0) promise = 'sound in itself but poorly circumstanced, so the promise strains in spite of its strength';
       // three phrasings per verdict, picked by house number: the same reading judges four or five
       // domains, and one stock sentence repeated across all of them is what makes prose sound machine-made
@@ -3295,7 +3289,17 @@ var APP = (function () {
       receipts.push(spec.lotName + ' ' + ordinal(lh) + ' lord ' + nameFor(llK) + ' lilly' + (llt >= 0 ? '+' : '') + llt);
     }
     if (spec.karaka) { var kd = determination(c, b, spec.karaka); if (kd) { var kt = kd.condition ? kd.condition.total : 0; favor += (kt >= 3 ? 0.5 : kt < 0 ? -0.5 : 0);
-      S.push(capit(nameTh(spec.karaka)) + ', the planet the tradition gives to ' + spec.karWord + ', is ' + stateAdj9(kd.essential.label) + ' in ' + kd.signName + (kd.house ? ' in your ' + ordinal(kd.house) : '') + ' — ' + (kt >= 3 ? 'strong, it underwrites the whole matter' : kt < 0 ? 'weak, it withholds where it should give' : 'mixed, neither sealing nor sinking it') + '.');
+      S.push(capit(nameTh(spec.karaka)) + ', the planet the tradition gives to ' + spec.karWord + ', is ' + stateAdj9(kd.essential.label) + ' in ' + kd.signName + (kd.house ? ' in your ' + ordinal(kd.house) : '') + ' — ' + (function () {
+        // the composite total can be lifted by a good house alone; whether this planet UNDERWRITES
+        // the matter is a question about its own state, so the verdict is gated on the state
+        var kes9 = (kd.essential && typeof kd.essential.score === 'number') ? kd.essential.score : 0;
+        if (kd.essential && kd.essential.peregrine) return 'holding no title of its own in that sign, it neither seals the matter nor sinks it';
+        if (kes9 > 0 && kes9 < 3) return 'holding only a thin claim there, it does not settle the matter either way';
+        if (kes9 >= 3 && kt >= 3) return 'strong in itself and well placed, it underwrites the whole matter';
+        if (kes9 >= 3) return 'strong in itself, though its placement does not help it deliver';
+        if (kt < 0) return 'weak, it withholds where it should give';
+        return 'mixed, neither sealing nor sinking it';
+      })() + '.');
       receipts.push(spec.karaka + ' karaka lilly' + (kt >= 0 ? '+' : '') + kt); } }
     var verdict = favor >= 1.5 ? 'well-promised' : favor <= -1.5 ? 'hard-won' : 'mixed';
     S.push(spec.title + ', on balance: ' + (verdict === 'well-promised' ? 'well promised — the testimonies mostly favour it, and it tends to come without being wrung for.' : verdict === 'hard-won' ? 'hard-won — the testimonies lean against, so it is built by effort and second attempts rather than handed over.' : 'mixed — real strengths and real taxes, and timing decides which speaks in a given year.'));
@@ -3405,8 +3409,11 @@ var APP = (function () {
   // promised by someone with no standing to grant it). Mutual reception by fall or
   // detriment is the hostile bond — two planets each stranded in the other's worst ground.
   var DIGRANK11 = { domicile: 5, exaltation: 4, triplicity: 3, term: 2, face: 1 };
-  var DIGWORD11 = { domicile: 'its own house', exaltation: 'its exaltation', triplicity: 'its triplicity', term: 'its own terms', face: 'its face' };
-  var DIGNOUN11 = { domicile: 'house', exaltation: 'exaltation', triplicity: 'triplicity', term: 'terms', face: 'face' }; // neutral form for "the X of Y"
+  // "House" is the tradition's word for a sign a planet owns, but this app spends every other line
+  // using "house" for one of the twelve life-areas. Saying the Moon sits "in the house of Jupiter"
+  // therefore reads as Jupiter owning the Moon's 5th, which is simply false. Domicile says SIGN.
+  var DIGWORD11 = { domicile: 'a sign it owns', exaltation: 'its exaltation', triplicity: 'its own family of signs', term: 'its own patch of degrees', face: 'its own colours' };
+  var DIGNOUN11 = { domicile: 'sign', exaltation: 'exaltation', triplicity: 'family of signs', term: 'patch of degrees', face: 'colours' }; // neutral form for "the X of Y"
   // the dignities the host holds at the guest's degree — strongest first
   function receivesBy11(hostK, guestLon, isDay) {
     var led = dignityLedger(guestLon, isDay !== false), out = [];
@@ -3429,7 +3436,7 @@ var APP = (function () {
     var major = (aHostsB[0] === 'domicile' || aHostsB[0] === 'exaltation' || bHostsA[0] === 'domicile' || bHostsA[0] === 'exaltation');
     var strength = Math.max(aHostsB.length ? DIGRANK11[aHostsB[0]] : 0, bHostsA.length ? DIGRANK11[bHostsA[0]] : 0);
     var parts = [];
-    if (mutual) parts.push(capit(nameTh(aK)) + ' and ' + nameTh(bK) + ' receive each other: ' + nameTh(aK) + ' sits in the ' + DIGNOUN11[bHostsA[0]] + ' of ' + nameTh(bK) + ', and ' + nameTh(bK) + ' in the ' + DIGNOUN11[aHostsB[0]] + ' of ' + nameTh(aK) + '. That is a mutual reception' + (major ? ' by ' + (DIGRANK11[aHostsB[0]] >= 4 && DIGRANK11[bHostsA[0]] >= 4 ? 'the major dignities, the strong kind' : 'sign or exaltation') : ' by the minor dignities, a lighter bond'));
+    if (mutual) parts.push(capit(nameTh(aK)) + ' and ' + nameTh(bK) + ' receive each other: ' + nameTh(aK) + ' sits in a ' + DIGNOUN11[bHostsA[0]] + ' ' + nameTh(bK) + ' owns, and ' + nameTh(bK) + ' in a ' + DIGNOUN11[aHostsB[0]] + ' ' + nameTh(aK) + ' owns. That is a mutual reception' + (major ? ' by ' + (DIGRANK11[aHostsB[0]] >= 4 && DIGRANK11[bHostsA[0]] >= 4 ? 'the major dignities, the strong kind' : 'sign or exaltation') : ' by the minor dignities, a lighter bond'));
     else if (aHostsB.length) parts.push(capit(nameTh(aK)) + ' receives ' + nameTh(bK) + ' into ' + DIGWORD11[aHostsB[0]] + ', as a host takes in a guest');
     else if (bHostsA.length) parts.push(capit(nameTh(bK)) + ' receives ' + nameTh(aK) + ' into ' + DIGWORD11[bHostsA[0]] + ', as a host takes in a guest');
     if (hostile) parts.push((mutual ? 'But the ground is contested. ' : '') + capit(nameTh(aK)) + ' and ' + nameTh(bK) + ' also stand each in the other’s fall or detriment, a bond of mutual hindrance: two planets stranded in each other’s worst country');
@@ -3966,7 +3973,7 @@ var APP = (function () {
     var pm = promittorDomain16(c, b, E.np); if (!pm) return null;
     var when = 'Around ' + Math.round(E.age) + ' (' + E.year + ')', ageHalf = Math.round(E.age * 2) / 2;
     var hard = (E.aspKey === 'square' || E.aspKey === 'opposition'), conj = (E.aspKey === 'conjunction'), soft = (E.aspKey === 'trine' || E.aspKey === 'sextile');
-    var pipe = conj ? 'comes to the very body of' : hard ? (E.aspKey === 'square' ? 'squares' : 'opposes') : (E.aspKey === 'trine' ? 'trines' : 'sextiles');
+    var pipe = conj ? 'arrives exactly on the degree of' : hard ? (E.aspKey === 'square' ? 'squares' : 'opposes') : (E.aspKey === 'trine' ? 'trines' : 'sextiles');
     var whatB;
     if (pm.isPoint) whatB = 'Your natal ' + pm.name + ' is ' + pm.matter + '.';
     else {
@@ -3983,7 +3990,7 @@ var APP = (function () {
     else if (hard && targetNat === 'malefic') verdict = 'a ' + E.aspKey + ' to a malefic, even a dignified one, brings its matter to a head: ' + pm.matter + ' presses, and the work is to meet it deliberately rather than be caught by it';
     else if (soft && targetNat === 'benefic') verdict = 'an easy channel to a benefic in good standing: help around ' + pm.matter + ' arrives more or less unasked — a year to accept what is offered';
     else if (soft && targetNat === 'malefic') verdict = 'an easy road to a malefic still runs a malefic’s water: ' + pm.matter + ' comes smoothly but carries ' + (E.np === 'saturn' ? 'Saturn’s weight' : E.np === 'mars' ? 'Mars’s heat' : 'its edge') + ' — use the ease on purpose, or it uses you';
-    else if (conj) verdict = 'the directed point comes to the very body of ' + nameFor(E.np) + ': for this stretch, ' + dd.short + ' and ' + pm.short + ' are one instrument, for better and worse';
+    else if (conj) verdict = 'the moving point arrives exactly on the degree of ' + nameFor(E.np) + ': for this stretch, ' + dd.short + ' and ' + pm.short + ' are one instrument, for better and worse';
     else verdict = 'the manner is a ' + E.aspKey + ', the matter is ' + pm.matter + ', and ' + (targetScore != null && targetScore >= 0 ? 'the promittor is sound enough to make it count' : 'the promittor’s weak state keeps the effect modest');
     if (rec) verdict += ' — and there is reception between them: ' + (rec.kind === 'mutual' ? 'they hold each other’s keys, which eases the whole passage' : nameFor(rec.host) + ' receives the mover as a guest, giving the year somewhere to land');
     var line = when + ', ' + dd.n + ' ' + pipe + ' your natal ' + nameFor(E.np) + (dd.g ? ' — the year brings ' + dd.g + ' to bear' : '') + '. ' + whatB + ' So this is the year ' + dd.short + ' meets ' + pm.short + ': ' + verdict + '. (Morin, Astrologia Gallica XXII: a direction is the significator’s domain arriving at the promittor in its full determination, judged by its state.)';
@@ -4178,7 +4185,7 @@ var APP = (function () {
     var judged = events.map(function (E) { return judgeDirection(c, b, E); }).filter(Boolean);
     var loud = judged.filter(function (d) { return d.dp === loy.lord || d.np === loy.lord; });
     loud.sort(function (x, y) { return Math.abs(x.age - ageNow) - Math.abs(y.age - ageNow); });
-    var D = loy.det, natTxt = nameFor(loy.lord) + ' is ' + stateAdj9(D.essential.label) + ' in ' + D.signName + (D.house ? ' in your ' + ordinal(D.house) + ' house, speaking first of ' + (D.analogy.speaksFirst ? D.analogy.speaksFirst.matter : (D.natural ? D.natural.karakas[0] : nameFor(loy.lord))) : '') + (D.condition ? ', ' + D.condition.band + ' at ' + (D.condition.total >= 0 ? '+' : '') + D.condition.total + ' by Lilly’s count' : '');
+    var D = loy.det, natTxt = nameFor(loy.lord) + ' is ' + stateAdj9(D.essential.label) + ' in ' + D.signName + (D.house ? ' in your ' + ordinal(D.house) + ' house, speaking first of ' + (D.analogy.speaksFirst ? D.analogy.speaksFirst.matter : (D.natural ? D.natural.karakas[0] : nameFor(loy.lord))) : '') + (D.condition ? ', and in ' + D.condition.band + ' condition weighed the old way' : '');
     var line = 'Each birthday the Ascendant steps forward one whole sign. At ' + loy.age + ' it has reached ' + loy.profSignName + ', lighting your ' + ordinal(loy.profHouse) + ' house, so ' + nameTh(loy.lord) + ', which rules that sign, is your lord of the year: the planet the whole year runs on. ' + natTxt + '. '
       + (D.condition && D.condition.total >= 5 ? 'A well-placed lord of the year promises a year that mostly pays: what ' + nameFor(loy.lord) + ' governs is favoured now. ' : D.condition && D.condition.total < 0 ? 'A weak lord of the year warns of a demanding one: the matters ' + nameFor(loy.lord) + ' governs are where the year asks the most. ' : 'A mixed lord of the year makes a mixed one, turning on which of its testimonies is triggered. ')
       + (loy.activated && loy.activated.length ? 'And a planet of yours stands in that very sign: ' + loy.activated.map(nameFor).join(' and ') + ' — natally in ' + loy.profSignName + ', so the year switches ' + (loy.activated.length > 1 ? 'them' : 'it') + ' on with special force, co-ruling the time with ' + nameFor(loy.lord) + '. ' : '')
@@ -4275,7 +4282,7 @@ var APP = (function () {
     var promise = (loyD.analogy && loyD.analogy.speaksFirst) ? loyD.analogy.speaksFirst.matter : (loyD.natural ? loyD.natural.karakas[0] : nameFor(loy.lord));
     var srClass = loySRhouse ? HOUSECLASS9[(loySRhouse - 1) % 3] : null;
     var loyPlace = (hasTime && loySR) ? ('In the return it stands in ' + loySR.signName + ', the return’s ' + ordinal(loySRhouse) + ' house — ' + (srClass === 'angular' ? 'on an angle of the year, so ' + nameFor(loy.lord) + ' comes forward and its matters lead the twelve months' : srClass === 'succedent' ? 'a succedent place, so its matters build quietly through the year' : 'a cadent place, so this is a recessed year for its matters, worked behind the scenes') + '. ')
-      : ('Its natal state — ' + (loyD.condition ? loyD.condition.band + ' at ' + (loyD.condition.total >= 0 ? '+' : '') + loyD.condition.total + ' by Lilly’s count' : stateAdj9(loyD.essential.label)) + ' — sets the tone the return only triggers. ');
+      : ('Its natal state, ' + (loyD.condition ? loyD.condition.band + ' condition' : stateAdj9(loyD.essential.label)) + ', sets the tone the return only triggers. ');
     var line = 'Your next solar return falls on ' + fmtDate21(sum.date) + ' — the year-chart cast for the Sun’s return to its exact natal degree. The Persian rule is firm: read it against the natal and against the lord of the year, never on its own. '
       + (hasTime && sr.ascBody ? 'It rises in ' + sr.ascBody.signName + (sr.ascNatalHouse ? ', which falls across your natal ' + ordinal(sr.ascNatalHouse) + ' house — ' + HOUSE_AREA9[sr.ascNatalHouse - 1] + ', the ground this year is pitched on. ' : '. ') : '')
       + 'Your lord of the year is ' + nameFor(loy.lord) + ' (' + ordinal(loy.profHouse) + '-house profection), which in the natal speaks first of ' + promise + '. ' + loyPlace
@@ -5023,7 +5030,8 @@ var APP = (function () {
     var d0 = tr.daily[0];
     if (d0) {
       var hx = (b.timeKnown && c.planets[d0.np] && c.planets[d0.np].house) ? (' The contact lands in your ' + ordinal(c.planets[d0.np].house) + ' house, so expect it around ' + DATA.HOUSES[c.planets[d0.np].house - 1].title.toLowerCase() + '.') : '';
-      var pt0 = pairAspectText(d0.tp, d0.np, d0.asp.key);
+      // the meaning of a contact is the domain it touches — never a note about the reader's mind
+      var pt0 = null; try { pt0 = 'the ' + d0.asp.key + ' presses on ' + deptOf9(c, d0.np); } catch (ePt9) {}
       s.push(vpick(['The day’s main event: ', 'What actually matters today: ', 'One contact outranks the rest: '], seed + 'b') + 'transiting ' + nameFor(d0.tp) + ' ' + d0.asp.key + ' your natal ' + nameFor(d0.np) + ', ' + d0.orb.toFixed(1) + '° from exact.' + (pt0 ? (' ' + capit(pt0) + '.') : '') + hx);
     }
     var d1 = tr.daily[1];
@@ -5751,15 +5759,18 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
   var INK = [26, 23, 20];
   var ACC = [210, 82, 28];     // vibrant accent for fills / decoration
   var ACCTX = [150, 48, 14];   // darker accent reserved for small label TEXT (WCAG contrast)
+  // Each screen has its own ground, but they are TINTED PAPERS, not filters: same high value,
+  // small real chroma, so near-black ink stays crisp on every one of them and the app reads as a
+  // set of stocks from the same mill. (The old mid-grey washes dropped contrast and looked dirty.)
   var GROUNDS = {
-    onboard: [230, 222, 204], chart: [230, 222, 204],
-    read: [170, 181, 160], tarot: [206, 188, 168], settings: [200, 202, 199], more: [200, 202, 199], learn: [158, 170, 184], people: [196, 178, 186]
+    onboard: [234, 226, 208], chart: [234, 226, 208],
+    read: [226, 230, 216], tarot: [235, 222, 205], settings: [228, 227, 222], more: [228, 227, 222], learn: [219, 228, 234], people: [236, 222, 222]
   };
   var THEMES = {
-    light: { ink: [26, 23, 20], acc: [210, 82, 28], acctx: [150, 48, 14], g: { onboard: [230, 222, 204], chart: [230, 222, 204], read: [170, 181, 160], tarot: [206, 188, 168], settings: [200, 202, 199], more: [200, 202, 199], learn: [158, 170, 184], people: [196, 178, 186] } },
-    dark: { ink: [232, 226, 213], acc: [235, 110, 58], acctx: [240, 138, 92], g: { onboard: [20, 19, 25], chart: [20, 19, 25], read: [17, 24, 20], tarot: [27, 20, 17], settings: [22, 22, 27], more: [22, 22, 27], learn: [15, 19, 29], people: [25, 18, 25] } },
-    paper: { ink: [58, 44, 28], acc: [150, 60, 20], acctx: [120, 48, 14], g: { onboard: [235, 225, 199], chart: [235, 225, 199], read: [226, 216, 188], tarot: [232, 219, 194], settings: [228, 221, 202], more: [228, 221, 202], learn: [221, 213, 192], people: [231, 218, 198] } },
-    night: { ink: [214, 223, 240], acc: [126, 152, 232], acctx: [150, 174, 244], g: { onboard: [12, 15, 27], chart: [12, 15, 27], read: [11, 17, 26], tarot: [18, 15, 28], settings: [13, 15, 30], more: [13, 15, 30], learn: [10, 15, 30], people: [17, 13, 28] } }
+    light: { ink: [26, 23, 20], acc: [210, 82, 28], acctx: [150, 48, 14], g: { onboard: [234, 226, 208], chart: [234, 226, 208], read: [226, 230, 216], tarot: [235, 222, 205], settings: [228, 227, 222], more: [228, 227, 222], learn: [219, 228, 234], people: [236, 222, 222] } },
+    dark: { ink: [234, 228, 216], acc: [238, 116, 62], acctx: [244, 146, 100], g: { onboard: [24, 22, 32], chart: [24, 22, 32], read: [20, 28, 28], tarot: [32, 23, 22], settings: [25, 24, 32], more: [25, 24, 32], learn: [19, 24, 36], people: [31, 21, 30] } },
+    paper: { ink: [58, 44, 28], acc: [150, 60, 20], acctx: [120, 48, 14], g: { onboard: [237, 227, 202], chart: [237, 227, 202], read: [231, 227, 200], tarot: [238, 225, 200], settings: [233, 227, 208], more: [233, 227, 208], learn: [227, 226, 208], people: [238, 224, 205] } },
+    night: { ink: [216, 225, 242], acc: [132, 158, 238], acctx: [156, 180, 248], g: { onboard: [13, 16, 30], chart: [13, 16, 30], read: [12, 20, 30], tarot: [21, 16, 32], settings: [15, 16, 34], more: [15, 16, 34], learn: [11, 17, 34], people: [20, 15, 32] } }
   };
   // custom accent palette (index 0 = the theme's own accent)
   var ACCENTS = [null, [210, 82, 28], [196, 64, 92], [120, 150, 86], [78, 120, 200], [150, 96, 196], [44, 160, 150]];
@@ -6291,6 +6302,52 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
           rot: (Math.random() - 0.5) * 0.7, tw: Math.random() * 6.28 });
       }
     }
+    // ============ THE PAPER ============
+    // The whole app is meant to read as a printed object, not a flat fill. Two cheap passes give
+    // it that: a 128px grain tile drawn under the content (built once, reused every frame), and a
+    // radial vignette laid over the top so the frame has weight at its edges and light at its
+    // centre. Both are alpha-only, so they ride on ANY ground colour and any theme.
+    var GRAIN = null, GRAIN_N = 128;
+    function grainTile() {
+      if (GRAIN) return GRAIN;
+      try {
+        GRAIN = p.createGraphics(GRAIN_N, GRAIN_N);
+        GRAIN.noStroke();
+        // two passes: fine speckle for tooth, a few soft blooms for the unevenness of laid paper
+        var i, n = GRAIN_N * GRAIN_N * 0.34;
+        for (i = 0; i < n; i++) {
+          var v = Math.random();
+          GRAIN.fill(v < 0.5 ? 0 : 255, 8 + Math.random() * 12);
+          GRAIN.rect(Math.random() * GRAIN_N | 0, Math.random() * GRAIN_N | 0, 1, 1);
+        }
+        for (i = 0; i < 26; i++) {
+          GRAIN.fill(Math.random() < 0.5 ? 0 : 255, 5);
+          GRAIN.ellipse(Math.random() * GRAIN_N, Math.random() * GRAIN_N, 8 + Math.random() * 26, 8 + Math.random() * 26);
+        }
+      } catch (eG) { GRAIN = false; }
+      return GRAIN;
+    }
+    function drawGrain(alpha) {
+      var g = grainTile(); if (!g) return;
+      var x, y;
+      p.push(); try { p.tint(255, alpha); } catch (eT) {}
+      for (y = 0; y < H; y += GRAIN_N) for (x = 0; x < W; x += GRAIN_N) p.image(g, x, y);
+      p.pop();
+    }
+    // a soft radial vignette in the ground's own shadow — never a grey wash over a colour
+    function drawVignette(strength) {
+      var ctx = p.drawingContext; if (!ctx || !ctx.createRadialGradient) return;
+      var cx = W / 2, cy = H * 0.46, r0 = Math.min(W, H) * 0.30, r1 = Math.max(W, H) * 0.80;
+      try {
+        var g = ctx.createRadialGradient(cx, cy, r0, cx, cy, r1);
+        var dark = (UI.bg && (UI.bg[0] + UI.bg[1] + UI.bg[2]) < 300);
+        var c = dark ? '0,0,0' : Math.round(INK[0] * 0.7) + ',' + Math.round(INK[1] * 0.7) + ',' + Math.round(INK[2] * 0.7);
+        g.addColorStop(0, 'rgba(' + c + ',0)');
+        g.addColorStop(0.62, 'rgba(' + c + ',' + (strength * 0.34).toFixed(3) + ')');
+        g.addColorStop(1, 'rgba(' + c + ',' + strength.toFixed(3) + ')');
+        ctx.save(); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H); ctx.restore();
+      } catch (eV) {}
+    }
     function drawField() {
       var still = reduced(), fc = p.frameCount, F = UI.field, cxC = W / 2, cyC = H / 2;
       var rot = still ? 0.5 : fc * 0.00030, ca = Math.cos(rot), sa = Math.sin(rot); // the whole sky turns — a touch more alive now
@@ -6406,12 +6463,28 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var sv9 = scrollOf() - (UI.sPrev == null ? scrollOf() : UI.sPrev); UI.sPrev = scrollOf();
       UI.wLag = ((UI.wLag || 0) + sv9 * 0.22) * 0.86;
       if (!still) cy += Math.max(-13, Math.min(13, UI.wLag));
-      var R = size * 0.43, ascLon = b.timeKnown ? c.asc : 0;
+      var R = size * 0.405, ascLon = b.timeKnown ? c.asc : 0;
       function ax(lon, r) { return cx + r * Math.cos((180 + (lon - ascLon)) * Math.PI / 180); }
       function ay(lon, r) { return cy - r * Math.sin((180 + (lon - ascLon)) * Math.PI / 180); }
       // A1 — the wheel draws itself in on entry (calm, once): rings + ring sweep in, planets glide out from centre
       var rv = (still || UI.walk) ? 1 : cl01((t - UI.fxT) / 1300), er = eCubic(rv);
 
+      // THE ELEMENTS, FELT. Each sign's band of the outer ring carries its element at a whisper,
+      // so the same fire/earth/air/water balance the stick states in numbers is visible in the
+      // wheel itself — a stellium in fire now shows as a warm quarter, not just as three dots.
+      (function () {
+        var r1e = R - 1, r0e = R * 0.855, ze, st;
+        p.noStroke();
+        for (ze = 0; ze < 12; ze++) {
+          var col9 = ELHUE[DATA.SIGNS[ze].element] || INK;
+          var a0e = (180 + (ze * 30 - ascLon)) * Math.PI / 180, a1e = (180 + ((ze + 1) * 30 - ascLon)) * Math.PI / 180;
+          fillc(col9, 17 * er);
+          p.beginShape();
+          for (st = 0; st <= 9; st++) { var aa = a0e + (a1e - a0e) * st / 9; p.vertex(cx + r1e * Math.cos(aa), cy - r1e * Math.sin(aa)); }
+          for (st = 9; st >= 0; st--) { var ab = a0e + (a1e - a0e) * st / 9; p.vertex(cx + r0e * Math.cos(ab), cy - r0e * Math.sin(ab)); }
+          p.endShape(p.CLOSE);
+        }
+      })();
       // structural rings (near-static; structure, not decoration)
       p.noFill();
       for (var g = 1; g <= 4; g++) { var rr = (g / 4.4) * R * 0.82; strokec(INK, 13 * er); p.strokeWeight(1); p.ellipse(cx, cy, rr * 2, rr * 2); }
@@ -6422,19 +6495,30 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       p.noFill(); strokec(INK, 220); p.strokeWeight(1.6); p.arc(cx, cy, R * 2, R * 2, -Math.PI / 2, -Math.PI / 2 + 2 * Math.PI * (er < 0.999 ? er : 1));
       // zodiac: the glyph outside, and the sign NAMED in full, curved along the
       // inside of the ring, so the wheel reads without a glossary
+      // ONE FORM FOR THE WHOLE RING. Sizing each name on its own put LIBRA next to SAG and read
+      // as a mistake; the ring is measured as a set, and if the longest name cannot sit legibly
+      // in its 27° arc then every sign takes its three-letter form together.
+      // The names ride OUTSIDE the ring, the way a printed chart sets them, and the glyphs move
+      // inside onto their element band. Arc length is radius times angle, so the outer track is
+      // the only place SAGITTARIUS can print in full at a size the eye can actually read.
+      var RING_R9 = R + 13, ringSz9 = 8.5, ringAbbr9 = false;
+      (function () {
+        var budget9 = 24 * Math.PI / 180, i9, z9, worst9 = 8.5;   // 6° of clear air between neighbours
+        p.textFont(SANS); p.textSize(8.5);
+        for (z9 = 0; z9 < 12; z9++) {
+          var nm9 = DATA.SIGNS[z9].name.toUpperCase(), tw9 = 0;
+          for (i9 = 0; i9 < nm9.length; i9++) tw9 += p.textWidth(nm9.charAt(i9)) + 0.6;
+          var ang9 = tw9 / RING_R9;
+          if (ang9 > budget9) { var n9 = 8.5 * budget9 / ang9; if (n9 < worst9) worst9 = n9; }
+        }
+        if (worst9 < 6.6) ringAbbr9 = true; else ringSz9 = worst9;
+      })();
       function arcWord9(txt, midA, r9, al9) {
-        var flip9 = Math.sin(midA) < -0.001, budget9 = 27 * Math.PI / 180, i9;
-        // measure the word at a comfortable size, then shrink only if it would spill its 27 degree budget
-        var sz9 = 8.5; p.textFont(SANS); p.textSize(sz9);
+        var flip9 = Math.sin(midA) < -0.001, i9, sz9 = ringSz9;
+        if (ringAbbr9) txt = txt.slice(0, 3);
+        p.textFont(SANS); p.textSize(sz9);
         var ws9 = [], tw9 = 0; for (i9 = 0; i9 < txt.length; i9++) { var cw9 = p.textWidth(txt.charAt(i9)) + 0.6; ws9.push(cw9); tw9 += cw9; }
         var ang9 = tw9 / r9;
-        if (ang9 > budget9) {
-          // if the full name can't sit at a readable size inside its 27° arc,
-          // use the classic three-letter form instead of cramming
-          var need9 = sz9 * budget9 / ang9;
-          if (need9 < 7.4) { txt = txt.slice(0, 3); } else { sz9 = need9; }
-          p.textSize(sz9); ws9 = []; tw9 = 0; for (i9 = 0; i9 < txt.length; i9++) { var cw2 = p.textWidth(txt.charAt(i9)) + 0.6; ws9.push(cw2); tw9 += cw2; } ang9 = tw9 / r9;
-        }
         var acc9 = -ang9 / 2;
         for (i9 = 0; i9 < txt.length; i9++) {
           var cAng9 = ws9[i9] / r9, off9 = acc9 + cAng9 / 2; acc9 += cAng9;
@@ -6449,14 +6533,21 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       for (var z = 0; z < 12; z++) {
         var card = (z % 3 === 0); strokec(INK, (card ? 200 : 90) * er); p.strokeWeight(card ? 1.4 : 1);
         p.line(ax(z * 30, R), ay(z * 30, R), ax(z * 30, R - (card ? 12 : 6)), ay(z * 30, R - (card ? 12 : 6)));
-        setFont(SANS, 12, INK, p.CENTER, p.CENTER, 150 * er); p.text(DATA.SIGNS[z].glyph, ax(z * 30 + 15, R + 16), ay(z * 30 + 15, R + 16));
-        arcWord9(DATA.SIGNS[z].name.toUpperCase(), (180 + (z * 30 + 15 - ascLon)) * Math.PI / 180, R - 16, 130 * er);
+        setFont(SANS, 11.5, INK, p.CENTER, p.CENTER, 185 * er); p.text(DATA.SIGNS[z].glyph, ax(z * 30 + 15, R - 11), ay(z * 30 + 15, R - 11));
+        arcWord9(DATA.SIGNS[z].name.toUpperCase(), (180 + (z * 30 + 15 - ascLon)) * Math.PI / 180, RING_R9, 168 * er);
       }
       if (b.timeKnown) {
         for (var hh = 1; hh <= 12; hh++) { var ang = (hh === 1 || hh === 4 || hh === 7 || hh === 10); strokec(INK, (ang ? 70 : 30) * er); p.strokeWeight(ang ? 1.2 : 0.7); p.line(ax(c.cusps[hh], R * 0.3), ay(c.cusps[hh], R * 0.3), ax(c.cusps[hh], R * 0.82), ay(c.cusps[hh], R * 0.82)); }
         strokec(ACC, 255 * er); p.strokeWeight(2.2); p.line(cx, cy, ax(ascLon, R - 4), ay(ascLon, R - 4));
         p.noStroke(); fillc(ACC, 255 * er); p.ellipse(ax(ascLon, R - 4), ay(ascLon, R - 4), 8, 8);
-        setFont(MONO, 9, ACC, p.CENTER, p.CENTER, 255 * er); bold(); p.text('ASC', ax(ascLon, R + 15), ay(ascLon, R + 15)); normal();
+        (function () {
+          var axP = ax(ascLon, R), ayP = ay(ascLon, R), aRad = (180 + (ascLon - ascLon)) * Math.PI / 180;
+          aRad = Math.atan2(cy - ayP, axP - cx);
+          p.push(); p.translate(axP, ayP); p.rotate(-aRad + (Math.cos(aRad) < 0 ? Math.PI : 0));
+          p.noStroke(); fillc(ACC, 255 * er); p.rectMode(p.CENTER); p.rect(0, 0, 30, 13, 6.5); p.rectMode(p.CORNER);
+          setFont(MONO, 8.5, GROUNDS[UI.screen] || GROUNDS.chart, p.CENTER, p.CENTER, 255 * er); bold(); p.text('ASC', 0, 0.5); normal();
+          p.pop();
+        })();
       }
 
       // compute planet positions (declustered); during reveal each glides out from the centre with a small stagger
@@ -6476,6 +6567,22 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       }
       // the wheel's geometry, stashed so the placement-zoom can grow from the tapped planet
       UI.posMap = posMap; UI.dialGeom = { cx: cx, cy: cy, R: R };
+      // THE ASPECT WEB. The geometry the judgment is actually made of, drawn faintly and always:
+      // coloured by the aspect's nature (easy = air blue, hard = the accent, conjunction = ink)
+      // and weighted by how close to exact it is, so the eye finds the tight ones on its own.
+      // It steps aside the moment a planet is selected — then only that planet's threads show.
+      if (rv > 0.55 && !UI.selPlanet) {
+        var CLW9 = { sun: 1, moon: 1, mercury: 1, venus: 1, mars: 1, jupiter: 1, saturn: 1 }, wi9;
+        for (wi9 = 0; wi9 < c.aspects.length; wi9++) {
+          var Aw9 = c.aspects[wi9]; if (!CLW9[Aw9.a] || !CLW9[Aw9.b]) continue;
+          var pa9 = posMap[Aw9.a], pb9 = posMap[Aw9.b]; if (!pa9 || !pb9) continue;
+          var q9 = Aw9.asp.quality, cw9 = (q9 === 'flow' || q9 === 'opportunity') ? ELHUE.air : (q9 === 'fusion' ? INK : ACC);
+          var tight9 = cl01(1 - (Aw9.orb / (Aw9.asp.orb || 6)));
+          strokec(cw9, (14 + 52 * tight9 * tight9) * er * cl01((rv - 0.55) / 0.35));
+          p.strokeWeight(0.55 + 1.15 * tight9);
+          p.line(pa9.x, pa9.y, pb9.x, pb9.y);
+        }
+      }
       // A2 — living aspect threads: the selected planet's aspects draw out as shimmering filaments
       if (rv > 0.9 && UI.selPlanet && posMap[UI.selPlanet]) {
         var sp = posMap[UI.selPlanet], ap = (still ? 1 : cl01((t - UI.popT) / 640)), apE = eCubic(ap), ai2;
@@ -6528,7 +6635,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
           var activeBy = {}, TORDER = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto'];
           for (tdi = 0; tdi < trd.daily.length; tdi++) if (!activeBy[trd.daily[tdi].tp]) activeBy[trd.daily[tdi].tp] = trd.daily[tdi];
           // a faint outer track the live sky rides on, well clear of the zodiac names and glyphs
-          var RIM9 = R * 1.19;
+          var RIM9 = R * 1.235;
           p.noFill(); strokec(INK, 22 * er); p.strokeWeight(1); p.ellipse(cx, cy, RIM9 * 2, RIM9 * 2);
           for (tdi = 0; tdi < TORDER.length; tdi++) {
             tkey = TORDER[tdi]; var srcp = trd.ctx.tp[tkey]; if (!srcp) continue;
@@ -6543,7 +6650,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
               strokec(tcol, 55 * puls); p.strokeWeight(1); p.line(ax(tlon, R), ay(tlon, R), natal.x, natal.y);
               p.noStroke(); fillc(tcol, 60 * puls); p.ellipse(orx, ory, 20, 20);
               fillc(tcol, 225); p.ellipse(orx, ory, 13, 13);
-              setFont(SANS, 7.5, GROUNDS[UI.screen], p.CENTER, p.CENTER); p.text(APP.glyphFor(tkey), orx, ory + 0.5);
+              setFont(SANS, 7.5, glyphInk9(tcol), p.CENTER, p.CENTER); p.text(APP.glyphFor(tkey), orx, ory + 0.5);
               (function (ex, ey) { pushHit(ex - 13, ey - 13, 26, 26, function () { openToday(); }); })(orx, ory);
             } else {
               // the quiet rest of the sky: a small unobtrusive tick, present but silent
@@ -6568,24 +6675,38 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       else { p.noStroke(); fillc(ACC, 50 * a); p.ellipse(0, 0, ds + 18 + 6 * Math.sin(t * 0.006), ds + 18 + 6 * Math.sin(t * 0.006)); }
       p.pop();
     }
+    // perceived lightness of a colour, so a glyph never lands dark-on-dark or light-on-light
+    function lum9(c9) { return (c9[0] * 0.299 + c9[1] * 0.587 + c9[2] * 0.114); }
+    function glyphInk9(c9) { return lum9(c9) > 148 ? INK : (GROUNDS[UI.screen] || GROUNDS.chart); }
+    // A planet on the wheel is an OBJECT, not a dot: its own body colour, a cast shadow, a lit
+    // upper edge and a hairline rim. Flat grey discs all read the same at 21px, which is what
+    // made a stellium look like a smudge; a lit sphere in Mars red is legible at a glance.
+    function planetToken9(px, py, ds, col, rimA, glyph, glyphA) {
+      p.noStroke();
+      fillc(INK, 34); p.ellipse(px + ds * 0.035, py + ds * 0.085, ds, ds);          // cast shadow
+      fillc(col, 255); p.ellipse(px, py, ds, ds);                                    // the body
+      fillc(255, 52); p.ellipse(px - ds * 0.14, py - ds * 0.16, ds * 0.60, ds * 0.48); // the lit edge
+      fillc(INK, 20); p.ellipse(px + ds * 0.16, py + ds * 0.18, ds * 0.56, ds * 0.44); // the shaded edge
+      p.noFill(); strokec(INK, rimA); p.strokeWeight(ds > 30 ? 1.5 : 1); p.ellipse(px, py, ds, ds);
+      setFont(SANS, ds * 0.5, glyphInk9(col), p.CENTER, p.CENTER, glyphA); p.text(glyph, px, py + 0.5);
+    }
     function drawPlanet(it, sel, t) {
-      var ds = UI.pdia[it.key], px = it.x, py = it.y;
+      var ds = UI.pdia[it.key], px = it.x, py = it.y, col = BODYCOL[it.key] || [190, 180, 168];
       if (sel) {
         planetBloom(it.key, px, py, ds, t); // A4 — body-specific flourish behind the tapped planet
-        // halo rings pulsing
+        // halo rings pulsing, plus a soft corona in the body's own light
         var pulse = 0.5 + 0.5 * Math.sin(t * 0.006);
+        p.noStroke(); fillc(col, 30); p.ellipse(px, py, ds + 34 + pulse * 12, ds + 34 + pulse * 12);
         p.noFill(); strokec(ACC, 200); p.strokeWeight(2); p.ellipse(px, py, ds + 12 + pulse * 6, ds + 12 + pulse * 6);
         strokec(ACC, 70); p.strokeWeight(1); p.ellipse(px, py, ds + 26 + pulse * 10, ds + 26 + pulse * 10);
-        // glitch-in shimmer just after pop
+        planetToken9(px, py, ds, col, 210, APP.glyphFor(it.key), 255);
+        // the chromatic shimmer of the pop, kept as a rim split rather than a fill wash
         var inten = cl01(1 - (t - UI.popT) / 320);
-        p.noStroke(); fillc(INK); p.ellipse(px, py, ds, ds);
-        if (inten > 0.02) { strokec(214, 44, 44, 120 * inten); p.noFill(); p.strokeWeight(1.4); p.ellipse(px - inten * 3, py, ds, ds); strokec(44, 110, 214, 120 * inten); p.ellipse(px + inten * 3, py, ds, ds); }
-        setFont(SANS, ds * 0.5, GROUNDS[UI.screen], p.CENTER, p.CENTER); p.text(APP.glyphFor(it.key), px, py + 0.5);
+        if (inten > 0.02) { p.noFill(); strokec(214, 44, 44, 120 * inten); p.strokeWeight(1.4); p.ellipse(px - inten * 3, py, ds, ds); strokec(44, 110, 214, 120 * inten); p.ellipse(px + inten * 3, py, ds, ds); }
       } else {
         var glow = it.beam || 0;
-        if (glow > 0.01) { p.noFill(); strokec(ACC, 130 * glow); p.strokeWeight(1.4); p.ellipse(px, py, ds + 8 + glow * 7, ds + 8 + glow * 7); }
-        p.noStroke(); fillc(INK, 120 + 110 * glow); p.ellipse(px, py, ds * (1 + 0.12 * glow), ds * (1 + 0.12 * glow));
-        setFont(SANS, ds * 0.52, GROUNDS[UI.screen], p.CENTER, p.CENTER, 210); p.text(APP.glyphFor(it.key), px, py + 0.5);
+        if (glow > 0.01) { p.noStroke(); fillc(col, 44 * glow); p.ellipse(px, py, ds + 20 * glow, ds + 20 * glow); p.noFill(); strokec(ACC, 130 * glow); p.strokeWeight(1.4); p.ellipse(px, py, ds + 8 + glow * 7, ds + 8 + glow * 7); }
+        planetToken9(px, py, ds * (1 + 0.10 * glow), col, 110 + 80 * glow, APP.glyphFor(it.key), 235);
       }
     }
     // tapping a body just highlights it (magnify + aspect threads + bloom) and shows its meaning BELOW the
@@ -11914,10 +12035,11 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
           else if (UI.sectDay === false) { p.fill(96, 122, 196, 9); p.rect(0, 0, W, H); }
         }
       } catch (eSA9) {}
+      drawGrain(reduced() ? 26 : 34);
       drawField(); drawRipples();
       // readability scrim: on text-heavy screens, settle the constellations behind a calm ground so the
       // words always come first (the chart stays lively — it's the visual centrepiece).
-      if (({ read: 1, learn: 1, settings: 1, people: 1, tarot: 1 })[UI.screen]) { p.noStroke(); p.fill(UI.bg[0], UI.bg[1], UI.bg[2], 158); p.rect(0, topY() - 8, W, H - (topY() - 8)); }
+      if (({ read: 1, learn: 1, settings: 1, people: 1, tarot: 1 })[UI.screen]) { p.noStroke(); p.fill(UI.bg[0], UI.bg[1], UI.bg[2], 146); p.rect(0, topY() - 8, W, H - (topY() - 8)); }
       hits = []; phits = []; p.rectMode(p.CORNER); p.textStyle(p.NORMAL); UI.jDrawn = false;
       if (!UI.fontApplied) {
         UI.fontApplied = true; try { applyFontPref(); } catch (eFp) {} try { loadBrandFonts(); } catch (eFb) {}
@@ -11962,6 +12084,8 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       // Users can still replay it from Settings.
       if (!UI.tour && !UI.walk && APP.STATE.chart && APP.STATE.settings && !APP.STATE.settings.toured && s !== 'onboard') { try { APP.STATE.settings.toured = true; APP.save(); } catch (eTour9) {} }
       drawTour();
+      // the vignette rides last, over the content: it gives the frame weight without touching legibility
+      if (!reduced()) drawVignette(UI.screen === 'chart' ? 0.15 : 0.11);
       drawTransition();
       (function () {
         var maxS = Math.max(0, (UI.contentH[UI.screen] || 0) - viewH());
