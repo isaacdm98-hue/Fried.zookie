@@ -4463,6 +4463,11 @@ var APP = (function () {
   // ===== The Book of You: the entire reading, typeset as one printable document =====
   function bookPlacement(c, key) {
     var pl = c.planets[key]; if (!pl) return null;
+    // the printed book must say what the app says: the traditional judgment first
+    try {
+      var tb9 = placementProse(c, STATE.birth, key);
+      if (tb9 && tb9.text) return { title: nameFor(key) + ' in ' + pl.signName, meta: tb9.receipt, text: tb9.text };
+    } catch (eBp9) {}
     var core;
     if (key === 'sun') core = DATA.SUN_IN_SIGN[pl.sign];
     else if (key === 'moon') core = DATA.MOON_IN_SIGN[pl.sign];
@@ -6560,6 +6565,10 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     }
     function delineate(c, key, b) {
       var pl = (key === 'asc') ? c.ascBody : c.planets[key]; if (!pl) return '';
+      // the tradition judges the seven classical planets: use its judgment, not a sign character
+      // sketch. Only the modern bodies (which have no dignity and no traditional signification)
+      // fall through to the descriptive text below.
+      try { var trad9 = placementProse(c, b || APP.STATE.birth, key); if (trad9 && trad9.text) return trad9.text; } catch (eDl9) {}
       var core;
       if (key === 'sun') core = DATA.SUN_IN_SIGN[pl.sign];
       else if (key === 'moon') core = DATA.MOON_IN_SIGN[pl.sign];
