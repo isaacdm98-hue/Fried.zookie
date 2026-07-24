@@ -8157,19 +8157,24 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         }
         var DOMLAB9 = ['You & your body', 'Money & resources', 'Mind, siblings & the near world', 'Home, father & roots', 'Children, love & joy', 'Work, health & service', 'Marriage & partnership', 'Intimacy, death & shared money', 'Belief, travel & higher learning', 'Career, standing & the mother', 'Friends, allies & hopes', 'The hidden, solitude & undoing'];
         // the topical syntheses — a domain read across its several houses — keyed to their lead house
+        // A topical synthesis reads a domain across its several houses; where it subsumes its lead
+        // house (money/love/career/family) it REPLACES the single-house reading, halving the length
+        // without losing depth. Health is ADDITIVE — the medical body-reading is distinct from the
+        // 6th-house domain — so it shows beneath the house reading rather than in place of it.
         if (UI.topicCache === undefined) { UI.topicCache = {}; try {
           UI.topicCache[2] = { r: APP.judgeMoney(c, b), lab: 'WEALTH, READ ACROSS ITS HOUSES' };
           UI.topicCache[4] = { r: APP.judgeFamily(c, b), lab: 'HOME & KIN, READ ACROSS ITS HOUSES' };
-          UI.topicCache[6] = { r: APP.judgeHealth(c, b), lab: 'THE BODY, AS THE TRADITION WATCHES IT' };
+          UI.topicCache[6] = { r: APP.judgeHealth(c, b), lab: 'THE BODY, AS THE TRADITION WATCHES IT', additive: true };
           UI.topicCache[7] = { r: APP.judgeLove(c, b), lab: 'UNION, READ ACROSS ITS HOUSES' };
           UI.topicCache[10] = { r: APP.judgeCareer(c, b), lab: 'THE CALLING, READ ACROSS ITS HOUSES' };
         } catch (eTC8) {} }
         var dk9; for (dk9 = 0; dk9 < UI.domCache.length; dk9++) {
-          var DC9 = UI.domCache[dk9];
+          var DC9 = UI.domCache[dk9], TC9 = UI.topicCache[DC9.h], subsumes = !!(TC9 && TC9.r && !TC9.additive);
           eyebrow(DOMLAB9[DC9.h - 1], x, ly, ACC); ly += 22;
-          ly += paragraph(DC9.jh.line, x, ly, w, 15, INK, SERIF, 23) + 6;
-          ly += paragraph(DC9.jh.receipt, x, ly, w, 8.5, ACCTX, MONO, 12, 190) + 14;
-          var TC9 = UI.topicCache[DC9.h];
+          if (!subsumes) { // the single-house four-testimony reading, unless a topical replaces it here
+            ly += paragraph(DC9.jh.line, x, ly, w, 15, INK, SERIF, 23) + 6;
+            ly += paragraph(DC9.jh.receipt, x, ly, w, 8.5, ACCTX, MONO, 12, 190) + 14;
+          }
           if (TC9 && TC9.r) {
             setFont(MONO, 9.5, ACCTX, p.LEFT, p.TOP, 215); p.text(TC9.lab, x, sY(ly)); ly += 17;
             ly += paragraph(TC9.r.line, x, ly, w, 15, INK, SERIF, 23) + 6;
