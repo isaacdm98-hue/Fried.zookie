@@ -3216,9 +3216,24 @@ var APP = (function () {
       favor += (t >= 3 ? 1 : t < 0 ? -1 : 0); weight++;
       var occTxt = '';
       for (oi = 0; oi < CL.length; oi++) { k = CL[oi]; var pp = c.planets[k]; if (pp && pp.house === h && k !== lordK) { var v = determination(c, b, k); occTxt = ' ' + nameFor(k) + ' stands in it, ' + (v.nature.verdict === 'benefic' ? 'a benefic favouring' : v.nature.verdict === 'malefic' ? 'a malefic troubling' : 'a mixed hand on') + ' ' + hs.role + '.'; if (v.nature.verdict === 'benefic') favor += 0.5; else if (v.nature.verdict === 'malefic') favor -= 0.5; break; } }
+      // the aspects TO the lord — a benefic seconds the promise by soft aspect/conjunction, a malefic
+      // taxes it by conjunction/hard aspect, reception softening (Lilly's testimony of the lord's friends)
+      var aspTxt = '', bestAsp = null, api;
+      for (api = 0; api < lordD.aspects.length; api++) {
+        var Ap = lordD.aspects[api], oth = Ap.other; if (['venus', 'jupiter', 'mars', 'saturn'].indexOf(oth) < 0) continue;
+        var ben = (oth === 'venus' || oth === 'jupiter'), hard = (Ap.aspect === 'square' || Ap.aspect === 'opposition'), conj = (Ap.aspect === 'conjunction');
+        var counts = ben ? (!hard) : (hard || conj); // benefics help by soft/conj; malefics bite by conj/hard
+        if (!counts) continue;
+        if (!bestAsp || Ap.orb < bestAsp.orb) bestAsp = { oth: oth, aspect: Ap.aspect, orb: Ap.orb, ben: ben, rec: !!Ap.reception };
+      }
+      if (bestAsp) {
+        favor += bestAsp.ben ? (bestAsp.rec ? 0.75 : 0.5) : (bestAsp.rec ? -0.25 : -0.5);
+        aspTxt = ' ' + capit(nameFor(bestAsp.oth)) + (bestAsp.ben ? ' seconds it by ' : ' presses on it by ') + art9(bestAsp.aspect) + ' ' + bestAsp.aspect + (bestAsp.rec ? ', though reception eases the exchange' : '') + '.';
+        receipts.push(nameFor(lordK) + (bestAsp.ben ? '+' : '−') + nameFor(bestAsp.oth) + ' ' + bestAsp.aspect.slice(0, 3));
+      }
       var promise = (t >= 3 ? 'held strong, the promise holds' : t < 0 ? 'held weak, the promise strains' : 'held middling, the promise is mixed');
       var link = (srcH && srcH !== h) ? ', and sits in your ' + ordinal(srcH) + ' — so ' + (CAUSE_LINK9[h] || ('the ' + ordinal(h) + '’s matters run through')) + ' ' + HOUSE_AREA9[srcH - 1] : '';
-      S.push(capit(hs.role) + ' answers to ' + nameFor(lordK) + ', ' + stateAdj9(lordD.essential.label) + ' in ' + lordD.signName + link + ' — ' + promise + '.' + occTxt);
+      S.push(capit(hs.role) + ' answers to ' + nameFor(lordK) + ', ' + stateAdj9(lordD.essential.label) + ' in ' + lordD.signName + link + ' — ' + promise + '.' + occTxt + aspTxt);
       receipts.push(ordinal(h) + ' lord ' + nameFor(lordK) + '→' + ordinal(srcH || 0) + ' lilly' + (t >= 0 ? '+' : '') + t);
     }
     if (spec.lot && c.points && c.points[spec.lot]) {
