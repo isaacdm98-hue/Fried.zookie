@@ -1084,7 +1084,7 @@ var DATA = (function () {
     moon: {
       persons: 'The mother, first of all in a night chart; women generally, and the queen as the people’s mirror; the common people themselves — the crowd, the customer; travellers, sailors, and everyone whose trade follows water or the road; midwives and nurses.',
       matters: 'The daily life of the body — sleep, food, habit, mood; the household and its tides; change itself, and every removal, journey and flitting; the public and its favour; water in all its forms; whatever waxes, wanes and returns.',
-      qualities: 'Cold and moist, the phlegmatic temperament. Well placed she is composed, soft-spoken, tender toward what she keeps, a lover of peace and of home. Poorly placed the same fluidity becomes drift — unstable, idle, a vagabond of moods, carried by whoever stands nearest.',
+      qualities: 'Cold and moist, the phlegmatic temperament. Well placed it is composed, soft-spoken, tender toward what it keeps, a lover of peace and of home. Poorly placed the same fluidity becomes drift — unstable, idle, a vagabond of moods, carried by whoever stands nearest.',
       body: 'The breast and the stomach, the belly and the womb, and the brain in its moistures; her illnesses are of the stomach and the humours — the swellings and rheums that come and go on her own schedule.',
       vocations: 'Trades of the people and of movement: carriers and couriers, sailors and travellers, nurses and midwives, innkeepers, and everyone who feeds, ferries or tends the crowd; any work that lives by the public’s daily custom.',
       karakas: ['the mother', 'women and the household', 'the common people', 'journeys and removals', 'the body’s daily tides'],
@@ -1094,7 +1094,7 @@ var DATA = (function () {
     mercury: {
       persons: 'The literate and the quick: scribes, secretaries, clerks and accountants; merchants and brokers; messengers and printers; mathematicians, astrologers and schoolmasters; poets and orators; the young generally — and, when he is ill disposed, the cheat and the thief.',
       matters: 'The word, spoken and written; letters, contracts and accounts; trade and negotiation; calculation, craft and skill of hand; the go-between in every sense — whatever carries one thing across to another.',
-      qualities: 'Convertible before all else: he takes the colour of whatever touches him — excellent among the good, worst among the bad. Well placed: a sharp, searching wit, learned, subtle, an unwearied student of anything. Ill placed the same subtlety turns to shifts — a boaster, a busybody, a maker of clever frauds.',
+      qualities: 'Convertible before all else: it takes the colour of whatever touches it — excellent among the good, worst among the bad. Well placed: a sharp, searching wit, learned, subtle, an unwearied student of anything. Ill placed the same subtlety turns to shifts — a boaster, a busybody, a maker of clever frauds.',
       body: 'The brain and the tongue, the hands, the nerves and the spirits that run through them; his illnesses are of speech and of the nerves — stammering, vertigo, and the restless troubles of an overdriven mind.',
       vocations: 'Every trade done with words, numbers or nimble hands — the writer and the teacher, the trader and the accountant, the printer and the translator; the counting-house and the school, the press, and the road that carries messages between them all.',
       karakas: ['speech and writing', 'trade and negotiation', 'accounts and calculation', 'the young', 'service and skill of hand'],
