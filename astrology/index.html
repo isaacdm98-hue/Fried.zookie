@@ -1505,116 +1505,139 @@ var APP = (function () {
     anyExactAspect: 0.6150,
     anyMutualReception: 0.6700
   };
-  var RARITY_N9 = 400;
-  // receipts get the human name of the feature, not the internal key: "STELLIUMBYHOUSE" is a
-  // variable name leaking into the one register that is supposed to be checkable by a person
-  var RARITY_LABEL9 = {
-    twoDomicile: 'two or more planets in their own sign', fourPeregrine: 'four or more planets holding no title',
-    stelliumByHouse: 'three or more planets in one house', fourAngular: 'four or more planets angular',
-    noneAngular: 'no planet angular', captainInFirst: 'the Ascendant lord in the 1st',
-    cazimi: 'a planet cazimi', fortuneOnAngle: 'the Lot of Fortune on an angle',
-    anyUnaspected: 'an unaspected planet', threeRetrograde: 'three or more planets retrograde'
+  // ===== THE CONFIGURATIONS THIS CHART ACTUALLY HAS =====
+  // This began as a "how rare is your chart" feature and that was the wrong idea. Telling somebody
+  // that 38 charts in a hundred share their stellium is demographic trivia: it compares them to a
+  // population instead of reading their life, and it breaks the register by having the app talk
+  // about its own sample. The method reads the domains of A LIFE; it does not rank nativities.
+  //
+  // What survives is the detection. Each configuration below is read as what it does to the houses
+  // THIS chart's planets answer for — a judgment, not a badge. The measured frequencies (from
+  // tests/rarity-baseline.cjs, corpus-rarity.json) are kept for ONE purpose only: deciding which of
+  // a chart's configurations leads, so the most distinctive one goes first. They are never spoken,
+  // never printed, and never reach a receipt. Receipts name the chart's own facts instead.
+  var FEATURE_RANK9 = {
+    cazimi: 0.015, fortuneOnAngle: 0.038, captainInFirst: 0.050, noneAngular: 0.090,
+    threeRetrograde: 0.153, fourAngular: 0.203, twoDomicile: 0.213, fourPeregrine: 0.273,
+    stelliumByHouse: 0.380, anyUnaspected: 0.512
   };
-  function rarityLabel9(k) { return RARITY_LABEL9[k] || String(k); }
-  // the bands are deliberately coarse: a reader wants "unusual" or "ordinary", not a percentage
-  function rarityBand9(f) {
-    if (f <= 0.08) return { band: 'rare', word: 'genuinely rare' };
-    if (f <= 0.25) return { band: 'uncommon', word: 'uncommon' };
-    if (f <= 0.60) return { band: 'common', word: 'fairly common' };
-    return { band: 'ordinary', word: 'the ordinary case' };
-  }
-  // chartRarity — what is actually unusual about THIS nativity, ranked rarest first, each read as a
-  // domain of the life rather than as a badge. Detection mirrors tests/rarity-baseline.cjs exactly,
-  // so the frequency attached to a finding is the frequency of that same definition.
-  function chartRarity(c, b) {
+  // chartFeatures — the named configurations present in this nativity, most distinctive first, each
+  // read as a domain of the life. Detection matches tests/rarity-baseline.cjs so the ordering signal
+  // and the detector cannot drift apart.
+  function chartFeatures(c, b) {
     if (!c || !c.planets) return [];
     var CL9 = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn'], out = [], i9, k9;
     var hasTime9 = !!(b && b.timeKnown && c.ascBody);
-    function add(key, line) {
-      var f9 = RARITY_FREQ9[key]; if (f9 == null) return;
-      var bd9 = rarityBand9(f9);
-      out.push({ key: key, freq: f9, band: bd9.band, word: bd9.word, line: line,
-        receipt: (rarityLabel9(key) + ' \u00b7 ' + Math.round(f9 * 100) + '% of ' + RARITY_N9 + ' measured charts').toUpperCase() });
+    function add(key, title, line, receipt) {
+      out.push({ key: key, rank: FEATURE_RANK9[key] == null ? 1 : FEATURE_RANK9[key], title: title, line: line, receipt: String(receipt || '').toUpperCase() });
     }
+    function pl9(k) { var p = c.planets[k]; return nameFor(k) + (p ? ' ' + degStr(p.lon % 30) + ' ' + p.signName + (p.house ? ' ' + ordinal(p.house) : '') : ''); }
     var dets9 = {}; for (i9 = 0; i9 < CL9.length; i9++) { try { dets9[CL9[i9]] = determination(c, b, CL9[i9]); } catch (eD9) {} }
+    function rulesOf9(k) {
+      var d9 = dets9[k];
+      return (d9 && d9.rules && d9.rules.length) ? andList9(d9.rules.slice(0, 3).map(function (r9) { return 'your ' + ordinal(r9.house); })) : null;
+    }
 
+    // --- planets on their own ground ---
     var dom9 = [], per9 = 0;
     for (i9 = 0; i9 < CL9.length; i9++) {
       var d9 = dets9[CL9[i9]]; if (!d9 || !d9.essential) continue;
       if (d9.essential.layers && d9.essential.layers.domicile) dom9.push(CL9[i9]);
       if (d9.essential.peregrine) per9++;
     }
-    if (dom9.length >= 2) add('twoDomicile', andList9(dom9.map(nameTh)) + ' are both in their own signs, so the matters they answer for run on their own ground rather than on somebody else\u2019s.');
-    if (per9 >= 4) add('fourPeregrine', capit(numWord9(per9)) + ' of your seven planets hold no title in the sign they occupy, so this chart is decided far more by where its planets stand, and what reaches them, than by the signs themselves.');
+    if (dom9.length >= 2) {
+      var domR9 = [];
+      for (i9 = 0; i9 < dom9.length; i9++) { var r9 = rulesOf9(dom9[i9]); if (r9) domR9.push(nameTh(dom9[i9]) + ' for ' + r9); }
+      add('twoDomicile', 'Two lords on their own ground',
+        andList9(dom9.map(nameTh)) + ' both stand in signs they own, which is the strongest state the tradition recognises: what they promise, they can deliver without borrowing. ' + (domR9.length ? capit(andList9(domR9)) + ' — those are the departments that run on their own strength here.' : ''),
+        andList9(dom9.map(pl9)) + ' · domicile');
+    }
+    if (per9 >= 4) add('fourPeregrine', 'A chart decided by placement, not by sign',
+      capit(numWord9(per9)) + ' of your seven planets hold no title at all in the sign they occupy. The tradition is explicit about what that means: their signs neither help nor harm them, so every one of those promises is settled by the house the planet stands in and by what reaches it there. Read this chart by its houses and its aspects; the signs will not decide it.',
+      numWord9(per9) + ' of 7 peregrine');
 
+    // --- where the chart concentrates ---
     var byHouse9 = {}, ang9 = 0;
     for (i9 = 0; i9 < CL9.length; i9++) {
       var p9 = c.planets[CL9[i9]]; if (!p9) continue;
       if (p9.house) { (byHouse9[p9.house] = byHouse9[p9.house] || []).push(CL9[i9]); if (p9.house === 1 || p9.house === 4 || p9.house === 7 || p9.house === 10) ang9++; }
     }
     for (k9 in byHouse9) if (byHouse9.hasOwnProperty(k9) && byHouse9[k9].length >= 3) {
-      add('stelliumByHouse', capit(numWord9(byHouse9[k9].length)) + ' of your planets crowd into the ' + ordinal(+k9) + ', namely ' + andList9(byHouse9[k9].map(nameTh)) + ', so a great deal of this chart\u2019s weight lands on ' + HOUSE_AREA9[k9 - 1] + '.');
+      var occ9 = byHouse9[k9], lordK9 = TRAD_RULER[Math.floor(rev(c.cusps[+k9]) / 30)], lordD9 = dets9[lordK9];
+      add('stelliumByHouse', 'Where this chart concentrates',
+        capit(numWord9(occ9.length)) + ' of your planets stand together in the ' + ordinal(+k9) + ': ' + andList9(occ9.map(nameTh)) + '. Whatever else the chart says, this is where the life gathers, so more of your weight lands on ' + HOUSE_AREA9[k9 - 1] + ' than on any other matter.' + (lordD9 ? ' The house answers to ' + nameTh(lordK9) + ', ' + stateAdj9(lordD9.essential.label) + ' in ' + lordD9.signName + (lordD9.house ? ' from your ' + ordinal(lordD9.house) : '') + ', and that is the hand these planets have to work through.' : ''),
+        andList9(occ9.map(pl9)) + ' · ' + ordinal(+k9) + ' lord ' + nameFor(lordK9));
       break;
     }
-    if (hasTime9 && ang9 >= 4) add('fourAngular', capit(numWord9(ang9)) + ' of your planets sit on the angles, which the tradition reads plainly: what they signify happens in the open, and it happens early.');
-    if (hasTime9 && ang9 === 0) add('noneAngular', 'Not one of your seven planets sits on an angle, so this chart does its work away from the front of the stage, through the quieter houses rather than in public.');
+    if (hasTime9 && ang9 >= 4) {
+      var angL9 = [];
+      for (i9 = 0; i9 < CL9.length; i9++) { var ap9 = c.planets[CL9[i9]]; if (ap9 && (ap9.house === 1 || ap9.house === 4 || ap9.house === 7 || ap9.house === 10)) angL9.push(CL9[i9]); }
+      add('fourAngular', 'A chart that does its work in the open',
+        capit(numWord9(ang9)) + ' of your planets sit on the angles: ' + andList9(angL9.map(function (ak9) { return nameTh(ak9) + ' on your ' + ordinal(c.planets[ak9].house); })) + '. The tradition reads angularity as visibility and speed, so what these signify happens in the open, and it happens early rather than late.',
+        andList9(angL9.map(pl9)) + ' · angular');
+    }
+    if (hasTime9 && ang9 === 0) add('noneAngular', 'A chart that does its work off-stage',
+      'Not one of your seven planets sits on an angle. Nothing here is amplified by position, so this chart transacts its business through the quieter houses: less in public, less early, and more through arrangements other people do not see.',
+      '0 angular of 7');
 
+    // --- the captain at home ---
     if (hasTime9) {
       var cap9 = TRAD_RULER[c.ascBody.sign], cp9 = c.planets[cap9];
-      if (cp9 && cp9.house === 1) add('captainInFirst', 'The lord of your Ascendant, ' + nameTh(cap9) + ', stands in the 1st itself, so the planet the whole life reports to is at home in the house of the life: unusually little of this chart is transacted at second hand.');
+      if (cp9 && cp9.house === 1) add('captainInFirst', 'The captain is at home',
+        'The lord of your Ascendant is ' + nameTh(cap9) + ', and it stands in the 1st itself. The planet the whole life reports to is therefore in the house of the life: what this chart wants and what it does are answered by the same hand, so remarkably little of it is transacted at second hand.',
+        pl9(cap9) + ' · asc lord in 1st');
     }
 
+    // --- a planet in the heart of the Sun ---
     try {
       var cd9 = chartConditions(c, b) || [], ci9;
       for (ci9 = 0; ci9 < cd9.length; ci9++) if (cd9[ci9].t === 'cazimi') {
-        add('cazimi', capit(nameTh(cd9[ci9].k)) + ' sits in the exact heart of the Sun, inside seventeen arcminutes of it. The tradition treats that as the one place a planet is not burned but enthroned, and it is the rarest thing in this list.');
+        var czk9 = cd9[ci9].k, czr9 = rulesOf9(czk9);
+        add('cazimi', 'A planet in the heart of the Sun',
+          capit(nameTh(czk9)) + ' sits within seventeen arcminutes of the Sun. Everything closer than seven and a half degrees is burned; this one narrow band is the exception the tradition makes, where a planet is not burned but enthroned. ' + (czr9 ? 'What it answers for — ' + czr9 + ' — carries an authority the rest of the chart does not.' : 'What it signifies carries an authority the rest of the chart does not.'),
+          pl9(czk9) + ' · cazimi');
         break;
       }
     } catch (eC9) {}
 
+    // --- the Lot of Fortune on an angle ---
     if (hasTime9) try {
       var lt9 = lots(c, b), fl9 = (lt9 && lt9.fortune) ? (lt9.fortune.lon != null ? lt9.fortune.lon : lt9.fortune) : null;
       if (fl9 != null) {
         var onAsc9 = angSep(fl9, c.ascBody.lon) <= 3, onMc9 = (c.mc != null && angSep(fl9, c.mc) <= 3);
-        if (onAsc9 || onMc9) add('fortuneOnAngle', 'Your Lot of Fortune falls on ' + (onAsc9 ? 'the Ascendant' : 'the Midheaven') + ' itself, which sets the chart\u2019s point of livelihood and good directly on ' + (onAsc9 ? 'the life and the body' : 'the standing and the career') + ', with nothing standing in between.');
+        if (onAsc9 || onMc9) add('fortuneOnAngle', 'Your Lot of Fortune sits on an angle',
+          'The Lot of Fortune is the chart\u2019s point of body and livelihood, and yours falls on ' + (onAsc9 ? 'the Ascendant' : 'the Midheaven') + ' itself, within three degrees. It therefore bears directly on ' + (onAsc9 ? 'the life and the body' : 'the standing and the career') + ' with nothing standing in between: no lord to route it through, no house to translate it.',
+          'lot of fortune ' + degStr(fl9 % 30) + ' ' + DATA.SIGNS[Math.floor(rev(fl9) / 30)].name + ' on ' + (onAsc9 ? 'asc' : 'mc'));
       }
     } catch (eL9) {}
 
+    // --- the planet that answers to nothing ---
     var aspN9 = {};
     for (i9 = 0; i9 < c.aspects.length; i9++) {
       var A9 = c.aspects[i9]; if (CL9.indexOf(A9.a) < 0 || CL9.indexOf(A9.b) < 0) continue;
       aspN9[A9.a] = 1; aspN9[A9.b] = 1;
     }
     for (i9 = 0; i9 < CL9.length; i9++) if (!aspN9[CL9[i9]]) {
-      var ud9 = dets9[CL9[i9]], urul9 = (ud9 && ud9.rules && ud9.rules.length) ? andList9(ud9.rules.slice(0, 2).map(function (r9) { return 'your ' + ordinal(r9.house); })) : null;
-      add('anyUnaspected', capit(nameTh(CL9[i9])) + ' answers to no other planet in your chart at all. Nothing moderates it and nothing helps it, so ' + (urul9 ? 'the matters it rules, ' + urul9 + ', run' : 'what it signifies runs') + ' on its own terms, for better and for worse.');
+      var uk9 = CL9[i9], ur9 = rulesOf9(uk9), ud9 = dets9[uk9];
+      add('anyUnaspected', 'The planet that answers to nothing',
+        capit(nameTh(uk9)) + ' makes no aspect to any other planet in your chart. Nothing tempers it and nothing assists it, so ' + (ur9 ? 'the matters it answers for — ' + ur9 + ' — run on their' : 'what it signifies runs on its') + ' own terms entirely: unmoderated when it is strong, and unrescued when it is not.' + (ud9 && ud9.condition ? ' Here it stands in ' + ud9.condition.band + ' condition, which is the whole story for those matters, since no other planet will alter it.' : ''),
+        pl9(uk9) + ' · unaspected');
       break;
     }
 
+    // --- planets moving backwards ---
     var retro9 = [];
     for (i9 = 0; i9 < CL9.length; i9++) { var rp9 = c.planets[CL9[i9]]; if (rp9 && rp9.retro) retro9.push(CL9[i9]); }
-    if (retro9.length >= 3) add('threeRetrograde', capit(numWord9(retro9.length)) + ' of your planets were moving backwards at your birth, namely ' + andList9(retro9.map(nameTh)) + ', which the tradition reads as matters that arrive late, come back round, or have to be done a second time.');
-
-    out.sort(function (x9, z9) { return x9.freq - z9.freq; });
-    return out;
-  }
-  // Honesty cuts both ways. A chart with nothing unusual is told so plainly, because that is what
-  // makes the rare claims credible on the charts that do have them.
-  function rarityVerdict(c, b) {
-    var r9 = chartRarity(c, b);
-    var rare9 = [], i9;
-    for (i9 = 0; i9 < r9.length; i9++) if (r9[i9].band === 'rare' || r9[i9].band === 'uncommon') rare9.push(r9[i9]);
-    if (!rare9.length) {
-      // It must not assert negatives it has not checked. An earlier version said "no planet stands
-      // unaspected" on a chart that had one — the detector had found it and correctly declined to
-      // call it rare (about half of charts have one), and the summary then denied it existed. This
-      // says only what was measured, and still hands the reader a fact about their own chart.
-      var lead9 = r9.length ? r9[0] : null;
-      return { unusual: [], all: r9,
-        line: 'Nothing here is unusual by the numbers.' + (lead9 ? ' The most notable feature is this. ' + lead9.line + ' About ' + Math.round(lead9.freq * 100) + ' charts in a hundred carry something of that kind, so it is a real fact about your chart without being a rare one.' : '') + ' An ordinary chart is judged exactly the same way as a remarkable one, on its lords and the states they are in, and that is what follows.',
-        receipt: (lead9 ? ('rarest feature: ' + rarityLabel9(lead9.key) + ', at ' + Math.round(lead9.freq * 100) + '% \u00b7 nothing under 25%') : ('no measurable feature \u00b7 measured over ' + RARITY_N9 + ' charts')).toUpperCase() };
+    if (retro9.length >= 3) {
+      var retroR9 = [];
+      for (i9 = 0; i9 < retro9.length; i9++) { var rr9 = rulesOf9(retro9[i9]); if (rr9) retroR9.push(rr9); }
+      add('threeRetrograde', 'Matters that come back round',
+        capit(numWord9(retro9.length)) + ' of your planets were moving backwards at your birth: ' + andList9(retro9.map(nameTh)) + '. The tradition reads retrogradation as timing rather than character — what these planets signify arrives late, returns after it seemed settled, or has to be done a second time.' + (retroR9.length ? ' The matters concerned are ' + andList9(retroR9) + '.' : ''),
+        andList9(retro9.map(pl9)) + ' · retrograde');
     }
-    return { unusual: rare9, all: r9, line: rare9[0].line, receipt: rare9[0].receipt };
+
+    out.sort(function (x9, z9) { return x9.rank - z9.rank; });
+    return out;
   }
   function temperament(c, b) {
     if (!c || !c.planets || !c.planets.sun || !c.planets.moon) return null;
@@ -5929,7 +5952,7 @@ var APP = (function () {
     solarReturnChart: solarReturnChart, upcomingEclipses: upcomingEclipses, bestDaysFor: bestDaysFor, electIntents: electIntents, oddPredictions: oddPredictions, composeProfectionYear: composeProfectionYear, signHouseWeave: signHouseWeave,
     progressedTimeline: progressedTimeline, retroSeasons: retroSeasons,
     exportBook: exportBook, exportBackup: exportBackup, importBackup: importBackup, composeDailyEssay: composeDailyEssay, chartFP: chartFP, weaveNote: weaveNote, termOf: termOf, anA: anA, composeColleague: composeColleague, exportColleague: exportColleague,
-    microFor: microFor, tellsFor: tellsFor, weaveTransit: weaveTransit, traditionalRead: traditionalRead, determination: determination, determinationSheet: determinationSheet, derivedHouseOf: derivedHouseOf, derivedPhrase: derivedPhrase, conditionVerdict: conditionVerdict, chartRarity: chartRarity, rarityVerdict: rarityVerdict, sectProfile: sectProfile, judgeAscendant: judgeAscendant, judgeCaptain: judgeCaptain, rulershipWeb: rulershipWeb, zodiacMatrix: zodiacMatrix, cuspAlmuten: cuspAlmuten, judgeHouse: judgeHouse, judgeHouses: judgeHouses, judgeHealth: judgeHealth, judgeTopic: judgeTopic, judgeMoney: judgeMoney, judgeLove: judgeLove, judgeCareer: judgeCareer, judgeFamily: judgeFamily, lifeAtAGlance: lifeAtAGlance, judgeAspect: judgeAspect, judgeAspects: judgeAspects, fullReception: fullReception, receptionOnAspect: receptionOnAspect, receptionsInChart: receptionsInChart, testimonyAuthority: testimonyAuthority, contest: contest, rulingVoice: rulingVoice, contradictions: contradictions, natalSynthesis: natalSynthesis, housesThatMatter: housesThatMatter, noBirthTimeReading: noBirthTimeReading, judgeDirection: judgeDirection, judgeDirections: judgeDirections, directedAscendant: directedAscendant, directedSignificators: directedSignificators, significatorFor: significatorFor, directedChapter18: directedChapter18, boundsWalk: boundsWalk, lordOfYear: lordOfYear, profectionYear: profectionYear, yearAhead: yearAhead, triggerReading: triggerReading, liveWires21: liveWires21, judgeCycle: judgeCycle, judgeCycles: judgeCycles, judgeReturn: judgeReturn, eclipseTimers: eclipseTimers, glanceJudged: glanceJudged, weekJudged: weekJudged, lots: lots, starsJudged: starsJudged, hiddenPartnerships: hiddenPartnerships, patternsAsTestimony: patternsAsTestimony, vedicWall: vedicWall, bondSpine35: bondSpine35, bondOverlay35: bondOverlay35, voiceCheck: voiceCheck, sourceRegistry: sourceRegistry, citeSource: citeSource, placementProse: placementProse, interpret: interpret, temperament: temperament, temperamentProse: temperamentProse, symbolicDirections: symbolicDirections, castFromDirection: castFromDirection, directionLine: directionLine, directionReceipt: directionReceipt, aspectNature: aspectNature, transitCycles: transitCycles, weaveCycle: weaveCycle, weaveWeek: weaveWeek, receptionOf: receptionOf, guideCards: guideCards, ancientSky: ancientSky, addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, returnsAlmanac: returnsAlmanac, progressedLunation: progressedLunation, planetaryHours: planetaryHours, moonVoidWindow: moonVoidWindow, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
+    microFor: microFor, tellsFor: tellsFor, weaveTransit: weaveTransit, traditionalRead: traditionalRead, determination: determination, determinationSheet: determinationSheet, derivedHouseOf: derivedHouseOf, derivedPhrase: derivedPhrase, conditionVerdict: conditionVerdict, chartFeatures: chartFeatures, sectProfile: sectProfile, judgeAscendant: judgeAscendant, judgeCaptain: judgeCaptain, rulershipWeb: rulershipWeb, zodiacMatrix: zodiacMatrix, cuspAlmuten: cuspAlmuten, judgeHouse: judgeHouse, judgeHouses: judgeHouses, judgeHealth: judgeHealth, judgeTopic: judgeTopic, judgeMoney: judgeMoney, judgeLove: judgeLove, judgeCareer: judgeCareer, judgeFamily: judgeFamily, lifeAtAGlance: lifeAtAGlance, judgeAspect: judgeAspect, judgeAspects: judgeAspects, fullReception: fullReception, receptionOnAspect: receptionOnAspect, receptionsInChart: receptionsInChart, testimonyAuthority: testimonyAuthority, contest: contest, rulingVoice: rulingVoice, contradictions: contradictions, natalSynthesis: natalSynthesis, housesThatMatter: housesThatMatter, noBirthTimeReading: noBirthTimeReading, judgeDirection: judgeDirection, judgeDirections: judgeDirections, directedAscendant: directedAscendant, directedSignificators: directedSignificators, significatorFor: significatorFor, directedChapter18: directedChapter18, boundsWalk: boundsWalk, lordOfYear: lordOfYear, profectionYear: profectionYear, yearAhead: yearAhead, triggerReading: triggerReading, liveWires21: liveWires21, judgeCycle: judgeCycle, judgeCycles: judgeCycles, judgeReturn: judgeReturn, eclipseTimers: eclipseTimers, glanceJudged: glanceJudged, weekJudged: weekJudged, lots: lots, starsJudged: starsJudged, hiddenPartnerships: hiddenPartnerships, patternsAsTestimony: patternsAsTestimony, vedicWall: vedicWall, bondSpine35: bondSpine35, bondOverlay35: bondOverlay35, voiceCheck: voiceCheck, sourceRegistry: sourceRegistry, citeSource: citeSource, placementProse: placementProse, interpret: interpret, temperament: temperament, temperamentProse: temperamentProse, symbolicDirections: symbolicDirections, castFromDirection: castFromDirection, directionLine: directionLine, directionReceipt: directionReceipt, aspectNature: aspectNature, transitCycles: transitCycles, weaveCycle: weaveCycle, weaveWeek: weaveWeek, receptionOf: receptionOf, guideCards: guideCards, ancientSky: ancientSky, addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, returnsAlmanac: returnsAlmanac, progressedLunation: progressedLunation, planetaryHours: planetaryHours, moonVoidWindow: moonVoidWindow, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
     saveCurrentChart: saveCurrentChart, deleteSavedChart: deleteSavedChart, activateSavedChart: activateSavedChart, activeChartKey: activeChartKey, chartKey: chartKey, lifeTransits: lifeTransits, upcomingTransits: upcomingTransits, transitMotion: transitMotion, compositeChart: compositeChart,
     nameFor: nameFor, nameTh: nameTh, glyphFor: glyphFor, pad: pad,
     domElement: domElement, lowElement: lowElement, domMod: domMod, tzOffsetHours: tzOffsetHours
@@ -8710,13 +8733,13 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         var bsF = [], T9 = UI.tradCache;
         var addB = function (lab, txt, rc) { if (txt) bsF.push({ lab: lab, txt: txt, receipt: rc || null }); };
         var clip9 = function (t, n) { if (!t || t.length <= n) return t; var cut = t.slice(0, n), m = cut.lastIndexOf('. '); return m > n * 0.5 ? cut.slice(0, m + 1) : cut.replace(/\s+\S*$/, '') + '…'; };
-        // WHAT IS UNUSUAL HERE, FIRST. Plan task 12: lead on the rarest true thing, because that is
-        // the beat a reader cannot mistake for somebody else's reading. On a chart with nothing rare
-        // it says so and names the most notable ordinary feature instead — which is what keeps the
-        // rarity claims credible on the charts that do have them.
+        // THIS CHART'S OWN CONFIGURATIONS, FIRST — titled by what they say, not by how rare they are.
+        // The reader is never told how they compare to other charts; they are told what the shape
+        // they actually have does to the houses their planets answer for. Frequency only decides
+        // which one leads. A chart with no named configuration simply proceeds to its lords.
         try {
-          var RV9 = APP.rarityVerdict(c, b);
-          if (RV9 && RV9.line) addB(RV9.unusual.length ? 'What is unusual in your chart' : 'How unusual is your chart', clip9(RV9.line, 420), RV9.receipt);
+          var FT9 = APP.chartFeatures(c, b) || [], fti9;
+          for (fti9 = 0; fti9 < Math.min(2, FT9.length); fti9++) addB(FT9[fti9].title, clip9(FT9[fti9].line, 430), FT9[fti9].receipt);
         } catch (eRv9) {}
         if (T9 && T9.asc) addB('Where a reading starts', T9.asc.line, T9.asc.receipt);
         if (T9 && T9.ruler) addB('The captain of your chart', T9.ruler.line, T9.ruler.receipt);

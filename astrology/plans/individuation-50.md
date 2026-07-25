@@ -90,18 +90,32 @@ movement completed.
     debit. Say what the tradition says: what it signifies arrives late, returns, or must be done
     twice. Attach it to the *domain* the planet rules, never to the person.
 
-## Movement B — what is rare in this chart (11–18)
+## Movement B — the configurations this chart actually has (11–18)
 
-11. **A rarity engine.** ✅ *Done.* `chartRarity(c, b)` detects ten features and ranks them rarest
-    first, each read as a domain of the life rather than as a badge. Detection mirrors the baseline
-    script exactly, so the frequency attached to a finding is the frequency of that same definition.
-12. **Lead the reading with the rarest true thing.** ✅ *Done.* The Read screen now opens on "What is
-    unusual in your chart" — or, on an ordinary chart, "How unusual is your chart".
-13. **Say when something is common.** ✅ *Done, and it caught a real defect.* The first version of the
-    ordinary-chart line asserted specific negatives — *"no planet stands unaspected"* — on a chart
-    that had one: the detector had found it and correctly declined to call it rare (about half of
-    charts have one), and the summary then denied it existed. It now says only what was measured, and
-    still hands the reader a fact about their own chart with its honest frequency attached.
+> **Corrected after review.** This movement was originally written as "what is rare in this chart",
+> and built that way. It was wrong. Telling somebody that 38 charts in a hundred share their stellium
+> is demographic trivia: it compares them to a population instead of reading their life, and it breaks
+> the register by having the app talk about its own sample. The method reads the domains of *a life*;
+> it does not rank nativities.
+>
+> The detection survives; the framing is gone. Each configuration is now read as what it does to the
+> houses **this** chart's planets answer for, titled by what it says ("Where this chart concentrates",
+> "The planet that answers to nothing"). The measured frequencies are kept for exactly one purpose —
+> deciding which of a chart's configurations leads — and are never spoken, never printed, and never
+> reach a receipt. Receipts name the chart's own facts: planets, degrees, houses, the lord in play.
+
+11. **A configuration engine.** ✅ *Done.* `chartFeatures(c, b)` detects ten named configurations and
+    reads each as what it does to the houses this chart's planets answer for — naming the planets,
+    their degrees, the house they crowd, and the lord they have to work through. Detection mirrors
+    the baseline script, so the ordering signal and the detector cannot drift apart.
+12. **Lead on the chart's own configuration.** ✅ *Done, reframed.* The Read screen opens on this
+    chart's most distinctive configuration, titled by what it says rather than by how rare it is.
+    Frequency picks the order and is never shown.
+13. **~~Say when something is common.~~** *Dropped as a category error.* This task existed to keep the
+    rarity claims honest — and the fix is not a better disclaimer but not making the claim. A chart
+    with no named configuration now simply proceeds to its lords, which is what the method does anyway.
+    (Its one useful by-product: the first version asserted *"no planet stands unaspected"* on a chart
+    that had one, which is why every generated negative is now checked against the detector.)
 14. **Distribution baselines, computed not asserted.** ✅ *Done, and it corrected the plan itself.*
     `tests/rarity-baseline.cjs` measures each feature over 400 deterministic charts — every month,
     every hour of the clock, both hemispheres, six decades — and writes `corpus-rarity.json`.
