@@ -92,6 +92,16 @@ const BIRTHS = [
       });
       for (let h = 1; h <= 12; h++) T('house' + h, () => APP.judgeHouse(c, bb, h));
       T('aspect', () => { const a = APP.judgeAspects(c, bb); return a && a[0]; });
+      // the Read screen's own chapters — these were missing, which is how "peregrine — neither
+      // helped nor harmed by its sign" survived in the very first paragraph of the reading
+      T('traditionalRead', () => APP.traditionalRead && APP.traditionalRead(c, bb));
+      T('captainChain', () => APP.judgeCaptain && APP.judgeCaptain(c, bb));
+      T('ascendant', () => APP.judgeAscendant && APP.judgeAscendant(c, bb));
+      T('synthesis', () => { const n = APP.natalSynthesis(c, bb); return n && n.movements ? { text: n.movements.map(m => m.text).join(' ') } : null; });
+      T('receptions', () => { const r = APP.receptionsInChart && APP.receptionsInChart(c, bb); return r && r.length ? { text: r.map(x => x.line || x.text || '').join(' ') } : null; });
+      T('dispositors', () => { const d = APP.finalDispositors && APP.finalDispositors(c, bb); return d && (d.line || d.text) ? d : null; });
+      T('glanceJudged', () => APP.glanceJudged && APP.glanceJudged(c, bb));
+      T('boundsNote', () => { const w = APP.boundsWalk(c, bb); return w && (w.note ? { text: w.note } : null); });
     }
     return out;
   }, BIRTHS);

@@ -32,9 +32,10 @@ const BIRTH = { name: 'Ash', y: 1990, mo: 3, d: 21, hour: 6, min: 12, tz: 0, man
     const pg = await ctx.newPage();
     await pg.goto(`http://127.0.0.1:${PORT}/index.html?go=${scr}`, { waitUntil: 'domcontentloaded' });
     await pg.waitForTimeout(2600);
-    // the splash waits for a tap before the app proper appears
-    await pg.mouse.click(195, 420); await pg.waitForTimeout(1800);
-    await pg.mouse.click(195, 420); await pg.waitForTimeout(1600);
+    // the splash waits for a tap — but tap the dead strip near the very bottom, not the middle:
+    // a centre tap lands on the chart wheel and SELECTS a planet, which changes what we are auditing
+    await pg.mouse.click(195, 700); await pg.waitForTimeout(1800);
+    await pg.mouse.click(195, 700); await pg.waitForTimeout(1600);
     await pg.screenshot({ path: path.join(OUT, scr + '-0.png') });
     for (let s = 1; s <= 3; s++) {
       for (let k = 0; k < 4; k++) { await pg.mouse.wheel(0, 700); await pg.waitForTimeout(120); }

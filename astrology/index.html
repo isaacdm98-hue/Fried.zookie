@@ -2446,12 +2446,13 @@ var APP = (function () {
   // symbolic direction (one degree a year), not by today's transits.
   var TRAD_CO = { 7: 'pluto', 10: 'uranus', 11: 'neptune' }; // modern co-rulers, named second
   var HOUSE_AREA9 = ['the self and the body', 'money and what you own', 'siblings, neighbours and the everyday mind', 'home, family and roots', 'children, pleasure and creation', 'work, health and routine', 'marriage and open partners', 'shared money, loss and the deep', 'travel, faith and higher learning', 'career and public standing', 'friends, allies and hopes', 'solitude, the hidden and self-undoing'];
+  // the same plain register the rest of the reading uses: the Latin belongs on the receipt line
   function dignityPhrase(st) {
-    if (st === 'Domicile') return 'in its own sign — strong, at home, free to act';
-    if (st === 'Exaltation') return 'exalted — honoured here, working at its best';
-    if (st === 'Detriment') return 'in detriment — far from home, negotiating for everything';
-    if (st === 'Fall') return 'in fall — it labours here, and the labour shows';
-    return 'peregrine — neither helped nor harmed by its sign; its house and aspects decide';
+    if (st === 'Domicile') return 'in its own sign, strong and at home, free to act';
+    if (st === 'Exaltation') return 'exalted, honoured here and working at its best';
+    if (st === 'Detriment') return 'in the sign opposite its own, far from home and negotiating for everything';
+    if (st === 'Fall') return 'in the sign that honours it least, where it labours and the labour shows';
+    return 'a stranger in that sign, holding no title of its own, so its house and its aspects decide';
   }
   var MAL9 = { mars: 1, saturn: 1 }, BEN9 = { venus: 1, jupiter: 1 };
   function aspectNature(aK, bK, aspKey) {
@@ -3476,7 +3477,7 @@ var APP = (function () {
       var alm = cuspAlmuten(c, b, matterHouse), lordK = TRAD_RULER[Math.floor(rev(c.cusps[matterHouse]) / 30)];
       var aspectsCusp = false, ii;
       for (ii = 0; ii < c.aspects.length; ii++) { var A = c.aspects[ii]; if ((A.a === k && A.b === lordK) || (A.b === k && A.a === lordK)) aspectsCusp = true; }
-      if (alm && alm.lead === k) { w += 6; role = 'almuten'; why.push('almuten of the ' + ordinal(matterHouse)); }
+      if (alm && alm.lead === k) { w += 6; role = 'almuten'; why.push('holds the most dignity at the ' + ordinal(matterHouse) + '\u2019s own degree'); }
       else if (lordK === k) { w += 5; role = 'lord'; why.push('lord of the ' + ordinal(matterHouse)); }
       else if (det.house === matterHouse) { w += 3; role = 'occupant'; why.push('occupies the ' + ordinal(matterHouse)); }
       else if (aspectsCusp) { w += 2; role = 'aspector'; why.push('aspects the lord of the ' + ordinal(matterHouse)); }
@@ -3508,7 +3509,7 @@ var APP = (function () {
     var dir = ruling.favor > 0 ? 'well' : ruling.favor < 0 ? 'ill' : 'evenly';
     var line;
     if (!counter || ruling.favor === 0 && !topAgainst && !topFor) line = 'On the ' + ordinal(matterHouse) + ', the testimonies do not fight: ' + nameFor(ruling.key) + ' carries the most authority (' + ruling.why.join(', ') + ') and the matter is read from its state alone.';
-    else if (contested) line = 'Your ' + ordinal(matterHouse) + ' argues with itself: ' + nameFor(ruling.key) + ' speaks ' + dir + ' with authority ' + ruling.authority + ' (' + ruling.why.slice(0, 2).join(', ') + '), but ' + nameFor(counter.key) + ' answers back at ' + counter.authority + ' (' + counter.why.slice(0, 2).join(', ') + ') — only ' + margin + ' apart. This is a genuine tension, not a middling average: the matter swings on which is triggered in time.';
+    else if (contested) line = 'Your ' + ordinal(matterHouse) + ' argues with itself: ' + nameTh(ruling.key) + ' speaks ' + dir + ' and carries the louder voice, but ' + nameTh(counter.key) + ' answers back almost as loudly. This is a genuine tension, not a middling average: the matter swings on whichever of them is triggered first in time.';
     else line = 'On the ' + ordinal(matterHouse) + ', the verdict falls to ' + nameFor(ruling.key) + ' — the loudest voice by ' + ruling.why.slice(0, 2).join(' and ') + ' (authority ' + ruling.authority + '), speaking ' + dir + '. ' + (counter ? nameFor(counter.key) + ' dissents at ' + counter.authority + ', but is outweighed by ' + margin + ' and does not overturn it.' : 'Nothing of comparable weight dissents.');
     return { house: matterHouse, ranked: ts, ruling: ruling, counter: counter, contested: !!contested, margin: margin, line: line,
       receipt: (ordinal(matterHouse) + ' · ruling ' + nameFor(ruling.key) + ' auth ' + ruling.authority + (counter ? ' vs ' + nameFor(counter.key) + ' auth ' + counter.authority + (contested ? ' — CONTESTED' : ' — decided') : ' — uncontested')).toUpperCase(),
@@ -3552,7 +3553,7 @@ var APP = (function () {
       var D = determination(c, b, CL[i]); if (!D || !D.house || !D.essential || D.essential.modern) continue;
       var strongSign = D.essential.score >= 4, weakSign = D.essential.score <= -4;
       var strongHouse = D.terrestrial.houseClass === 'angular', weakHouse = D.terrestrial.houseClass === 'cadent';
-      if (strongSign && weakHouse) out.push({ kind: 'planet', key: CL[i], weight: 3, line: nameFor(CL[i]) + ' is sound in itself — ' + stateAdj9(D.essential.label) + ' in ' + D.signName + ' — but buried in your cadent ' + ordinal(D.house) + ' house: a fine instrument in a back room, where the gift of ' + D.signName + ' ' + nameFor(CL[i]) + ' is real but acts through others rather than in the open.' });
+      if (strongSign && weakHouse) out.push({ kind: 'planet', key: CL[i], weight: 3, line: nameFor(CL[i]) + ' is sound in itself — ' + stateAdj9(D.essential.label) + ' in ' + D.signName + ' — but buried in your ' + ordinal(D.house) + ' house, one of the three the tradition calls muted: a fine instrument in a back room, where the gift of ' + D.signName + ' ' + nameFor(CL[i]) + ' is real but acts through others rather than in the open.' });
       else if (weakSign && strongHouse) out.push({ kind: 'planet', key: CL[i], weight: 3, line: nameFor(CL[i]) + ' stands on an angle — your ' + ordinal(D.house) + ', the most public ground there is — yet ' + stateAdj9(D.essential.label) + ' in ' + D.signName + ': a loud voice with a shaky brief. It will be seen and it will matter, but it cannot always deliver what its prominence promises.' });
       else if (weakSign && D.condition && D.condition.total >= 5) out.push({ kind: 'planet', key: CL[i], weight: 2, line: nameFor(CL[i]) + ' fails its sign — ' + stateAdj9(D.essential.label) + ' in ' + D.signName + ' — and yet by accident (house, motion, freedom from the Sun) it scores ' + (D.condition.total >= 0 ? '+' : '') + D.condition.total + ': weak by nature, propped up by circumstance. What it stands for arrives, but leans on its surroundings to do it.' });
     }
@@ -5828,7 +5829,11 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
 
   var UI = {
     screen: (APP.STATE.birth ? 'chart' : 'onboard'), prevScreen: '',
-    scroll: {}, contentH: {}, selPlanet: 'sun', prevSel: 'sun',
+    // selPlanet starts EMPTY. It used to default to 'sun', which meant every cold open showed the
+    // Sun magnified to 50px with halo rings and no card to explain it — it read as a rendering
+    // fault — and it suppressed the aspect web, which only draws when nothing is selected. The
+    // first sight of the chart should be the whole chart.
+    scroll: {}, contentH: {}, selPlanet: null, prevSel: 'sun',
     tarotTab: null, spread: 1, card: null, tarotDealtSpread: -1, tarotDealT: 0, learnCat: null, learnItem: null,
     askTopic: null, askAns: '', readCache: null, draft: null,
     viewPerson: null, padd: null, familyTree: false, bondCache: null, bondFor: null, bondT: 0,
@@ -6495,29 +6500,56 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       p.noFill(); strokec(INK, 220); p.strokeWeight(1.6); p.arc(cx, cy, R * 2, R * 2, -Math.PI / 2, -Math.PI / 2 + 2 * Math.PI * (er < 0.999 ? er : 1));
       // zodiac: the glyph outside, and the sign NAMED in full, curved along the
       // inside of the ring, so the wheel reads without a glossary
-      // ONE FORM FOR THE WHOLE RING. Sizing each name on its own put LIBRA next to SAG and read
-      // as a mistake; the ring is measured as a set, and if the longest name cannot sit legibly
-      // in its 27° arc then every sign takes its three-letter form together.
-      // The names ride OUTSIDE the ring, the way a printed chart sets them, and the glyphs move
-      // inside onto their element band. Arc length is radius times angle, so the outer track is
-      // the only place SAGITTARIUS can print in full at a size the eye can actually read.
-      var RING_R9 = R + 13, ringSz9 = 8.5, ringAbbr9 = false;
-      (function () {
-        var budget9 = 24 * Math.PI / 180, i9, z9, worst9 = 8.5;   // 6° of clear air between neighbours
-        p.textFont(SANS); p.textSize(8.5);
+      // ============ THE SIGN RING ============
+      // The names ride OUTSIDE the ring, the way a printed chart sets them, and the glyphs sit
+      // inside on their element band. Arc length is radius times angle, so the outer track is the
+      // only place SAGITTARIUS can print in full at a size the eye can read.
+      //
+      // Two things make the obvious sizing maths wrong, and both were caught by measuring the real
+      // render rather than trusting the arithmetic:
+      //   1. Width does NOT scale linearly with point size in this face — a set solved from one
+      //      measurement at 8.5pt came out 22% too wide when drawn at 6.95pt. So the size is SOLVED
+      //      by iteration: measure, correct, measure again, until the widest pair actually fits.
+      //   2. The constraint is not "each name inside its own 30° sector" but "no name touches its
+      //      NEIGHBOUR". Two names centred 30° apart collide when the mean of their widths exceeds
+      //      30°, which is how CAPRICORN (29.0°) and SAGITTARIUS (32.4°) ran together while each
+      //      looked individually fine.
+      // One size for all twelve, because sizing each name on its own put LIBRA next to SAG and read
+      // as a mistake. Only if the solve cannot reach a legible size does the whole ring abbreviate.
+      var RING_R9 = R + 22, ringSz9 = 8.5, ringAbbr9 = false;
+      var RING_PAD9 = 0.25;                       // inter-letter air, in px; tighter buys real arc
+      function ringWidths9(sz, r) {               // angular width of every name, in radians
+        p.textFont(SANS); p.textSize(sz);
+        var out = [], z9, i9;
         for (z9 = 0; z9 < 12; z9++) {
           var nm9 = DATA.SIGNS[z9].name.toUpperCase(), tw9 = 0;
-          for (i9 = 0; i9 < nm9.length; i9++) tw9 += p.textWidth(nm9.charAt(i9)) + 0.6;
-          var ang9 = tw9 / RING_R9;
-          if (ang9 > budget9) { var n9 = 8.5 * budget9 / ang9; if (n9 < worst9) worst9 = n9; }
+          for (i9 = 0; i9 < nm9.length; i9++) tw9 += p.textWidth(nm9.charAt(i9)) + RING_PAD9;
+          out.push(tw9 / r);
         }
-        if (worst9 < 6.6) ringAbbr9 = true; else ringSz9 = worst9;
+        return out;
+      }
+      (function () {
+        var GAP9 = 3 * Math.PI / 180;             // clear air demanded between neighbouring names
+        var limit9 = (30 * Math.PI / 180) - GAP9; // ...so the mean of any adjacent pair must fit this
+        function worstPair9(sz) {
+          var w9 = ringWidths9(sz, RING_R9), worst9 = 0, z9;
+          for (z9 = 0; z9 < 12; z9++) { var m9 = (w9[z9] + w9[(z9 + 1) % 12]) / 2; if (m9 > worst9) worst9 = m9; }
+          return worst9;
+        }
+        var sz9 = 8.5, pass9;
+        for (pass9 = 0; pass9 < 8; pass9++) {
+          var got9 = worstPair9(sz9);
+          if (got9 <= limit9) break;
+          sz9 = sz9 * (limit9 / got9) * 0.99;     // a shade under, so rounding cannot re-collide
+          if (sz9 < 5.4) break;
+        }
+        if (sz9 < 6.0) ringAbbr9 = true; else ringSz9 = sz9;
       })();
       function arcWord9(txt, midA, r9, al9) {
         var flip9 = Math.sin(midA) < -0.001, i9, sz9 = ringSz9;
         if (ringAbbr9) txt = txt.slice(0, 3);
         p.textFont(SANS); p.textSize(sz9);
-        var ws9 = [], tw9 = 0; for (i9 = 0; i9 < txt.length; i9++) { var cw9 = p.textWidth(txt.charAt(i9)) + 0.6; ws9.push(cw9); tw9 += cw9; }
+        var ws9 = [], tw9 = 0; for (i9 = 0; i9 < txt.length; i9++) { var cw9 = p.textWidth(txt.charAt(i9)) + RING_PAD9; ws9.push(cw9); tw9 += cw9; }
         var ang9 = tw9 / r9;
         var acc9 = -ang9 / 2;
         for (i9 = 0; i9 < txt.length; i9++) {
@@ -6534,10 +6566,10 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         var card = (z % 3 === 0); strokec(INK, (card ? 200 : 90) * er); p.strokeWeight(card ? 1.4 : 1);
         p.line(ax(z * 30, R), ay(z * 30, R), ax(z * 30, R - (card ? 12 : 6)), ay(z * 30, R - (card ? 12 : 6)));
         setFont(SANS, 11.5, INK, p.CENTER, p.CENTER, 185 * er); p.text(DATA.SIGNS[z].glyph, ax(z * 30 + 15, R - 11), ay(z * 30 + 15, R - 11));
-        arcWord9(DATA.SIGNS[z].name.toUpperCase(), (180 + (z * 30 + 15 - ascLon)) * Math.PI / 180, RING_R9, 168 * er);
+        arcWord9(DATA.SIGNS[z].name.toUpperCase(), (180 + (z * 30 + 15 - ascLon)) * Math.PI / 180, RING_R9, 196 * er);
       }
       if (b.timeKnown) {
-        for (var hh = 1; hh <= 12; hh++) { var ang = (hh === 1 || hh === 4 || hh === 7 || hh === 10); strokec(INK, (ang ? 70 : 30) * er); p.strokeWeight(ang ? 1.2 : 0.7); p.line(ax(c.cusps[hh], R * 0.3), ay(c.cusps[hh], R * 0.3), ax(c.cusps[hh], R * 0.82), ay(c.cusps[hh], R * 0.82)); }
+        for (var hh = 1; hh <= 12; hh++) { var ang = (hh === 1 || hh === 4 || hh === 7 || hh === 10); strokec(INK, (ang ? 100 : 44) * er); p.strokeWeight(ang ? 1.3 : 0.8); p.line(ax(c.cusps[hh], R * 0.3), ay(c.cusps[hh], R * 0.3), ax(c.cusps[hh], R * 0.82), ay(c.cusps[hh], R * 0.82)); }
         strokec(ACC, 255 * er); p.strokeWeight(2.2); p.line(cx, cy, ax(ascLon, R - 4), ay(ascLon, R - 4));
         p.noStroke(); fillc(ACC, 255 * er); p.ellipse(ax(ascLon, R - 4), ay(ascLon, R - 4), 8, 8);
         (function () {
@@ -6550,17 +6582,78 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         })();
       }
 
-      // compute planet positions (declustered); during reveal each glides out from the centre with a small stagger
+      // ============ WHERE THE BODIES SIT ============
+      // A stellium is the hard case, and two earlier attempts failed for instructive reasons.
+      // A fixed 8° window let neighbours touch, because a 21px token at this radius subtends about
+      // 12° of arc. Stepping a clashing body inward by a fixed amount could not converge either:
+      // pulling it in makes its angular footprint LARGER, so Neptune and the Node bottomed out on
+      // the floor still sitting on top of Saturn.
+      //
+      // What works is LANES. Every body keeps its exact longitude and takes the outermost lane it
+      // fits in, measured as real distance between token centres. Two things make the packing
+      // actually fit: the bodies are assigned in longitude order, which is what makes greedy
+      // lane-filling optimal rather than leaving unusable holes, and the modern points — secondary
+      // in a traditional judgment — carry a slightly smaller token, which buys a lane's worth of
+      // room. A hairline runs from each token out to its true degree on the ring, so the lane a
+      // body ended up in never costs the reader the one thing that matters: where it actually is.
       var order = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto', 'node'];
-      var pos = [], placed = [], posMap = {};
+      function tokenSize9(k) { return (k === 'sun' || k === 'moon') ? 26 : ({ uranus: 1, neptune: 1, pluto: 1, node: 1 }[k] ? 17 : 21); }
+      var pos = [], placed = [], posMap = {}, laneOf9 = {};
+      (function () {
+        var LANES9 = [], lr9 = R * 0.70;
+        while (lr9 > R * 0.30) { LANES9.push(lr9); lr9 -= 25; }
+        // Longitude order within PRIORITY BANDS. Sorting by longitude is what makes greedy
+        // lane-filling optimal rather than leaving unusable holes; banding by importance is what
+        // stops a modern point taking the outer lane while the Moon gets pushed to the hub. The
+        // seven the judgment is actually made of are placed first, and the modern points fill in.
+        var BAND9 = { sun: 0, moon: 0, mercury: 1, venus: 1, mars: 1, jupiter: 1, saturn: 1 };
+        var sorted9 = [], oi9;
+        for (oi9 = 0; oi9 < order.length; oi9++) if (c.planets[order[oi9]]) sorted9.push(order[oi9]);
+        sorted9.sort(function (a9, b9) {
+          var ba9 = BAND9[a9] == null ? 2 : BAND9[a9], bb9 = BAND9[b9] == null ? 2 : BAND9[b9];
+          return (ba9 !== bb9) ? (ba9 - bb9) : (c.planets[a9].lon - c.planets[b9].lon);
+        });
+        // the last resort is an angular NUDGE, not a deeper lane: the innermost lanes are so short
+        // that two bodies 30° apart still collide there, whereas six degrees of shift on the outer
+        // lane clears easily — and the leader line back to the true degree keeps it honest, which
+        // is exactly how a printed chart handles a stellium it cannot stack.
+        var NUDGE9 = [0, 4, -4, 8, -8, 12, -12, 16, -16];
+        var si9, li9, pj9, ni9;
+        function clear9(qx9, qy9, d9) {
+          for (pj9 = 0; pj9 < placed.length; pj9++) {
+            var need9 = (d9 + placed[pj9].d) / 2 + 3;
+            var ddx9 = qx9 - placed[pj9].x, ddy9 = qy9 - placed[pj9].y;
+            if (ddx9 * ddx9 + ddy9 * ddy9 < need9 * need9) return false;
+          }
+          return true;
+        }
+        for (si9 = 0; si9 < sorted9.length; si9++) {
+          var k9 = sorted9[si9], d9b = tokenSize9(k9), lon9 = c.planets[k9].lon;
+          var gotR9 = LANES9[LANES9.length - 1], gotL9 = lon9, done9 = false;
+          for (ni9 = 0; ni9 < NUDGE9.length && !done9; ni9++) {
+            for (li9 = 0; li9 < LANES9.length; li9++) {
+              var cand9 = LANES9[li9], tl9 = lon9 + NUDGE9[ni9];
+              if (clear9(ax(tl9, cand9), ay(tl9, cand9), d9b)) { gotR9 = cand9; gotL9 = tl9; done9 = true; break; }
+            }
+          }
+          laneOf9[k9] = { r: gotR9, lon: gotL9 };
+          placed.push({ x: ax(gotL9, gotR9), y: ay(gotL9, gotR9), d: d9b });
+        }
+      })();
       for (var pi = 0; pi < order.length; pi++) {
         var key = order[pi], pl = c.planets[key]; if (!pl) continue;
-        var rr2 = R * 0.7; for (var pj = 0; pj < placed.length; pj++) if (Math.abs(((pl.lon - placed[pj] + 540) % 360) - 180) < 8) rr2 -= 15; placed.push(pl.lon);
-        var base = (key === 'sun' || key === 'moon') ? 26 : 21;
+        var base = tokenSize9(key), lane9 = laneOf9[key] || { r: R * 0.70, lon: pl.lon };
+        var rr2 = lane9.r, shownLon9 = lane9.lon;
+        // the leader: from the token to its TRUE degree on the inner edge of the zodiac ring, so a
+        // body that had to take an inner lane or a nudge still reads at the degree it really holds
+        if (rr2 < R * 0.69 || Math.abs(shownLon9 - pl.lon) > 0.01) {
+          strokec(INK, 52 * er); p.strokeWeight(0.7);
+          p.line(ax(shownLon9, rr2), ay(shownLon9, rr2), ax(pl.lon, R * 0.855), ay(pl.lon, R * 0.855));
+        }
         if (UI.pdia[key] == null) UI.pdia[key] = base;
         var prv = (still || UI.walk) ? 1 : cl01(((t - UI.fxT) - pi * 55) / 680), prvE = eCubic(prv);
         var curR = R * 0.98 - (R * 0.98 - rr2) * prvE;   // AN1 — sails in from the rim to its resting orbit
-        var curLon = pl.lon + (1 - prvE) * 26;            // sweeping forward along the orbit, settling onto its degree
+        var curLon = shownLon9 + (1 - prvE) * 26;         // sweeping forward along the orbit, settling onto its place
         var raw = (pl.lon - sw + 360) % 360, adist = Math.min(raw, 360 - raw), beam = (still || rv < 0.96) ? 0 : Math.max(0, (9 - adist) / 9);
         var it0 = { key: key, x: ax(curLon, curR), y: ay(curLon, curR), base: base, beam: beam, rev: prv, lon: pl.lon }; pos.push(it0); posMap[key] = it0;
         if (prv < 0.999) { strokec(INK, 45 * (1 - prv)); p.strokeWeight(0.8); p.line(ax(curLon + 14 * (1 - prvE), curR), ay(curLon + 14 * (1 - prvE), curR), ax(curLon, curR), ay(curLon, curR)); }
@@ -6578,8 +6671,8 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
           var pa9 = posMap[Aw9.a], pb9 = posMap[Aw9.b]; if (!pa9 || !pb9) continue;
           var q9 = Aw9.asp.quality, cw9 = (q9 === 'flow' || q9 === 'opportunity') ? ELHUE.air : (q9 === 'fusion' ? INK : ACC);
           var tight9 = cl01(1 - (Aw9.orb / (Aw9.asp.orb || 6)));
-          strokec(cw9, (14 + 52 * tight9 * tight9) * er * cl01((rv - 0.55) / 0.35));
-          p.strokeWeight(0.55 + 1.15 * tight9);
+          strokec(cw9, (20 + 74 * tight9 * tight9) * er * cl01((rv - 0.55) / 0.35));
+          p.strokeWeight(0.6 + 1.3 * tight9);
           p.line(pa9.x, pa9.y, pb9.x, pb9.y);
         }
       }
@@ -8465,9 +8558,32 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
           drawImageContain(artIm, x, artY, w, artH);
           if (dcArt) dcArt.restore();
         }
-        if (beat.lab) { setFont(MONO, 10, ACCTX, p.LEFT, p.TOP, 230 * caF); p.text(beat.lab.toUpperCase(), x, tyF - 34 + riseF); }
+        // THE BEAT AS A LEAF OF A BOOK. The reader shows one judged beat at a time, centred, so a
+        // short beat used to sit in the middle of a lot of nothing — correct pacing, but it read as
+        // an unfinished screen. Framing it as a lifted card with a chapter numeral behind it turns
+        // that air into deliberate margin, which is what a printed page does with the same space.
+        (function () {
+          var padT9 = 26, padB9 = 20, padX9 = 16;
+          var cTop9 = tyF - 34 - padT9 + riseF, cBot9 = tyF + thF + (rcH9 ? rcH9 + 2 : 8) + padB9 + riseF;
+          var cX9 = x - padX9, cW9 = w + padX9 * 2, cR9 = 18;
+          p.noStroke();
+          fillc(INK, 16 * caF); p.rect(cX9 + 1, cTop9 + 4, cW9, cBot9 - cTop9, cR9);        // the leaf's shadow
+          fillc(shade(GROUNDS[UI.screen] || GROUNDS.chart, 12), 248 * caF); p.rect(cX9, cTop9, cW9, cBot9 - cTop9, cR9);
+          p.noFill(); strokec(INK, 34 * caF); p.strokeWeight(1); p.rect(cX9, cTop9, cW9, cBot9 - cTop9, cR9);
+          // the chapter numeral, set large and faint the way a book sets one
+          setFont(SERIF, 62, INK, p.RIGHT, p.TOP, 26 * caF);
+          p.text(String(bi + 1), cX9 + cW9 - 16, cTop9 + 8);
+        })();
+        if (beat.lab) {
+          setFont(MONO, 10, ACCTX, p.LEFT, p.TOP, 230 * caF); p.text(beat.lab.toUpperCase(), x, tyF - 34 + riseF);
+          p.strokeWeight(1.4); strokec(ACC, 200 * caF); p.line(x, tyF - 16 + riseF, x + 30, tyF - 16 + riseF);
+        }
         setFont(SERIF, tszF, INK, p.LEFT, p.TOP, 255 * caF); var wiF; for (wiF = 0; wiF < wlF.length; wiF++) p.text(wlF[wiF], x, tyF + wiF * lhF + riseF);
-        if (rcL9) { var ryF9 = tyF + thF + 12 + riseF, rri9; setFont(MONO, 8.5, ACCTX, p.LEFT, p.TOP, 180 * caF); for (rri9 = 0; rri9 < rcL9.length; rri9++) p.text(rcL9[rri9], x, ryF9 + rri9 * 12); }
+        if (rcL9) {
+          var ryF9 = tyF + thF + 12 + riseF, rri9;
+          p.strokeWeight(1); strokec(INK, 30 * caF); p.line(x, ryF9 - 6, x + w, ryF9 - 6);   // the receipt sits below the rule
+          setFont(MONO, 8.5, ACCTX, p.LEFT, p.TOP, 180 * caF); for (rri9 = 0; rri9 < rcL9.length; rri9++) p.text(rcL9[rri9], x, ryF9 + rri9 * 12);
+        }
         var lastF = bi >= beats.length - 1;
         setFont(MONO, 10.5, ACCTX, p.CENTER, p.BOTTOM, 175 + 55 * (reduced() ? 1 : (0.5 + 0.5 * Math.sin(nowT() * 0.003)))); p.text(lastF ? 'SEE EVERYTHING  ›' : 'TAP TO CONTINUE  ›', x + w / 2, scrBot);
         pushHit(x - 8, scrTop + 42, w + 16, (scrBot - 46) - (scrTop + 42), function () { if (lastF) { UI.readMode = 'menu'; UI.scroll.read = 0; } else { UI.rdI = bi + 1; } UI.rdT = nowT(); buzz(8); });
@@ -10607,7 +10723,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         // delete ✕
         setFont(SANS, 18, active ? GROUNDS[UI.screen] : INK, p.CENTER, p.CENTER, 200); p.text('×', x + w - 22, ry + rhc / 2);
         (function (idx) { pushHit(x + w - 44, ry, 44, rhc, function () { APP.deleteSavedChart(idx); }); })(ci2);
-        if (!active) (function (idx) { pushHit(x, ry, w - 44, rhc, function () { APP.activateSavedChart(idx); recompute(); UI.selPlanet = 'sun'; UI.scroll.chart = 0; UI.popT = nowT(); UI.screen = 'chart'; }); })(ci2);
+        if (!active) (function (idx) { pushHit(x, ry, w - 44, rhc, function () { APP.activateSavedChart(idx); recompute(); UI.selPlanet = null; UI.pcard = null; UI.scroll.chart = 0; UI.screen = 'chart'; }); })(ci2);
         ly += rhc + 8;
       }
       if (!inList) { flatBtn('+ Save this chart', x, ly, w, 42, function () { APP.saveCurrentChart(); }, false); ly += 54; }
@@ -11238,7 +11354,11 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (d.geo && d.geo.iana) { place = d.geo.place; iana = d.geo.iana; lat = d.geo.lat; lon = d.geo.lon; }
       else { var ci = DATA.CITIES[d.cityIdx]; place = ci[0] + ', ' + ci[1]; iana = ci[4]; lat = ci[2]; lon = ci[3]; }
       APP.STATE.birth = { name: '', y: d.y, mo: d.mo, d: d.d, hour: d.hour, min: d.min, tz: d.tz || 0, manualTz: !!d.manualTz, iana: iana, lat: lat, lon: lon, place: place, timeKnown: d.timeKnown };
-      recompute(); UI.selPlanet = 'sun'; UI.popT = nowT(); UI.popFrom = 22; UI.scroll.chart = 0; UI.screen = 'chart'; hideSearchInput();
+      // The first view is the WHOLE chart, not one planet blown up. This used to pre-select the Sun,
+      // which magnified it to 50px with halo rings but opened no card to explain why — it read as a
+      // rendering fault — and it suppressed the aspect web, which only draws when nothing is
+      // selected. The wheel is the reward; the hint under it invites the tap that starts the zoom.
+      recompute(); UI.selPlanet = null; UI.pcard = null; UI.scroll.chart = 0; UI.screen = 'chart'; hideSearchInput();
     }
     function recompute() { APP.STATE.chart = APP.compute(APP.STATE.birth, APP.STATE.settings); APP.save(); UI.readCache = null; UI.readSig = null; UI.readTransit = null; UI.forecast = null; UI.promCache = null; UI.arcCache = null; UI.todayCache = null; UI.fmList = null; UI.lifeList = null; UI.calEvents = null; UI.calDay = null; UI.walkTr = null; UI.walkTheme = null; UI.bondCache = null; UI.bondFor = null; UI.plun = null; UI.ringsData = null; UI.ringSel = null; UI.vocW = null; UI.phCache = null; UI.synToneCache = null; UI.dailyEssay = null; UI.cycles = undefined; UI.cycOpen = {}; UI.weekWv = undefined; UI.tradCache = undefined; UI.recCache = undefined; UI.domCache = undefined; UI.topicCache = undefined; UI.glanceCache = undefined; UI.dirCache = undefined; UI.liveWires = undefined; UI.sectDay = undefined; UI.pcProseFor = null; UI.chartWarm = false; UI.warmStep = 0; UI.chartFormT = 0; if (APP.clearPersonCharts) APP.clearPersonCharts(); UI.askAns = ''; UI.quip = null; UI.quipNext = 0; buildField(); }
 
