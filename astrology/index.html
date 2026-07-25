@@ -6060,6 +6060,13 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (UI.lastHit && Math.abs(UI.lastHit.x - x) < 2 && Math.abs(UI.lastHit.y - y) < 2) { var rt = (nowT() - UI.lastHit.t) / 300; if (rt >= 0 && rt < 1) return depth * Math.exp(-rt * 5) * Math.cos(rt * 15); }
       return 0;
     }
+    // Headings must ride the reader's text size, because body copy already does: paragraph()
+    // scales its size by textScale * 1.46, so a heading pinned at a constant ended up SMALLER than
+    // the paragraph beneath it at any setting above the default. headSz9 keeps the hierarchy.
+    // Same scale factor body copy gets, so the ratio between a heading and its paragraph is fixed
+    // at every text setting. A heading pinned at 24 sat at 24 while its body sat at 15.5*1.46 = 22.6
+    // — visually the same size, and the body's faux-bold stroke made it look heavier than the title.
+    function headSz9(base) { var fs = (APP.STATE.settings && APP.STATE.settings.textScale) || 1; return base * fs * 1.46; }
     function setFont(f, sz, c, ha, va, a) { p.textFont(f); p.textSize(sz); fillc(c, a); p.noStroke(); p.textAlign(ha || p.LEFT, va || p.TOP); p.textStyle(p.NORMAL); }
     function bold() { p.textStyle(p.BOLD); }
     function normal() { p.textStyle(p.NORMAL); }
@@ -10551,7 +10558,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         ly += paragraph(APP.nameFor(k) + ' sits at ' + pl.deg.toFixed(1) + '\u00B0 ' + pl.signName + (b && b.timeKnown ? ', in your ' + ordinal(pl.house) + ' house' : '') + (pl.retro ? ', retrograde' : '') + '.', x, ly, w, 16, INK, SERIF, 24) + 12;
       } else if (cat === 'houses') {
         var H = DATA.HOUSES[it], hn = it + 1;
-        p.textFont(SANS); p.textSize(28); p.textStyle(p.BOLD); fillc(INK); p.noStroke(); p.text('House ' + hn, x, sY(ly)); normal(); ly += 36;
+        p.textAlign(p.LEFT, p.TOP); p.textFont(SANS); p.textSize(28); p.textStyle(p.BOLD); fillc(INK); p.noStroke(); p.text('House ' + hn, x, sY(ly)); normal(); ly += 36;
         eyebrow(H.title, x, ly, ACC); ly += 24;
         ly += paragraph('This house governs ' + H.meaning, x, ly, w, 16.5, INK, SERIF, 25) + 14;
         hairline(x, ly, x + w, 60); ly += 14; eyebrow('In your chart', x, ly); ly += 22;
@@ -10561,7 +10568,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         ly += paragraph(hm, x, ly, w, 16, INK, SERIF, 24) + 12;
       } else if (cat === 'aspects') {
         var A = DATA.ASPECTS[it];
-        p.textFont(SANS); p.textSize(28); fillc(ACC); p.textStyle(p.BOLD); p.noStroke(); p.text(A.glyph + '  ', x, sY(ly)); var aw = p.textWidth(A.glyph + '  '); fillc(INK); p.text(A.key.charAt(0).toUpperCase() + A.key.slice(1), x + aw, sY(ly)); normal(); ly += 40;
+        p.textAlign(p.LEFT, p.TOP); p.textFont(SANS); p.textSize(28); fillc(ACC); p.textStyle(p.BOLD); p.noStroke(); p.text(A.glyph + '  ', x, sY(ly)); var aw = p.textWidth(A.glyph + '  '); fillc(INK); p.text(A.key.charAt(0).toUpperCase() + A.key.slice(1), x + aw, sY(ly)); normal(); ly += 40;
         eyebrow(A.angle + '\u00B0 apart \u00B7 ' + A.quality, x, ly, ACC); ly += 24;
         ly += paragraph('Two planets in ' + A.key + ' are ' + A.phrase + '.', x, ly, w, 16.5, INK, SERIF, 25) + 14;
         hairline(x, ly, x + w, 60); ly += 14; eyebrow('In your chart', x, ly); ly += 22;
@@ -10571,7 +10578,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         ly += 12;
       } else if (cat === 'myths') {
         var my2 = MYTHS[it], S3 = DATA.SIGNS[my2.s];
-        p.textFont(SANS); p.textSize(28); fillc(ACC); p.textStyle(p.BOLD); p.noStroke(); p.text(S3.glyph + '  ', x, sY(ly)); var mgw = p.textWidth(S3.glyph + '  '); fillc(INK); p.text(S3.name, x + mgw, sY(ly)); normal(); ly += 38;
+        p.textAlign(p.LEFT, p.TOP); p.textFont(SANS); p.textSize(28); fillc(ACC); p.textStyle(p.BOLD); p.noStroke(); p.text(S3.glyph + '  ', x, sY(ly)); var mgw = p.textWidth(S3.glyph + '  '); fillc(INK); p.text(S3.name, x + mgw, sY(ly)); normal(); ly += 38;
         eyebrow(my2.t, x, ly, ACC); ly += 24;
         loadArtifacts('myth' + it, "Urania's Mirror " + S3.name);
         var mW = w, mH = 224, my0 = sY(ly);
@@ -10587,7 +10594,35 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         if (ps2.length) ly += paragraph('In your chart, ' + ps2.map(function (k) { return APP.nameFor(k); }).join(', ') + ' ' + (ps2.length === 1 ? 'lives' : 'live') + ' in ' + S3.name + ': this myth is one of yours.', x, ly, w, 15, INK, SERIF, 23, 215) + 10;
       } else if (cat === 'howto') {
         var HT = HOWTO[it];
-        p.textFont(SANS); p.textSize(24); p.textStyle(p.BOLD); fillc(INK); p.noStroke(); var hl = wrapLines(HT.t, w); var hli; for (hli = 0; hli < hl.length; hli++) p.text(hl[hli], x, sY(ly + hli * 28)); normal(); ly += hl.length * 28 + 8;
+        // setFont, not a hand-rolled textFont/textSize pair: this was the one title in the app that
+        // never set its alignment, so it inherited CENTER from whatever drew last and rendered
+        // half off the left edge ("Spot a stellium or pattern" arrived as "tellium or pattern").
+        // setFont FIRST, then bold(), then measure: setFont resets textStyle to NORMAL (so a bold set
+        // before it is discarded), and wrapLines measures with whatever font is current — called
+        // ahead of setFont it was wrapping the title against the list rows' 15px metrics.
+        // Drawn straight to the 2D context with an explicit font string, the way the chart screen
+        // sets its big " rising" suffix. Inside this screen's unfurl clip, going through p.textSize
+        // did not reach the canvas — measured back out, the heading was still p5's default 12px,
+        // while body copy sits at 15.5 * textScale * 1.46, so the title read SMALLER than its own
+        // steps. The wrap is measured with the SAME context that draws, for the same reason.
+        var hsz9 = headSz9(20), hlh9 = hsz9 * 1.22, hli;
+        var dcH9 = p.drawingContext, hl = [HT.t];
+        if (dcH9) {
+          dcH9.save();
+          dcH9.font = 'bold ' + hsz9.toFixed(1) + 'px ' + SANS;
+          var wds9 = String(HT.t).split(' '), cur9 = '';
+          hl = [];
+          for (hli = 0; hli < wds9.length; hli++) {
+            var try9 = cur9 ? cur9 + ' ' + wds9[hli] : wds9[hli];
+            if (dcH9.measureText(try9).width > w && cur9) { hl.push(cur9); cur9 = wds9[hli]; } else cur9 = try9;
+          }
+          if (cur9) hl.push(cur9);
+          dcH9.textAlign = 'left'; dcH9.textBaseline = 'top';
+          dcH9.fillStyle = 'rgb(' + (INK[0] | 0) + ',' + (INK[1] | 0) + ',' + (INK[2] | 0) + ')';
+          for (hli = 0; hli < hl.length; hli++) dcH9.fillText(hl[hli], x, sY(ly + hli * hlh9));
+          dcH9.restore();
+        }
+        ly += hl.length * hlh9 + 12;
         if (HT.anim) ly += animBox(HT.anim, x, ly, w) + 4;
         flatBtn('Walk me through it: live in the app ›', x, ly, Math.min(w, 360), 44, (function (hi) { return function () { startHowTour(hi); }; })(it), true); ly += 56;
         eyebrow('Step by step', x, ly, ACC); ly += 26;
@@ -10598,13 +10633,13 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         ly += 4;
       } else if (cat === 'glossary') {
         var G = GLOSSARY[it];
-        p.textFont(SANS); p.textSize(24); p.textStyle(p.BOLD); fillc(INK); p.noStroke(); var gl2 = wrapLines(G.t, w); var gi3; for (gi3 = 0; gi3 < gl2.length; gi3++) p.text(gl2[gi3], x, sY(ly + gi3 * 28)); normal(); ly += gl2.length * 28 + 8;
+        p.textAlign(p.LEFT, p.TOP); p.textFont(SANS); p.textSize(24); p.textStyle(p.BOLD); fillc(INK); p.noStroke(); var gl2 = wrapLines(G.t, w); var gi3; for (gi3 = 0; gi3 < gl2.length; gi3++) p.text(gl2[gi3], x, sY(ly + gi3 * 28)); normal(); ly += gl2.length * 28 + 8;
         if (GLOSS_ANIM[G.t]) ly += animBox(GLOSS_ANIM[G.t], x, ly, w) + 4;
         eyebrow('Plain terms', x, ly, ACC); ly += 24;
         ly += paragraph(G.d, x, ly, w, 17, INK, SERIF, 26) + 14;
       } else { // history \u2014 an animated era lesson, or a real antique star-atlas (Ken-Burns), with the story
         var Hh = HISTORY[it];
-        p.textFont(SANS); p.textSize(24); p.textStyle(p.BOLD); fillc(INK); p.noStroke(); var htl = wrapLines(Hh.t, w); var hti; for (hti = 0; hti < htl.length; hti++) p.text(htl[hti], x, sY(ly + hti * 28)); normal(); ly += htl.length * 28 + 6;
+        p.textAlign(p.LEFT, p.TOP); p.textFont(SANS); p.textSize(24); p.textStyle(p.BOLD); fillc(INK); p.noStroke(); var htl = wrapLines(Hh.t, w); var hti; for (hti = 0; hti < htl.length; hti++) p.text(htl[hti], x, sY(ly + hti * 28)); normal(); ly += htl.length * 28 + 6;
         eyebrow(Hh.y, x, ly, ACC); ly += 24;
         if (Hh.era) { // teaching era \u2014 a clean vector animation, no photo
           var eH = 188, eyy = sY(ly), ecx = x + w / 2, eR = Math.min(w * 0.34, 72);
