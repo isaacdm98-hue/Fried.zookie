@@ -5,8 +5,12 @@ A single-file, offline-first astrology + tarot PWA. Computed natal charts
 astrologer does — the Ascendant and its lord, the house-lords followed home,
 essential dignities, aspects by nature, and the year's time-lord — an
 educational **Learn** screen, and a tarot reference. All on-device, no server,
-no API keys. Your birth data never leaves your phone; the whole chart and
-reading are computed locally.
+no API keys. **Your birth data never leaves your phone** — the whole chart and
+reading are computed locally, and `tests/network.cjs` asserts zero external
+requests on default settings. An optional place-name lookup (OpenStreetMap +
+open-meteo) can be switched on in Settings; it is **off by default**, nothing
+turns it on for you, and it is the only thing that ever sends anything
+anywhere.
 
 The chart screen fits one frame: the wheel is the hero, with your Sun, Moon and
 Rising as tappable anchors. Tap any planet and the chart zooms into that
@@ -46,12 +50,15 @@ working (dignity, house, and the Lilly score) every time.
 - **Daily & time aspects** — live transits to your natal chart, split into
   what's running *today* (the slower planets) and *the passing hour* (the fast
   Moon), each with a plain-language paragraph.
-- **On-device chart intelligence** (no AI) — your *lunar phase at birth*, your
-  Marc-Edmund-Jones *chart shape* (bowl, bucket, locomotive, …), detected
-  *aspect patterns* (stellium, grand trine, T-square, yod), *essential
-  dignities*, *sect*, *declination parallels & contraparallels*, and rare
-  conditions (combust / cazimi / under-beams / out-of-bounds / stationary) —
-  surfaced only when actually present.
+- **On-device chart intelligence** (no AI) — your *lunar phase at birth*,
+  detected *aspect patterns* (stellium, grand trine, T-square, yod) entered as
+  weighted testimonies, *essential dignities*, *sect*, *declination parallels &
+  contraparallels*, and rare conditions (combust / cazimi / under-beams /
+  out-of-bounds / stationary) — surfaced only when actually present. Patterns
+  are formed from the **seven classical planets only**: a stellium whose weight
+  came from Uranus and Neptune is a modern reading wearing a traditional label.
+  (The Marc-Edmund-Jones *chart shape* was removed: the shape computes fine, but
+  each of its readings was a character type, which this method does not do.)
 - **Astrodienst-grade options** (Settings) — **True Node** by default (Mean
   toggle), optional **minor aspects** (quincunx / sesquiquadrate / semisquare /
   semisextile), and **Chiron + the four major asteroids** folded into the aspect
@@ -117,7 +124,7 @@ working (dignity, house, and the Lilly score) every time.
 
 ## Version
 
-**4.9.1** — see `CHANGELOG.md`. Licensed MIT (`LICENSE`).
+**4.11.0** — see `CHANGELOG.md`. Licensed MIT (`LICENSE`).
 
 ## Deploy
 
@@ -172,15 +179,25 @@ to the home screen. On iOS Safari: **Share → Add to Home Screen**.
 
 ## Verified headlessly
 
-An automated headless-Chromium pass (see `test.html` plus the harness in
-development) confirms: the ephemeris matches its pinned baseline (**ALL 12
-positions locked**); every screen (chart, read, today, learn, tarot, people,
-settings) renders with **no runtime errors**; a cold load issues **zero
-external network requests** (fonts inlined); the app **installs and launches
-fully offline** (service worker precaches the shell, the tarot deck and the
-fonts — 89 entries — and a reload with the network cut still boots, computes a
-chart and shows the bundled card art); and charts stay correct across **DST,
-leap days, sidereal mode, extreme dates (1300–2100) and polar latitudes**.
+Nine harnesses in `tests/`, each run against the real app in headless Chromium:
+
+| harness | what it holds to account |
+|---|---|
+| `golden.cjs` | the **judged meaning** of five reference nativities, pinned. A drift must be a recorded doctrine change, never an accident — `golden.json` carries a `doctrineChanges` log |
+| `doctrine.cjs` | the dignity ledgers and the method's own rules |
+| `individuation.cjs` | chart-specific tokens **per sentence**, verbatim and frame overlap between charts, and receipt completeness |
+| `plain-language.cjs` | no jargon in composed prose; every term of art glossed in the same passage |
+| `prose-lint.cjs` | em-dash density, fragments, repeated formulas, second-person counsel |
+| `topical-stress.cjs` | 500 engine calls across 50 diverse charts: no exceptions, no voice violations |
+| `screen-audit.cjs` | 7 screens × 3 widths render with no runtime errors |
+| `network.cjs` | **zero external requests on default settings**, and no host Settings does not name |
+| `rarity-baseline.cjs` | measures feature frequencies over 400 charts so the engine's ordering is data, not assertion |
+
+`tests/shots.cjs` screenshots every screen — several defects in this app were
+only ever going to be found by looking, not by asserting.
+
+Charts stay correct across DST, leap days, sidereal mode, extreme dates
+(1300–2100) and polar latitudes.
 
 ## Still worth a device check
 

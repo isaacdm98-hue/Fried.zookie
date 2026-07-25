@@ -1,5 +1,70 @@
 # Changelog
 
+## 4.11.0 — 2026-07-25 — a full audit, and the things an audit is for
+
+Driven by one instruction: audit and upgrade every element. The findings that
+mattered were not the ones I expected.
+
+### The app told the reader the opposite of what it did
+
+Settings says, and has always said, "Off (default): everything runs on-device."
+The default was `geocodeOnline: true`, and a migration set it to `true` for
+everybody — including users who had deliberately turned it off. The place you
+were born is birth data, and it was going to OpenStreetMap. The default is now
+off, the migration is deleted, and nothing may switch a privacy setting on
+without being asked.
+
+`tests/network.cjs` now proves the claim: it drives every screen with a chart
+loaded and asserts **zero external requests** on default settings, then flips
+the opt-in and asserts no host appears that Settings does not name.
+
+### Dead code that would have broken that claim
+
+An in-app Internet Archive video player, 4.7KB, could never open: `UI.video`
+was only ever set by `openVideo()`, which nothing called. It fetched
+archive.org. Dead code that contradicts the app's central promise the moment
+someone wires it up is a landmine, not a feature. Removed.
+
+### Pop astrology survived where it was most visible
+
+`MICRO` — 5.7KB of second-person personality profiling keyed to sign ("you do
+not know what you feel until you have said it out loud to someone, twice") —
+was live, reached from the first-run tour. So the first astrology a new reader
+met was pop, while the reading proper was traditional. Worse, the same slide
+said "the lights are not your personality" and then appended a line from it.
+The tour now carries the actual judgment of each light: its state, its sign,
+its house, and the houses it answers for.
+
+`SHAPE_MEAN` was the same thing in another coat — seven chart shapes each read
+as a character type ("a natural mediator, sometimes torn"). The shape computes
+fine; the readings were profiles. Removed with it.
+
+### Features built and then disconnected
+
+Sixteen engine functions were exported and called by nothing, several of them
+things the README advertises. `patternsAsTestimony` — stellium, grand trine,
+T-square and yod, weighted and entered into the same judgment as the
+house-lords — computed correctly and reached no screen. It is wired in now.
+
+Fixing it exposed a doctrinal error: patterns were formed from ten bodies, so a
+reference chart's "stellium in Capricorn" turned out to be Uranus and Neptune
+carrying the weight. With the seven classical planets — which is what this
+method judges by — that chart has no pattern at all. A modern configuration was
+being reported as a traditional testimony.
+
+### The Tarot screen was three buttons and a void
+
+Nearly half the screen was empty on a phone, while the one thing it should show
+is the deck that ships with the app. It now shows real bundled faces from
+`tarot/`, with a caption that shrink-to-fits rather than running off both edges.
+
+### Housekeeping
+
+- 15 dead functions, 13 dead tables, one orphaned by the removals: **-27KB**.
+  A second scan added exported-but-uncalled detection, which the first missed.
+- README corrected: it claimed 4.9.1, described the removed chart-shape feature,
+  and its "verified headlessly" section predated six of the nine harnesses.
+
 ## 4.10.0 — 2026-07-24 — it reads like an astrologer wrote it, and only what she uses
 
 A pass driven by one complaint: the text was full of AI tells and did not make
