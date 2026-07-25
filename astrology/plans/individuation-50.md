@@ -27,6 +27,8 @@ day and night births, four decades and extreme latitudes.
 | sentence frames shared by half the charts or more | 78 | 60 |
 | receipts with no hand-checkable value | 46 | **0** |
 
+Movement B added the rarity engine on measured frequencies (tasks 11–14 done); tasks 15–18 remain.
+
 The first run is the important number: more than half the reading could have been about anyone.
 The largest single cause was not a shortage of variety but a **category error** — see task 1's
 note below. The ceiling in the harness is set at 32% and is meant to be tightened with each
@@ -70,8 +72,10 @@ movement completed.
    ("the 7th's business is transacted on the 11th's ground"), then say what that route costs or
    saves, from the lord's condition. The route is unique to the chart; the phrasing currently is not.
 6. **Reception named, always, where it exists.** `receptionOf` is computed but surfaced unevenly.
-   Any judged sentence whose two planets are in reception must say so, because reception is the
-   single most individuating relation in the chart — most pairs do not have it.
+   Any judged sentence whose two planets are in reception should say so — but **not** as a rarity:
+   task 14 measured mutual reception somewhere in the chart at 67%, so the claim this task
+   originally made ("the single most individuating relation") is false at chart level. It is worth
+   naming because it changes the *judgment*, not because it is unusual.
 7. **Antiscia on the angles only.** The engine computes antiscia; most of it is noise. Surface it
    only where a mirror degree falls within 1° of the Ascendant, Midheaven, Sun or Moon, and say
    plainly what a mirror degree is. Rare, so it individuates when present.
@@ -88,19 +92,27 @@ movement completed.
 
 ## Movement B — what is rare in this chart (11–18)
 
-11. **A rarity engine.** Compute, for the actual chart, which of its features are statistically
-    uncommon: a planet in domicile, an exact aspect, mutual reception, a stellium, an unaspected
-    planet, cazimi, out-of-bounds, a Lot conjunct an angle, all-one-element. Return each with a
-    plain rarity note.
-12. **Lead the reading with the rarest true thing.** The Read screen's beat order is fixed. Rank
-    the first three beats by rarity, so a chart with mutual reception opens on it, and a chart with
-    nothing unusual opens honestly on its strongest ordinary testimony.
-13. **Say when something is common.** Honesty cuts both ways: if a chart's most notable feature is
-    a wide trine, the reading should say the chart is quiet rather than inflate it. This is what
-    makes the rare claims credible.
-14. **Distribution baselines, computed not asserted.** To claim rarity, compute a reference
-    distribution once over a spread of synthetic charts (the stress harness already builds fifty)
-    and pin the frequencies in a data file, so "uncommon" is a measured word with a receipt.
+11. **A rarity engine.** ✅ *Done.* `chartRarity(c, b)` detects ten features and ranks them rarest
+    first, each read as a domain of the life rather than as a badge. Detection mirrors the baseline
+    script exactly, so the frequency attached to a finding is the frequency of that same definition.
+12. **Lead the reading with the rarest true thing.** ✅ *Done.* The Read screen now opens on "What is
+    unusual in your chart" — or, on an ordinary chart, "How unusual is your chart".
+13. **Say when something is common.** ✅ *Done, and it caught a real defect.* The first version of the
+    ordinary-chart line asserted specific negatives — *"no planet stands unaspected"* — on a chart
+    that had one: the detector had found it and correctly declined to call it rare (about half of
+    charts have one), and the summary then denied it existed. It now says only what was measured, and
+    still hands the reader a fact about their own chart with its honest frequency attached.
+14. **Distribution baselines, computed not asserted.** ✅ *Done, and it corrected the plan itself.*
+    `tests/rarity-baseline.cjs` measures each feature over 400 deterministic charts — every month,
+    every hour of the clock, both hemispheres, six decades — and writes `corpus-rarity.json`.
+
+    **Two of this plan's own assumptions were wrong, and only measuring found it.** Task 6 below
+    called mutual reception "the single most individuating relation in the chart — most pairs do not
+    have it". Per *pair* that is true; as a chart feature it occurs in **67%** of charts, so leading
+    with it as a rarity would be flattery. And out-of-bounds, which this app files under "rare
+    conditions", occurs in **46%**. Measured frequencies, rarest first: cazimi 1.5%, Lot of Fortune
+    on an angle 3.8%, Ascendant lord in the 1st 5.0%, no planet angular 9.0%, three or more
+    retrograde 15.3%, four or more angular 20.3%, two or more in domicile 21.3%.
 15. **The chart's shape as circumstance, not archetype.** Bowl/bucket/locomotive were removed as
     pop. Reinstate only the *computable* fact with a domain reading: "every planet you have falls
     in five signs, so the life concentrates" — no personality claim.

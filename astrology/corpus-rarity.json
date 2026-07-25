@@ -1,0 +1,29 @@
+{
+  "measuredOver": 400,
+  "generatedBy": "tests/rarity-baseline.cjs",
+  "freq": {
+    "anyCombust": 0.215,
+    "anyDomicile": 0.5875,
+    "anyEdgeDegree": 0.3775,
+    "anyEmptyElement": 0.5325,
+    "anyExactAspect": 0.615,
+    "anyExaltation": 0.455,
+    "anyMutualReception": 0.67,
+    "anyUnaspected": 0.5125,
+    "captainInFirst": 0.05,
+    "cazimi": 0.015,
+    "elementDominant": 0.2925,
+    "fortuneOnAngle": 0.0375,
+    "fourAngular": 0.2025,
+    "fourPeregrine": 0.2725,
+    "noneAngular": 0.09,
+    "outOfBounds": 0.4625,
+    "stationary": 0.1525,
+    "stelliumByHouse": 0.38,
+    "stelliumBySign": 0.355,
+    "threeRetrograde": 0.1525,
+    "twoDebility": 0.44,
+    "twoDomicile": 0.2125,
+    "twoExactAspects": 0.2275
+  }
+}
