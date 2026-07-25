@@ -15,12 +15,48 @@ prose about people, it is the wrong task.
 
 ---
 
+## Measured baseline (tests/individuation.cjs)
+
+The harness reads 408 composed passages across 12 charts spanning every season, both hemispheres,
+day and night births, four decades and extreme latitudes.
+
+| measure | at first run | after tasks 1, 45, 46, 47 |
+|---|---|---|
+| sentences naming fewer than two chart-specific things | **52.6%** (1510/2870) | **28.7%** (792/2762) |
+| verbatim sentences shared by half the charts or more | 53 | 34 |
+| sentence frames shared by half the charts or more | 78 | 60 |
+| receipts with no hand-checkable value | 46 | **0** |
+
+The first run is the important number: more than half the reading could have been about anyone.
+The largest single cause was not a shortage of variety but a **category error** — see task 1's
+note below. The ceiling in the harness is set at 32% and is meant to be tightened with each
+movement completed.
+
+---
+
 ## Movement A — the sentence can only be about this chart (1–10)
 
-1. **Determinant floor per sentence, enforced.** The stress harness counts determinants per
-   *passage*; make it count per *sentence* and fail any sentence in a judged passage carrying
-   fewer than two chart-specific tokens (a degree, a sign, a house, a planet, an orb, a score).
-   This is the measurement that makes every other task in this movement provable.
+1. **Determinant floor per sentence, enforced.** ✅ *Done.* The stress harness counted determinants
+   per *passage*, which is far too coarse — a paragraph passes on its first sentence while the
+   other six say nothing chart-specific. Counted per sentence, 52.6% of the reading failed.
+
+   **What it found, and why it matters more than the number.** The most-repeated sentences were
+   *"By nature it is hot and dry, the choleric fire at full"* (identical on all 12 charts) and a
+   list of virtues or faults keyed only to strong/weak (8 of 12). Both are statements about the
+   **planet** — true of Mars in every chart ever cast. By the method's own standard a sentence that
+   cannot vary is a definition, not a judgment; and the virtue list is the personality register the
+   method forbids outright. So this was never a variety problem. The universal layer had been given
+   equal billing with the particular one. The nature is now a subordinate clause on a sentence whose
+   subject is the houses **this** planet answers for, and the virtue list is gone.
+
+   Three further gaps the same measurement exposed:
+   - The peregrine image ends *"…and its dispositor decides what it can finally deliver"* and then
+     never said which planet that was — a gap in the reading and the most individuating fact in the
+     sentence.
+   - The debility clause emitted a raw layer name and three em-dashes: *"though face — in its fine
+     clothes at the door — dignified in appearance, fragile in substance — tempers the worst of it."*
+   - Topical verdicts closed on a line that could be pasted onto any chart. They now name how many
+     significators were weighed and which one led them (task 24, brought forward).
 2. **Exact degrees in the lead, not the tail.** `placementProse` opens with house and sign, and
    only later reaches the degree. Lead with the degree when it is doing work (0°, 29°, a bound
    boundary, a fixed star inside 1°) — those are the cases where the degree *is* the story.
@@ -153,14 +189,16 @@ prose about people, it is the wrong task.
 
 ## Movement G — proving it is personal (45–50)
 
-45. **The uniqueness harness.** Generate readings for N charts, then measure inter-chart text
-    overlap per chapter. Fail any chapter whose sentences are more than a set fraction shared
-    across charts. This is the single most important test in the plan: it makes "personal" a
-    number.
-46. **Template-echo lint.** Detect any sentence frame emitted verbatim for more than a set share
-    of charts, and require either a chart-specific clause or a variant bank keyed to computed values.
-47. **Receipt completeness.** Every judged sentence must have a receipt that could be checked by
-    hand against an ephemeris. Fail any beat whose receipt lacks a degree or a score.
+45. **The uniqueness harness.** ✅ *Done.* Measures verbatim inter-chart sentence overlap per
+    chapter. Doctrine lines — the ones that state the method rather than the nativity — are declared
+    in an explicit exempt list rather than hidden behind a threshold, so the exemption is reviewable.
+46. **Template-echo lint.** ✅ *Done.* Masks every determinant and reports which sentence *frames*
+    repeat. This catches the subtler failure: text that differs on every chart and is still the
+    same sentence.
+47. **Receipt completeness.** ✅ *Done, 46 → 0.* Temperament now names the rising degree its
+    testimonies were read from; health names the rising degree and the Ascendant lord's score; the
+    ruling voice and the sect profile name their planets' Lilly totals. Every judged beat can now
+    be checked by hand against an ephemeris.
 48. **Determinant provenance.** Assert in tests that each topical verdict's receipt names the
     testimonies that actually produced it, so the working can never drift from the words.
 49. **A golden individuation baseline.** Extend `golden.json` from verdicts to a hash of the
