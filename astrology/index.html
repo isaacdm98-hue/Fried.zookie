@@ -6770,7 +6770,13 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     }
     // perceived lightness of a colour, so a glyph never lands dark-on-dark or light-on-light
     function lum9(c9) { return (c9[0] * 0.299 + c9[1] * 0.587 + c9[2] * 0.114); }
-    function glyphInk9(c9) { return lum9(c9) > 148 ? INK : (GROUNDS[UI.screen] || GROUNDS.chart); }
+    // Pick the glyph colour by CONTRAST, not by which palette slot it came from. Choosing INK for
+    // a light body works on paper but inverts in the dark themes, where INK is itself near-white —
+    // the Moon's glyph vanished into its own disc. Comparing both candidates is right everywhere.
+    function glyphInk9(c9) {
+      var g9 = GROUNDS[UI.screen] || GROUNDS.chart, l9 = lum9(c9);
+      return (Math.abs(l9 - lum9(INK)) >= Math.abs(l9 - lum9(g9))) ? INK : g9;
+    }
     // A planet on the wheel is an OBJECT, not a dot: its own body colour, a cast shadow, a lit
     // upper edge and a hairline rim. Flat grey discs all read the same at 21px, which is what
     // made a stellium look like a smudge; a lit sphere in Mars red is legible at a glance.
@@ -10332,7 +10338,43 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         ['Level 2 · Reading a chart', [['houses', 'Houses'], ['aspects', 'Aspects'], ['howto', 'How to']]],
         ['Level 3 · Time & tradition', [['history', 'History'], ['myths', 'Myths'], ['glossary', 'Glossary']]]
       ];
-      if (!UI.learnCat) { UI.contentH.learn = ly + 24; return; }
+      // THE CURRICULUM ITSELF WAS UNREACHABLE. LEVELS was declared and then never rendered: the
+      // early return below sat above the only code that could have drawn it, so Signs, Planets,
+      // Houses, Aspects, How-to, History, Myths and Glossary had no way in from this screen at all
+      // — which is why Learn showed a title, a hero and then several hundred pixels of nothing.
+      var LEVEL_SUB9 = {
+        signs: 'the twelve, and what each one is for',
+        planets: 'the seven, and what each signifies',
+        houses: 'the twelve domains of a life',
+        aspects: 'how the planets speak to each other',
+        howto: 'walkthroughs, in the real app',
+        history: 'where this method comes from',
+        myths: 'the stories behind the names',
+        glossary: 'every term in the app, defined'
+      };
+      if (!UI.learnCat) {
+        var li9, lj9, cardH9 = 62;
+        for (li9 = 0; li9 < LEVELS.length; li9++) {
+          eyebrow(LEVELS[li9][0], x, ly, ACCTX); ly += 24;
+          var items9 = LEVELS[li9][1];
+          for (lj9 = 0; lj9 < items9.length; lj9++) {
+            var key9 = items9[lj9][0], lab9 = items9[lj9][1], cyy9 = sY(ly);
+            if (cyy9 > topY() - cardH9 - 20 && cyy9 < H + 40) {
+              p.noStroke();
+              fillc(INK, 14); p.rect(x, cyy9 + 3, w, cardH9, 12);
+              fillc(shade(GROUNDS[UI.screen] || GROUNDS.chart, 12), 250); p.rect(x, cyy9, w, cardH9, 12);
+              p.noFill(); strokec(INK, 42); p.strokeWeight(1); p.rect(x, cyy9, w, cardH9, 12);
+              setFont(SANS, 16, INK, p.LEFT, p.TOP); bold(); p.text(lab9, x + 16, cyy9 + 13); normal();
+              setFont(MONO, 9, ACCTX, p.LEFT, p.TOP, 205); p.text((LEVEL_SUB9[key9] || '').toUpperCase(), x + 16, cyy9 + 37);
+              setFont(SANS, 18, INK, p.RIGHT, p.CENTER, 115); p.text('\u203A', x + w - 14, cyy9 + cardH9 / 2);
+            }
+            (function (kk9, ry9) { pushHit(x, ry9, w, cardH9, function () { UI.learnCat = kk9; UI.learnItem = null; UI.scroll.learn = 0; UI.popT = nowT(); buzz(8); }); })(key9, cyy9);
+            ly += cardH9 + 10;
+          }
+          ly += 12;
+        }
+        UI.contentH.learn = ly + 24; return;
+      }
       chip('\u2715 Close', false, x, ly, function () { UI.learnCat = null; UI.learnItem = null; UI.scroll.learn = 0; }); ly += 48;
       // a gentle fade-in each time the category or item changes — a small storytelling beat
       var lfx = Math.max(UI.fxT, UI.popT || 0), le = reduced() ? 1 : eCubic(cl01((nowT() - lfx) / 380));
