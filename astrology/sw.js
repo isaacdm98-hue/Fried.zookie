@@ -1,5 +1,5 @@
 /* Aqau Pluto service worker - ES5, offline-first single-file PWA */
-var CACHE = 'aqau-pluto-v137';
+var CACHE = 'aqau-pluto-v139';
 var CORE = ['./', 'index.html', 'corpus.js', 'lib-astronomy.js', 'lib-p5.js', 'manifest.webmanifest', 'icon-180.png', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png'];
 // the bundled public-domain Rider-Waite-Smith tarot deck (0.jpg .. 77.jpg), so the
 // card art is there offline. Best-effort: a miss here never breaks the core precache.
@@ -25,11 +25,17 @@ self.addEventListener('install', function (e) {
 self.addEventListener('activate', function (e) {
   e.waitUntil(
     caches.keys().then(function (keys) {
-      return Promise.all(keys.map(function (k) { if (k !== CACHE) return caches['delete'](k); }));
-    }).then(function () { return self.clients.claim(); }).then(function () {
-      // a fresh version takes over: reload open pages once, so nobody is left on the stale shell
-      return self.clients.matchAll({ type: 'window' }).then(function (cs) {
-        cs.forEach(function (c) { try { if (c.navigate && c.url) c.navigate(c.url); } catch (e) {} });
+      var stale = keys.filter(function (k) { return k !== CACHE; });
+      return Promise.all(stale.map(function (k) { return caches['delete'](k); })).then(function () { return stale.length > 0; });
+    }).then(function (wasUpdate) {
+      return self.clients.claim().then(function () {
+        // Reload open pages ONLY when an older version was actually replaced. On a first visit
+        // there is no stale shell to escape, and the unconditional reload was the "first screen
+        // flashes twice" bug: install → activate → forced navigate, moments after first paint.
+        if (!wasUpdate) return;
+        return self.clients.matchAll({ type: 'window' }).then(function (cs) {
+          cs.forEach(function (c) { try { if (c.navigate && c.url) c.navigate(c.url); } catch (e) {} });
+        });
       });
     })
   );

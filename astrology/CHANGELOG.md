@@ -1,5 +1,59 @@
 # Changelog
 
+## 4.15.0 — 2026-07-26 — the astrologer's voice
+
+A ten-step round built on one instruction: stop being vague or technical and
+say what the chart means, the way a working astrologer would say it across a
+table. Research went into the register that the best pre-written delineation
+texts use — the Hand/Greene tradition: second person, no astrologese, recurring
+life situations rather than qualities, costs and payments both named.
+
+### Every placement now opens with its meaning
+
+The old paragraph led with machinery ("The Moon keeps its court in your 10th
+house, in the sign opposite its own…"). Now:
+
+> Your Moon is your feelings and daily rhythms, what you need in order to feel
+> safe — and yours lives in Capricorn, in your 10th house: the public hill,
+> where career, reputation and name are made. For the Moon in your 10th, that
+> tends to look like: the career is lived in front of people, and the name
+> rises and falls with public mood; the mother stands behind the ambition, and
+> there is no rest until the work is seen. Capricorn makes your Moon patient
+> and ambitious there: it climbs slowly and endures what it climbs through.
+> But Capricorn is hard ground for the Moon…
+
+Three new banks carry it: what each planet IS in a life, what each house IS in
+a life, and how each sign makes a planet behave — manner of operation, never a
+personality profile. The whole 84-entry planet-in-house bank was rewritten from
+clause-lists into lived-experience prose, keeping every classical claim.
+
+### Home is now the most important screen
+
+Under the element stick, the chart screen now says what the chart MEANS in two
+composed lines — who runs it and from where, and which domain pays easily
+against which asks work — tappable straight into the full reading. The house
+judgments open with the life ("Your 7th house holds the other person, where
+marriage, partners and open rivals meet you as equals") and the Read screen
+opens with the Big Three, in the same voice, before the method takes over.
+
+### Removed, fixed, offered
+
+- The three animated journey modes (chart-as-film, card-by-card, the life reel)
+  are gone; the reading is the product.
+- The first-screen double flash is fixed: the service worker force-reloaded
+  every page on activation, including the very first visit, moments after first
+  paint. It now reloads only when an old version was actually replaced. The
+  chromatic-aberration title flourish stays — it was never the bug.
+- The online place search is offered on the birth-place step itself, stated
+  plainly both ways, instead of hiding in Settings. Still a choice; the app
+  never switches it on by itself.
+- Aspects name life areas instead of house numbers ("the parts of your life
+  Jupiter answers for — travel, faith and higher learning").
+
+All eleven harnesses pass; every new sentence still carries at least two of the
+chart's own determinants, and the individuation floor caught and forced the fix
+where the first draft didn't.
+
 ## 4.14.1 — 2026-07-26 — the reading, read aloud
 
 A prose pass made by dumping full readings and reading them the way a user

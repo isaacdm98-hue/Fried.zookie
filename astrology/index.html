@@ -2520,6 +2520,47 @@ var APP = (function () {
   // the two malefics is an easy road between two hard planets, not a blessing. Predict by
   // symbolic direction (one degree a year), not by today's transits.
   var TRAD_CO = { 7: 'pluto', 10: 'uranus', 11: 'neptune' }; // modern co-rulers, named second
+  // WHAT EACH PART OF A CHART IS, IN A SENTENCE A FIRST-TIMER FOLLOWS. Three banks, used at the
+  // head of every placement so the reading opens with meaning and keeps the method underneath:
+  // the planet = which part of your life this is; the house = where in your life it plays out;
+  // the sign = HOW it behaves there (manner of operation, never a personality profile).
+  var PLANET_LIFE9 = {
+    sun: 'your core self and vitality, what your life is trying to become',
+    moon: 'your feelings and daily rhythms, what you need in order to feel safe',
+    mercury: 'your mind and your voice, how you think and speak and handle the everyday',
+    venus: 'how you love, what you find beautiful, and the people you draw close',
+    mars: 'your drive, how you fight and push and go after what you want',
+    jupiter: 'where life is generous with you, and the help that finds you',
+    saturn: 'where life asks discipline of you, and what only time builds'
+  };
+  var HOUSE_LIFE9 = [
+    'the most visible part of life, where your body, your presence and your first moves live',
+    'the material floor under you, what you earn and own and can count on',
+    'the near world of errands, messages, siblings and neighbours',
+    'home, family, roots, and the parent who shaped the ground you stand on',
+    'children, romance, play, and the things you make for joy',
+    'the working day, with your labour, your routines and your health',
+    'the other person, where marriage, partners and open rivals meet you as equals',
+    'what is shared and what is lost, from other people’s money to the deep ends of life',
+    'the far horizon of travel, higher learning and belief',
+    'the public hill, where career, reputation and name are made',
+    'your people, the friends, allies and hopes you carry',
+    'the backstage of life, with its solitude, its secrets, and what works against you unseen'
+  ];
+  var SIGN_HOW9 = [
+    'fast, direct and impatient there: it acts first and reflects after',
+    'slow, steady and possessive there: it builds, keeps, and hates being rushed',
+    'quick, curious and double there: it runs two threads at once and talks its way through',
+    'protective and tidal there: it feels its way in, holds on, and remembers everything',
+    'proud and warm there: it wants to be seen, and to be seen doing it well',
+    'exact and careful there: it perfects, sorts, and worries at the details',
+    'poised and other-facing there: it weighs both sides and decides through people',
+    'intense and guarded there: all or nothing, and it does not forget',
+    'broad and blunt there: it aims far, promises big, and sometimes overshoots',
+    'patient and ambitious there: it climbs slowly and endures what it climbs through',
+    'cool and independent there: it stands a little apart and thinks in straight lines',
+    'porous and imaginative there: edges blur, moods soak in, and it drifts unless anchored'
+  ];
   var HOUSE_AREA9 = ['the self and the body', 'money and what you own', 'siblings, neighbours and the everyday mind', 'home, family and roots', 'children, pleasure and creation', 'work, health and routine', 'marriage and open partners', 'shared money, loss and the deep', 'travel, faith and higher learning', 'career and public standing', 'friends, allies and hopes', 'solitude, the hidden and self-undoing'];
   // the same plain register the rest of the reading uses: the Latin belongs on the receipt line
   function dignityPhrase(st) {
@@ -3322,7 +3363,7 @@ var APP = (function () {
     // "has Libra on the cusp" and a bare "(9 against 5)" are three barriers in one line: the cusp,
     // the comparison and two numbers on an undisclosed scale. The sentence says it in English and
     // the tally rides the receipt, where the numbers belong.
-    S.push(csName + ' begins your ' + ordinal(h) + ' house of ' + HOUSE_AREA9[h - 1] + ', so it answers to ' + nameTh(lordK) + '.');
+    S.push('Your ' + ordinal(h) + ' house holds ' + HOUSE_LIFE9[h - 1] + '. ' + capit(csName) + ' begins it, so this whole domain answers to ' + nameTh(lordK) + ' — wherever ' + nameTh(lordK) + ' stands and however it fares, that is how this part of your life fares.');
     if (alm && alm.differs) S.push('At the exact degree the house opens, though, ' + nameTh(alm.lead) + ' holds a stronger claim on that degree than ' + nameTh(lordK) + ' does, so both have a voice here and both are read below.');
     if (occs.length >= 3) S.push('This house is crowded — ' + occs.length + ' planets stand in your ' + ordinal(h) + ', a stellium: whatever else the chart says, this is where the life gathers.');
     for (i = 0; i < occs.length; i++) {
@@ -3534,7 +3575,7 @@ var APP = (function () {
       if (bestAsp && firstLord) { // only fold the lord's aspect once — the same planet, not a new testimony
         var wA9 = bestAsp.full ? 1 : 0.5;   // benefic-by-hard and malefic-by-soft carry half weight
         favor += wA9 * (bestAsp.ben ? (bestAsp.rec ? 0.75 : 0.5) : (bestAsp.rec ? -0.25 : -0.5));
-        aspTxt = ' ' + capit(nameFor(bestAsp.oth)) + (bestAsp.ben ? ' seconds it by ' : ' presses on it by ') + art9(bestAsp.aspect) + ' ' + bestAsp.aspect + (bestAsp.rec ? ', though reception eases the exchange' : '') + '.';
+        aspTxt = ' ' + capit(nameFor(bestAsp.oth)) + (bestAsp.ben ? ' seconds ' : ' presses on ') + nameTh(lordK) + ' by ' + art9(bestAsp.aspect) + ' ' + bestAsp.aspect + (bestAsp.rec ? ', though reception eases the exchange' : '') + '.';
         receipts.push(nameFor(lordK) + (bestAsp.ben ? '+' : '−') + nameFor(bestAsp.oth) + ' ' + bestAsp.aspect.slice(0, 3));
         testify(i * 10 + 3, 'what reaches the lord', capit(nameTh(bestAsp.oth)) + ' reaches it by ' + art9(bestAsp.aspect) + ' ' + bestAsp.aspect + ' — ' + orbWord9(bestAsp.orb) + ', and ' + motionWord9(bestAsp.app) + '. ' +
           (bestAsp.full ? (capit(pron9(bestAsp.oth, 0)) + (bestAsp.ben ? ' seconds the promise' : ' takes a cut of it') + (bestAsp.rec ? ', though each planet stands in ground the other rules, which eases the exchange' : ''))
@@ -3569,7 +3610,7 @@ var APP = (function () {
         : PROMISE9.mixed[h % 3];
       if (firstLord) {
         var link = (srcH && srcH !== h) ? ', standing in your ' + ordinal(srcH) + ' — so ' + (hs.link || CAUSE_LINK9[h] || ('the ' + ordinal(h) + '’s matters run through')) + ' ' + HOUSE_AREA9[srcH - 1] : '';
-        S.push(capit(nameTh(lordK)) + ' answers for ' + hs.role + ': ' + stateAdj9(lordD.essential.label) + ' in ' + lordD.signName + link + '. It ' + promise + '.' + occTxt + aspTxt);
+        S.push(capit(nameTh(lordK)) + ' answers for ' + hs.role + ': ' + stateAdj9(lordD.essential.label) + ' in ' + lordD.signName + link + '. ' + capit(nameTh(lordK)) + ' ' + promise.replace(' there', ' in ' + lordD.signName) + '.' + occTxt + aspTxt);
         receipts.push(ordinal(h) + ' lord ' + nameFor(lordK) + '→' + ordinal(srcH || 0) + ' lilly' + (t >= 0 ? '+' : '') + t);
         testify(i * 10 + 2, 'lord of the ' + ordinal(h) + ', who carries the promise', capit(nameTh(lordK)) + ' answers for it, ' + stateAdj9(lordD.essential.label) + ' in ' + lordD.signName + (srcH ? ', and works from your ' + ordinal(srcH) + ' — ' + HOUSE_AREA9[srcH - 1] : '') + '. It ' + promise + '.', lordLean9, figOf9(lordD));
       } else {
@@ -3689,12 +3730,13 @@ var APP = (function () {
     var nat = aspectNature(aK, bK, key), rec = receptionOf(c, aK, bK);
     var pipe = conj ? 'fused into one instrument' : hard ? 'a bent pipe, so the current flows but never straight' : 'a clean channel, so the current flows without effort';
     function rulesTxt9(D) {
-      var rr = [], i; for (i = 0; i < D.rules.length; i++) rr.push(ordinal(D.rules[i].house));
-      return rr.length ? rr.join(' and ') : null;
+      var rr = [], i;
+      for (i = 0; i < Math.min(2, D.rules.length); i++) rr.push(HOUSE_AREA9[D.rules[i].house - 1] + ' (your ' + ordinal(D.rules[i].house) + ')');
+      return rr.length ? rr.join(', and ') : null;
     }
     // what one planet's current does to the OTHER's departments
     function currentClause9(from, to) {
-      var fv = from.nature.verdict, toRules = rulesTxt9(to), toTxt = toRules ? ('what ' + nameTh(to.key) + ' rules in your chart, the ' + toRules) : (nameTh(to.key) + '’s matters');
+      var fv = from.nature.verdict, toRules = rulesTxt9(to), toTxt = toRules ? ('the parts of your life ' + nameTh(to.key) + ' answers for — ' + toRules) : (nameTh(to.key) + '’s matters');
       var verb = fv === 'benefic' ? (from.key === 'jupiter' ? 'feeds and grows' : 'sweetens and steadies') : fv === 'malefic' ? (from.key === 'saturn' ? 'weighs down and slows' : 'heats and hurries') : 'colours';
       var clause = capit(nameTh(from.key)) + '’s current ' + verb + ' ' + toTxt;
       if (fv === 'benefic' && from.essential.score < 0) clause += ', though being ' + stateAdj9(from.essential.label) + ' it gives less than it promises';
@@ -4075,16 +4117,40 @@ var APP = (function () {
     // The peregrine image ends "…and its dispositor decides what it can finally deliver" — and then
     // never said WHICH planet that is, which is both a gap in the reading and the most individuating
     // fact in the sentence. Named here, for any state whose image refers to it.
-    var stChar = D.essential.character ? ('By dignity it is ' + D.essential.character.replace(' — ', ': ')) : null;
+    var stChar = D.essential.character ? ('The tradition’s own image for that state: ' + D.essential.character.replace(' — ', ', that is, ')) : null;
     if (stChar && /dispositor/.test(stChar) && D.essential.dispositor && D.essential.dispositor !== key) {
       stChar = stChar.replace(/its dispositor/, 'its dispositor (the lord of ' + D.signName + ', ' + nameFor(D.essential.dispositor) + ')');
     }
-    var artP9 = (key === 'sun' || key === 'moon') ? 'The ' : '';
-    var place = D.house ? (artP9 + nameFor(key) + ' keeps its court in your ' + ordinal(D.house) + ' house of ' + HOUSE_AREA9[D.house - 1] + ', ' + stateAdj9(D.essential.label) + ' in ' + D.signName) : (artP9 + nameFor(key) + ' stands ' + stateAdj9(D.essential.label) + ' in ' + D.signName + ' (your birth time would place it in a house)');
-    L.push(place + '.' + (stChar ? ' ' + stChar + '.' : ''));
+    // THE PLACEMENT, SPOKEN THE WAY AN ASTROLOGER SPEAKS IT. The old paragraph opened with the
+    // machinery ("keeps its court in your 10th house, in the sign opposite its own..."). A reader
+    // across the table hears it the other way round: which part of YOUR life this is, where it
+    // plays out, what that looks like in practice, how the sign makes it behave, and only then how
+    // strongly it runs. The method has not moved an inch; it just stopped leading with its own
+    // workings.
+    // 1. Which part of your life this is, and where it lives.
+    var life9 = PLANET_LIFE9[key];
+    if (D.house) L.push('Your ' + nameFor(key) + ' is ' + life9 + ' — and yours lives in ' + D.signName + ', in your ' + ordinal(D.house) + ' house: ' + HOUSE_LIFE9[D.house - 1] + '.');
+    else L.push('Your ' + nameFor(key) + ' is ' + life9 + ' — and yours stands in ' + D.signName + '. (With a birth time it would also have a house: the part of life it plays out in.)');
+    // 2. What that looks like in a life, before any machinery is mentioned.
+    if (D.house && DATA.PLANET_IN_HOUSE && DATA.PLANET_IN_HOUSE[key] && DATA.PLANET_IN_HOUSE[key][D.house - 1]) {
+      L.push('For ' + nameTh(key) + ' in your ' + ordinal(D.house) + ', that tends to look like: ' + DATA.PLANET_IN_HOUSE[key][D.house - 1] + '.');
+    }
+    // 3. How the sign makes it behave — manner of operation, not personality.
+    L.push(capit(D.signName) + ' makes your ' + nameFor(key) + ' ' + SIGN_HOW9[D.sign] + '.');
+    // 4. How strongly it runs, in one plain sentence; the dignity image deepens it.
+    var Ly9 = D.essential.layers || {};
+    var strength9;
+    if (Ly9.domicile) strength9 = 'And it is in its own sign, so this side of you stands on its own ground: what it promises, it can deliver, and what it builds tends to last';
+    else if (Ly9.exaltation) strength9 = 'And it is exalted there, on honoured ground, so this side of you runs high and strong, though like any honoured guest it holds power without quite owning the place';
+    else if (Ly9.detriment) strength9 = 'But ' + D.signName + ' is hard ground for ' + nameTh(key) + ', the sign opposite its own, so this side of you works uphill: what it wants tends to arrive late, at cost, or through other people';
+    else if (Ly9.fall) strength9 = 'But ' + D.signName + ' is where ' + nameTh(key) + ' counts for least, the sign of its fall, so this side of you underplays its hand and needs backing from elsewhere in the chart';
+    else if (D.essential.peregrine) strength9 = 'It holds no title of its own in ' + D.signName + ', a stranger there, so this side of you depends on the company it keeps: the planets that reach it, and the ground it stands on, decide what it can deliver';
+    else strength9 = 'It holds a minor title in ' + D.signName + ', able there but not in charge, so this side of you does its work through allies and circumstances rather than by right';
+    L.push(strength9 + '.');
     // T2 — the character this planet gives, in the half its state has earned. The temperament is
     // named first (it anchors the "same fire/fluidity…" the poorly-placed clause refers to), then
     // the state asserts which half of the nature actually shows — the tradition's own qualities.
+    if (stChar) L.push(stChar + '.');
     var interp = interpret(D), saidRules9 = false;
     // THE NATURE IS SUBORDINATED TO THE DOMAINS IT ACTS ON.
     // This used to be two sentences: "By nature it is hot and dry, the choleric fire at full" and
@@ -4115,15 +4181,7 @@ var APP = (function () {
     // self-help — "you came here to connect ideas", "your job is to enjoy what you have",
     // "the skill to build" — i.e. personality profiling plus counsel the chart cannot warrant.
     // The sign is already judged above, as STATE: which half of the planet's nature it can show.)
-    // T5 — the concrete planet-in-house life-read: what this exact placement classically means
-    // for the life, delivered plainly and shaded by state (strong gives it; weak struggles to).
-    if (D.house && DATA.PLANET_IN_HOUSE && DATA.PLANET_IN_HOUSE[key] && DATA.PLANET_IN_HOUSE[key][D.house - 1]) {
-      var pih9 = DATA.PLANET_IN_HOUSE[key][D.house - 1];
-      var frame9 = (interp && interp.tone === 'poor')
-        ? 'In your ' + ordinal(D.house) + ', what ' + nameTh(key) + ' classically brings, at its harder edge: ' + pih9 + '. Too weak here to give that outright, it arrives late, at cost, or through others'
-        : 'In your ' + ordinal(D.house) + ', what ' + nameTh(key) + ' concretely brings: ' + pih9;
-      L.push(frame9 + '.');
-    }
+    // (the concrete planet-in-house delineation now LEADS the paragraph, step 2 above)
     var ruled = []; for (var i = 0; i < D.rules.length; i++) ruled.push(ordinal(D.rules[i].house));
     if (ruled.length && !saidRules9) L.push('It answers for your ' + andList9(ruled) + (ruled.length > 1 ? ', so those matters dock wherever it stands' : '') + '.');
     // T10 — the degree itself. Two chart-specific details that separate two planets in the same
@@ -6524,7 +6582,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       }
       return h;
     }
-    // chromatic-aberration text (glitch). inten 0..1
+    // chromatic-aberration text (glitch). inten 0..1 — the vintage-synth title flourish, kept.
     function glitchText(str, x, y, sz, font, col, ha, va, inten) {
       // titles draw straight onto the canvas, like riseText, so no stray frame
       // state can ever shrink them
@@ -7936,6 +7994,26 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       normal(); ly += 42;
       // the element stick, back by request \u2014 the four qualities at a glance, under the title
       ly += elementStick(c, x, w, ly) + 8;
+      if (UI.homeLine === undefined) {
+        UI.homeLine = null;
+        try {
+          var hl9 = [];
+          var rv9 = APP.rulingVoice(c, b);
+          if (rv9 && rv9.key) {
+            var rd9 = APP.determination(c, b, rv9.key);
+            hl9.push('This chart answers to ' + (APP.nameTh ? APP.nameTh(rv9.key) : APP.nameFor(rv9.key)) + (rd9 && rd9.house ? ' in your ' + ordinal(rd9.house) + ' house' : '') + (rd9 ? ', ' + APP.stateAdj9(rd9.essential.label) + ' in ' + rd9.signName : '') + '.');
+          }
+          var gl9 = APP.lifeAtAGlance(c, b);
+          if (gl9 && gl9.best && gl9.worst && gl9.best.domain !== gl9.worst.domain) hl9.push(gl9.best.domain.charAt(0).toUpperCase() + gl9.best.domain.slice(1) + ' pays most easily here; ' + gl9.worst.domain.toLowerCase() + ' asks the most work.');
+          if (hl9.length) UI.homeLine = hl9.join(' ');
+        } catch (eHl9) { UI.homeLine = null; }
+      }
+      if (UI.homeLine) {
+        var hlH9 = paragraph(UI.homeLine, x, ly, w, 11.5, INK, SERIF, 16, 205);
+        pushHit(x, sY(ly) - 2, w, hlH9 + 6, function () { UI.screen = 'read'; UI.readTab = 'story'; UI.scroll.read = 0; UI.actT = nowT(); });
+        setFont(MONO, 8, ACCTX, p.RIGHT, p.TOP, 170); p.text('READ \u203A', x + w, sY(ly + hlH9 + 1));
+        ly += hlH9 + 14;
+      }
       // FIT ONE FRAME \u2014 the wheel is the hero; the reels are the anchor row; a single live
       // line for today sits under it. Nothing scrolls: depth is reached by tapping a planet
       // (the placement zoom grows from it), never by scrolling down. The wheel is sized to
@@ -8534,7 +8612,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       flatBtn('‹ Read', x, ly, 100, 36, function () { UI.lifeView = false; UI.scroll.read = 0; }, false, true); ly += 50;
       p.textStyle(p.BOLD); glitchText('Your life', x, sY(ly), 32, SANS, INK, p.LEFT, p.TOP, gi); normal(); ly += 42;
       ly += paragraph('The rare, slow transits and planetary returns that mark the real chapters of a life. What was likely stirring then, and what’s ahead. Astrology as weather, not fate.', x, ly, w, 14.5, INK, SERIF, 22, 205) + 14;
-      flatBtn('Play as a journey', x, ly, w, 46, function () { UI.lifeWalk = { i: -1, t0: nowT() }; UI.lwNoteI = null; }, true); ly += 60;
+
       var ev = UI.lifeList, nowMs = new Date().getTime(), lineX = x + 16, i, nowDrawn = false;
       strokec(INK, 45); p.strokeWeight(2); var topLine = sY(ly), botLine = sY(ly + ev.length * 96 + 40); p.line(lineX, topLine, lineX, botLine);
       // A14 — a travelling light runs the thread as you scroll, lighting each chapter it passes
@@ -8830,6 +8908,13 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         // they actually have does to the houses their planets answer for. Frequency only decides
         // which one leads. A chart with no named configuration simply proceeds to its lords.
         try {
+          var big3 = [['sun', 'Your Sun'], ['moon', 'Your Moon']], b3i;
+          for (b3i = 0; b3i < big3.length; b3i++) {
+            var pp3 = APP.placementProse(c, b, big3[b3i][0]);
+            if (pp3) addB(big3[b3i][1], clip9(pp3.text, 620), pp3.receipt);
+          }
+        } catch (eB3) {}
+        try {
           var FT9 = APP.chartFeatures(c, b) || [], fti9;
           for (fti9 = 0; fti9 < Math.min(2, FT9.length); fti9++) addB(FT9[fti9].title, clip9(FT9[fti9].line, 430), FT9[fti9].receipt);
         } catch (eRv9) {}
@@ -8841,7 +8926,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
           if (PT9 && PT9.testimonies) for (pti9 = 0; pti9 < Math.min(2, PT9.testimonies.length); pti9++)
             addB('A configuration the whole chart feels', clip9(PT9.testimonies[pti9].line, 420), PT9.testimonies[pti9].receipt);
         } catch (ePt9) {}
-        if (T9 && T9.asc) addB('Where a reading starts', T9.asc.line, T9.asc.receipt);
+        if (T9 && T9.asc) addB('Your Rising sign — where a reading starts', T9.asc.line, T9.asc.receipt);
         if (T9 && T9.ruler) addB('The captain of your chart', T9.ruler.line, T9.ruler.receipt);
         if (T9 && !T9.hasTime && T9.note) addB('Where a reading starts', T9.note, null);
         // the house-lords, followed home — the angles first, then the fortunes
@@ -8933,8 +9018,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       eyebrow('Everything, in full', x, ly, ACC); ly += 24;
       ly += paragraph('The whole chart, judged the traditional way — the twelve house-lords followed home, every planet in its state, and what carries the most weight. Each line shows its working.', x, ly, w, 14, INK, SERIF, 22, 220) + 12;
       flatBtn('‹  Back to the reading', x, ly, w, 40, function () { UI.readMode = 'flow'; UI.rdI = 0; UI.rdT = nowT(); UI.scroll.read = 0; buzz(8); }, false, true); ly += 50;
-      flatBtn('▶  Play your chart as a film', x, ly, w, 46, function () { startWalk(); buzz(12); }, true); ly += 54;
-      flatBtn('◉  Or walk it card by card', x, ly, w, 46, function () { UI.guide = { phase: 'intro', t0: nowT() }; UI.scroll.read = 0; buzz(12); }, false); ly += 58;
+
       setFont(MONO, 9, INK, p.LEFT, p.TOP, 140); p.text('CHAPTERS', x, sY(ly)); ly += 20;
       UI.sec = UI.sec || {};
       var chapterHead = function (id, label, sub) {
@@ -9095,12 +9179,11 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       }, false); ly += 54;
       // the three journeys, one calm row: chapters, the reel, the calendar
       (function () {
-        var g3 = 10, cw3 = (w - g3 * 2) / 3, ch3 = 66, jy = sY(ly), J3 = [
+        var g3 = 10, cw3 = (w - g3) / 2, ch3 = 66, jy = sY(ly), J3 = [
           ['\u2726', 'Chapters', function () { UI.lifeView = true; UI.scroll.read = 0; UI.popT = nowT(); }],
-          ['\u23F5', 'The Reel', function () { var age0 = (new Date().getTime() - Date.UTC(b.y, b.mo - 1, b.d)) / (365.2422 * 86400000); UI.reel = { f: Math.max(0.01, Math.min(1, age0 / 90)) }; UI.reelCap = null; UI.screen = 'chart'; buzz(12); }],
           ['\u25A6', 'Calendar', function () { UI.calView = true; UI.calDay = null; UI.scroll.read = 0; UI.popT = nowT(); }]
         ], j3;
-        for (j3 = 0; j3 < 3; j3++) {
+        for (j3 = 0; j3 < 2; j3++) {
           var jx = x + j3 * (cw3 + g3);
           p.noStroke(); fillc(INK); p.rect(jx, jy + 3, cw3, ch3, 11); fillc(shade(INK, 16)); p.rect(jx, jy, cw3, ch3, 11);
           setFont(SANS, 15, GROUNDS[UI.screen], p.CENTER, p.CENTER); p.text(J3[j3][0], jx + cw3 / 2, jy + 22);
@@ -11674,6 +11757,16 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       setFont(SANS, 13, INK, p.LEFT, p.CENTER); p.text('I don\u2019t know my birth time', x + 32, sY(ly) + 11); pushHit(x, sY(ly), w, 26, function () { d.timeKnown = !d.timeKnown; }); ly += 38;
       var online = !!(APP.STATE.settings && APP.STATE.settings.geocodeOnline);
       eyebrow('Birth place', x, ly); ly += 24;
+      // the one online choice, made where the need appears rather than buried in Settings
+      var tglLab9 = online ? 'ONLINE PLACE SEARCH: ON — ANY TOWN ON EARTH' : 'CAN’T FIND YOUR TOWN? TAP FOR ONLINE SEARCH';
+      p.textFont(MONO); p.textSize(9.5);
+      setFont(MONO, 9.5, online ? ACCTX : INK, p.LEFT, p.TOP, online ? 235 : 190);
+      p.text(tglLab9, x, sY(ly));
+      pushHit(x - 4, sY(ly - 6), w, 24, function () {
+        if (APP.STATE.settings) { APP.STATE.settings.geocodeOnline = !APP.STATE.settings.geocodeOnline; APP.save(); UI.geoQ = ''; UI.geoResults = []; UI.geoErr = ''; buzz(8); }
+      });
+      ly += 18;
+      if (!online) { ly += paragraph('The built-in list covers major cities and runs fully on this device. Online search looks your town up on OpenStreetMap — one request, only when you type here, nothing else ever sent.', x, ly, w, 10.5, INK, SERIF, 15, 150) + 8; }
       var selName = d.geo ? d.geo.place : (d.cityIdx >= 0 ? (DATA.CITIES[d.cityIdx][0] + ', ' + DATA.CITIES[d.cityIdx][1]) : 'None selected: search below');
       var hasSel = !!(d.geo || d.cityIdx >= 0);
       setFont(MONO, 11, hasSel ? ACC : INK, p.LEFT, p.TOP, hasSel ? 255 : 140); p.text(selName.toUpperCase(), x, sY(ly)); ly += 22;
@@ -11764,7 +11857,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       // selected. The wheel is the reward; the hint under it invites the tap that starts the zoom.
       recompute(); UI.selPlanet = null; UI.pcard = null; UI.scroll.chart = 0; UI.screen = 'chart'; hideSearchInput();
     }
-    function recompute() { APP.STATE.chart = APP.compute(APP.STATE.birth, APP.STATE.settings); APP.save(); UI.readCache = null; UI.readSig = null; UI.readTransit = null; UI.forecast = null; UI.promCache = null; UI.arcCache = null; UI.todayCache = null; UI.fmList = null; UI.lifeList = null; UI.calEvents = null; UI.calDay = null; UI.walkTr = null; UI.walkTheme = null; UI.bondCache = null; UI.bondFor = null; UI.plun = null; UI.ringsData = null; UI.ringSel = null; UI.vocW = null; UI.phCache = null; UI.synToneCache = null; UI.dailyEssay = null; UI.cycles = undefined; UI.cycOpen = {}; UI.weekWv = undefined; UI.tradCache = undefined; UI.recCache = undefined; UI.domCache = undefined; UI.topicCache = undefined; UI.glanceCache = undefined; UI.dirCache = undefined; UI.liveWires = undefined; UI.sectDay = undefined; UI.pcProseFor = null; UI.chartWarm = false; UI.warmStep = 0; UI.chartFormT = 0; if (APP.clearPersonCharts) APP.clearPersonCharts(); UI.askAns = ''; UI.quip = null; UI.quipNext = 0; buildField(); }
+    function recompute() { APP.STATE.chart = APP.compute(APP.STATE.birth, APP.STATE.settings); APP.save(); UI.homeLine = undefined; UI.readCache = null; UI.readSig = null; UI.readTransit = null; UI.forecast = null; UI.promCache = null; UI.arcCache = null; UI.todayCache = null; UI.fmList = null; UI.lifeList = null; UI.calEvents = null; UI.calDay = null; UI.walkTr = null; UI.walkTheme = null; UI.bondCache = null; UI.bondFor = null; UI.plun = null; UI.ringsData = null; UI.ringSel = null; UI.vocW = null; UI.phCache = null; UI.synToneCache = null; UI.dailyEssay = null; UI.cycles = undefined; UI.cycOpen = {}; UI.weekWv = undefined; UI.tradCache = undefined; UI.recCache = undefined; UI.domCache = undefined; UI.topicCache = undefined; UI.glanceCache = undefined; UI.dirCache = undefined; UI.liveWires = undefined; UI.sectDay = undefined; UI.pcProseFor = null; UI.chartWarm = false; UI.warmStep = 0; UI.chartFormT = 0; if (APP.clearPersonCharts) APP.clearPersonCharts(); UI.askAns = ''; UI.quip = null; UI.quipNext = 0; buildField(); }
 
     // ---------- share / export a clean chart card (own untainted canvas; the live one holds remote images) ----------
     // share a daily card (clean offscreen canvas) — moon phase + what's live on your chart today
