@@ -380,9 +380,25 @@ var EPH = (function () {
     var gmst = 280.46061837 + 360.98564736629 * (d - 1.5);
     return rev(gmst + lonEast);
   }
+  // ONE FRAME OF DATE. The planets come out of astronomy-engine in the true equinox of date —
+  // nutation and all — while the angles were built from a linear mean-obliquity and a GMST truncated
+  // after its linear term: a MEAN-equinox frame, missing the equation of the equinoxes. Two frames in
+  // one chart means the Ascendant and the planets disagree about where 0° Aries is; measured, the
+  // ASC error is a fraction of an arcminute for a modern birth and ~0.8′ for a 1750 one, and a
+  // 29°58′-rising call inherits it. The bundled library exports the true values, so the angles now
+  // come from the same sky as the planets: GAST via AE.SiderealTime (hours × 15), true obliquity via
+  // AE.e_tilt().tobl. The analytic pair above is kept only as the no-library fallback.
+  function trueFrame9(d, lonEast) {
+    if (!AE || !AE.SiderealTime || !AE.e_tilt) return null;
+    try {
+      var t9 = AE.MakeTime(dateOf(d));
+      return { ramc: rev(AE.SiderealTime(t9) * 15 + lonEast), ecl: AE.e_tilt(t9).tobl };
+    } catch (eTF9) { return null; }
+  }
   function angles(d, latDeg, lonEast) {
-    var ecl = obliquity(d);
-    var ramc = lstDeg(d, lonEast);
+    var tf9 = trueFrame9(d, lonEast);
+    var ecl = tf9 ? tf9.ecl : obliquity(d);
+    var ramc = tf9 ? tf9.ramc : lstDeg(d, lonEast);
     var mc = rev(atan2d(sind(ramc), cosd(ramc) * cosd(ecl)));
     var y = cosd(ramc);
     var x = -(sind(ramc) * cosd(ecl) + tand(latDeg) * sind(ecl));
@@ -422,7 +438,10 @@ var EPH = (function () {
     return Math.abs(total - 360) < 1; // the 12 houses must wrap the zodiac exactly once, not several times
   }
   function placidusOk(c, lat) {
-    return Math.abs(lat) < 66 && cuspsMonotonic(c); // beyond the polar circle Placidus is undefined
+    // the real limit is the polar circle itself, 90° − ε ≈ 66.56°: the flat 66 cut a half-degree
+    // band (Rovaniemi, Murmansk) out of Placidus and told those readers the system was undefined
+    // for them, which for that band is untrue. cuspsMonotonic still guards the genuine collapse.
+    return Math.abs(lat) < 90 - obliquity(0) - 0.01 && cuspsMonotonic(c);
   }
   function houses(system, d, latDeg, lonEast) {
     var a = angles(d, latDeg, lonEast);
@@ -470,9 +489,22 @@ var EPH = (function () {
     var v = AE.GeoVector(AE.Body[bodyName], date, true);
     return rev(AE.Ecliptic(v).elon);
   }
-  // geocentric declination (degrees) — for out-of-bounds detection
+  // geocentric declination (degrees) — for out-of-bounds detection and declination parallels.
+  // GeoVector returns J2000-frame coordinates; reading declination off them without rotating into
+  // the equator of date was wrong by up to ~8′ for births decades from 2000 — real slack on a pure
+  // threshold call like out-of-bounds. Rotation_EQJ_EQD is the one-line fix the library ships.
   function declOf(bodyName, d) {
-    try { var v = AE.GeoVector(AE.Body[bodyName], dateOf(d), true); return AE.EquatorFromVector(v).dec; } catch (e) { return null; }
+    try {
+      var t9 = AE.MakeTime(dateOf(d));
+      var v = AE.GeoVector(AE.Body[bodyName], t9, true);
+      if (AE.Rotation_EQJ_EQD && AE.RotateVector) v = AE.RotateVector(AE.Rotation_EQJ_EQD(t9), v);
+      return AE.EquatorFromVector(v).dec;
+    } catch (e) { return null; }
+  }
+  // the true obliquity of the birth date: the out-of-bounds line itself, not a frozen constant
+  function oblOfDate(d) {
+    if (AE && AE.e_tilt) { try { return AE.e_tilt(AE.MakeTime(dateOf(d))).tobl; } catch (eOb9) {} }
+    return obliquity(d);
   }
   var PNAMES = ['Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto'];
   var PKEYS = ['mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto'];
@@ -501,7 +533,7 @@ var EPH = (function () {
 
   return {
     SIGNS: SIGNS, rev: rev, dayNumber: dayNumber, positions: positions, declOf: declOf, eclLon: eclLon,
-    angles: angles, houses: houses, houseOf: houseOf, obliquity: obliquity, lstDeg: lstDeg
+    angles: angles, houses: houses, houseOf: houseOf, obliquity: obliquity, lstDeg: lstDeg, oblOfDate: oblOfDate
   };
 })();
 
@@ -1786,7 +1818,7 @@ var APP = (function () {
   }
 
   // aspects from the sensitive points (North Node, Lilith, Part of Fortune) to your natal planets
-  var POINT_KEYS = [['trueNode', 'North Node', 'the growth that stretches you toward who you’re becoming'], ['lilith', 'Black Moon Lilith', 'the wild, unapologetic part of you'], ['pof', 'Part of Fortune', 'where ease and good fortune flow most freely']];
+  var POINT_KEYS = [['trueNode', 'North Node', 'the growth that stretches you toward who you’re becoming'], ['lilith', 'Mean Black Moon Lilith', 'the wild, unapologetic part of you — the mean lunar apogee, which can sit tens of degrees from the true point, so it is named for what it is'], ['pof', 'Part of Fortune', 'where ease and good fortune flow most freely']];
   function pointAspects(c) {
     var natal = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto'], out = [], pi, ni;
     for (pi = 0; pi < POINT_KEYS.length; pi++) {
@@ -1826,8 +1858,8 @@ var APP = (function () {
     var out = [], i, sunLon = c.planets.sun ? c.planets.sun.lon : 0;
     var d = EPH.dayNumber(b.y, b.mo, b.d, b.timeKnown ? (b.hour + (b.min || 0) / 60) : 12);
     var cf = ['mercury', 'venus', 'mars']; for (i = 0; i < cf.length; i++) { var k = cf[i], p = c.planets[k]; if (!p) continue; var sep = angSep(p.lon, sunLon);
-      if (sep <= 0.283) out.push({ t: 'cazimi', k: k, v: sep }); else if (sep <= 7.5) out.push({ t: 'combust', k: k, v: sep }); else if (sep <= 15) out.push({ t: 'beams', k: k, v: sep }); }
-    var ob = ['moon', 'mercury', 'venus', 'mars', 'pluto']; for (i = 0; i < ob.length; i++) { var ok = ob[i]; if (!c.planets[ok]) continue; var dec = EPH.declOf(BODYNAME[ok], d); if (dec != null && Math.abs(dec) > 23.4366) out.push({ t: 'oob', k: ok, v: dec }); }
+      if (sep <= 0.283 - 2 / 60) out.push({ t: 'cazimi', k: k, v: sep }); else if (sep <= 7.5) out.push({ t: 'combust', k: k, v: sep, edge: sep <= 0.283 + 2 / 60 }); else if (sep <= 15) out.push({ t: 'beams', k: k, v: sep }); }
+    var ob = ['moon', 'mercury', 'venus', 'mars', 'pluto']; for (i = 0; i < ob.length; i++) { var ok = ob[i]; if (!c.planets[ok]) continue; var dec = EPH.declOf(BODYNAME[ok], d); if (dec != null && Math.abs(dec) > EPH.oblOfDate(d)) out.push({ t: 'oob', k: ok, v: dec }); }
     try { var p0 = EPH.positions(d - 0.5), p1 = EPH.positions(d + 0.5), sp = ['mercury', 'venus', 'mars', 'jupiter', 'saturn']; for (i = 0; i < sp.length; i++) { var sk = sp[i]; if (!c.planets[sk]) continue; var spd = sdelta(p0[sk].lon, p1[sk].lon); if (Math.abs(spd) < 0.018) out.push({ t: 'stationary', k: sk, v: spd }); } } catch (e) {}
     if (c) c._condCache = out;
     return out;
@@ -1835,7 +1867,7 @@ var APP = (function () {
   function conditionLine(cd) {
     var nm = nameFor(cd.k), fn = DATA.PLANETS[cd.k] ? DATA.PLANETS[cd.k].fn : 'this part of you', sf = shortFn(cd.k);
     if (cd.t === 'cazimi') return nm + ' is cazimi: within 17 arcminutes of the exact heart of the Sun. Not burned but enthroned: ' + fn + ' is fused to your core identity and carries rare authority.';
-    if (cd.t === 'combust') return nm + ' is combust, only ' + cd.v.toFixed(1) + '° from the Sun, its light swallowed by your own drive to shine, so ' + sf + ' has to work hard to be seen on its own terms.';
+    if (cd.t === 'combust') return nm + ' is combust, only ' + cd.v.toFixed(1) + '° from the Sun, its light swallowed by your own drive to shine, so ' + sf + ' has to work hard to be seen on its own terms.' + (cd.edge ? ' (This one sits within the instrument’s error of the cazimi line — the heart of the Sun — a fraction of an arcminute the other way and it would be enthroned there instead of burned, so it is judged the lesser, and said so.)' : '');
     if (cd.t === 'beams') return nm + ' rides under the Sun’s beams (' + cd.v.toFixed(1) + '°), operating half-hidden behind your sense of self: quietly steering rather than speaking out loud.';
     if (cd.t === 'oob') return nm + ' is out of bounds: its declination of ' + cd.v.toFixed(1) + '° runs past the Sun’s own limit, so ' + sf + ' answers to no one but itself: gifted, excessive, and hard to govern.';
     if (cd.t === 'stationary') return nm + ' stood almost still at your birth, pivoting between forward and retrograde, so ' + sf + ' sits unusually deep and concentrated in you, a fixed undercurrent rather than a passing mood.';
@@ -2586,7 +2618,7 @@ var APP = (function () {
     }
     if (k === 'sun') {
       var burns9 = [], ck9 = ['moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn'], bi9;
-      for (bi9 = 0; bi9 < ck9.length; bi9++) { var bp9 = P[ck9[bi9]]; if (!bp9) continue; var sep9 = angSep(bp9.lon, P.sun.lon); if (sep9 <= 7.5 && sep9 > 0.283) burns9.push(ck9[bi9]); }
+      for (bi9 = 0; bi9 < ck9.length; bi9++) { var bp9 = P[ck9[bi9]]; if (!bp9) continue; var sep9 = angSep(bp9.lon, P.sun.lon); if (sep9 <= 7.5 && sep9 > 0.283 - 2 / 60) burns9.push(ck9[bi9]); }   // the same conservative cazimi line the ledger judges by
       why.push('benefic alone and by aspect; malefic by close conjunction — it burns whatever sits inside 7°30′' + (burns9.length ? ' (here: ' + burns9.map(nameFor).join(', ') + ')' : ''));
       return { base: 'benefic', verdict: 'benefic', burns: burns9, why: why };
     }
@@ -2698,8 +2730,8 @@ var APP = (function () {
     var cds9 = [], ci9; try { var allCd9 = chartConditions(c, b); for (ci9 = 0; ci9 < allCd9.length; ci9++) if (allCd9[ci9].k === k && (allCd9[ci9].t === 'oob' || allCd9[ci9].t === 'stationary')) cds9.push(allCd9[ci9]); } catch (eCd9) {}
     if (k !== 'sun' && !det.essential.modern && c.planets.sun) {
       var sSep9 = angSep(p.lon, c.planets.sun.lon);
-      if (sSep9 <= 0.283) cds9.push({ t: 'cazimi', k: k, v: sSep9 });
-      else if (sSep9 <= 7.5) cds9.push({ t: 'combust', k: k, v: sSep9 });
+      if (sSep9 <= 0.283 - 2 / 60) cds9.push({ t: 'cazimi', k: k, v: sSep9 });
+      else if (sSep9 <= 7.5) cds9.push({ t: 'combust', k: k, v: sSep9, edge: sSep9 <= 0.283 + 2 / 60 });
       else if (sSep9 <= 15) cds9.push({ t: 'beams', k: k, v: sSep9 });
     }
     det.terrestrial.conditions = cds9;
@@ -2822,6 +2854,7 @@ var APP = (function () {
     'partile conjunction with the South Node': 'sitting exactly on the South Node'
   };
   function plainDig9(label) {
+    label = label.replace(/ — within instrument error of the 1° line$/, '').replace(/ — within instrument error of the cazimi line, judged the lesser$/, '');
     if (PLAIN_DIG9[label]) return PLAIN_DIG9[label];
     if (label.indexOf('partile ') === 0) return 'an exact ' + label.slice(8);
     if (label.indexOf('conjunct the star ') === 0) return 'sitting on the fixed star ' + label.slice(18);
@@ -2860,7 +2893,9 @@ var APP = (function () {
     }
     if (k !== 'sun' && c.planets.sun) {
       var ss9 = angSep(p.lon, c.planets.sun.lon);
-      if (ss9 <= 0.283) acc.push(['cazimi — in the heart of the Sun', 5]);
+      var ERR2_9 = 2 / 60;   // two bodies at ~1′ each: the orb's own error bar
+      if (ss9 <= 0.283 - ERR2_9) acc.push(['cazimi — in the heart of the Sun', 5]);
+      else if (ss9 <= 0.283 + ERR2_9) acc.push(['combust — within instrument error of the cazimi line, judged the lesser', -5]);
       else if (ss9 <= 7.5) acc.push(['combust', -5]);
       else if (ss9 <= 15) acc.push(['under the Sun’s beams', -4]);
       else acc.push(['free of combustion and the beams', 5]);
@@ -2868,15 +2903,16 @@ var APP = (function () {
     for (i9 = 0; i9 < c.aspects.length; i9++) {
       var A9 = c.aspects[i9]; if ((A9.a !== k && A9.b !== k) || A9.orb > 1) continue;
       var o9 = A9.a === k ? A9.b : A9.a, ky9 = A9.asp.key;
+      var edge9 = (1 - A9.orb) <= (2 / 60) ? ' — within instrument error of the 1° line' : '';
       if (o9 === 'jupiter' || o9 === 'venus') {
-        if (ky9 === 'conjunction') acc.push(['partile conjunction with ' + nameFor(o9), 5]);
-        else if (ky9 === 'trine') acc.push(['partile trine to ' + nameFor(o9), 4]);
-        else if (ky9 === 'sextile') acc.push(['partile sextile to ' + nameFor(o9), 3]);
+        if (ky9 === 'conjunction') acc.push(['partile conjunction with ' + nameFor(o9) + edge9, 5]);
+        else if (ky9 === 'trine') acc.push(['partile trine to ' + nameFor(o9) + edge9, 4]);
+        else if (ky9 === 'sextile') acc.push(['partile sextile to ' + nameFor(o9) + edge9, 3]);
       }
       if (o9 === 'saturn' || o9 === 'mars') {
-        if (ky9 === 'conjunction') acc.push(['partile conjunction with ' + nameFor(o9), -5]);
-        else if (ky9 === 'opposition') acc.push(['partile opposition to ' + nameFor(o9), -4]);
-        else if (ky9 === 'square') acc.push(['partile square to ' + nameFor(o9), -3]);
+        if (ky9 === 'conjunction') acc.push(['partile conjunction with ' + nameFor(o9) + edge9, -5]);
+        else if (ky9 === 'opposition') acc.push(['partile opposition to ' + nameFor(o9) + edge9, -4]);
+        else if (ky9 === 'square') acc.push(['partile square to ' + nameFor(o9) + edge9, -3]);
       }
     }
     // the node the reader actually selected, so the ledger cannot disagree with the wheel: this read
@@ -2892,8 +2928,11 @@ var APP = (function () {
       var dM9 = sdelta(c.planets.mars.lon, p.lon), dS9 = sdelta(c.planets.saturn.lon, p.lon);
       if (Math.abs(dM9) <= 8 && Math.abs(dS9) <= 8 && dM9 * dS9 < 0) acc.push(['besieged between Mars and Saturn', -5]);
     }
-    var prec9 = 1.39775 * (((b && b.y) || 2000) - 2000) / 100, si9;
-    for (si9 = 0; si9 < LILLY_STARS9.length; si9++) { var st9 = LILLY_STARS9[si9]; if (angSep(p.lon, rev(st9[1] + prec9)) <= 2) acc.push(['conjunct the star ' + st9[0], st9[2]]); }
+    // the same precStar9 the display tables use — one precession, so the ledger and the star
+    // chapter can never place Regulus at two different degrees of the same chart
+    var si9;
+    var pTrop9 = rev(p.lon + (c.ayan || 0));   // back to tropical: the frame the star table lives in
+    for (si9 = 0; si9 < LILLY_STARS9.length; si9++) { var st9 = LILLY_STARS9[si9]; if (angSep(pTrop9, precStar9(st9[1], c.d)) <= 2) acc.push(['conjunct the star ' + st9[0], st9[2]]); }
     var eT9 = 0, aT9 = 0;
     for (i9 = 0; i9 < ess.length; i9++) eT9 += ess[i9][1];
     for (i9 = 0; i9 < acc.length; i9++) aT9 += acc[i9][1];
@@ -3162,6 +3201,7 @@ var APP = (function () {
   // threshold at +3 alongside them, which cut the mixed band in half — so a row could print
   // "well enough disposed to pay" directly above a figure reading "net +4 (mixed)". Judgment now runs
   // on the bands, and the words above a figure can no longer disagree with it.
+  var MAJOR_ASP9 = { conjunction: 1, sextile: 1, square: 1, trine: 1, opposition: 1 };
   function leanOf9(total) { return total >= 5 ? 1 : total < 0 ? -1 : 0; }
   // THE PROMISE COMES FROM THE ZODIACAL STATE. Morin's état céleste against his état terrestre, and
   // the school's own first rule: the sign a significator stands in says what it can PROMISE; the house
@@ -3220,21 +3260,31 @@ var APP = (function () {
     }
     var bond = null, nAsp = 0;
     for (i = 0; i < lordD.aspects.length; i++) {
-      var A = lordD.aspects[i], o = A.other; if (CL9.indexOf(o) < 0) continue;
+      var A = lordD.aspects[i], o = A.other;
+      if (o !== 'venus' && o !== 'jupiter' && o !== 'mars' && o !== 'saturn') continue;
+      if (!MAJOR_ASP9[A.aspect]) continue;   // minors never enter the weighing: the four arms describe the five Ptolemaic angles
       var hard = (A.aspect === 'square' || A.aspect === 'opposition');
-      if (o === 'venus' || o === 'jupiter') { helps += (A.reception ? 2 : 1); if (!bond) bond = A; testimony.push(nameTh(o) + '’s ' + A.aspect + ' to the lord' + (A.reception ? ', with reception, a real repair' : '')); }
+      var aBen = (o === 'venus' || o === 'jupiter'), aConj = (A.aspect === 'conjunction');
+      var aKind9;   // which arm of the pipe-and-liquid rule this contact falls under
+      if (aBen && !hard) { helps += (A.reception ? 2 : 1); aKind9 = 'benSoft'; testimony.push(nameTh(o) + '’s ' + A.aspect + ' to the lord' + (A.reception ? ', with reception, a real repair' : '')); }
+      else if (aBen && hard) { helps += (A.reception ? 1 : 0.5); aKind9 = 'benHard'; testimony.push(nameTh(o) + '’s ' + A.aspect + ' to the lord — increase, but through friction' + (A.reception ? ', eased by reception' : '')); }
       // a malefic CONJUNCT the house lord is one of the tradition's heaviest afflictions, and this
       // loop was passing over it: only squares and oppositions counted, so Mars sitting on the lord
       // of the 7th registered as nothing at all
-      else if ((o === 'mars' || o === 'saturn') && (hard || A.aspect === 'conjunction')) { harms += (A.reception ? 1 : 2); if (!bond) bond = A; testimony.push(nameTh(o) + '’s ' + A.aspect + ' to the lord' + (A.reception ? ', though reception softens it' : A.aspect === 'conjunction' ? ', sitting on it' : ', friction at the root')); }
-      else continue;
-      var aBen = (o === 'venus' || o === 'jupiter');
+      else if (!aBen && (hard || aConj)) { harms += (A.reception ? 1 : 2); aKind9 = 'malHard'; testimony.push(nameTh(o) + '’s ' + A.aspect + ' to the lord' + (A.reception ? ', though reception softens it' : aConj ? ', sitting on it' : ', friction at the root')); }
+      else { harms += (A.reception ? 0.5 : 1); aKind9 = 'malSoft'; testimony.push(nameTh(o) + '’s ' + A.aspect + ' to the lord — smooth delivery of a hard substance' + (A.reception ? ', eased by reception' : '')); }
+      if (!bond) bond = A;
       testify(30 + (nAsp++), 'what reaches the lord: ' + nameFor(o),
-        capit(nameTh(o)) + ' reaches ' + nameTh(lordK) + ' by ' + art9(A.aspect) + ' ' + A.aspect + ' — ' + orbWord9(A.orb) + ', and ' + motionWord9(A.applying) + '. ' + capit(pron9(o, 0)) + (aBen ? ' seconds what this house promises' : ' presses on it') + (A.reception ? ', though each stands in ground the other rules, which turns the exchange into a real repair' : '') + '.',
+        capit(nameTh(o)) + ' reaches ' + nameTh(lordK) + ' by ' + art9(A.aspect) + ' ' + A.aspect + ' — ' + orbWord9(A.orb) + ', and ' + motionWord9(A.applying) + '. ' +
+        (aKind9 === 'benSoft' ? capit(pron9(o, 0)) + ' seconds what this house promises' + (A.reception ? ', and each stands in ground the other rules, which turns the exchange into a real repair' : '')
+         : aKind9 === 'benHard' ? capit(pron9(o, 0)) + ' still brings increase — a kind planet does not stop being kind at a hard angle — but it arrives through friction, so the good here is won, not handed over'
+         : aKind9 === 'malHard' ? capit(pron9(o, 0)) + ' presses on it' + (A.reception ? ', though each stands in ground the other rules, which softens the pressure' : '')
+         : 'The angle is easy, so the delivery is smooth — but what is delivered is still ' + nameTh(o) + '’s own substance. The tradition trusts a hard aspect from a kind planet over an easy one from this: it arrives without resistance, and brings its cost with it' + (A.reception ? ' — though each stands in ground the other rules, which blunts the cost' : '')) + '.',
         aBen ? 1 : -1,
-        nameFor(lordK) + ' ' + A.aspect + ' ' + nameFor(o) + ' · orb ' + A.orb.toFixed(2) + '° ' + (A.applying ? 'applying' : 'separating') + (A.reception ? ' · reception' : ''));
+        nameFor(lordK) + ' ' + A.aspect + ' ' + nameFor(o) + ' · orb ' + A.orb.toFixed(2) + '° ' + (A.applying ? 'applying' : 'separating') + (A.reception ? ' · reception' : '') + ' · ' + (aKind9 === 'benHard' ? 'increase through friction' : aKind9 === 'malSoft' ? 'smooth pipe, hard liquid' : aBen ? 'benefic testimony' : 'malefic testimony'));
     }
     var lscore = lordD.condition ? lordD.condition.total : 0;
+    var lordLeanH9 = promiseLean9(lordD);
     testify(20, 'lord of the house, who carries the promise',
       capit(nameTh(lordK)) + ' answers for this ground, ' + stateAdj9(lordD.essential.label) + ' in ' + lordD.signName + (lordD.house === h ? ', standing in the house it rules, so this domain runs on its own ground' : lordD.house ? ', and works from your ' + ordinal(lordD.house) + ' — ' + HOUSE_AREA9[lordD.house - 1] : '') + '. ' + (function () {
         var le9 = (lordD.essential && typeof lordD.essential.score === 'number') ? lordD.essential.score : 0, lb9 = lordLeanH9;
@@ -3246,7 +3296,6 @@ var APP = (function () {
         return lb9 > 0 ? 'It is well enough disposed to pay what it promises' : lb9 < 0 ? 'It is too poorly disposed to pay outright: it pays late, through others, or not in full' : 'It is neither strong nor weak, so timing decides which half of it speaks';
       })() + '.',
       lordLeanH9, figOf9(lordD));
-    var lordLeanH9 = promiseLean9(lordD);
     // FOUR VERDICTS WERE THREE TOO FEW AT THE MIDDLE. Once the promise-lean came from the zodiacal
     // state, a lord holding only a term or a face — a thin claim, neither owned nor undone — fell
     // straight through to "withheld", which says the lord is too weak to pay at all. That is a real
@@ -3255,8 +3304,17 @@ var APP = (function () {
     // verdict the doctrine's own state/circumstance split implies: a matter decided by where the
     // significator stands rather than by what it owns.
     var accH9 = lordD.condition ? lordD.condition.accidental.total : 0;
+    // A COMBUST LORD CANNOT BE 'CARRIED'. The carried verdict says the circumstances are strong
+    // enough to deliver a thin promise — and combustion is the one circumstance the tradition names
+    // as destroying the power to deliver at all. An angular, swift, combust lord can still sum a
+    // positive accidental column (house +5, direct +4, swift +2 against combust −5), so the sum
+    // alone would print 'carried' for exactly the planet Lilly calls most afflicted. Cazimi is the
+    // opposite case and is already the greater dignity; being under the beams is milder and is left
+    // to the column.
+    var burnt9 = false, bc9 = (lordD.terrestrial && lordD.terrestrial.conditions) || [], bi9;
+    for (bi9 = 0; bi9 < bc9.length; bi9++) if (bc9[bi9].t === 'combust') burnt9 = true;
     var verdict = (lordLeanH9 > 0) ? (harms > helps ? 'taxed' : 'promised')
-      : (lordLeanH9 === 0) ? ((helps > harms || accH9 >= 5) ? 'carried' : harms > helps ? 'taxed' : 'withheld')
+      : (lordLeanH9 === 0) ? (((helps > harms || accH9 >= 5) && !burnt9) ? 'carried' : 'withheld')
       : (helps > 0 ? 'repaired' : 'withheld');
     // --- compose the paragraph ---
     var S = [];
@@ -3437,7 +3495,7 @@ var APP = (function () {
     function testify(ord, role, what, lean, fig) { tst.push({ ord: ord, role: role, what: what, lean: lean, fig: fig || '' }); }
     // Which planets will be weighed as lords of this topic's houses — settled before the loop, so
     // "have we already heard from this planet?" never depends on which house happens to come first.
-    var lordSet9 = {}, ps9;
+    var lordSet9 = {}, occSeen9 = {}, ps9;
     for (ps9 = 0; ps9 < spec.houses.length; ps9++) lordSet9[TRAD_RULER[Math.floor(rev(c.cusps[spec.houses[ps9].h]) / 30)]] = true;
     for (i = 0; i < spec.houses.length; i++) {
       var hs = spec.houses[i], h = hs.h, cs = Math.floor(rev(c.cusps[h]) / 30);
@@ -3449,7 +3507,7 @@ var APP = (function () {
       var lordLean9 = promiseLean9(lordD);
       if (firstLord) favor += lordLean9;
       var occTxt = '';
-      for (oi = 0; oi < CL.length; oi++) { k = CL[oi]; var pp = c.planets[k]; if (pp && pp.house === h && k !== lordK) { var v = determination(c, b, k), occDup9 = !!lordSet9[k]; occTxt = ' ' + capit(nameTh(k)) + ' stands in the ' + ordinal(h) + ' itself, ' + occNature9(v) + '.';
+      for (oi = 0; oi < CL.length; oi++) { k = CL[oi]; var pp = c.planets[k]; if (pp && pp.house === h && k !== lordK) { var v = determination(c, b, k), occDup9 = !!lordSet9[k]; occSeen9[k] = true; occTxt = ' ' + capit(nameTh(k)) + ' stands in the ' + ordinal(h) + ' itself, ' + occNature9(v) + '.';
         testify(i * 10 + 1, occDup9 ? 'in the ' + ordinal(h) + ' itself: ' + nameFor(k) + ' — one hand, not two' : 'in the ' + ordinal(h) + ' itself: ' + nameFor(k),
           capit(nameTh(k)) + ' stands in the house itself, ' + stateAdj9(v.essential.label) + ' in ' + v.signName + ', and ' + (v.nature.verdict === 'benefic' ? 'favours this ground' : v.nature.verdict === 'malefic' ? 'disturbs this ground' : 'takes its colour from what reaches it') + (occDup9 ? '. It also rules another of this domain’s houses, so the same planet is standing on ground it already answers for — which concentrates the matter, but is still one testimony and is not counted twice' : ''),
           occDup9 ? 0 : v.nature.verdict === 'benefic' ? 1 : v.nature.verdict === 'malefic' ? -1 : 0, figOf9(v));
@@ -3460,17 +3518,28 @@ var APP = (function () {
       var aspTxt = '', bestAsp = null, api;
       for (api = 0; api < lordD.aspects.length; api++) {
         var Ap = lordD.aspects[api], oth = Ap.other; if (['venus', 'jupiter', 'mars', 'saturn'].indexOf(oth) < 0) continue;
+        if (!MAJOR_ASP9[Ap.aspect]) continue;   // same rule as judgeHouse: minors never enter the weighing
         var ben = (oth === 'venus' || oth === 'jupiter'), hard = (Ap.aspect === 'square' || Ap.aspect === 'opposition'), conj = (Ap.aspect === 'conjunction');
-        var counts = ben ? (!hard) : (hard || conj); // benefics help by soft/conj; malefics bite by conj/hard
-        if (!counts) continue;
-        if (!bestAsp || Ap.orb < bestAsp.orb) bestAsp = { oth: oth, aspect: Ap.aspect, orb: Ap.orb, ben: ben, rec: !!Ap.reception, app: !!Ap.applying };
+        // all four arms of the pipe-and-liquid rule count, matching judgeHouse exactly: the two
+        // engines were gating this differently, and two engines answering the same question
+        // differently is a fault regardless of which one is right
+        var full9 = ben ? !hard : (hard || conj);   // the full-weight arms; the other two count at half
+        // a full-weight testimony outranks a tighter half-weight one — otherwise a benefic square at
+        // 0.3° displaces a malefic conjunction at 4° and this engine answers the opposite of
+        // judgeHouse, which sums every contact
+        if (!bestAsp || (full9 && !bestAsp.full) || (full9 === bestAsp.full && Ap.orb < bestAsp.orb))
+          bestAsp = { oth: oth, aspect: Ap.aspect, orb: Ap.orb, ben: ben, rec: !!Ap.reception, app: !!Ap.applying, full: full9 };
       }
       if (bestAsp && firstLord) { // only fold the lord's aspect once — the same planet, not a new testimony
-        favor += bestAsp.ben ? (bestAsp.rec ? 0.75 : 0.5) : (bestAsp.rec ? -0.25 : -0.5);
+        var wA9 = bestAsp.full ? 1 : 0.5;   // benefic-by-hard and malefic-by-soft carry half weight
+        favor += wA9 * (bestAsp.ben ? (bestAsp.rec ? 0.75 : 0.5) : (bestAsp.rec ? -0.25 : -0.5));
         aspTxt = ' ' + capit(nameFor(bestAsp.oth)) + (bestAsp.ben ? ' seconds it by ' : ' presses on it by ') + art9(bestAsp.aspect) + ' ' + bestAsp.aspect + (bestAsp.rec ? ', though reception eases the exchange' : '') + '.';
         receipts.push(nameFor(lordK) + (bestAsp.ben ? '+' : '−') + nameFor(bestAsp.oth) + ' ' + bestAsp.aspect.slice(0, 3));
-        testify(i * 10 + 3, 'what reaches the lord', capit(nameTh(bestAsp.oth)) + ' reaches it by ' + art9(bestAsp.aspect) + ' ' + bestAsp.aspect + ' — ' + orbWord9(bestAsp.orb) + ', and ' + motionWord9(bestAsp.app) + '. ' + capit(pron9(bestAsp.oth, 0)) + (bestAsp.ben ? ' seconds the promise' : ' takes a cut of it') + (bestAsp.rec ? ', though each planet stands in ground the other rules, which eases the exchange' : '') + '.', bestAsp.ben ? 1 : -1,
-          nameFor(lordK) + ' ' + bestAsp.aspect + ' ' + nameFor(bestAsp.oth) + ' · orb ' + bestAsp.orb.toFixed(2) + '° ' + (bestAsp.app ? 'applying' : 'separating') + (bestAsp.rec ? ' · reception' : '') + ' · ' + (bestAsp.ben ? 'benefic' : 'malefic') + ' testimony');
+        testify(i * 10 + 3, 'what reaches the lord', capit(nameTh(bestAsp.oth)) + ' reaches it by ' + art9(bestAsp.aspect) + ' ' + bestAsp.aspect + ' — ' + orbWord9(bestAsp.orb) + ', and ' + motionWord9(bestAsp.app) + '. ' +
+          (bestAsp.full ? (capit(pron9(bestAsp.oth, 0)) + (bestAsp.ben ? ' seconds the promise' : ' takes a cut of it') + (bestAsp.rec ? ', though each planet stands in ground the other rules, which eases the exchange' : ''))
+           : bestAsp.ben ? capit(pron9(bestAsp.oth, 0)) + ' still brings increase at a hard angle, but through friction: the good is won rather than handed over'
+           : 'The angle is easy, so the delivery is smooth — but what arrives is still ' + nameTh(bestAsp.oth) + '’s own substance, cost included') + '.', bestAsp.ben ? 1 : -1,
+          nameFor(lordK) + ' ' + bestAsp.aspect + ' ' + nameFor(bestAsp.oth) + ' · orb ' + bestAsp.orb.toFixed(2) + '° ' + (bestAsp.app ? 'applying' : 'separating') + (bestAsp.rec ? ' · reception' : '') + ' · ' + (bestAsp.full ? (bestAsp.ben ? 'benefic' : 'malefic') + ' testimony' : bestAsp.ben ? 'increase through friction' : 'smooth pipe, hard liquid'));
       }
       // state (the sign) and circumstance (the house) are held apart, never blended: a lord weak in
       // its own sign but well placed reads as a promise carried by circumstance, not as "held strong"
@@ -3511,7 +3580,7 @@ var APP = (function () {
         spec.lotName + ' ' + degStr(rev(lp.lon) % 30) + ' ' + DATA.SIGNS[ls].name + ' · ' + ordinal(lh) + ' · lord ' + (llD ? figOf9(llD) : nameFor(llK)));
     }
     if (spec.karaka) { var kd = determination(c, b, spec.karaka); if (kd) { var kt = kd.condition ? kd.condition.total : 0;
-      var karDup9 = !!lordSeen[spec.karaka];       // already weighed as a house lord above
+      var karDup9 = !!lordSeen[spec.karaka] || !!occSeen9[spec.karaka];   // already weighed above, as lord or as occupant
       var karLean9 = promiseLean9(kd);
       if (!karDup9) favor += 0.5 * karLean9;
       S.push(capit(nameTh(spec.karaka)) + ', the planet the tradition gives to ' + spec.karWord + ', is ' + stateAdj9(kd.essential.label) + ' in ' + kd.signName + (kd.house ? ' in your ' + ordinal(kd.house) : '') + ' — ' + (function () {
@@ -4358,7 +4427,7 @@ var APP = (function () {
     return {
       hasTime: true, line: tidyProse(S.join(' ')), tone: (zr && ((zr.l2 && zr.l2.peak) || zr.l1.peak)) || null, lord: loy.lord, event: event ? { dp: event.dp, np: event.np, year: event.year } : null,
       receipt: (ordinal(loy.profHouse) + '-profection · lord ' + nameFor(loy.lord) + (zr && zr.l1 ? ' · ZR ' + zr.l1.signName + (((zr.l2 && zr.l2.peak) || zr.l1.peak) ? ' ' + ((zr.l2 && zr.l2.peak) || zr.l1.peak) : '') : '') + (event ? ' · ' + nameFor(event.dp) + ' ' + event.aspKey + ' ' + nameFor(event.np) + ' ~' + event.year : '')).toUpperCase(),
-      src: 'the year woven from profection (the lord of the year), Zodiacal Releasing (the chapter and its peaks), symbolic directions (the dated event) and the derived-houses fan-out (the cast); the trigger doctrine puts transits last'
+      src: 'the year woven from profection (the lord of the year), Zodiacal Releasing (the chapter and its peaks), symbolic directions (the dated event — ecliptic degree-for-a-year arcs, the shorthand, not mundane primary directions) and the derived-houses fan-out (the cast); the trigger doctrine puts transits last'
     };
   }
   function directedChapter18(c, b, moverK) {
@@ -4432,7 +4501,7 @@ var APP = (function () {
       }
       chapters.push(ch); age = endAge;
     }
-    return { hasTime: true, ageNow: ageNow, chapters: chapters, current: current, src: 'Abu Ma’shar and the Persian tradition: the distribution of the bounds (al-Firdaria’s cousin), the directed Ascendant’s term-lord as time-lord' };
+    return { hasTime: true, ageNow: ageNow, chapters: chapters, current: current, src: 'Abu Ma’shar and the Persian tradition: the distribution of the bounds (al-Firdaria’s cousin), the directed Ascendant’s term-lord as time-lord — computed here as ecliptic arcs (degree-for-a-year shorthand), not the classical circumambulation in oblique ascension' };
   }
   // ===== PHASE 20 — PROFECTIONS × DIRECTIONS: the lord of the year decides which speak loudest =====
   // The annual profection advances the Ascendant one whole sign a year; the lord of the profected
@@ -5295,7 +5364,7 @@ var APP = (function () {
           var czk9 = ['mercury', 'venus'], czi9;
           for (czi9 = 0; czi9 < czk9.length; czi9++) {
             var czp9 = tpz9[czk9[czi9]]; if (!czp9) continue;
-            if (Math.abs(sdelta(tpz9.sun.lon, czp9.lon)) <= 0.283) s.push(nameFor(czk9[czi9]) + ' sits in the heart of the Sun today: cazimi, the old astrologers\u2019 lucky hour stretched across a day. ' + (czk9[czi9] === 'mercury' ? 'Words, decisions and paperwork carry rare authority: say the thing, sign the thing.' : 'Affection and taste sit enthroned: ask, choose, make the gesture.'));
+            if (Math.abs(sdelta(tpz9.sun.lon, czp9.lon)) <= 0.283 - 2 / 60) s.push(nameFor(czk9[czi9]) + ' sits in the heart of the Sun today: cazimi, the old astrologers\u2019 lucky hour stretched across a day. ' + (czk9[czi9] === 'mercury' ? 'Words, decisions and paperwork carry rare authority: say the thing, sign the thing.' : 'Affection and taste sit enthroned: ask, choose, make the gesture.'));
           }
         }
       } catch (eCz9) {}
@@ -5741,6 +5810,12 @@ var APP = (function () {
   function degreeNote(deg) { var d = Math.floor(deg); if (d === 0) return 'at 0°: a raw, first-breath expression of the sign'; if (d === 29) return 'at 29°, the sign’s last degree: urgency, and a lesson nearly finished'; return null; }
   // Natures and meanings follow Vivian Robson, *The Fixed Stars and Constellations in Astrology* (1923,
   // public domain), summarised in our own words; tropical longitudes are for ~J2000 (precession ~50″/yr).
+  // THE STARS MOVE. These longitudes are epoch ~J2000, and precession carries every star forward
+  // ~50.29″ a year (1.39775°/century) — for a 1950 birth that is ~0.7°, half the 1.4° orb the app
+  // judges with, so an unprecessed compare puts a reader's star contacts in the wrong sky. The
+  // Lilly ledger (LILLY_STARS9) already precessed at use; these tables now do the same, through one
+  // shared helper, so the app cannot disagree with itself about where Regulus is.
+  function precStar9(lon2000, d) { return rev(lon2000 + 1.39775 * ((d || 0) - 1) / 36525); }
   var FIXED_STARS = [
     { n: 'Difda', lon: 2.6, m: 'self-undoing turned to discipline; forced change that finally frees you', nat: 'Saturn' },
     { n: 'Mirach', lon: 30.4, m: 'beauty, devotion and a gift for drawing the right people close', nat: 'Venus' },
@@ -5764,7 +5839,7 @@ var APP = (function () {
   ];
   function starsOn(c) {
     var keys = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'asc', 'mc'], out = [], i, s;
-    for (i = 0; i < keys.length; i++) { var p = (keys[i] === 'asc') ? c.ascBody : (keys[i] === 'mc') ? c.mcBody : c.planets[keys[i]]; if (!p) continue; if ((keys[i] === 'asc' || keys[i] === 'mc') && !STATE.birth.timeKnown) continue; var raw = rev(p.lon + (c.ayan || 0)); for (s = 0; s < FIXED_STARS.length; s++) { var o = Math.abs(sdelta(raw, FIXED_STARS[s].lon)); if (o <= 1.4) out.push({ planet: keys[i], star: FIXED_STARS[s].n, m: FIXED_STARS[s].m, nat: FIXED_STARS[s].nat, orb: o }); } }
+    for (i = 0; i < keys.length; i++) { var p = (keys[i] === 'asc') ? c.ascBody : (keys[i] === 'mc') ? c.mcBody : c.planets[keys[i]]; if (!p) continue; if ((keys[i] === 'asc' || keys[i] === 'mc') && !STATE.birth.timeKnown) continue; var raw = rev(p.lon + (c.ayan || 0)); for (s = 0; s < FIXED_STARS.length; s++) { var o = Math.abs(sdelta(raw, precStar9(FIXED_STARS[s].lon, c.d))); if (o <= 1.4) out.push({ planet: keys[i], star: FIXED_STARS[s].n, m: FIXED_STARS[s].m, nat: FIXED_STARS[s].nat, orb: o }); } }
     out.sort(function (a, b) { return a.orb - b.orb; }); return out.slice(0, 4);
   }
   // ===== The Ancient Sky: the pyramid-builders' astronomy, computed on YOUR chart =====
@@ -5797,7 +5872,7 @@ var APP = (function () {
     for (ki = 0; ki < keys.length; ki++) {
       var pl = (keys[ki] === 'asc') ? c.ascBody : (keys[ki] === 'mc') ? c.mcBody : P[keys[ki]]; if (!pl) continue;
       var lonT = trop(pl.lon);
-      for (si = 0; si < PYRAMID_STARS.length; si++) { var o = Math.abs(sdelta(lonT, PYRAMID_STARS[si].lon)); if (o <= 2.2) hits.push({ k: keys[ki], star: PYRAMID_STARS[si], orb: o }); }
+      for (si = 0; si < PYRAMID_STARS.length; si++) { var o = Math.abs(sdelta(lonT, precStar9(PYRAMID_STARS[si].lon, c.d))); if (o <= 2.2) hits.push({ k: keys[ki], star: PYRAMID_STARS[si], orb: o }); }
     }
     hits.sort(function (u, v) { return u.orb - v.orb; });
     if (hits.length) {
@@ -5809,13 +5884,13 @@ var APP = (function () {
     for (ki = 0; ki < keys.length; ki++) {
       var plr = (keys[ki] === 'asc') ? c.ascBody : (keys[ki] === 'mc') ? c.mcBody : P[keys[ki]]; if (!plr) continue;
       var lonR = trop(plr.lon);
-      for (rj = 0; rj < ROYAL_STARS.length; rj++) { var orb = Math.abs(sdelta(lonR, ROYAL_STARS[rj].lon)); if (orb <= 2.2) rhits.push({ k: keys[ki], star: ROYAL_STARS[rj], orb: orb }); }
+      for (rj = 0; rj < ROYAL_STARS.length; rj++) { var orb = Math.abs(sdelta(lonR, precStar9(ROYAL_STARS[rj].lon, c.d))); if (orb <= 2.2) rhits.push({ k: keys[ki], star: ROYAL_STARS[rj], orb: orb }); }
     }
     rhits.sort(function (u, v) { return u.orb - v.orb; });
     if (rhits.length) { var r0 = rhits[0], rnm = (r0.k === 'asc') ? 'rising degree' : (r0.k === 'mc') ? 'Midheaven' : nameFor(r0.k); out.push({ civ: 'persia', lab: 'A Watcher stands guard on your chart', txt: 'Your ' + rnm + ' falls on ' + r0.star.n + ', one of the Four Royal Stars the Persians set to guard the sky ' + '(' + r0.star.watch + '). Three thousand years ago these four marked the turning of the seasons. On you it carries ' + r0.star.m + '.' }); }
     // 2) your herald star — heliacal rising, the Egyptian way of reading the dawn
     var herald = null, hb = 99, hi;
-    for (hi = 0; hi < FIXED_STARS.length; hi++) { var dh = ((sunT - FIXED_STARS[hi].lon) % 360 + 360) % 360; if (dh >= 7 && dh <= 20) { var dd = Math.abs(dh - 13); if (dd < hb) { hb = dd; herald = FIXED_STARS[hi]; } } }
+    for (hi = 0; hi < FIXED_STARS.length; hi++) { var dh = ((sunT - precStar9(FIXED_STARS[hi].lon, c.d)) % 360 + 360) % 360; if (dh >= 7 && dh <= 20) { var dd = Math.abs(dh - 13); if (dd < hb) { hb = dd; herald = FIXED_STARS[hi]; } } }
     if (herald) out.push({ civ: 'egypt', lab: 'Your herald star', txt: herald.n + ' is your herald: around your birthday it rose in the dawn just ahead of the Sun — the way Egyptian priests read the coming day by the star that broke the horizon first. Its old meaning, ' + herald.m + ', is the note struck the moment before your Sun, every year.' });
     // 3) the precession the seasonal zodiac quietly hides
     var tSign = Math.floor(rev(sunT) / 30), sSign = Math.floor(sunSid / 30);
@@ -7175,8 +7250,8 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       if (b && b.timeKnown && pl.house) { var ang = [1, 4, 7, 10].indexOf(pl.house) >= 0 ? 'angular' : [2, 5, 8, 11].indexOf(pl.house) >= 0 ? 'succedent' : 'cadent'; parts.push(ang + ' in the ' + ordinal(pl.house)); score += ang === 'angular' ? 1 : ang === 'cadent' ? -1 : 0; }
       if (key !== 'sun' && c.planets.sun) {
         var ds = Math.abs(sdelta2(pl.lon, c.planets.sun.lon));
-        if (ds <= 0.3) { parts.push('cazimi: in the heart of the Sun'); score += 2; }
-        else if (ds <= 8.5 && key !== 'moon') { parts.push('combust'); score -= 2; }
+        if (ds <= 0.283 - 2 / 60) { parts.push('cazimi: in the heart of the Sun'); score += 2; }
+        else if (ds <= 7.5 && key !== 'moon') { parts.push('combust'); score -= 2; }
         parts.push(pl.retro ? 'retrograde' : 'direct'); if (pl.retro) score -= 0.5;
       }
       if (b && b.timeKnown && c.planets.sun && c.planets.sun.house && (key === 'jupiter' || key === 'saturn' || key === 'venus' || key === 'mars')) {
@@ -10989,6 +11064,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       ly += toggleRow('Daily Sky bulletin', [['on', 'On'], ['off', 'Off']], st.news === false ? 'off' : 'on', ly, function (v) { st.news = (v === 'on'); APP.save(); });
       ly += toggleRow('Haptics', [['on', 'On'], ['off', 'Off']], st.haptics === false ? 'off' : 'on', ly, function (v) { st.haptics = (v === 'on'); APP.save(); if (st.haptics) buzz(14); });
       ly += toggleRow('Zodiac', [['tropical', 'Tropical'], ['sidereal', 'Sidereal']], st.zodiac, ly, function (v) { st.zodiac = v; recompute(); });
+      if (st.zodiac === 'sidereal') ly += paragraph('Sidereal shifts the whole zodiac back by the ayanamsa — the accumulated drift between the signs and the stars. This app uses a linear Lahiri-style value, a close approximation within a fraction of a degree of the named Lahiri figure over the last century; said plainly so positions can be reconciled against other software.', x, ly, w, 12.5, INK, SERIF, 19, 180) + 12;
       ly += toggleRow('House system', [['whole', 'Whole'], ['equal', 'Equal'], ['porphyry', 'Porphyry'], ['placidus', 'Placidus']], st.house, ly, function (v) { st.house = v; recompute(); });
       ly += paragraph('Whole: each sign is one house, the oldest way, steady even without an exact birth time. Placidus: the modern default, angles cut to your minute. Your planets never move between systems; only the room lines do.', x, ly, w, 12.5, INK, SERIF, 19, 180) + 12;
       if (APP.STATE.chart && APP.STATE.chart.houseFallback) {

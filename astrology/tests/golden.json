@@ -75,7 +75,7 @@
       "helper": "jupiter",
       "tooth": "mars",
       "ruling": "venus",
-      "h1": "carried",
+      "h1": "withheld",
       "h7": "carried",
       "h10": "promised"
     },
@@ -95,13 +95,13 @@
       "asc": "Gemini",
       "captain": "mercury",
       "captainState": "Term",
-      "captainLilly": 15,
+      "captainLilly": 5,
       "captainHouse": 7,
       "day": true,
       "helper": "jupiter",
       "tooth": "mars",
-      "ruling": "mercury",
-      "h1": "carried",
+      "ruling": "mars",
+      "h1": "withheld",
       "h7": "repaired",
       "h10": "promised"
     },
@@ -192,6 +192,38 @@
         "D.h1": {
           "was": "promised",
           "now": "carried"
+        }
+      }
+    },
+    {
+      "date": "2026-07-26",
+      "change": "verdicts inside the instrument's error bar are adjudicated conservatively; the angles join the planets' true-of-date frame; the aspect gate is the same four-arm pipe-and-liquid rule in both engines",
+      "why": "The ephemeris layer's documented floor is ~1 arcminute per body (~2' on a two-body separation), and the header had been claiming ~1 arcsecond - a sixtyfold overstatement now corrected. Cazimi is decided at 0.283 deg: a call within 2' of that line is a coin toss wearing a verdict, so the rule is now written down and enforced: within the error bar, take the lesser dignity and say so on the row itself. Separately, the angles were built in a MEAN-equinox frame (linear GMST, no equation of the equinoxes, linear mean obliquity) while the planets are true-of-date; the ASC now comes from AE.SiderealTime and e_tilt().tobl, declination is rotated EQJ->EQD before use (the Sun-declination closure error falls from arcminutes to under 0.01'), out-of-bounds is judged against the obliquity of the birth date rather than a frozen 23.4366, and the Placidus polar gate is the real circle 90-eps, not a flat 66. Finally the judgeHouse aspect loop was rewritten to the four-arm pipe-and-liquid rule (benefic-hard = increase through friction at half weight; malefic-soft = smooth delivery of a hard substance at half weight) to match judgeTopic - and the rewrite initially admitted the Sun and Moon into the malefic arm, which the harness caught: only the four judged planets belong in that loop.",
+      "effect": "Chart D is the textbook boundary case the hedge exists for: its Mercury stands 0.2766 deg from the Sun, 0.4' INSIDE the cazimi line - far under the instrument error. Conservatively judged combust (-5, with the hedge printed on the ledger row) rather than cazimi (+5): D.captainLilly 15 -> 5, and the ruling voice passes from Mercury to Mars, which follows from the same figure. D.h1 carried -> withheld: with its lord combust, the 1st's promise is not merely thin but obstructed - the classical reading of a combust lord. D.h10 returned to promised once the false Sun/Moon malefic testimonies were removed by the loop fix.",
+      "pinned": {
+        "D.captainLilly": {
+          "was": 15,
+          "now": 5
+        },
+        "D.ruling": {
+          "was": "mercury",
+          "now": "mars"
+        },
+        "D.h1": {
+          "was": "carried",
+          "now": "withheld"
+        }
+      }
+    },
+    {
+      "date": "2026-07-26",
+      "change": "a combust lord cannot be 'carried'",
+      "why": "The carried verdict asserts that circumstances are strong enough to deliver a thin promise, and combustion is the one circumstance the tradition names as destroying the power to deliver at all. Lilly's accidental column can still sum positive for a combust planet (an angular house +5, direct +4 and swift +2 outweigh combust's -5), so a verdict taken from the sum alone printed 'carried' for exactly the planet the book calls most afflicted. The gate reads the condition itself, not the sum: combust bars carried; cazimi is the opposite case and remains the greater dignity; under-the-beams is milder and is left to the column.",
+      "effect": "C.h1 carried -> withheld: chart C's first-house lord Venus stands 2.11 deg from the Sun - squarely combust, nowhere near the cazimi band - with accidental +9 from house and motion. Its promise is not merely thin but obstructed, and the verdict now says so.",
+      "pinned": {
+        "C.h1": {
+          "was": "carried",
+          "now": "withheld"
         }
       }
     }

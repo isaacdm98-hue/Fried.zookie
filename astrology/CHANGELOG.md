@@ -1,5 +1,120 @@
 # Changelog
 
+## 4.14.0 — 2026-07-26 — one frame of date, and the honest boundary
+
+Movements 3–5 of `plans/engine-of-the-future.md`, plus the rest of Movement 2.
+Every change carries a harness assertion; one bug the rewrite itself introduced
+was caught by the harness before it shipped.
+
+### The angles now stand in the same sky as the planets
+
+The planets come out of the ephemeris in the **true equinox of date** — nutation
+and all — while the Ascendant and cusps were built from a linear mean obliquity
+and a truncated mean sidereal time: a *mean*-equinox frame, missing the equation
+of the equinoxes. Two frames in one chart means the Ascendant and the planets
+disagree about where 0° Aries is. The angles now come from `AE.SiderealTime` and
+`e_tilt().tobl`; declination is rotated EQJ→EQD before use (the Sun-declination
+closure error falls from arcminutes to under 0.01′); out-of-bounds is judged
+against the obliquity of the birth date rather than a frozen constant; and the
+Placidus polar gate is the real circle 90°−ε, not a flat 66 — which had been
+telling Rovaniemi it was mathematically impossible when it wasn't.
+
+### Verdicts inside the error bar are decided the conservative way
+
+The engine's floor is ~1 arcminute per body (~2′ on any two-body separation), and
+cazimi is decided at 0.283°. A call within the error bar of that line is a coin
+toss wearing a verdict. Written down and enforced: within the bar, take the
+lesser dignity, and print the hedge on the ledger row itself —
+
+```
+combust — within instrument error of the cazimi line, judged the lesser  −5
+```
+
+Reference chart D turned out to be the textbook case: its Mercury stands 0.2766°
+from the Sun, 0.4′ inside the cazimi line. Judged conservatively, its captain
+loses ten points and the chart's ruling voice passes from Mercury to Mars — three
+pinned values moved, recorded with the figure in `tests/golden.json`. Partile
+rows within 2′ of the 1° line carry the same hedge. Mean Black Moon Lilith is now
+*named* mean; the sidereal toggle names its ayanamsa; the symbolic directions and
+the bound-distributor walk say plainly that they are ecliptic degree-for-a-year
+shorthand, not the classical circumambulation — that labelling holds until real
+primary directions land.
+
+### One aspect rule in both engines — and the bug the harness caught
+
+`judgeHouse` counted a benefic square as pure help and skipped a malefic trine
+entirely; `judgeTopic` gated differently — two engines answering the same
+question two ways. Both now apply the same four-arm pipe-and-liquid rule: a
+benefic by hard aspect still brings increase, *through friction*, at half
+weight; a malefic by soft aspect delivers smoothly — and what it delivers is
+still its own substance ("better a square of Jupiter than a trine of Saturn"),
+at half weight. The rewrite initially admitted the Sun and Moon into the malefic
+arm — "the Moon's sextile, smooth delivery of a hard substance" — and the golden
+harness caught it within minutes: only the four judged planets belong in that
+loop. The middle verdict also lost a borrowed word: a middling lord can be
+**carried** or **withheld**, never "taxed", whose text asserts a strength the
+lord doesn't have.
+
+### The stars moved
+
+The fixed-star tables are epoch J2000 and precession carries every star ~50″ a
+year — for a 1950 birth that is ~0.7°, half the app's 1.4° orb, so star contacts
+were being judged against a sky decades out of date. One shared `precStar9()`
+now precesses every comparison in `starsOn`, the royal-star watch and the herald
+scan, consistent with the Lilly ledger's existing precession.
+
+### What the adversarial verifiers caught
+
+Four skeptic agents were pointed at this round's diff with instructions to
+refute it. Their confirmed findings, all fixed before shipping:
+
+- With the *Minor aspects* setting on, a quincunx to a house lord fell into the
+  "smooth delivery" arm and was described as an easy angle — false of a 150°
+  contact. Only the five Ptolemaic aspects now enter the weighing, in both
+  engines.
+- `judgeTopic` picked its aspect testimony by orb alone, so a tight benefic
+  square could displace a wide malefic conjunction and the two engines answered
+  the same question in opposite directions. A full-weight testimony now outranks
+  a tighter half-weight one.
+- The half arms ignored reception in `judgeHouse` while `judgeTopic` scaled by
+  it; both now do, and the "smooth delivery" prose acknowledges the reception
+  its own receipt discloses.
+- The Lilly star rows used their own year-based precession beside the display
+  tables' day-based one; both now go through the one shared helper.
+- The combust hedge flag was write-only — computed and never read. It now
+  reaches the spoken condition line.
+- In **sidereal mode** the ledger's fixed-star row compared an ayanamsa-shifted
+  planet against a tropical star — ~24° off, a ±5-point row landing on the wrong
+  charts. It now converts back to the tropical frame first, as the star chapter
+  always did.
+- The pyramid-star scan was the one remaining unprecessed comparison; the Daily
+  Sky bulletin and the colleague-export ledger ran cazimi at 0.283 flat and 0.3
+  (with combust at 8.5); the Sun's own "what it burns" list disagreed with the
+  ledger's band. Every cazimi/combust claim in the app now runs on the same
+  conservative numbers.
+
+### A contradiction only a screenshot could catch
+
+The lord's weighing row was reading its lean from a variable declared *after*
+the row was written — hoisted, so `undefined` — and a Moon in detriment printed
+a neutral mark and "neither strong nor weak" directly above a tally reading
+WITHHELD. The verdict itself was always right (it used the assigned value); only
+the visible working lied. Found by looking at a screenshot, not by any harness —
+so the ledger harness grew section E, which recomputes the promise-lean from the
+dignity layers for 480 lord rows and asserts the row carries exactly that lean.
+
+### Also
+
+- A combust lord can no longer be judged **carried**: the carried verdict says
+  circumstance can deliver a thin promise, and combustion is the circumstance the
+  tradition names as destroying delivery outright. Chart C's 1st-lord Venus —
+  2.11° from the Sun with accidental +9 from house and motion — was the case in
+  point, and is now withheld.
+- The karaka dedup now covers occupancy as well as lordship in `judgeTopic`.
+- `tests/kernel.cjs` grew a frame-closure section: Sun declination against
+  asin(sin ε · sin λ) of date across five decades, and the polar gate at 66.3°
+  (Placidus holds) and 69° (falls back, and says why).
+
 ## 4.13.0 — 2026-07-26 — the numbers under the judgment
 
 A research pass across professional ephemeris accuracy, real traditional-astrology

@@ -87,7 +87,28 @@ const BANDS = [[10, 'commanding'], [5, 'sound'], [0, 'mixed'], [-5, 'strained'],
           essTotal: cd.essential.total, sign: c.planets[k].signName });
       }
     }
-    return { rows, recCharts };
+    // E. the weighing's lord row must agree with the verdict it feeds: recompute the promise-lean
+    // from the layers and compare it against the lean the row actually carries
+    const leanRows = [];
+    for (let n = 0; n < 40; n++) {
+      const bb = { name: 'L', y: 1950 + (n % 70), mo: 1 + (n % 12), d: 1 + ((n * 11) % 27),
+        hour: (n * 7) % 24, min: (n * 17) % 60, tz: 0, iana: 'Europe/London', lat: 51.5, lon: -0.13, timeKnown: true };
+      let c; try { c = APP.compute(bb, APP.STATE.settings); } catch (e) { continue; }
+      APP.STATE.birth = bb; APP.STATE.chart = c;
+      for (let h = 1; h <= 12; h++) {
+        let jh; try { jh = APP.judgeHouse(c, bb, h); } catch (e) { continue; }
+        if (!jh || !jh.testimonies) continue;
+        const lordRow = jh.testimonies.find(r => r.role.indexOf('lord of the house') === 0);
+        if (!lordRow) continue;
+        const ld = APP.determination(c, bb, jh.lord), L = (ld.essential && ld.essential.layers) || {};
+        const want = (L.detriment || L.fall) ? -1
+          : (L.mutualReception === 'house') ? 1
+          : ld.essential.peregrine ? 0
+          : (L.domicile || L.exaltation) ? 1 : 0;
+        leanRows.push({ h, lord: jh.lord, sign: ld.signName, got: lordRow.lean, want, ok: lordRow.lean === want });
+      }
+    }
+    return { rows, recCharts, leanRows };
   });
 
   await b.close(); srv.kill();
@@ -156,6 +177,14 @@ const BANDS = [[10, 'commanding'], [5, 'sound'], [0, 'mixed'], [-5, 'strained'],
   if (badSum.length) fails.push(`${badSum.length} essential column(s) do not sum to their own rows`);
   if (badTotal.length) fails.push(`${badTotal.length} net total(s) are not essential + accidental`);
   if (badBand.length) fails.push(`${badBand.length} band(s) disagree with the published cutoffs`);
+
+  // ---- E. the lord row's lean agrees with the doctrine that decides the verdict ----
+  console.log('\nE. THE WEIGHING AGREES WITH ITSELF');
+  const lr = R.leanRows || [], lrBad = lr.filter(x => !x.ok);
+  console.log(`   lord-row leans checked: ${lr.length}; disagreeing with the recomputed promise-lean: ${lrBad.length}`);
+  lrBad.slice(0, 6).forEach(x => console.log(`   ✗ h${x.h} lord ${x.lord} in ${x.sign}: row carries ${x.got}, doctrine says ${x.want}`));
+  if (!lr.length) fails.push('no lord rows sampled — the weighing agreement is unproven');
+  if (lrBad.length) fails.push(`${lrBad.length} lord row(s) carry a lean the doctrine disagrees with`);
 
   if (fails.length) { console.log('\nLILLY LEDGER: FAIL'); fails.forEach(f => console.log('  ✗ ' + f)); process.exit(1); }
   console.log('\nLILLY LEDGER: PASS — the table the app cites is the table the app charges.');

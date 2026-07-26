@@ -132,6 +132,33 @@ const CHROME = process.env.PW_CHROME || '/opt/pw-browsers/chromium_headless_shel
           ok: (!!c.planets[k2].retro) === (ref < 0), oldWasWrong: (fwd < 0) !== (ref < 0) });
       }
     }
+
+    // ---------- 5. ONE FRAME OF DATE ----------
+    // (a) Sun-declination closure: the Sun has essentially no ecliptic latitude, so its declination
+    // must equal asin(sin ε · sin λ) with BOTH ε and λ of the birth date. If declOf still returned
+    // the J2000 frame, this identity breaks by several arcminutes for births decades from 2000 —
+    // it is exactly the test a missing rotation cannot pass.
+    out.frame = [];
+    if (EPHM && EPHM.oblOfDate) {
+      for (const y of [1920, 1955, 1987, 2010, 2025]) {
+        const bb = { name: 'K', y, mo: 5, d: 20, hour: 9, min: 0, tz: 0, iana: 'Europe/London', lat: 51.5, lon: -0.13, timeKnown: true };
+        let c; try { c = chart(bb); } catch (e) { continue; }
+        const dec = EPHM.declOf('Sun', c.d);
+        if (dec == null) continue;
+        const eps = EPHM.oblOfDate(c.d), lam = c.planets.sun.lon;
+        const want = Math.asin(Math.sin(eps * Math.PI / 180) * Math.sin(lam * Math.PI / 180)) * 180 / Math.PI;
+        out.frame.push({ y, errArcmin: +Math.abs((dec - want) * 60).toFixed(3) });
+      }
+    }
+    // (b) the Placidus polar gate: 66.3° is inside the real circle (90 − ε ≈ 66.56) and must get
+    // Placidus; 69° must fall back. The flat 66 gate failed the first.
+    out.polar = [];
+    for (const lat of [66.3, 69]) {
+      const bb = { name: 'K', y: 1990, mo: 6, d: 15, hour: 12, min: 0, tz: 0, iana: 'Europe/Helsinki', lat, lon: 25.7, timeKnown: true };
+      let c; try { c = chart(bb, { house: 'placidus' }); } catch (e) { continue; }
+      out.polar.push({ lat, fallback: c.houseFallback || null, want: lat > 66.6 ? 'fallback' : 'placidus',
+        ok: lat > 66.6 ? !!c.houseFallback : !c.houseFallback });
+    }
     return out;
   });
 
@@ -189,6 +216,18 @@ const CHROME = process.env.PW_CHROME || '/opt/pw-browsers/chromium_headless_shel
     rtBad.slice(0, 4).forEach(x => console.log(`   ✗ ${x.date} ${x.body}: engine=${x.engineRetro} reference=${x.refRetro}`));
     if (rtBad.length) fails.push(`${rtBad.length} retrograde flag(s) disagree with the reference`);
   }
+
+  // 5
+  const fr = R.frame || [];
+  if (fr.length) {
+    const worstF = fr.reduce((m, x) => x.errArcmin > m.errArcmin ? x : m, fr[0]);
+    console.log(`\n5. ONE FRAME OF DATE — Sun-declination closure across ${fr.length} decades`);
+    fr.forEach(x => console.log(`   ${x.y}: ${x.errArcmin}′ from asin(sin ε · sin λ) of date`));
+    if (worstF.errArcmin > 0.5) fails.push(`declination breaks the frame identity by ${worstF.errArcmin}′ (${worstF.y}) — the EQD rotation is not being applied`);
+  } else fails.push('frame closure test did not run');
+  const po = R.polar || [];
+  po.forEach(x => console.log(`   Placidus at ${x.lat}°N: ${x.fallback ? 'fell back (' + x.fallback + ')' : 'computed'} — ${x.ok ? 'ok' : 'WRONG'}`));
+  po.filter(x => !x.ok).forEach(x => fails.push(`Placidus polar gate wrong at ${x.lat}°N`));
 
   if (fails.length) { console.log('\nKERNEL: FAIL'); fails.forEach(f => console.log('  ✗ ' + f)); process.exit(1); }
   console.log('\nKERNEL: PASS — the numbers the judgment stands on are the numbers at the moment of birth.');
