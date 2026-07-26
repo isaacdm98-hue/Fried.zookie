@@ -1,5 +1,42 @@
 # Changelog
 
+## 4.14.1 — 2026-07-26 — the reading, read aloud
+
+A prose pass made by dumping full readings and reading them the way a user
+would — no new astrology, only the words. Every fix is to something that was
+technically correct and humanly wrong.
+
+- **The domain openers broke their own grammar.** "Your own wealth and income
+  *answers* to Venus, a stranger in Aquarius, *and sits in your 11th*" — a
+  compound subject on a singular verb, and a "sits" whose grammatical subject
+  was the wealth, not the planet. Every opener is now planet-first: "Venus
+  answers for your own wealth and income: a stranger in Aquarius, standing in
+  your 11th — so money arrives through friends, allies and hopes."
+- **The connective was keyed to the house, not the matter.** The love reading
+  explained romance with "so *children and joy* come through career"; the family
+  reading explained siblings with "the everyday mind and its errands." Each
+  topical house now carries its own link — "romance finds you through…", "the
+  near family and its daily traffic run through…"
+- **The promise sentence now follows the same lean as its mark.** A Moon in
+  detriment carried a − in the weighing while its sentence said "is mixed
+  there" — the words keyed off Lilly's blended total, the mark off the zodiacal
+  state. State now picks the sentence family (weak / strong / middling);
+  circumstance picks the variant inside it.
+- **The verdict no longer sounds caused by its own counter-evidence.**
+  "…well carried; *decided by* Mars's conjunction to the lord" read as if the
+  affliction produced the good verdict. It now says "Weighed against it: …"
+- **One pronoun per planet.** "*She* owns nothing in Aquarius, so this matter is
+  decided entirely by where *it* stands" — the follow-on subject is now
+  uniformly "It", matching the promise clauses and the weighing rows.
+- **The Sun is not "a kind planet."** As an occupant it now reads: "its light
+  dignifies the ground it stands on, though whatever sits too close to it
+  burns" — the one rule about the Sun a reader most needs.
+- The year-ahead fan-out — "For your child, the motion brings a change in
+  partners and rivals, reaching beliefs and far journeys" — now says whose year,
+  where it lands, and what to expect, one clause each. The Captain paragraph no
+  longer says "chart" three times in one sentence, and the temperament's "Where
+  it is tested, it is when it overheats" is untangled.
+
 ## 4.14.0 — 2026-07-26 — one frame of date, and the honest boundary
 
 Movements 3–5 of `plans/engine-of-the-future.md`, plus the rest of Movement 2.
