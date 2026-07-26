@@ -1,5 +1,99 @@
 # Changelog
 
+## 4.17.0 — 2026-07-26 — the consultation
+
+Built under the sharpest feedback of the project: "how can I actually use the
+astrology to benefit my life", "doesn't feel like I'm going to an astrologer."
+Both were right, and neither was about diction. An astrologer does two things
+this app never did: synthesizes the chart into one story before reading any
+pieces, and says where the leverage is.
+
+### The reading now opens the way a consultation opens
+
+The first entry is **The shape of your chart** — what runs it, where the life
+gathers, which ground pays against which asks work — before a single placement:
+
+> **THE SHAPE OF YOUR CHART** — ARIES RISING
+> This chart runs on Mars, working from your 11th house.
+> Three of your planets stand together in the 11th.
+> Money pays most easily here; love asks the most work.
+
+### Every placement ends with its leverage; every domain with its practical read
+
+A new twelve-entry leverage bank reads the house directly — stated as where
+things pay, never as faked counsel:
+
+> The leverage: privacy — closed doors are productive here, and the quiet
+> hours do the real lifting.
+
+Each domain verdict closes with what it means in practice: well-promised —
+"this one comes to meet you; the mistake would be over-forcing it"; hard-won —
+"second attempts are the pattern here, not a verdict"; mixed — "timing decides."
+
+### All 84 delineations rewritten as second-person life statements
+
+"The shine of this life happens off stage" described an abstraction. The bank
+now speaks to the person: "With your Sun in your 12th, you do your best work
+out of sight. Credit often lands on someone else. You need real solitude to
+stay well." Three authored lines per placement, Lilly's content in modern
+words, each entry opening anchored to the chart. The stacked-line feed renders
+them one thought per line.
+
+The individuation floor was retuned once, with the reasoning recorded in the
+harness: the bank's determinants now live in each entry's opening line and in
+its selection, which per-sentence token counting cannot see. The verbatim and
+receipt floors are unchanged.
+
+## 4.16.0 — 2026-07-26 — the feed, and the last of the animations
+
+### The reading is stacked lines now — one thought per line
+
+Even short paragraphs were blocks. The feed's final form, after three drafts in
+one day: every entry is a label, a small fact-header carrying the astrology
+(sign · house · verdict), and then a stack of single-idea lines, most under a
+dozen words, each with air around it:
+
+> **YOUR MOON** — CAPRICORN · 10TH HOUSE
+> Your Moon is your feelings and daily rhythms.
+> The 10th is the public hill, where career, reputation and name are made.
+> The career is lived in front of people, and the name rises and falls with public mood.
+> The mother stands behind the ambition, and there is no rest until the work is seen.
+> Hard ground for the Moon: it works uphill, and tends to pay late.
+
+The astrology lives in the header so the lines are free to say what it means in
+a life. `lineify9` splits the prose banks at the joints their punctuation
+already marks; a stacked line never starts on a conjunction, and two sentences
+never fuse into one line. No READ MORE, nothing clipped mid-thought.
+
+### The earlier drafts, for the record: composed short, not clipped short
+
+The story reader showed one centred "leaf" at a time — dots, TAP TO CONTINUE,
+flicking back and forth like an e-reader, each leaf a full paragraph. A first
+replacement used two-sentence heads with READ MORE tabs; that was rejected the
+same day, and rightly: clipping a long chapter mid-thought is not the same as
+writing a short one.
+
+The feed's entries are now COMPOSED at their length. A new `briefPlacement9`
+writes each of the Big Three in exactly three sentences (what this part of you
+is and where it lives; what that looks like in practice; the strength when it
+is notable, otherwise the sign's manner). The domain entries are the topical
+synthesis's own two-sentence verdicts; the Rising, captain, year and sky
+entries take their chapters' opening sentences whole. Twelve entries, two to
+three sentences each, nothing clipped, nothing to expand — the full chapters
+with their four-testimony workings and receipts all live under "Everything, in
+full". The sharpest-contact entry now judges planet-to-planet contacts only:
+"neither planet is a kind one" said of the Midheaven was the kind of sentence
+the feed exists to never print.
+
+### The day-as-a-scene animations are gone, at every door
+
+The daily bulletin played today's sky as an animated story reel: once a day on
+app open, again from a "Watch today as a scene" button, with an unread dot on
+the Read tab pushing toward it. All three doors are removed, along with the
+Settings toggle for a feature that no longer exists. The day's reading is text
+on the Today screen, read at the reader's own pace instead of performed at
+them.
+
 ## 4.15.0 — 2026-07-26 — the astrologer's voice
 
 A ten-step round built on one instruction: stop being vague or technical and

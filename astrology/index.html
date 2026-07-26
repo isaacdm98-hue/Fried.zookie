@@ -4105,6 +4105,87 @@ var APP = (function () {
       .replace(/,\s*,/g, ',').replace(/,\s*([.;:])/g, '$1').replace(/\s+([.,;:])/g, '$1')
       .replace(/([,;:])\s*—/g, ' —').replace(/\s{2,}/g, ' ').trim();
   }
+  // THE FEED, AS STACKED LINES. A 40-word sentence with three nested clauses is correct and lands
+  // on nobody. Every feed entry is now a stack of single-idea lines — each line one thought, most
+  // under a dozen words — under a small fact-header carrying the sign and house. The prose banks
+  // are the source; lineify9 splits their clause-flows at the joints the punctuation already marks.
+  var USE_HOUSE9 = [
+    'The leverage: showing up in person — things move for you when you go first.',
+    'The leverage: owning your means — what you build with your own hands stays yours.',
+    'The leverage: the message and the errand — your life moves on small, near moves.',
+    'The leverage: home base — get the ground right and everything above it steadies.',
+    'The leverage: making things — when you create, the rest of the chart follows.',
+    'The leverage: the routine — fix the daily round and the big things follow it.',
+    'The leverage: the other person — partnership is where this part of you does its real work.',
+    'The leverage: shared stakes — managed jointly, things grow here that never would alone.',
+    'The leverage: distance — study and travel move this part of you further than effort at home.',
+    'The leverage: visibility — work that is seen pays double here, and work kept hidden pays half.',
+    'The leverage: the circle — this part of you moves at the speed of your friendships.',
+    'The leverage: privacy — closed doors are productive here, and the quiet hours do the real lifting.'
+  ];
+  function lineify9(t, max) {
+    var out = [];
+    function pushL(x) {
+      x = String(x).replace(/^\s+|[\s,;]+$/g, '');
+      x = x.replace(/^[Aa]nd\s+/, '').replace(/^[Ss]o\s+/, '');   // a stacked line never starts on a conjunction
+      if (!x) return;
+      x = x.charAt(0).toUpperCase() + x.slice(1);
+      if (!/[.!?]$/.test(x)) x += '.';
+      out.push(x);
+    }
+    var parts = String(t == null ? '' : t).split('; '), i, j;
+    for (i = 0; i < parts.length; i++) {
+      var subs = parts[i].split(': ');
+      for (j = 0; j < subs.length; j++) {
+        var u = subs[j];
+        if (u.length > 95) { var k9 = u.indexOf(', and '); if (k9 > 24) { pushL(u.slice(0, k9)); u = u.slice(k9 + 2); } }
+        if (u.length > 95) { var k8 = u.indexOf(', so '); if (k8 > 24) { pushL(u.slice(0, k8)); u = u.slice(k8 + 2); } }
+        pushL(u);
+      }
+    }
+    return out.slice(0, max || 5);
+  }
+  function feedBeats9(c, b) {
+    var out = [];
+    function push9(lab, head, lines, rc) { if (lines && lines.length) out.push({ lab: lab, head: head || null, lines: lines, receipt: rc || null }); }
+    var PKS9 = ['sun', 'moon'], pi9;
+    for (pi9 = 0; pi9 < PKS9.length; pi9++) {
+      var k9 = PKS9[pi9], D9 = determination(c, b, k9);
+      if (!D9 || !D9.essential || D9.essential.modern) continue;
+      var head9 = D9.signName + (D9.house ? ' · ' + ordinal(D9.house) + ' house' : '');
+      var L9 = ['Your ' + nameFor(k9) + ' is ' + PLANET_LIFE9[k9].split(',')[0] + '.'];
+      if (D9.house) L9.push('The ' + ordinal(D9.house) + ' is ' + HOUSE_LIFE9[D9.house - 1] + '.');
+      if (D9.house && DATA.PLANET_IN_HOUSE && DATA.PLANET_IN_HOUSE[k9] && DATA.PLANET_IN_HOUSE[k9][D9.house - 1])
+        L9 = L9.concat(DATA.PLANET_IN_HOUSE[k9][D9.house - 1]);
+      var Ls9 = D9.essential.layers || {};
+      if (Ls9.domicile) L9.push(capit(nameTh(k9)) + ' is in its own sign here: what it promises, it can deliver.');
+      else if (Ls9.exaltation) L9.push('Exalted in ' + D9.signName + ': this side of you runs high and strong.');
+      else if (Ls9.detriment) L9.push('Hard ground for ' + nameTh(k9) + ': it works uphill, and tends to pay late.');
+      else if (Ls9.fall) L9.push(capit(D9.signName) + ' is its weakest seat: it needs backing from elsewhere.');
+      else if (D9.essential.peregrine) L9.push('No title of its own here: the planets that reach it decide.');
+      if (D9.house) L9.push(USE_HOUSE9[D9.house - 1]);
+      push9('Your ' + nameFor(k9), head9, L9.slice(0, 7),
+        (nameFor(k9) + ' · ' + degStr(D9.lon % 30) + ' ' + D9.signName + (D9.house ? ' · ' + ordinal(D9.house) + ' house' : '') + ' · ' + D9.essential.label).toUpperCase());
+    }
+    return out;
+  }
+  function briefPlacement9(c, b, key) {
+    if (!c.planets[key] || !PLANET_LIFE9[key]) return null;
+    var D = determination(c, b, key); if (!D || !D.essential || D.essential.modern) return null;
+    var S = [];
+    if (D.house) S.push('Your ' + nameFor(key) + ' is ' + PLANET_LIFE9[key] + ' — and yours lives in ' + D.signName + ', in your ' + ordinal(D.house) + ' house: ' + HOUSE_LIFE9[D.house - 1] + '.');
+    else S.push('Your ' + nameFor(key) + ' is ' + PLANET_LIFE9[key] + ' — and yours stands in ' + D.signName + '.');
+    if (D.house && DATA.PLANET_IN_HOUSE && DATA.PLANET_IN_HOUSE[key] && DATA.PLANET_IN_HOUSE[key][D.house - 1])
+      S.push(DATA.PLANET_IN_HOUSE[key][D.house - 1].join(' '));
+    var Lb9 = D.essential.layers || {};
+    if (Lb9.domicile) S.push(capit(nameTh(key)) + ' is in its own sign there, so what this side of you promises, it can deliver.');
+    else if (Lb9.exaltation) S.push(capit(nameTh(key)) + ' is exalted in ' + D.signName + ', so this side of you runs high and strong.');
+    else if (Lb9.detriment) S.push(capit(D.signName) + ' is hard ground for ' + nameTh(key) + ', so this side of you works uphill and tends to pay late.');
+    else if (Lb9.fall) S.push(capit(D.signName) + ' is where ' + nameTh(key) + ' counts for least, so this side of you needs backing from elsewhere in the chart.');
+    else S.push(capit(D.signName) + ' makes your ' + nameFor(key) + ' ' + SIGN_HOW9[D.sign] + '.');
+    return { key: key, text: tidyProse(S.join(' ')),
+      receipt: (nameFor(key) + ' · ' + degStr(D.lon % 30) + ' ' + D.signName + (D.house ? ' · ' + ordinal(D.house) + ' house' : '') + ' · ' + D.essential.label).toUpperCase() };
+  }
   function placementProse(c, b, key) {
     if (key === 'asc' || !c.planets[key]) return null;
     var D = determination(c, b, key); if (!D || !D.essential || D.essential.modern) return null;
@@ -4133,7 +4214,7 @@ var APP = (function () {
     else L.push('Your ' + nameFor(key) + ' is ' + life9 + ' — and yours stands in ' + D.signName + '. (With a birth time it would also have a house: the part of life it plays out in.)');
     // 2. What that looks like in a life, before any machinery is mentioned.
     if (D.house && DATA.PLANET_IN_HOUSE && DATA.PLANET_IN_HOUSE[key] && DATA.PLANET_IN_HOUSE[key][D.house - 1]) {
-      L.push('For ' + nameTh(key) + ' in your ' + ordinal(D.house) + ', that tends to look like: ' + DATA.PLANET_IN_HOUSE[key][D.house - 1] + '.');
+      L.push(DATA.PLANET_IN_HOUSE[key][D.house - 1].join(' '));
     }
     // 3. How the sign makes it behave — manner of operation, not personality.
     L.push(capit(D.signName) + ' makes your ' + nameFor(key) + ' ' + SIGN_HOW9[D.sign] + '.');
@@ -6122,7 +6203,7 @@ var APP = (function () {
     solarReturnChart: solarReturnChart, upcomingEclipses: upcomingEclipses, bestDaysFor: bestDaysFor, electIntents: electIntents, oddPredictions: oddPredictions, composeProfectionYear: composeProfectionYear, signHouseWeave: signHouseWeave,
     progressedTimeline: progressedTimeline, retroSeasons: retroSeasons,
     exportBook: exportBook, exportBackup: exportBackup, importBackup: importBackup, composeDailyEssay: composeDailyEssay, chartFP: chartFP, weaveNote: weaveNote, termOf: termOf, anA: anA, composeColleague: composeColleague, exportColleague: exportColleague,
-    weaveTransit: weaveTransit, traditionalRead: traditionalRead, determination: determination, determinationSheet: determinationSheet, derivedHouseOf: derivedHouseOf, derivedPhrase: derivedPhrase, conditionVerdict: conditionVerdict, chartFeatures: chartFeatures, stateAdj9: stateAdj9, sectProfile: sectProfile, judgeAscendant: judgeAscendant, judgeCaptain: judgeCaptain, rulershipWeb: rulershipWeb, zodiacMatrix: zodiacMatrix, cuspAlmuten: cuspAlmuten, judgeHouse: judgeHouse, judgeHouses: judgeHouses, judgeHealth: judgeHealth, judgeTopic: judgeTopic, judgeMoney: judgeMoney, judgeLove: judgeLove, judgeCareer: judgeCareer, judgeFamily: judgeFamily, lifeAtAGlance: lifeAtAGlance, judgeAspect: judgeAspect, judgeAspects: judgeAspects, fullReception: fullReception, receptionOnAspect: receptionOnAspect, receptionsInChart: receptionsInChart, testimonyAuthority: testimonyAuthority, contest: contest, rulingVoice: rulingVoice, contradictions: contradictions, natalSynthesis: natalSynthesis, housesThatMatter: housesThatMatter, noBirthTimeReading: noBirthTimeReading, judgeDirection: judgeDirection, judgeDirections: judgeDirections, directedAscendant: directedAscendant, directedSignificators: directedSignificators, significatorFor: significatorFor, directedChapter18: directedChapter18, boundsWalk: boundsWalk, lordOfYear: lordOfYear, profectionYear: profectionYear, yearAhead: yearAhead, triggerReading: triggerReading, liveWires21: liveWires21, judgeCycle: judgeCycle, judgeCycles: judgeCycles, judgeReturn: judgeReturn, eclipseTimers: eclipseTimers, glanceJudged: glanceJudged, weekJudged: weekJudged, lots: lots, starsJudged: starsJudged, hiddenPartnerships: hiddenPartnerships, patternsAsTestimony: patternsAsTestimony, vedicWall: vedicWall, bondSpine35: bondSpine35, bondOverlay35: bondOverlay35, voiceCheck: voiceCheck, sourceRegistry: sourceRegistry, citeSource: citeSource, placementProse: placementProse, interpret: interpret, temperament: temperament, temperamentProse: temperamentProse, symbolicDirections: symbolicDirections, castFromDirection: castFromDirection, directionLine: directionLine, directionReceipt: directionReceipt, aspectNature: aspectNature, transitCycles: transitCycles, weaveCycle: weaveCycle, weaveWeek: weaveWeek, receptionOf: receptionOf, guideCards: guideCards, ancientSky: ancientSky, addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, returnsAlmanac: returnsAlmanac, progressedLunation: progressedLunation, planetaryHours: planetaryHours, moonVoidWindow: moonVoidWindow, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
+    weaveTransit: weaveTransit, traditionalRead: traditionalRead, determination: determination, determinationSheet: determinationSheet, derivedHouseOf: derivedHouseOf, derivedPhrase: derivedPhrase, conditionVerdict: conditionVerdict, chartFeatures: chartFeatures, stateAdj9: stateAdj9, sectProfile: sectProfile, judgeAscendant: judgeAscendant, judgeCaptain: judgeCaptain, rulershipWeb: rulershipWeb, zodiacMatrix: zodiacMatrix, cuspAlmuten: cuspAlmuten, judgeHouse: judgeHouse, judgeHouses: judgeHouses, judgeHealth: judgeHealth, judgeTopic: judgeTopic, judgeMoney: judgeMoney, judgeLove: judgeLove, judgeCareer: judgeCareer, judgeFamily: judgeFamily, lifeAtAGlance: lifeAtAGlance, judgeAspect: judgeAspect, judgeAspects: judgeAspects, fullReception: fullReception, receptionOnAspect: receptionOnAspect, receptionsInChart: receptionsInChart, testimonyAuthority: testimonyAuthority, contest: contest, rulingVoice: rulingVoice, contradictions: contradictions, natalSynthesis: natalSynthesis, housesThatMatter: housesThatMatter, noBirthTimeReading: noBirthTimeReading, judgeDirection: judgeDirection, judgeDirections: judgeDirections, directedAscendant: directedAscendant, directedSignificators: directedSignificators, significatorFor: significatorFor, directedChapter18: directedChapter18, boundsWalk: boundsWalk, lordOfYear: lordOfYear, profectionYear: profectionYear, yearAhead: yearAhead, triggerReading: triggerReading, liveWires21: liveWires21, judgeCycle: judgeCycle, judgeCycles: judgeCycles, judgeReturn: judgeReturn, eclipseTimers: eclipseTimers, glanceJudged: glanceJudged, weekJudged: weekJudged, lots: lots, starsJudged: starsJudged, hiddenPartnerships: hiddenPartnerships, patternsAsTestimony: patternsAsTestimony, vedicWall: vedicWall, bondSpine35: bondSpine35, bondOverlay35: bondOverlay35, voiceCheck: voiceCheck, sourceRegistry: sourceRegistry, citeSource: citeSource, placementProse: placementProse, briefPlacement9: briefPlacement9, sentences9: sentences9, lineify9: lineify9, feedBeats9: feedBeats9, interpret: interpret, temperament: temperament, temperamentProse: temperamentProse, symbolicDirections: symbolicDirections, castFromDirection: castFromDirection, directionLine: directionLine, directionReceipt: directionReceipt, aspectNature: aspectNature, transitCycles: transitCycles, weaveCycle: weaveCycle, weaveWeek: weaveWeek, receptionOf: receptionOf, guideCards: guideCards, ancientSky: ancientSky, addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, returnsAlmanac: returnsAlmanac, progressedLunation: progressedLunation, planetaryHours: planetaryHours, moonVoidWindow: moonVoidWindow, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
     saveCurrentChart: saveCurrentChart, deleteSavedChart: deleteSavedChart, activateSavedChart: activateSavedChart, activeChartKey: activeChartKey, chartKey: chartKey, lifeTransits: lifeTransits, upcomingTransits: upcomingTransits, transitMotion: transitMotion, compositeChart: compositeChart,
     nameFor: nameFor, nameTh: nameTh, glyphFor: glyphFor, pad: pad,
     domElement: domElement, lowElement: lowElement, domMod: domMod, tzOffsetHours: tzOffsetHours
@@ -8895,124 +8976,98 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       // are no longer computed eagerly here. Any tab that still uses one computes it lazily.
       if (UI.tradCache === undefined) { try { UI.tradCache = APP.traditionalRead(c, b); } catch (eTr9) { UI.tradCache = null; } }
       if (UI.rdBeats === undefined) {
-        // THE READING IS THE JUDGMENT — Sonia's order, every beat chart-specific with its receipt:
-        // the Ascendant, then its lord (the captain), then each house-lord followed home, then the
-        // planets' states, the sharpest aspect judged by nature, the lord of the year, and LAST the
-        // transits — read only where they strike a live wire. The old element-first beats now live
-        // only under "All", never at the front.
+        // THE FEED AS STACKED LINES. Every entry: a label, a small fact-header carrying the
+        // astrology (sign · house · verdict), then single-idea lines — one thought per line, most
+        // under a dozen words. The astrology lives in the header so the lines are free to say what
+        // it means in a life. Long chapters and receipts live under "Everything, in full".
         var bsF = [], T9 = UI.tradCache;
-        var addB = function (lab, txt, rc) { if (txt) bsF.push({ lab: lab, txt: txt, receipt: rc || null }); };
-        var clip9 = function (t, n) { if (!t || t.length <= n) return t; var cut = t.slice(0, n), m = cut.lastIndexOf('. '); return m > n * 0.5 ? cut.slice(0, m + 1) : cut.replace(/\s+\S*$/, '') + '…'; };
-        // THIS CHART'S OWN CONFIGURATIONS, FIRST — titled by what they say, not by how rare they are.
-        // The reader is never told how they compare to other charts; they are told what the shape
-        // they actually have does to the houses their planets answer for. Frequency only decides
-        // which one leads. A chart with no named configuration simply proceeds to its lords.
+        var addL = function (lab, head, lines, rc) { if (lines && lines.length) bsF.push({ lab: lab, head: head, lines: lines, receipt: rc || null }); };
+        // the first thing an astrologer says is not a placement — it is the SHAPE: what runs this
+        // chart, where the life gathers, and which ground pays against which asks work
         try {
-          var big3 = [['sun', 'Your Sun'], ['moon', 'Your Moon']], b3i;
-          for (b3i = 0; b3i < big3.length; b3i++) {
-            var pp3 = APP.placementProse(c, b, big3[b3i][0]);
-            if (pp3) addB(big3[b3i][1], clip9(pp3.text, 620), pp3.receipt);
+          var shp9 = [];
+          var rv0 = APP.rulingVoice(c, b);
+          if (rv0 && rv0.key) {
+            var rd0 = APP.determination(c, b, rv0.key);
+            if (rd0 && rd0.house) shp9.push('This chart runs on ' + (APP.nameTh ? APP.nameTh(rv0.key) : APP.nameFor(rv0.key)) + ', working from your ' + ordinal(rd0.house) + ' house.');
           }
-        } catch (eB3) {}
+          var FT0 = APP.chartFeatures(c, b) || [];
+          if (FT0.length) shp9 = shp9.concat(APP.lineify9(APP.sentences9(FT0[0].line)[0], 1));
+          var gl0 = APP.lifeAtAGlance(c, b);
+          if (gl0 && gl0.best && gl0.worst && gl0.best.domain !== gl0.worst.domain)
+            shp9.push(gl0.best.domain.charAt(0).toUpperCase() + gl0.best.domain.slice(1).toLowerCase() + ' pays most easily here; ' + gl0.worst.domain.toLowerCase() + ' asks the most work.');
+          addL('The shape of your chart', c.ascBody ? (c.ascBody.signName + ' rising') : null, shp9.slice(0, 4), gl0 ? gl0.receipt : null);
+        } catch (eShp9) {}
+        var lin9 = function (t, m) { return APP.lineify9(t, m); };
+        var sen9 = function (t) { return APP.sentences9(t); };
+        try { var FB9 = APP.feedBeats9(c, b), fbi9; for (fbi9 = 0; fbi9 < FB9.length; fbi9++) { var FBB9 = FB9[fbi9]; addL(FBB9.lab, FBB9.head, FBB9.lines, FBB9.receipt); } } catch (eFb9) {}
+        if (T9 && T9.asc) { try {
+          var ascS9 = sen9(T9.asc.line), ascL9 = [];
+          for (var as9 = 1; as9 < Math.min(3, ascS9.length); as9++) ascL9 = ascL9.concat(lin9(ascS9[as9], 2));
+          addL('Your Rising sign', c.ascBody ? c.ascBody.signName : null, ascL9.slice(0, 4), T9.asc.receipt);
+        } catch (eAsc9) {} }
+        if (T9 && T9.ruler) { try {
+          var rulS9 = sen9(T9.ruler.line), rulL9 = [];
+          for (var rs9 = 1; rs9 < Math.min(3, rulS9.length); rs9++) rulL9 = rulL9.concat(lin9(rulS9[rs9], 2));
+          var capK9 = (c.ascBody && APP._data().TRAD_RULER) ? null : null;
+          addL('The captain of your chart', rulS9.length ? sen9(T9.ruler.line)[0].replace(/^.*is /, '').replace(/\.$/, '') : null, rulL9.slice(0, 4), T9.ruler.receipt);
+        } catch (eRul9) {} }
+        if (T9 && !T9.hasTime && T9.note) addL('Where a reading starts', null, lin9(T9.note, 3), null);
+        // the domains: verdict in the header, the working as lines
         try {
-          var FT9 = APP.chartFeatures(c, b) || [], fti9;
-          for (fti9 = 0; fti9 < Math.min(2, FT9.length); fti9++) addB(FT9[fti9].title, clip9(FT9[fti9].line, 430), FT9[fti9].receipt);
+          var DOMS9 = [['Money', APP.judgeMoney], ['Love', APP.judgeLove], ['Career', APP.judgeCareer], ['Home and family', APP.judgeFamily]], dmi9;
+          for (dmi9 = 0; dmi9 < DOMS9.length; dmi9++) {
+            var DR9 = DOMS9[dmi9][1](c, b); if (!DR9 || !DR9.line) continue;
+            var dS9 = sen9(DR9.line), dL9 = [];
+            // the first lord sentence says who answers for it and through what part of life
+            for (var ds9 = 0; ds9 < dS9.length; ds9++) if (dS9[ds9].indexOf(' answers for ') >= 0) { dL9 = dL9.concat(lin9(dS9[ds9], 2)); break; }
+            // the closing evidence sentence says why the verdict fell the way it did
+            if (dS9.length) dL9 = dL9.concat(lin9(dS9[dS9.length - 1], 2));
+            dL9.push(DR9.verdict === 'well-promised' ? 'The practical read: this one comes to meet you — the mistake would be over-forcing it.'
+              : DR9.verdict === 'hard-won' ? 'The practical read: second attempts are the pattern here, not a verdict — round one failing means little.'
+              : 'The practical read: timing decides — this one pays in its lit seasons and idles between them.');
+            addL(DOMS9[dmi9][0], DR9.verdict, dL9.slice(0, 5), DR9.receipt);
+          }
+        } catch (eDm9) {}
+        try {
+          var FT9 = APP.chartFeatures(c, b) || [];
+          if (FT9.length) { var ftS9 = sen9(FT9[0].line).slice(0, 2), ftL9 = [], fts9; for (fts9 = 0; fts9 < ftS9.length; fts9++) ftL9 = ftL9.concat(lin9(ftS9[fts9], 2)); addL(FT9[0].title, null, ftL9.slice(0, 4), FT9[0].receipt); }
         } catch (eRv9) {}
-        // The pattern testimonies (stellium, grand trine, T-square, yod) were computed, weighted and
-        // then never shown to anybody: patternsAsTestimony was exported and called by nothing, so a
-        // feature the README advertises had no way to reach the page. Wired in, heaviest first.
         try {
-          var PT9 = APP.patternsAsTestimony(c, b), pti9;
-          if (PT9 && PT9.testimonies) for (pti9 = 0; pti9 < Math.min(2, PT9.testimonies.length); pti9++)
-            addB('A configuration the whole chart feels', clip9(PT9.testimonies[pti9].line, 420), PT9.testimonies[pti9].receipt);
-        } catch (ePt9) {}
-        if (T9 && T9.asc) addB('Your Rising sign — where a reading starts', T9.asc.line, T9.asc.receipt);
-        if (T9 && T9.ruler) addB('The captain of your chart', T9.ruler.line, T9.ruler.receipt);
-        if (T9 && !T9.hasTime && T9.note) addB('Where a reading starts', T9.note, null);
-        // the house-lords, followed home — the angles first, then the fortunes
-        if (T9 && T9.houses && T9.houses.length) {
-          var hByN9 = {}, hq9; for (hq9 = 0; hq9 < T9.houses.length; hq9++) hByN9[T9.houses[hq9].house] = T9.houses[hq9];
-          var HPRI9 = [1, 10, 7, 4, 2, 5, 9, 11], hpi9, shown9 = 0;
-          for (hpi9 = 0; hpi9 < HPRI9.length && shown9 < 5; hpi9++) { var HH9 = hByN9[HPRI9[hpi9]]; if (!HH9) continue; addB('The ' + ordinal(HH9.house) + ' house · followed home', HH9.line, HH9.receipt); shown9++; }
-        }
-        // the planets' states — the soundest and the weakest, judged by dignity
-        if (T9 && T9.states && T9.states.length) {
-          var DRANK9 = { Domicile: 5, Exaltation: 4, Triplicity: 3, Term: 2, Terms: 2, Face: 1, Decan: 1, Peregrine: 0, Detriment: -5, Fall: -4 };
-          var sts9 = T9.states.slice(), rank9 = function (s) { return DRANK9[s.state] == null ? 0 : DRANK9[s.state]; };
-          sts9.sort(function (a, z) { return rank9(z) - rank9(a); });
-          var strong9 = sts9[0], weak9 = sts9[sts9.length - 1];
-          if (strong9) addB('The soundest planet in you', strong9.line, strong9.receipt);
-          if (weak9 && weak9.k !== strong9.k && rank9(weak9) < 0) addB('The planet that leans on others', weak9.line, weak9.receipt);
-        }
-        // the sharpest aspect — judged by the NATURE of the planets in it, not the angle alone
-        try {
-          var aspH9 = null, ai9; for (ai9 = 0; ai9 < c.aspects.length; ai9++) { var A9 = c.aspects[ai9]; if (A9.asp.key === 'square' || A9.asp.key === 'opposition') { aspH9 = A9; break; } }
-          if (!aspH9 && c.aspects.length) aspH9 = c.aspects[0];
-          if (aspH9) { var nat9 = APP.aspectNature(aspH9.a, aspH9.b, aspH9.asp.key); addB('The sharpest conversation', 'Your tightest hard contact is ' + APP.nameFor(aspH9.a) + ' ' + aspH9.asp.key + ' ' + APP.nameFor(aspH9.b) + ', ' + aspH9.orb.toFixed(1) + '° from exact. The tradition judges it by nature, not the angle alone: ' + nat9.line + '. Better a square from a benefic than a trine from a malefic.', (APP.nameFor(aspH9.a) + ' ' + aspH9.asp.key + ' ' + APP.nameFor(aspH9.b) + ' · ORB ' + aspH9.orb.toFixed(1) + '° · ' + nat9.tone).toUpperCase()); }
+          var CLF9 = { sun: 1, moon: 1, mercury: 1, venus: 1, mars: 1, jupiter: 1, saturn: 1 };
+          var aspH9 = null, ai9;
+          for (ai9 = 0; ai9 < c.aspects.length; ai9++) { var A9 = c.aspects[ai9]; if (!CLF9[A9.a] || !CLF9[A9.b]) continue; if (A9.asp.key === 'square' || A9.asp.key === 'opposition') { aspH9 = A9; break; } }
+          if (!aspH9) for (ai9 = 0; ai9 < c.aspects.length; ai9++) { var A8 = c.aspects[ai9]; if (CLF9[A8.a] && CLF9[A8.b]) { aspH9 = A8; break; } }
+          if (aspH9) {
+            var nat9 = APP.aspectNature(aspH9.a, aspH9.b, aspH9.asp.key);
+            addL('The sharpest conversation', APP.nameFor(aspH9.a) + ' ' + aspH9.asp.key + ' ' + APP.nameFor(aspH9.b), lin9(nat9.line, 3),
+              (APP.nameFor(aspH9.a) + ' ' + aspH9.asp.key + ' ' + APP.nameFor(aspH9.b) + ' · orb ' + aspH9.orb.toFixed(1) + '°').toUpperCase());
+          }
         } catch (eA9) {}
-        // the timing: the lord of the year and the directions it lights — prediction, in order
-        try { var PY9 = APP.profectionYear(c, b); if (PY9 && PY9.line) addB('The lord of your year', clip9(PY9.line, 360), PY9.receipt); } catch (ePy9) {}
-        // and LAST of all — the transits, only where they strike a live wire
-        try { var TG9 = APP.triggerReading(c, b); if (TG9) { var tgTxt9 = TG9.doctrine + (TG9.loud && TG9.loud.length ? ' ' + TG9.loud[0].line : ''); addB('Last of all: what the sky triggers now', clip9(tgTxt9, 360), TG9.receipt); } } catch (eTg9) {}
-        // the ancient sky — real fixed-star / pyramid-era astronomy on your exact chart (a short tail)
-        if (UI.ancient === undefined) { try { UI.ancient = APP.ancientSky(c, b); } catch (eAs9) { UI.ancient = []; } }
-        if (UI.ancient && UI.ancient.length) { var asF; for (asF = 0; asF < Math.min(2, UI.ancient.length); asF++) bsF.push({ lab: UI.ancient[asF].lab, txt: UI.ancient[asF].txt, civ: UI.ancient[asF].civ }); }
+        try { var PY9 = APP.profectionYear(c, b); if (PY9 && PY9.line) { var pyS9 = sen9(PY9.line).slice(0, 3), pyL9 = [], pys9; for (pys9 = 0; pys9 < pyS9.length; pys9++) pyL9 = pyL9.concat(lin9(pyS9[pys9], 2)); addL('The lord of your year', PY9.lordName || null, pyL9.slice(0, 4), PY9.receipt); } } catch (ePy9) {}
+        try { var TG9 = APP.triggerReading(c, b); if (TG9 && TG9.loud && TG9.loud.length) { var tgS9 = sen9(TG9.loud[0].line).slice(0, 3), tgL9 = [], tgs9; for (tgs9 = 0; tgs9 < tgS9.length; tgs9++) tgL9 = tgL9.concat(lin9(tgS9[tgs9], 2)); addL('The sky right now, where it matters', null, tgL9.slice(0, 4), TG9.loud[0].receipt || null); } } catch (eTg9) {}
         UI.rdBeats = bsF;
       }
       if (UI.readMode === undefined) UI.readMode = 'flow';
       if (UI.readMode === 'flow' && UI.rdBeats.length) {
-        var beats = UI.rdBeats, bi = Math.min(UI.rdI || 0, beats.length - 1), beat = beats[bi];
-        var scrTop = sY(ly), scrBot = botY() - 8;
-        var dn = beats.length, dotW = 13, dx0 = x + (w - dn * dotW) / 2, di;
-        for (di = 0; di < dn; di++) { p.noStroke(); fillc(di === bi ? ACC : INK, di === bi ? 255 : (di < bi ? 130 : 50)); p.ellipse(dx0 + di * dotW + 6, scrTop + 9, di === bi ? 7 : 5, di === bi ? 7 : 5); }
-        flatBtn('≡ All', x + w - 60, ly + 24, 60, 30, function () { UI.readMode = 'menu'; UI.scroll.read = 0; buzz(6); }, false, true);
-        var caF = reduced() ? 1 : cl01((nowT() - (UI.rdT || UI.fxT)) / 500), riseF = (1 - eCubic(caF)) * 14;
-        var availTop = scrTop + 74, availBot = scrBot - 52;
-        var tszF = beat.txt.length > 340 ? 14 : beat.txt.length > 260 ? 15.5 : beat.txt.length > 200 ? 17 : (beat.txt.length > 140 ? 19 : 21);
-        var wlF = wrapLines2(beat.txt, w, SERIF, tszF * 1.46), lhF = tszF * 1.46 * 1.5, thF = wlF.length * lhF;
-        // the receipt — the working and the source, on every judged beat (Sonia's rule)
-        var rcL9 = beat.receipt ? wrapLines2(beat.receipt, w, MONO, 8.5) : null, rcH9 = rcL9 ? rcL9.length * 12 + 14 : 0;
-        // the Ancient Sky beats carry illustrated headers when the bundled art/ folder is present;
-        // absence costs nothing — the beat simply centres its text the way it always did
-        var artIm = beat.civ ? artImg('ancient-' + beat.civ) : null, artH = 0;
-        if (artIm) { artH = Math.min(Math.round(w * 9 / 16), (availBot - availTop) - thF - 130); if (artH < 70) { artIm = null; artH = 0; } }
-        var tyF = availTop + Math.max(0, ((availBot - availTop) - thF - rcH9 - (artH ? artH + 24 : 0)) / 2) + (artH ? artH + 24 : 0);
-        if (artIm) {
-          var artY = tyF - 34 - 18 - artH + riseF, dcArt = p.drawingContext;
-          if (dcArt) { dcArt.save(); dcArt.globalAlpha = 0.92 * caF; }
-          drawImageContain(artIm, x, artY, w, artH);
-          if (dcArt) dcArt.restore();
+        // THE READING AS A FEED, NOT A DECK OF PAGES. The old reader showed one centred "leaf" at a
+        // time with dots and TAP TO CONTINUE — flicking back and forth like an e-reader, and each
+        // leaf a full paragraph. Now every beat is a short entry in one scrolling column: its label,
+        // its first two sentences, and READ MORE for the rest. The receipt appears only when an
+        // entry is opened, so the closed feed is plain speech with the working one tap away.
+        var beats = UI.rdBeats, bF;
+        for (bF = 0; bF < beats.length; bF++) {
+          var beatF = beats[bF];
+          if (beatF.lab) { eyebrow(beatF.lab, x, ly, ACC); ly += 20; }
+          if (beatF.head) { setFont(MONO, 10.5, INK, p.LEFT, p.TOP, 235); p.text(String(beatF.head).toUpperCase(), x, sY(ly)); ly += 20; }
+          var lnF;
+          for (lnF = 0; lnF < beatF.lines.length; lnF++) ly += paragraph(beatF.lines[lnF], x, ly, w, 13.5, INK, SERIF, 20) + 7;
+          ly += 8;
+          if (bF < beats.length - 1) { hairline(x, ly, x + w, 26); ly += 16; }
         }
-        // THE BEAT AS A LEAF OF A BOOK. The reader shows one judged beat at a time, centred, so a
-        // short beat used to sit in the middle of a lot of nothing — correct pacing, but it read as
-        // an unfinished screen. Framing it as a lifted card with a chapter numeral behind it turns
-        // that air into deliberate margin, which is what a printed page does with the same space.
-        (function () {
-          var padT9 = 26, padB9 = 20, padX9 = 16;
-          var cTop9 = tyF - 34 - padT9 + riseF, cBot9 = tyF + thF + (rcH9 ? rcH9 + 2 : 8) + padB9 + riseF;
-          var cX9 = x - padX9, cW9 = w + padX9 * 2, cR9 = 18;
-          p.noStroke();
-          fillc(INK, 16 * caF); p.rect(cX9 + 1, cTop9 + 4, cW9, cBot9 - cTop9, cR9);        // the leaf's shadow
-          fillc(shade(GROUNDS[UI.screen] || GROUNDS.chart, 12), 248 * caF); p.rect(cX9, cTop9, cW9, cBot9 - cTop9, cR9);
-          p.noFill(); strokec(INK, 34 * caF); p.strokeWeight(1); p.rect(cX9, cTop9, cW9, cBot9 - cTop9, cR9);
-          // the chapter numeral, set large and faint the way a book sets one
-          setFont(SERIF, 62, INK, p.RIGHT, p.TOP, 26 * caF);
-          p.text(String(bi + 1), cX9 + cW9 - 16, cTop9 + 8);
-        })();
-        if (beat.lab) {
-          setFont(MONO, 10, ACCTX, p.LEFT, p.TOP, 230 * caF); p.text(beat.lab.toUpperCase(), x, tyF - 34 + riseF);
-          p.strokeWeight(1.4); strokec(ACC, 200 * caF); p.line(x, tyF - 16 + riseF, x + 30, tyF - 16 + riseF);
-        }
-        setFont(SERIF, tszF, INK, p.LEFT, p.TOP, 255 * caF); var wiF; for (wiF = 0; wiF < wlF.length; wiF++) p.text(wlF[wiF], x, tyF + wiF * lhF + riseF);
-        if (rcL9) {
-          var ryF9 = tyF + thF + 12 + riseF, rri9;
-          p.strokeWeight(1); strokec(INK, 30 * caF); p.line(x, ryF9 - 6, x + w, ryF9 - 6);   // the receipt sits below the rule
-          setFont(MONO, 8.5, ACCTX, p.LEFT, p.TOP, 180 * caF); for (rri9 = 0; rri9 < rcL9.length; rri9++) p.text(rcL9[rri9], x, ryF9 + rri9 * 12);
-        }
-        var lastF = bi >= beats.length - 1;
-        setFont(MONO, 10.5, ACCTX, p.CENTER, p.BOTTOM, 175 + 55 * (reduced() ? 1 : (0.5 + 0.5 * Math.sin(nowT() * 0.003)))); p.text(lastF ? 'SEE EVERYTHING  ›' : 'TAP TO CONTINUE  ›', x + w / 2, scrBot);
-        pushHit(x - 8, scrTop + 42, w + 16, (scrBot - 46) - (scrTop + 42), function () { if (lastF) { UI.readMode = 'menu'; UI.scroll.read = 0; } else { UI.rdI = bi + 1; } UI.rdT = nowT(); buzz(8); });
-        UI.contentH.read = 0;
+        ly += 6;
+        flatBtn('\u2261  Everything, in full', x, ly, w, 44, function () { UI.readMode = 'menu'; UI.scroll.read = 0; buzz(6); }, false); ly += 58;
+        UI.contentH.read = ly + 30;
       } else {
       // ===== the full chapter menu (reached via "All"; return via "back to the reading") =====
       eyebrow('Everything, in full', x, ly, ACC); ly += 24;
@@ -9172,11 +9227,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         ly += paragraph('The sky today, and what it touches in your chart.', x, ly, w, 14.5, INK, SERIF, 23, 225) + 14;
         ly += expandPara(UI.dailyEssay, x, ly, w, 'dessay', 17, 27) + 18;
       }
-      // watch today acted out again: the same bulletin that greets the day
-      flatBtn('▸  Watch today as a scene', x, ly, w, 42, function () {
-        var ndR = new Date(), nkR = ndR.getFullYear() + '-' + APP.pad(ndR.getMonth() + 1) + '-' + APP.pad(ndR.getDate());
-        UI.dailyNews = { i: 0, t0: nowT(), day: nkR, scenes: null }; UI.newsNoteI = -9; buzz(12);
-      }, false); ly += 54;
+
       // the three journeys, one calm row: chapters, the reel, the calendar
       (function () {
         var g3 = 10, cw3 = (w - g3) / 2, ch3 = 66, jy = sY(ly), J3 = [
@@ -11151,7 +11202,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       ly += toggleRow('Sound', [['off', 'Off'], ['on', 'On']], st.sound ? 'on' : 'off', ly, function (v) { st.sound = (v === 'on'); APP.save(); if (st.sound) { audioInit(); try { padStart(padChord9(), 0.02); setTimeout(function () { try { padStop(1.4); } catch (eSP9) {} }, 2400); } catch (eSC9) {} } });
       ly += toggleRow('Transit reminders', [['off', 'Off'], ['on', 'On']], st.notify ? 'on' : 'off', ly, function (v) { st.notify = (v === 'on'); APP.save(); if (st.notify) enableNotify(); });
       ly += paragraph('On: when you open the app on a day a planet lands exactly on your chart, you get one system notification. Where the browser supports it, a daily background check is registered too. Nothing leaves the device.', x, ly, w, 13.5, INK, SERIF, 20, 180) + 14;
-      ly += toggleRow('Daily Sky bulletin', [['on', 'On'], ['off', 'Off']], st.news === false ? 'off' : 'on', ly, function (v) { st.news = (v === 'on'); APP.save(); });
+
       ly += toggleRow('Haptics', [['on', 'On'], ['off', 'Off']], st.haptics === false ? 'off' : 'on', ly, function (v) { st.haptics = (v === 'on'); APP.save(); if (st.haptics) buzz(14); });
       ly += toggleRow('Zodiac', [['tropical', 'Tropical'], ['sidereal', 'Sidereal']], st.zodiac, ly, function (v) { st.zodiac = v; recompute(); });
       if (st.zodiac === 'sidereal') ly += paragraph('Sidereal shifts the whole zodiac back by the ayanamsa — the accumulated drift between the signs and the stars. This app uses a linear Lahiri-style value, a close approximation within a fraction of a degree of the named Lahiri figure over the last century; said plainly so positions can be reconciled against other software.', x, ly, w, 12.5, INK, SERIF, 19, 180) + 12;
@@ -12365,9 +12416,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         var on = UI.screen === tabs[i][1] || (tabs[i][1] === 'more' && MOREKIDS[UI.screen]);
         var tx = i * tw, dn = pressing(tx, navY, tw, NAVH + sb), cy2 = navY + NAVH / 2 - 2 + (dn ? 1 : 0);
         setFont(MONO, 11, INK, p.CENTER, p.CENTER, on ? 255 : (dn ? 175 : 105)); if (on) bold(); p.text(tabs[i][0].toUpperCase(), tx + tw / 2, cy2); normal();
-        if (tabs[i][1] === 'read' && APP.STATE.chart && APP.STATE.settings && APP.STATE.settings.news !== false && !UI.dailyNews) {
-          var dN9 = new Date(), dS9 = dN9.getFullYear() + '-' + ('' + (dN9.getMonth() + 101)).slice(1) + '-' + ('' + (dN9.getDate() + 100)).slice(1);
-          if (APP.STATE.settings.newsDay !== dS9) { p.noStroke(); fillc(ACC, 230); p.ellipse(tx + tw / 2 + 26, cy2 - 7, 5, 5); }
+        if (false) {
         }
         if (on) {
           // a small moon orbits the word you are on
@@ -12631,17 +12680,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       // the voice fetches itself in the background: once, politely, only when online
       // (the downloadable voice is gone; the system voice ships with the OS and simply works)
       if ((UI.screen === 'onboard' && !APP.STATE.birth && !UI.introDone) || UI.introReplay) { drawIntro(); clampScroll(); return; }
-      // the daily bulletin: once per day, on open, today's sky arrives as a story
-      if (!UI.newsChecked && APP.STATE.chart && APP.STATE.settings && APP.STATE.settings.toured) {
-        UI.newsChecked = true;
-        try {
-          var ndN = new Date(), nkN = ndN.getFullYear() + '-' + APP.pad(ndN.getMonth() + 1) + '-' + APP.pad(ndN.getDate());
-          // the daily story is a front-door greeting, so it must not hijack a screen the user asked
-          // for: skip it when a ?go= destination was given, or when they are already reading
-          var askedFor9 = false; try { askedFor9 = /[?&]go=/.test(location.search); } catch (eAf9) {}
-          if (APP.STATE.settings.news !== false && APP.STATE.settings.newsDay !== nkN && !askedFor9 && UI.screen === 'chart') UI.dailyNews = { i: 0, t0: nowT(), day: nkN, scenes: null };
-        } catch (eNC) {}
-      }
+      // (the once-a-day animated bulletin used to launch itself here; the day now stays as text)
       if (UI.dailyNews && APP.STATE.chart && UI.screen !== 'onboard') { hideSearchInput(); drawDailyNews(); drawTopbar(); clampScroll(); return; }
       var s = UI.screen;
       if (s === 'onboard') drawOnboard(); else { if (!(s === 'people' && UI.padd)) hideSearchInput(); if (s === 'chart') drawChart(); else if (s === 'read') drawRead(); else if (s === 'more') drawMore(); else if (s === 'learn') drawLearn(); else if (s === 'tarot') drawTarot(); else if (s === 'people') drawPeople(); else if (s === 'settings') { drawSettings(); drawSettingsGuide(); } }

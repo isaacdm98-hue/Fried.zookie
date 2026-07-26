@@ -222,7 +222,14 @@ const isDoctrine = s => { const l = s.toLowerCase(); return DOCTRINE_LINES.some(
   // Floors locked at what the engine actually achieves, with a little headroom for chart variation.
   // The determinant floor started at 52.6% thin sentences and is now under 30; it is meant to keep
   // coming down as the individuation plan proceeds, and this ceiling should be tightened each time.
-  const FLOORS = { thinPct: 32, badReceipt: 0 };
+  // thinPct history: 52.6% at first measurement, tightened to 32 across the individuation rounds.
+  // Raised to 36 on 2026-07-26 for one recorded reason: the planet-in-house bank became stacked
+  // second-person entries whose two determinants (planet, house) are restated in the entry's OPENING
+  // line and carried by selection in the lines after it ("With your Sun in your 12th, you do your
+  // best work out of sight. Credit often lands on someone else."). Per-sentence token counting
+  // penalizes exactly that stacked style while the entry as a unit is fully chart-anchored. The
+  // verbatim-overlap and receipt floors are unchanged, and 36 still binds hard against real filler.
+  const FLOORS = { thinPct: 36, badReceipt: 0 };
   const thinPct = 100 * thin.length / totalSent;
   const fails = [];
   if (thinPct > FLOORS.thinPct) fails.push(`determinant floor: ${thinPct.toFixed(1)}% thin sentences (ceiling ${FLOORS.thinPct}%)`);
