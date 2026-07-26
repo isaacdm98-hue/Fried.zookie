@@ -8296,7 +8296,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         if (ev) { var evW = wv(ev); watchL = { txt: APP.nameFor(ev.tp) + ' ' + ev.asp.key + ' your ' + APP.nameFor(ev.np) + ' turns exact ' + fmtShort(ev.exactDate) + ': it is building now.', full: evW && evW.line, why: (evW ? evW.receipt : glanceWhy(ev)) + ' · EXACT ' + fmtShort(ev.exactDate).toUpperCase() }; }
         else watchL = { txt: 'Nothing sharp on watch. A plain sky is permission to just live the day.', why: 'NO EXACT PASS, VOID WINDOW, ECLIPSE OR PERSONAL RETROGRADE IN RANGE' };
       }
-      return { rows: [{ tag: 'DO', col: ELHUE.air, txt: doL.txt, full: doL.full, why: doL.why }, { tag: 'EASY ON', col: ACC, txt: easeL.txt, full: easeL.full, why: easeL.why }, { tag: 'WATCH', col: ELHUE.fire, txt: watchL.txt, full: watchL.full, why: watchL.why }] };
+      return { rows: [{ tag: 'WITH YOU', col: ELHUE.air, txt: doL.txt, full: doL.full, why: doL.why }, { tag: 'GO GENTLE', col: ACC, txt: easeL.txt, full: easeL.full, why: easeL.why }, { tag: 'AGAINST YOU', col: ELHUE.fire, txt: watchL.txt, full: watchL.full, why: watchL.why }] };
     }
     // ---- life-in-chapters timeline: the slow transits & returns across a lifetime ----
     // ===== THE ACTOR: a gesture-drawing come to life. Head ball with construction cross,
@@ -12233,8 +12233,8 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       // at a glance — the three-second practical layer beneath the judgment: do / easy on / watch
       if (!UI.glance || UI.glanceT !== UI.todayCacheT) { try { UI.glance = glanceToday(d); } catch (eGl) { UI.glance = null; } UI.glanceT = UI.todayCacheT; UI.glanceOpen = {}; }
       if (UI.glance) {
-        head('At a glance');
-        var GLR = UI.glance.rows, gIndent = 66, gi9;
+        head('Today, for you');
+        var GLR = UI.glance.rows, gIndent = 74, gi9;
         for (gi9 = 0; gi9 < GLR.length; gi9++) {
           var G9 = GLR[gi9], gy0 = ty();
           setFont(MONO, 8.5, G9.col, p.LEFT, p.TOP, 255); bold(); p.text(G9.tag, x + pad, gy0 + 3); normal();

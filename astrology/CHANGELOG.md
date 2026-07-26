@@ -8,6 +8,15 @@ Both were right, and neither was about diction. An astrologer does two things
 this app never did: synthesizes the chart into one story before reading any
 pieces, and says where the leverage is.
 
+### The daily check answers its own question
+
+Today's glance rows now say what the reader is actually asking: **WITH YOU** /
+**GO GENTLE** / **AGAINST YOU**, under the heading "Today, for you". The full
+transformation plan — Today rebuilt around those two questions, the chapters
+brought to the consultation voice, cross-placement connections, synastry in the
+same register — is written out in `plans/transformation.md` and is the roadmap
+for the next arcs.
+
 ### The reading now opens the way a consultation opens
 
 The first entry is **The shape of your chart** — what runs it, where the life
