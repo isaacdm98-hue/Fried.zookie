@@ -4145,6 +4145,41 @@ var APP = (function () {
     }
     return out.slice(0, max || 5);
   }
+  function connections9(c, b) {
+    if (!(b && b.timeKnown && c.ascBody && c.cusps)) return [];
+    var out = [], usedLord9 = {}, i9, j9;
+    var DOMH9 = [[10, 'career'], [7, 'marriage'], [2, 'money'], [4, 'home'], [5, 'children'], [11, 'friendships']];
+    var lordOfH9 = function (h) { return TRAD_RULER[Math.floor(rev(c.cusps[h]) / 30)]; };
+    // two domains, one hand: the tightest link a chart can draw
+    for (i9 = 0; i9 < DOMH9.length && out.length < 2; i9++) {
+      for (j9 = i9 + 1; j9 < DOMH9.length && out.length < 2; j9++) {
+        var kA9 = lordOfH9(DOMH9[i9][0]), kB9 = lordOfH9(DOMH9[j9][0]);
+        if (kA9 !== kB9 || usedLord9[kA9]) continue;
+        usedLord9[kA9] = true;
+        var dA9 = determination(c, b, kA9);
+        out.push({
+          line: 'Your ' + DOMH9[i9][1] + ' and your ' + DOMH9[j9][1] + ' answer to the same planet: ' + nameTh(kA9) + (dA9 && dA9.house ? ', working from your ' + ordinal(dA9.house) : '') + '. The two tend to rise and fall together.',
+          receipt: ('lord ' + DOMH9[i9][0] + ' = lord ' + DOMH9[j9][0] + ' = ' + nameFor(kA9) + (dA9 && dA9.house ? ' → ' + ordinal(dA9.house) : '')).toUpperCase()
+        });
+      }
+    }
+    // one domain's lord standing on another's ground
+    var CROSS9 = [[10, 'career'], [7, 'marriage'], [4, 'home life']];
+    for (i9 = 0; i9 < CROSS9.length && out.length < 3; i9++) {
+      var hC9 = CROSS9[i9][0], kC9 = lordOfH9(hC9);
+      if (usedLord9[kC9]) continue;
+      var pC9 = c.planets[kC9]; if (!pC9 || !pC9.house || pC9.house === hC9) continue;
+      var tgt9 = null, t9;
+      for (t9 = 0; t9 < DOMH9.length; t9++) if (DOMH9[t9][0] === pC9.house) tgt9 = HOUSE_AREA9[pC9.house - 1];
+      if (!tgt9) continue;
+      usedLord9[kC9] = true;
+      out.push({
+        line: 'The planet that answers for your ' + CROSS9[i9][1] + ' stands in the house of ' + tgt9 + '. Watch how those two move together in your life: when one stirs, the other follows.',
+        receipt: ('lord ' + hC9 + ' ' + nameFor(kC9) + ' → ' + ordinal(pC9.house)).toUpperCase()
+      });
+    }
+    return out.slice(0, 3);
+  }
   function feedBeats9(c, b) {
     var out = [];
     function push9(lab, head, lines, rc) { if (lines && lines.length) out.push({ lab: lab, head: head || null, lines: lines, receipt: rc || null }); }
@@ -6203,7 +6238,7 @@ var APP = (function () {
     solarReturnChart: solarReturnChart, upcomingEclipses: upcomingEclipses, bestDaysFor: bestDaysFor, electIntents: electIntents, oddPredictions: oddPredictions, composeProfectionYear: composeProfectionYear, signHouseWeave: signHouseWeave,
     progressedTimeline: progressedTimeline, retroSeasons: retroSeasons,
     exportBook: exportBook, exportBackup: exportBackup, importBackup: importBackup, composeDailyEssay: composeDailyEssay, chartFP: chartFP, weaveNote: weaveNote, termOf: termOf, anA: anA, composeColleague: composeColleague, exportColleague: exportColleague,
-    weaveTransit: weaveTransit, traditionalRead: traditionalRead, determination: determination, determinationSheet: determinationSheet, derivedHouseOf: derivedHouseOf, derivedPhrase: derivedPhrase, conditionVerdict: conditionVerdict, chartFeatures: chartFeatures, stateAdj9: stateAdj9, sectProfile: sectProfile, judgeAscendant: judgeAscendant, judgeCaptain: judgeCaptain, rulershipWeb: rulershipWeb, zodiacMatrix: zodiacMatrix, cuspAlmuten: cuspAlmuten, judgeHouse: judgeHouse, judgeHouses: judgeHouses, judgeHealth: judgeHealth, judgeTopic: judgeTopic, judgeMoney: judgeMoney, judgeLove: judgeLove, judgeCareer: judgeCareer, judgeFamily: judgeFamily, lifeAtAGlance: lifeAtAGlance, judgeAspect: judgeAspect, judgeAspects: judgeAspects, fullReception: fullReception, receptionOnAspect: receptionOnAspect, receptionsInChart: receptionsInChart, testimonyAuthority: testimonyAuthority, contest: contest, rulingVoice: rulingVoice, contradictions: contradictions, natalSynthesis: natalSynthesis, housesThatMatter: housesThatMatter, noBirthTimeReading: noBirthTimeReading, judgeDirection: judgeDirection, judgeDirections: judgeDirections, directedAscendant: directedAscendant, directedSignificators: directedSignificators, significatorFor: significatorFor, directedChapter18: directedChapter18, boundsWalk: boundsWalk, lordOfYear: lordOfYear, profectionYear: profectionYear, yearAhead: yearAhead, triggerReading: triggerReading, liveWires21: liveWires21, judgeCycle: judgeCycle, judgeCycles: judgeCycles, judgeReturn: judgeReturn, eclipseTimers: eclipseTimers, glanceJudged: glanceJudged, weekJudged: weekJudged, lots: lots, starsJudged: starsJudged, hiddenPartnerships: hiddenPartnerships, patternsAsTestimony: patternsAsTestimony, vedicWall: vedicWall, bondSpine35: bondSpine35, bondOverlay35: bondOverlay35, voiceCheck: voiceCheck, sourceRegistry: sourceRegistry, citeSource: citeSource, placementProse: placementProse, briefPlacement9: briefPlacement9, sentences9: sentences9, lineify9: lineify9, feedBeats9: feedBeats9, interpret: interpret, temperament: temperament, temperamentProse: temperamentProse, symbolicDirections: symbolicDirections, castFromDirection: castFromDirection, directionLine: directionLine, directionReceipt: directionReceipt, aspectNature: aspectNature, transitCycles: transitCycles, weaveCycle: weaveCycle, weaveWeek: weaveWeek, receptionOf: receptionOf, guideCards: guideCards, ancientSky: ancientSky, addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, returnsAlmanac: returnsAlmanac, progressedLunation: progressedLunation, planetaryHours: planetaryHours, moonVoidWindow: moonVoidWindow, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
+    weaveTransit: weaveTransit, traditionalRead: traditionalRead, determination: determination, determinationSheet: determinationSheet, derivedHouseOf: derivedHouseOf, derivedPhrase: derivedPhrase, conditionVerdict: conditionVerdict, chartFeatures: chartFeatures, stateAdj9: stateAdj9, sectProfile: sectProfile, judgeAscendant: judgeAscendant, judgeCaptain: judgeCaptain, rulershipWeb: rulershipWeb, zodiacMatrix: zodiacMatrix, cuspAlmuten: cuspAlmuten, judgeHouse: judgeHouse, judgeHouses: judgeHouses, judgeHealth: judgeHealth, judgeTopic: judgeTopic, judgeMoney: judgeMoney, judgeLove: judgeLove, judgeCareer: judgeCareer, judgeFamily: judgeFamily, lifeAtAGlance: lifeAtAGlance, judgeAspect: judgeAspect, judgeAspects: judgeAspects, fullReception: fullReception, receptionOnAspect: receptionOnAspect, receptionsInChart: receptionsInChart, testimonyAuthority: testimonyAuthority, contest: contest, rulingVoice: rulingVoice, contradictions: contradictions, natalSynthesis: natalSynthesis, housesThatMatter: housesThatMatter, noBirthTimeReading: noBirthTimeReading, judgeDirection: judgeDirection, judgeDirections: judgeDirections, directedAscendant: directedAscendant, directedSignificators: directedSignificators, significatorFor: significatorFor, directedChapter18: directedChapter18, boundsWalk: boundsWalk, lordOfYear: lordOfYear, profectionYear: profectionYear, yearAhead: yearAhead, triggerReading: triggerReading, liveWires21: liveWires21, judgeCycle: judgeCycle, judgeCycles: judgeCycles, judgeReturn: judgeReturn, eclipseTimers: eclipseTimers, glanceJudged: glanceJudged, weekJudged: weekJudged, lots: lots, starsJudged: starsJudged, hiddenPartnerships: hiddenPartnerships, patternsAsTestimony: patternsAsTestimony, vedicWall: vedicWall, bondSpine35: bondSpine35, bondOverlay35: bondOverlay35, voiceCheck: voiceCheck, sourceRegistry: sourceRegistry, citeSource: citeSource, placementProse: placementProse, briefPlacement9: briefPlacement9, sentences9: sentences9, lineify9: lineify9, feedBeats9: feedBeats9, connections9: connections9, interpret: interpret, temperament: temperament, temperamentProse: temperamentProse, symbolicDirections: symbolicDirections, castFromDirection: castFromDirection, directionLine: directionLine, directionReceipt: directionReceipt, aspectNature: aspectNature, transitCycles: transitCycles, weaveCycle: weaveCycle, weaveWeek: weaveWeek, receptionOf: receptionOf, guideCards: guideCards, ancientSky: ancientSky, addPerson: addPerson, removePerson: removePerson, personChart: personChart, clearPersonCharts: clearPersonCharts, composeBond: composeBond, synastry: synastry, moonPhaseNow: moonPhaseNow, composeForecast: composeForecast, monthlyProfection: monthlyProfection, zodiacalReleasing: zodiacalReleasing, dignityOf: dignityOf, dignityLedger: dignityLedger, almutenChart: almutenChart, finalDispositors: finalDispositors, prominence: prominence, chartConditions: chartConditions, composeThemes: composeThemes, composeArc: composeArc, returnsAlmanac: returnsAlmanac, progressedLunation: progressedLunation, planetaryHours: planetaryHours, moonVoidWindow: moonVoidWindow, declAspects: declAspects, pairAspectText: pairAspectText, decanOf: decanOf, degreeNote: degreeNote, tarotGuide: tarotGuide, planetJoys: planetJoys, traditionFor: traditionFor, starsOn: starsOn,
     saveCurrentChart: saveCurrentChart, deleteSavedChart: deleteSavedChart, activateSavedChart: activateSavedChart, activeChartKey: activeChartKey, chartKey: chartKey, lifeTransits: lifeTransits, upcomingTransits: upcomingTransits, transitMotion: transitMotion, compositeChart: compositeChart,
     nameFor: nameFor, nameTh: nameTh, glyphFor: glyphFor, pad: pad,
     domElement: domElement, lowElement: lowElement, domMod: domMod, tzOffsetHours: tzOffsetHours
@@ -9022,6 +9057,11 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
           addL('The captain of your chart', rulS9.length ? sen9(T9.ruler.line)[0].replace(/^.*is /, '').replace(/\.$/, '') : null, rulL9.slice(0, 4), T9.ruler.receipt);
         } catch (eRul9) {} }
         if (T9 && !T9.hasTime && T9.note) addL('Where a reading starts', null, lin9(T9.note, 3), null);
+        try {
+          var CX9 = APP.connections9(c, b), cxi9, cxL9 = [], cxR9 = [];
+          for (cxi9 = 0; cxi9 < CX9.length; cxi9++) { cxL9.push(CX9[cxi9].line); cxR9.push(CX9[cxi9].receipt); }
+          if (cxL9.length) addL('How your chart connects', null, cxL9, cxR9.join(' · '));
+        } catch (eCx9) {}
         // the domains: verdict in the header, the working as lines
         try {
           var DOMS9 = [['Money', APP.judgeMoney], ['Love', APP.judgeLove], ['Career', APP.judgeCareer], ['Home and family', APP.judgeFamily]], dmi9;

@@ -1,5 +1,20 @@
 # Changelog
 
+## 4.18.0 — 2026-07-26 — how your chart connects
+
+The astrologer's "and notice—" move: after the pieces, the joins. A new
+`connections9` pass finds the links a consultation is built on — two life
+areas answering to the same planet, or one domain's lord standing on another
+domain's ground — and says them as one line each:
+
+> Your marriage and your money answer to the same planet: Venus, working from
+> your 11th. The two tend to rise and fall together.
+
+At most three, chosen tightest-first, each with its receipt, placed right
+after the captain in the reading — pieces first, then what ties them. The
+pairing itself is the individuation: which two domains share a hand differs
+chart to chart, and it is the thing readers recognise as "that is my life."
+
 ## 4.17.1 — 2026-07-26 — the Sonia fit-check, applied
 
 A requested audit against the school's own doctrine notes found two real
