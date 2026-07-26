@@ -50,8 +50,8 @@
       "tooth": "saturn",
       "ruling": "mars",
       "h1": "promised",
-      "h7": "promised",
-      "h10": "promised"
+      "h7": "taxed",
+      "h10": "withheld"
     },
     "C": {
       "birth": {
@@ -75,7 +75,7 @@
       "helper": "jupiter",
       "tooth": "mars",
       "ruling": "venus",
-      "h1": "promised",
+      "h1": "repaired",
       "h7": "withheld",
       "h10": "promised"
     },
@@ -134,6 +134,27 @@
           "now": "promised"
         }
       }
+    },
+    {
+      "date": "2026-07-26",
+      "change": "judgment runs on Lilly's own condition bands, and a malefic CONJUNCT a house lord counts as an affliction",
+      "why": "Two defects, found while making the four testimonies visible as a weighing. (1) The engine had grown an invented threshold at +3 alongside Lilly's published bands (commanding >=10, sound >=5, mixed >=0, strained >=-5, afflicted below), so a lord at net +4 was declared able to pay while the ledger printed under it read 'mixed'. Once each testimony shows the figure it was read from, words that disagree with the figure are visible as a contradiction. leanOf9() now derives every lean and every favour increment from the bands: sound or better favours, below zero opposes, mixed is genuinely mixed. (2) judgeHouse counted malefic squares and oppositions to the house lord but passed over the conjunction, which the tradition treats as the heaviest affliction of the three — Mars sitting on the lord of the 7th registered as nothing at all. judgeTopic already counted it; the two functions disagreed.",
+      "effect": "B.h7 promised -> taxed (Mars conjunct the 7th lord now counts, so harms exceeds helps). B.h10 promised -> withheld and C.h1 promised -> repaired (both lords sat in the +3..+4 window that the invented threshold had let through as able to pay, and Lilly's bands put them in 'mixed'). No other pinned value moves.",
+      "pinned": {
+        "B.h7": {
+          "was": "promised",
+          "now": "taxed"
+        },
+        "B.h10": {
+          "was": "promised",
+          "now": "withheld"
+        },
+        "C.h1": {
+          "was": "promised",
+          "now": "repaired"
+        }
+      }
     }
-  ]
+  ],
+  "note": ""
 }

@@ -1,5 +1,77 @@
 # Changelog
 
+## 4.12.0 — 2026-07-26 — the four testimonies, shown rather than described
+
+The method this app is built on is explicit: four testimonies to one judgment.
+The app was performing all four and then handing over only the conclusion, with
+the working folded invisibly into a paragraph. Now every domain shows its
+weighing.
+
+### The weighing
+
+`judgeTopic` and `judgeHouse` both return `testimonies` — one row per testimony,
+in the method's own order (what occupies the house → the lord who carries the
+promise → what reaches that lord → the Lot → the natural significator, checked
+last) — plus a `tally` of how many lean each way. Each row carries three things:
+the office it speaks from, what it says in plain English, and **the figure it was
+read from**:
+
+```
+LORD OF THE HOUSE, WHO CARRIES THE PROMISE
+Jupiter answers for this ground, exalted in Cancer, and works from your
+4th — home, family and roots. It is well enough disposed to pay what it promises.
+Jupiter 1°46' Cancer · 4th (angular) · essential +4 · accidental +9 · net +13 (commanding)
+```
+
+Position to the arc-minute, the house and its class, retrogradation, and Lilly's
+ledger split into its two columns — because the essential column and the
+accidental column answer different questions, and a net total that hides the
+split can say "strong" about a planet with no title of its own propped up by an
+angle. On the Read screen the tally is always visible (a verdict whose count you
+cannot see is an assertion); the rows themselves open on a tap.
+
+### Three defects the figures exposed immediately
+
+Printing the arithmetic under each sentence made contradictions visible that
+prose had been hiding.
+
+**An invented threshold, cutting one of Lilly's bands in half.** The engine had
+grown its own cutoff at `+3` alongside Lilly's published bands (commanding ≥10,
+sound ≥5, mixed ≥0, strained ≥−5, afflicted below). So a lord at net +4 was
+declared "well enough disposed to pay what it promises" directly above a ledger
+reading `net +4 (mixed)`. `leanOf9()` now derives every lean, every favour
+increment and every verdict from the bands themselves.
+
+**A malefic sitting on a house lord counted for nothing.** `judgeHouse` weighed
+malefic squares and oppositions to the lord and passed over the conjunction —
+the heaviest affliction of the three. Mars conjunct the lord of the 7th
+registered as no testimony at all. `judgeTopic` had always counted it; the two
+functions disagreed with each other.
+
+**One planet counted as two testimonies.** Where the natural significator of a
+matter is also one of its house lords — Venus for marriage on a Taurus or Libra
+7th, for instance — the engine weighed it twice and inflated the verdict on the
+strength of a single planet. Both functions now recognise the doubling, say so in
+the row ("the same hand holds both offices … one testimony, not two"), and leave
+the tally alone. The same rule now covers an occupant that already rules another
+of the domain's houses, decided in a pre-pass so the answer never depends on
+which house the loop reaches first.
+
+Effect on the pinned reference nativities, recorded in
+`tests/golden.json → doctrineChanges`: B.h7 promised → taxed, B.h10 promised →
+withheld, C.h1 promised → repaired.
+
+### Also
+
+- Aspect rows now say what the tradition reads and the app was dropping: orb
+  strength in words (partile / close / wide) and whether the aspect is applying
+  or separating — a thing still forming versus a thing already done.
+- The role label wraps at its own size instead of running off the right edge, and
+  the tally line drops the toggle to its own line when the two would overprint.
+- A `window.__ui` test seam, so a screenshot harness can open a collapsed panel
+  rather than hunting for it with a mouse. The sketch runs in instance mode and
+  its handle was not kept anywhere.
+
 ## 4.11.0 — 2026-07-25 — a full audit, and the things an audit is for
 
 Driven by one instruction: audit and upgrade every element. The findings that

@@ -124,7 +124,7 @@ working (dignity, house, and the Lilly score) every time.
 
 ## Version
 
-**4.11.0** — see `CHANGELOG.md`. Licensed MIT (`LICENSE`).
+**4.12.0** — see `CHANGELOG.md`. Licensed MIT (`LICENSE`).
 
 ## Deploy
 

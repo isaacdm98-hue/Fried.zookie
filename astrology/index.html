@@ -3047,6 +3047,33 @@ var APP = (function () {
              'is mixed there, so the gift and the cost tend to arrive in the same parcel']
   };
   var CAUSE_LINK9 = { 1: 'the body and its undertakings are spent on', 2: 'money arrives through', 3: 'the everyday mind and its errands are shaped by', 4: 'home and the family’s story are settled through', 5: 'children and joy come through', 6: 'your daily work and your health both take their shape from', 7: 'the partner is met through', 8: 'loss and legacy arrive through', 9: 'belief and the far road are fed by', 10: 'the career runs through', 11: 'friends and hopes are won through', 12: 'the hidden life drains or restores through' };
+  // THE FIGURE, TO THE MINUTE. A trained reader does not take "well placed" on trust: they want the
+  // position to the arc-minute, the house and its class, whether the planet is direct or retrograde,
+  // and the dignity ledger split into its two columns — because Lilly's essential column and his
+  // accidental column answer two different questions, and a net total that hides the split can say
+  // "strong" about a planet with no title of its own propped up by an angle. Every testimony row
+  // carries one of these, so the judgment above it can be checked against an ephemeris.
+  function signed9(n) { return (n >= 0 ? '+' : '\u2212') + Math.abs(n); }
+  function figOf9(d) {
+    if (!d) return '';
+    var f = nameFor(d.key) + ' ' + degStr(d.deg) + ' ' + d.signName + (d.retro ? ' \u211E' : '');
+    if (d.house) f += ' \u00B7 ' + ordinal(d.house) + (d.terrestrial && d.terrestrial.houseClass ? ' (' + d.terrestrial.houseClass + ')' : '');
+    if (d.condition && d.condition.essential && d.condition.accidental)
+      f += ' \u00B7 essential ' + signed9(d.condition.essential.total) + ' \u00B7 accidental ' + signed9(d.condition.accidental.total) + ' \u00B7 net ' + signed9(d.condition.total) + (d.condition.band ? ' (' + d.condition.band + ')' : '');
+    return f;
+  }
+  // ONE SCALE. Lilly's own bands are what the tradition reads a planet's condition on: sound and
+  // above can perform what it promises, "mixed" genuinely turns on which testimony gets triggered,
+  // and below zero it acts late, at cost, or through others. The engine had grown a second, invented
+  // threshold at +3 alongside them, which cut the mixed band in half — so a row could print
+  // "well enough disposed to pay" directly above a figure reading "net +4 (mixed)". Judgment now runs
+  // on the bands, and the words above a figure can no longer disagree with it.
+  function leanOf9(total) { return total >= 5 ? 1 : total < 0 ? -1 : 0; }
+  // Orb and motion, in the tradition's own terms. Lilly weighs a partile aspect far above a wide
+  // one, and the difference between applying and separating is the difference between a thing still
+  // forming and a thing already done — so the row says which, rather than only naming the angle.
+  function orbWord9(orb) { return orb <= 1 ? 'to the degree, which makes it a strong testimony' : orb <= 3 ? 'close, so it carries real weight' : orb >= 6 ? 'wide, so it is a weak testimony' : 'at a moderate distance'; }
+  function motionWord9(applying) { return applying ? 'still closing, so it describes what is forming rather than what is settled' : 'already separating, so it describes something that has largely done its work'; }
   function judgeHouse(c, b, h) {
     if (!(b && b.timeKnown && c.ascBody && c.cusps)) return null;
     var cuspLon = c.cusps[h], cs = Math.floor(rev(cuspLon) / 30), csName = DATA.SIGNS[cs].name;
@@ -3057,21 +3084,47 @@ var APP = (function () {
     for (i = 0; i < CL9.length; i++) { k = CL9[i]; var pp = c.planets[k]; if (pp && pp.house === h && k !== lordK) occs.push(determination(c, b, k)); }
     var lordHere = c.planets[lordK] && c.planets[lordK].house === h;
     // --- weigh the testimonies ---
-    var helps = 0, harms = 0, testimony = [];
+    // Kept as rows as well as as prose: the same four testimonies the paragraph below is built from,
+    // each with the figure it was read from, so the working can be shown instead of only described.
+    var helps = 0, harms = 0, testimony = [], tst = [];
+    function testify(ord, role, what, lean, fig) { tst.push({ ord: ord, role: role, what: what, lean: lean, fig: fig || '' }); }
     for (i = 0; i < occs.length; i++) {
       var O = occs[i], v = O.nature.verdict;
       if (v === 'benefic') { helps += (O.essential.score >= 3 ? 2 : 1); testimony.push(nameTh(O.key) + ' in the house, ' + (O.essential.score >= 3 ? 'dignified, a strong shield' : 'a friendly hand')); }
       else if (v === 'malefic') { var hw = (O.essential.score >= 3 ? 1 : 2); harms += hw; testimony.push(nameTh(O.key) + ' in the house' + (O.essential.score >= 3 ? ', dignified, a hard builder rather than a wrecker' : ', afflicted, a real tax')); }
+      testify(10 + i, 'in the house itself: ' + nameFor(O.key),
+        capit(nameTh(O.key)) + ' stands here, ' + stateAdj9(O.essential.label) + ' in ' + O.signName + ', and ' + (v === 'benefic' ? (O.essential.score >= 3 ? 'holds a title of its own in that sign, which makes it a strong shield over this ground' : 'favours this ground, a friendly hand on it') : v === 'malefic' ? (O.essential.score >= 3 ? 'holds a title of its own in that sign, so it builds this ground slowly rather than wrecking it' : 'disturbs this ground, and takes a real cut of it') : 'takes its colour from whatever reaches it'),
+        v === 'benefic' ? 1 : v === 'malefic' ? -1 : 0, figOf9(O));
     }
-    var bond = null;
+    var bond = null, nAsp = 0;
     for (i = 0; i < lordD.aspects.length; i++) {
       var A = lordD.aspects[i], o = A.other; if (CL9.indexOf(o) < 0) continue;
       var hard = (A.aspect === 'square' || A.aspect === 'opposition');
       if (o === 'venus' || o === 'jupiter') { helps += (A.reception ? 2 : 1); if (!bond) bond = A; testimony.push(nameTh(o) + '’s ' + A.aspect + ' to the lord' + (A.reception ? ', with reception, a real repair' : '')); }
-      else if ((o === 'mars' || o === 'saturn') && hard) { harms += (A.reception ? 1 : 2); if (!bond) bond = A; testimony.push(nameTh(o) + '’s ' + A.aspect + ' to the lord' + (A.reception ? ', though reception softens it' : ', friction at the root')); }
+      // a malefic CONJUNCT the house lord is one of the tradition's heaviest afflictions, and this
+      // loop was passing over it: only squares and oppositions counted, so Mars sitting on the lord
+      // of the 7th registered as nothing at all
+      else if ((o === 'mars' || o === 'saturn') && (hard || A.aspect === 'conjunction')) { harms += (A.reception ? 1 : 2); if (!bond) bond = A; testimony.push(nameTh(o) + '’s ' + A.aspect + ' to the lord' + (A.reception ? ', though reception softens it' : A.aspect === 'conjunction' ? ', sitting on it' : ', friction at the root')); }
+      else continue;
+      var aBen = (o === 'venus' || o === 'jupiter');
+      testify(30 + (nAsp++), 'what reaches the lord: ' + nameFor(o),
+        capit(nameTh(o)) + ' reaches ' + nameTh(lordK) + ' by ' + art9(A.aspect) + ' ' + A.aspect + ' — ' + orbWord9(A.orb) + ', and ' + motionWord9(A.applying) + '. ' + capit(pron9(o, 0)) + (aBen ? ' seconds what this house promises' : ' presses on it') + (A.reception ? ', though each stands in ground the other rules, which turns the exchange into a real repair' : '') + '.',
+        aBen ? 1 : -1,
+        nameFor(lordK) + ' ' + A.aspect + ' ' + nameFor(o) + ' · orb ' + A.orb.toFixed(2) + '° ' + (A.applying ? 'applying' : 'separating') + (A.reception ? ' · reception' : ''));
     }
     var lscore = lordD.condition ? lordD.condition.total : 0;
-    var verdict = (lscore >= 3) ? (harms > helps ? 'taxed' : 'promised') : (helps > 0 ? 'repaired' : 'withheld');
+    testify(20, 'lord of the house, who carries the promise',
+      capit(nameTh(lordK)) + ' answers for this ground, ' + stateAdj9(lordD.essential.label) + ' in ' + lordD.signName + (lordD.house === h ? ', standing in the house it rules, so this domain runs on its own ground' : lordD.house ? ', and works from your ' + ordinal(lordD.house) + ' — ' + HOUSE_AREA9[lordD.house - 1] : '') + '. ' + (function () {
+        var le9 = (lordD.essential && typeof lordD.essential.score === 'number') ? lordD.essential.score : 0, lb9 = leanOf9(lscore);
+        if (lordD.essential && lordD.essential.peregrine) return lb9 > 0 ? 'It owns no title of its own in that sign, so it has no strength of its own to draw on: whatever it delivers here, it delivers on the strength of its place rather than its state'
+          : lb9 < 0 ? 'It owns no title of its own in that sign and stands badly besides, so nothing here arrives on its own account'
+          : 'It owns no title of its own in that sign, so this ground is decided entirely by where it stands and what reaches it';
+        if (le9 < 0 && lb9 > 0) return 'It is weak in its sign but well placed, so the promise is carried by circumstance rather than by its own strength';
+        if (le9 >= 3 && lb9 < 0) return 'It is sound in its sign but poorly circumstanced, so the promise strains in spite of its strength';
+        return lb9 > 0 ? 'It is well enough disposed to pay what it promises' : lb9 < 0 ? 'It is too poorly disposed to pay outright: it pays late, through others, or not in full' : 'It is neither strong nor weak, so timing decides which half of it speaks';
+      })() + '.',
+      leanOf9(lscore), figOf9(lordD));
+    var verdict = (leanOf9(lscore) > 0) ? (harms > helps ? 'taxed' : 'promised') : (helps > 0 ? 'repaired' : 'withheld');
     // --- compose the paragraph ---
     var S = [];
     // "has Libra on the cusp" and a bare "(9 against 5)" are three barriers in one line: the cusp,
@@ -3088,14 +3141,20 @@ var APP = (function () {
     }
     if (!occs.length && !lordHere) S.push('No planet occupies the ' + ordinal(h) + ': the domain is answered entirely by its lord, ' + nameTh(lordK) + ', from where ' + pron9(lordK, 0) + ' stands.');
     if (lordHere) S.push(nameFor(lordK) + ' stands in ' + pron9(lordK, 1) + ' own house, ' + stateAdj9(lordD.essential.label) + ' in ' + lordD.signName + ': the ' + ordinal(h) + ' runs on its own ground, answering to nobody else.');
-    else S.push('The promise itself is read from the lord: ' + capit(nameTh(lordK)) + ' stands ' + stateAdj9(lordD.essential.label) + ' in ' + lordD.signName + ' in your ' + ordinal(lordD.house) + ', so ' + CAUSE_LINK9[h] + ' ' + HOUSE_AREA9[lordD.house - 1] + (lscore >= 5 ? ', and being well disposed there, the link pays' : lscore < 0 ? ', and being poorly disposed there, the link costs more than it pays' : '') + '.');
+    else S.push('The promise itself is read from the lord: ' + capit(nameTh(lordK)) + ' stands ' + stateAdj9(lordD.essential.label) + ' in ' + lordD.signName + ' in your ' + ordinal(lordD.house) + ', so ' + CAUSE_LINK9[h] + ' ' + HOUSE_AREA9[lordD.house - 1] + (leanOf9(lscore) > 0 ? ', and being well disposed there, the link pays' : leanOf9(lscore) < 0 ? ', and being poorly disposed there, the link costs more than it pays' : '') + '.');
     if (lordD.condition) S.push(lordD.condition.line);
     var conj = null;
     for (i = 0; i < lordD.aspects.length; i++) if (lordD.aspects[i].aspect === 'conjunction' && CL9.indexOf(lordD.aspects[i].other) >= 0) { conj = lordD.aspects[i]; break; }
     if (conj) S.push('Standing with the lord is ' + nameTh(conj.other) + ' (' + conj.orb.toFixed(1) + '°), ' + ((conj.other === 'venus' || conj.other === 'jupiter') ? 'a benefic at ' + pron9(lordK, 1) + ' elbow, so what the ' + ordinal(h) + ' needs, it gets help asking for' : (conj.other === 'mars' || conj.other === 'saturn') ? 'a malefic at ' + pron9(lordK, 1) + ' elbow, so the ' + ordinal(h) + '’s business carries that edge everywhere' : 'colouring everything the ' + ordinal(h) + ' asks of ' + pron9(lordK, 2)) + '.');
     var kk = KARAKA_OF_HOUSE9[h], kD = (kk === lordK) ? lordD : determination(c, b, kk);
     if (kD && kD.feral) S.push('Checked last, ' + nameTh(kk) + ', the planet the tradition gives to ' + KARAKA_WORD9[h] + ', is feral, aspected by no classical planet: what ' + pron9(kk, 0) + ' stands for here stands unsupported and alone.');
-    else if (kD && kD.condition) S.push('Checked last, ' + nameTh(kk) + ', the planet the tradition gives to ' + KARAKA_WORD9[h] + ', stands in ' + kD.condition.band + ' condition, which ' + (kD.condition.total >= 5 ? 'seconds the promise' : kD.condition.total < 0 ? 'withholds its second' : 'neither helps nor hinders') + '.');
+    else if (kD && kD.condition) S.push('Checked last, ' + nameTh(kk) + ', the planet the tradition gives to ' + KARAKA_WORD9[h] + ', stands in ' + kD.condition.band + ' condition, which ' + (leanOf9(kD.condition.total) > 0 ? 'seconds the promise' : leanOf9(kD.condition.total) < 0 ? 'withholds its second' : 'neither helps nor hinders') + '.');
+    if (kD) testify(90, (kk === lordK) ? 'checked last: ' + nameFor(kk) + ' again — already weighed above'
+        : 'checked last: ' + nameFor(kk) + ', the planet given to ' + KARAKA_WORD9[h],
+      (kk === lordK) ? 'The same hand holds both offices: ' + nameTh(kk) + ' rules this house AND is the planet the tradition gives to ' + KARAKA_WORD9[h] + '. That concentrates the whole matter in one planet — whatever happens to it happens here — but it is one testimony, not two, so it is not counted twice.'
+        : kD.feral ? capit(nameTh(kk)) + ' is reached by no classical planet at all, so what it stands for here stands unsupported and alone'
+        : capit(nameTh(kk)) + ' is ' + stateAdj9(kD.essential.label) + ' in ' + kD.signName + (kD.house ? ', standing in your ' + ordinal(kD.house) : '') + ', and ' + (kD.condition && leanOf9(kD.condition.total) > 0 ? 'seconds what the house promises' : kD.condition && leanOf9(kD.condition.total) < 0 ? 'withholds its second' : 'neither helps nor hinders'),
+      (kk === lordK) ? 0 : kD.feral ? -1 : (kD.condition ? leanOf9(kD.condition.total) : 0), figOf9(kD));
     var lsTxt = (lscore >= 0 ? '+' : '') + lscore;   // the number itself rides the receipt line, not the prose
     var vLine = {
       promised: 'promised — ' + nameTh(lordK) + ' is strong enough to pay, and what this house offers arrives and holds',
@@ -3104,9 +3163,12 @@ var APP = (function () {
       withheld: 'withheld — ' + nameTh(lordK) + ' is too weak here to pay outright, so it pays late, through others, or not in full; expect second attempts'
     }[verdict];
     S.push('The verdict on your ' + ordinal(h) + ': ' + vLine + '; decided by ' + (testimony.length ? testimony.slice(0, 3).join('; ') : nameTh(lordK) + '’s own state, with no planet interfering') + '.');
+    tst.sort(function (a9, z9) { return a9.ord - z9.ord; });
+    var hf9 = 0, ha9 = 0, hn9 = 0, hi9;
+    for (hi9 = 0; hi9 < tst.length; hi9++) { if (tst[hi9].lean > 0) hf9++; else if (tst[hi9].lean < 0) ha9++; else hn9++; }
     return {
       house: h, cuspSign: csName, lord: lordK, almuten: alm, occupants: occs.map(function (o) { return o.key; }), lordScore: lscore, helps: helps, harms: harms,
-      verdict: verdict, testimony: testimony, line: tidyProse(S.join(' ')),
+      verdict: verdict, testimony: testimony, testimonies: tst, tally: { favour: hf9, against: ha9, neutral: hn9 }, line: tidyProse(S.join(' ')),
       receipt: (ordinal(h) + ' cusp ' + degStr(cuspLon % 30) + ' ' + csName + ' · lord ' + nameFor(lordK) + ' → ' + ordinal(lordD.house) + ', ' + lordD.signName + (alm && alm.differs ? ' · cusp almuten ' + nameFor(alm.lead) + ' ' + alm.score + ' v ' + (alm.tally[lordK] || 0) : '') + ' · lilly ' + (lscore >= 0 ? '+' : '') + lscore + ' · ' + verdict).toUpperCase(),
       src: 'the school’s twelve-step judgment; Morin, Astrologia Gallica XXI (1661); Lilly, Christian Astrology (1647)'
     };
@@ -3230,6 +3292,19 @@ var APP = (function () {
     if (!(b && b.timeKnown && c.ascBody && c.cusps)) return null;
     var CL = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn'];
     var S = [spec.opener], receipts = [], favor = 0, weight = 0, i, oi, k, lordSeen = {};
+    // THE WEIGHING, KEPT AS DATA. The method is explicitly four testimonies to one judgment, and the
+    // app was giving the reader the judgment while the four stayed inside a sentence. Each testimony
+    // is recorded here as a row — what it is, what it says, and which way it leans — so the working
+    // can be shown as a weighing rather than described as one. The receipt string is unchanged.
+    // The order of the rows is the order of the method — occupant, then the lord who carries the
+    // promise, then what reaches that lord, then the Lot, then the planet the tradition gives to the
+    // matter — not the order the code happens to compute them in, so `ord` is carried and sorted on.
+    var tst = [];
+    function testify(ord, role, what, lean, fig) { tst.push({ ord: ord, role: role, what: what, lean: lean, fig: fig || '' }); }
+    // Which planets will be weighed as lords of this topic's houses — settled before the loop, so
+    // "have we already heard from this planet?" never depends on which house happens to come first.
+    var lordSet9 = {}, ps9;
+    for (ps9 = 0; ps9 < spec.houses.length; ps9++) lordSet9[TRAD_RULER[Math.floor(rev(c.cusps[spec.houses[ps9].h]) / 30)]] = true;
     for (i = 0; i < spec.houses.length; i++) {
       var hs = spec.houses[i], h = hs.h, cs = Math.floor(rev(c.cusps[h]) / 30);
       var lordK = TRAD_RULER[cs], lordD = determination(c, b, lordK); if (!lordD) continue;
@@ -3237,9 +3312,14 @@ var APP = (function () {
       var firstLord = !lordSeen[lordK]; lordSeen[lordK] = true; weight++;
       // one planet ruling two of the topic's houses is ONE significator — count its state once, and
       // note the second house briefly rather than re-deriving the whole delineation
-      if (firstLord) favor += (t >= 3 ? 1 : t < 0 ? -1 : 0);
+      if (firstLord) favor += leanOf9(t);
       var occTxt = '';
-      for (oi = 0; oi < CL.length; oi++) { k = CL[oi]; var pp = c.planets[k]; if (pp && pp.house === h && k !== lordK) { var v = determination(c, b, k); occTxt = ' ' + capit(nameTh(k)) + ' stands in the ' + ordinal(h) + ' itself, ' + occNature9(v) + '.'; if (v.nature.verdict === 'benefic') favor += 0.5; else if (v.nature.verdict === 'malefic') favor -= 0.5; break; } }
+      for (oi = 0; oi < CL.length; oi++) { k = CL[oi]; var pp = c.planets[k]; if (pp && pp.house === h && k !== lordK) { var v = determination(c, b, k), occDup9 = !!lordSet9[k]; occTxt = ' ' + capit(nameTh(k)) + ' stands in the ' + ordinal(h) + ' itself, ' + occNature9(v) + '.';
+        testify(i * 10 + 1, occDup9 ? 'in the ' + ordinal(h) + ' itself: ' + nameFor(k) + ' — one hand, not two' : 'in the ' + ordinal(h) + ' itself: ' + nameFor(k),
+          capit(nameTh(k)) + ' stands in the house itself, ' + stateAdj9(v.essential.label) + ' in ' + v.signName + ', and ' + (v.nature.verdict === 'benefic' ? 'favours this ground' : v.nature.verdict === 'malefic' ? 'disturbs this ground' : 'takes its colour from what reaches it') + (occDup9 ? '. It also rules another of this domain’s houses, so the same planet is standing on ground it already answers for — which concentrates the matter, but is still one testimony and is not counted twice' : ''),
+          occDup9 ? 0 : v.nature.verdict === 'benefic' ? 1 : v.nature.verdict === 'malefic' ? -1 : 0, figOf9(v));
+        if (!occDup9) { if (v.nature.verdict === 'benefic') favor += 0.5; else if (v.nature.verdict === 'malefic') favor -= 0.5; }
+        break; } }
       // the aspects TO the lord — a benefic seconds the promise by soft aspect/conjunction, a malefic
       // taxes it by conjunction/hard aspect, reception softening (Lilly's testimony of the lord's friends)
       var aspTxt = '', bestAsp = null, api;
@@ -3248,12 +3328,14 @@ var APP = (function () {
         var ben = (oth === 'venus' || oth === 'jupiter'), hard = (Ap.aspect === 'square' || Ap.aspect === 'opposition'), conj = (Ap.aspect === 'conjunction');
         var counts = ben ? (!hard) : (hard || conj); // benefics help by soft/conj; malefics bite by conj/hard
         if (!counts) continue;
-        if (!bestAsp || Ap.orb < bestAsp.orb) bestAsp = { oth: oth, aspect: Ap.aspect, orb: Ap.orb, ben: ben, rec: !!Ap.reception };
+        if (!bestAsp || Ap.orb < bestAsp.orb) bestAsp = { oth: oth, aspect: Ap.aspect, orb: Ap.orb, ben: ben, rec: !!Ap.reception, app: !!Ap.applying };
       }
       if (bestAsp && firstLord) { // only fold the lord's aspect once — the same planet, not a new testimony
         favor += bestAsp.ben ? (bestAsp.rec ? 0.75 : 0.5) : (bestAsp.rec ? -0.25 : -0.5);
         aspTxt = ' ' + capit(nameFor(bestAsp.oth)) + (bestAsp.ben ? ' seconds it by ' : ' presses on it by ') + art9(bestAsp.aspect) + ' ' + bestAsp.aspect + (bestAsp.rec ? ', though reception eases the exchange' : '') + '.';
         receipts.push(nameFor(lordK) + (bestAsp.ben ? '+' : '−') + nameFor(bestAsp.oth) + ' ' + bestAsp.aspect.slice(0, 3));
+        testify(i * 10 + 3, 'what reaches the lord', capit(nameTh(bestAsp.oth)) + ' reaches it by ' + art9(bestAsp.aspect) + ' ' + bestAsp.aspect + ' — ' + orbWord9(bestAsp.orb) + ', and ' + motionWord9(bestAsp.app) + '. ' + capit(pron9(bestAsp.oth, 0)) + (bestAsp.ben ? ' seconds the promise' : ' takes a cut of it') + (bestAsp.rec ? ', though each planet stands in ground the other rules, which eases the exchange' : '') + '.', bestAsp.ben ? 1 : -1,
+          nameFor(lordK) + ' ' + bestAsp.aspect + ' ' + nameFor(bestAsp.oth) + ' · orb ' + bestAsp.orb.toFixed(2) + '° ' + (bestAsp.app ? 'applying' : 'separating') + (bestAsp.rec ? ' · reception' : '') + ' · ' + (bestAsp.ben ? 'benefic' : 'malefic') + ' testimony');
       }
       // state (the sign) and circumstance (the house) are held apart, never blended: a lord weak in
       // its own sign but well placed reads as a promise carried by circumstance, not as "held strong"
@@ -3265,19 +3347,20 @@ var APP = (function () {
       // house was good. It never has strength of its own to be strong WITH — by the tradition's own
       // rule its house and its aspects decide — so it takes its own branch, in its own words.
       var inSign9 = ' in ' + lordD.signName, atHouse9 = lordD.house ? ' from your ' + ordinal(lordD.house) : '';
-      if (per9) promise = (t >= 3) ? 'owns nothing' + inSign9 + ', so it has no strength of its own to draw on; what it delivers, it delivers on the strength of its place' + (lordD.house ? ' in your ' + ordinal(lordD.house) : ' alone')
-        : (t < 0) ? 'owns nothing' + inSign9 + ' and stands badly' + atHouse9 + ' besides, so nothing here arrives on its own account'
+      if (per9) promise = (leanOf9(t) > 0) ? 'owns nothing' + inSign9 + ', so it has no strength of its own to draw on; what it delivers, it delivers on the strength of its place' + (lordD.house ? ' in your ' + ordinal(lordD.house) : ' alone')
+        : (leanOf9(t) < 0) ? 'owns nothing' + inSign9 + ' and stands badly' + atHouse9 + ' besides, so nothing here arrives on its own account'
         : 'owns nothing' + inSign9 + ', so this matter is decided entirely by where it stands and what reaches it';
-      else if (es9 < 0 && t >= 3) promise = 'is weak' + inSign9 + ' but well placed' + atHouse9 + ', so the promise is carried by circumstance rather than by its own strength';
-      else if (es9 <= 0 && t >= 3) promise = 'has its dignities and debilities' + inSign9 + ' cancel out, so the promise rests on its placement rather than on its state';
-      else if (es9 >= 3 && t < 0) promise = 'is sound' + inSign9 + ' but poorly circumstanced' + atHouse9 + ', so the promise strains in spite of its strength';
+      else if (es9 < 0 && leanOf9(t) > 0) promise = 'is weak' + inSign9 + ' but well placed' + atHouse9 + ', so the promise is carried by circumstance rather than by its own strength';
+      else if (es9 <= 0 && leanOf9(t) > 0) promise = 'has its dignities and debilities' + inSign9 + ' cancel out, so the promise rests on its placement rather than on its state';
+      else if (es9 >= 3 && leanOf9(t) < 0) promise = 'is sound' + inSign9 + ' but poorly circumstanced' + atHouse9 + ', so the promise strains in spite of its strength';
       // three phrasings per verdict, picked by house number: the same reading judges four or five
       // domains, and one stock sentence repeated across all of them is what makes prose sound machine-made
-      else promise = (t >= 3 ? PROMISE9.strong : t < 0 ? PROMISE9.weak : PROMISE9.mixed)[h % 3];
+      else promise = (leanOf9(t) > 0 ? PROMISE9.strong : leanOf9(t) < 0 ? PROMISE9.weak : PROMISE9.mixed)[h % 3];
       if (firstLord) {
         var link = (srcH && srcH !== h) ? ', and sits in your ' + ordinal(srcH) + ' — so ' + (CAUSE_LINK9[h] || ('the ' + ordinal(h) + '’s matters run through')) + ' ' + HOUSE_AREA9[srcH - 1] : '';
         S.push(capit(hs.role) + ' answers to ' + nameTh(lordK) + ', ' + stateAdj9(lordD.essential.label) + ' in ' + lordD.signName + link + '. ' + capit(nameTh(lordK)) + ' ' + promise + '.' + occTxt + aspTxt);
         receipts.push(ordinal(h) + ' lord ' + nameFor(lordK) + '→' + ordinal(srcH || 0) + ' lilly' + (t >= 0 ? '+' : '') + t);
+        testify(i * 10 + 2, 'lord of the ' + ordinal(h) + ', who carries the promise', capit(nameTh(lordK)) + ' answers for it, ' + stateAdj9(lordD.essential.label) + ' in ' + lordD.signName + (srcH ? ', and works from your ' + ordinal(srcH) + ' — ' + HOUSE_AREA9[srcH - 1] : '') + '. It ' + promise + '.', leanOf9(t), figOf9(lordD));
       } else {
         // same planet already read for this topic — note the second house briefly, not the whole delineation
         S.push(capit(hs.role) + ' answers to the same hand, ' + nameTh(lordK) + ' — so both stand or fall together.' + occTxt);
@@ -3285,23 +3368,36 @@ var APP = (function () {
     }
     if (spec.lot && c.points && c.points[spec.lot]) {
       var lp = c.points[spec.lot], lh = lp.house || natalHouseOf(c, lp.lon), ls = Math.floor(rev(lp.lon) / 30), llK = TRAD_RULER[ls], llD = determination(c, b, llK);
-      var llt = llD && llD.condition ? llD.condition.total : 0; favor += (llt >= 3 ? 0.5 : llt < 0 ? -0.5 : 0); // the Lot's state weighs into the verdict, not just the prose
-      S.push('Your ' + spec.lotName + ' falls in your ' + ordinal(lh) + ' (' + HOUSE_AREA9[lh - 1] + '), ruled by ' + nameTh(llK) + (llD && llD.house ? ' from your ' + ordinal(llD.house) : '') + (llt >= 3 ? ': strong, so the good of it flows freely.' : llt < 0 ? ': weak, so the good of it comes grudgingly.' : ', which is where the good of it flows.'));
+      var llt = llD && llD.condition ? llD.condition.total : 0; favor += 0.5 * leanOf9(llt); // the Lot's state weighs into the verdict, not just the prose
+      S.push('Your ' + spec.lotName + ' falls in your ' + ordinal(lh) + ' (' + HOUSE_AREA9[lh - 1] + '), ruled by ' + nameTh(llK) + (llD && llD.house ? ' from your ' + ordinal(llD.house) : '') + (leanOf9(llt) > 0 ? ': strong, so the good of it flows freely.' : leanOf9(llt) < 0 ? ': weak, so the good of it comes grudgingly.' : ', which is where the good of it flows.'));
       receipts.push(spec.lotName + ' ' + ordinal(lh) + ' lord ' + nameFor(llK) + ' lilly' + (llt >= 0 ? '+' : '') + llt);
+      testify(90, 'the ' + spec.lotName + ', and where its good flows', 'It falls in your ' + ordinal(lh) + ' — ' + HOUSE_AREA9[lh - 1] + ' — and answers to ' + nameTh(llK) + (leanOf9(llt) > 0 ? ', who is strong enough to let the good of it flow freely' : leanOf9(llt) < 0 ? ', who is too weak to let the good of it flow except grudgingly' : ', neither strong nor weak, so it flows as the year allows'),
+        leanOf9(llt),
+        spec.lotName + ' ' + degStr(rev(lp.lon) % 30) + ' ' + DATA.SIGNS[ls].name + ' · ' + ordinal(lh) + ' · lord ' + (llD ? figOf9(llD) : nameFor(llK)));
     }
-    if (spec.karaka) { var kd = determination(c, b, spec.karaka); if (kd) { var kt = kd.condition ? kd.condition.total : 0; favor += (kt >= 3 ? 0.5 : kt < 0 ? -0.5 : 0);
+    if (spec.karaka) { var kd = determination(c, b, spec.karaka); if (kd) { var kt = kd.condition ? kd.condition.total : 0;
+      var karDup9 = !!lordSeen[spec.karaka];       // already weighed as a house lord above
+      if (!karDup9) favor += 0.5 * leanOf9(kt);
       S.push(capit(nameTh(spec.karaka)) + ', the planet the tradition gives to ' + spec.karWord + ', is ' + stateAdj9(kd.essential.label) + ' in ' + kd.signName + (kd.house ? ' in your ' + ordinal(kd.house) : '') + ' — ' + (function () {
         // the composite total can be lifted by a good house alone; whether this planet UNDERWRITES
         // the matter is a question about its own state, so the verdict is gated on the state
         var kes9 = (kd.essential && typeof kd.essential.score === 'number') ? kd.essential.score : 0;
         if (kd.essential && kd.essential.peregrine) return 'holding no title of its own in that sign, it neither seals the matter nor sinks it';
         if (kes9 > 0 && kes9 < 3) return 'holding only a thin claim there, it does not settle the matter either way';
-        if (kes9 >= 3 && kt >= 3) return 'strong in itself and well placed, it underwrites the whole matter';
+        if (kes9 >= 3 && leanOf9(kt) > 0) return 'strong in itself and well placed, it underwrites the whole matter';
         if (kes9 >= 3) return 'strong in itself, though its placement does not help it deliver';
-        if (kt < 0) return 'weak, it withholds where it should give';
+        if (leanOf9(kt) < 0) return 'weak, it withholds where it should give';
         return 'mixed, neither sealing nor sinking it';
       })() + '.');
-      receipts.push(spec.karaka + ' karaka lilly' + (kt >= 0 ? '+' : '') + kt); } }
+      receipts.push(spec.karaka + ' karaka lilly' + (kt >= 0 ? '+' : '') + kt);
+      var kes0 = (kd.essential && typeof kd.essential.score === 'number') ? kd.essential.score : 0;
+      // the lean here is gated on the planet's OWN state, not the composite total, for the same
+      // reason the prose above is: a good house can lift the total without the planet owning anything
+      testify(95, karDup9 ? 'checked last: ' + nameFor(spec.karaka) + ' again — already weighed above'
+          : 'checked last: ' + nameFor(spec.karaka) + ', the planet given to ' + spec.karWord,
+        karDup9 ? 'The same hand holds both offices here: ' + nameTh(spec.karaka) + ' is both the planet the tradition gives to ' + spec.karWord + ' and the lord of one of these houses. That concentrates the matter in one planet — but it is one testimony, not two, so it is not counted again.'
+          : capit(nameTh(spec.karaka)) + ' is ' + stateAdj9(kd.essential.label) + ' in ' + kd.signName + (kd.house ? ', standing in your ' + ordinal(kd.house) : '') + ', and ' + ((kd.essential && kd.essential.peregrine) ? 'holds no title of its own there, so it neither seals the matter nor sinks it' : (kes0 >= 3 && leanOf9(kt) > 0) ? 'underwrites the whole matter' : kes0 >= 3 ? 'is strong in itself, though its placement does not help it deliver' : leanOf9(kt) < 0 ? 'withholds where it should give' : 'neither seals the matter nor sinks it'),
+        karDup9 ? 0 : (kes0 >= 3 && leanOf9(kt) > 0) ? 1 : (leanOf9(kt) < 0 && kes0 < 3) ? -1 : 0, figOf9(kd)); } }
     var verdict = favor >= 1.5 ? 'well-promised' : favor <= -1.5 ? 'hard-won' : 'mixed';
     // The verdict names its own evidence: how many testimonies were weighed, and which planet led
     // them. A closing line that could be pasted onto any chart is the last thing this chapter needs.
@@ -3315,7 +3411,11 @@ var APP = (function () {
     var ledBy9 = leadK9 ? (nT9 > 1 ? ', led by ' + nameTh(leadK9) : ' — ' + nameTh(leadK9)) : '';
     var because9 = evid9 ? (evid9 + ledBy9 + ', and ') : '';
     S.push(spec.title + ', on balance: ' + (verdict === 'well-promised' ? 'well promised. ' + capit(because9) + 'they mostly favour it, so it tends to come without being wrung for.' : verdict === 'hard-won' ? 'hard-won. ' + capit(because9) + 'they lean against, so it is built by effort and second attempts rather than handed over.' : 'mixed. ' + capit(because9) + 'they pull both ways, so timing decides which speaks in a given year.'));
+    tst.sort(function (a9, z9) { return a9.ord - z9.ord; });
+    var forCt9 = 0, agCt9 = 0, nu9 = 0, ti9;
+    for (ti9 = 0; ti9 < tst.length; ti9++) { if (tst[ti9].lean > 0) forCt9++; else if (tst[ti9].lean < 0) agCt9++; else nu9++; }
     return { hasTime: true, topic: spec.key, verdict: verdict, favor: favor, line: tidyProse(S.join(' ')),
+      testimonies: tst, tally: { favour: forCt9, against: agCt9, neutral: nu9 },
       receipt: (spec.key + ': ' + receipts.join(' · ') + ' · ' + verdict).toUpperCase(),
       src: 'the topical synthesis across the domain’s houses, its Lot and its karaka; Lilly, Christian Astrology (1647); Morin, Astrologia Gallica XXI' };
   }
@@ -6284,6 +6384,58 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
       var s = txt.toUpperCase(), cx = x; for (var i = 0; i < s.length; i++) { p.text(s[i], cx, sY(ly)); cx += p.textWidth(s[i]) + 2; }
     }
 
+    // THE WEIGHING, SHOWN. The method is four testimonies to one judgment — and the app was handing
+    // over the judgment with the four folded invisibly into a paragraph. Here each testimony gets a
+    // row on a rail: what it is, what it says, the exact figure it was read from, and which way it
+    // leans; the tally at the foot is the arithmetic that produced the verdict. A trained reader can
+    // audit the working against an ephemeris; a new one watches a judgment being built rather than
+    // being told one. Returns its own height so the caller's layout cursor stays honest.
+    function weighing(rows, tally, verdict, x, ly, w, key) {
+      if (!rows || !rows.length) return 0;
+      var y0 = ly, open = !!(UI.readExp && UI.readExp[key]), i;
+      // The arithmetic is never hidden: the tally rides above the fold, because a verdict whose
+      // count you cannot see is an assertion. The rows themselves open on a tap, which keeps the
+      // reading calm for someone reading it straight through and gives the whole working to anyone
+      // who wants to check it.
+      hairline(x, ly, x + w, 42); ly += 9;
+      var tl = tally.favour + ' IN FAVOUR \u00B7 ' + tally.against + ' AGAINST' + (tally.neutral ? ' \u00B7 ' + tally.neutral + ' NEITHER' : '') + '  \u2192  ' + String(verdict).toUpperCase();
+      var tg = open ? 'HIDE THE WORKING' : 'SHOW THE WORKING \u203A';
+      // the tally and the toggle share a line only when they actually fit on one: at the reader's
+      // larger text sizes, and on the longest verdict words, they were overprinting each other
+      p.textFont(MONO); p.textSize(9);
+      var oneLine9 = (p.textWidth(tl) + p.textWidth(tg) + 18) <= w;
+      setFont(MONO, 9, ACCTX, p.LEFT, p.TOP, 232); p.text(tl, x, sY(ly));
+      if (oneLine9) { setFont(MONO, 9, ACCTX, p.RIGHT, p.TOP, 225); p.text(tg, x + w, sY(ly)); }
+      else { ly += 14; setFont(MONO, 9, ACCTX, p.LEFT, p.TOP, 225); p.text(tg, x, sY(ly)); }
+      pushHit(x, sY(ly - 10), w, 30, (function (k) { return function () { if (!UI.readExp) UI.readExp = {}; UI.readExp[k] = !UI.readExp[k]; }; })(key));
+      ly += 20;
+      if (!open) return ly - y0;
+      setFont(MONO, 9.5, ACCTX, p.LEFT, p.TOP, 200);
+      p.text(rows.length + (rows.length === 1 ? ' TESTIMONY' : ' TESTIMONIES') + ', WEIGHED IN ORDER', x, sY(ly)); ly += 19;
+      var RX = x + 8, TX = x + 26, bw = w - (TX - x), dots = [];
+      for (i = 0; i < rows.length; i++) {
+        var R = rows[i], ln = R.lean, col = ln > 0 ? ELHUE.air : ln < 0 ? ACC : INK, dY = ly + 6;
+        dots.push(dY);
+        p.noStroke(); p.ellipseMode(p.CENTER); fillc(col, ln === 0 ? 70 : 255); p.ellipse(RX, sY(dY), 14, 14);
+        setFont(MONO, 10, ln === 0 ? INK : GROUNDS[UI.screen], p.CENTER, p.CENTER, 255);
+        p.text(ln > 0 ? '+' : ln < 0 ? '\u2212' : '\u00B7', RX, sY(dY) + 0.5);
+        // the role is a label at label size, so it needs its own wrap: paragraph() would scale it to
+        // body size, and drawing it flat let the longer roles run off the right edge of the screen
+        p.textFont(MONO); p.textSize(9);
+        var rl9 = wrapLines(String(R.role).toUpperCase(), bw), rj9;
+        setFont(MONO, 9, ACCTX, p.LEFT, p.TOP, 205);
+        for (rj9 = 0; rj9 < rl9.length; rj9++) p.text(rl9[rj9], TX, sY(ly + rj9 * 12));
+        ly += 3 + rl9.length * 12;
+        ly += paragraph(R.what, TX, ly, bw, 13, INK, SERIF, 19, 242) + 3;
+        if (R.fig) ly += paragraph(R.fig, TX, ly, bw, 8.5, ACCTX, MONO, 12, 185) + 2;
+        ly += 13;
+      }
+      // the rail is drawn in segments BETWEEN the markers, so the line never crosses one
+      strokec(INK, 48); p.strokeWeight(1);
+      for (i = 0; i + 1 < dots.length; i++) p.line(RX, sY(dots[i] + 9), RX, sY(dots[i + 1] - 9));
+      return (ly + 2) - y0;
+    }
+
     // ============ BACKGROUND = YOUR OWN ZODIAC SKY ============
     // The constellations drawn are the ones that belong to YOU — your Sun, Moon and Rising signs
     // (then your other placements) — turning gently as one quiet celestial movement.
@@ -8643,6 +8795,7 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
           } catch (eHs9) {}
           if (!subsumes) { // the single-house four-testimony reading, unless a topical replaces it here
             ly += paragraph(DC9.jh.line, x, ly, w, 15, INK, SERIF, 23) + 6;
+            if (DC9.jh.testimonies && DC9.jh.tally) ly += weighing(DC9.jh.testimonies, DC9.jh.tally, DC9.jh.verdict, x, ly, w, 'wghH' + DC9.h) + 8;
             ly += paragraph(DC9.jh.receipt, x, ly, w, 8.5, ACCTX, MONO, 12, 190) + 14;
           }
           if (TC9 && TC9.r) {
@@ -8651,6 +8804,8 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
             // house reading) needs its own label to mark a genuinely distinct second reading.
             if (!subsumes) { setFont(MONO, 9.5, ACCTX, p.LEFT, p.TOP, 215); p.text(TC9.lab, x, sY(ly)); ly += 17; }
             ly += paragraph(TC9.r.line, x, ly, w, 15, INK, SERIF, 23) + 6;
+            // the four testimonies, as a weighing rather than a paragraph — the method's own working
+            if (TC9.r.testimonies && TC9.r.tally) ly += weighing(TC9.r.testimonies, TC9.r.tally, TC9.r.verdict, x, ly, w, 'wgh' + DC9.h) + 8;
             ly += paragraph(TC9.r.receipt, x, ly, w, 8.5, ACCTX, MONO, 12, 190) + 14;
           }
         }
@@ -12058,7 +12213,11 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
     }
 
     // ---------- lifecycle ----------
-    p.__setScreen = function (s) { UI.screen = s; }; p.__ui = UI; // test seam (unused in normal play)
+    // test seam (unused in normal play). The sketch runs in instance mode and its handle is not
+    // kept anywhere, so p.__ui was unreachable from a harness — hence the window mirror, which is
+    // what lets a screenshot run open a collapsed panel instead of hunting for it with a mouse.
+    p.__setScreen = function (s) { UI.screen = s; }; p.__ui = UI;
+    try { window.__ui = UI; } catch (eSeam9) {}
     p.setup = function () {
       // set the pixel density BEFORE creating the canvas, so the drawing buffer is built at the
       // right resolution from frame one (setting it afterward left the first ~320ms rendering into
