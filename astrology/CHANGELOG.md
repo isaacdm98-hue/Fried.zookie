@@ -1,5 +1,27 @@
 # Changelog
 
+## 4.17.1 — 2026-07-26 — the Sonia fit-check, applied
+
+A requested audit against the school's own doctrine notes found two real
+violations in the new consultation text, both now fixed.
+
+- **"Your core self, what your life is trying to become" was the school's core
+  complaint, verbatim.** The doctrine's first page names "the modern reduction
+  of astrology to the self" as what the method stands against — and the Sun's
+  life-meaning gloss said exactly that. Every planet's meaning line is
+  re-anchored to its traditional significations in plain words: the Sun is
+  vitality and honour and the father in your story; the Moon is the body's
+  tides, the mother, and the public you move through.
+- **The feed had dropped the objective register.** Sonia's three registers
+  require the working to stay reachable; feed entries now reveal their receipt
+  on a tap.
+
+And the daily rows were remapped to answer the daily question truthfully: the
+strongest hard contact IS what is working against you (it had been filed under
+"go gentle"), while void Moons, eclipses and retrogrades are ON THE CLOCK —
+timing, not opposition. A charged conjunction joins WITH YOU as a second row
+when one is live: strong for starting, loud if pushed.
+
 ## 4.17.0 — 2026-07-26 — the consultation
 
 Built under the sharpest feedback of the project: "how can I actually use the

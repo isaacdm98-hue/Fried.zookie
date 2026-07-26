@@ -2525,13 +2525,13 @@ var APP = (function () {
   // the planet = which part of your life this is; the house = where in your life it plays out;
   // the sign = HOW it behaves there (manner of operation, never a personality profile).
   var PLANET_LIFE9 = {
-    sun: 'your core self and vitality, what your life is trying to become',
-    moon: 'your feelings and daily rhythms, what you need in order to feel safe',
-    mercury: 'your mind and your voice, how you think and speak and handle the everyday',
-    venus: 'how you love, what you find beautiful, and the people you draw close',
-    mars: 'your drive, how you fight and push and go after what you want',
-    jupiter: 'where life is generous with you, and the help that finds you',
-    saturn: 'where life asks discipline of you, and what only time builds'
+    sun: 'your vitality and your honour — where recognition comes from, and the father in your story',
+    moon: 'your body’s tides and your daily life — the mother in your story, and the public you move through',
+    venus: 'love, union and pleasure in your life — what you hold dear, and who holds you',
+    mercury: 'your words, your reckoning and your dealings — everything spoken, written and traded',
+    mars: 'the fight in your life — effort, conflict, and everything done by force or courage',
+    jupiter: 'increase in your life — where things grow, and the help that finds you',
+    saturn: 'limit and time in your life — what weighs, what endures, and what only patience builds'
   };
   var HOUSE_LIFE9 = [
     'the most visible part of life, where your body, your presence and your first moves live',
@@ -4153,7 +4153,7 @@ var APP = (function () {
       var k9 = PKS9[pi9], D9 = determination(c, b, k9);
       if (!D9 || !D9.essential || D9.essential.modern) continue;
       var head9 = D9.signName + (D9.house ? ' · ' + ordinal(D9.house) + ' house' : '');
-      var L9 = ['Your ' + nameFor(k9) + ' is ' + PLANET_LIFE9[k9].split(',')[0] + '.'];
+      var L9 = ['Your ' + nameFor(k9) + ' is ' + PLANET_LIFE9[k9].split(' — ')[0] + '.'];
       if (D9.house) L9.push('The ' + ordinal(D9.house) + ' is ' + HOUSE_LIFE9[D9.house - 1] + '.');
       if (D9.house && DATA.PLANET_IN_HOUSE && DATA.PLANET_IN_HOUSE[k9] && DATA.PLANET_IN_HOUSE[k9][D9.house - 1])
         L9 = L9.concat(DATA.PLANET_IN_HOUSE[k9][D9.house - 1]);
@@ -8296,7 +8296,16 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         if (ev) { var evW = wv(ev); watchL = { txt: APP.nameFor(ev.tp) + ' ' + ev.asp.key + ' your ' + APP.nameFor(ev.np) + ' turns exact ' + fmtShort(ev.exactDate) + ': it is building now.', full: evW && evW.line, why: (evW ? evW.receipt : glanceWhy(ev)) + ' · EXACT ' + fmtShort(ev.exactDate).toUpperCase() }; }
         else watchL = { txt: 'Nothing sharp on watch. A plain sky is permission to just live the day.', why: 'NO EXACT PASS, VOID WINDOW, ECLIPSE OR PERSONAL RETROGRADE IN RANGE' };
       }
-      return { rows: [{ tag: 'WITH YOU', col: ELHUE.air, txt: doL.txt, full: doL.full, why: doL.why }, { tag: 'GO GENTLE', col: ACC, txt: easeL.txt, full: easeL.full, why: easeL.why }, { tag: 'AGAINST YOU', col: ELHUE.fire, txt: watchL.txt, full: watchL.full, why: watchL.why }] };
+      var rows9 = [{ tag: 'WITH YOU', col: ELHUE.air, txt: doL.txt, full: doL.full, why: doL.why }];
+      if (charged && open) {
+        var chW9 = wv(charged);
+        rows9.push({ tag: 'WITH YOU', col: ELHUE.air,
+          txt: APP.nameFor(charged.tp) + ' sits right on your ' + APP.nameFor(charged.np) + ' today — its matters run charged: strong for starting, loud if pushed.' + wireNote34(charged),
+          full: chW9 && chW9.line, why: (APP.nameFor(charged.tp) + ' conjunct ' + APP.nameFor(charged.np) + ' · orb ' + charged.orb.toFixed(1) + '°').toUpperCase() });
+      }
+      rows9.push({ tag: 'AGAINST YOU', col: ELHUE.fire, txt: easeL.txt, full: easeL.full, why: easeL.why });
+      rows9.push({ tag: 'ON THE CLOCK', col: ACC, txt: watchL.txt, full: watchL.full, why: watchL.why });
+      return { rows: rows9 };
     }
     // ---- life-in-chapters timeline: the slow transits & returns across a lifetime ----
     // ===== THE ACTOR: a gesture-drawing come to life. Head ball with construction cross,
@@ -9058,10 +9067,17 @@ if (typeof document !== 'undefined') { try { APP.load(); } catch (e) {} }
         var beats = UI.rdBeats, bF;
         for (bF = 0; bF < beats.length; bF++) {
           var beatF = beats[bF];
+          var beatTop9 = ly;
           if (beatF.lab) { eyebrow(beatF.lab, x, ly, ACC); ly += 20; }
           if (beatF.head) { setFont(MONO, 10.5, INK, p.LEFT, p.TOP, 235); p.text(String(beatF.head).toUpperCase(), x, sY(ly)); ly += 20; }
           var lnF;
           for (lnF = 0; lnF < beatF.lines.length; lnF++) ly += paragraph(beatF.lines[lnF], x, ly, w, 13.5, INK, SERIF, 20) + 7;
+          // Sonia's three registers: the composed lines above, and the objective working one tap
+          // away — every entry carries its receipt, shown when the reader asks for it
+          if (beatF.receipt) {
+            if (UI.readExp && UI.readExp['rcpt' + bF]) ly += paragraph(beatF.receipt, x, ly, w, 8.5, ACCTX, MONO, 12, 175) + 6;
+            pushHit(x, sY(beatTop9), w, ly - beatTop9 + 8, (function (k8) { return function () { if (!UI.readExp) UI.readExp = {}; UI.readExp[k8] = !UI.readExp[k8]; }; })('rcpt' + bF));
+          }
           ly += 8;
           if (bF < beats.length - 1) { hairline(x, ly, x + w, 26); ly += 16; }
         }
