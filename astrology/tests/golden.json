@@ -17,7 +17,7 @@
       "asc": "Libra",
       "captain": "venus",
       "captainState": "Domicile",
-      "captainLilly": 11,
+      "captainLilly": 15,
       "captainHouse": 8,
       "day": true,
       "helper": "jupiter",
@@ -43,13 +43,13 @@
       "asc": "Scorpio",
       "captain": "mars",
       "captainState": "Triplicity",
-      "captainLilly": 16,
+      "captainLilly": 20,
       "captainHouse": 4,
       "day": false,
       "helper": "venus",
       "tooth": "saturn",
       "ruling": "mars",
-      "h1": "promised",
+      "h1": "carried",
       "h7": "taxed",
       "h10": "withheld"
     },
@@ -75,8 +75,8 @@
       "helper": "jupiter",
       "tooth": "mars",
       "ruling": "venus",
-      "h1": "repaired",
-      "h7": "withheld",
+      "h1": "carried",
+      "h7": "carried",
       "h10": "promised"
     },
     "D": {
@@ -101,7 +101,7 @@
       "helper": "jupiter",
       "tooth": "mars",
       "ruling": "mercury",
-      "h1": "promised",
+      "h1": "carried",
       "h7": "repaired",
       "h10": "promised"
     },
@@ -152,6 +152,46 @@
         "C.h1": {
           "was": "promised",
           "now": "repaired"
+        }
+      }
+    },
+    {
+      "date": "2026-07-26",
+      "change": "Lilly's ledger now charges the two reception rows his table actually prints, and the kernel reads the birth instant instead of the day after it",
+      "why": "TWO SEPARATE FINDINGS, verified against their sources. (1) Christian Astrology's table of essential dignities opens 'If a Planet be in his own House, OR IN MUTUALL RECEPTION with another by house - 5. In his Exaltation, OR IN RECEPTION BY EXALTATION - 4.' The app computed reception everywhere else in the reading and never brought it to the ledger, so two planets each standing in ground the other rules - the configuration the tradition cites for why a square between them resolves rather than festers - were each scored bare strangers at -5. Reception is a title on this table, so it also suppresses the peregrine charge, on the same principle that already stops a planet in its fall being charged twice. A mixed exchange (one leg by house, one by exaltation) is graded by the weaker leg at 4, the conservative reading. (2) Applying/separating was decided by stepping a pair a WHOLE DAY of birth-speed motion and asking whether the orb had shrunk, which inverts the answer for any fast pair that perfects and overshoots inside 24 hours; measured over 1749 aspects against an independent seven-minute finite difference, the old method got 161 wrong (9.2%), almost all of them Moon contacts. Daily motion and the retrograde flag came from the same forward difference and are now centred on the birth instant (worst error 0.115 deg/day to 0.000026). Sect was read from the Sun's house NUMBER, exact for quadrant systems but wrong in whole-sign, where a Sun already risen can sit in house 1; it is now measured against the horizon arc directly. North and South Node came from different sources, so on the default setting the two nodes drawn were not opposite each other.",
+      "effect": "Only two pinned values move, both by exactly the +4 of one reception row, and neither crosses a band boundary so no verdict changes. A: Venus in Taurus, captain of a Libra Ascendant, is in mutual reception by exaltation with the Moon in Pisces (Venus exalts in Pisces; the Moon exalts in Taurus) - Lilly total 11 to 15. B: Mars in Pisces, captain of a Scorpio Ascendant, exchanges with Jupiter in Capricorn (Mars in Jupiter's own sign; Jupiter in Mars's exaltation) - Lilly total 16 to 20. The applying/separating correction changes no pinned value because none of the five reference nativities pins an aspect flag; its effect is on the aspect and transit prose, covered by tests/kernel.cjs.",
+      "pinned": {
+        "A.captainLilly": {
+          "was": 11,
+          "now": 15
+        },
+        "B.captainLilly": {
+          "was": 16,
+          "now": 20
+        }
+      }
+    },
+    {
+      "date": "2026-07-26",
+      "change": "the promise-lean of every testimony now comes from the ZODIACAL state, not from Lilly's blended net total, and a fifth house-verdict named 'carried' covers the thin promise that circumstance is carrying",
+      "why": "MEASURED, not argued. Over 2,100 planet-ledgers across 300 charts: the essential column has mean +0.32 and median 0 - effectively zero-centred - while the accidental column has mean +6.50 and median +7, because nine of Lilly's twelve houses score positive and only three negative, before direct motion, swiftness, increasing light and freedom from the beams are added. Taking each testimony's plus-or-minus off the BLENDED total therefore returned 'favours the matter' 60.7% of the time against 20.3% adverse: a three-to-one thumb on the scale, per testimony, compounding across three or four testimonies per domain. The visible result was judgeMoney calling 33 of 49 sample charts well-promised - flattery wearing a ledger. The fix is the school's own first rule (Morin's etat celeste against etat terrestre, doctrine-notes 1): the SIGN says what a significator can promise, the house says only under what circumstances it must deliver. promiseLean9 reads the zodiacal state alone - major dignity or Lilly's reception-by-house favours, detriment or fall opposes, a stranger or a thin claim (triplicity, term, face, borrowed exaltation standing) is neutral - and returns 23.5% favour / 55.5% neutral / 21.0% against, symmetric as a zero-centred judgment should be. Lilly's blended total keeps both of its real jobs: it is the figure printed in every receipt and the band spoken in the prose. It no longer decides whether a testimony favours the matter. Reception is tested BEFORE the peregrine branch, because reception is a title and the ledger already stops charging peregrine when it finds one - the lean has to agree with the ledger it prints. SECOND FINDING, exposed by the first: with the lean now zodiacal, a lord holding only a term or a face fell straight through to 'withheld', which asserts the lord is too weak to pay at all - a real misreading when that same lord is angular, direct and free of the beams. 'Carried' is that case said honestly, and it is exactly what the state/circumstance split implies: a matter decided by where the significator stands rather than by what it owns.",
+      "effect": "Domain verdicts across a 49-chart spread move from money 33 well-promised / 13 mixed / 3 hard-won to 18 / 26 / 5, with 'mixed' the plurality in every domain, as the tradition expects. Four pinned house verdicts take the new middle verdict: B.h1 promised -> carried (Mars with triplicity and borrowed exaltation standing, accidental +13), C.h1 repaired -> carried, C.h7 withheld -> carried, D.h1 promised -> carried (Mercury holding only a term in Capricorn, accidental +13). A.h10 stays promised: the Moon there is peregrine by sign but in mutual reception by house with Jupiter, which the ledger credits at 5 and the lean now credits too.",
+      "pinned": {
+        "B.h1": {
+          "was": "promised",
+          "now": "carried"
+        },
+        "C.h1": {
+          "was": "repaired",
+          "now": "carried"
+        },
+        "C.h7": {
+          "was": "withheld",
+          "now": "carried"
+        },
+        "D.h1": {
+          "was": "promised",
+          "now": "carried"
         }
       }
     }

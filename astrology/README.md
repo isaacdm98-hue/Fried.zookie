@@ -124,7 +124,7 @@ working (dignity, house, and the Lilly score) every time.
 
 ## Version
 
-**4.12.0** — see `CHANGELOG.md`. Licensed MIT (`LICENSE`).
+**4.13.0** — see `CHANGELOG.md`. Licensed MIT (`LICENSE`).
 
 ## Deploy
 
@@ -179,12 +179,14 @@ to the home screen. On iOS Safari: **Share → Add to Home Screen**.
 
 ## Verified headlessly
 
-Nine harnesses in `tests/`, each run against the real app in headless Chromium:
+Eleven harnesses in `tests/`, each run against the real app in headless Chromium:
 
 | harness | what it holds to account |
 |---|---|
 | `golden.cjs` | the **judged meaning** of five reference nativities, pinned. A drift must be a recorded doctrine change, never an accident — `golden.json` carries a `doctrineChanges` log |
 | `doctrine.cjs` | the dignity ledgers and the method's own rules |
+| `kernel.cjs` | the astronomy the judgment stands on: applying/separating checked against an independent finite difference over 1,749 aspects, sect against the horizon arc, the two nodes exactly opposite, daily motion and retrogradation against a seven-minute reference |
+| `lilly-ledger.cjs` | *Christian Astrology*'s table of essential dignities, row by row against the printed points — including that Lilly's same-row alternatives are never charged twice |
 | `individuation.cjs` | chart-specific tokens **per sentence**, verbatim and frame overlap between charts, and receipt completeness |
 | `plain-language.cjs` | no jargon in composed prose; every term of art glossed in the same passage |
 | `prose-lint.cjs` | em-dash density, fragments, repeated formulas, second-person counsel |

@@ -1,5 +1,114 @@
 # Changelog
 
+## 4.13.0 — 2026-07-26 — the numbers under the judgment
+
+A research pass across professional ephemeris accuracy, real traditional-astrology
+software, and the primary sources' own procedures, then an audit of this engine
+against all three. Five defects landed; every one is checked by a new harness, and
+each was verified in the code before being believed.
+
+### Applying or separating was wrong on one aspect in eleven
+
+The engine decided whether an aspect was still forming by stepping the pair a
+**whole day** of birth-speed motion and asking whether the orb had shrunk. A Moon
+five degrees before an exact conjunction closes at about 12°/day — so one day
+later it sits seven degrees *past* exact, the orb has grown, and the app reported
+"separating."
+
+This is the determinant the tradition consults most often: a promise still
+forming against one already spent. It is spoken aloud in the reading ("it was
+still tightening at the minute you were born, so it grows louder with age") and
+it gates the transit layer.
+
+The orb's rate of change is available in closed form from the two speeds, so it is
+now taken directly — no step, nothing to overshoot. `tests/kernel.cjs` checks
+1,749 aspects against an independent seven-minute finite difference on raw
+ephemeris positions: the engine gets all 1,749 right, and **the old method got 161
+wrong (9.2%)**, almost all of them Moon contacts. Applying aspects now also carry
+their rate of perfection and days-to-exact.
+
+### Three more one-day bugs in the same region
+
+- **Daily motion and retrogradation** came from the same `d → d+1` forward
+  difference — the mean speed of the day *after* birth. Within half a day of a
+  station that gets the direction of travel itself wrong. Now a centred difference
+  about the birth instant: worst error 0.115°/day → 0.000026°/day.
+- **Sect** was read from the Sun's *house number* (7–12 = above the horizon).
+  Exact for quadrant systems, wrong for whole-sign, where the whole rising sign is
+  house 1, so a Sun that has already risen could be judged nocturnal. Sect decides
+  the chart's helper and its tooth, the triplicity lords, the temperament
+  weighting and the Lot of Fortune's formula — one house-system toggle could
+  invert the chain. Now measured against the horizon arc itself.
+- **The two nodes were not opposite each other.** The North Node honoured the
+  reader's Mean/True setting; the South Node was hardcoded to mean + 180. On the
+  default setting they disagreed by up to ~1°45′ — a different degree, sometimes a
+  different sign and house. Lilly's node rows also read the true node regardless of
+  the setting, so the ledger could contradict the wheel.
+
+### Lilly's table was missing its first two rows
+
+*Christian Astrology* opens its table of essential dignities: "If a Planet be in
+his own House, **or in mutuall reception with another by house** — 5. In his
+Exaltation, **or in reception by Exaltation** — 4." The app computed reception
+everywhere else in the reading and never brought it to the ledger, so two planets
+each standing in ground the other rules — the configuration the tradition cites for
+why a square between them resolves rather than festers — were each scored bare
+strangers at −5.
+
+Both rows are now charged, reception suppresses the peregrine charge on the same
+principle that already stops a planet in its fall being charged twice, and a mixed
+exchange (one leg by house, one by exaltation) is graded by the weaker leg.
+`tests/lilly-ledger.cjs` checks all ten rows against the printed points, asserts
+Lilly's same-row alternatives are never charged twice, and confirms the two columns
+sum independently to the published bands.
+
+### The engine was flattering two-thirds of its readers
+
+`judgeMoney` called 33 of 49 sample charts "well-promised." The cause, measured
+over 2,100 planet-ledgers: **Lilly's accidental column is not zero-centred.** Its
+mean is +6.50 and its median +7 — nine of his twelve houses score positive and only
+three negative, before direct motion, swiftness, increasing light and freedom from
+the beams are added. The essential column, by contrast, has mean +0.32 and median 0.
+
+Every testimony's plus-or-minus had been read off the *blended* total, which
+returned "favours the matter" 60.7% of the time against 20.3% adverse — a
+three-to-one thumb on the scale, per testimony, compounding across three or four
+testimonies per domain.
+
+The fix is the school's own first rule (Morin's *état céleste* against *état
+terrestre*): the **sign** says what a significator can promise; the **house** says
+only under what circumstances it must deliver. `promiseLean9` reads the zodiacal
+state alone and returns 23.5% favour / 55.5% neutral / 21.0% against — symmetric,
+as a zero-centred judgment should be. Lilly's blended total keeps both of its real
+jobs: it is the figure printed in every receipt and the band spoken in the prose.
+It no longer decides whether a testimony favours the matter.
+
+Across the spread, `mixed` is now the plurality in every domain, as the tradition
+expects: money 16 well-promised / 28 mixed / 5 hard-won.
+
+### A fifth house-verdict, because four were three too few in the middle
+
+With the lean now zodiacal, a lord holding only a term or a face — a thin claim,
+neither owned nor undone — fell straight through to **withheld**, which asserts the
+lord is too weak to pay at all. That is a real misreading when the same lord is
+angular, direct and free of the beams. **Carried** is that case said honestly, and
+it is what the state/circumstance split implies: a matter decided by where the
+significator stands rather than by what it owns.
+
+Six pinned verdicts moved, each recorded with its reasoning in
+`tests/golden.json → doctrineChanges`.
+
+### Also
+
+- The header comment claimed positions accurate to "~1 arcsecond." The bundled
+  library's documented design accuracy is ~1 **arcminute**, and the app's own
+  Settings copy already said so — a sixtyfold overstatement, now corrected, with
+  the honesty rule written down beside it.
+- `plans/engine-of-the-future.md` — the full research output: twelve ranked
+  correctness defects with file:line evidence, a twelve-movement build plan, and a
+  section on what is *not* worth doing in a single-file offline app and why.
+- Two new harnesses (`kernel`, `lilly-ledger`) bring the floor to ten.
+
 ## 4.12.0 — 2026-07-26 — the four testimonies, shown rather than described
 
 The method this app is built on is explicit: four testimonies to one judgment.
